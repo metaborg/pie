@@ -1,0 +1,48 @@
+group 'mb'
+version '0.1.0-SNAPSHOT'
+
+buildscript {
+  ext.kotlin_version = '1.1.2-2'
+
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // Kotlin Gradle plugin
+    classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-M4' // JUnit 5 Gradle plugin
+  }
+}
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'org.junit.platform.gradle.plugin'
+
+def javaVersion = JavaVersion.VERSION_1_8
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+
+compileKotlin {
+  sourceCompatibility = javaVersion
+  targetCompatibility = javaVersion
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+  compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+
+  // JUnit 5 testing API and runtime engine (http://junit.org/junit5/docs/current/user-guide/)
+  testCompile 'org.junit.jupiter:junit-jupiter-api:5.0.0-M4'
+  testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.0.0-M4'
+  testCompile 'org.junit.platform:junit-platform-runner:1.0.0-M4'
+  // Guice extension for JUnit 5 (https://github.com/JeffreyFalgout/junit5-guice-extension)
+  testCompile 'com.google.inject:guice:4.1.0'
+  testCompile 'name.falgout.jeffrey.testing:junit5-guice-extension:1.0.0-M3'
+  // In-memory filesystem implementation for testing (https://github.com/google/jimfs)
+  testCompile 'com.google.jimfs:jimfs:1.1'
+  // Mockito for Kotlin
+  testCompile 'com.nhaarman:mockito-kotlin:1.4.0'
+}
