@@ -1,11 +1,14 @@
 package mb.ceres
 
+import java.io.IOException
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Path
 
-data class CPath(val pathStr: String, val scheme: String) : Serializable {
+data class CPath(var pathStr: String, var scheme: String) : Serializable {
   constructor(path: Path) : this(path.toString(), path.fileSystem.provider().scheme) {
     this.pathCache = path
   }

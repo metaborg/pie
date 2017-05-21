@@ -1,8 +1,8 @@
 package mb.ceres
 
-class SimpleLambdaBuilder<in I, out O>(val name: String, val path: CPath, val build: (I) -> O) : Builder<I, O> {
-  override fun name(input: I): String {
-    return name
+class SimpleLambdaBuilder<in I : In, out O : Out>(override val id: String, val desc: String, val path: CPath, val buildFunc: (I) -> O) : Builder<I, O> {
+  override fun desc(input: I): String {
+    return desc
   }
 
   override fun path(input: I): CPath {
@@ -10,21 +10,21 @@ class SimpleLambdaBuilder<in I, out O>(val name: String, val path: CPath, val bu
   }
 
   override fun build(input: I, context: BuildContext): O? {
-    return build(input)
+    return buildFunc(input)
   }
 }
 
-class LambdaBuilder<in I, out O>(val name: (I) -> String, val path: (I) -> CPath, val build: (input: I, buildContext: BuildContext) -> O) : Builder<I, O> {
-  override fun name(input: I): String {
-    return name(input)
+class LambdaBuilder<in I : In, out O : Out>(override val id: String, val descFunc: (I) -> String, val pathFunc: (I) -> CPath, val buildFunc: (input: I, buildContext: BuildContext) -> O) : Builder<I, O> {
+  override fun desc(input: I): String {
+    return descFunc(input)
   }
 
   override fun path(input: I): CPath {
-    return path(input)
+    return pathFunc(input)
   }
 
   override fun build(input: I, context: BuildContext): O? {
-    return build(input, context)
+    return buildFunc(input, context)
   }
 }
 
