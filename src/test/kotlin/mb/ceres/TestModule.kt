@@ -5,7 +5,6 @@ import com.google.common.jimfs.Jimfs
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
 import java.nio.file.FileSystem
-import java.nio.file.FileSystems
 
 class TestModule : AbstractModule() {
   override fun configure() {

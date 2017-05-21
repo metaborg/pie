@@ -14,7 +14,7 @@ import java.nio.file.FileSystem
 @IncludeModule(TestModule::class)
 class BuildManagerTests {
   @Test
-  fun testSingleBuild(bm: BuildManagerImpl, fs: FileSystem) {
+  fun testSingleBuild(bm: BuildManagerImpl) {
     val sbm = spy(bm)
     val desc = "toLowerCase"
     val input = "CAPITALIZED"
@@ -45,7 +45,7 @@ class BuildManagerTests {
   }
 
   @Test
-  fun testMultipleBuilds(bm: BuildManagerImpl, fs: FileSystem) {
+  fun testMultipleBuilds(bm: BuildManagerImpl) {
     val sbm = spy(bm)
     val id = "toLowerCase"
     val builder = spy(b<String, String>(id, { "toLowerCase($it)" }, { it.toLowerCase() }))
@@ -86,7 +86,7 @@ class BuildManagerTests {
   }
 
   @Test
-  fun testReuseResult(bm: BuildManagerImpl, fs: FileSystem) {
+  fun testReuseResult(bm: BuildManagerImpl) {
     val id = "toLowerCase"
     val input = "CAPITALIZED"
     val builder = spy(b<String, String>(id, "toLowerCase") { it.toLowerCase() })
@@ -106,6 +106,16 @@ class BuildManagerTests {
     verify(builder, atLeastOnce()).desc(input)
   }
 
+  fun testRequirementsIncrementality() {
+    // Setup:
+    // Builder A, requires builder B, which requires file F
+    // Run:
+    // Build A - observe rebuild of A and B
+    // Build A again unchanged - observe no rebuilds
+    // Change required file F in such a way that its output changes, build A again - observe rebuild of A and B
+    // Change required file F in such aw ay that its output does not change, build A again - observe rebuild of B only
+  }
+
 
   fun p(fs: FileSystem, path: String): CPath {
     return CPath(fs.getPath(path))
@@ -120,7 +130,7 @@ class BuildManagerTests {
     return LambdaBuilder(id, descFunc, { input, _ -> buildFunc(input) })
   }
 
-  fun <I : In, O : Out> bc(id: String, descFunc: (I) -> String, buildFunc: (input: I, buildContext: BuildContext) -> O): Builder<I, O> {
+  fun <I : In, O : Out> bc(id: String, descFunc: (I) -> String, buildFunc: (input: I, context: BuildContext) -> O): Builder<I, O> {
     return LambdaBuilder(id, descFunc, buildFunc)
   }
 
