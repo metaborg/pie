@@ -1,11 +1,7 @@
 package mb.ceres
 
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.lang.IllegalStateException
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 
 
 interface BuildContext {
@@ -19,8 +15,8 @@ typealias Out = Serializable
 
 interface Builder<in I : In, out O : Out> {
   val id: String
+
   fun desc(input: I): String
-  fun path(input: I): CPath
   fun build(input: I, context: BuildContext): O?
 }
 
@@ -59,65 +55,35 @@ internal interface BuildManagerInternal {
   fun <I : In, O : Out> require(request: BuildRequest<I, O>): BuildResult<I, O>
 }
 
-class BuildManagerImpl(prevGenerated: Map<CPath, CPath> = emptyMap()) : BuildManager, BuildManagerInternal {
+class BuildManagerImpl(prevConsistent: Map<BuildRequest<*, *>, BuildResult<*, *>> = emptyMap(), prevGenerated: Map<CPath, CPath> = emptyMap()) : BuildManager, BuildManagerInternal {
   private val builders = mutableMapOf<String, Builder<*, *>>()
+  private val cache = prevConsistent.toMutableMap()
 
-  private val consistent = mutableSetOf<CPath>()
+  private val consistent = mutableSetOf<BuildRequest<*, *>>()
   private val required = mutableSetOf<CPath>()
   private val generated = prevGenerated.toMutableMap()
 
 
-  override fun <I : In, O : Out> registerBuilder(builder: Builder<I, O>) {
-    val id = builder.id
-    if (builders.containsKey(id)) {
-      throw IllegalStateException("Builder with id $id already exists")
-    }
-    builders.put(id, builder)
-  }
-
-  override fun <I : In, O : Out> unregisterBuilder(builder: Builder<I, O>) {
-    val id = builder.id
-    if (!builders.containsKey(id)) {
-      throw IllegalStateException("Builder with id $id does not exist")
-    }
-    builders.remove(id)
-  }
-
-  internal fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
-    if (!builders.containsKey(id)) {
-      throw IllegalStateException("Builder with id $id does not exist")
-    }
-    @Suppress("UNCHECKED_CAST")
-    return builders[id] as Builder<I, O>
-  }
-
-
   override fun <I : In, O : Out> build(vararg requests: BuildRequest<I, O>): List<BuildResult<I, O>> {
+    consistent.clear()
+    required.clear()
+    generated.clear()
     return requests.map { require(it) }
   }
 
   override fun <I : In, O : Out> require(request: BuildRequest<I, O>): BuildResult<I, O> {
-    val (builderId, input) = request
-    val builder = getBuilder<I, O>(builderId)
-    val path = builder.path(input)
-
-    val existingResult = readResult<I, O>(path)
+    val existingResult = getCachedResult(request)
     if (existingResult == null) {
       // No existing result was found: rebuild
       return rebuild(request)
     }
 
-    if (path in consistent) {
-      // If javaPath is consistent (i.e., builder was executed with input already): reuse
+    if (consistent.contains(request)) {
+      // Existing result is known to be consistent this build: reuse
       return existingResult
     }
 
     // Check for inconsistencies and rebuild when found
-    // Internal consistency: builder or input change
-    if (existingResult.builderId != builderId || existingResult.input != input) {
-      // If result was built with a different builder, or built with a different input: rebuild
-      return rebuild(request)
-    }
     // Internal consistency: generated files
     for ((genPath, stamp) in existingResult.gens) {
       val newStamp = stamp.stamper.stamp(genPath)
@@ -139,7 +105,7 @@ class BuildManagerImpl(prevGenerated: Map<CPath, CPath> = emptyMap()) : BuildMan
           }
         }
         is BuildReq<*, *> -> {
-          // Make required build consistent
+          // Make required build cache
           require(req.request)
         }
       }
@@ -147,9 +113,9 @@ class BuildManagerImpl(prevGenerated: Map<CPath, CPath> = emptyMap()) : BuildMan
 
     // No inconsistencies found
     // Validate well-formedness of the dependency graph
-    validate(existingResult, path)
-    // Mark result at javaPath as consistent. Important: must be done after validation
-    consistent.add(path)
+    validate(existingResult)
+    // Mark result consistent. Important: must be done after validation
+    consistent.add(request)
     // Reuse existing result
     return existingResult
   }
@@ -157,7 +123,6 @@ class BuildManagerImpl(prevGenerated: Map<CPath, CPath> = emptyMap()) : BuildMan
   internal fun <I : In, O : Out> rebuild(request: BuildRequest<I, O>): BuildResult<I, O> {
     val (builderId, input) = request
     val builder = getBuilder<I, O>(builderId)
-    val path = builder.path(input)
     val desc = builder.desc(input)
 
     // Execute builder
@@ -166,52 +131,49 @@ class BuildManagerImpl(prevGenerated: Map<CPath, CPath> = emptyMap()) : BuildMan
     val output = builder.build(input, requirer)
     val result = BuildResult(builderId, input, output, requirer.reqs, requirer.gens)
 
-    // Store build result
-    writeResult(result, path)
     // Validate well-formedness of the dependency graph
-    validate(result, path)
-    // Mark result at javaPath as consistent. Important: must be done after validation
-    consistent.add(path)
+    validate(result)
+    // Cache result and mark it consistent. Important: must be done after validation
+    cache.put(request, result)
+    consistent.add(request)
 
     return result
   }
 
-  internal fun <I : In, O : Out> validate(result: BuildResult<I, O>, path: CPath) {
-    if (path in consistent) {
-      error("Overlapping build results for javaPath $path")
-    }
-    for ((genPath, _) in result.gens) {
-      if (generated[genPath] != null) {
-        error("Overlapping generated javaPath $genPath")
-      } else if (genPath in required) {
-        error("Hidden dependency on javaPath $genPath")
-      } else {
-        generated.put(genPath, path)
-      }
-    }
-    // TODO: more complex hidden dependency check
+  internal fun <I : In, O : Out> validate(result: BuildResult<I, O>) {
+    // TODO: overlapping file check
+    // TODO: hidden dependency check
   }
 
-  internal fun <I : In, O : Out> readResult(path: CPath): BuildResult<I, O>? {
-    if (Files.notExists(path.javaPath)) {
-      return null
-    }
 
-    Files.newInputStream(path.javaPath).use {
-      ObjectInputStream(it).use {
-        @Suppress("UNCHECKED_CAST")
-        return it.readObject() as BuildResult<I, O>
-      }
+  internal fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
+    if (!builders.containsKey(id)) {
+      throw IllegalStateException("Builder with id $id does not exist")
     }
+    @Suppress("UNCHECKED_CAST")
+    return builders[id] as Builder<I, O>
   }
 
-  internal fun <I : In, O : Out> writeResult(result: BuildResult<I, O>, path: CPath) {
-    Files.createDirectories(path.javaPath.parent)
-    Files.newOutputStream(path.javaPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING).use {
-      ObjectOutputStream(it).use {
-        it.writeObject(result)
-      }
+  internal fun <I : In, O : Out> getCachedResult(request: BuildRequest<I, O>): BuildResult<I, O>? {
+    @Suppress("UNCHECKED_CAST")
+    return cache[request] as BuildResult<I, O>?
+  }
+
+
+  override fun <I : In, O : Out> registerBuilder(builder: Builder<I, O>) {
+    val id = builder.id
+    if (builders.containsKey(id)) {
+      throw IllegalStateException("Builder with id $id already exists")
     }
+    builders.put(id, builder)
+  }
+
+  override fun <I : In, O : Out> unregisterBuilder(builder: Builder<I, O>) {
+    val id = builder.id
+    if (!builders.containsKey(id)) {
+      throw IllegalStateException("Builder with id $id does not exist")
+    }
+    builders.remove(id)
   }
 }
 
