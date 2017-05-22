@@ -17,9 +17,3 @@ class EqualsOutputStamper : OutputStamper {
     return ValueOutputStamp(output, this)
   }
 }
-
-class HashOutputStamper : OutputStamper {
-  override fun <O : Out> stamp(output: O): OutputStamp {
-    return ValueOutputStamp(output.hashCode(), this)
-  }
-}

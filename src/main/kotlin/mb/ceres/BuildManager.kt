@@ -79,30 +79,10 @@ class BuildManagerImpl(prevConsistent: Map<BuildRequest<*, *>, BuildResult<*, *>
         return rebuild(request)
       }
     }
-    // Internal consistency: required files
-    // Total consistency: required builds
+    // Internal and total consistency: requirements
     for (req in existingResult.reqs) {
-      when (req) {
-      // TODO: move consistency code into requirement, so we don't have to pattern match here
-        is FileReq -> {
-          val (reqPath, stamp) = req
-          val newStamp = stamp.stamper.stamp(reqPath)
-          if (stamp != newStamp) {
-            // If a required file is outdated (i.e., its stamp changed): rebuild
-            return rebuild(request)
-          }
-        }
-        is BuildReq<*, *> -> {
-          val (reqRequest, stamp) = req
-          // Make required build consistent
-          val result = require(reqRequest)
-          // CHANGED: paper algorithm did not check if the result changed, which would cause inconsistencies
-          val newStamp = stamp.stamper.stamp(result.output)
-          if (stamp != newStamp) {
-            // If output of a required builder has changed: rebuild
-            return rebuild(request)
-          }
-        }
+      if (!req.makeConsistent(this)) {
+        return rebuild(request)
       }
     }
 
@@ -187,7 +167,7 @@ internal class BuildContextImpl(val buildManager: BuildManagerInternal) : BuildC
 
   override fun require(path: CPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
-    reqs.add(FileReq(path, stamp))
+    reqs.add(PathReq(path, stamp))
   }
 
   override fun generate(path: CPath, stamper: PathStamper) {

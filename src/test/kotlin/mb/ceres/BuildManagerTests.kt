@@ -3,8 +3,7 @@ package mb.ceres
 import com.nhaarman.mockito_kotlin.*
 import name.falgout.jeffrey.testing.junit5.GuiceExtension
 import name.falgout.jeffrey.testing.junit5.IncludeModule
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.nio.charset.Charset
@@ -18,7 +17,7 @@ import java.nio.file.attribute.FileTime
 @IncludeModule(TestModule::class)
 class BuildManagerTests {
   @Test
-  fun testSingleBuild(bm: BuildManagerImpl) {
+  fun testBuild(bm: BuildManagerImpl) {
     val sbm = spy(bm)
     val desc = "toLowerCase"
     val input = "CAPITALIZED"
@@ -87,7 +86,7 @@ class BuildManagerTests {
   }
 
   @Test
-  fun testReuseResult(bm: BuildManagerImpl) {
+  fun testReuse(bm: BuildManagerImpl) {
     val id = "toLowerCase"
     val input = "CAPITALIZED"
     val builder = spy(b<String, String>(id, "toLowerCase") { it.toLowerCase() })
@@ -108,7 +107,76 @@ class BuildManagerTests {
   }
 
   @Test
-  fun testRequirementsIncrementality(bm: BuildManagerImpl, fs: FileSystem) {
+  fun testPathReq(bm: BuildManagerImpl, fs: FileSystem) {
+    val readPath = spy(bc<CPath, String>("read", { "read($it)" }, { path, context ->
+      context.require(path)
+      String(Files.readAllBytes(path.javaPath), Charset.defaultCharset())
+    }))
+    bm.registerBuilder(readPath)
+
+    val filePath = CPath(fs.getPath("/file"))
+    Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
+
+    // Build 'readPath', observe rebuild
+    val sbm1 = spy(bm)
+    val output1 = sbm1.build(BuildRequest(readPath, filePath))
+    assertEquals("HELLO WORLD!", output1)
+    verify(sbm1, times(1)).rebuild(BuildRequest(readPath, filePath))
+
+    // No changes - build 'readPath', observe no rebuild
+    val sbm2 = spy(bm)
+    val output2 = sbm1.build(BuildRequest(readPath, filePath))
+    assertEquals("HELLO WORLD!", output2)
+    verify(sbm2, never()).rebuild(BuildRequest(readPath, filePath))
+
+    // Change required file in such a way that the output of 'readPath' changes (change file content)
+    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
+
+    // Run again - expect rebuild
+    val sbm3 = spy(bm)
+    val output3 = sbm3.build(BuildRequest(readPath, filePath))
+    assertEquals("!DLROW OLLEH", output3)
+    verify(sbm3, times(1)).rebuild(BuildRequest(readPath, filePath))
+  }
+
+  @Test
+  fun testPathGen(bm: BuildManagerImpl, fs: FileSystem) {
+    val writePath = spy(bc<Pair<String, CPath>, None>("write", { "write$it" }, { (text, path), context ->
+      Files.write(path.javaPath, text.toByteArray(), StandardOpenOption.CREATE)
+      context.generate(path)
+      None.instance
+    }))
+    bm.registerBuilder(writePath)
+
+    val filePath = CPath(fs.getPath("/file"))
+    assertTrue(Files.notExists(filePath.javaPath))
+
+    // Build 'writePath', observe rebuild and existence of file
+    val sbm1 = spy(bm)
+    sbm1.build(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    verify(sbm1, times(1)).rebuild(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+
+    assertTrue(Files.exists(filePath.javaPath))
+    assertEquals("HELLO WORLD!", String(Files.readAllBytes(filePath.javaPath), Charset.defaultCharset()))
+
+    // No changes - build 'writePath', observe no rebuild, no change to file
+    val sbm2 = spy(bm)
+    sbm2.build(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    verify(sbm2, never()).rebuild(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+
+    // Change generated file in such a way that 'writePath' is rebuilt (change file content)
+    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
+
+    // Build 'writePath', observe rebuild and change of file
+    val sbm3 = spy(bm)
+    sbm3.build(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    verify(sbm3, times(1)).rebuild(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+
+    assertEquals("HELLO WORLD!", String(Files.readAllBytes(filePath.javaPath), Charset.defaultCharset()))
+  }
+
+  @Test
+  fun testBuildReq(bm: BuildManagerImpl, fs: FileSystem) {
     val toLowerCase = spy(b<String, String>("toLowerCase", { "toLowerCase($it)" }, { it.toLowerCase() }))
     bm.registerBuilder(toLowerCase)
     val readPath = spy(bc<CPath, String>("read", { "read($it)" }, { path, context ->
@@ -127,7 +195,8 @@ class BuildManagerTests {
 
     // Build 'combine', observe rebuild of all
     val sbm1 = spy(bm)
-    sbm1.build(BuildRequest(combine, filePath))
+    val output1 = sbm1.build(BuildRequest(combine, filePath))
+    assertEquals("hello world!", output1)
     inOrder(sbm1) {
       verify(sbm1, times(1)).rebuild(BuildRequest(combine, filePath))
       verify(sbm1, times(1)).rebuild(BuildRequest(readPath, filePath))
@@ -136,17 +205,19 @@ class BuildManagerTests {
 
     // No changes - build 'combine', observe no rebuild
     val sbm2 = spy(bm)
-    sbm2.build(BuildRequest(combine, filePath))
+    val output2 = sbm2.build(BuildRequest(combine, filePath))
+    assertEquals("hello world!", output2)
     verify(sbm2, never()).rebuild(BuildRequest(combine, filePath))
     verify(sbm2, never()).rebuild(BuildRequest(readPath, filePath))
     verify(sbm2, never()).rebuild(BuildRequest(toLowerCase, "HELLO WORLD!"))
 
-    // Change required file in such a way that its output changes (change file content)
-    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray(), StandardOpenOption.CREATE)
+    // Change required file in such a way that the output of 'readPath' changes (change file content)
+    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
 
     // Build 'combine', observe rebuild of all in dependency order
     val sbm3 = spy(bm)
-    sbm3.build(BuildRequest(combine, filePath))
+    val output3 = sbm3.build(BuildRequest(combine, filePath))
+    assertEquals("!dlrow olleh", output3)
     inOrder(sbm3) {
       verify(sbm3, times(1)).require(BuildRequest(combine, filePath))
       verify(sbm3, times(1)).rebuild(BuildRequest(readPath, filePath))
@@ -154,14 +225,15 @@ class BuildManagerTests {
       verify(sbm3, times(1)).rebuild(BuildRequest(toLowerCase, "!DLROW OLLEH"))
     }
 
-    // Change required file in such a way that its output does not change (change modification date)
+    // Change required file in such a way that the output of 'readPath' does not change (change modification date)
     val lastModified = Files.getLastModifiedTime(filePath.javaPath)
     val newLastModified = FileTime.fromMillis(lastModified.toMillis() + 1)
     Files.setLastModifiedTime(filePath.javaPath, newLastModified)
 
     // Build 'combine', observe rebuild of 'readPath' only
     val sbm4 = spy(bm)
-    sbm4.build(BuildRequest(combine, filePath))
+    val output4 = sbm4.build(BuildRequest(combine, filePath))
+    assertEquals("!dlrow olleh", output4)
     inOrder(sbm4) {
       verify(sbm4, times(1)).require(BuildRequest(combine, filePath))
       verify(sbm4, times(1)).rebuild(BuildRequest(readPath, filePath))
