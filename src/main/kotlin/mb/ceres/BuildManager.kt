@@ -4,51 +4,18 @@ import java.io.Serializable
 import java.lang.IllegalStateException
 
 
-interface BuildContext {
-  fun <I : In, O : Out> require(request: BuildRequest<I, O>): O?
-  fun require(path: CPath, stamper: Stamper)
-  fun generate(path: CPath, stamper: Stamper)
+data class BuildResult<out I : In, out O : Out>(val builderId: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable
+data class BuildRequest<out I : In, out O : Out>(val builderId: String, val input: I) : Serializable {
+  constructor(builder: Builder<I, O>, input: I) : this(builder.id, input)
 }
-
-typealias In = Serializable
-typealias Out = Serializable
-
-interface Builder<in I : In, out O : Out> {
-  val id: String
-
-  fun desc(input: I): String
-  fun build(input: I, context: BuildContext): O?
-}
-
-
-interface Stamper {
-  fun stamp(path: CPath): Stamp
-}
-
-interface Stamp : Serializable {
-  val stamper: Stamper
-}
-
-data class ValueStamp<out V>(val value: V?, override val stamper: Stamper) : Stamp
-
-
-sealed class Req : Serializable
-data class FileReq(val path: CPath, val stamp: Stamp) : Req()
-data class BuildReq<out I : In, out O : Out>(val request: BuildRequest<I, O>) : Req()
-
-
-data class Gen(val path: CPath, val stamp: Stamp) : Serializable
-
-
-data class BuildResult<out I : In, out O : Out>(val builderId: String, val input: I, val output: O?, val reqs: List<Req>, val gens: List<Gen>) : Serializable
-data class BuildRequest<out I : In, out O : Out>(val builderId: String, val input: I) : Serializable
 
 
 interface BuildManager {
+  fun <I : In, O : Out> build(request: BuildRequest<I, O>): O
+  fun <I : In, O : Out> buildAll(vararg requests: BuildRequest<I, O>): List<O>
+
   fun <I : In, O : Out> registerBuilder(builder: Builder<I, O>)
   fun <I : In, O : Out> unregisterBuilder(builder: Builder<I, O>)
-
-  fun <I : In, O : Out> build(vararg requests: BuildRequest<I, O>): Collection<BuildResult<I, O>>
 }
 
 internal interface BuildManagerInternal {
@@ -64,12 +31,32 @@ class BuildManagerImpl(prevConsistent: Map<BuildRequest<*, *>, BuildResult<*, *>
   private val generated = prevGenerated.toMutableMap()
 
 
-  override fun <I : In, O : Out> build(vararg requests: BuildRequest<I, O>): List<BuildResult<I, O>> {
+  private fun resetBeforeBuild() {
     consistent.clear()
     required.clear()
     generated.clear()
+  }
+
+
+  override fun <I : In, O : Out> build(request: BuildRequest<I, O>): O {
+    return buildInternal(request).output
+  }
+
+  internal fun <I : In, O : Out> buildInternal(request: BuildRequest<I, O>): BuildResult<I, O> {
+    resetBeforeBuild()
+    return require(request)
+  }
+
+
+  override fun <I : In, O : Out> buildAll(vararg requests: BuildRequest<I, O>): List<O> {
+    return buildAllInternal(*requests).map { it.output }
+  }
+
+  internal fun <I : In, O : Out> buildAllInternal(vararg requests: BuildRequest<I, O>): List<BuildResult<I, O>> {
+    resetBeforeBuild()
     return requests.map { require(it) }
   }
+
 
   override fun <I : In, O : Out> require(request: BuildRequest<I, O>): BuildResult<I, O> {
     val existingResult = getCachedResult(request)
@@ -96,6 +83,7 @@ class BuildManagerImpl(prevConsistent: Map<BuildRequest<*, *>, BuildResult<*, *>
     // Total consistency: required builds
     for (req in existingResult.reqs) {
       when (req) {
+      // TODO: move consistency code into requirement, so we don't have to pattern match here
         is FileReq -> {
           val (reqPath, stamp) = req
           val newStamp = stamp.stamper.stamp(reqPath)
@@ -105,8 +93,15 @@ class BuildManagerImpl(prevConsistent: Map<BuildRequest<*, *>, BuildResult<*, *>
           }
         }
         is BuildReq<*, *> -> {
-          // Make required build cache
-          require(req.request)
+          val (reqRequest, stamp) = req
+          // Make required build consistent
+          val result = require(reqRequest)
+          // CHANGED: paper algorithm did not check if the result changed, which would cause inconsistencies
+          val newStamp = stamp.stamper.stamp(result.output)
+          if (stamp != newStamp) {
+            // If output of a required builder has changed: rebuild
+            return rebuild(request)
+          }
         }
       }
     }
@@ -183,18 +178,19 @@ internal class BuildContextImpl(val buildManager: BuildManagerInternal) : BuildC
   val gens = mutableListOf<Gen>()
 
 
-  override fun <I : In, O : Out> require(request: BuildRequest<I, O>): O? {
+  override fun <I : In, O : Out> require(request: BuildRequest<I, O>, stamper: OutputStamper): O {
     val result = buildManager.require(request)
-    reqs.add(BuildReq(request))
+    val stamp = stamper.stamp(result.output)
+    reqs.add(BuildReq(request, stamp))
     return result.output
   }
 
-  override fun require(path: CPath, stamper: Stamper) {
+  override fun require(path: CPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
     reqs.add(FileReq(path, stamp))
   }
 
-  override fun generate(path: CPath, stamper: Stamper) {
+  override fun generate(path: CPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
     gens.add(Gen(path, stamp))
   }

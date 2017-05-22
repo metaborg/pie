@@ -5,7 +5,7 @@ import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Path
 
-data class CPath(var pathStr: String, var scheme: String) : Serializable {
+data class CPath(private var pathStr: String, private var scheme: String) : Serializable {
   constructor(path: Path) : this(path.toString(), path.fileSystem.provider().scheme) {
     this.pathCache = path
   }

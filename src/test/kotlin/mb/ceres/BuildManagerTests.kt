@@ -7,7 +7,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.nio.charset.Charset
 import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.FileTime
 
 
 @ExtendWith(GuiceExtension::class)
@@ -23,10 +27,7 @@ class BuildManagerTests {
     sbm.registerBuilder(builder)
     val request = br(builder, input)
 
-    val results = sbm.build(request)
-    assertEquals(1, results.size)
-
-    val result = results[0]
+    val result = sbm.buildInternal(request)
     assertEquals(builder.id, result.builderId)
     assertEquals(input, result.input)
     assertEquals("capitalized", result.output)
@@ -34,7 +35,7 @@ class BuildManagerTests {
     assertEquals(0, result.gens.size)
 
     inOrder(sbm, builder) {
-      verify(sbm, times(1)).build(request)
+      verify(sbm, times(1)).buildInternal(request)
       verify(sbm, times(1)).require(request)
       verify(sbm, times(1)).rebuild(request)
       verify(builder, times(1)).build(eq(input), anyOrNull())
@@ -55,7 +56,7 @@ class BuildManagerTests {
     val input2 = "CAPITALIZED_EVEN_MORE"
     val request2 = br(builder, input2)
 
-    val results = sbm.build(request1, request2)
+    val results = sbm.buildAllInternal(request1, request2)
     assertEquals(2, results.size)
 
     val result1 = results[0]
@@ -71,7 +72,7 @@ class BuildManagerTests {
     assertNotEquals(result1, result2)
 
     inOrder(sbm, builder) {
-      verify(sbm, times(1)).build(request1, request2)
+      verify(sbm, times(1)).buildAllInternal(request1, request2)
 
       verify(sbm, times(1)).require(request1)
       verify(sbm, times(1)).rebuild(request1)
@@ -92,12 +93,12 @@ class BuildManagerTests {
     val builder = spy(b<String, String>(id, "toLowerCase") { it.toLowerCase() })
     bm.registerBuilder(builder)
     val request = br(builder, input)
-    val result1 = bm.build(request)[0]
+    val output1 = bm.build(request)
 
     val sbm = spy(bm)
-    val result2 = sbm.build(request)[0]
+    val output2 = sbm.build(request)
 
-    assertEquals(result1, result2)
+    assertEquals(output1, output2)
 
     // Result is reused if rebuild is never called
     verify(sbm, never()).rebuild(request)
@@ -106,14 +107,67 @@ class BuildManagerTests {
     verify(builder, atLeastOnce()).desc(input)
   }
 
-  fun testRequirementsIncrementality() {
-    // Setup:
-    // Builder A, requires builder B, which requires file F
-    // Run:
-    // Build A - observe rebuild of A and B
-    // Build A again unchanged - observe no rebuilds
-    // Change required file F in such a way that its output changes, build A again - observe rebuild of A and B
-    // Change required file F in such aw ay that its output does not change, build A again - observe rebuild of B only
+  @Test
+  fun testRequirementsIncrementality(bm: BuildManagerImpl, fs: FileSystem) {
+    val toLowerCase = spy(b<String, String>("toLowerCase", { "toLowerCase($it)" }, { it.toLowerCase() }))
+    bm.registerBuilder(toLowerCase)
+    val readPath = spy(bc<CPath, String>("read", { "read($it)" }, { path, context ->
+      context.require(path, ModifiedPathStamper())
+      String(Files.readAllBytes(path.javaPath), Charset.defaultCharset())
+    }))
+    bm.registerBuilder(readPath)
+    val combine = spy(bc<CPath, String>("combine", { "toLowerCase(read($it))" }, { path, context ->
+      val text = context.require(BuildRequest(readPath, path))
+      context.require(BuildRequest(toLowerCase, text))
+    }))
+    bm.registerBuilder(combine)
+
+    val filePath = CPath(fs.getPath("/file"))
+    Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
+
+    // Build 'combine', observe rebuild of all
+    val sbm1 = spy(bm)
+    sbm1.build(BuildRequest(combine, filePath))
+    inOrder(sbm1) {
+      verify(sbm1, times(1)).rebuild(BuildRequest(combine, filePath))
+      verify(sbm1, times(1)).rebuild(BuildRequest(readPath, filePath))
+      verify(sbm1, times(1)).rebuild(BuildRequest(toLowerCase, "HELLO WORLD!"))
+    }
+
+    // No changes - build 'combine', observe no rebuild
+    val sbm2 = spy(bm)
+    sbm2.build(BuildRequest(combine, filePath))
+    verify(sbm2, never()).rebuild(BuildRequest(combine, filePath))
+    verify(sbm2, never()).rebuild(BuildRequest(readPath, filePath))
+    verify(sbm2, never()).rebuild(BuildRequest(toLowerCase, "HELLO WORLD!"))
+
+    // Change required file in such a way that its output changes (change file content)
+    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray(), StandardOpenOption.CREATE)
+
+    // Build 'combine', observe rebuild of all in dependency order
+    val sbm3 = spy(bm)
+    sbm3.build(BuildRequest(combine, filePath))
+    inOrder(sbm3) {
+      verify(sbm3, times(1)).require(BuildRequest(combine, filePath))
+      verify(sbm3, times(1)).rebuild(BuildRequest(readPath, filePath))
+      verify(sbm3, times(1)).rebuild(BuildRequest(combine, filePath))
+      verify(sbm3, times(1)).rebuild(BuildRequest(toLowerCase, "!DLROW OLLEH"))
+    }
+
+    // Change required file in such a way that its output does not change (change modification date)
+    val lastModified = Files.getLastModifiedTime(filePath.javaPath)
+    val newLastModified = FileTime.fromMillis(lastModified.toMillis() + 1)
+    Files.setLastModifiedTime(filePath.javaPath, newLastModified)
+
+    // Build 'combine', observe rebuild of 'readPath' only
+    val sbm4 = spy(bm)
+    sbm4.build(BuildRequest(combine, filePath))
+    inOrder(sbm4) {
+      verify(sbm4, times(1)).require(BuildRequest(combine, filePath))
+      verify(sbm4, times(1)).rebuild(BuildRequest(readPath, filePath))
+    }
+    verify(sbm4, never()).rebuild(BuildRequest(combine, filePath))
+    verify(sbm4, never()).rebuild(BuildRequest(toLowerCase, "!DLROW OLLEH"))
   }
 
 
