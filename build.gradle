@@ -32,7 +32,6 @@ repositories {
 
 dependencies {
   compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-  compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
   // JUnit 5 testing API and runtime engine (http://junit.org/junit5/docs/current/user-guide/)
   testCompile 'org.junit.jupiter:junit-jupiter-api:5.0.0-M4'
