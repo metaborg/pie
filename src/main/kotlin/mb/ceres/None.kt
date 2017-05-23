@@ -6,7 +6,9 @@ class None : Out {
   }
 
   override fun equals(other: Any?): Boolean {
-    return other is None
+    if (this === other) return true
+    if (other?.javaClass != javaClass) return false
+    return true
   }
 
   override fun hashCode(): Int {

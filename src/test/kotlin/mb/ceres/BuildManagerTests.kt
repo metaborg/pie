@@ -71,8 +71,6 @@ class BuildManagerTests {
     assertNotEquals(result1, result2)
 
     inOrder(sbm, builder) {
-      verify(sbm, times(1)).buildAllInternal(request1, request2)
-
       verify(sbm, times(1)).require(request1)
       verify(sbm, times(1)).rebuild(request1)
       verify(builder, times(1)).build(eq(input1), anyOrNull())
