@@ -37,19 +37,19 @@ internal interface BuildManagerInternal {
 typealias BuildMap = Map<BuildRequest<*, *>, BuildResult<*, *>>
 typealias PathMap = Map<CPath, BuildResult<*, *>>
 
-class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: PathMap = emptyMap()) : BuildManager, BuildManagerInternal {
+open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: PathMap = emptyMap()) : BuildManager, BuildManagerInternal {
   private val builders = mutableMapOf<String, Builder<*, *>>()
-  private val cache = prevConsistent.toMutableMap()
 
-  private val consistent = mutableSetOf<BuildRequest<*, *>>()
-  private val required = mutableMapOf<CPath, BuildResult<*, *>>()
-  private val generated = prevGenerated.toMutableMap()
+  private val resultCache = resultCache.toMutableMap()
+  private val generatedByCache = generatedCache.toMutableMap()
+
+  private val isConsistent = mutableSetOf<BuildRequest<*, *>>()
+  private val requiredBy = mutableMapOf<CPath, BuildResult<*, *>>()
 
 
   private fun resetBeforeBuild() {
-    consistent.clear()
-    required.clear()
-    generated.clear()
+    isConsistent.clear()
+    requiredBy.clear()
   }
 
 
@@ -57,7 +57,7 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
     return buildInternal(request).output
   }
 
-  internal fun <I : In, O : Out> buildInternal(request: BuildRequest<I, O>): BuildResult<I, O> {
+  open internal fun <I : In, O : Out> buildInternal(request: BuildRequest<I, O>): BuildResult<I, O> {
     resetBeforeBuild()
     return require(request)
   }
@@ -67,27 +67,27 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
     return buildAllInternal(*requests).map { it.output }
   }
 
-  internal fun <I : In, O : Out> buildAllInternal(vararg requests: BuildRequest<I, O>): List<BuildResult<I, O>> {
+  open internal fun <I : In, O : Out> buildAllInternal(vararg requests: BuildRequest<I, O>): List<BuildResult<I, O>> {
     resetBeforeBuild()
     return requests.map { require(it) }
   }
 
 
   override fun <I : In, O : Out> require(request: BuildRequest<I, O>): BuildResult<I, O> {
-    val existingResult = getCachedResult(request)
-    if (existingResult == null) {
+    val cachedResult = getCachedResult(request)
+    if (cachedResult == null) {
       // No existing result was found: rebuild
       return rebuild(request)
     }
 
-    if (consistent.contains(request)) {
+    if (isConsistent.contains(request)) {
       // Existing result is known to be consistent this build: reuse
-      return existingResult
+      return cachedResult
     }
 
     // Check for inconsistencies and rebuild when found
     // Internal consistency: generated files
-    for ((genPath, stamp) in existingResult.gens) {
+    for ((genPath, stamp) in cachedResult.gens) {
       val newStamp = stamp.stamper.stamp(genPath)
       if (stamp != newStamp) {
         // If a generated file is outdated (i.e., its stamp changed): rebuild
@@ -95,7 +95,7 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
       }
     }
     // Internal and total consistency: requirements
-    for (req in existingResult.reqs) {
+    for (req in cachedResult.reqs) {
       if (!req.makeConsistent(this)) {
         return rebuild(request)
       }
@@ -103,52 +103,57 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
 
     // No inconsistencies found
     // Validate well-formedness of the dependency graph
-    validate(existingResult)
-    // Mark result consistent. Important: must be done after validation
-    consistent.add(request)
+    validate(cachedResult)
+    // Mark result consistent.
+    isConsistent.add(request)
     // Reuse existing result
-    return existingResult
+    return cachedResult
   }
 
-  internal fun <I : In, O : Out> rebuild(request: BuildRequest<I, O>): BuildResult<I, O> {
+  open internal fun <I : In, O : Out> rebuild(request: BuildRequest<I, O>): BuildResult<I, O> {
     val (builderId, input) = request
     val builder = getBuilder<I, O>(builderId)
     val desc = builder.desc(input)
 
     // Execute builder
     println("Executing builder $desc")
-    val requirer = BuildContextImpl(this)
-    val output = builder.build(input, requirer)
-    val result = BuildResult(builderId, desc, input, output, requirer.reqs, requirer.gens)
+    val context = BuildContextImpl(this)
+    val output = builder.build(input, context)
+    val result = BuildResult(builderId, desc, input, output, context.reqs, context.gens)
 
     // Validate well-formedness of the dependency graph
     validate(result)
-    // Cache result and mark it consistent. Important: must be done after validation
-    cache.put(request, result)
-    consistent.add(request)
+    // Cache result and mark it consistent
+    resultCache.put(request, result)
+    isConsistent.add(request)
 
     return result
   }
 
-  internal fun <I : In, O : Out> validate(result: BuildResult<I, O>) {
+  open internal fun <I : In, O : Out> validate(result: BuildResult<I, O>) {
+    // Clear own generated files from cache before validation, to prevent overlapping of own generated files
     for ((path, _) in result.gens) {
-      val generatedBy = generated[path]
+      generatedByCache.remove(path, result)
+    }
+
+    for ((path, _) in result.gens) {
+      val generatedBy = generatedByCache[path]
+      generatedByCache.put(path, result) // Add to cache before throwing exceptions
       if (generatedBy != null) {
-        throw BuildValidationException("Overlapping generated path: $path was generated by '${result.desc}' and '${generatedBy.desc}'")
+        throw OverlappingGeneratedPathException("Overlapping generated path: $path was generated by '${result.desc}' and '${generatedBy.desc}'")
       }
-      val requiredBy = required[path]
+      val requiredBy = requiredBy[path]
       if (requiredBy != null) {
-        throw BuildValidationException("Hidden dependency: $path was generated by '${result.desc}' after being previously required by ${requiredBy.desc}")
+        throw HiddenDependencyException("Hidden dependency: $path was generated by '${result.desc}' after being previously required by ${requiredBy.desc}")
       }
-      generated.put(path, result)
     }
 
     for ((path, _) in result.reqs.filterIsInstance<PathReq>()) {
-      required.put(path, result)
-      val generator = generated[path]
+      requiredBy.put(path, result)
+      val generator = generatedByCache[path]
       // 'path' is required by 'result', and path is generated by 'generator', thus 'result' must (transitively) require 'generator'
       if (generator != null && !hasBuildReq(result, generator)) {
-        throw BuildValidationException("Hidden dependency: '${result.desc}' requires path $path, generated by '${generator.desc}', without a (transitive) build requirement for it")
+        throw HiddenDependencyException("Hidden dependency: '${result.desc}' requires path $path, generated by '${generator.desc}', without a (transitive) build requirement for it")
       }
     }
   }
@@ -166,7 +171,7 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
       val reqResults = mutableListOf<BuildResult<*, *>>()
       for (reqRequest in reqRequests) {
         // TODO: are the results of all requirements available at this point?
-        val reqResult = cache[reqRequest] ?: error("Cannot get result for request $reqRequest")
+        val reqResult = resultCache[reqRequest] ?: error("Cannot get result for request $reqRequest")
         reqResults.add(reqResult)
       }
       // TODO: cycles cause non-termination
@@ -176,7 +181,7 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
   }
 
 
-  internal fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
+  private fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
     if (!builders.containsKey(id)) {
       throw IllegalStateException("Builder with id $id does not exist")
     }
@@ -184,9 +189,9 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
     return builders[id] as Builder<I, O>
   }
 
-  internal fun <I : In, O : Out> getCachedResult(request: BuildRequest<I, O>): BuildResult<I, O>? {
+  private fun <I : In, O : Out> getCachedResult(request: BuildRequest<I, O>): BuildResult<I, O>? {
     @Suppress("UNCHECKED_CAST")
-    return cache[request] as BuildResult<I, O>?
+    return resultCache[request] as BuildResult<I, O>?
   }
 
 
@@ -206,6 +211,11 @@ class BuildManagerImpl(prevConsistent: BuildMap = emptyMap(), prevGenerated: Pat
     builders.remove(id)
   }
 }
+
+
+open class BuildValidationException(message: String) : RuntimeException(message)
+class OverlappingGeneratedPathException(message: String) : BuildValidationException(message)
+class HiddenDependencyException(message: String) : BuildValidationException(message)
 
 
 internal class BuildContextImpl(val buildManager: BuildManagerInternal) : BuildContext {

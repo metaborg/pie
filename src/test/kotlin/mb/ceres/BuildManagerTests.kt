@@ -32,7 +32,6 @@ class BuildManagerTests {
     assertEquals(0, result.gens.size)
 
     inOrder(sbm, builder) {
-      verify(sbm, times(1)).buildInternal(request)
       verify(sbm, times(1)).require(request)
       verify(sbm, times(1)).rebuild(request)
       verify(builder, times(1)).build(eq(input), anyOrNull())
@@ -228,23 +227,66 @@ class BuildManagerTests {
 
   @Test
   fun testOverlappingGeneratedPath(bm: BuildManagerImpl, fs: FileSystem) {
-    val writePath = spy(writePath)
     bm.registerBuilder(writePath)
 
     val filePath = p(fs, "/file")
-    assertThrows(BuildValidationException::class.java) {
+    assertThrows(OverlappingGeneratedPathException::class.java) {
       bm.buildAll(BuildRequest(writePath, Pair("HELLO WORLD 1!", filePath)), BuildRequest(writePath, Pair("HELLO WORLD 2!", filePath)))
+    }
+
+    // Overlapping generated path exception should also trigger between separate builds
+    assertThrows(OverlappingGeneratedPathException::class.java) {
+      bm.build(BuildRequest(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
 
   @Test
-  fun testGenerateRequiredHiddenDep() {
+  fun testGenerateRequiredHiddenDep(bm: BuildManagerImpl, fs: FileSystem) {
+    bm.registerBuilder(readPath)
+    bm.registerBuilder(writePath)
 
+    val filePath = p(fs, "/file")
+    Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
+
+    assertThrows(HiddenDependencyException::class.java) {
+      bm.buildAll(BuildRequest(readPath, filePath), BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    }
+
+    // Hidden dependency exception should also trigger between separate builds
+    assertThrows(HiddenDependencyException::class.java) {
+      bm.build(BuildRequest(readPath, filePath))
+    }
   }
 
   @Test
-  fun testRequireGeneratedHiddenDep() {
+  fun testRequireGeneratedHiddenDep(bm: BuildManagerImpl, fs: FileSystem) {
+    val indirection = requireBuilder<Pair<String, CPath>, None>()
+    bm.registerBuilder(indirection)
+    bm.registerBuilder(writePath)
+    bm.registerBuilder(readPath)
 
+    val combineIncorrect = spy(b<Pair<String, CPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
+      require(BuildRequest(indirection, BuildRequest(writePath, Pair(text, path))))
+      require(BuildRequest(readPath, path))
+    })
+    bm.registerBuilder(combineIncorrect)
+
+    val filePath1 = p(fs, "/file1")
+    assertThrows(HiddenDependencyException::class.java) {
+      bm.build(BuildRequest(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
+    }
+
+    val combineStillIncorrect = spy(b<Pair<String, CPath>, String>("combineStillIncorrect", { "combine$it" }) { (text, path) ->
+      require(BuildRequest(indirection, BuildRequest(writePath, Pair(text, path))))
+      require(BuildRequest(writePath, Pair(text, path)))
+      require(BuildRequest(readPath, path))
+    })
+    bm.registerBuilder(combineStillIncorrect)
+
+    val filePath2 = p(fs, "/file2")
+    assertThrows(HiddenDependencyException::class.java) {
+      bm.build(BuildRequest(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
+    }
   }
 
 
@@ -272,5 +314,11 @@ class BuildManagerTests {
     Files.write(path.javaPath, text.toByteArray(), StandardOpenOption.CREATE)
     generate(path)
     None.instance
+  }
+
+  inline fun <reified I : In, reified O : Out> requireBuilder(): Builder<BuildRequest<I, O>, O> {
+    return b("require(${I::class}):${O::class}", { "require($it)" }) {
+      require(it)
+    }
   }
 }
