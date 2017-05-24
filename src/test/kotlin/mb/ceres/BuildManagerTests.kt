@@ -19,10 +19,8 @@ class BuildManagerTests {
   @Test
   fun testBuild(bm: BuildManagerImpl) {
     val sbm = spy(bm)
-    val desc = "toLowerCase"
     val input = "CAPITALIZED"
-    val id = "toLowerCase"
-    val builder = spy(b<String, String>(id, desc) { it.toLowerCase() })
+    val builder = spy(toLowerCase)
     sbm.registerBuilder(builder)
     val request = br(builder, input)
 
@@ -47,8 +45,7 @@ class BuildManagerTests {
   @Test
   fun testMultipleBuilds(bm: BuildManagerImpl) {
     val sbm = spy(bm)
-    val id = "toLowerCase"
-    val builder = spy(b<String, String>(id, { "toLowerCase($it)" }, { it.toLowerCase() }))
+    val builder = spy(toLowerCase)
     sbm.registerBuilder(builder)
     val input1 = "CAPITALIZED"
     val request1 = br(builder, input1)
@@ -85,9 +82,8 @@ class BuildManagerTests {
 
   @Test
   fun testReuse(bm: BuildManagerImpl) {
-    val id = "toLowerCase"
     val input = "CAPITALIZED"
-    val builder = spy(b<String, String>(id, "toLowerCase") { it.toLowerCase() })
+    val builder = spy(toLowerCase)
     bm.registerBuilder(builder)
     val request = br(builder, input)
     val output1 = bm.build(request)
@@ -106,13 +102,10 @@ class BuildManagerTests {
 
   @Test
   fun testPathReq(bm: BuildManagerImpl, fs: FileSystem) {
-    val readPath = spy(bc<CPath, String>("read", { "read($it)" }, { path, context ->
-      context.require(path)
-      String(Files.readAllBytes(path.javaPath), Charset.defaultCharset())
-    }))
+    val readPath = spy(readPath)
     bm.registerBuilder(readPath)
 
-    val filePath = CPath(fs.getPath("/file"))
+    val filePath = p(fs, "/file")
     Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
 
     // Build 'readPath', observe rebuild
@@ -139,14 +132,10 @@ class BuildManagerTests {
 
   @Test
   fun testPathGen(bm: BuildManagerImpl, fs: FileSystem) {
-    val writePath = spy(bc<Pair<String, CPath>, None>("write", { "write$it" }, { (text, path), context ->
-      Files.write(path.javaPath, text.toByteArray(), StandardOpenOption.CREATE)
-      context.generate(path)
-      None.instance
-    }))
+    val writePath = spy(writePath)
     bm.registerBuilder(writePath)
 
-    val filePath = CPath(fs.getPath("/file"))
+    val filePath = p(fs, "/file")
     assertTrue(Files.notExists(filePath.javaPath))
 
     // Build 'writePath', observe rebuild and existence of file
@@ -175,20 +164,17 @@ class BuildManagerTests {
 
   @Test
   fun testBuildReq(bm: BuildManagerImpl, fs: FileSystem) {
-    val toLowerCase = spy(b<String, String>("toLowerCase", { "toLowerCase($it)" }, { it.toLowerCase() }))
+    val toLowerCase = spy(toLowerCase)
     bm.registerBuilder(toLowerCase)
-    val readPath = spy(bc<CPath, String>("read", { "read($it)" }, { path, context ->
-      context.require(path, ModifiedPathStamper())
-      String(Files.readAllBytes(path.javaPath), Charset.defaultCharset())
-    }))
+    val readPath = spy(readPath)
     bm.registerBuilder(readPath)
-    val combine = spy(bc<CPath, String>("combine", { "toLowerCase(read($it))" }, { path, context ->
-      val text = context.require(BuildRequest(readPath, path))
-      context.require(BuildRequest(toLowerCase, text))
-    }))
+    val combine = spy(b<CPath, String>("combine", { "toLowerCase(read($it))" }) {
+      val text = require(BuildRequest(readPath, it))
+      require(BuildRequest(toLowerCase, text))
+    })
     bm.registerBuilder(combine)
 
-    val filePath = CPath(fs.getPath("/file"))
+    val filePath = p(fs, "/file")
     Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
 
     // Build 'combine', observe rebuild of all
@@ -240,26 +226,51 @@ class BuildManagerTests {
     verify(sbm4, never()).rebuild(BuildRequest(toLowerCase, "!DLROW OLLEH"))
   }
 
+  @Test
+  fun testOverlappingGeneratedPath(bm: BuildManagerImpl, fs: FileSystem) {
+    val writePath = spy(writePath)
+    bm.registerBuilder(writePath)
+
+    val filePath = p(fs, "/file")
+    assertThrows(BuildValidationException::class.java) {
+      bm.buildAll(BuildRequest(writePath, Pair("HELLO WORLD 1!", filePath)), BuildRequest(writePath, Pair("HELLO WORLD 2!", filePath)))
+    }
+  }
+
+  @Test
+  fun testGenerateRequiredHiddenDep() {
+
+  }
+
+  @Test
+  fun testRequireGeneratedHiddenDep() {
+
+  }
+
 
   fun p(fs: FileSystem, path: String): CPath {
     return CPath(fs.getPath(path))
   }
 
-
-  fun <I : In, O : Out> b(id: String, desc: String, buildFunc: (I) -> O): Builder<I, O> {
-    return SimpleLambdaBuilder(id, desc, buildFunc)
-  }
-
-  fun <I : In, O : Out> b(id: String, descFunc: (I) -> String, buildFunc: (I) -> O): Builder<I, O> {
-    return LambdaBuilder(id, descFunc, { input, _ -> buildFunc(input) })
-  }
-
-  fun <I : In, O : Out> bc(id: String, descFunc: (I) -> String, buildFunc: (input: I, context: BuildContext) -> O): Builder<I, O> {
+  fun <I : In, O : Out> b(id: String, descFunc: (I) -> String, buildFunc: BuildContext.(I) -> O): Builder<I, O> {
     return LambdaBuilder(id, descFunc, buildFunc)
   }
 
-
   fun <I : In, O : Out> br(builder: Builder<I, O>, input: I): BuildRequest<I, O> {
     return BuildRequest(builder.id, input)
+  }
+
+
+  val toLowerCase = b<String, String>("toLowerCase", { "toLowerCase($it)" }) {
+    it.toLowerCase()
+  }
+  val readPath = b<CPath, String>("read", { "read($it)" }) {
+    require(it)
+    String(Files.readAllBytes(it.javaPath), Charset.defaultCharset())
+  }
+  val writePath = b<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
+    Files.write(path.javaPath, text.toByteArray(), StandardOpenOption.CREATE)
+    generate(path)
+    None.instance
   }
 }

@@ -22,8 +22,9 @@ sourceCompatibility = javaVersion
 targetCompatibility = javaVersion
 
 compileKotlin {
-  sourceCompatibility = javaVersion
-  targetCompatibility = javaVersion
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
 }
 
 repositories {
