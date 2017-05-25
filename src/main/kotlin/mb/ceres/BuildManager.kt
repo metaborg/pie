@@ -5,9 +5,9 @@ import java.lang.IllegalStateException
 import java.util.*
 
 
-data class BuildResult<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
-  val toRequest get() = BuildRequest<I, O>(builderId, input)
-  fun requires(other: BuildRequest<*, *>): Boolean {
+data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
+  val toApp get() = BuildApp<I, O>(builderId, input)
+  fun requires(other: BuildApp<*, *>): Boolean {
     for ((req, _) in reqs.filterIsInstance<BuildReq<*, *>>()) {
       if (other == req) {
         return true
@@ -17,25 +17,25 @@ data class BuildResult<out I : In, out O : Out>(val builderId: String, val desc:
   }
 }
 
-data class BuildRequest<out I : In, out O : Out>(val builderId: String, val input: I) : Serializable {
+data class BuildApp<out I : In, out O : Out>(val builderId: String, val input: I) : Serializable {
   constructor(builder: Builder<I, O>, input: I) : this(builder.id, input)
 }
 
 
 interface BuildManager {
-  fun <I : In, O : Out> build(request: BuildRequest<I, O>): O
-  fun <I : In, O : Out> buildAll(vararg requests: BuildRequest<I, O>): List<O>
+  fun <I : In, O : Out> build(app: BuildApp<I, O>): O
+  fun <I : In, O : Out> buildAll(vararg apps: BuildApp<I, O>): List<O>
 
   fun <I : In, O : Out> registerBuilder(builder: Builder<I, O>)
   fun <I : In, O : Out> unregisterBuilder(builder: Builder<I, O>)
 }
 
 internal interface BuildManagerInternal {
-  fun <I : In, O : Out> require(request: BuildRequest<I, O>): BuildResult<I, O>
+  fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O>
 }
 
-typealias BuildMap = Map<BuildRequest<*, *>, BuildResult<*, *>>
-typealias PathMap = Map<CPath, BuildResult<*, *>>
+typealias BuildMap = Map<BuildApp<*, *>, BuildRes<*, *>>
+typealias PathMap = Map<CPath, BuildRes<*, *>>
 
 open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: PathMap = emptyMap()) : BuildManager, BuildManagerInternal {
   private val builders = mutableMapOf<String, Builder<*, *>>()
@@ -43,8 +43,8 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
   private val resultCache = resultCache.toMutableMap()
   private val generatedByCache = generatedCache.toMutableMap()
 
-  private val isConsistent = mutableSetOf<BuildRequest<*, *>>()
-  private val requiredBy = mutableMapOf<CPath, BuildResult<*, *>>()
+  private val isConsistent = mutableSetOf<BuildApp<*, *>>()
+  private val requiredBy = mutableMapOf<CPath, BuildRes<*, *>>()
 
 
   private fun resetBeforeBuild() {
@@ -53,34 +53,34 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
   }
 
 
-  override fun <I : In, O : Out> build(request: BuildRequest<I, O>): O {
-    return buildInternal(request).output
+  override fun <I : In, O : Out> build(app: BuildApp<I, O>): O {
+    return buildInternal(app).output
   }
 
-  open internal fun <I : In, O : Out> buildInternal(request: BuildRequest<I, O>): BuildResult<I, O> {
+  open internal fun <I : In, O : Out> buildInternal(app: BuildApp<I, O>): BuildRes<I, O> {
     resetBeforeBuild()
-    return require(request)
+    return require(app)
   }
 
 
-  override fun <I : In, O : Out> buildAll(vararg requests: BuildRequest<I, O>): List<O> {
-    return buildAllInternal(*requests).map { it.output }
+  override fun <I : In, O : Out> buildAll(vararg apps: BuildApp<I, O>): List<O> {
+    return buildAllInternal(*apps).map { it.output }
   }
 
-  open internal fun <I : In, O : Out> buildAllInternal(vararg requests: BuildRequest<I, O>): List<BuildResult<I, O>> {
+  open internal fun <I : In, O : Out> buildAllInternal(vararg apps: BuildApp<I, O>): List<BuildRes<I, O>> {
     resetBeforeBuild()
-    return requests.map { require(it) }
+    return apps.map { require(it) }
   }
 
 
-  override fun <I : In, O : Out> require(request: BuildRequest<I, O>): BuildResult<I, O> {
-    val cachedResult = getCachedResult(request)
+  override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O> {
+    val cachedResult = getCachedResult(app)
     if (cachedResult == null) {
       // No existing result was found: rebuild
-      return rebuild(request)
+      return rebuild(app)
     }
 
-    if (isConsistent.contains(request)) {
+    if (isConsistent.contains(app)) {
       // Existing result is known to be consistent this build: reuse
       return cachedResult
     }
@@ -91,13 +91,13 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
       val newStamp = stamp.stamper.stamp(genPath)
       if (stamp != newStamp) {
         // If a generated file is outdated (i.e., its stamp changed): rebuild
-        return rebuild(request)
+        return rebuild(app)
       }
     }
     // Internal and total consistency: requirements
     for (req in cachedResult.reqs) {
       if (!req.makeConsistent(this)) {
-        return rebuild(request)
+        return rebuild(app)
       }
     }
 
@@ -105,13 +105,13 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
     // Validate well-formedness of the dependency graph
     validate(cachedResult)
     // Mark result consistent.
-    isConsistent.add(request)
+    isConsistent.add(app)
     // Reuse existing result
     return cachedResult
   }
 
-  open internal fun <I : In, O : Out> rebuild(request: BuildRequest<I, O>): BuildResult<I, O> {
-    val (builderId, input) = request
+  open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>): BuildRes<I, O> {
+    val (builderId, input) = app
     val builder = getBuilder<I, O>(builderId)
     val desc = builder.desc(input)
 
@@ -119,18 +119,18 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
     println("Executing builder $desc")
     val context = BuildContextImpl(this)
     val output = builder.build(input, context)
-    val result = BuildResult(builderId, desc, input, output, context.reqs, context.gens)
+    val result = BuildRes(builderId, desc, input, output, context.reqs, context.gens)
 
     // Validate well-formedness of the dependency graph
     validate(result)
     // Cache result and mark it consistent
-    resultCache.put(request, result)
-    isConsistent.add(request)
+    resultCache.put(app, result)
+    isConsistent.add(app)
 
     return result
   }
 
-  open internal fun <I : In, O : Out> validate(result: BuildResult<I, O>) {
+  open internal fun <I : In, O : Out> validate(result: BuildRes<I, O>) {
     // Clear own generated files from cache before validation, to prevent overlapping of own generated files
     for ((path, _) in result.gens) {
       generatedByCache.remove(path, result)
@@ -158,20 +158,20 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
     }
   }
 
-  private fun hasBuildReq(requiree: BuildResult<*, *>, generator: BuildResult<*, *>): Boolean {
+  private fun hasBuildReq(requiree: BuildRes<*, *>, generator: BuildRes<*, *>): Boolean {
     // TODO: more efficient implementation for figuring out if a result depends on another result?
-    val toCheckQueue: Queue<BuildResult<*, *>> = LinkedList()
+    val toCheckQueue: Queue<BuildRes<*, *>> = LinkedList()
     toCheckQueue.add(requiree)
     while (!toCheckQueue.isEmpty()) {
       val toCheck = toCheckQueue.poll()
-      if (toCheck.requires(generator.toRequest)) {
+      if (toCheck.requires(generator.toApp)) {
         return true
       }
-      val reqRequests = toCheck.reqs.filterIsInstance<BuildReq<*, *>>().map { it.request }
-      val reqResults = mutableListOf<BuildResult<*, *>>()
+      val reqRequests = toCheck.reqs.filterIsInstance<BuildReq<*, *>>().map { it.app }
+      val reqResults = mutableListOf<BuildRes<*, *>>()
       for (reqRequest in reqRequests) {
         // TODO: are the results of all requirements available at this point?
-        val reqResult = resultCache[reqRequest] ?: error("Cannot get result for request $reqRequest")
+        val reqResult = resultCache[reqRequest] ?: error("Cannot get result for app $reqRequest")
         reqResults.add(reqResult)
       }
       // TODO: cycles cause non-termination
@@ -189,9 +189,9 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
     return builders[id] as Builder<I, O>
   }
 
-  private fun <I : In, O : Out> getCachedResult(request: BuildRequest<I, O>): BuildResult<I, O>? {
+  private fun <I : In, O : Out> getCachedResult(app: BuildApp<I, O>): BuildRes<I, O>? {
     @Suppress("UNCHECKED_CAST")
-    return resultCache[request] as BuildResult<I, O>?
+    return resultCache[app] as BuildRes<I, O>?
   }
 
 
@@ -223,10 +223,10 @@ internal class BuildContextImpl(val buildManager: BuildManagerInternal) : BuildC
   val gens = mutableListOf<Gen>()
 
 
-  override fun <I : In, O : Out> require(request: BuildRequest<I, O>, stamper: OutputStamper): O {
-    val result = buildManager.require(request)
+  override fun <I : In, O : Out> require(app: BuildApp<I, O>, stamper: OutputStamper): O {
+    val result = buildManager.require(app)
     val stamp = stamper.stamp(result.output)
-    reqs.add(BuildReq(request, stamp))
+    reqs.add(BuildReq(app, stamp))
     return result.output
   }
 

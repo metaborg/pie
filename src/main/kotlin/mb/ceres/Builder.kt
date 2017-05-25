@@ -13,7 +13,7 @@ interface Builder<in I : In, out O : Out> {
 }
 
 interface BuildContext {
-  fun <I : In, O : Out> require(request: BuildRequest<I, O>, stamper: OutputStamper = EqualsOutputStamper.instance): O
+  fun <I : In, O : Out> require(app: BuildApp<I, O>, stamper: OutputStamper = EqualsOutputStamper.instance): O
   fun require(path: CPath, stamper: PathStamper = ModifiedPathStamper.instance)
   fun generate(path: CPath, stamper: PathStamper = HashPathStamper.instance)
 }

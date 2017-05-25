@@ -109,24 +109,24 @@ class BuildManagerTests {
 
     // Build 'readPath', observe rebuild
     val sbm1 = spy(bm)
-    val output1 = sbm1.build(BuildRequest(readPath, filePath))
+    val output1 = sbm1.build(BuildApp(readPath, filePath))
     assertEquals("HELLO WORLD!", output1)
-    verify(sbm1, times(1)).rebuild(BuildRequest(readPath, filePath))
+    verify(sbm1, times(1)).rebuild(BuildApp(readPath, filePath))
 
     // No changes - build 'readPath', observe no rebuild
     val sbm2 = spy(bm)
-    val output2 = sbm1.build(BuildRequest(readPath, filePath))
+    val output2 = sbm1.build(BuildApp(readPath, filePath))
     assertEquals("HELLO WORLD!", output2)
-    verify(sbm2, never()).rebuild(BuildRequest(readPath, filePath))
+    verify(sbm2, never()).rebuild(BuildApp(readPath, filePath))
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
     Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
 
     // Run again - expect rebuild
     val sbm3 = spy(bm)
-    val output3 = sbm3.build(BuildRequest(readPath, filePath))
+    val output3 = sbm3.build(BuildApp(readPath, filePath))
     assertEquals("!DLROW OLLEH", output3)
-    verify(sbm3, times(1)).rebuild(BuildRequest(readPath, filePath))
+    verify(sbm3, times(1)).rebuild(BuildApp(readPath, filePath))
   }
 
   @Test
@@ -139,24 +139,24 @@ class BuildManagerTests {
 
     // Build 'writePath', observe rebuild and existence of file
     val sbm1 = spy(bm)
-    sbm1.build(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(sbm1, times(1)).rebuild(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    sbm1.build(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
+    verify(sbm1, times(1)).rebuild(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
 
     assertTrue(Files.exists(filePath.javaPath))
     assertEquals("HELLO WORLD!", String(Files.readAllBytes(filePath.javaPath), Charset.defaultCharset()))
 
     // No changes - build 'writePath', observe no rebuild, no change to file
     val sbm2 = spy(bm)
-    sbm2.build(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(sbm2, never()).rebuild(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    sbm2.build(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
+    verify(sbm2, never()).rebuild(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
     Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
 
     // Build 'writePath', observe rebuild and change of file
     val sbm3 = spy(bm)
-    sbm3.build(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(sbm3, times(1)).rebuild(BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+    sbm3.build(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
+    verify(sbm3, times(1)).rebuild(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
 
     assertEquals("HELLO WORLD!", String(Files.readAllBytes(filePath.javaPath), Charset.defaultCharset()))
   }
@@ -168,8 +168,8 @@ class BuildManagerTests {
     val readPath = spy(readPath)
     bm.registerBuilder(readPath)
     val combine = spy(b<CPath, String>("combine", { "toLowerCase(read($it))" }) {
-      val text = require(BuildRequest(readPath, it))
-      require(BuildRequest(toLowerCase, text))
+      val text = require(BuildApp(readPath, it))
+      require(BuildApp(toLowerCase, text))
     })
     bm.registerBuilder(combine)
 
@@ -178,34 +178,34 @@ class BuildManagerTests {
 
     // Build 'combine', observe rebuild of all
     val sbm1 = spy(bm)
-    val output1 = sbm1.build(BuildRequest(combine, filePath))
+    val output1 = sbm1.build(BuildApp(combine, filePath))
     assertEquals("hello world!", output1)
     inOrder(sbm1) {
-      verify(sbm1, times(1)).rebuild(BuildRequest(combine, filePath))
-      verify(sbm1, times(1)).rebuild(BuildRequest(readPath, filePath))
-      verify(sbm1, times(1)).rebuild(BuildRequest(toLowerCase, "HELLO WORLD!"))
+      verify(sbm1, times(1)).rebuild(BuildApp(combine, filePath))
+      verify(sbm1, times(1)).rebuild(BuildApp(readPath, filePath))
+      verify(sbm1, times(1)).rebuild(BuildApp(toLowerCase, "HELLO WORLD!"))
     }
 
     // No changes - build 'combine', observe no rebuild
     val sbm2 = spy(bm)
-    val output2 = sbm2.build(BuildRequest(combine, filePath))
+    val output2 = sbm2.build(BuildApp(combine, filePath))
     assertEquals("hello world!", output2)
-    verify(sbm2, never()).rebuild(BuildRequest(combine, filePath))
-    verify(sbm2, never()).rebuild(BuildRequest(readPath, filePath))
-    verify(sbm2, never()).rebuild(BuildRequest(toLowerCase, "HELLO WORLD!"))
+    verify(sbm2, never()).rebuild(BuildApp(combine, filePath))
+    verify(sbm2, never()).rebuild(BuildApp(readPath, filePath))
+    verify(sbm2, never()).rebuild(BuildApp(toLowerCase, "HELLO WORLD!"))
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
     Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
 
     // Build 'combine', observe rebuild of all in dependency order
     val sbm3 = spy(bm)
-    val output3 = sbm3.build(BuildRequest(combine, filePath))
+    val output3 = sbm3.build(BuildApp(combine, filePath))
     assertEquals("!dlrow olleh", output3)
     inOrder(sbm3) {
-      verify(sbm3, times(1)).require(BuildRequest(combine, filePath))
-      verify(sbm3, times(1)).rebuild(BuildRequest(readPath, filePath))
-      verify(sbm3, times(1)).rebuild(BuildRequest(combine, filePath))
-      verify(sbm3, times(1)).rebuild(BuildRequest(toLowerCase, "!DLROW OLLEH"))
+      verify(sbm3, times(1)).require(BuildApp(combine, filePath))
+      verify(sbm3, times(1)).rebuild(BuildApp(readPath, filePath))
+      verify(sbm3, times(1)).rebuild(BuildApp(combine, filePath))
+      verify(sbm3, times(1)).rebuild(BuildApp(toLowerCase, "!DLROW OLLEH"))
     }
 
     // Change required file in such a way that the output of 'readPath' does not change (change modification date)
@@ -215,14 +215,14 @@ class BuildManagerTests {
 
     // Build 'combine', observe rebuild of 'readPath' only
     val sbm4 = spy(bm)
-    val output4 = sbm4.build(BuildRequest(combine, filePath))
+    val output4 = sbm4.build(BuildApp(combine, filePath))
     assertEquals("!dlrow olleh", output4)
     inOrder(sbm4) {
-      verify(sbm4, times(1)).require(BuildRequest(combine, filePath))
-      verify(sbm4, times(1)).rebuild(BuildRequest(readPath, filePath))
+      verify(sbm4, times(1)).require(BuildApp(combine, filePath))
+      verify(sbm4, times(1)).rebuild(BuildApp(readPath, filePath))
     }
-    verify(sbm4, never()).rebuild(BuildRequest(combine, filePath))
-    verify(sbm4, never()).rebuild(BuildRequest(toLowerCase, "!DLROW OLLEH"))
+    verify(sbm4, never()).rebuild(BuildApp(combine, filePath))
+    verify(sbm4, never()).rebuild(BuildApp(toLowerCase, "!DLROW OLLEH"))
   }
 
   @Test
@@ -231,12 +231,12 @@ class BuildManagerTests {
 
     val filePath = p(fs, "/file")
     assertThrows(OverlappingGeneratedPathException::class.java) {
-      bm.buildAll(BuildRequest(writePath, Pair("HELLO WORLD 1!", filePath)), BuildRequest(writePath, Pair("HELLO WORLD 2!", filePath)))
+      bm.buildAll(BuildApp(writePath, Pair("HELLO WORLD 1!", filePath)), BuildApp(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
     // Overlapping generated path exception should also trigger between separate builds
     assertThrows(OverlappingGeneratedPathException::class.java) {
-      bm.build(BuildRequest(writePath, Pair("HELLO WORLD 3!", filePath)))
+      bm.build(BuildApp(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
 
@@ -249,12 +249,12 @@ class BuildManagerTests {
     Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
 
     assertThrows(HiddenDependencyException::class.java) {
-      bm.buildAll(BuildRequest(readPath, filePath), BuildRequest(writePath, Pair("HELLO WORLD!", filePath)))
+      bm.buildAll(BuildApp(readPath, filePath), BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate builds
     assertThrows(HiddenDependencyException::class.java) {
-      bm.build(BuildRequest(readPath, filePath))
+      bm.build(BuildApp(readPath, filePath))
     }
   }
 
@@ -266,26 +266,26 @@ class BuildManagerTests {
     bm.registerBuilder(readPath)
 
     val combineIncorrect = spy(b<Pair<String, CPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
-      require(BuildRequest(indirection, BuildRequest(writePath, Pair(text, path))))
-      require(BuildRequest(readPath, path))
+      require(BuildApp(indirection, BuildApp(writePath, Pair(text, path))))
+      require(BuildApp(readPath, path))
     })
     bm.registerBuilder(combineIncorrect)
 
     val filePath1 = p(fs, "/file1")
     assertThrows(HiddenDependencyException::class.java) {
-      bm.build(BuildRequest(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
+      bm.build(BuildApp(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
     }
 
     val combineStillIncorrect = spy(b<Pair<String, CPath>, String>("combineStillIncorrect", { "combine$it" }) { (text, path) ->
-      require(BuildRequest(indirection, BuildRequest(writePath, Pair(text, path))))
-      require(BuildRequest(writePath, Pair(text, path)))
-      require(BuildRequest(readPath, path))
+      require(BuildApp(indirection, BuildApp(writePath, Pair(text, path))))
+      require(BuildApp(writePath, Pair(text, path)))
+      require(BuildApp(readPath, path))
     })
     bm.registerBuilder(combineStillIncorrect)
 
     val filePath2 = p(fs, "/file2")
     assertThrows(HiddenDependencyException::class.java) {
-      bm.build(BuildRequest(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
+      bm.build(BuildApp(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
     }
   }
 
@@ -298,8 +298,8 @@ class BuildManagerTests {
     return LambdaBuilder(id, descFunc, buildFunc)
   }
 
-  fun <I : In, O : Out> br(builder: Builder<I, O>, input: I): BuildRequest<I, O> {
-    return BuildRequest(builder.id, input)
+  fun <I : In, O : Out> br(builder: Builder<I, O>, input: I): BuildApp<I, O> {
+    return BuildApp(builder.id, input)
   }
 
 
@@ -316,7 +316,7 @@ class BuildManagerTests {
     None.instance
   }
 
-  inline fun <reified I : In, reified O : Out> requireBuilder(): Builder<BuildRequest<I, O>, O> {
+  inline fun <reified I : In, reified O : Out> requireBuilder(): Builder<BuildApp<I, O>, O> {
     return b("require(${I::class}):${O::class}", { "require($it)" }) {
       require(it)
     }

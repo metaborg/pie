@@ -13,9 +13,9 @@ data class PathReq(val path: CPath, val stamp: PathStamp) : Req {
   }
 }
 
-data class BuildReq<out I : In, out O : Out>(val request: BuildRequest<I, O>, val stamp: OutputStamp) : Req {
+data class BuildReq<out I : In, out O : Out>(val app: BuildApp<I, O>, val stamp: OutputStamp) : Req {
   override fun makeConsistent(bm: BuildManagerImpl): Boolean {
-    val result = bm.require(request)
+    val result = bm.require(app)
     // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies
     val newStamp = stamp.stamper.stamp(result.output)
     return stamp == newStamp
