@@ -105,7 +105,7 @@ class BuildManagerTests {
     bm.registerBuilder(readPath)
 
     val filePath = p(fs, "/file")
-    Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
+    write("HELLO WORLD!", filePath)
 
     // Build 'readPath', observe rebuild
     val sbm1 = spy(bm)
@@ -120,7 +120,7 @@ class BuildManagerTests {
     verify(sbm2, never()).rebuild(BuildApp(readPath, filePath))
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
-    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
+    write("!DLROW OLLEH", filePath)
 
     // Run again - expect rebuild
     val sbm3 = spy(bm)
@@ -143,7 +143,7 @@ class BuildManagerTests {
     verify(sbm1, times(1)).rebuild(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
 
     assertTrue(Files.exists(filePath.javaPath))
-    assertEquals("HELLO WORLD!", String(Files.readAllBytes(filePath.javaPath), Charset.defaultCharset()))
+    assertEquals("HELLO WORLD!", read(filePath))
 
     // No changes - build 'writePath', observe no rebuild, no change to file
     val sbm2 = spy(bm)
@@ -151,14 +151,14 @@ class BuildManagerTests {
     verify(sbm2, never()).rebuild(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
-    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
+    write("!DLROW OLLEH", filePath)
 
     // Build 'writePath', observe rebuild and change of file
     val sbm3 = spy(bm)
     sbm3.build(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
     verify(sbm3, times(1)).rebuild(BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
 
-    assertEquals("HELLO WORLD!", String(Files.readAllBytes(filePath.javaPath), Charset.defaultCharset()))
+    assertEquals("HELLO WORLD!", read(filePath))
   }
 
   @Test
@@ -174,7 +174,7 @@ class BuildManagerTests {
     bm.registerBuilder(combine)
 
     val filePath = p(fs, "/file")
-    Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
+    write("HELLO WORLD!", filePath)
 
     // Build 'combine', observe rebuild of all
     val sbm1 = spy(bm)
@@ -195,7 +195,7 @@ class BuildManagerTests {
     verify(sbm2, never()).rebuild(BuildApp(toLowerCase, "HELLO WORLD!"))
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
-    Files.write(filePath.javaPath, "!DLROW OLLEH".toByteArray())
+    write("!DLROW OLLEH", filePath)
 
     // Build 'combine', observe rebuild of all in dependency order
     val sbm3 = spy(bm)
@@ -246,7 +246,7 @@ class BuildManagerTests {
     bm.registerBuilder(writePath)
 
     val filePath = p(fs, "/file")
-    Files.write(filePath.javaPath, "HELLO WORLD!".toByteArray(), StandardOpenOption.CREATE)
+    write("HELLO WORLD!", filePath)
 
     assertThrows(HiddenDependencyException::class.java) {
       bm.buildAll(BuildApp(readPath, filePath), BuildApp(writePath, Pair("HELLO WORLD!", filePath)))
@@ -303,15 +303,34 @@ class BuildManagerTests {
   }
 
 
+  fun read(path: CPath): String {
+    Files.newInputStream(path.javaPath, StandardOpenOption.READ).use {
+      val bytes = it.readBytes()
+      val text = String(bytes)
+      return text
+    }
+  }
+
+  fun write(text: String, path: CPath) {
+    println("Write $text")
+    Files.newOutputStream(path.javaPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+      StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC).use {
+      it.write(text.toByteArray())
+    }
+    // HACK: for some reason, sleeping is required for writes to the file to be picked up by reads...
+    Thread.sleep(1)
+  }
+
+
   val toLowerCase = b<String, String>("toLowerCase", { "toLowerCase($it)" }) {
     it.toLowerCase()
   }
   val readPath = b<CPath, String>("read", { "read($it)" }) {
     require(it)
-    String(Files.readAllBytes(it.javaPath), Charset.defaultCharset())
+    read(it)
   }
   val writePath = b<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
-    Files.write(path.javaPath, text.toByteArray(), StandardOpenOption.CREATE)
+    write(text, path)
     generate(path)
     None.instance
   }
