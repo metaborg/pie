@@ -45,11 +45,13 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
 
   private val isConsistent = mutableSetOf<BuildApp<*, *>>()
   private val requiredBy = mutableMapOf<CPath, BuildRes<*, *>>()
+  private val requireStack = mutableSetOf<BuildApp<*, *>>()
 
 
   private fun resetBeforeBuild() {
     isConsistent.clear()
     requiredBy.clear()
+    requireStack.clear()
   }
 
 
@@ -74,40 +76,49 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
 
 
   override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O> {
-    val cachedResult = getCachedResult(app)
-    if (cachedResult == null) {
-      // No existing result was found: rebuild
-      return rebuild(app)
-    }
+    try {
+      if (requireStack.contains(app)) {
+        throw CyclicDependencyException("Cyclic dependency: requirement of $app from requirements ${requireStack.joinToString(" -> ")} creates cycle")
+      }
+      requireStack.add(app)
 
-    if (isConsistent.contains(app)) {
-      // Existing result is known to be consistent this build: reuse
+      val cachedResult = getCachedResult(app)
+      if (cachedResult == null) {
+        // No existing result was found: rebuild
+        return rebuild(app)
+      }
+
+      if (isConsistent.contains(app)) {
+        // Existing result is known to be consistent this build: reuse
+        return cachedResult
+      }
+
+      // Check for inconsistencies and rebuild when found
+      // Internal consistency: generated files
+      for ((genPath, stamp) in cachedResult.gens) {
+        val newStamp = stamp.stamper.stamp(genPath)
+        if (stamp != newStamp) {
+          // If a generated file is outdated (i.e., its stamp changed): rebuild
+          return rebuild(app)
+        }
+      }
+      // Internal and total consistency: requirements
+      for (req in cachedResult.reqs) {
+        if (!req.makeConsistent(this)) {
+          return rebuild(app)
+        }
+      }
+
+      // No inconsistencies found
+      // Validate well-formedness of the dependency graph
+      validate(cachedResult)
+      // Mark result consistent.
+      isConsistent.add(app)
+      // Reuse existing result
       return cachedResult
+    } finally {
+      requireStack.remove(app)
     }
-
-    // Check for inconsistencies and rebuild when found
-    // Internal consistency: generated files
-    for ((genPath, stamp) in cachedResult.gens) {
-      val newStamp = stamp.stamper.stamp(genPath)
-      if (stamp != newStamp) {
-        // If a generated file is outdated (i.e., its stamp changed): rebuild
-        return rebuild(app)
-      }
-    }
-    // Internal and total consistency: requirements
-    for (req in cachedResult.reqs) {
-      if (!req.makeConsistent(this)) {
-        return rebuild(app)
-      }
-    }
-
-    // No inconsistencies found
-    // Validate well-formedness of the dependency graph
-    validate(cachedResult)
-    // Mark result consistent.
-    isConsistent.add(app)
-    // Reuse existing result
-    return cachedResult
   }
 
   open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>): BuildRes<I, O> {
@@ -170,11 +181,9 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
       val reqRequests = toCheck.reqs.filterIsInstance<BuildReq<*, *>>().map { it.app }
       val reqResults = mutableListOf<BuildRes<*, *>>()
       for (reqRequest in reqRequests) {
-        // TODO: are the results of all requirements available at this point?
         val reqResult = resultCache[reqRequest] ?: error("Cannot get result for app $reqRequest")
         reqResults.add(reqResult)
       }
-      // TODO: cycles cause non-termination
       toCheckQueue.addAll(reqResults)
     }
     return false
@@ -216,6 +225,7 @@ open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: 
 open class BuildValidationException(message: String) : RuntimeException(message)
 class OverlappingGeneratedPathException(message: String) : BuildValidationException(message)
 class HiddenDependencyException(message: String) : BuildValidationException(message)
+class CyclicDependencyException(message: String) : BuildValidationException(message)
 
 
 internal class BuildContextImpl(val buildManager: BuildManagerInternal) : BuildContext {

@@ -6,7 +6,6 @@ import name.falgout.jeffrey.testing.junit5.IncludeModule
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import java.nio.charset.Charset
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
@@ -22,7 +21,7 @@ class BuildManagerTests {
     val input = "CAPITALIZED"
     val builder = spy(toLowerCase)
     sbm.registerBuilder(builder)
-    val request = br(builder, input)
+    val request = a(builder, input)
 
     val result = sbm.buildInternal(request)
     assertEquals(builder.id, result.builderId)
@@ -47,9 +46,9 @@ class BuildManagerTests {
     val builder = spy(toLowerCase)
     sbm.registerBuilder(builder)
     val input1 = "CAPITALIZED"
-    val request1 = br(builder, input1)
+    val request1 = a(builder, input1)
     val input2 = "CAPITALIZED_EVEN_MORE"
-    val request2 = br(builder, input2)
+    val request2 = a(builder, input2)
 
     val results = sbm.buildAllInternal(request1, request2)
     assertEquals(2, results.size)
@@ -84,7 +83,7 @@ class BuildManagerTests {
     val input = "CAPITALIZED"
     val builder = spy(toLowerCase)
     bm.registerBuilder(builder)
-    val request = br(builder, input)
+    val request = a(builder, input)
     val output1 = bm.build(request)
 
     val sbm = spy(bm)
@@ -289,6 +288,16 @@ class BuildManagerTests {
     }
   }
 
+  @Test
+  fun testCyclicDependency(bm: BuildManagerImpl) {
+    val b1 = b<None, None>("b1", { "b1" }, { require(BuildApp("b1", None.instance)) })
+    bm.registerBuilder(b1)
+
+    assertThrows(CyclicDependencyException::class.java) {
+      bm.build(BuildApp(b1, None.instance))
+    }
+  }
+
 
   fun p(fs: FileSystem, path: String): CPath {
     return CPath(fs.getPath(path))
@@ -298,7 +307,7 @@ class BuildManagerTests {
     return LambdaBuilder(id, descFunc, buildFunc)
   }
 
-  fun <I : In, O : Out> br(builder: Builder<I, O>, input: I): BuildApp<I, O> {
+  fun <I : In, O : Out> a(builder: Builder<I, O>, input: I): BuildApp<I, O> {
     return BuildApp(builder.id, input)
   }
 
