@@ -14,9 +14,9 @@ interface PathStamp : Serializable {
   val stamper: PathStamper
 }
 
-data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStamper) : PathStamp
+internal data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStamper) : PathStamp
 
-data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
+internal data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (other?.javaClass != javaClass) return false
@@ -42,7 +42,7 @@ class HashPathStamper : PathStamper {
     val instance = HashPathStamper()
   }
 
-  override fun stamp(cpath: CPath): ByteArrayPathStamp {
+  override fun stamp(cpath: CPath): PathStamp {
     val path = cpath.javaPath
     if (Files.notExists(path)) {
       return ByteArrayPathStamp(null, this)

@@ -5,7 +5,7 @@ import java.lang.IllegalStateException
 import java.util.*
 
 
-data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
+internal data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
   val toApp get() = BuildApp<I, O>(builderId, input)
   fun requires(other: BuildApp<*, *>): Boolean {
     for ((req, _) in reqs.filterIsInstance<BuildReq<*, *>>()) {
@@ -34,10 +34,10 @@ internal interface BuildManagerInternal {
   fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O>
 }
 
-typealias BuildMap = Map<BuildApp<*, *>, BuildRes<*, *>>
-typealias PathMap = Map<CPath, BuildRes<*, *>>
+internal typealias BuildMap = Map<BuildApp<*, *>, BuildRes<*, *>>
+internal typealias PathMap = Map<CPath, BuildRes<*, *>>
 
-open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: PathMap = emptyMap()) : BuildManager, BuildManagerInternal {
+internal open class BuildManagerImpl(resultCache: BuildMap = emptyMap(), generatedCache: PathMap = emptyMap()) : BuildManager, BuildManagerInternal {
   private val builders = mutableMapOf<String, Builder<*, *>>()
 
   private val resultCache = resultCache.toMutableMap()

@@ -14,7 +14,7 @@ import java.nio.file.attribute.FileTime
 
 @ExtendWith(GuiceExtension::class)
 @IncludeModule(TestModule::class)
-class BuildManagerTests {
+internal class BuildManagerTests {
   @Test
   fun testBuild(bm: BuildManagerImpl) {
     val sbm = spy(bm)

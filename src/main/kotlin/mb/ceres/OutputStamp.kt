@@ -10,7 +10,7 @@ interface OutputStamp : Serializable {
   val stamper: OutputStamper
 }
 
-data class ValueOutputStamp<out V>(val value: V, override val stamper: OutputStamper) : OutputStamp
+internal data class ValueOutputStamp<out V>(val value: V, override val stamper: OutputStamper) : OutputStamp
 
 class EqualsOutputStamper : OutputStamper {
   companion object {
