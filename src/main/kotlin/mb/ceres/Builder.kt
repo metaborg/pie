@@ -13,11 +13,14 @@ interface Builder<in I : In, out O : Out> {
 }
 
 interface BuildContext {
-  fun <I : In, O : Out> require(app: BuildApp<I, O>, stamper: OutputStamper = EqualsOutputStamper.instance): O
-  fun require(path: CPath, stamper: PathStamper = ModifiedPathStamper.instance)
-  fun generate(path: CPath, stamper: PathStamper = HashPathStamper.instance)
+  fun <I : In, O : Out> require(app: BuildApp<I, O>, stamper: OutputStamper = OutputStampers.equals): O
+  fun require(path: CPath, stamper: PathStamper = PathStampers.modified)
+  fun generate(path: CPath, stamper: PathStamper = PathStampers.hash)
 }
 
+data class BuildApp<out I : In, out O : Out>(val builderId: String, val input: I) : Serializable {
+  constructor(builder: Builder<I, O>, input: I) : this(builder.id, input)
+}
 
 open class LambdaBuilder<in I : In, out O : Out>(override val id: String, val descFunc: (I) -> String, val buildFunc: BuildContext.(I) -> O) : Builder<I, O> {
   override fun desc(input: I): String {
@@ -28,4 +31,3 @@ open class LambdaBuilder<in I : In, out O : Out>(override val id: String, val de
     return context.buildFunc(input)
   }
 }
-

@@ -46,10 +46,10 @@ compileTestKotlin {
 
 dependencies {
   compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
+  compile 'com.google.inject:guice:4.1.0'
 
   // JUnit 5 (http://junit.org/junit5/docs/current/user-guide/)
   testCompile "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-  testCompile 'com.google.inject:guice:4.1.0'
   testCompile 'name.falgout.jeffrey.testing:junit5-guice-extension:1.0.0-M3'
   // In-memory filesystem implementation for testing (https://github.com/google/jimfs)
   testCompile 'com.google.jimfs:jimfs:1.1'

@@ -1,5 +1,6 @@
-package mb.ceres
+package mb.ceres.internal
 
+import mb.ceres.*
 import java.io.Serializable
 
 internal interface Req : Serializable {
