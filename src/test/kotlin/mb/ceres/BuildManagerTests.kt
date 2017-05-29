@@ -167,8 +167,8 @@ internal class BuildManagerTests {
     val readPath = spy(readPath)
     bm.registerBuilder(readPath)
     val combine = spy(b<CPath, String>("combine", { "toLowerCase(read($it))" }) {
-      val text = require(BuildApp(readPath, it))
-      require(BuildApp(toLowerCase, text))
+      val text = requireOutput(BuildApp(readPath, it))
+      requireOutput(BuildApp(toLowerCase, text))
     })
     bm.registerBuilder(combine)
 
@@ -259,14 +259,14 @@ internal class BuildManagerTests {
 
   @Test
   fun testRequireGeneratedHiddenDep(bm: BuildManagerImpl, fs: FileSystem) {
-    val indirection = requireBuilder<Pair<String, CPath>, None>()
+    val indirection = requireOutputBuilder<Pair<String, CPath>, None>()
     bm.registerBuilder(indirection)
     bm.registerBuilder(writePath)
     bm.registerBuilder(readPath)
 
     val combineIncorrect = spy(b<Pair<String, CPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
-      require(BuildApp(indirection, BuildApp(writePath, Pair(text, path))))
-      require(BuildApp(readPath, path))
+      requireBuild(BuildApp(indirection, BuildApp(writePath, Pair(text, path))))
+      requireOutput(BuildApp(readPath, path))
     })
     bm.registerBuilder(combineIncorrect)
 
@@ -276,9 +276,9 @@ internal class BuildManagerTests {
     }
 
     val combineStillIncorrect = spy(b<Pair<String, CPath>, String>("combineStillIncorrect", { "combine$it" }) { (text, path) ->
-      require(BuildApp(indirection, BuildApp(writePath, Pair(text, path))))
-      require(BuildApp(writePath, Pair(text, path)))
-      require(BuildApp(readPath, path))
+      requireBuild(BuildApp(indirection, BuildApp(writePath, Pair(text, path))))
+      requireBuild(BuildApp(writePath, Pair(text, path)))
+      requireOutput(BuildApp(readPath, path))
     })
     bm.registerBuilder(combineStillIncorrect)
 
@@ -290,7 +290,7 @@ internal class BuildManagerTests {
 
   @Test
   fun testCyclicDependency(bm: BuildManagerImpl) {
-    val b1 = b<None, None>("b1", { "b1" }, { require(BuildApp("b1", None.instance)) })
+    val b1 = b<None, None>("b1", { "b1" }, { requireOutput(BuildApp("b1", None.instance)) })
     bm.registerBuilder(b1)
 
     assertThrows(CyclicDependencyException::class.java) {
@@ -344,9 +344,9 @@ internal class BuildManagerTests {
     None.instance
   }
 
-  inline fun <reified I : In, reified O : Out> requireBuilder(): Builder<BuildApp<I, O>, O> {
-    return b("require(${I::class}):${O::class}", { "require($it)" }) {
-      require(it)
+  inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Builder<BuildApp<I, O>, O> {
+    return b("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
+      requireOutput(it)
     }
   }
 }

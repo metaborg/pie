@@ -3,7 +3,7 @@ package mb.ceres.internal
 import mb.ceres.*
 import java.io.Serializable
 
-internal interface Req : Serializable {
+interface Req : Serializable {
   fun makeConsistent(bm: BuildManagerImpl): Boolean
 }
 
@@ -24,4 +24,4 @@ internal data class BuildReq<out I : In, out O : Out>(val app: BuildApp<I, O>, v
 }
 
 
-internal data class Gen(val path: CPath, val stamp: PathStamp) : Serializable
+data class Gen(val path: CPath, val stamp: PathStamp) : Serializable
