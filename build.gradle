@@ -5,8 +5,8 @@ buildscript {
   ext {
     kotlinVersion = '1.1.2-2'
     javaVersion = JavaVersion.VERSION_1_8
-    junitPlatformVersion = '1.0.0-M4'
     junitVersion = '5.0.0-M4'
+    guiceVersion = '4.1.0'
   }
 
   repositories {
@@ -46,10 +46,14 @@ compileTestKotlin {
 
 dependencies {
   compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
-  compile 'com.google.inject:guice:4.1.0'
+  compile "com.google.inject:guice:$guiceVersion"
+  compile "com.google.inject.extensions:guice-assistedinject:$guiceVersion"
+  compile 'org.lmdbjava:lmdbjava:0.0.5'
 
   // JUnit 5 (http://junit.org/junit5/docs/current/user-guide/)
   testCompile "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+  testCompile "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+  // https://github.com/JeffreyFalgout/junit5-guice-extension
   testCompile 'name.falgout.jeffrey.testing:junit5-guice-extension:1.0.0-M3'
   // In-memory filesystem implementation for testing (https://github.com/google/jimfs)
   testCompile 'com.google.jimfs:jimfs:1.1'

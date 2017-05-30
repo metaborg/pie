@@ -5,7 +5,7 @@ import mb.ceres.internal.HashPathStamper
 import mb.ceres.internal.ModifiedPathStamper
 import java.io.Serializable
 
-interface PathStamper {
+interface PathStamper : Serializable {
   fun stamp(cpath: CPath): PathStamp
 }
 

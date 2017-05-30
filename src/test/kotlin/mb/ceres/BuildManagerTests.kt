@@ -2,21 +2,40 @@ package mb.ceres
 
 import com.nhaarman.mockito_kotlin.*
 import mb.ceres.internal.BuildManagerImpl
+import mb.ceres.internal.BuildStore
+import mb.ceres.internal.InMemoryBuildStore
+import mb.ceres.internal.LMDBBuildStore
 import name.falgout.jeffrey.testing.junit5.GuiceExtension
 import name.falgout.jeffrey.testing.junit5.IncludeModule
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import java.io.File
 import java.nio.file.FileSystem
 import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
+
+@Retention(AnnotationRetention.RUNTIME)
+@ParameterizedTest()
+@MethodSource(names = arrayOf("createBuildStores"))
+internal annotation class UseBuildStores
 
 @ExtendWith(GuiceExtension::class)
 @IncludeModule(TestModule::class)
-internal class BuildManagerTests {
-  @Test
-  fun testBuild(bm: BuildManagerImpl) {
+internal class BuildManagerTests : TestBase() {
+  companion object {
+    @Suppress("unused")
+    @JvmStatic fun createBuildStores(): Array<BuildStore> {
+      return arrayOf(InMemoryBuildStore(), LMDBBuildStore(File("build/test/lmdbstore")))
+    }
+  }
+
+  @UseBuildStores
+  fun testBuild(store: BuildStore) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val sbm = spy(bm)
     val input = "CAPITALIZED"
     val builder = spy(toLowerCase)
@@ -40,9 +59,10 @@ internal class BuildManagerTests {
     verify(builder, atLeastOnce()).desc(input)
   }
 
-  @Test
-  fun testMultipleBuilds(bm: BuildManagerImpl) {
-    val sbm = spy(bm)
+  @UseBuildStores
+  fun testMultipleBuilds(store: BuildStore) {
+    store.reset()
+    val sbm = spy(BuildManagerImpl(store))
     val builder = spy(toLowerCase)
     sbm.registerBuilder(builder)
     val input1 = "CAPITALIZED"
@@ -78,8 +98,11 @@ internal class BuildManagerTests {
     }
   }
 
-  @Test
-  fun testReuse(bm: BuildManagerImpl) {
+  @UseBuildStores
+  fun testReuse(store: BuildStore) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val input = "CAPITALIZED"
     val builder = spy(toLowerCase)
     bm.registerBuilder(builder)
@@ -98,8 +121,11 @@ internal class BuildManagerTests {
     verify(builder, atLeastOnce()).desc(input)
   }
 
-  @Test
-  fun testPathReq(bm: BuildManagerImpl, fs: FileSystem) {
+  @UseBuildStores
+  fun testPathReq(store: BuildStore, fs: FileSystem) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val readPath = spy(readPath)
     bm.registerBuilder(readPath)
 
@@ -128,8 +154,11 @@ internal class BuildManagerTests {
     verify(sbm3, times(1)).rebuild(BuildApp(readPath, filePath))
   }
 
-  @Test
-  fun testPathGen(bm: BuildManagerImpl, fs: FileSystem) {
+  @UseBuildStores
+  fun testPathGen(store: BuildStore, fs: FileSystem) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val writePath = spy(writePath)
     bm.registerBuilder(writePath)
 
@@ -160,8 +189,11 @@ internal class BuildManagerTests {
     assertEquals("HELLO WORLD!", read(filePath))
   }
 
-  @Test
-  fun testBuildReq(bm: BuildManagerImpl, fs: FileSystem) {
+  @UseBuildStores
+  fun testBuildReq(store: BuildStore, fs: FileSystem) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val toLowerCase = spy(toLowerCase)
     bm.registerBuilder(toLowerCase)
     val readPath = spy(readPath)
@@ -224,8 +256,11 @@ internal class BuildManagerTests {
     verify(sbm4, never()).rebuild(BuildApp(toLowerCase, "!DLROW OLLEH"))
   }
 
-  @Test
-  fun testOverlappingGeneratedPath(bm: BuildManagerImpl, fs: FileSystem) {
+  @UseBuildStores
+  fun testOverlappingGeneratedPath(store: BuildStore, fs: FileSystem) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     bm.registerBuilder(writePath)
 
     val filePath = p(fs, "/file")
@@ -239,8 +274,11 @@ internal class BuildManagerTests {
     }
   }
 
-  @Test
-  fun testGenerateRequiredHiddenDep(bm: BuildManagerImpl, fs: FileSystem) {
+  @UseBuildStores
+  fun testGenerateRequiredHiddenDep(store: BuildStore, fs: FileSystem) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     bm.registerBuilder(readPath)
     bm.registerBuilder(writePath)
 
@@ -257,8 +295,11 @@ internal class BuildManagerTests {
     }
   }
 
-  @Test
-  fun testRequireGeneratedHiddenDep(bm: BuildManagerImpl, fs: FileSystem) {
+  @UseBuildStores
+  fun testRequireGeneratedHiddenDep(store: BuildStore, fs: FileSystem) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val indirection = requireOutputBuilder<Pair<String, CPath>, None>()
     bm.registerBuilder(indirection)
     bm.registerBuilder(writePath)
@@ -288,65 +329,16 @@ internal class BuildManagerTests {
     }
   }
 
-  @Test
-  fun testCyclicDependency(bm: BuildManagerImpl) {
+  @UseBuildStores
+  fun testCyclicDependency(store: BuildStore) {
+    store.reset()
+    val bm = BuildManagerImpl(store)
+
     val b1 = b<None, None>("b1", { "b1" }, { requireOutput(BuildApp("b1", None.instance)) })
     bm.registerBuilder(b1)
 
     assertThrows(CyclicDependencyException::class.java) {
       bm.build(BuildApp(b1, None.instance))
-    }
-  }
-
-
-  fun p(fs: FileSystem, path: String): CPath {
-    return CPath(fs.getPath(path))
-  }
-
-  fun <I : In, O : Out> b(id: String, descFunc: (I) -> String, buildFunc: BuildContext.(I) -> O): Builder<I, O> {
-    return LambdaBuilder(id, descFunc, buildFunc)
-  }
-
-  fun <I : In, O : Out> a(builder: Builder<I, O>, input: I): BuildApp<I, O> {
-    return BuildApp(builder.id, input)
-  }
-
-
-  fun read(path: CPath): String {
-    Files.newInputStream(path.javaPath, StandardOpenOption.READ).use {
-      val bytes = it.readBytes()
-      val text = String(bytes)
-      return text
-    }
-  }
-
-  fun write(text: String, path: CPath) {
-    println("Write $text")
-    Files.newOutputStream(path.javaPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
-      StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC).use {
-      it.write(text.toByteArray())
-    }
-    // HACK: for some reason, sleeping is required for writes to the file to be picked up by reads...
-    Thread.sleep(1)
-  }
-
-
-  val toLowerCase = b<String, String>("toLowerCase", { "toLowerCase($it)" }) {
-    it.toLowerCase()
-  }
-  val readPath = b<CPath, String>("read", { "read($it)" }) {
-    require(it)
-    read(it)
-  }
-  val writePath = b<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
-    write(text, path)
-    generate(path)
-    None.instance
-  }
-
-  inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Builder<BuildApp<I, O>, O> {
-    return b("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
-      requireOutput(it)
     }
   }
 }

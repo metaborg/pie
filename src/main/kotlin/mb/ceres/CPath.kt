@@ -2,11 +2,11 @@ package mb.ceres
 
 import java.io.Serializable
 import java.net.URI
-import java.nio.file.FileSystems
 import java.nio.file.Path
+import java.nio.file.Paths
 
-data class CPath(private var pathStr: String, private var scheme: String) : Serializable {
-  constructor(path: Path) : this(path.toString(), path.fileSystem.provider().scheme) {
+data class CPath(private var uri: URI) : Serializable {
+  constructor(path: Path) : this(path.toUri()) {
     this.pathCache = path
   }
 
@@ -15,10 +15,9 @@ data class CPath(private var pathStr: String, private var scheme: String) : Seri
   val javaPath: Path
     get() {
       if (pathCache != null) {
-        return pathCache as Path
+        return pathCache!!
       } else {
-        val fs = FileSystems.getFileSystem(URI(scheme, "", ""))
-        val path = fs.getPath(pathStr)
+        val path = Paths.get(uri)
         pathCache = path
         return path
       }

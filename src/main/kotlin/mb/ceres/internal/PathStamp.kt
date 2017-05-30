@@ -46,7 +46,7 @@ class ModifiedPathStamper : PathStamper {
       TODO("Implement ModifiedPathStamper for directories")
     }
 
-    return ValuePathStamp(Files.getLastModifiedTime(path), this)
+    return ValuePathStamp(Files.getLastModifiedTime(path).toMillis(), this)
   }
 
   override fun equals(other: Any?): Boolean {

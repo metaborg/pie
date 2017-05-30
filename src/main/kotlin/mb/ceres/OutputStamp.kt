@@ -3,7 +3,7 @@ package mb.ceres
 import mb.ceres.internal.EqualsOutputStamper
 import java.io.Serializable
 
-interface OutputStamper {
+interface OutputStamper : Serializable {
   fun <O : Out> stamp(output: O): OutputStamp
 }
 
