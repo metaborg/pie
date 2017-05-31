@@ -1,12 +1,27 @@
 package mb.ceres
 
-import mb.ceres.internal.BuildImpl
-import mb.ceres.internal.Store
+import mb.ceres.internal.*
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import java.io.File
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 
+@Retention(AnnotationRetention.RUNTIME)
+@ParameterizedTest()
+@MethodSource(names = arrayOf("createBuildStores"))
+internal annotation class UseBuildStores
+
 open internal class TestBase {
+  companion object {
+    @Suppress("unused")
+    @JvmStatic fun createBuildStores(): Array<Store> {
+      return arrayOf(InMemoryStore(), LMDBStore(File("build/test/lmdbstore")))
+    }
+  }
+
+
   fun p(fs: FileSystem, path: String): CPath {
     return CPath(fs.getPath(path))
   }
@@ -23,8 +38,8 @@ open internal class TestBase {
     return BuildApp(builderId, input)
   }
 
-  fun b(store: Store, bStore: BuilderStore): BuildImpl {
-    return BuildImpl(store, bStore)
+  fun b(store: Store, bStore: BuilderStore, share: BuildShare): BuildImpl {
+    return BuildImpl(store, bStore, share)
   }
 
 

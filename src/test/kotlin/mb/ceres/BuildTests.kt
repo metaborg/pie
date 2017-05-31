@@ -1,10 +1,7 @@
 package mb.ceres
 
 import com.nhaarman.mockito_kotlin.*
-import mb.ceres.internal.BuildManagerImpl
-import mb.ceres.internal.InMemoryStore
-import mb.ceres.internal.LMDBStore
-import mb.ceres.internal.Store
+import mb.ceres.internal.*
 import name.falgout.jeffrey.testing.junit5.GuiceExtension
 import name.falgout.jeffrey.testing.junit5.IncludeModule
 import org.junit.jupiter.api.Assertions.*
@@ -16,23 +13,11 @@ import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
 
-@Retention(AnnotationRetention.RUNTIME)
-@ParameterizedTest()
-@MethodSource(names = arrayOf("createBuildStores"))
-internal annotation class UseBuildStores
-
 @ExtendWith(GuiceExtension::class)
 @IncludeModule(TestModule::class)
 internal class BuildManagerTests : TestBase() {
-  companion object {
-    @Suppress("unused")
-    @JvmStatic fun createBuildStores(): Array<Store> {
-      return arrayOf(InMemoryStore(), LMDBStore(File("build/test/lmdbstore")))
-    }
-  }
-
   @UseBuildStores
-  fun testBuild(store: Store, bStore: BuilderStore) {
+  fun testBuild(store: Store, bStore: BuilderStore, share: BuildShare) {
     store.use {
       store.reset()
 
@@ -41,7 +26,7 @@ internal class BuildManagerTests : TestBase() {
       bStore.registerBuilder(builder)
       val app = a(builder, input)
 
-      val build = spy(b(store, bStore))
+      val build = spy(b(store, bStore, share))
       val result = build.require(app)
       assertEquals(builder.id, result.builderId)
       assertEquals(input, result.input)
@@ -60,7 +45,7 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testMultipleBuilds(store: Store, bStore: BuilderStore) {
+  fun testMultipleBuilds(store: Store, bStore: BuilderStore, share: BuildShare) {
     store.use {
       store.reset()
       val builder = spy(toLowerCase)
@@ -68,7 +53,7 @@ internal class BuildManagerTests : TestBase() {
 
       val input1 = "CAPITALIZED"
       val app1 = a(builder, input1)
-      val build1 = spy(b(store, bStore))
+      val build1 = spy(b(store, bStore, share))
       val result1 = build1.require(app1)
       assertEquals(builder.id, result1.builderId)
       assertEquals(input1, result1.input)
@@ -76,7 +61,7 @@ internal class BuildManagerTests : TestBase() {
 
       val input2 = "CAPITALIZED_EVEN_MORE"
       val app2 = a(builder, input2)
-      val build2 = spy(b(store, bStore))
+      val build2 = spy(b(store, bStore, share))
       val result2 = build2.require(app2)
       assertEquals(builder.id, result2.builderId)
       assertEquals(input2, result2.input)
@@ -97,7 +82,7 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testReuse(store: Store, bStore: BuilderStore) {
+  fun testReuse(store: Store, bStore: BuilderStore, share: BuildShare) {
     store.use {
       store.reset()
 
@@ -106,10 +91,10 @@ internal class BuildManagerTests : TestBase() {
 
       val input = "CAPITALIZED"
       val app = a(builder, input)
-      val build1 = b(store, bStore)
+      val build1 = b(store, bStore, share)
       val output1 = build1.require(app)
 
-      val build2 = spy(b(store, bStore))
+      val build2 = spy(b(store, bStore, share))
       val output2 = build2.require(app)
 
       assertEquals(output1, output2)
@@ -123,7 +108,7 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testPathReq(store: Store, bStore: BuilderStore, fs: FileSystem) {
+  fun testPathReq(store: Store, bStore: BuilderStore, share: BuildShare, fs: FileSystem) {
     store.use {
       store.reset()
 
@@ -134,13 +119,13 @@ internal class BuildManagerTests : TestBase() {
       write("HELLO WORLD!", filePath)
 
       // Build 'readPath', observe rebuild
-      val build1 = spy(b(store, bStore))
+      val build1 = spy(b(store, bStore, share))
       val result1 = build1.require(a(readPath, filePath))
       assertEquals("HELLO WORLD!", result1.output)
       verify(build1, times(1)).rebuild(a(readPath, filePath))
 
       // No changes - build 'readPath', observe no rebuild
-      val build2 = spy(b(store, bStore))
+      val build2 = spy(b(store, bStore, share))
       val result2 = build2.require(a(readPath, filePath))
       assertEquals("HELLO WORLD!", result2.output)
       verify(build2, never()).rebuild(a(readPath, filePath))
@@ -149,7 +134,7 @@ internal class BuildManagerTests : TestBase() {
       write("!DLROW OLLEH", filePath)
 
       // Run again - expect rebuild
-      val build3 = spy(b(store, bStore))
+      val build3 = spy(b(store, bStore, share))
       val result3 = build3.require(a(readPath, filePath))
       assertEquals("!DLROW OLLEH", result3.output)
       verify(build3, times(1)).rebuild(a(readPath, filePath))
@@ -157,7 +142,7 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testPathGen(store: Store, bStore: BuilderStore, fs: FileSystem) {
+  fun testPathGen(store: Store, bStore: BuilderStore, share: BuildShare, fs: FileSystem) {
     store.use {
       store.reset()
 
@@ -168,7 +153,7 @@ internal class BuildManagerTests : TestBase() {
       assertTrue(Files.notExists(filePath.javaPath))
 
       // Build 'writePath', observe rebuild and existence of file
-      val build1 = spy(b(store, bStore))
+      val build1 = spy(b(store, bStore, share))
       build1.require(a(writePath, Pair("HELLO WORLD!", filePath)))
       verify(build1, times(1)).rebuild(a(writePath, Pair("HELLO WORLD!", filePath)))
 
@@ -176,7 +161,7 @@ internal class BuildManagerTests : TestBase() {
       assertEquals("HELLO WORLD!", read(filePath))
 
       // No changes - build 'writePath', observe no rebuild, no change to file
-      val build2 = spy(b(store, bStore))
+      val build2 = spy(b(store, bStore, share))
       build2.require(a(writePath, Pair("HELLO WORLD!", filePath)))
       verify(build2, never()).rebuild(a(writePath, Pair("HELLO WORLD!", filePath)))
 
@@ -184,7 +169,7 @@ internal class BuildManagerTests : TestBase() {
       write("!DLROW OLLEH", filePath)
 
       // Build 'writePath', observe rebuild and change of file
-      val build3 = spy(b(store, bStore))
+      val build3 = spy(b(store, bStore, share))
       build3.require(a(writePath, Pair("HELLO WORLD!", filePath)))
       verify(build3, times(1)).rebuild(a(writePath, Pair("HELLO WORLD!", filePath)))
 
@@ -193,7 +178,7 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testBuildReq(store: Store, bStore: BuilderStore, fs: FileSystem) {
+  fun testBuildReq(store: Store, bStore: BuilderStore, share: BuildShare, fs: FileSystem) {
     store.use {
       store.reset()
 
@@ -211,7 +196,7 @@ internal class BuildManagerTests : TestBase() {
       write("HELLO WORLD!", filePath)
 
       // Build 'combine', observe rebuild of all
-      val build1 = spy(b(store, bStore))
+      val build1 = spy(b(store, bStore, share))
       val result1 = build1.require(a(combine, filePath))
       assertEquals("hello world!", result1.output)
       inOrder(build1) {
@@ -221,7 +206,7 @@ internal class BuildManagerTests : TestBase() {
       }
 
       // No changes - build 'combine', observe no rebuild
-      val build2 = spy(b(store, bStore))
+      val build2 = spy(b(store, bStore, share))
       val result2 = build2.require(a(combine, filePath))
       assertEquals("hello world!", result2.output)
       verify(build2, never()).rebuild(a(combine, filePath))
@@ -232,7 +217,7 @@ internal class BuildManagerTests : TestBase() {
       write("!DLROW OLLEH", filePath)
 
       // Build 'combine', observe rebuild of all in dependency order
-      val build3 = spy(b(store, bStore))
+      val build3 = spy(b(store, bStore, share))
       val result3 = build3.require(a(combine, filePath))
       assertEquals("!dlrow olleh", result3.output)
       inOrder(build3) {
@@ -248,7 +233,7 @@ internal class BuildManagerTests : TestBase() {
       Files.setLastModifiedTime(filePath.javaPath, newLastModified)
 
       // Build 'combine', observe rebuild of 'readPath' only
-      val build4 = spy(b(store, bStore))
+      val build4 = spy(b(store, bStore, share))
       val result4 = build4.require(a(combine, filePath))
       assertEquals("!dlrow olleh", result4.output)
       inOrder(build4) {
@@ -261,11 +246,11 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testOverlappingGeneratedPath(store: Store, bStore: BuilderStore, fs: FileSystem) {
+  fun testOverlappingGeneratedPath(store: Store, bStore: BuilderStore, share: BuildShare, fs: FileSystem) {
     store.use {
       store.reset()
 
-      val bm = BuildManagerImpl(store, bStore)
+      val bm = BuildManagerImpl(store, bStore, share)
 
       bm.registerBuilder(writePath)
 
@@ -282,11 +267,11 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testGenerateRequiredHiddenDep(store: Store, bStore: BuilderStore, fs: FileSystem) {
+  fun testGenerateRequiredHiddenDep(store: Store, bStore: BuilderStore, share: BuildShare, fs: FileSystem) {
     store.use {
       store.reset()
 
-      val bm = BuildManagerImpl(store, bStore)
+      val bm = BuildManagerImpl(store, bStore, share)
 
       bm.registerBuilder(readPath)
       bm.registerBuilder(writePath)
@@ -295,7 +280,8 @@ internal class BuildManagerTests : TestBase() {
       write("HELLO WORLD!", filePath)
 
       assertThrows(HiddenDependencyException::class.java) {
-        bm.buildAll(a(readPath, filePath), a(writePath, Pair("HELLO WORLD!", filePath)))
+        bm.build(a(readPath, filePath))
+        bm.build(a(writePath, Pair("HELLO WORLD!", filePath)))
       }
 
       // Hidden dependency exception should also trigger between separate builds
@@ -306,11 +292,11 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testRequireGeneratedHiddenDep(store: Store, bStore: BuilderStore, fs: FileSystem) {
+  fun testRequireGeneratedHiddenDep(store: Store, bStore: BuilderStore, share: BuildShare, fs: FileSystem) {
     store.use {
       store.reset()
 
-      val bm = BuildManagerImpl(store, bStore)
+      val bm = BuildManagerImpl(store, bStore, share)
 
       val indirection = requireOutputBuilder<Pair<String, CPath>, None>()
       bm.registerBuilder(indirection)
@@ -343,10 +329,10 @@ internal class BuildManagerTests : TestBase() {
   }
 
   @UseBuildStores
-  fun testCyclicDependency(store: Store, bStore: BuilderStore) {
+  fun testCyclicDependency(store: Store, bStore: BuilderStore, share: BuildShare) {
     store.use {
       it.reset()
-      val bm = BuildManagerImpl(store, bStore)
+      val bm = BuildManagerImpl(store, bStore, share)
 
       val b1 = lb<None, None>("b1", { "b1" }) { requireOutput(a("b1", None.instance)) }
       bm.registerBuilder(b1)

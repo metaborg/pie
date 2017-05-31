@@ -10,60 +10,80 @@ import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
 interface Store : AutoCloseable {
-  operator fun set(app: UBuildApp, res: UBuildRes)
-  operator fun set(path: CPath, res: UBuildRes)
-  operator fun get(app: UBuildApp): UBuildRes?
-  operator fun get(path: CPath): UBuildRes?
+  fun setProduces(app: UBuildApp, res: UBuildRes)
+  fun produces(app: UBuildApp): UBuildRes?
+
+  fun setGeneratedBy(path: CPath, res: UBuildRes)
+  fun generatedBy(path: CPath): UBuildRes?
+
+  fun setRequiredBy(path: CPath, res: UBuildRes)
+  fun requiredBy(path: CPath): UBuildRes?
+
   fun reset()
 }
 
 class InMemoryStore : Store {
   val produces = ConcurrentHashMap<UBuildApp, UBuildRes>()
-  val generates = ConcurrentHashMap<CPath, UBuildRes>()
+  val generatedBy = ConcurrentHashMap<CPath, UBuildRes>()
+  val requiredBy = ConcurrentHashMap<CPath, UBuildRes>()
 
-  override fun set(app: UBuildApp, res: UBuildRes) {
+
+  override fun setProduces(app: UBuildApp, res: UBuildRes) {
     produces[app] = res
   }
 
-  override fun set(path: CPath, res: UBuildRes) {
-    generates[path] = res
-  }
-
-  override fun get(app: UBuildApp): UBuildRes? {
+  override fun produces(app: UBuildApp): UBuildRes? {
     return produces[app]
   }
 
-  override fun get(path: CPath): UBuildRes? {
-    return generates[path]
+
+  override fun setGeneratedBy(path: CPath, res: UBuildRes) {
+    generatedBy[path] = res
   }
+
+  override fun generatedBy(path: CPath): UBuildRes? {
+    return generatedBy[path]
+  }
+
+
+  override fun setRequiredBy(path: CPath, res: UBuildRes) {
+    requiredBy[path] = res
+  }
+
+  override fun requiredBy(path: CPath): UBuildRes? {
+    return requiredBy[path]
+  }
+
 
   override fun reset() {
     produces.clear()
-    generates.clear()
+    generatedBy.clear()
   }
 
-  override fun close() {
-    // No closing required
-  }
+  override fun close() {}
 }
 
-class LMDBStore(envDir: File) : Store {
+class LMDBStore(envDir: File, numReaders : Int = 8) : Store {
   val env: Env<ByteBuffer>
   val produces: Dbi<ByteBuffer>
-  val generates: Dbi<ByteBuffer>
+  val generatedBy: Dbi<ByteBuffer>
+  val requiredBy: Dbi<ByteBuffer>
+
 
   init {
     envDir.mkdirs()
-    env = Env.create().setMaxDbs(1024 * 1024).setMaxDbs(2).open(envDir)
+    env = Env.create().setMaxDbs(1024 * 1024).setMaxDbs(3).setMaxReaders(numReaders).open(envDir)
     produces = env.openDbi("produces", DbiFlags.MDB_CREATE)
-    generates = env.openDbi("generates", DbiFlags.MDB_CREATE)
+    generatedBy = env.openDbi("generatedBy", DbiFlags.MDB_CREATE)
+    requiredBy = env.openDbi("requiredBy", DbiFlags.MDB_CREATE)
   }
 
   override fun close() {
     env.close()
   }
 
-  override fun set(app: UBuildApp, res: UBuildRes) {
+
+  override fun setProduces(app: UBuildApp, res: UBuildRes) {
     val k = serialize(app)
     val v = serialize(res)
     env.txnWrite().use {
@@ -72,16 +92,7 @@ class LMDBStore(envDir: File) : Store {
     }
   }
 
-  override fun set(path: CPath, res: UBuildRes) {
-    val k = serialize(path)
-    val v = serialize(res)
-    env.txnWrite().use {
-      generates.put(it, k, v)
-      it.commit()
-    }
-  }
-
-  override fun get(app: UBuildApp): UBuildRes? {
+  override fun produces(app: UBuildApp): UBuildRes? {
     env.txnRead().use {
       val k = serialize(app)
       val v = produces.get(it, k)
@@ -92,10 +103,20 @@ class LMDBStore(envDir: File) : Store {
     }
   }
 
-  override fun get(path: CPath): UBuildRes? {
+
+  override fun setGeneratedBy(path: CPath, res: UBuildRes) {
+    val k = serialize(path)
+    val v = serialize(res)
+    env.txnWrite().use {
+      generatedBy.put(it, k, v)
+      it.commit()
+    }
+  }
+
+  override fun generatedBy(path: CPath): UBuildRes? {
     env.txnRead().use {
       val k = serialize(path)
-      val v = generates.get(it, k)
+      val v = generatedBy.get(it, k)
       when (v) {
         null -> return null
         else -> return deserialize(v)
@@ -103,10 +124,32 @@ class LMDBStore(envDir: File) : Store {
     }
   }
 
+
+  override fun setRequiredBy(path: CPath, res: UBuildRes) {
+    val k = serialize(path)
+    val v = serialize(res)
+    env.txnWrite().use {
+      requiredBy.put(it, k, v)
+      it.commit()
+    }
+  }
+
+  override fun requiredBy(path: CPath): UBuildRes? {
+    env.txnRead().use {
+      val k = serialize(path)
+      val v = requiredBy.get(it, k)
+      when (v) {
+        null -> return null
+        else -> return deserialize(v)
+      }
+    }
+  }
+
+
   override fun reset() {
     env.txnWrite().use {
       produces.drop(it)
-      generates.drop(it)
+      generatedBy.drop(it)
       it.commit()
     }
   }

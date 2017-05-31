@@ -4,6 +4,7 @@ version '0.1.0-SNAPSHOT'
 buildscript {
   ext {
     kotlinVersion = '1.1.2-2'
+    kotlin_version = kotlinVersion
     javaVersion = JavaVersion.VERSION_1_8
     junitVersion = '5.0.0-M4'
     guiceVersion = '4.1.0'
@@ -46,6 +47,7 @@ compileTestKotlin {
 
 dependencies {
   compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
+  compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.15"
   compile "com.google.inject:guice:$guiceVersion"
   compile "com.google.inject.extensions:guice-assistedinject:$guiceVersion"
   compile 'org.lmdbjava:lmdbjava:0.0.5'
