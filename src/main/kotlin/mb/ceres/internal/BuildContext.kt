@@ -2,19 +2,19 @@ package mb.ceres.internal
 
 import mb.ceres.*
 
-internal class BuildContextImpl(val buildManager: BuildManagerInternal) : BuildContext {
+internal class BuildContextImpl(val build: Build) : BuildContext {
   val reqs = mutableListOf<Req>()
   val gens = mutableListOf<Gen>()
 
   override fun <I : In, O : Out> requireOutput(app: BuildApp<I, O>, stamper: OutputStamper): O {
-    val result = buildManager.require(app)
+    val result = build.require(app)
     val stamp = stamper.stamp(result.output)
     reqs.add(BuildReq(app, stamp))
     return result.output
   }
 
   override fun requireBuild(app: UBuildApp, stamper: OutputStamper) {
-    val result = buildManager.require(app)
+    val result = build.require(app)
     val stamp = stamper.stamp(result.output)
     reqs.add(BuildReq(app, stamp))
   }

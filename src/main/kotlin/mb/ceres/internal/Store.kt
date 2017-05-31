@@ -7,9 +7,9 @@ import org.lmdbjava.DbiFlags
 import org.lmdbjava.Env
 import java.io.*
 import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
 
-
-interface BuildStore : AutoCloseable {
+interface Store : AutoCloseable {
   operator fun set(app: UBuildApp, res: UBuildRes)
   operator fun set(path: CPath, res: UBuildRes)
   operator fun get(app: UBuildApp): UBuildRes?
@@ -17,9 +17,9 @@ interface BuildStore : AutoCloseable {
   fun reset()
 }
 
-class InMemoryBuildStore : BuildStore {
-  val produces = mutableMapOf<UBuildApp, UBuildRes>()
-  val generates = mutableMapOf<CPath, UBuildRes>()
+class InMemoryStore : Store {
+  val produces = ConcurrentHashMap<UBuildApp, UBuildRes>()
+  val generates = ConcurrentHashMap<CPath, UBuildRes>()
 
   override fun set(app: UBuildApp, res: UBuildRes) {
     produces[app] = res
@@ -47,7 +47,7 @@ class InMemoryBuildStore : BuildStore {
   }
 }
 
-class LMDBBuildStore(envDir: File) : BuildStore {
+class LMDBStore(envDir: File) : Store {
   val env: Env<ByteBuffer>
   val produces: Dbi<ByteBuffer>
   val generates: Dbi<ByteBuffer>

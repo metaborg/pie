@@ -1,5 +1,7 @@
 package mb.ceres
 
+import mb.ceres.internal.BuildImpl
+import mb.ceres.internal.Store
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
@@ -9,12 +11,20 @@ open internal class TestBase {
     return CPath(fs.getPath(path))
   }
 
-  fun <I : In, O : Out> b(id: String, descFunc: (I) -> String, buildFunc: BuildContext.(I) -> O): Builder<I, O> {
+  fun <I : In, O : Out> lb(id: String, descFunc: (I) -> String, buildFunc: BuildContext.(I) -> O): Builder<I, O> {
     return LambdaBuilder(id, descFunc, buildFunc)
   }
 
   fun <I : In, O : Out> a(builder: Builder<I, O>, input: I): BuildApp<I, O> {
-    return BuildApp(builder.id, input)
+    return BuildApp(builder, input)
+  }
+
+  fun <I : In, O : Out> a(builderId: String, input: I): BuildApp<I, O> {
+    return BuildApp(builderId, input)
+  }
+
+  fun b(store: Store, bStore: BuilderStore): BuildImpl {
+    return BuildImpl(store, bStore)
   }
 
 
@@ -37,21 +47,21 @@ open internal class TestBase {
   }
 
 
-  val toLowerCase = b<String, String>("toLowerCase", { "toLowerCase($it)" }) {
+  val toLowerCase = lb<String, String>("toLowerCase", { "toLowerCase($it)" }) {
     it.toLowerCase()
   }
-  val readPath = b<CPath, String>("read", { "read($it)" }) {
+  val readPath = lb<CPath, String>("read", { "read($it)" }) {
     require(it)
     read(it)
   }
-  val writePath = b<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
+  val writePath = lb<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
     write(text, path)
     generate(path)
     None.instance
   }
 
   inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Builder<BuildApp<I, O>, O> {
-    return b("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
+    return lb("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
       requireOutput(it)
     }
   }
