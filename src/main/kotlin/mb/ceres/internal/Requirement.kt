@@ -7,14 +7,14 @@ interface Req : Serializable {
   fun makeConsistent(build: Build): Boolean
 }
 
-internal data class PathReq(val path: CPath, val stamp: PathStamp) : Req {
+data class PathReq(val path: CPath, val stamp: PathStamp) : Req {
   override fun makeConsistent(build: Build): Boolean {
     val newStamp = stamp.stamper.stamp(path)
     return stamp == newStamp
   }
 }
 
-internal data class BuildReq<out I : In, out O : Out>(val app: BuildApp<I, O>, val stamp: OutputStamp) : Req {
+data class BuildReq<out I : In, out O : Out>(val app: BuildApp<I, O>, val stamp: OutputStamp) : Req {
   override fun makeConsistent(build: Build): Boolean {
     val result = build.require(app)
     // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies
@@ -22,6 +22,7 @@ internal data class BuildReq<out I : In, out O : Out>(val app: BuildApp<I, O>, v
     return stamp == newStamp
   }
 }
+typealias UBuildReq = BuildReq<*, *>
 
 
 data class Gen(val path: CPath, val stamp: PathStamp) : Serializable

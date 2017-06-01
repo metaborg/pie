@@ -1,14 +1,13 @@
 package mb.ceres
 
 import com.nhaarman.mockito_kotlin.*
-import mb.ceres.internal.*
+import mb.ceres.internal.BuildManagerImpl
+import mb.ceres.internal.BuildShare
+import mb.ceres.internal.Store
 import name.falgout.jeffrey.testing.junit5.GuiceExtension
 import name.falgout.jeffrey.testing.junit5.IncludeModule
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
-import java.io.File
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
@@ -35,8 +34,8 @@ internal class BuildManagerTests : TestBase() {
       assertEquals(0, result.gens.size)
 
       inOrder(build, builder) {
-        verify(build, times(1)).require(app)
-        verify(build, times(1)).rebuild(app)
+        verify(build, times(1)).require(eq(app))
+        verify(build, times(1)).rebuild(eq(app), any())
         verify(builder, times(1)).build(eq(input), anyOrNull())
       }
 
@@ -70,12 +69,12 @@ internal class BuildManagerTests : TestBase() {
       assertNotEquals(result1, result2)
 
       inOrder(builder, build1, build2) {
-        verify(build1, times(1)).require(app1)
-        verify(build1, times(1)).rebuild(app1)
+        verify(build1, times(1)).require(eq(app1))
+        verify(build1, times(1)).rebuild(eq(app1), any())
         verify(builder, times(1)).build(eq(input1), anyOrNull())
 
-        verify(build2, times(1)).require(app2)
-        verify(build2, times(1)).rebuild(app2)
+        verify(build2, times(1)).require(eq(app2))
+        verify(build2, times(1)).rebuild(eq(app2), any())
         verify(builder, times(1)).build(eq(input2), anyOrNull())
       }
     }
@@ -122,13 +121,13 @@ internal class BuildManagerTests : TestBase() {
       val build1 = spy(b(store, bStore, share))
       val result1 = build1.require(a(readPath, filePath))
       assertEquals("HELLO WORLD!", result1.output)
-      verify(build1, times(1)).rebuild(a(readPath, filePath))
+      verify(build1, times(1)).rebuild(eq(a(readPath, filePath)), any())
 
       // No changes - build 'readPath', observe no rebuild
       val build2 = spy(b(store, bStore, share))
       val result2 = build2.require(a(readPath, filePath))
       assertEquals("HELLO WORLD!", result2.output)
-      verify(build2, never()).rebuild(a(readPath, filePath))
+      verify(build2, never()).rebuild(eq(a(readPath, filePath)), any())
 
       // Change required file in such a way that the output of 'readPath' changes (change file content)
       write("!DLROW OLLEH", filePath)
@@ -137,7 +136,7 @@ internal class BuildManagerTests : TestBase() {
       val build3 = spy(b(store, bStore, share))
       val result3 = build3.require(a(readPath, filePath))
       assertEquals("!DLROW OLLEH", result3.output)
-      verify(build3, times(1)).rebuild(a(readPath, filePath))
+      verify(build3, times(1)).rebuild(eq(a(readPath, filePath)), any())
     }
   }
 
@@ -155,7 +154,7 @@ internal class BuildManagerTests : TestBase() {
       // Build 'writePath', observe rebuild and existence of file
       val build1 = spy(b(store, bStore, share))
       build1.require(a(writePath, Pair("HELLO WORLD!", filePath)))
-      verify(build1, times(1)).rebuild(a(writePath, Pair("HELLO WORLD!", filePath)))
+      verify(build1, times(1)).rebuild(eq(a(writePath, Pair("HELLO WORLD!", filePath))), any())
 
       assertTrue(Files.exists(filePath.javaPath))
       assertEquals("HELLO WORLD!", read(filePath))
@@ -163,7 +162,7 @@ internal class BuildManagerTests : TestBase() {
       // No changes - build 'writePath', observe no rebuild, no change to file
       val build2 = spy(b(store, bStore, share))
       build2.require(a(writePath, Pair("HELLO WORLD!", filePath)))
-      verify(build2, never()).rebuild(a(writePath, Pair("HELLO WORLD!", filePath)))
+      verify(build2, never()).rebuild(eq(a(writePath, Pair("HELLO WORLD!", filePath))), any())
 
       // Change generated file in such a way that 'writePath' is rebuilt (change file content)
       write("!DLROW OLLEH", filePath)
@@ -171,7 +170,7 @@ internal class BuildManagerTests : TestBase() {
       // Build 'writePath', observe rebuild and change of file
       val build3 = spy(b(store, bStore, share))
       build3.require(a(writePath, Pair("HELLO WORLD!", filePath)))
-      verify(build3, times(1)).rebuild(a(writePath, Pair("HELLO WORLD!", filePath)))
+      verify(build3, times(1)).rebuild(eq(a(writePath, Pair("HELLO WORLD!", filePath))), any())
 
       assertEquals("HELLO WORLD!", read(filePath))
     }
@@ -200,18 +199,18 @@ internal class BuildManagerTests : TestBase() {
       val result1 = build1.require(a(combine, filePath))
       assertEquals("hello world!", result1.output)
       inOrder(build1) {
-        verify(build1, times(1)).rebuild(a(combine, filePath))
-        verify(build1, times(1)).rebuild(a(readPath, filePath))
-        verify(build1, times(1)).rebuild(a(toLowerCase, "HELLO WORLD!"))
+        verify(build1, times(1)).rebuild(eq(a(combine, filePath)), any())
+        verify(build1, times(1)).rebuild(eq(a(readPath, filePath)), any())
+        verify(build1, times(1)).rebuild(eq(a(toLowerCase, "HELLO WORLD!")), any())
       }
 
       // No changes - build 'combine', observe no rebuild
       val build2 = spy(b(store, bStore, share))
       val result2 = build2.require(a(combine, filePath))
       assertEquals("hello world!", result2.output)
-      verify(build2, never()).rebuild(a(combine, filePath))
-      verify(build2, never()).rebuild(a(readPath, filePath))
-      verify(build2, never()).rebuild(a(toLowerCase, "HELLO WORLD!"))
+      verify(build2, never()).rebuild(eq(a(combine, filePath)), any())
+      verify(build2, never()).rebuild(eq(a(readPath, filePath)), any())
+      verify(build2, never()).rebuild(eq(a(toLowerCase, "HELLO WORLD!")), any())
 
       // Change required file in such a way that the output of 'readPath' changes (change file content)
       write("!DLROW OLLEH", filePath)
@@ -222,9 +221,9 @@ internal class BuildManagerTests : TestBase() {
       assertEquals("!dlrow olleh", result3.output)
       inOrder(build3) {
         verify(build3, times(1)).require(a(combine, filePath))
-        verify(build3, times(1)).rebuild(a(readPath, filePath))
-        verify(build3, times(1)).rebuild(a(combine, filePath))
-        verify(build3, times(1)).rebuild(a(toLowerCase, "!DLROW OLLEH"))
+        verify(build3, times(1)).rebuild(eq(a(readPath, filePath)), any())
+        verify(build3, times(1)).rebuild(eq(a(combine, filePath)), any())
+        verify(build3, times(1)).rebuild(eq(a(toLowerCase, "!DLROW OLLEH")), any())
       }
 
       // Change required file in such a way that the output of 'readPath' does not change (change modification date)
@@ -238,10 +237,10 @@ internal class BuildManagerTests : TestBase() {
       assertEquals("!dlrow olleh", result4.output)
       inOrder(build4) {
         verify(build4, times(1)).require(a(combine, filePath))
-        verify(build4, times(1)).rebuild(a(readPath, filePath))
+        verify(build4, times(1)).rebuild(eq(a(readPath, filePath)), any())
       }
-      verify(build4, never()).rebuild(a(combine, filePath))
-      verify(build4, never()).rebuild(a(toLowerCase, "!DLROW OLLEH"))
+      verify(build4, never()).rebuild(eq(a(combine, filePath)), any())
+      verify(build4, never()).rebuild(eq(a(toLowerCase, "!DLROW OLLEH")), any())
     }
   }
 

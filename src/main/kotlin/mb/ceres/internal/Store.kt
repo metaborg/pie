@@ -150,6 +150,7 @@ class LMDBStore(envDir: File, numReaders : Int = 8) : Store {
     env.txnWrite().use {
       produces.drop(it)
       generatedBy.drop(it)
+      requiredBy.drop(it)
       it.commit()
     }
   }

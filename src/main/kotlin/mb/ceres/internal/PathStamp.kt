@@ -77,9 +77,9 @@ class ExistsPathStamper : PathStamper {
 }
 
 
-internal data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStamper) : PathStamp
+data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStamper) : PathStamp
 
-internal data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
+data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (other?.javaClass != javaClass) return false

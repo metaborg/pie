@@ -1,24 +1,7 @@
 package mb.ceres.internal
 
-import kotlinx.coroutines.experimental.CoroutineStart
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.runBlocking
 import mb.ceres.*
-import java.io.Serializable
 import java.util.*
-
-data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
-  val toApp get() = BuildApp<I, O>(builderId, input)
-  fun requires(other: BuildApp<*, *>): Boolean {
-    for ((req, _) in reqs.filterIsInstance<BuildReq<*, *>>()) {
-      if (other == req) {
-        return true
-      }
-    }
-    return false
-  }
-}
-typealias UBuildRes = BuildRes<*, *>
 
 interface Build {
   fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O>
@@ -38,7 +21,7 @@ open class BuildImpl(private val store: Store, private val builderStore: Builder
       val cachedResult = getCachedResult(app)
       if (cachedResult == null) {
         // No existing result was found: rebuild
-        return rebuild(app)
+        return rebuild(app, true)
       }
 
       if (isConsistent.contains(app)) {
@@ -75,25 +58,23 @@ open class BuildImpl(private val store: Store, private val builderStore: Builder
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>): BuildRes<I, O> {
-    @Suppress("UNCHECKED_CAST")
-    val result = runBlocking {
-      share[app]?.await() as BuildRes<I, O>? ?: try {
-        val deferred = async(context, CoroutineStart.LAZY) {
-          val (builderId, input) = app
-          val builder = builderStore.getBuilder<I, O>(builderId)
-          val desc = builder.desc(input)
-          println("Executing builder $desc")
-          val context = BuildContextImpl(this@BuildImpl)
-          val output = builder.build(input, context)
-          BuildRes(builderId, desc, input, output, context.reqs, context.gens)
-        }
-        share[app] = deferred
-        deferred.await()
-      } finally {
-        share.remove(app)
-      }
+  open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>, useCache: Boolean = false): BuildRes<I, O> {
+    if (useCache) {
+      return share.reuseOrCreate(app, this::getCachedResult, this::rebuildInternal)
+    } else {
+      return share.reuseOrCreate(app, this::rebuildInternal)
     }
+  }
+
+  // Method is open internal for testability
+  open internal fun <I : In, O : Out> rebuildInternal(app: BuildApp<I, O>): BuildRes<I, O> {
+    val (builderId, input) = app
+    val builder = builderStore.getBuilder<I, O>(builderId)
+    val desc = builder.desc(input)
+    println("Executing builder $desc")
+    val context = BuildContextImpl(this)
+    val output = builder.build(input, context)
+    val result = BuildRes(builderId, desc, input, output, context.reqs, context.gens)
 
     // Validate well-formedness of the dependency graph
     validate(result)
@@ -136,7 +117,7 @@ open class BuildImpl(private val store: Store, private val builderStore: Builder
       if (toCheck.requires(generator.toApp)) {
         return true
       }
-      val reqRequests = toCheck.reqs.filterIsInstance<BuildReq<*, *>>().map { it.app }
+      val reqRequests = toCheck.reqs.filterIsInstance<UBuildReq>().map { it.app }
       val reqResults = mutableListOf<UBuildRes>()
       for (reqRequest in reqRequests) {
         val reqResult = store.produces(reqRequest) ?: error("Cannot get result for app $reqRequest")

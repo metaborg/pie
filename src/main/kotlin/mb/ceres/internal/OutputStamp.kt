@@ -20,4 +20,4 @@ class EqualsOutputStamper : OutputStamper {
   }
 }
 
-internal data class ValueOutputStamp<out V>(val value: V, override val stamper: OutputStamper) : OutputStamp
+data class ValueOutputStamp<out V>(val value: V, override val stamper: OutputStamper) : OutputStamp
