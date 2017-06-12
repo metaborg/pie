@@ -1,24 +1,32 @@
 package mb.ceres
 
-import mb.ceres.internal.*
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
-import java.io.File
+import com.google.inject.Guice
+import com.google.inject.Injector
+import mb.ceres.impl.BuildCache
+import mb.ceres.internal.BuildImpl
+import mb.ceres.internal.BuildManagerImpl
+import mb.ceres.internal.BuildShare
+import mb.ceres.internal.BuildStore
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 
-@Retention(AnnotationRetention.RUNTIME)
-@ParameterizedTest()
-@MethodSource(names = arrayOf("createBuildStores"))
-internal annotation class UseBuildStores
+open class TestBase {
+  protected val inj: Injector = Guice.createInjector(CeresModule())
+  protected val builders = mutableMapOf<String, UBuilder>()
 
-open internal class TestBase {
-  companion object {
-    @Suppress("unused")
-    @JvmStatic fun createBuildStores(): Array<Store> {
-      return arrayOf(InMemoryStore(), LMDBStore(File("build/test/lmdbstore")))
-    }
+
+  val toLowerCase = lb<String, String>("toLowerCase", { "toLowerCase($it)" }) {
+    it.toLowerCase()
+  }
+  val readPath = lb<CPath, String>("read", { "read($it)" }) {
+    require(it)
+    read(it)
+  }
+  val writePath = lb<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
+    write(text, path)
+    generate(path)
+    None.instance
   }
 
 
@@ -35,11 +43,16 @@ open internal class TestBase {
   }
 
   fun <I : In, O : Out> a(builderId: String, input: I): BuildApp<I, O> {
-    return BuildApp(builderId, input)
+    return BuildApp<I, O>(builderId, input)
   }
 
-  fun b(store: Store, bStore: BuilderStore, share: BuildShare): BuildImpl {
-    return BuildImpl(store, bStore, share)
+
+  fun b(store: BuildStore, cache: BuildCache, share: BuildShare): BuildImpl {
+    return BuildImpl(store, cache, share, builders, inj)
+  }
+
+  fun bm(store: BuildStore, cache: BuildCache, share: BuildShare): BuildManager {
+    return BuildManagerImpl(store, cache, share, builders, inj)
   }
 
 
@@ -62,21 +75,12 @@ open internal class TestBase {
   }
 
 
-  val toLowerCase = lb<String, String>("toLowerCase", { "toLowerCase($it)" }) {
-    it.toLowerCase()
-  }
-  val readPath = lb<CPath, String>("read", { "read($it)" }) {
-    require(it)
-    read(it)
-  }
-  val writePath = lb<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
-    write(text, path)
-    generate(path)
-    None.instance
+  fun registerBuilder(builder: UBuilder) {
+    builders[builder.id] = builder
   }
 
   inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Builder<BuildApp<I, O>, O> {
-    return lb("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
+    return lb<BuildApp<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
       requireOutput(it)
     }
   }

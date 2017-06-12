@@ -1,6 +1,8 @@
 package mb.ceres
 
-class None : Out {
+import java.io.Serializable
+
+class None : Serializable {
   companion object {
     val instance = None()
   }

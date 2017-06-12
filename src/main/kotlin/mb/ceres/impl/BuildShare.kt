@@ -68,4 +68,9 @@ class BuildShareImpl : BuildShare {
       mutex.unlock()
     }
   }
+
+
+  override fun toString(): String {
+    return "BuildShare"
+  }
 }
