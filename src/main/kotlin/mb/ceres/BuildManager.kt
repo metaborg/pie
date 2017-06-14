@@ -7,7 +7,7 @@ interface BuildManager {
   @Throws(BuildException::class)
   fun <I : In, O : Out> build(app: BuildApp<I, O>): O
   @Throws(BuildException::class)
-  fun <I : In, O : Out> buildAll(vararg apps: BuildApp<I, O>): List<O>
+  fun <I : In, O : Out> buildAll(vararg apps: BuildApp<I, O>): List<O>  
 
   @Throws(BuildException::class)
   fun <I : In, O : Out, B : Builder<I, O>> build(clazz: Class<B>, input: I): O

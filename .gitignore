@@ -21,3 +21,6 @@
 *.class
 *.jar
 hs_err_pid*
+
+# Generated MANIFEST.MF
+/META-INF/MANIFEST.MF

@@ -69,7 +69,13 @@ class InMemoryBuildStore : BuildStore {
   }
 }
 
-class LMDBBuildStore(envDir: File, maxDbSize: Int = 1024 * 1024 * 128, maxReaders: Int = 8) : BuildStore {
+class LMDBBuildStoreFactory {
+  fun create(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, maxReaders: Int = 1024): LMDBBuildStore {
+    return LMDBBuildStore(envDir, maxDbSize, maxReaders);
+  }
+}
+
+class LMDBBuildStore(envDir: File, maxDbSize: Int, maxReaders: Int) : BuildStore {
   val env: Env<ByteBuffer>
   val produces: Dbi<ByteBuffer>
   val generatedBy: Dbi<ByteBuffer>

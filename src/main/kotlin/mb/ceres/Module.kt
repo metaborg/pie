@@ -8,16 +8,15 @@ import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.ceres.impl.BuildCache
-import mb.ceres.impl.MapBuildCache
 import mb.ceres.internal.BuildManagerImpl
 import mb.ceres.internal.BuildShare
 import mb.ceres.internal.BuildShareImpl
+import mb.ceres.internal.LMDBBuildStoreFactory
 
 open class CeresModule : Module {
   override fun configure(binder: Binder) {
     binder.bindBuildManager()
-    binder.bindCache()
+    binder.bindStore()
     binder.bindShare()
 
     val builders = binder.builderMapBinder()
@@ -27,12 +26,12 @@ open class CeresModule : Module {
 
   open protected fun Binder.bindBuildManager() {
     install(FactoryModuleBuilder()
-      .implement(BuildManager::class.java, BuildManagerImpl::class.java)
-      .build(BuildManagerFactory::class.java))
+            .implement(BuildManager::class.java, BuildManagerImpl::class.java)
+            .build(BuildManagerFactory::class.java))
   }
 
-  open protected fun Binder.bindCache() {
-    bind<BuildCache>().toSingleton<MapBuildCache>()
+  open protected fun Binder.bindStore() {
+    bind<LMDBBuildStoreFactory>().asSingleton();
   }
 
   open protected fun Binder.bindShare() {

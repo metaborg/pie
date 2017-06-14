@@ -25,7 +25,7 @@ internal annotation class UseBuildVariability
 
 object ArgumentProvider : ArgumentsProvider {
   override fun arguments(context: ContainerExtensionContext?): Stream<out Arguments> {
-    val stores = arrayOf({ InMemoryBuildStore() }, { LMDBBuildStore(File("build/test/lmdbstore")) })
+    val stores = arrayOf({ InMemoryBuildStore() }, { LMDBBuildStoreFactory().create(File("target/lmdbstore")) })
     val caches = arrayOf({ NoBuildCache() }, { MapBuildCache() })
     val shares = arrayOf({ BuildShareImpl() })
     val fs = { Jimfs.newFileSystem(Configuration.unix()) }

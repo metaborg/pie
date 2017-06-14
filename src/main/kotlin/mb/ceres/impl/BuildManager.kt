@@ -8,7 +8,7 @@ import mb.ceres.impl.BuildCache
 
 class BuildManagerImpl @Inject constructor(
   private @Assisted val store: BuildStore,
-  private val cache: BuildCache,
+  private @Assisted val cache: BuildCache,
   private val share: BuildShare,
   private val builders: MutableMap<String, UBuilder>,
   private val injector: Injector)
