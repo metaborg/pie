@@ -4,8 +4,9 @@ import mb.ceres.CPath
 import mb.ceres.PathStamp
 import mb.ceres.PathStamper
 import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
-import java.util.*
+import java.util.Arrays
 
 class HashPathStamper : PathStamper {
   override fun stamp(cpath: CPath): PathStamp {
@@ -13,15 +14,31 @@ class HashPathStamper : PathStamper {
     if (Files.notExists(path)) {
       return ByteArrayPathStamp(null, this)
     }
-
-    if (Files.isDirectory(path)) {
-      TODO("Implement HashPathStamper for directories")
-    }
-
     val digest = MessageDigest.getInstance("SHA-1")
+    digest.digestPath(path)
+    val bytes = digest.digest()
+    return ByteArrayPathStamp(bytes, this)
+  }
+
+  private fun MessageDigest.digestFile(path: Path) {
     val bytes = Files.readAllBytes(path)
-    val digestBytes = digest.digest(bytes)
-    return ByteArrayPathStamp(digestBytes, this)
+    update(bytes)
+  }
+
+  private fun MessageDigest.digestDir(path: Path) {
+    for (subPath in Files.list(path)) {
+      digestPath(subPath)
+    }
+  }
+
+  private fun MessageDigest.digestPath(path: Path) {
+    if (Files.notExists(path)) {
+      return; // Don't digest non-existant files
+    }
+    if (Files.isDirectory(path)) {
+      return digestDir(path)
+    }
+    digestFile(path)
   }
 
   override fun equals(other: Any?): Boolean {
@@ -41,11 +58,89 @@ class ModifiedPathStamper : PathStamper {
     if (Files.notExists(path)) {
       return ValuePathStamp(null, this)
     }
+    val lastModifiedTime = pathLastModified(path)
+    return ValuePathStamp(lastModifiedTime, this)
+  }
 
-    if (Files.isDirectory(path)) {
-      TODO("Implement ModifiedPathStamper for directories")
+  private fun fileLastModified(path: Path): Long {
+    return Files.getLastModifiedTime(path).toMillis();
+  }
+
+  private fun dirLastModified(path: Path): Long {
+    var latestModifiedTime = Files.getLastModifiedTime(path).toMillis();
+    for (subPath in Files.list(path)) {
+      val modifiedTime = pathLastModified(subPath)
+      latestModifiedTime = Math.max(latestModifiedTime, modifiedTime)
     }
+    return latestModifiedTime
+  }
 
+  private fun pathLastModified(path: Path): Long {
+    if (Files.notExists(path)) {
+      // Non existant files do not have a modification time.
+      return Long.MIN_VALUE
+    }
+    if (Files.isDirectory(path)) {
+      return dirLastModified(path)
+    }
+    return fileLastModified(path)
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
+}
+
+class DirectoriesModifiedPathStamper : PathStamper {
+  override fun stamp(cpath: CPath): PathStamp {
+    val path = cpath.javaPath
+    if (Files.notExists(path)) {
+      return ValuePathStamp(null, this)
+    }
+    val lastModifiedTime = pathLastModified(path)
+    return ValuePathStamp(lastModifiedTime, this)
+  }
+
+  private fun dirLastModified(path: Path): Long {
+    var latestModifiedTime = Files.getLastModifiedTime(path).toMillis();
+    for (subPath in Files.list(path)) {
+      val modifiedTime = pathLastModified(subPath)
+      latestModifiedTime = Math.max(latestModifiedTime, modifiedTime)
+    }
+    return latestModifiedTime
+  }
+
+  private fun pathLastModified(path: Path): Long {
+    if (Files.isDirectory(path)) {
+      return dirLastModified(path)
+    }
+    // Ignore files and non-existant paths
+    return Long.MIN_VALUE;
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
+}
+
+class NonRecursiveModifiedPathStamper : PathStamper {
+  override fun stamp(cpath: CPath): PathStamp {
+    val path = cpath.javaPath
+    if (Files.notExists(path)) {
+      return ValuePathStamp(null, this)
+    }
     return ValuePathStamp(Files.getLastModifiedTime(path).toMillis(), this)
   }
 
