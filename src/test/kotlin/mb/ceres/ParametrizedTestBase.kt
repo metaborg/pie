@@ -50,9 +50,9 @@ open internal class ParametrizedTestBase : TestBase() {
   @BeforeEach
   fun beforeEach(store: BuildStore, cache: BuildCache, share: BuildShare, fs: FileSystem) {
     this.store = store
-    this.store.reset()
+    this.store.drop()
     this.cache = cache
-    this.cache.clear()
+    this.cache.drop()
     this.share = share
     this.fs = fs
   }

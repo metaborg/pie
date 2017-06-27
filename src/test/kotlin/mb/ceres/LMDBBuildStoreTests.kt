@@ -15,7 +15,7 @@ internal class LMDBBuildStoreTests : ParametrizedTestBase() {
     registerBuilder(toLowerCase)
 
     factory.create(File("build/test/lmdbstore")).use {
-      it.reset()
+      it.drop()
       val build = b(it, cache, share)
       build.require(a(toLowerCase, "HELLO WORLD!"))
     }

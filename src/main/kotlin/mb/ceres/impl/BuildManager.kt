@@ -7,11 +7,11 @@ import mb.ceres.*
 import mb.ceres.impl.BuildCache
 
 class BuildManagerImpl @Inject constructor(
-  private @Assisted val store: BuildStore,
-  private @Assisted val cache: BuildCache,
-  private val share: BuildShare,
-  private val builders: MutableMap<String, UBuilder>,
-  private val injector: Injector)
+        private @Assisted val store: BuildStore,
+        private @Assisted val cache: BuildCache,
+        private val share: BuildShare,
+        private val builders: MutableMap<String, UBuilder>,
+        private val injector: Injector)
   : BuildManager {
   override fun <I : In, O : Out> build(app: BuildApp<I, O>): O {
     val build = BuildImpl(store, cache, share, builders, injector)
@@ -38,6 +38,14 @@ class BuildManagerImpl @Inject constructor(
       val build = BuildImpl(store, cache, share, builders, injector)
       build.require(it).output
     }
+  }
+
+  override fun dropStore() {
+    store.drop();
+  }
+
+  override fun dropCache() {
+    cache.drop();
   }
 }
 

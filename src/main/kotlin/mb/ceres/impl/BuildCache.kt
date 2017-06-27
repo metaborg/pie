@@ -7,14 +7,14 @@ import java.util.concurrent.ConcurrentHashMap
 interface BuildCache {
   operator fun set(app: UBuildApp, res: UBuildRes)
   operator fun get(app: UBuildApp): UBuildRes?
-  fun clear()
+  fun drop()
 }
 
 
 class NoBuildCache : BuildCache {
   override fun set(app: UBuildApp, res: UBuildRes) = Unit
   override fun get(app: UBuildApp): UBuildRes? = null
-  override fun clear() = Unit
+  override fun drop() = Unit
 
 
   override fun toString(): String {
@@ -33,7 +33,7 @@ class MapBuildCache : BuildCache {
     return map[app]
   }
 
-  override fun clear() {
+  override fun drop() {
     map.clear()
   }
 

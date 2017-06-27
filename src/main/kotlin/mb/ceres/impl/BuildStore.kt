@@ -20,7 +20,7 @@ interface BuildStore : AutoCloseable {
   fun setRequiredBy(path: CPath, res: UBuildRes)
   fun requiredBy(path: CPath): UBuildRes?
 
-  fun reset()
+  fun drop()
 }
 
 class InMemoryBuildStore : BuildStore {
@@ -56,7 +56,7 @@ class InMemoryBuildStore : BuildStore {
   }
 
 
-  override fun reset() {
+  override fun drop() {
     produces.clear()
     generatedBy.clear()
   }
@@ -179,7 +179,7 @@ class LMDBBuildStore(envDir: File, maxDbSize: Int, maxReaders: Int) : BuildStore
   }
 
 
-  override fun reset() {
+  override fun drop() {
     env.txnWrite().use {
       produces.drop(it)
       generatedBy.drop(it)

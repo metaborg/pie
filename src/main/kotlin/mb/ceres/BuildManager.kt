@@ -13,6 +13,9 @@ interface BuildManager {
   fun <I : In, O : Out, B : Builder<I, O>> build(clazz: Class<B>, input: I): O
   @Throws(BuildException::class)
   fun <I : In, O : Out, B : Builder<I, O>> buildAll(clazz: Class<B>, vararg inputs: I): List<O>
+  
+  fun dropStore();
+  fun dropCache();
 }
 
 @Throws(BuildException::class)
