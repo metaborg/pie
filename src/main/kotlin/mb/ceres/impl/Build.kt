@@ -1,26 +1,28 @@
-package mb.ceres.internal
+package mb.ceres.impl
 
 import com.google.inject.Injector
 import mb.ceres.*
-import mb.ceres.impl.BuildCache
 import java.util.*
 
 interface Build {
-  fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O>
+  fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O>
 }
 
 open class BuildImpl(
   private val store: BuildStore,
   private val cache: BuildCache,
   private val share: BuildShare,
+  private val reporter: BuildReporter,
   private val builders: Map<String, UBuilder>,
   private val injector: Injector)
   : Build {
   private val consistent = mutableMapOf<UBuildApp, UBuildRes>()
   private val stack = mutableSetOf<UBuildApp>()
 
-  override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildRes<I, O> {
+  override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O> {
     try {
+      reporter.require(app)
+
       if (stack.contains(app)) {
         throw CyclicDependencyException("""Cyclic dependency.
   Requirement of:
@@ -39,33 +41,39 @@ open class BuildImpl(
       val consistentResult = consistent[app]?.cast<I, O>()
       if (consistentResult != null) {
         // Existing result is known to be consistent this build: reuse
-        return consistentResult
+        return BuildInfo(consistentResult)
       }
 
       val existingResult = (cache[app] ?: store.produces(app))?.cast<I, O>()
+      @Suppress("FoldInitializerAndIfToElvis")
       if (existingResult == null) {
         // No cached or stored result was found: rebuild
-        return rebuild(app, true)
+        return rebuild(app, NoResultReason(), true)
       }
 
       // Check for inconsistencies and rebuild when found
-      // Internal consistency: result consistency
-      if (!existingResult.consistent) {
-        return rebuild(app)
+      // Internal consistency: output consistency
+      run {
+        val inconsistencyReason = existingResult.inconsistencyReason
+        if (inconsistencyReason != null) {
+          return rebuild(app, inconsistencyReason)
+        }
       }
 
       // Internal consistency: generated files
-      for ((genPath, stamp) in existingResult.gens) {
+      for (gen in existingResult.gens) {
+        val (genPath, stamp) = gen
         val newStamp = stamp.stamper.stamp(genPath)
         if (stamp != newStamp) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
-          return rebuild(app)
+          return rebuild(app, InconsistentGenPath(existingResult, gen, newStamp))
         }
       }
       // Internal and total consistency: requirements
       for (req in existingResult.reqs) {
-        if (!req.makeConsistent(this)) {
-          return rebuild(app)
+        val inconsistencyReason = req.makeConsistent(existingResult, this)
+        if (inconsistencyReason != null) {
+          return rebuild(app, inconsistencyReason)
         }
       }
 
@@ -76,19 +84,28 @@ open class BuildImpl(
       consistent[app] = existingResult
       cache[app] = existingResult
       // Reuse existing result
-      return existingResult
+      return BuildInfo(existingResult)
     } finally {
       stack.remove(app)
     }
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>, useCache: Boolean = false): BuildRes<I, O> {
-    if (useCache) {
-      return share.reuseOrCreate(app, { store.produces(it)?.cast<I, O>() }) { this.rebuildInternal(it) }
-    } else {
-      return share.reuseOrCreate(app) { this.rebuildInternal(it) }
+  open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>, reason: BuildReason, useCache: Boolean = false): BuildInfo<I, O> {
+    reporter.build(app, reason)
+    val result: BuildRes<I, O>
+    try {
+      result = if (useCache) {
+        share.reuseOrCreate(app, { store.produces(it)?.cast<I, O>() }) { this.rebuildInternal(it) }
+      } else {
+        share.reuseOrCreate(app) { this.rebuildInternal(it) }
+      }
+    } catch(e: BuildException) {
+      reporter.buildFailed(app, reason, e)
+      throw e
     }
+    reporter.buildSuccess(app, reason, result)
+    return BuildInfo(result, reason)
   }
 
   // Method is open internal for testability
@@ -96,7 +113,6 @@ open class BuildImpl(
     val (builderId, input) = app
     val builder = getBuilder<I, O>(builderId)
     val desc = builder.desc(input)
-    println("Executing builder $desc")
     val context = BuildContextImpl(this, injector)
     val output = builder.build(input, context)
     val result = BuildRes(builderId, desc, input, output, context.reqs, context.gens)
@@ -115,9 +131,9 @@ open class BuildImpl(
     for ((path, _) in result.gens) {
       val generatedBy = store.generatedBy(path)
       store.setGeneratedBy(path, result) // Add to store before throwing exceptions
-      // HACK: generatedBy.toApp != result.toApp - compare apps instead of results to allow re-generating with a different output
       if (generatedBy != null) {
         val builder = getBuilder<I, O>(result.builderId)
+        // CHANGED: builders may describe if certain different build applications may generate the same file.
         @Suppress("UNCHECKED_CAST")
         if (!builder.mayOverlap(result.input, generatedBy.input as I)) {
           throw OverlappingGeneratedPathException("""Overlapping generated path.
@@ -136,7 +152,7 @@ open class BuildImpl(
         }
       }
       val requiredBy = store.requiredBy(path)
-      // HACK: !stack.contains(requiredBy.toApp) - it is allowed to generate something required by something on the stack
+      // CHANGED: it is allowed to generate something required by something on the stack
       if (requiredBy != null && !stack.contains(requiredBy.toApp)) {
         throw HiddenDependencyException("""Hidden dependency.
   Path:

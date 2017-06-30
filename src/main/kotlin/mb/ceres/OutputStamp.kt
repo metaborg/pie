@@ -1,6 +1,6 @@
 package mb.ceres
 
-import mb.ceres.internal.EqualsOutputStamper
+import mb.ceres.impl.EqualsOutputStamper
 import java.io.Serializable
 
 interface OutputStamper : Serializable {

@@ -2,11 +2,7 @@ package mb.ceres
 
 import com.google.inject.Guice
 import com.google.inject.Injector
-import mb.ceres.impl.BuildCache
-import mb.ceres.internal.BuildImpl
-import mb.ceres.internal.BuildManagerImpl
-import mb.ceres.internal.BuildShare
-import mb.ceres.internal.BuildStore
+import mb.ceres.impl.*
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
@@ -47,8 +43,8 @@ open class TestBase {
   }
 
 
-  fun b(store: BuildStore, cache: BuildCache, share: BuildShare): BuildImpl {
-    return BuildImpl(store, cache, share, builders, inj)
+  fun b(store: BuildStore, cache: BuildCache, share: BuildShare, reporter: BuildReporter): BuildImpl {
+    return BuildImpl(store, cache, share, reporter, builders, inj)
   }
 
   fun bm(store: BuildStore, cache: BuildCache, share: BuildShare): BuildManager {

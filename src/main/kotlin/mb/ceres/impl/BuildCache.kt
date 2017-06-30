@@ -1,7 +1,7 @@
 package mb.ceres.impl
 
 import mb.ceres.UBuildApp
-import mb.ceres.internal.UBuildRes
+import mb.ceres.UBuildRes
 import java.util.concurrent.ConcurrentHashMap
 
 interface BuildCache {

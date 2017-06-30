@@ -2,10 +2,7 @@ package mb.ceres
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import mb.ceres.impl.BuildCache
-import mb.ceres.impl.MapBuildCache
-import mb.ceres.impl.NoBuildCache
-import mb.ceres.internal.*
+import mb.ceres.impl.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ContainerExtensionContext
@@ -28,12 +25,13 @@ object ArgumentProvider : ArgumentsProvider {
     val stores = arrayOf({ InMemoryBuildStore() }, { LMDBBuildStoreFactory().create(File("target/lmdbstore")) })
     val caches = arrayOf({ NoBuildCache() }, { MapBuildCache() })
     val shares = arrayOf({ BuildShareImpl() })
+    val reporter = { StreamBuildReporter() }
     val fs = { Jimfs.newFileSystem(Configuration.unix()) }
 
     return stores.flatMap { store ->
       caches.flatMap { cache ->
         shares.map { share ->
-          ObjectArrayArguments.create(store(), cache(), share(), fs())
+          ObjectArrayArguments.create(store(), cache(), share(), reporter(), fs())
         }
       }
     }.stream()
@@ -44,16 +42,18 @@ open internal class ParametrizedTestBase : TestBase() {
   protected lateinit var store: BuildStore
   protected lateinit var cache: BuildCache
   protected lateinit var share: BuildShare
+  protected lateinit var reporter: BuildReporter
   protected lateinit var fs: FileSystem
 
 
   @BeforeEach
-  fun beforeEach(store: BuildStore, cache: BuildCache, share: BuildShare, fs: FileSystem) {
+  fun beforeEach(store: BuildStore, cache: BuildCache, share: BuildShare, reporter: BuildReporter, fs: FileSystem) {
     this.store = store
     this.store.drop()
     this.cache = cache
     this.cache.drop()
     this.share = share
+    this.reporter = reporter
     this.fs = fs
   }
 
@@ -64,7 +64,7 @@ open internal class ParametrizedTestBase : TestBase() {
 
 
   fun b(): BuildImpl {
-    return b(store, cache, share)
+    return b(store, cache, share, reporter)
   }
 
   fun bm(): BuildManager {

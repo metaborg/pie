@@ -1,4 +1,4 @@
-package mb.ceres.internal
+package mb.ceres.impl
 
 import mb.ceres.Out
 import mb.ceres.OutputStamp

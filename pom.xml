@@ -92,7 +92,7 @@
     <dependency>
       <groupId>com.nhaarman</groupId>
       <artifactId>mockito-kotlin</artifactId>
-      <version>1.4.0</version>
+      <version>1.5.0</version>
       <scope>test</scope>
     </dependency>
     <!-- Sync version of kotlin-reflect with ${kotlin.version}, since mockito-kotlin depends on an older version -->

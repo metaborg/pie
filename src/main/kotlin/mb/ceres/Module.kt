@@ -8,16 +8,14 @@ import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.ceres.internal.BuildManagerImpl
-import mb.ceres.internal.BuildShare
-import mb.ceres.internal.BuildShareImpl
-import mb.ceres.internal.LMDBBuildStoreFactory
+import mb.ceres.impl.*
 
 open class CeresModule : Module {
   override fun configure(binder: Binder) {
     binder.bindBuildManager()
     binder.bindStore()
     binder.bindShare()
+    binder.bindReporter()
 
     val builders = binder.builderMapBinder()
     binder.bindBuilders(builders)
@@ -26,8 +24,8 @@ open class CeresModule : Module {
 
   open protected fun Binder.bindBuildManager() {
     install(FactoryModuleBuilder()
-            .implement(BuildManager::class.java, BuildManagerImpl::class.java)
-            .build(BuildManagerFactory::class.java))
+      .implement(BuildManager::class.java, BuildManagerImpl::class.java)
+      .build(BuildManagerFactory::class.java))
   }
 
   open protected fun Binder.bindStore() {
@@ -36,6 +34,10 @@ open class CeresModule : Module {
 
   open protected fun Binder.bindShare() {
     bind<BuildShare>().toSingleton<BuildShareImpl>()
+  }
+
+  open protected fun Binder.bindReporter() {
+    bind<BuildReporter>().to<StreamBuildReporter>()
   }
 
   open protected fun Binder.bindBuilders(builders: MapBinder<String, UBuilder>) {

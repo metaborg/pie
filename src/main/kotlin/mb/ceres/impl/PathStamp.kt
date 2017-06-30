@@ -1,4 +1,4 @@
-package mb.ceres.internal
+package mb.ceres.impl
 
 import mb.ceres.CPath
 import mb.ceres.PathStamp

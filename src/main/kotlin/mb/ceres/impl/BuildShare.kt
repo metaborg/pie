@@ -1,14 +1,11 @@
-package mb.ceres.internal
+package mb.ceres.impl
 
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.runBlocking
 import kotlinx.coroutines.experimental.sync.Mutex
-import mb.ceres.BuildApp
-import mb.ceres.In
-import mb.ceres.Out
-import mb.ceres.UBuildApp
+import mb.ceres.*
 
 interface BuildShare {
   fun <I : In, O : Out> reuseOrCreate(app: BuildApp<I, O>, cacheFunc: (BuildApp<I, O>) -> BuildRes<I, O>?, buildFunc: (BuildApp<I, O>) -> BuildRes<I, O>): BuildRes<I, O>

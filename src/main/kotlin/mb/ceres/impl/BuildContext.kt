@@ -1,4 +1,4 @@
-package mb.ceres.internal
+package mb.ceres.impl
 
 import com.google.inject.Injector
 import mb.ceres.BuildApp
@@ -33,14 +33,14 @@ internal class BuildContextImpl(
 
 
   override fun <I : In, O : Out> requireOutput(app: BuildApp<I, O>, stamper: OutputStamper): O {
-    val result = build.require(app)
+    val result = build.require(app).result
     val stamp = stamper.stamp(result.output)
     reqs.add(BuildReq(app, stamp))
     return result.output
   }
 
   override fun requireBuild(app: UBuildApp, stamper: OutputStamper) {
-    val result = build.require(app)
+    val result = build.require(app).result
     val stamp = stamper.stamp(result.output)
     reqs.add(BuildReq(app, stamp))
   }

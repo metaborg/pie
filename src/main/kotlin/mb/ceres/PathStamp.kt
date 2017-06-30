@@ -1,10 +1,10 @@
 package mb.ceres
 
-import mb.ceres.internal.DirectoriesModifiedPathStamper
-import mb.ceres.internal.ExistsPathStamper
-import mb.ceres.internal.HashPathStamper
-import mb.ceres.internal.ModifiedPathStamper
-import mb.ceres.internal.NonRecursiveModifiedPathStamper
+import mb.ceres.impl.DirectoriesModifiedPathStamper
+import mb.ceres.impl.ExistsPathStamper
+import mb.ceres.impl.HashPathStamper
+import mb.ceres.impl.ModifiedPathStamper
+import mb.ceres.impl.NonRecursiveModifiedPathStamper
 import java.io.Serializable
 
 interface PathStamper : Serializable {

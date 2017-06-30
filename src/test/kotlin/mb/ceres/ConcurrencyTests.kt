@@ -5,7 +5,7 @@ import com.nhaarman.mockito_kotlin.spy
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
-import mb.ceres.internal.BuildImpl
+import mb.ceres.impl.BuildImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.reflect.full.memberFunctions

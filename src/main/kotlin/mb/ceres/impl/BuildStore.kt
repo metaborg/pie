@@ -1,7 +1,8 @@
-package mb.ceres.internal
+package mb.ceres.impl
 
 import mb.ceres.CPath
 import mb.ceres.UBuildApp
+import mb.ceres.UBuildRes
 import org.lmdbjava.Dbi
 import org.lmdbjava.DbiFlags
 import org.lmdbjava.Env
