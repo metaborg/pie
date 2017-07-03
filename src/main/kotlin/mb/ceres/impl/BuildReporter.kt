@@ -1,11 +1,19 @@
 package mb.ceres.impl
 
-import mb.ceres.*
-import java.io.PrintStream
+import mb.ceres.BuildApp
+import mb.ceres.BuildException
+import mb.ceres.BuildReason
+import mb.ceres.BuildReporter
+import mb.ceres.BuildRes
+import mb.ceres.In
+import mb.ceres.Out
+import java.io.OutputStream
+import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicInteger
 
 
-class StreamBuildReporter(val stream: PrintStream = System.out) : BuildReporter {
+open class StreamBuildReporter(stream: OutputStream = System.out) : BuildReporter {
+  val writer: PrintWriter = PrintWriter(stream, true)
   var indentation = AtomicInteger(0)
   val indent get() = " ".repeat(indentation.get())
 
@@ -14,17 +22,17 @@ class StreamBuildReporter(val stream: PrintStream = System.out) : BuildReporter 
   }
 
   override fun <I : In, O : Out> build(app: BuildApp<I, O>, reason: BuildReason) {
-    stream.println("$indent> ${app.toShortString(100)} (reason: $reason)")
+    writer.println("$indent> ${app.toShortString(100)} (reason: $reason)")
     indentation.incrementAndGet()
   }
 
   override fun <I : In, O : Out> buildSuccess(app: BuildApp<I, O>, reason: BuildReason, result: BuildRes<I, O>) {
     indentation.decrementAndGet()
-    stream.println("$indent< ${result.toShortString(100)}")
+    writer.println("$indent< ${result.toShortString(100)}")
   }
 
   override fun <I : In, O : Out> buildFailed(app: BuildApp<I, O>, reason: BuildReason, exception: BuildException) {
     indentation.decrementAndGet()
-    stream.println("$indent< $exception")
+    writer.println("$indent< $exception")
   }
 }
