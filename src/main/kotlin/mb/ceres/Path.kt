@@ -2,6 +2,7 @@ package mb.ceres
 
 import java.io.Serializable
 import java.net.URI
+import java.nio.file.FileSystemNotFoundException
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -31,7 +32,13 @@ data class CPathImpl(override val uri: URI) : CPath {
   override val javaPath: Path
     get() {
       if (pathCache == null) {
-        pathCache = Paths.get(uri)
+        try {
+          pathCache = Paths.get(uri)
+        } catch(e: IllegalArgumentException) {
+          throw RuntimeException("Could not get Java path for URI $uri", e)
+        } catch(e: FileSystemNotFoundException) {
+          throw RuntimeException("Could not get Java path for URI $uri", e)
+        }
       }
       return pathCache!!
     }
