@@ -3,7 +3,7 @@ package mb.ceres
 import mb.ceres.impl.BuildCache
 import mb.ceres.impl.BuildStore
 
-interface BuildManager {
+interface BuildSession {
   @Throws(BuildException::class)
   fun <I : In, O : Out> build(app: BuildApp<I, O>): O
 
@@ -28,30 +28,35 @@ interface BuildManager {
 
   @Throws(BuildException::class)
   fun <I : In, O : Out, B : Builder<I, O>> buildAllToInfo(clazz: Class<B>, vararg inputs: I): List<BuildInfo<I, O>>
-
-
-  fun dropStore()
-  fun dropCache()
 }
 
+
 @Throws(BuildException::class)
-inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildManager.build(input: I): O {
+inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildSession.build(input: I): O {
   return this.build(B::class.java, input)
 }
 
 @Throws(BuildException::class)
-inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildManager.buildAll(vararg inputs: I): List<O> {
+inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildSession.buildAll(vararg inputs: I): List<O> {
   return this.buildAll(B::class.java, *inputs)
 }
 
 @Throws(BuildException::class)
-inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildManager.buildToInfo(input: I): BuildInfo<I, O> {
+inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildSession.buildToInfo(input: I): BuildInfo<I, O> {
   return this.buildToInfo(B::class.java, input)
 }
 
 @Throws(BuildException::class)
-inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildManager.buildAllToInfo(vararg inputs: I): List<BuildInfo<I, O>> {
+inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildSession.buildAllToInfo(vararg inputs: I): List<BuildInfo<I, O>> {
   return this.buildAllToInfo(B::class.java, *inputs)
+}
+
+
+interface BuildManager : BuildSession {
+  fun newSession(): BuildSession
+
+  fun dropStore()
+  fun dropCache()
 }
 
 
