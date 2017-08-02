@@ -261,7 +261,6 @@ internal class BuildManagerTests : ParametrizedTestBase() {
     }
   }
 
-  @Disabled
   @UseBuildVariability
   fun testGenerateRequiredHiddenDep() {
     registerBuilder(readPath)
@@ -280,7 +279,7 @@ internal class BuildManagerTests : ParametrizedTestBase() {
 
     // Hidden dependency exception should also trigger between separate builds
     assertThrows(HiddenDependencyException::class.java) {
-      bm.build(a(readPath, filePath))
+      bm.build(a(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
 
