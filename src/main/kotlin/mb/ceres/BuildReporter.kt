@@ -3,12 +3,16 @@ package mb.ceres
 import mb.ceres.impl.BuildReq
 import mb.ceres.impl.Gen
 import mb.ceres.impl.PathReq
+import mb.vfs.path.PPath
 
 interface BuildReporter {
   fun <I : In, O : Out> require(app: BuildApp<I, O>)
+  fun <I : In, O : Out> checkGenPath(app: BuildApp<I, O>, path: PPath, oldStamp: PathStamp, newStamp: PathStamp)
+  fun <I : In, O : Out> checkReqPath(app: BuildApp<I, O>, path: PPath, oldStamp: PathStamp, newStamp: PathStamp)
   fun <I : In, O : Out> build(app: BuildApp<I, O>, reason: BuildReason)
   fun <I : In, O : Out> buildSuccess(app: BuildApp<I, O>, reason: BuildReason, result: BuildRes<I, O>)
   fun <I : In, O : Out> buildFailed(app: BuildApp<I, O>, reason: BuildReason, exception: BuildException)
+  fun <I : In, O : Out> consistent(app: BuildApp<I, O>, result: BuildRes<I, O>)
 }
 
 interface BuildReason {

@@ -1,20 +1,24 @@
 package mb.ceres
 
-interface BuildContext {
+import mb.vfs.path.PPath
+
+interface BuildContext : AutoCloseable {
   @Throws(BuildException::class)
   fun <I : In, O : Out> requireOutput(app: BuildApp<I, O>, stamper: OutputStamper = OutputStampers.equals): O
 
   @Throws(BuildException::class)
-  fun requireBuild(app: UBuildApp, stamper: OutputStamper = OutputStampers.equals)
+  fun requireBuild(app: UBuildApp, stamper: OutputStamper = OutputStampers.inconsequential)
 
   @Throws(BuildException::class)
   fun <I : In, O : Out, B : Builder<I, O>> requireOutput(clazz: Class<B>, input: I, stamper: OutputStamper = OutputStampers.equals): O
 
   @Throws(BuildException::class)
-  fun <I : In, B : Builder<I, *>> requireBuild(clazz: Class<B>, input: I, stamper: OutputStamper = OutputStampers.equals)
+  fun <I : In, B : Builder<I, *>> requireBuild(clazz: Class<B>, input: I, stamper: OutputStamper = OutputStampers.inconsequential)
 
-  fun require(path: CPath, stamper: PathStamper = PathStampers.modified)
-  fun generate(path: CPath, stamper: PathStamper = PathStampers.hash)
+  fun require(path: PPath, stamper: PathStamper = PathStampers.modified)
+  fun generate(path: PPath, stamper: PathStamper = PathStampers.hash)
+
+  override fun close()
 }
 
 @Throws(BuildException::class)

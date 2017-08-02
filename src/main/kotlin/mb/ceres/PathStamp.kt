@@ -1,14 +1,13 @@
 package mb.ceres
 
-import mb.ceres.impl.DirectoriesModifiedPathStamper
-import mb.ceres.impl.ExistsPathStamper
-import mb.ceres.impl.HashPathStamper
-import mb.ceres.impl.ModifiedPathStamper
-import mb.ceres.impl.NonRecursiveModifiedPathStamper
+import mb.ceres.impl.stamp.*
+import mb.vfs.list.PathMatcher
+import mb.vfs.list.PathWalker
+import mb.vfs.path.PPath
 import java.io.Serializable
 
 interface PathStamper : Serializable {
-  fun stamp(cpath: CPath): PathStamp
+  fun stamp(path: PPath): PathStamp
 }
 
 interface PathStamp : Serializable {
@@ -17,8 +16,12 @@ interface PathStamp : Serializable {
 
 object PathStampers {
   val hash = HashPathStamper()
+  fun hash(matcher: PathMatcher?) = HashPathStamper(matcher)
+  fun hash(walker: PathWalker?) = RecHashPathStamper(walker)
+
   val modified = ModifiedPathStamper()
-  val directoriesModified = DirectoriesModifiedPathStamper()
-  val nonRecursiveModified = NonRecursiveModifiedPathStamper()
+  fun modified(matcher: PathMatcher?) = ModifiedPathStamper(matcher)
+  fun modified(walker: PathWalker?) = RecModifiedPathStamper(walker)
+
   val exists = ExistsPathStamper()
 }

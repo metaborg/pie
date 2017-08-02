@@ -9,6 +9,7 @@ import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
 import mb.ceres.impl.*
+import mb.ceres.impl.store.LMDBBuildStoreFactory
 
 open class CeresModule : Module {
   override fun configure(binder: Binder) {

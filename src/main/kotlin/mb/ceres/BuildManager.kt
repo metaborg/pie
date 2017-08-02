@@ -1,7 +1,7 @@
 package mb.ceres
 
 import mb.ceres.impl.BuildCache
-import mb.ceres.impl.BuildStore
+import mb.ceres.impl.store.BuildStore
 
 interface BuildSession {
   @Throws(BuildException::class)

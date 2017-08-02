@@ -1,6 +1,7 @@
 package mb.ceres
 
 import mb.ceres.impl.EqualsOutputStamper
+import mb.ceres.impl.InconsequentialOutputStamper
 import java.io.Serializable
 
 interface OutputStamper : Serializable {
@@ -13,4 +14,5 @@ interface OutputStamp : Serializable {
 
 object OutputStampers {
   val equals = EqualsOutputStamper()
+  val inconsequential = InconsequentialOutputStamper.instance
 }

@@ -20,4 +20,25 @@ class EqualsOutputStamper : OutputStamper {
   }
 }
 
-data class ValueOutputStamp<out V>(val value: V, override val stamper: OutputStamper) : OutputStamp
+class InconsequentialOutputStamper : OutputStamper {
+  companion object {
+    val instance = InconsequentialOutputStamper()
+    val inconsequentialStamp = ValueOutputStamp(null, instance)
+  }
+
+  override fun <O : Out> stamp(output: O): OutputStamp {
+    return inconsequentialStamp
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
+}
+
+data class ValueOutputStamp<out V>(val value: V?, override val stamper: OutputStamper) : OutputStamp

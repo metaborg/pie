@@ -1,18 +1,20 @@
 package mb.ceres
 
 import com.nhaarman.mockito_kotlin.*
-import mb.ceres.impl.LMDBBuildStoreFactory
+import mb.ceres.impl.store.LMDBBuildStoreFactory
 import java.io.File
 
 internal class LMDBBuildStoreTests : ParametrizedTestBase() {
-  val factory = LMDBBuildStoreFactory()
+
 
   @UseBuildVariability
   fun testReuse() {
+    val factory = LMDBBuildStoreFactory(logger)
+
     registerBuilder(toLowerCase)
 
     factory.create(File("build/test/lmdbstore")).use {
-      it.drop()
+      it.writeTxn().use { it.drop() }
       val build = b(it, cache, share, reporter)
       build.require(a(toLowerCase, "HELLO WORLD!"))
     }

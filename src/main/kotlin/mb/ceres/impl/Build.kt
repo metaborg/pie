@@ -2,6 +2,8 @@ package mb.ceres.impl
 
 import com.google.inject.Injector
 import mb.ceres.*
+import mb.ceres.impl.store.BuildStore
+import mb.ceres.impl.store.BuildStoreReadTxn
 import java.util.*
 
 interface Build {
@@ -41,14 +43,17 @@ open class BuildImpl(
       val consistentResult = consistent[app]?.cast<I, O>()
       if (consistentResult != null) {
         // Existing result is known to be consistent this build: reuse
+        reporter.consistent(app, consistentResult)
         return BuildInfo(consistentResult)
       }
 
-      val existingResult = (cache[app] ?: store.produces(app))?.cast<I, O>()
+      val existingResult = (cache[app] ?: store.readTxn().use { it.produces(app) })?.cast<I, O>()
       @Suppress("FoldInitializerAndIfToElvis")
       if (existingResult == null) {
         // No cached or stored result was found: rebuild
-        return rebuild(app, NoResultReason(), true)
+        val info = rebuild(app, NoResultReason(), true)
+        reporter.consistent(app, info.result)
+        return info
       }
 
       // Check for inconsistencies and rebuild when found
@@ -56,7 +61,9 @@ open class BuildImpl(
       run {
         val inconsistencyReason = existingResult.inconsistencyReason
         if (inconsistencyReason != null) {
-          return rebuild(app, inconsistencyReason)
+          val info = rebuild(app, inconsistencyReason)
+          reporter.consistent(app, info.result)
+          return info
         }
       }
 
@@ -64,22 +71,28 @@ open class BuildImpl(
       for (gen in existingResult.gens) {
         val (genPath, stamp) = gen
         val newStamp = stamp.stamper.stamp(genPath)
+        reporter.checkGenPath(app, genPath, stamp, newStamp)
         if (stamp != newStamp) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
-          return rebuild(app, InconsistentGenPath(existingResult, gen, newStamp))
+          val info = rebuild(app, InconsistentGenPath(existingResult, gen, newStamp))
+          reporter.consistent(app, info.result)
+          return info
         }
       }
       // Internal and total consistency: requirements
       for (req in existingResult.reqs) {
-        val inconsistencyReason = req.makeConsistent(existingResult, this)
+        val inconsistencyReason = req.makeConsistent(app, existingResult, this, reporter)
         if (inconsistencyReason != null) {
-          return rebuild(app, inconsistencyReason)
+          val info = rebuild(app, inconsistencyReason)
+          reporter.consistent(app, info.result)
+          return info
         }
       }
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
       validate(existingResult)
+      reporter.consistent(app, existingResult)
       // Cache the result
       consistent[app] = existingResult
       cache[app] = existingResult
@@ -96,7 +109,7 @@ open class BuildImpl(
     val result: BuildRes<I, O>
     try {
       result = if (useCache) {
-        share.reuseOrCreate(app, { store.produces(it)?.cast<I, O>() }) { this.rebuildInternal(it) }
+        share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.produces(it)?.cast<I, O>() } }) { this.rebuildInternal(it) }
       } else {
         share.reuseOrCreate(app) { this.rebuildInternal(it) }
       }
@@ -113,14 +126,21 @@ open class BuildImpl(
     val (builderId, input) = app
     val builder = getBuilder<I, O>(builderId)
     val desc = builder.desc(input)
-    val context = BuildContextImpl(this, injector)
-    val output = builder.build(input, context)
-    val result = BuildRes(builderId, desc, input, output, context.reqs, context.gens)
+    val context = BuildContextImpl(this, store, injector, app)
+    val output = context.use {
+      builder.build(input, context)
+    }
+    val (reqs, gens) = context.getReqsAndGens()
+    val result = BuildRes(builderId, desc, input, output, reqs, gens)
 
     // Validate well-formedness of the dependency graph
     validate(result)
-    // Store and cache the result
-    store.setProduces(app, result)
+    // Store result and path dependencies in build store
+    store.writeTxn().use {
+      it.setProduces(app, result)
+      context.writePathDepsToStore(it)
+    }
+    // Cache result
     consistent[app] = result
     cache[app] = result
 
@@ -128,15 +148,15 @@ open class BuildImpl(
   }
 
   private fun <I : In, O : Out> validate(result: BuildRes<I, O>) {
-    for ((path, _) in result.gens) {
-      val generatedBy = store.generatedBy(path)
-      store.setGeneratedBy(path, result) // Add to store before throwing exceptions
-      if (generatedBy != null) {
-        val builder = getBuilder<I, O>(result.builderId)
-        // CHANGED: builders may describe if certain different build applications may generate the same file.
-        @Suppress("UNCHECKED_CAST")
-        if (!builder.mayOverlap(result.input, generatedBy.input as I)) {
-          throw OverlappingGeneratedPathException("""Overlapping generated path.
+    store.readTxn().use { txn ->
+      for ((path, _) in result.gens) {
+        val generatedBy = txn.generatedBy(path)
+        if (generatedBy != null) {
+          val builder = getBuilder<I, O>(result.builderId)
+          // CHANGED: builders may describe if certain different build applications may generate the same file.
+          @Suppress("UNCHECKED_CAST")
+          if (!builder.mayOverlap(result.input, generatedBy.input as I)) {
+            throw OverlappingGeneratedPathException("""Overlapping generated path.
   Path:
 
     $path
@@ -147,35 +167,35 @@ open class BuildImpl(
 
   and:
 
-    ${generatedBy.desc}
+    $generatedBy
 """)
+          }
         }
+
+//        val requiredBy = txn.requiredBy(path)
+//        // CHANGED: it is allowed to generate something required by something on the stack
+//        if (requiredBy != null && !stack.contains(requiredBy)) {
+//          throw HiddenDependencyException("""Hidden dependency.
+//  Path:
+//
+//    $path
+//
+//  was generated by:
+//
+//    ${result.desc}
+//
+//  after being previously required by:
+//
+//    $requiredBy
+//""")
+//        }
       }
-      val requiredBy = store.requiredBy(path)
-      // CHANGED: it is allowed to generate something required by something on the stack
-      if (requiredBy != null && !stack.contains(requiredBy.toApp)) {
-        throw HiddenDependencyException("""Hidden dependency.
-  Path:
 
-    $path
-
-  was generated by:
-
-    ${result.desc}
-
-  after being previously required by:
-
-    ${requiredBy.desc}
-""")
-      }
-    }
-
-    for ((path, _) in result.reqs.filterIsInstance<PathReq>()) {
-      store.setRequiredBy(path, result)
-      val generator = store.generatedBy(path)
-      // 'path' is required by 'result', and path is generated by 'generator', thus 'result' must (transitively) require 'generator'
-      if (generator != null && !hasBuildReq(result, generator)) {
-        throw HiddenDependencyException("""Hidden dependency.
+      for ((path, _) in result.reqs.filterIsInstance<PathReq>()) {
+        val generator = txn.generatedBy(path)
+        // 'path' is required by 'result', and path is generated by 'generator', thus 'result' must (transitively) require 'generator'
+        if (generator != null && !hasBuildReq(result, generator, txn)) {
+          throw HiddenDependencyException("""Hidden dependency.
   Build:
 
     ${result.desc}
@@ -186,27 +206,28 @@ open class BuildImpl(
 
   generated by:
 
-    ${generator.desc}
+    $generator
 
   without a (transitive) build requirement for it
 """)
+        }
       }
     }
   }
 
-  private fun hasBuildReq(requiree: UBuildRes, generator: UBuildRes): Boolean {
+  private fun hasBuildReq(requiree: UBuildRes, generator: UBuildApp, txn: BuildStoreReadTxn): Boolean {
     // TODO: more efficient implementation for figuring out if a result depends on another result?
     val toCheckQueue: Queue<UBuildRes> = LinkedList()
     toCheckQueue.add(requiree)
     while (!toCheckQueue.isEmpty()) {
       val toCheck = toCheckQueue.poll()
-      if (toCheck.requires(generator.toApp)) {
+      if (toCheck.requires(generator)) {
         return true
       }
       val reqRequests = toCheck.reqs.filterIsInstance<UBuildReq>().map { it.app }
       val reqResults = mutableListOf<UBuildRes>()
       for (reqRequest in reqRequests) {
-        val reqResult = store.produces(reqRequest) ?: error("Cannot get result for app $reqRequest")
+        val reqResult = txn.produces(reqRequest) ?: error("Cannot get result for app $reqRequest")
         reqResults.add(reqResult)
       }
       toCheckQueue.addAll(reqResults)

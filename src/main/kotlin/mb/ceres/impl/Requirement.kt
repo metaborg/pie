@@ -1,15 +1,17 @@
 package mb.ceres.impl
 
 import mb.ceres.*
+import mb.vfs.path.PPath
 import java.io.Serializable
 
 interface Req : Serializable {
-  fun <I : In, O : Out> makeConsistent(requiringResult: BuildRes<I, O>, build: Build): BuildReason?
+  fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, reporter: BuildReporter): BuildReason?
 }
 
-data class PathReq(val path: CPath, val stamp: PathStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringResult: BuildRes<I, O>, build: Build): BuildReason? {
+data class PathReq(val path: PPath, val stamp: PathStamp) : Req {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, reporter: BuildReporter): BuildReason? {
     val newStamp = stamp.stamper.stamp(path)
+    reporter.checkReqPath(requiringApp, path, stamp, newStamp)
     if (stamp != newStamp) {
       return InconsistentPathReq(requiringResult, this, newStamp)
     }
@@ -18,7 +20,7 @@ data class PathReq(val path: CPath, val stamp: PathStamp) : Req {
 }
 
 data class BuildReq<out AI : In, out AO : Out>(val app: BuildApp<AI, AO>, val stamp: OutputStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringResult: BuildRes<I, O>, build: Build): BuildReason? {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, reporter: BuildReporter): BuildReason? {
     val result = build.require(app).result
 
     // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
@@ -38,4 +40,4 @@ data class BuildReq<out AI : In, out AO : Out>(val app: BuildApp<AI, AO>, val st
 typealias UBuildReq = BuildReq<*, *>
 
 
-data class Gen(val path: CPath, val stamp: PathStamp) : Serializable
+data class Gen(val path: PPath, val stamp: PathStamp) : Serializable

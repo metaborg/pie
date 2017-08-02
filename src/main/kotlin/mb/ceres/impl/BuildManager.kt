@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Injector
 import com.google.inject.assistedinject.Assisted
 import mb.ceres.*
+import mb.ceres.impl.store.BuildStore
 
 class BuildSessionImpl(private val build: BuildImpl, private val injector: Injector)
   : BuildSession {
@@ -64,7 +65,7 @@ class BuildManagerImpl @Inject constructor(
   }
 
   override fun dropStore() {
-    store.drop()
+    store.writeTxn().use { it.drop() }
   }
 
   override fun dropCache() {

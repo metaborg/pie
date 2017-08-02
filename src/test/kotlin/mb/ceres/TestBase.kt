@@ -3,31 +3,36 @@ package mb.ceres
 import com.google.inject.Guice
 import com.google.inject.Injector
 import mb.ceres.impl.*
+import mb.ceres.impl.store.BuildStore
+import mb.log.LogModule
+import mb.vfs.path.PPath
+import mb.vfs.path.PPathImpl
+import org.slf4j.LoggerFactory
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 
 open class TestBase {
-  protected val inj: Injector = Guice.createInjector(CeresModule())
+  protected val inj: Injector = Guice.createInjector(CeresModule(), LogModule(LoggerFactory.getLogger("root")))
   protected val builders = mutableMapOf<String, UBuilder>()
 
 
   val toLowerCase = lb<String, String>("toLowerCase", { "toLowerCase($it)" }) {
     it.toLowerCase()
   }
-  val readPath = lb<CPath, String>("read", { "read($it)" }) {
+  val readPath = lb<PPath, String>("read", { "read($it)" }) {
     require(it)
     read(it)
   }
-  val writePath = lb<Pair<String, CPath>, None>("write", { "write$it" }) { (text, path) ->
+  val writePath = lb<Pair<String, PPath>, None>("write", { "write$it" }) { (text, path) ->
     write(text, path)
     generate(path)
     None.instance
   }
 
 
-  fun p(fs: FileSystem, path: String): CPath {
-    return CPath(fs.getPath(path))
+  fun p(fs: FileSystem, path: String): PPath {
+    return PPathImpl(fs.getPath(path))
   }
 
   fun <I : In, O : Out> lb(id: String, descFunc: (I) -> String, buildFunc: BuildContext.(I) -> O): Builder<I, O> {
@@ -52,7 +57,7 @@ open class TestBase {
   }
 
 
-  fun read(path: CPath): String {
+  fun read(path: PPath): String {
     Files.newInputStream(path.javaPath, StandardOpenOption.READ).use {
       val bytes = it.readBytes()
       val text = String(bytes)
@@ -60,7 +65,7 @@ open class TestBase {
     }
   }
 
-  fun write(text: String, path: CPath) {
+  fun write(text: String, path: PPath) {
     println("Write $text")
     Files.newOutputStream(path.javaPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
       StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC).use {

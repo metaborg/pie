@@ -1,22 +1,22 @@
 package mb.ceres.impl
 
 import com.google.inject.Injector
-import mb.ceres.BuildApp
-import mb.ceres.BuildContext
-import mb.ceres.Builder
-import mb.ceres.CPath
-import mb.ceres.In
-import mb.ceres.Out
-import mb.ceres.OutputStamper
-import mb.ceres.PathStamper
-import mb.ceres.UBuildApp
+import mb.ceres.*
+import mb.ceres.impl.store.BuildStore
+import mb.ceres.impl.store.BuildStoreWriteTxn
+import mb.vfs.path.PPath
 
 internal class BuildContextImpl(
-  val build: Build,
-  val injector: Injector)
+  private val build: Build,
+  private val store: BuildStore,
+  private val injector: Injector,
+  private val currentApp: UBuildApp)
   : BuildContext {
-  val reqs = mutableListOf<Req>()
-  val gens = mutableListOf<Gen>()
+  private var readTxn = store.readTxn()
+  private val reqs = mutableListOf<Req>()
+  private val pathReqsToWrite = mutableListOf<PathReq>()
+  private val gens = mutableListOf<Gen>()
+  private val gensToWrite = mutableListOf<Gen>()
 
 
   override fun <I : In, O : Out, B : Builder<I, O>> requireOutput(clazz: Class<B>, input: I, stamper: OutputStamper): O {
@@ -33,26 +33,66 @@ internal class BuildContextImpl(
 
 
   override fun <I : In, O : Out> requireOutput(app: BuildApp<I, O>, stamper: OutputStamper): O {
+    readTxn.close()
+    store.writeTxn().use { writePathDepsToStore(it) }
     val result = build.require(app).result
     val stamp = stamper.stamp(result.output)
-    reqs.add(BuildReq(app, stamp))
+    val req = BuildReq(app, stamp)
+    reqs.add(req)
+    readTxn = store.readTxn()
     return result.output
   }
 
   override fun requireBuild(app: UBuildApp, stamper: OutputStamper) {
+    readTxn.close()
+    store.writeTxn().use { writePathDepsToStore(it) }
     val result = build.require(app).result
     val stamp = stamper.stamp(result.output)
-    reqs.add(BuildReq(app, stamp))
+    val req = BuildReq(app, stamp)
+    reqs.add(req)
+    readTxn = store.readTxn()
   }
 
 
-  override fun require(path: CPath, stamper: PathStamper) {
+  override fun require(path: PPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
-    reqs.add(PathReq(path, stamp))
+    val req = PathReq(path, stamp)
+    reqs.add(req)
+    pathReqsToWrite.add(req)
+
+    val generatedBy = readTxn.generatedBy(path)
+    if (generatedBy != null) {
+      requireBuild(generatedBy)
+    }
   }
 
-  override fun generate(path: CPath, stamper: PathStamper) {
+  override fun generate(path: PPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
-    gens.add(Gen(path, stamp))
+    val gen = Gen(path, stamp)
+    gens.add(gen)
+    gensToWrite.add(gen)
+  }
+
+
+  override fun close() {
+    readTxn.close()
+  }
+
+
+  fun writePathDepsToStore(txn: BuildStoreWriteTxn) {
+    for ((path, _) in pathReqsToWrite) {
+      txn.setRequiredBy(path, currentApp)
+    }
+    for ((path, _) in gensToWrite) {
+      txn.setGeneratedBy(path, currentApp)
+    }
+    pathReqsToWrite.clear()
+    gensToWrite.clear()
+  }
+
+  data class ReqsAndGens(val reqs: List<Req>, val gens: List<Gen>)
+
+  fun getReqsAndGens(): ReqsAndGens {
+    return ReqsAndGens(reqs, gens)
   }
 }

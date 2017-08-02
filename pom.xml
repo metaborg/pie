@@ -22,6 +22,17 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>vfs</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>log</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-stdlib</artifactId>
       <version>${kotlin.version}</version>
