@@ -27,17 +27,7 @@ open class BuildImpl(
       reporter.require(app)
 
       if (stack.contains(app)) {
-        throw CyclicDependencyException("""Cyclic dependency.
-  Requirement of:
-
-    $app
-
-  from requirements:
-
-    ${stack.joinToString(" -> ")}
-
-  creates cycle
-""")
+        throw CyclicDependencyException(cycleError(app))
       }
       stack.add(app)
 
@@ -182,6 +172,47 @@ open class BuildImpl(
     }
   }
 
+
+  private fun hasBuildReq(requiree: UBuildRes, generator: UBuildApp, txn: BuildStoreReadTxn): Boolean {
+    // TODO: more efficient implementation for figuring out if a result depends on another result?
+    val toCheckQueue: Queue<UBuildRes> = LinkedList()
+    toCheckQueue.add(requiree)
+    while (!toCheckQueue.isEmpty()) {
+      val toCheck = toCheckQueue.poll()
+      if (toCheck.requires(generator)) {
+        return true
+      }
+      val reqRequests = toCheck.reqs.filterIsInstance<UBuildReq>().map { it.app }
+      val reqResults = mutableListOf<UBuildRes>()
+      for (reqRequest in reqRequests) {
+        val reqResult = txn.produces(reqRequest) ?: error("Cannot get result for app $reqRequest")
+        reqResults.add(reqResult)
+      }
+      toCheckQueue.addAll(reqResults)
+    }
+    return false
+  }
+
+  private fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
+    @Suppress("UNCHECKED_CAST")
+    return (builders[id] ?: error("Builder with identifier '$id' does not exist")) as Builder<I, O>
+  }
+
+
+  private fun <I : In, O : Out> cycleError(app: BuildApp<I, O>): String {
+    return """Cyclic dependency.
+  Requirement of:
+
+    $app
+
+  from requirements:
+
+    ${stack.joinToString(" -> ")}
+
+  creates cycle
+  """
+  }
+
   private fun <I : In, O : Out> overlappingGenError(path: PPath, result: BuildRes<I, O>, generatedBy: UBuildApp?): String {
     return """Overlapping generated path.
   Path:
@@ -230,31 +261,5 @@ open class BuildImpl(
 
   without a (transitive) build requirement for it
   """
-  }
-
-
-  private fun hasBuildReq(requiree: UBuildRes, generator: UBuildApp, txn: BuildStoreReadTxn): Boolean {
-    // TODO: more efficient implementation for figuring out if a result depends on another result?
-    val toCheckQueue: Queue<UBuildRes> = LinkedList()
-    toCheckQueue.add(requiree)
-    while (!toCheckQueue.isEmpty()) {
-      val toCheck = toCheckQueue.poll()
-      if (toCheck.requires(generator)) {
-        return true
-      }
-      val reqRequests = toCheck.reqs.filterIsInstance<UBuildReq>().map { it.app }
-      val reqResults = mutableListOf<UBuildRes>()
-      for (reqRequest in reqRequests) {
-        val reqResult = txn.produces(reqRequest) ?: error("Cannot get result for app $reqRequest")
-        reqResults.add(reqResult)
-      }
-      toCheckQueue.addAll(reqResults)
-    }
-    return false
-  }
-
-  private fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
-    @Suppress("UNCHECKED_CAST")
-    return (builders[id] ?: error("Builder with identifier '$id' does not exist")) as Builder<I, O>
   }
 }
