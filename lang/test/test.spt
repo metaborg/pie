@@ -1,6 +1,6 @@
 module test
 
-language pipeline
+language pie
 
 test parse [[
 

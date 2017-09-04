@@ -1,9 +1,9 @@
 ---
-id: org.metaborg:pipe.lang.example:0.1.0-SNAPSHOT
+id: org.metaborg:pie.lang.example:0.1.0-SNAPSHOT
 name: pipeline
 dependencies:
   compile:
-  - org.metaborg:pipe.lang:0.1.0-SNAPSHOT
+  - org.metaborg:pie.lang:0.1.0-SNAPSHOT
 debug:
   typesmart: false
 runtime:

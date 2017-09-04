@@ -5,8 +5,8 @@ imports
   libstratego-gpp
   libspoofax/sdf/pp
   libspoofax/editor/refactoring/-
-  pp/pipe-parenthesize
-  pp/pipe-pp
+  pp/pie-parenthesize
+  pp/pie-pp
   pp/impl/-
   pp/lex/-
 
@@ -21,20 +21,20 @@ rules
 
 rules
   
-  pp-pipe-string =
-    parenthesize-pipe
+  pp-pie-string =
+    parenthesize-pie
     ; prettyprint-pipe-start-symbols
     ; !V([], <id>)
     ; box2text-string(|120)
       
-  pp-partial-pipe-string =
-    parenthesize-pipe
+  pp-partial-pie-string =
+    parenthesize-pie
     ; prettyprint-pipe
     ; !V([], <id>)
     ; box2text-string(|120)
     
-  pp-partial-pipe-string(|sort) =
-    parenthesize-pipe
+  pp-partial-pie-string(|sort) =
+    parenthesize-pie
     ; prettyprint-pipe(|sort)
     ; !V([], <id>)
     ; box2text-string(|120)  
@@ -42,10 +42,10 @@ rules
   pp-debug :
     ast -> result
     with
-       result := <pp-pipe-string> ast
-    <+ <bottomup(try(not(is-string); not(is-list); not(pp-pipe-string); debug(!"cannot pp ")))> ast
+       result := <pp-pie-string> ast
+    <+ <bottomup(try(not(is-string); not(is-list); not(pp-pie-string); debug(!"cannot pp ")))> ast
     ;  result := ""
 
 rules
   
-  construct-textual-change = construct-textual-change(pp-partial-pipe-string, parenthesize, override-reconstruction, resugar)
+  construct-textual-change = construct-textual-change(pp-partial-pie-string, parenthesize, override-reconstruction, resugar)
