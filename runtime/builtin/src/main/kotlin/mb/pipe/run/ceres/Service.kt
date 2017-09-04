@@ -6,7 +6,6 @@ import mb.ceres.BuildManager
 import mb.ceres.BuildManagerFactory
 import mb.ceres.impl.BuildCache
 import mb.ceres.impl.store.LMDBBuildStoreFactory
-import mb.pipe.run.core.PipeRunEx
 import mb.vfs.path.PPath
 import mb.vfs.path.PathSrv
 import java.util.concurrent.ConcurrentHashMap
@@ -29,7 +28,7 @@ class CeresSrvImpl @Inject constructor(
       val storeDir = dir.resolve(".ceres");
       val localStoreDir = pathSrv.localPath(storeDir);
       if (localStoreDir == null) {
-        throw PipeRunEx("Cannot create Ceres LMDB store at $storeDir because it is not on the local filesystem");
+        throw RuntimeException("Cannot create Ceres LMDB store at $storeDir because it is not on the local filesystem");
       }
       val store = storeFactory.create(localStoreDir);
       val cache = cacheFactory.get()

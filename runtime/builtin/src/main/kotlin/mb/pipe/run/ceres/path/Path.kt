@@ -7,7 +7,6 @@ import mb.ceres.Builder
 import mb.ceres.In
 import mb.ceres.OutEffectBuilder
 import mb.ceres.PathStampers
-import mb.pipe.run.core.StaticPipeFacade
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
@@ -17,9 +16,6 @@ import java.io.Serializable
 import java.nio.file.Files
 import java.util.stream.Collectors
 
-fun resolve(path: String): PPath {
-  return StaticPipeFacade.facade().pathSrv.resolveLocal(path)
-}
 
 operator fun PPath.plus(other: PPath): PPath {
   return this.resolve(other)
