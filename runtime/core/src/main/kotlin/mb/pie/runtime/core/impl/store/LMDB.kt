@@ -11,7 +11,7 @@ import org.lmdbjava.Txn
 import java.io.*
 import java.nio.ByteBuffer
 import java.security.MessageDigest
-import javax.inject.Inject
+import com.google.inject.Inject
 
 typealias EnvB = Env<ByteBuffer>
 typealias DbiB = Dbi<ByteBuffer>
@@ -60,7 +60,7 @@ class LMDBBuildStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReader
 }
 
 open internal class LMDBBuildStoreReadTxn(
-  val env: EnvB, val produces: DbiB, val generatedBy: DbiB, val requiredBy: DbiB, val txn: TxnB, val logger: Logger)
+        val env: EnvB, val produces: DbiB, val generatedBy: DbiB, val requiredBy: DbiB, val txn: TxnB, val logger: Logger)
   : BuildStoreReadTxn {
   override fun produces(app: UBuildApp): UBuildRes? {
     val keyBytes: ByteBuffer? = serialize(app, true)
@@ -160,7 +160,7 @@ open internal class LMDBBuildStoreReadTxn(
 }
 
 internal class LMDBBuildStoreWriteTxn(
-  env: EnvB, produces: DbiB, generatedBy: DbiB, requiredBy: DbiB, txn: TxnB, logger: Logger)
+        env: EnvB, produces: DbiB, generatedBy: DbiB, requiredBy: DbiB, txn: TxnB, logger: Logger)
   : BuildStoreWriteTxn, LMDBBuildStoreReadTxn(env, produces, generatedBy, requiredBy, txn, logger) {
   override fun setProduces(app: UBuildApp, res: UBuildRes) {
     val k = serialize(app, true)
