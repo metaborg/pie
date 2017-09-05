@@ -1,12 +1,7 @@
 package mb.pipe.run.ceres.path
 
 import com.google.inject.Inject
-import mb.ceres.BuildContext
-import mb.ceres.BuildException
-import mb.ceres.Builder
-import mb.ceres.In
-import mb.ceres.OutEffectBuilder
-import mb.ceres.PathStampers
+import mb.pie.runtime.core.*
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
@@ -58,7 +53,7 @@ class ListContents @Inject constructor(val pathSrv: PathSrv) : Builder<ListConte
     try {
       val stream = if (matcher != null) path.list(matcher) else path.list()
       return stream.collect(Collectors.toCollection { ArrayList<PPath>() })
-    } catch(e: IOException) {
+    } catch (e: IOException) {
       throw BuildException("Cannot list contents of '$input'", e)
     }
   }
@@ -84,7 +79,7 @@ class WalkContents @Inject constructor(val pathSrv: PathSrv) : Builder<WalkConte
     try {
       val stream = if (walker != null) path.walk(walker) else path.walk()
       return stream.collect(Collectors.toCollection { ArrayList<PPath>() })
-    } catch(e: IOException) {
+    } catch (e: IOException) {
       throw BuildException("Cannot walk contents of '$input'", e)
     }
   }
@@ -103,7 +98,7 @@ class Read : Builder<PPath, String> {
     require(input, PathStampers.hash)
     try {
       return String(input.readAllBytes())
-    } catch(e: IOException) {
+    } catch (e: IOException) {
       throw BuildException("Reading '$input' failed", e)
     }
   }
@@ -125,7 +120,7 @@ class Copy : OutEffectBuilder<Copy.Input> {
     require(from)
     try {
       Files.copy(from.javaPath, to.javaPath)
-    } catch(e: IOException) {
+    } catch (e: IOException) {
       throw BuildException("Copying '${input.from}' to '${input.to}' failed", e)
     }
     generate(to)

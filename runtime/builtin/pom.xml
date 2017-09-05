@@ -41,7 +41,7 @@
       <artifactId>vfs</artifactId>
       <version>${metaborg-version}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>

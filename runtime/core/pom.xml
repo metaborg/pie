@@ -11,13 +11,13 @@
     <groupId>org.metaborg</groupId>
     <artifactId>parent.java</artifactId>
     <version>2.3.0-SNAPSHOT</version>
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <properties>
     <kotlin.version>1.1.2-5</kotlin.version>
-    <junit.version>5.0.0-M4</junit.version>
-    <junit.platform.version>1.0.0-M4</junit.platform.version>
+    <junit.jupiter.version>5.0.0-RC2</junit.jupiter.version>
+    <junit.platform.version>1.0.0-RC2</junit.platform.version>
   </properties>
 
   <dependencies>
@@ -73,21 +73,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- JUnit 5 Guice extension (https://github.com/JeffreyFalgout/junit5-guice-extension) -->
-    <dependency>
-      <groupId>name.falgout.jeffrey.testing</groupId>
-      <artifactId>junit5-guice-extension</artifactId>
-      <version>1.0.0-M3</version>
+      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
 
