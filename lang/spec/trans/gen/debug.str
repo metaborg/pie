@@ -6,6 +6,6 @@ imports
 
 rules
 
-  pipe-try-fail(|n) = debug(|$[Failed to apply [n] to:[" "]])
-  pipe-try-debug(s|n) = s <+ (pipe-try-fail(|n); fail)
-  pipe-filter-debug(s|n) = filter(s <+ pipe-try-debug(s|n))
+  pie-try-fail(|n) = debug(|$[Failed to apply [n] to:[" "]])
+  pie-try-debug(s|n) = s <+ (pie-try-fail(|n); fail)
+  pie-filter-debug(s|n) = filter(s <+ pie-try-debug(s|n))

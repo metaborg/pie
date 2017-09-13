@@ -1,16 +1,16 @@
-module gen/kotlin-ceres/build
+module gen/kotlin/build
 
 imports
   
   libspoofax/stratego/debug
   
-  gen/kotlin-ceres/core
+  gen/kotlin/core
 
 rules
 
-  generate-kotlin-ceres-file:
+  generate-kotlin-file:
     (ast, _, _, file, _) -> (filename, result)
     with
       filename := <guarantee-extension(|"kt")> file
     ; mod      := <base-filename;remove-extension> file
-    ; result   := <p2c(|mod)> ast
+    ; result   := <p2k(|mod)> ast

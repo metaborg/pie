@@ -7,11 +7,11 @@ imports
 
 language
 
-  extensions : pipe
+  extensions : pie
 
   provider : target/metaborg/stratego.ctree
 
 menus
 
   menu: "Generate"
-    action: "Kotlin-Ceres" = generate-kotlin-ceres-file
+    action: "Kotlin" = generate-kotlin-file

@@ -6,7 +6,7 @@ imports
   pp
   outline
   analysis
-  gen/kotlin-ceres/build
+  gen/kotlin/build
 
 rules // Debugging
   

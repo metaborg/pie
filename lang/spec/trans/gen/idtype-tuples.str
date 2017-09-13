@@ -8,20 +8,20 @@ imports
 
 rules // Params to idtype tuples
 
-  pipe-idtype-tuples:
+  pie-idtype-tuples:
     Params(params) -> idTypeTuples
     with
-      idTypeTuples := <nmap(pipe-idtype-tuple|1)> params
+      idTypeTuples := <nmap(pie-idtype-tuple|1)> params
     
-  pipe-idtype-tuple(|i):
+  pie-idtype-tuple(|i):
     Param(ty) -> ($[p[<int-to-string>i]], ty)
     
-  pipe-idtype-tuple(|i):
+  pie-idtype-tuple(|i):
     NParam(varId, ty) -> (varId, ty)
 
 rules // Tuple type to idtype tuples
 
-  pipe-idtype-tuples:
+  pie-idtype-tuples:
     TupleTy(tys) -> idTypeTuples
     with
       idTypeTuples := <map-with-index(\(i, ty) -> ($[_[i]], ty)\)> tys

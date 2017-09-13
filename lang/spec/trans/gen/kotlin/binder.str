@@ -1,0 +1,23 @@
+module gen/kotlin/binder
+
+imports
+
+  signatures/-
+  signatures/lex/-
+  signatures/impl/-
+  
+  gen/kotlin/type
+  gen/util
+  gen/debug
+
+rules
+
+  p2k-binder:
+    SingleBinder(bind) -> <p2k-bind> bind
+  p2k-binder:
+    TupleBinder(binds) -> $[([bindStr])]
+    with
+      bindStr := <map(p2k-bind); pie-sep-comma; concat-strings> binds
+
+  p2k-bind: Bind(varId)      -> $[[varId]]
+  p2k-bind: TBind(varId, ty) -> $[[varId] : [[<p2k-type-sig> ty]]]

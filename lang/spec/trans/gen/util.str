@@ -3,34 +3,33 @@ module gen/util
 imports
 
   nabl2/api
-  gen/kotlin-ceres/core
 
 rules // Generic strategies for getting properties and types of anything
 
-  pipe-prop(|ns, prop):
-    t -> <pipe-occ-prop(|prop)> t
+  pie-prop(|ns, prop):
+    t -> <pie-occ-prop(|prop)> t
     where
       <nabl2-get-occurrence-ns> t
       
-  pipe-prop(|ns, prop):
-    t -> <pipe-ast-ref-prop(|ns, prop)> t
+  pie-prop(|ns, prop):
+    t -> <pie-ast-ref-prop(|ns, prop)> t
     where
       <not(nabl2-get-occurrence-ns); is-string> t
 
-  pipe-type(|ns) = pipe-prop(|ns, "type")
+  pie-type(|ns) = pie-prop(|ns, "type")
   
-  pipe-type:
-    t -> <pipe-ast-type> t
+  pie-type:
+    t -> <pie-ast-type> t
     where
       <not(nabl2-get-occurrence-ns); not(is-string)> t
 
 rules // AST type
 
-  pipe-ast-type = nabl2-get-ast-type
+  pie-ast-type = nabl2-get-ast-type
   
 rules // Property of reference in the AST
   
-  pipe-ast-ref-prop(|ns, prop):
+  pie-ast-ref-prop(|ns, prop):
     term -> val
     with
       a      := <AstAnalysis>
@@ -38,38 +37,45 @@ rules // Property of reference in the AST
     ; defOcc := <nabl2-get-resolved-name(|a); Fst> refOcc
     ; val    := <nabl2-get-property(|a, prop)> defOcc
   
-  pipe-ast-ref-type(|ns) = pipe-ast-ref-prop(|ns, "type")
+  pie-ast-ref-type(|ns) = pie-ast-ref-prop(|ns, "type")
 
 rules // Property of occurrence
   
-  pipe-occ-prop(|prop):
+  pie-occ-prop(|prop):
     occ -> val
     with
       a   := <AstAnalysis>
     ; val := <nabl2-get-property(|a, prop)> occ
 
-  pipe-occ-type = pipe-occ-prop(|"type")
+  pie-occ-type = pie-occ-prop(|"type")
 
 rules
 
-  pipe-sep-nl    = separate-by(|"\n")
-  pipe-sep-comma = separate-by(|", ")
-  pipe-sep-space = separate-by(|" ")
+  pie-set-ast-analysis:
+    ast -> ast
+    with
+      rules(AstAnalysis : _ -> <nabl2-get-ast-analysis> ast)
+
+rules
+
+  pie-sep-nl    = separate-by(|"\n")
+  pie-sep-comma = separate-by(|", ")
+  pie-sep-space = separate-by(|" ")
   
-  pipe-remove-emptystrings = filter(not(?""))
+  pie-remove-emptystrings = filter(not(?""))
   
-  pipe-sep-concat(|sep) = pipe-remove-emptystrings; separate-by(|sep); concat-strings
-  pipe-concat-nl = pipe-sep-concat(|"\n")
-  pipe-concat-comma = pipe-sep-concat(|", ")
-  pipe-concat-space = pipe-sep-concat(|" ")
+  pie-sep-concat(|sep) = pie-remove-emptystrings; separate-by(|sep); concat-strings
+  pie-concat-nl = pie-sep-concat(|"\n")
+  pie-concat-comma = pie-sep-concat(|", ")
+  pie-concat-space = pie-sep-concat(|" ")
   
-  pipe-prepend-comma-nonempty: 
+  pie-prepend-comma-nonempty: 
     [] -> []
-  pipe-prepend-comma-nonempty: 
+  pie-prepend-comma-nonempty: 
     list -> [", "|list]
     where
       <not(?[])> list
 
 rules
 
-  pipe-sanitize-class-id = string-replace(|"-", "_")
+  pie-sanitize-class-id = string-replace(|"-", "_")

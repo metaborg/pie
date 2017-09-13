@@ -23,19 +23,19 @@ rules
   
   pp-pie-string =
     parenthesize-pie
-    ; prettyprint-pipe-start-symbols
+    ; prettyprint-pie-start-symbols
     ; !V([], <id>)
     ; box2text-string(|120)
       
   pp-partial-pie-string =
     parenthesize-pie
-    ; prettyprint-pipe
+    ; prettyprint-pie
     ; !V([], <id>)
     ; box2text-string(|120)
     
   pp-partial-pie-string(|sort) =
     parenthesize-pie
-    ; prettyprint-pipe(|sort)
+    ; prettyprint-pie(|sort)
     ; !V([], <id>)
     ; box2text-string(|120)  
       
