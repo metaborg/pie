@@ -25,6 +25,7 @@ interface Builder<in I : In, out O : Out> {
   fun desc(input: I): String = "$id(${input.toString().toShortString(100)})"
 }
 typealias UBuilder = Builder<*, *>
+typealias AnyBuilder = Builder<In, Out>
 
 
 class BuildException(message: String, cause: Exception?) : Exception(message, cause) {

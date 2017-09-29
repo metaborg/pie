@@ -179,7 +179,8 @@ open class BuildImpl(
     toCheckQueue.add(requiree)
     while (!toCheckQueue.isEmpty()) {
       val toCheck = toCheckQueue.poll()
-      if (toCheck.requires(generator)) {
+      val builder = getAnyBuilder(toCheck.builderId)
+      if (toCheck.requires(generator, this)) {
         return true
       }
       val reqRequests = toCheck.reqs.filterIsInstance<UBuildReq>().map { it.app }
@@ -193,11 +194,21 @@ open class BuildImpl(
     return false
   }
 
-  private fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
-    @Suppress("UNCHECKED_CAST")
-    return (builders[id] ?: error("Builder with identifier '$id' does not exist")) as Builder<I, O>
+  
+  internal fun getUBuilder(id: String): UBuilder {
+    return (builders[id] ?: error("Builder with identifier '$id' does not exist"))
   }
 
+  internal fun getAnyBuilder(id: String): AnyBuilder {
+    @Suppress("UNCHECKED_CAST")
+    return getUBuilder(id) as AnyBuilder
+  }
+  
+  internal fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
+    @Suppress("UNCHECKED_CAST")
+    return getUBuilder(id) as Builder<I, O>
+  }
+  
 
   private fun <I : In, O : Out> cycleError(app: BuildApp<I, O>): String {
     return """Cyclic dependency.

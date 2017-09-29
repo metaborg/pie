@@ -4,6 +4,7 @@ import mb.pie.runtime.core.impl.Gen
 import mb.pie.runtime.core.impl.Req
 import mb.pie.runtime.core.impl.UBuildReq
 import java.io.Serializable
+import mb.pie.runtime.core.impl.BuildImpl
 
 data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
   val toApp get() = mb.pie.runtime.core.BuildApp<I, O>(builderId, input)
@@ -16,9 +17,14 @@ data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: St
   }
   val isConsistent: Boolean get() = inconsistencyReason == null
 
-  fun requires(other: UBuildApp): Boolean {
-    for ((req, _) in reqs.filterIsInstance<UBuildReq>()) {
-      if (other == req) {
+  fun requires(other: UBuildApp, build: BuildImpl): Boolean {
+    // We require other when we have a build requirement with the same builder and input as other, or when their inputs overlap.
+    for ((req, _) in reqs.filterIsInstance<UBuildReq>().filter { it.app.builderId == other.builderId }) {
+      if (req == other) {
+        return true
+      }
+      val builder = build.getAnyBuilder(other.builderId);
+      if(builder.mayOverlap(req.input, other.input)) {
         return true
       }
     }
