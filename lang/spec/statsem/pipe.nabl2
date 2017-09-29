@@ -9,7 +9,9 @@ rules // Pipeline function implementation
 rules // Statements
 
   [[ Block(stms) ^ (s, ty_func_outer) ]] :=
-    Map2 [[ stms ^ (s, ty_func_outer) ]].
+    new s_block,
+    s_block -P-> s,
+    Map2 [[ stms ^ (s_block, ty_func_outer) ]].
 
 
   [[ ValDec(binder, exp) ^ (s, _) ]] :=
