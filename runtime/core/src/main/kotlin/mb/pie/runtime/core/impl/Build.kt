@@ -4,35 +4,36 @@ import com.google.inject.Injector
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.store.BuildStore
 import mb.pie.runtime.core.impl.store.BuildStoreReadTxn
-import mb.vfs.path.PPath
-import java.util.*
 
 interface Build {
   fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O>
+
+  fun getUBuilder(id: String): UBuilder
+  fun getAnyBuilder(id: String): AnyBuilder
+  fun <I : In, O : Out> getBuilder(id: String): Builder<I, O>
+
+  fun storeReadTxn(): BuildStoreReadTxn
 }
 
 open class BuildImpl(
   private val store: BuildStore,
   private val cache: BuildCache,
   private val share: BuildShare,
+  private val validationLayer: ValidationLayer,
   private val reporter: BuildReporter,
   private val builders: Map<String, UBuilder>,
   private val injector: Injector)
   : Build {
   private val consistent = mutableMapOf<UBuildApp, UBuildRes>()
-  private val stack = mutableSetOf<UBuildApp>()
+
 
   override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O> {
     try {
+      validationLayer.requireStart(app)
       reporter.require(app)
 
-      if (stack.contains(app)) {
-        throw CyclicDependencyException(cycleError(app))
-      }
-      stack.add(app)
-
       val consistentResult = consistent[app]?.cast<I, O>()
-      if (consistentResult != null) {
+      if(consistentResult != null) {
         // Existing result is known to be consistent this build: reuse
         reporter.consistent(app, consistentResult)
         return BuildInfo(consistentResult)
@@ -40,7 +41,7 @@ open class BuildImpl(
 
       val existingResult = (cache[app] ?: store.readTxn().use { it.produces(app) })?.cast<I, O>()
       @Suppress("FoldInitializerAndIfToElvis")
-      if (existingResult == null) {
+      if(existingResult == null) {
         // No cached or stored result was found: rebuild
         val info = rebuild(app, NoResultReason(), true)
         reporter.consistent(app, info.result)
@@ -51,7 +52,7 @@ open class BuildImpl(
       // Internal consistency: output consistency
       run {
         val inconsistencyReason = existingResult.inconsistencyReason
-        if (inconsistencyReason != null) {
+        if(inconsistencyReason != null) {
           val info = rebuild(app, inconsistencyReason)
           reporter.consistent(app, info.result)
           return info
@@ -59,11 +60,11 @@ open class BuildImpl(
       }
 
       // Internal consistency: generated files
-      for (gen in existingResult.gens) {
+      for(gen in existingResult.gens) {
         val (genPath, stamp) = gen
         val newStamp = stamp.stamper.stamp(genPath)
         reporter.checkGenPath(app, genPath, stamp, newStamp)
-        if (stamp != newStamp) {
+        if(stamp != newStamp) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
           val info = rebuild(app, InconsistentGenPath(existingResult, gen, newStamp))
           reporter.consistent(app, info.result)
@@ -71,9 +72,9 @@ open class BuildImpl(
         }
       }
       // Internal and total consistency: requirements
-      for (req in existingResult.reqs) {
+      for(req in existingResult.reqs) {
         val inconsistencyReason = req.makeConsistent(app, existingResult, this, reporter)
-        if (inconsistencyReason != null) {
+        if(inconsistencyReason != null) {
           val info = rebuild(app, inconsistencyReason)
           reporter.consistent(app, info.result)
           return info
@@ -82,7 +83,7 @@ open class BuildImpl(
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      validate(app, existingResult)
+      validationLayer.validate(app, existingResult, this)
       reporter.consistent(app, existingResult)
       // Cache the result
       consistent[app] = existingResult
@@ -90,7 +91,7 @@ open class BuildImpl(
       // Reuse existing result
       return BuildInfo(existingResult)
     } finally {
-      stack.remove(app)
+      validationLayer.requireEnd(app)
     }
   }
 
@@ -99,12 +100,12 @@ open class BuildImpl(
     reporter.build(app, reason)
     val result: BuildRes<I, O>
     try {
-      result = if (useCache) {
+      result = if(useCache) {
         share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.produces(it)?.cast<I, O>() } }) { this.rebuildInternal(it) }
       } else {
         share.reuseOrCreate(app) { this.rebuildInternal(it) }
       }
-    } catch (e: BuildException) {
+    } catch(e: BuildException) {
       reporter.buildFailed(app, reason, e)
       throw e
     }
@@ -125,7 +126,7 @@ open class BuildImpl(
     val result = BuildRes(builderId, desc, input, output, reqs, gens)
 
     // Validate well-formedness of the dependency graph
-    validate(app, result)
+    validationLayer.validate(app, result, this)
     // Store result and path dependencies in build store
     store.writeTxn().use {
       it.setProduces(app, result)
@@ -138,139 +139,23 @@ open class BuildImpl(
     return result
   }
 
-  private fun <I : In, O : Out> validate(app: BuildApp<I, O>, result: BuildRes<I, O>) {
-    store.readTxn().use { txn ->
-      for ((path, _) in result.gens) {
-        val generatedBy = txn.generatedBy(path)
-        if (generatedBy != null) {
-          val builder = getBuilder<I, O>(result.builderId)
-          // CHANGED: builders may describe if certain different build applications may generate the same file.
-          @Suppress("UNCHECKED_CAST")
-          if (!builder.mayOverlap(result.input, generatedBy.input as I)) {
-            throw OverlappingGeneratedPathException(overlappingGenError(path, result, generatedBy))
-          }
-        }
 
-        val requiredBy = txn.requiredBy(path)
-        // CHANGED: it is allowed to generate something required by something on the stack
-        if (requiredBy != null && !stack.contains(requiredBy)) {
-          // CHANGED: 'path' is generated by 'result', and path is required by 'requiredBy', thus 'requiredBy' must (transitively) require 'app'.
-          val requiredByResult = txn.produces(requiredBy)
-          if (requiredByResult != null && !hasBuildReq(requiredByResult, app, txn)) {
-            throw HiddenDependencyException(genAfterReqError(path, result, requiredBy))
-          }
-        }
-      }
-
-      for ((path, _) in result.reqs.filterIsInstance<PathReq>()) {
-        val generator = txn.generatedBy(path)
-        // 'path' is required by 'result', and path is generated by 'generator', thus 'result' must (transitively) require 'generator'.
-        if (generator != null && !hasBuildReq(result, generator, txn)) {
-          throw HiddenDependencyException(reqWithoutGenError(result, path, generator))
-        }
-      }
-    }
-  }
-
-
-  private fun hasBuildReq(requiree: UBuildRes, generator: UBuildApp, txn: BuildStoreReadTxn): Boolean {
-    // TODO: more efficient implementation for figuring out if a result depends on another result?
-    val toCheckQueue: Queue<UBuildRes> = LinkedList()
-    toCheckQueue.add(requiree)
-    while (!toCheckQueue.isEmpty()) {
-      val toCheck = toCheckQueue.poll()
-      val builder = getAnyBuilder(toCheck.builderId)
-      if (toCheck.requires(generator, this)) {
-        return true
-      }
-      val reqRequests = toCheck.reqs.filterIsInstance<UBuildReq>().map { it.app }
-      val reqResults = mutableListOf<UBuildRes>()
-      for (reqRequest in reqRequests) {
-        val reqResult = txn.produces(reqRequest) ?: error("Cannot get result for app $reqRequest")
-        reqResults.add(reqResult)
-      }
-      toCheckQueue.addAll(reqResults)
-    }
-    return false
-  }
-
-  
-  internal fun getUBuilder(id: String): UBuilder {
+  override fun getUBuilder(id: String): UBuilder {
     return (builders[id] ?: error("Builder with identifier '$id' does not exist"))
   }
 
-  internal fun getAnyBuilder(id: String): AnyBuilder {
+  override fun getAnyBuilder(id: String): AnyBuilder {
     @Suppress("UNCHECKED_CAST")
     return getUBuilder(id) as AnyBuilder
   }
-  
-  internal fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
+
+  override fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
     @Suppress("UNCHECKED_CAST")
     return getUBuilder(id) as Builder<I, O>
   }
-  
 
-  private fun <I : In, O : Out> cycleError(app: BuildApp<I, O>): String {
-    return """Cyclic dependency.
-  Requirement of:
 
-    $app
-
-  from requirements:
-
-    ${stack.joinToString(" -> ")}
-
-  creates cycle
-  """
-  }
-
-  private fun <I : In, O : Out> overlappingGenError(path: PPath, result: BuildRes<I, O>, generatedBy: UBuildApp?): String {
-    return """Overlapping generated path.
-  Path:
-
-    $path
-
-  was generated by:
-
-    ${result.desc}
-
-  and:
-
-    $generatedBy
-  """
-  }
-
-  private fun <I : In, O : Out> genAfterReqError(path: PPath, result: BuildRes<I, O>, requiredBy: UBuildApp?): String {
-    return """Hidden dependency.
-  Path:
-
-    $path
-
-  was generated by:
-
-    ${result.desc}
-
-  after being previously required by:
-
-    $requiredBy
-  """
-  }
-
-  private fun <I : In, O : Out> reqWithoutGenError(result: BuildRes<I, O>, path: PPath, generator: UBuildApp?): String {
-    return """Hidden dependency.
-  Build:
-
-    ${result.desc}
-
-  requires path:
-
-    $path
-
-  generated by:
-
-    $generator
-
-  without a (transitive) build requirement for it
-  """
+  override fun storeReadTxn(): BuildStoreReadTxn {
+    return store.readTxn()
   }
 }

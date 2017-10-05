@@ -27,6 +27,6 @@ inline fun <I : In, O : Out, reified B : Builder<I, O>> BuildContext.requireOutp
 }
 
 @Throws(BuildException::class)
-inline fun <I : In, reified B : Builder<I, *>> BuildContext.requireBuild(input: I, stamper: OutputStamper = OutputStampers.equals) {
+inline fun <I : In, reified B : Builder<I, *>> BuildContext.requireBuild(input: I, stamper: OutputStamper = OutputStampers.inconsequential) {
   return this.requireBuild(B::class.java, input, stamper)
 }

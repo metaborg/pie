@@ -1,26 +1,24 @@
 package mb.pie.runtime.core
 
-import mb.pie.runtime.core.impl.Gen
-import mb.pie.runtime.core.impl.Req
-import mb.pie.runtime.core.impl.UBuildReq
+import mb.pie.runtime.core.impl.*
 import java.io.Serializable
-import mb.pie.runtime.core.impl.BuildImpl
 
 data class BuildRes<out I : In, out O : Out>(val builderId: String, val desc: String, val input: I, val output: O, val reqs: List<Req>, val gens: List<Gen>) : Serializable {
   val toApp get() = mb.pie.runtime.core.BuildApp<I, O>(builderId, input)
 
-  val inconsistencyReason: BuildReason? get() {
-    if (output is OutTransient<*>) {
-      return if (output.consistent) null else InconsistentTransientOutput(this)
+  val inconsistencyReason: BuildReason?
+    get() {
+      if(output is OutTransient<*>) {
+        return if(output.consistent) null else InconsistentTransientOutput(this)
+      }
+      return null
     }
-    return null
-  }
   val isConsistent: Boolean get() = inconsistencyReason == null
 
-  fun requires(other: UBuildApp, build: BuildImpl): Boolean {
+  fun requires(other: UBuildApp, build: Build): Boolean {
     // We require other when we have a build requirement with the same builder and input as other, or when their inputs overlap.
-    for ((req, _) in reqs.filterIsInstance<UBuildReq>().filter { it.app.builderId == other.builderId }) {
-      if (req == other) {
+    for((req, _) in reqs.filterIsInstance<UBuildReq>().filter { it.app.builderId == other.builderId }) {
+      if(req == other) {
         return true
       }
       val builder = build.getAnyBuilder(other.builderId);

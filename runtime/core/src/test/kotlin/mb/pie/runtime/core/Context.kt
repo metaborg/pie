@@ -1,26 +1,21 @@
 package mb.pie.runtime.core
 
-import com.google.inject.Guice
-import com.google.inject.Injector
+import com.google.inject.*
 import mb.log.LogModule
 import mb.log.Logger
-import mb.pie.runtime.core.impl.BuildCache
-import mb.pie.runtime.core.impl.BuildImpl
-import mb.pie.runtime.core.impl.BuildManagerImpl
-import mb.pie.runtime.core.impl.BuildShare
+import mb.pie.runtime.core.impl.*
 import mb.pie.runtime.core.impl.store.BuildStore
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
 import org.slf4j.LoggerFactory
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
+import java.nio.file.*
 
 open class ParametrizedTestCtx(
   logger: Logger,
   val store: BuildStore,
   val cache: BuildCache,
   val share: BuildShare,
+  val validationLayerProvider: Provider<ValidationLayer>,
   val reporter: BuildReporter,
   val fs: FileSystem
 ) : TestCtx(), AutoCloseable {
@@ -37,11 +32,11 @@ open class ParametrizedTestCtx(
 
 
   fun b(): BuildImpl {
-    return b(store, cache, share, reporter)
+    return b(store, cache, share, validationLayerProvider.get(), reporter)
   }
 
   fun bm(): BuildManager {
-    return bm(store, cache, share)
+    return bm(store, cache, share, validationLayerProvider)
   }
 }
 
@@ -81,12 +76,12 @@ open class TestCtx {
   }
 
 
-  fun b(store: BuildStore, cache: BuildCache, share: BuildShare, reporter: BuildReporter): BuildImpl {
-    return BuildImpl(store, cache, share, reporter, builders, inj)
+  fun b(store: BuildStore, cache: BuildCache, share: BuildShare, validationLayer: ValidationLayer, reporter: BuildReporter): BuildImpl {
+    return BuildImpl(store, cache, share, validationLayer, reporter, builders, inj)
   }
 
-  fun bm(store: BuildStore, cache: BuildCache, share: BuildShare): BuildManager {
-    return BuildManagerImpl(store, cache, share, builders, inj)
+  fun bm(store: BuildStore, cache: BuildCache, share: BuildShare, validationLayerProvider: Provider<ValidationLayer>): BuildManager {
+    return BuildManagerImpl(store, cache, share, validationLayerProvider, builders, inj)
   }
 
 

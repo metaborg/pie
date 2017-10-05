@@ -2,16 +2,12 @@ package mb.pie.runtime.core
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
+import com.google.inject.Provider
 import mb.log.SLF4JLogger
-import mb.pie.runtime.core.impl.BuildShareImpl
-import mb.pie.runtime.core.impl.MapBuildCache
-import mb.pie.runtime.core.impl.NoBuildCache
-import mb.pie.runtime.core.impl.StreamBuildReporter
+import mb.pie.runtime.core.impl.*
 import mb.pie.runtime.core.impl.store.InMemoryBuildStore
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
-import org.junit.jupiter.api.DynamicContainer
-import org.junit.jupiter.api.DynamicNode
-import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.*
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.stream.Stream
@@ -22,6 +18,7 @@ object TestGenerator {
     val stores = arrayOf({ InMemoryBuildStore() }, { LMDBBuildStoreFactory(logger).create(File("target/lmdbstore")) })
     val caches = arrayOf({ NoBuildCache() }, { MapBuildCache() })
     val shares = arrayOf({ BuildShareImpl() })
+    val validationLayerProvider = Provider<ValidationLayer> { ValidationLayerImpl(logger) }
     val reporterGen = { StreamBuildReporter() }
     val fsGen = { Jimfs.newFileSystem(Configuration.unix()) }
 
@@ -35,7 +32,7 @@ object TestGenerator {
           val fs = fsGen()
 
           DynamicTest.dynamicTest("$store, $cache, $share", {
-            val context = ParametrizedTestCtx(logger, store, cache, share, reporter, fs)
+            val context = ParametrizedTestCtx(logger, store, cache, share, validationLayerProvider, reporter, fs)
             context.testFunc()
             context.close()
           })

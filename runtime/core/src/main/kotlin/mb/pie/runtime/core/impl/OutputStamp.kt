@@ -1,8 +1,6 @@
 package mb.pie.runtime.core.impl
 
-import mb.pie.runtime.core.Out
-import mb.pie.runtime.core.OutputStamp
-import mb.pie.runtime.core.OutputStamper
+import mb.pie.runtime.core.*
 
 class EqualsOutputStamper : OutputStamper {
   override fun <O : Out> stamp(output: O): OutputStamp {
@@ -10,8 +8,8 @@ class EqualsOutputStamper : OutputStamper {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other?.javaClass != javaClass) return false
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
     return true
   }
 
@@ -31,14 +29,45 @@ class InconsequentialOutputStamper : OutputStamper {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other?.javaClass != javaClass) return false
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
     return true
   }
 
   override fun hashCode(): Int {
     return 0
   }
+
+
 }
 
-data class ValueOutputStamp<out V>(val value: V?, override val stamper: OutputStamper) : OutputStamp
+data class ValueOutputStamp<out V : Out>(val value: V, override val stamper: OutputStamper) : OutputStamp {
+  override fun equals(other: Any?): Boolean {
+    if(this === other) return true
+    if(javaClass != other?.javaClass) return false
+
+    other as ValueOutputStamp<*>
+
+    if(value is OutTransientEquatable<*, *> && other.value is OutTransientEquatable<*, *>) {
+      if(value.e != other.value.e) {
+        return false
+      }
+    } else if(value != other.value) {
+      return false
+    }
+    if(stamper != other.stamper) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = 0
+    if(value is OutTransientEquatable<*, *>) {
+      result = 31 * result + (value.e?.hashCode() ?: 0)
+    } else {
+      result = 31 * result + (value?.hashCode() ?: 0)
+    }
+    result = 31 * result + stamper.hashCode()
+    return result
+  }
+}

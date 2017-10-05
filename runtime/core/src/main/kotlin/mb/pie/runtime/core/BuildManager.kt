@@ -63,8 +63,3 @@ interface BuildManager : BuildSession {
 interface BuildManagerFactory {
   fun create(store: BuildStore, cache: BuildCache): BuildManager
 }
-
-open class BuildValidationException(message: String) : RuntimeException(message)
-class OverlappingGeneratedPathException(message: String) : BuildValidationException(message)
-class HiddenDependencyException(message: String) : BuildValidationException(message)
-class CyclicDependencyException(message: String) : BuildValidationException(message)

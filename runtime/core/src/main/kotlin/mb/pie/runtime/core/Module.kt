@@ -1,17 +1,11 @@
 package mb.pie.runtime.core
 
-import com.google.inject.Binder
-import com.google.inject.Module
-import com.google.inject.Singleton
-import com.google.inject.TypeLiteral
+import com.google.inject.*
 import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.pie.runtime.core.impl.BuildManagerImpl
-import mb.pie.runtime.core.impl.BuildShare
-import mb.pie.runtime.core.impl.BuildShareImpl
-import mb.pie.runtime.core.impl.StreamBuildReporter
+import mb.pie.runtime.core.impl.*
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 
 open class PieModule : Module {
@@ -19,6 +13,7 @@ open class PieModule : Module {
     binder.bindBuildManager()
     binder.bindStore()
     binder.bindShare()
+    binder.bindValidationLayer()
     binder.bindReporter()
 
     val builders = binder.builderMapBinder()
@@ -40,9 +35,14 @@ open class PieModule : Module {
     bind<BuildShare>().toSingleton<BuildShareImpl>()
   }
 
+  open protected fun Binder.bindValidationLayer() {
+    bind<ValidationLayer>().to<ValidationLayerImpl>()
+  }
+
   open protected fun Binder.bindReporter() {
     bind<BuildReporter>().to<StreamBuildReporter>()
   }
+
 
   open protected fun Binder.bindBuilders(builders: MapBinder<String, UBuilder>) {
 

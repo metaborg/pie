@@ -256,12 +256,12 @@ internal class BuildManagerTests {
     val bm = bm()
 
     val filePath = p(fs, "/file")
-    assertThrows(OverlappingGeneratedPathException::class.java) {
+    assertThrows(ValidationException::class.java) {
       bm.buildAll(a(writePath, Pair("HELLO WORLD 1!", filePath)), a(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
     // Overlapping generated path exception should also trigger between separate builds
-    assertThrows(OverlappingGeneratedPathException::class.java) {
+    assertThrows(ValidationException::class.java) {
       bm.build(a(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
@@ -278,13 +278,13 @@ internal class BuildManagerTests {
     val filePath = p(fs, "/file")
     write("HELLO WORLD!", filePath)
 
-    assertThrows(HiddenDependencyException::class.java) {
+    assertThrows(ValidationException::class.java) {
       bm.build(a(readPath, filePath))
       bm.build(a(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate builds
-    assertThrows(HiddenDependencyException::class.java) {
+    assertThrows(ValidationException::class.java) {
       bm.build(a(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
@@ -333,7 +333,7 @@ internal class BuildManagerTests {
 
     val bm = bm()
 
-    assertThrows(CyclicDependencyException::class.java) {
+    assertThrows(ValidationException::class.java) {
       bm.build(a(b1, None.instance))
     }
   }

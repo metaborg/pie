@@ -15,13 +15,13 @@ internal class LMDBBuildStoreTests {
 
     factory.create(File("build/test/lmdbstore")).use {
       it.writeTxn().use { it.drop() }
-      val build = b(it, cache, share, reporter)
+      val build = b(it, cache, share, validationLayerProvider.get(), reporter)
       build.require(a(toLowerCase, "HELLO WORLD!"))
     }
 
     // Close and re-open the database
     factory.create(File("build/test/lmdbstore")).use {
-      val build = spy(b(it, cache, share, reporter))
+      val build = spy(b(it, cache, share, validationLayerProvider.get(), reporter))
       val app = a(toLowerCase, "HELLO WORLD!")
       build.require(app)
       verify(build, never()).rebuild(eq(app), any(), any())
