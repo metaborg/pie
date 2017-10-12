@@ -2,8 +2,8 @@ package mb.pie.runtime.core.impl
 
 import com.google.inject.Injector
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.store.BuildStore
-import mb.pie.runtime.core.impl.store.BuildStoreWriteTxn
+import mb.pie.runtime.core.BuildStore
+import mb.pie.runtime.core.BuildStoreWriteTxn
 import mb.vfs.path.PPath
 
 internal class BuildContextImpl(
@@ -12,7 +12,6 @@ internal class BuildContextImpl(
   private val injector: Injector,
   private val currentApp: UBuildApp)
   : BuildContext {
-  private var readTxn = store.readTxn()
   private val reqs = mutableListOf<Req>()
   private val pathReqsToWrite = mutableListOf<PathReq>()
   private val gens = mutableListOf<Gen>()
@@ -33,24 +32,20 @@ internal class BuildContextImpl(
 
 
   override fun <I : In, O : Out> requireOutput(app: BuildApp<I, O>, stamper: OutputStamper): O {
-    readTxn.close()
     store.writeTxn().use { writePathDepsToStore(it) }
     val result = build.require(app).result
     val stamp = stamper.stamp(result.output)
     val req = BuildReq(app, stamp)
     reqs.add(req)
-    readTxn = store.readTxn()
     return result.output
   }
 
   override fun requireBuild(app: UBuildApp, stamper: OutputStamper) {
-    readTxn.close()
     store.writeTxn().use { writePathDepsToStore(it) }
     val result = build.require(app).result
     val stamp = stamper.stamp(result.output)
     val req = BuildReq(app, stamp)
     reqs.add(req)
-    readTxn = store.readTxn()
   }
 
 
@@ -60,8 +55,8 @@ internal class BuildContextImpl(
     reqs.add(req)
     pathReqsToWrite.add(req)
 
-    val generatedBy = readTxn.generatedBy(path)
-    if (generatedBy != null) {
+    val generatedBy = store.readTxn().use{ it.generatedBy(path) }
+    if(generatedBy != null) {
       requireBuild(generatedBy)
     }
   }
@@ -74,16 +69,11 @@ internal class BuildContextImpl(
   }
 
 
-  override fun close() {
-    readTxn.close()
-  }
-
-
   fun writePathDepsToStore(txn: BuildStoreWriteTxn) {
-    for ((path, _) in pathReqsToWrite) {
+    for((path, _) in pathReqsToWrite) {
       txn.setRequiredBy(path, currentApp)
     }
-    for ((path, _) in gensToWrite) {
+    for((path, _) in gensToWrite) {
       txn.setGeneratedBy(path, currentApp)
     }
     pathReqsToWrite.clear()

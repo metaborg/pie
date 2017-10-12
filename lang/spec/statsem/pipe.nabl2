@@ -205,7 +205,7 @@ rules // Path operations
     ty_exp <? ListTy(StrTy()) | error $[Type mismatch: expected string* type, got [ty_exp]] @ exp.
 
 
-  [[ ReadPath(exp) ^ (s) : StrTy() ]] :=
+  [[ ReadPath(exp) ^ (s) : NullableTy(StrTy()) ]] :=
     [[ exp ^ (s) : ty_exp ]],
     ty_exp <? PathTy() | error $[Type mismatch: expected path type, got [ty_exp]] @ exp.  
 

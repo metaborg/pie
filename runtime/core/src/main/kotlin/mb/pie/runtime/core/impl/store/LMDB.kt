@@ -1,8 +1,6 @@
 package mb.pie.runtime.core.impl.store
 
 import mb.log.Logger
-import mb.pie.runtime.core.UBuildApp
-import mb.pie.runtime.core.UBuildRes
 import mb.vfs.path.PPath
 import org.lmdbjava.Dbi
 import org.lmdbjava.DbiFlags
@@ -12,6 +10,7 @@ import java.io.*
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import com.google.inject.Inject
+import mb.pie.runtime.core.*
 
 typealias EnvB = Env<ByteBuffer>
 typealias DbiB = Dbi<ByteBuffer>
@@ -60,14 +59,14 @@ class LMDBBuildStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReader
 }
 
 open internal class LMDBBuildStoreReadTxn(
-        val env: EnvB, val produces: DbiB, val generatedBy: DbiB, val requiredBy: DbiB, val txn: TxnB, val logger: Logger)
+  val env: EnvB, val produces: DbiB, val generatedBy: DbiB, val requiredBy: DbiB, val txn: TxnB, val logger: Logger)
   : BuildStoreReadTxn {
   override fun produces(app: UBuildApp): UBuildRes? {
     val keyBytes: ByteBuffer? = serialize(app, true)
     val valBytes: ByteBuffer? = produces.get(txn, keyBytes)
-    if (valBytes != null) {
+    if(valBytes != null) {
       val result = deserialize<UBuildRes>(valBytes)
-      if (result != null) {
+      if(result != null) {
         return result
       }
       // Deserialization failed, remove entry
@@ -80,9 +79,9 @@ open internal class LMDBBuildStoreReadTxn(
   override fun generatedBy(path: PPath): UBuildApp? {
     val keyBytes: ByteBuffer? = serialize(path, true)
     val valBytes: ByteBuffer? = generatedBy.get(txn, keyBytes)
-    if (valBytes != null) {
+    if(valBytes != null) {
       val result = deserialize<UBuildApp>(valBytes)
-      if (result != null) {
+      if(result != null) {
         return result
       }
       // Deserialization failed, remove entry
@@ -95,9 +94,9 @@ open internal class LMDBBuildStoreReadTxn(
   override fun requiredBy(path: PPath): UBuildApp? {
     val keyBytes: ByteBuffer? = serialize(path, true)
     val valBytes: ByteBuffer? = requiredBy.get(txn, keyBytes)
-    if (valBytes != null) {
+    if(valBytes != null) {
       val result = deserialize<UBuildApp>(valBytes)
-      if (result != null) {
+      if(result != null) {
         return result
       }
       // Deserialization failed, remove entry
@@ -119,7 +118,7 @@ open internal class LMDBBuildStoreReadTxn(
       }
       // TODO: ObjectOutputStream.toByteArray() copies the bytes: not efficient
       val bytes = it.toByteArray()
-      if (isKey && bytes.size > env.maxKeySize) {
+      if(isKey && bytes.size > env.maxKeySize) {
         return hash(bytes)
       }
       // TODO: this copies bytes again: not efficient
@@ -135,13 +134,13 @@ open internal class LMDBBuildStoreReadTxn(
         try {
           @Suppress("UNCHECKED_CAST")
           return it.readObject() as T
-        } catch (e: ClassNotFoundException) {
+        } catch(e: ClassNotFoundException) {
           logger.error("Deserialization failed", e)
           return null
-        } catch (e: ObjectStreamException) {
+        } catch(e: ObjectStreamException) {
           logger.error("Deserialization failed", e)
           return null
-        } catch (e: IOException) {
+        } catch(e: IOException) {
           logger.error("Deserialization failed", e)
           return null
         }
@@ -160,7 +159,7 @@ open internal class LMDBBuildStoreReadTxn(
 }
 
 internal class LMDBBuildStoreWriteTxn(
-        env: EnvB, produces: DbiB, generatedBy: DbiB, requiredBy: DbiB, txn: TxnB, logger: Logger)
+  env: EnvB, produces: DbiB, generatedBy: DbiB, requiredBy: DbiB, txn: TxnB, logger: Logger)
   : BuildStoreWriteTxn, LMDBBuildStoreReadTxn(env, produces, generatedBy, requiredBy, txn, logger) {
   override fun setProduces(app: UBuildApp, res: UBuildRes) {
     val k = serialize(app, true)
@@ -194,7 +193,7 @@ internal class LMDBBuildStoreWriteTxn(
 internal class ByteBufferBackedInputStream(private val buf: ByteBuffer) : InputStream() {
   @Throws(IOException::class)
   override fun read(): Int {
-    if (!buf.hasRemaining()) {
+    if(!buf.hasRemaining()) {
       return -1
     }
     return buf.get().toInt() and 0xFF
@@ -202,7 +201,7 @@ internal class ByteBufferBackedInputStream(private val buf: ByteBuffer) : InputS
 
   @Throws(IOException::class)
   override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
-    if (!buf.hasRemaining()) {
+    if(!buf.hasRemaining()) {
       return -1
     }
 

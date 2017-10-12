@@ -3,7 +3,9 @@ package mb.pie.runtime.core.impl
 import com.google.inject.*
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.store.BuildStore
+import mb.pie.runtime.core.BuildCache
+import mb.pie.runtime.core.impl.share.BuildShare
+import mb.pie.runtime.core.BuildStore
 
 class BuildSessionImpl(private val build: BuildImpl, private val injector: Injector)
   : BuildSession {
@@ -55,13 +57,13 @@ class BuildManagerImpl @Inject constructor(
   private @Assisted val store: BuildStore,
   private @Assisted val cache: BuildCache,
   private val share: BuildShare,
-  private val validationLayer: Provider<ValidationLayer>,
+  private val buildLayer: Provider<BuildLayer>,
   private val builders: MutableMap<String, UBuilder>,
   private val injector: Injector)
   : BuildManager {
   override fun newSession(): BuildSession {
-    val reporter = injector.getInstance(BuildReporter::class.java)
-    return BuildSessionImpl(BuildImpl(store, cache, share, validationLayer.get(), reporter, builders, injector), injector)
+    val reporter = injector.getInstance(BuildLogger::class.java)
+    return BuildSessionImpl(BuildImpl(store, cache, share, buildLayer.get(), reporter, builders, injector), injector)
   }
 
   override fun dropStore() {

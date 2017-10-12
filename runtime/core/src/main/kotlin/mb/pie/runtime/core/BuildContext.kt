@@ -2,7 +2,7 @@ package mb.pie.runtime.core
 
 import mb.vfs.path.PPath
 
-interface BuildContext : AutoCloseable {
+interface BuildContext {
   @Throws(BuildException::class)
   fun <I : In, O : Out> requireOutput(app: BuildApp<I, O>, stamper: OutputStamper = OutputStampers.equals): O
 
@@ -17,8 +17,6 @@ interface BuildContext : AutoCloseable {
 
   fun require(path: PPath, stamper: PathStamper = PathStampers.modified)
   fun generate(path: PPath, stamper: PathStamper = PathStampers.hash)
-
-  override fun close()
 }
 
 @Throws(BuildException::class)

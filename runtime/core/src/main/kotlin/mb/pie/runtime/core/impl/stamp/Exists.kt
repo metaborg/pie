@@ -11,8 +11,8 @@ class ExistsPathStamper : PathStamper {
 
 
   override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other?.javaClass != javaClass) return false
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
     return true
   }
 
@@ -20,5 +20,3 @@ class ExistsPathStamper : PathStamper {
     return 0
   }
 }
-
-

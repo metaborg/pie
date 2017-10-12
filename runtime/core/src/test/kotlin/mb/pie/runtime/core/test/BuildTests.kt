@@ -128,7 +128,7 @@ internal class BuildManagerTests {
     val result3 = build3.require(a(readPath, filePath)).result
     assertEquals("!DLROW OLLEH", result3.output)
     verify(build3, times(1)).rebuild(eq(a(readPath, filePath)), check {
-      val reason = it as? InconsistentPathReq<*, *>
+      val reason = it as? InconsistentPathReq
       assertNotNull(reason)
       assertEquals(filePath, reason!!.req.path)
     }, any())
@@ -163,7 +163,7 @@ internal class BuildManagerTests {
     val build3 = spy(b())
     build3.require(a(writePath, Pair("HELLO WORLD!", filePath)))
     verify(build3, times(1)).rebuild(eq(a(writePath, Pair("HELLO WORLD!", filePath))), check {
-      val reason = it as? InconsistentGenPath<*, *>
+      val reason = it as? InconsistentGenPath
       assertNotNull(reason)
       assertEquals(filePath, reason!!.gen.path)
     }, any())
@@ -215,12 +215,12 @@ internal class BuildManagerTests {
     inOrder(build3) {
       verify(build3, times(1)).require(a(combine, filePath))
       verify(build3, times(1)).rebuild(eq(a(readPath, filePath)), check {
-        val reason = it as? InconsistentPathReq<*, *>
+        val reason = it as? InconsistentPathReq
         assertNotNull(reason)
         assertEquals(filePath, reason!!.req.path)
       }, any())
       verify(build3, times(1)).rebuild(eq(a(combine, filePath)), check {
-        val reason = it as? InconsistentBuildReq<*, *>
+        val reason = it as? InconsistentBuildReq
         assertNotNull(reason)
         assertEquals(a(readPath, filePath), reason!!.req.app)
       }, any())
@@ -239,7 +239,7 @@ internal class BuildManagerTests {
     inOrder(build4) {
       verify(build4, times(1)).require(a(combine, filePath))
       verify(build4, times(1)).rebuild(eq(a(readPath, filePath)), check {
-        val reason = it as? InconsistentPathReq<*, *>
+        val reason = it as? InconsistentPathReq
         assertNotNull(reason)
         assertEquals(filePath, reason!!.req.path)
       }, any())

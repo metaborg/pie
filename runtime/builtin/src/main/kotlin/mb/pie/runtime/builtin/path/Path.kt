@@ -29,7 +29,7 @@ class Exists : Builder<PPath, Boolean> {
   override val id = Companion.id
   override fun BuildContext.build(input: PPath): Boolean {
     require(input, PathStampers.exists)
-    return Files.exists(input.javaPath)
+    return input.exists()
   }
 }
 
@@ -47,7 +47,7 @@ class ListContents @Inject constructor(val pathSrv: PathSrv) : Builder<ListConte
   override fun BuildContext.build(input: Input): ArrayList<PPath> {
     val (path, matcher) = input
     require(path, PathStampers.modified(matcher))
-    if (!Files.isDirectory(path.javaPath)) {
+    if (!path.isDir) {
       throw BuildException("Cannot list contents of '$input', it is not a directory")
     }
     try {
@@ -73,7 +73,7 @@ class WalkContents @Inject constructor(val pathSrv: PathSrv) : Builder<WalkConte
   override fun BuildContext.build(input: Input): ArrayList<PPath> {
     val (path, walker) = input
     require(path, PathStampers.modified(walker))
-    if (!Files.isDirectory(path.javaPath)) {
+    if (!path.isDir) {
       throw BuildException("Cannot walk contents of '$input', it is not a directory")
     }
     try {
@@ -88,16 +88,20 @@ class WalkContents @Inject constructor(val pathSrv: PathSrv) : Builder<WalkConte
 fun BuildContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, input)
 
 
-class Read : Builder<PPath, String> {
+class Read : Builder<PPath, String?> {
   companion object {
     val id = "read"
   }
 
   override val id = Companion.id
-  override fun BuildContext.build(input: PPath): String {
+  override fun BuildContext.build(input: PPath): String? {
     require(input, PathStampers.hash)
     try {
-      return String(input.readAllBytes())
+      if(!input.exists()) {
+        return null
+      }
+      val bytes = input.readAllBytes()
+      return String(bytes)
     } catch (e: IOException) {
       throw BuildException("Reading '$input' failed", e)
     }

@@ -10,21 +10,21 @@ interface ModifiedPathStamperTrait : PathStamper {
   val unknown get() = Long.MIN_VALUE
 
   fun modified(path: PPath, matcher: PathMatcher?): Long {
-    if (path.isDir) return modifiedDir(path, matcher)
-    if (path.isFile) return path.lastModifiedTimeMs()
+    if(path.isDir) return modifiedDir(path, matcher)
+    if(path.isFile) return path.lastModifiedTimeMs()
     return unknown
   }
 
   fun modifiedRec(path: PPath, walker: PathWalker?): Long {
-    if (path.isDir) return modifiedDirRec(path, walker)
-    if (path.isFile) return path.lastModifiedTimeMs()
+    if(path.isDir) return modifiedDirRec(path, walker)
+    if(path.isFile) return path.lastModifiedTimeMs()
     return unknown
   }
 
   fun modifiedDir(dir: PPath, matcher: PathMatcher?): Long {
-    if (matcher == null) return dir.lastModifiedTimeMs()
+    if(matcher == null) return dir.lastModifiedTimeMs()
     var lastModified = unknown
-    for (subPath in matcher.list(dir)) {
+    for(subPath in matcher.list(dir)) {
       val modified = subPath.lastModifiedTimeMs()
       lastModified = Math.max(lastModified, modified)
     }
@@ -33,7 +33,7 @@ interface ModifiedPathStamperTrait : PathStamper {
 
   fun modifiedDirRec(dir: PPath, walker: PathWalker?): Long {
     var lastModified = unknown
-    for (subPath in walker?.walk(dir) ?: dir.walk()) {
+    for(subPath in walker?.walk(dir) ?: dir.walk()) {
       val modified = subPath.lastModifiedTimeMs()
       lastModified = Math.max(lastModified, modified)
     }
@@ -43,7 +43,7 @@ interface ModifiedPathStamperTrait : PathStamper {
 
 data class ModifiedPathStamper(private val matcher: PathMatcher? = null) : ModifiedPathStamperTrait {
   override fun stamp(path: PPath): PathStamp {
-    if (!path.exists()) {
+    if(!path.exists()) {
       return ValuePathStamp(null, this)
     }
     val modified = modified(path, matcher)
@@ -53,7 +53,7 @@ data class ModifiedPathStamper(private val matcher: PathMatcher? = null) : Modif
 
 data class RecModifiedPathStamper(private val walker: PathWalker? = null) : ModifiedPathStamperTrait {
   override fun stamp(path: PPath): PathStamp {
-    if (!path.exists()) {
+    if(!path.exists()) {
       return ValuePathStamp(null, this)
     }
     val modified = modifiedRec(path, walker)

@@ -1,7 +1,5 @@
-package mb.pie.runtime.core.impl.store
+package mb.pie.runtime.core
 
-import mb.pie.runtime.core.UBuildApp
-import mb.pie.runtime.core.UBuildRes
 import mb.vfs.path.PPath
 
 interface BuildStore : AutoCloseable {

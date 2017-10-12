@@ -5,7 +5,13 @@ import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.pie.runtime.core.impl.*
+import mb.pie.runtime.core.impl.BuildManagerImpl
+import mb.pie.runtime.core.impl.cache.MapBuildCache
+import mb.pie.runtime.core.impl.cache.NoopBuildCache
+import mb.pie.runtime.core.impl.layer.ValidationBuildLayer
+import mb.pie.runtime.core.impl.logger.StreamBuildLogger
+import mb.pie.runtime.core.impl.share.BuildShare
+import mb.pie.runtime.core.impl.share.CoroutineBuildShare
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 
 open class PieModule : Module {
@@ -13,8 +19,8 @@ open class PieModule : Module {
     binder.bindBuildManager()
     binder.bindStore()
     binder.bindShare()
-    binder.bindValidationLayer()
-    binder.bindReporter()
+    binder.bindLayer()
+    binder.bindLogger()
 
     val builders = binder.builderMapBinder()
     binder.bindBuilders(builders)
@@ -32,15 +38,19 @@ open class PieModule : Module {
   }
 
   open protected fun Binder.bindShare() {
-    bind<BuildShare>().toSingleton<BuildShareImpl>()
+    bind<BuildShare>().toSingleton<CoroutineBuildShare>()
   }
 
-  open protected fun Binder.bindValidationLayer() {
-    bind<ValidationLayer>().to<ValidationLayerImpl>()
+  open protected fun Binder.bindCache() {
+    bind<BuildCache>().to<NoopBuildCache>()
   }
 
-  open protected fun Binder.bindReporter() {
-    bind<BuildReporter>().to<StreamBuildReporter>()
+  open protected fun Binder.bindLogger() {
+    bind<BuildLogger>().to<StreamBuildLogger>()
+  }
+
+  open protected fun Binder.bindLayer() {
+    bind<BuildLayer>().to<ValidationBuildLayer>()
   }
 
 

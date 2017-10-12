@@ -11,24 +11,24 @@ interface HashPathStamperTrait : PathStamper {
   fun createDigester() = MessageDigest.getInstance("SHA-1")!!
 
   fun MessageDigest.update(path: PPath, matcher: PathMatcher?) {
-    if (path.isDir) updateDir(path, matcher)
-    if (path.isFile) updateFile(path)
+    if(path.isDir) updateDir(path, matcher)
+    if(path.isFile) updateFile(path)
   }
 
   fun MessageDigest.updateRec(path: PPath, walker: PathWalker?) {
-    if (path.isDir) updateDirRec(path, walker)
-    if (path.isFile) updateFile(path)
+    if(path.isDir) updateDirRec(path, walker)
+    if(path.isFile) updateFile(path)
   }
 
   fun MessageDigest.updateDir(dir: PPath, matcher: PathMatcher?) {
-    for (subPath in matcher?.list(dir) ?: dir.list()) {
-      if (subPath.isFile) updateFile(subPath)
+    for(subPath in matcher?.list(dir) ?: dir.list()) {
+      if(subPath.isFile) updateFile(subPath)
     }
   }
 
   fun MessageDigest.updateDirRec(dir: PPath, walker: PathWalker?) {
-    for (subPath in walker?.walk(dir) ?: dir.walk()) {
-      if (subPath.isFile) updateFile(subPath)
+    for(subPath in walker?.walk(dir) ?: dir.walk()) {
+      if(subPath.isFile) updateFile(subPath)
     }
   }
 
@@ -39,7 +39,7 @@ interface HashPathStamperTrait : PathStamper {
 
 data class HashPathStamper(private val matcher: PathMatcher? = null) : HashPathStamperTrait {
   override fun stamp(path: PPath): PathStamp {
-    if (!path.exists()) {
+    if(!path.exists()) {
       return ByteArrayPathStamp(null, this)
     }
     val digest = createDigester()
@@ -51,7 +51,7 @@ data class HashPathStamper(private val matcher: PathMatcher? = null) : HashPathS
 
 data class RecHashPathStamper(private val walker: PathWalker? = null) : HashPathStamperTrait {
   override fun stamp(path: PPath): PathStamp {
-    if (!path.exists()) {
+    if(!path.exists()) {
       return ByteArrayPathStamp(null, this)
     }
     val digest = createDigester()

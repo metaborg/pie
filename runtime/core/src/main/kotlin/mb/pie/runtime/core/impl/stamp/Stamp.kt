@@ -12,13 +12,13 @@ data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStampe
 
 data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
   override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other?.javaClass != javaClass) return false
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
 
     other as ByteArrayPathStamp
 
-    if (!Arrays.equals(value, other.value)) return false // Override required for array equality
-    if (stamper != other.stamper) return false
+    if(!Arrays.equals(value, other.value)) return false // Override required for array equality
+    if(stamper != other.stamper) return false
 
     return true
   }
@@ -30,6 +30,6 @@ data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathS
   }
 
   override fun toString(): String {
-    return if (value == null) "null" else javax.xml.bind.DatatypeConverter.printHexBinary(value)
+    return if(value == null) "null" else javax.xml.bind.DatatypeConverter.printHexBinary(value)
   }
 }

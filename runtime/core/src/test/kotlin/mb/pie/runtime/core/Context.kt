@@ -4,7 +4,7 @@ import com.google.inject.*
 import mb.log.LogModule
 import mb.log.Logger
 import mb.pie.runtime.core.impl.*
-import mb.pie.runtime.core.impl.store.BuildStore
+import mb.pie.runtime.core.impl.share.BuildShare
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
 import org.slf4j.LoggerFactory
@@ -15,8 +15,8 @@ open class ParametrizedTestCtx(
   val store: BuildStore,
   val cache: BuildCache,
   val share: BuildShare,
-  val validationLayerProvider: Provider<ValidationLayer>,
-  val reporter: BuildReporter,
+  val buildLayerProvider: Provider<BuildLayer>,
+  val reporter: BuildLogger,
   val fs: FileSystem
 ) : TestCtx(), AutoCloseable {
   val logger: Logger = logger.forContext("Test")
@@ -32,11 +32,11 @@ open class ParametrizedTestCtx(
 
 
   fun b(): BuildImpl {
-    return b(store, cache, share, validationLayerProvider.get(), reporter)
+    return b(store, cache, share, buildLayerProvider.get(), reporter)
   }
 
   fun bm(): BuildManager {
-    return bm(store, cache, share, validationLayerProvider)
+    return bm(store, cache, share, buildLayerProvider)
   }
 }
 
@@ -76,12 +76,12 @@ open class TestCtx {
   }
 
 
-  fun b(store: BuildStore, cache: BuildCache, share: BuildShare, validationLayer: ValidationLayer, reporter: BuildReporter): BuildImpl {
-    return BuildImpl(store, cache, share, validationLayer, reporter, builders, inj)
+  fun b(store: BuildStore, cache: BuildCache, share: BuildShare, buildLayer: BuildLayer, logger: BuildLogger): BuildImpl {
+    return BuildImpl(store, cache, share, buildLayer, logger, builders, inj)
   }
 
-  fun bm(store: BuildStore, cache: BuildCache, share: BuildShare, validationLayerProvider: Provider<ValidationLayer>): BuildManager {
-    return BuildManagerImpl(store, cache, share, validationLayerProvider, builders, inj)
+  fun bm(store: BuildStore, cache: BuildCache, share: BuildShare, buildLayerProvider: Provider<BuildLayer>): BuildManager {
+    return BuildManagerImpl(store, cache, share, buildLayerProvider, builders, inj)
   }
 
 

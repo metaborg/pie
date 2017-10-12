@@ -1,18 +1,10 @@
-package mb.pie.runtime.core.impl
+package mb.pie.runtime.core.impl.share
 
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.sync.Mutex
 import mb.pie.runtime.core.*
 
-interface BuildShare {
-  fun <I : In, O : Out> reuseOrCreate(app: BuildApp<I, O>, cacheFunc: (BuildApp<I, O>) -> BuildRes<I, O>?, buildFunc: (BuildApp<I, O>) -> BuildRes<I, O>): BuildRes<I, O>
-  fun <I : In, O : Out> reuseOrCreate(app: BuildApp<I, O>, buildFunc: (BuildApp<I, O>) -> BuildRes<I, O>): BuildRes<I, O>
-}
-
-class BuildShareImpl : BuildShare {
+class CoroutineBuildShare : BuildShare {
   private val sharedBuilds = mutableMapOf<UBuildApp, Deferred<UBuildRes>>()
   private val mutex = Mutex()
 
@@ -30,24 +22,24 @@ class BuildShareImpl : BuildShare {
     mutex.lock()
 
     val existingBuild = sharedBuilds[app]
-    if (existingBuild != null) {
+    if(existingBuild != null) {
       // There is already a build for given app, wait for its result
       mutex.unlock()
       @Suppress("UNCHECKED_CAST")
       return existingBuild.await() as BuildRes<I, O>
     }
 
-    if (cacheFunc != null) {
+    if(cacheFunc != null) {
       /* First check if there is already a cached value. This handles the case where a build was removed from
       sharedBuilds before another coroutine could acquire the first lock, causing a recomputation. */
       val cached = cacheFunc(app)
-      if (cached != null) {
+      if(cached != null) {
         mutex.unlock()
         return cached
       }
     }
 
-    // There is no build for given app yet, create a new build and share it
+    // There is no build for given app yet, create a new rebuildStart and share it
     val build: Deferred<BuildRes<I, O>>
     try {
       build = async(context) { buildFunc(app) }
@@ -68,6 +60,6 @@ class BuildShareImpl : BuildShare {
 
 
   override fun toString(): String {
-    return "BuildShare"
+    return "CoroutineBuildShare"
   }
 }

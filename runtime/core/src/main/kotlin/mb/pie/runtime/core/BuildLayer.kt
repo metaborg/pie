@@ -2,7 +2,7 @@ package mb.pie.runtime.core
 
 import mb.pie.runtime.core.impl.Build
 
-interface ValidationLayer {
+interface BuildLayer {
   fun <I : In, O : Out> requireStart(app: BuildApp<I, O>)
 
   fun <I : In, O : Out> requireEnd(app: BuildApp<I, O>)

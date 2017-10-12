@@ -2,8 +2,10 @@ package mb.pie.runtime.core.impl
 
 import com.google.inject.Injector
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.store.BuildStore
-import mb.pie.runtime.core.impl.store.BuildStoreReadTxn
+import mb.pie.runtime.core.BuildCache
+import mb.pie.runtime.core.impl.share.BuildShare
+import mb.pie.runtime.core.BuildStore
+import mb.pie.runtime.core.BuildStoreReadTxn
 
 interface Build {
   fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O>
@@ -19,8 +21,8 @@ open class BuildImpl(
   private val store: BuildStore,
   private val cache: BuildCache,
   private val share: BuildShare,
-  private val validationLayer: ValidationLayer,
-  private val reporter: BuildReporter,
+  private val buildLayer: BuildLayer,
+  private val logger: BuildLogger,
   private val builders: Map<String, UBuilder>,
   private val injector: Injector)
   : Build {
@@ -29,32 +31,52 @@ open class BuildImpl(
 
   override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O> {
     try {
-      validationLayer.requireStart(app)
-      reporter.require(app)
+      buildLayer.requireStart(app)
+      logger.requireStart(app)
 
+      // Check if builder application is already consistent this build.
+      logger.checkConsistentStart(app)
       val consistentResult = consistent[app]?.cast<I, O>()
       if(consistentResult != null) {
         // Existing result is known to be consistent this build: reuse
-        reporter.consistent(app, consistentResult)
-        return BuildInfo(consistentResult)
+        val info = BuildInfo(consistentResult)
+        logger.checkConsistentEnd(app, consistentResult)
+        logger.requireEnd(app, info)
+        return info
+      }
+      logger.checkConsistentEnd(app, null)
+
+      // Check cache for result of build application.
+      logger.checkCachedStart(app)
+      val cachedResult = cache[app]
+      logger.checkCachedEnd(app, cachedResult)
+
+      // Check store for result of build application.
+      val existingUntypedResult = if(cachedResult != null) {
+        cachedResult
+      } else {
+        logger.checkStoredStart(app)
+        val result = store.readTxn().use { it.produces(app) }
+        logger.checkStoredEnd(app, result)
+        result
       }
 
-      val existingResult = (cache[app] ?: store.readTxn().use { it.produces(app) })?.cast<I, O>()
-      @Suppress("FoldInitializerAndIfToElvis")
+      // Check if rebuild is necessary.
+      val existingResult = existingUntypedResult?.cast<I, O>()
       if(existingResult == null) {
         // No cached or stored result was found: rebuild
         val info = rebuild(app, NoResultReason(), true)
-        reporter.consistent(app, info.result)
+        logger.requireEnd(app, info)
         return info
       }
 
-      // Check for inconsistencies and rebuild when found
+      // Check for inconsistencies and rebuild when found.
       // Internal consistency: output consistency
       run {
         val inconsistencyReason = existingResult.inconsistencyReason
         if(inconsistencyReason != null) {
           val info = rebuild(app, inconsistencyReason)
-          reporter.consistent(app, info.result)
+          logger.requireEnd(app, info)
           return info
         }
       }
@@ -62,54 +84,53 @@ open class BuildImpl(
       // Internal consistency: generated files
       for(gen in existingResult.gens) {
         val (genPath, stamp) = gen
+        logger.checkGenStart(app, gen)
         val newStamp = stamp.stamper.stamp(genPath)
-        reporter.checkGenPath(app, genPath, stamp, newStamp)
         if(stamp != newStamp) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
-          val info = rebuild(app, InconsistentGenPath(existingResult, gen, newStamp))
-          reporter.consistent(app, info.result)
+          val reason = InconsistentGenPath(existingResult, gen, newStamp)
+          logger.checkGenEnd(app, gen, reason)
+          val info = rebuild(app, reason)
+          logger.requireEnd(app, info)
           return info
+        } else {
+          logger.checkGenEnd(app, gen, null)
         }
       }
       // Internal and total consistency: requirements
       for(req in existingResult.reqs) {
-        val inconsistencyReason = req.makeConsistent(app, existingResult, this, reporter)
+        val inconsistencyReason = req.makeConsistent(app, existingResult, this, logger)
         if(inconsistencyReason != null) {
           val info = rebuild(app, inconsistencyReason)
-          reporter.consistent(app, info.result)
+          logger.requireEnd(app, info)
           return info
         }
       }
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      validationLayer.validate(app, existingResult, this)
-      reporter.consistent(app, existingResult)
+      buildLayer.validate(app, existingResult, this)
       // Cache the result
       consistent[app] = existingResult
       cache[app] = existingResult
       // Reuse existing result
-      return BuildInfo(existingResult)
+      val info = BuildInfo(existingResult)
+      logger.requireEnd(app, info)
+      return info
     } finally {
-      validationLayer.requireEnd(app)
+      buildLayer.requireEnd(app)
     }
   }
 
   // Method is open internal for testability
   open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>, reason: BuildReason, useCache: Boolean = false): BuildInfo<I, O> {
-    reporter.build(app, reason)
-    val result: BuildRes<I, O>
-    try {
-      result = if(useCache) {
-        share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.produces(it)?.cast<I, O>() } }) { this.rebuildInternal(it) }
-      } else {
-        share.reuseOrCreate(app) { this.rebuildInternal(it) }
-      }
-    } catch(e: BuildException) {
-      reporter.buildFailed(app, reason, e)
-      throw e
+    logger.rebuildStart(app, reason)
+    val result = if(useCache) {
+      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.produces(it)?.cast<I, O>() } }) { this.rebuildInternal(it) }
+    } else {
+      share.reuseOrCreate(app) { this.rebuildInternal(it) }
     }
-    reporter.buildSuccess(app, reason, result)
+    logger.rebuildEnd(app, reason, result)
     return BuildInfo(result, reason)
   }
 
@@ -119,14 +140,12 @@ open class BuildImpl(
     val builder = getBuilder<I, O>(builderId)
     val desc = builder.desc(input)
     val context = BuildContextImpl(this, store, injector, app)
-    val output = context.use {
-      builder.build(input, context)
-    }
+    val output = builder.build(input, context)
     val (reqs, gens) = context.getReqsAndGens()
     val result = BuildRes(builderId, desc, input, output, reqs, gens)
 
     // Validate well-formedness of the dependency graph
-    validationLayer.validate(app, result, this)
+    buildLayer.validate(app, result, this)
     // Store result and path dependencies in build store
     store.writeTxn().use {
       it.setProduces(app, result)

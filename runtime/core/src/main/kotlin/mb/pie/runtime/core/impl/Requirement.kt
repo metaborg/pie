@@ -5,36 +5,43 @@ import mb.vfs.path.PPath
 import java.io.Serializable
 
 interface Req : Serializable {
-  fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, reporter: BuildReporter): BuildReason?
+  fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): BuildReason?
 }
 
 data class PathReq(val path: PPath, val stamp: PathStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, reporter: BuildReporter): BuildReason? {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): InconsistentPathReq? {
+    logger.checkPathReqStart(requiringApp, this)
     val newStamp = stamp.stamper.stamp(path)
-    reporter.checkReqPath(requiringApp, path, stamp, newStamp)
-    if (stamp != newStamp) {
-      return InconsistentPathReq(requiringResult, this, newStamp)
+    val reason = if(stamp != newStamp) {
+      InconsistentPathReq(requiringResult, this, newStamp)
+    } else {
+      null
     }
-    return null
+    logger.checkPathReqEnd(requiringApp, this, reason)
+    return reason
   }
 }
 
 data class BuildReq<out AI : In, out AO : Out>(val app: BuildApp<AI, AO>, val stamp: OutputStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, reporter: BuildReporter): BuildReason? {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): BuildReason? {
+    logger.checkBuildReqStart(requiringApp, this)
     val result = build.require(app).result
-
-    // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
-    // If output is not consistent, requirement is not consistent
-    if (!result.isConsistent) {
-      return InconsistentBuildReqTransientOutput(requiringResult, this, result)
+    val reason = if(!result.isConsistent) {
+      // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
+      // If output is not consistent, requirement is not requireEnd
+      // TODO: is this necessary?
+      InconsistentBuildReqTransientOutput(requiringResult, this, result)
+    } else {
+      val newStamp = stamp.stamper.stamp(result.output)
+      if(stamp != newStamp) {
+        // If stamp has changed, requirement is not consistent
+        InconsistentBuildReq(requiringResult, this, newStamp)
+      } else {
+        null
+      }
     }
-
-    // If stamp has changed, requirement is not consistent
-    val newStamp = stamp.stamper.stamp(result.output)
-    if (stamp != newStamp) {
-      return InconsistentBuildReq(requiringResult, this, newStamp)
-    }
-    return null
+    logger.checkBuildReqEnd(requiringApp, this, reason)
+    return reason
   }
 }
 typealias UBuildReq = BuildReq<*, *>
