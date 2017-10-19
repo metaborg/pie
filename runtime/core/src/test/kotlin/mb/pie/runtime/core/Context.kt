@@ -4,7 +4,6 @@ import com.google.inject.*
 import mb.log.LogModule
 import mb.log.Logger
 import mb.pie.runtime.core.impl.*
-import mb.pie.runtime.core.impl.share.BuildShare
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
 import org.slf4j.LoggerFactory
@@ -12,11 +11,11 @@ import java.nio.file.*
 
 open class ParametrizedTestCtx(
   logger: Logger,
-  val store: BuildStore,
-  val cache: BuildCache,
+  val store: Store,
+  val cache: Cache,
   val share: BuildShare,
-  val buildLayerProvider: Provider<BuildLayer>,
-  val reporter: BuildLogger,
+  val layerProvider: Provider<Layer>,
+  val reporter: mb.pie.runtime.core.Logger,
   val fs: FileSystem
 ) : TestCtx(), AutoCloseable {
   val logger: Logger = logger.forContext("Test")
@@ -31,18 +30,18 @@ open class ParametrizedTestCtx(
   }
 
 
-  fun b(): BuildImpl {
-    return b(store, cache, share, buildLayerProvider.get(), reporter)
+  fun b(): PollingExec {
+    return b(store, cache, share, layerProvider.get(), reporter)
   }
 
-  fun bm(): BuildManager {
-    return bm(store, cache, share, buildLayerProvider)
+  fun bm(): PollingExecManager {
+    return bm(store, cache, share, layerProvider)
   }
 }
 
 open class TestCtx {
   protected val inj: Injector = Guice.createInjector(PieModule(), LogModule(LoggerFactory.getLogger("root")))
-  protected val builders = mutableMapOf<String, UBuilder>()
+  protected val builders = mutableMapOf<String, UFunc>()
 
 
   val toLowerCase = lb<String, String>("toLowerCase", { "toLowerCase($it)" }) {
@@ -63,25 +62,25 @@ open class TestCtx {
     return PPathImpl(fs.getPath(path))
   }
 
-  fun <I : In, O : Out> lb(id: String, descFunc: (I) -> String, buildFunc: BuildContext.(I) -> O): Builder<I, O> {
-    return LambdaBuilder(id, descFunc, buildFunc)
+  fun <I : In, O : Out> lb(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): Func<I, O> {
+    return LambdaFunc(id, descFunc, execFunc)
   }
 
-  fun <I : In, O : Out> a(builder: Builder<I, O>, input: I): BuildApp<I, O> {
-    return BuildApp(builder, input)
+  fun <I : In, O : Out> a(func: Func<I, O>, input: I): FuncApp<I, O> {
+    return FuncApp(func, input)
   }
 
-  fun <I : In, O : Out> a(builderId: String, input: I): BuildApp<I, O> {
-    return BuildApp<I, O>(builderId, input)
+  fun <I : In, O : Out> a(builderId: String, input: I): FuncApp<I, O> {
+    return FuncApp<I, O>(builderId, input)
   }
 
 
-  fun b(store: BuildStore, cache: BuildCache, share: BuildShare, buildLayer: BuildLayer, logger: BuildLogger): BuildImpl {
-    return BuildImpl(store, cache, share, buildLayer, logger, builders, inj)
+  fun b(store: Store, cache: Cache, share: BuildShare, layer: Layer, logger: mb.pie.runtime.core.Logger): PollingExec {
+    return PollingExec(store, cache, share, layer, logger, builders, inj)
   }
 
-  fun bm(store: BuildStore, cache: BuildCache, share: BuildShare, buildLayerProvider: Provider<BuildLayer>): BuildManager {
-    return BuildManagerImpl(store, cache, share, buildLayerProvider, builders, inj)
+  fun bm(store: Store, cache: Cache, share: BuildShare, layerProvider: Provider<Layer>): PollingExecManager {
+    return PollingExecManagerImpl(store, cache, share, layerProvider, builders, inj)
   }
 
 
@@ -104,12 +103,12 @@ open class TestCtx {
   }
 
 
-  fun registerBuilder(builder: UBuilder) {
+  fun registerBuilder(builder: UFunc) {
     builders[builder.id] = builder
   }
 
-  inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Builder<BuildApp<I, O>, O> {
-    return lb<BuildApp<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
+  inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Func<FuncApp<I, O>, O> {
+    return lb<FuncApp<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
       requireOutput(it)
     }
   }

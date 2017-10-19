@@ -8,43 +8,43 @@ import java.util.concurrent.ConcurrentHashMap
  * A build store that stored generated and required path dependencies in concurrent hash maps. For debugging or benchmarking purposes only.
  * Does not store the result of builds in a hash map, and therefore does not provide incrementality between changes in build outputs.
  */
-class InMemoryPathOnlyBuildStore : BuildStore, BuildStoreReadTxn, BuildStoreWriteTxn {
-  private val generatedBy = ConcurrentHashMap<PPath, UBuildApp>()
-  private val requiredBy = ConcurrentHashMap<PPath, UBuildApp>()
+class InMemoryPathOnlyStore : Store, StoreReadTxn, StoreWriteTxn {
+  private val generatedBy = ConcurrentHashMap<PPath, UFuncApp>()
+  private val requiredBy = ConcurrentHashMap<PPath, UFuncApp>()
 
 
-  override fun readTxn(): BuildStoreReadTxn {
+  override fun readTxn(): StoreReadTxn {
     return this
   }
 
-  override fun writeTxn(): BuildStoreWriteTxn {
+  override fun writeTxn(): StoreWriteTxn {
     return this
   }
 
   override fun close() {}
 
 
-  override fun setProduces(app: UBuildApp, res: UBuildRes) {}
+  override fun setProduces(app: UFuncApp, res: UExecRes) {}
 
-  override fun produces(app: UBuildApp): UBuildRes? {
+  override fun produces(app: UFuncApp): UExecRes? {
     return null
   }
 
 
-  override fun setGeneratedBy(path: PPath, res: UBuildApp) {
+  override fun setGeneratedBy(path: PPath, res: UFuncApp) {
     generatedBy[path] = res
   }
 
-  override fun generatedBy(path: PPath): UBuildApp? {
+  override fun generatedBy(path: PPath): UFuncApp? {
     return generatedBy[path]
   }
 
 
-  override fun setRequiredBy(path: PPath, res: UBuildApp) {
+  override fun setRequiredBy(path: PPath, res: UFuncApp) {
     requiredBy[path] = res
   }
 
-  override fun requiredBy(path: PPath): UBuildApp? {
+  override fun requiredBy(path: PPath): UFuncApp? {
     return requiredBy[path]
   }
 
@@ -56,6 +56,6 @@ class InMemoryPathOnlyBuildStore : BuildStore, BuildStoreReadTxn, BuildStoreWrit
 
 
   override fun toString(): String {
-    return "InMemoryPathOnlyBuildStore"
+    return "InMemoryPathOnlyStore"
   }
 }

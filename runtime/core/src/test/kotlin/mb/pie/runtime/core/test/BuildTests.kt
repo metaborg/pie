@@ -2,13 +2,14 @@ package mb.pie.runtime.core.test
 
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.layer.ValidationException
 import mb.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
 
-internal class BuildManagerTests {
+internal class ExecManagerTests {
   @TestFactory
   fun testBuild() = TestGenerator.generate("testBuild") {
     val input = "CAPITALIZED"
@@ -29,7 +30,7 @@ internal class BuildManagerTests {
     inOrder(build, builder) {
       verify(build, times(1)).require(eq(app))
       verify(build, times(1)).rebuild(eq(app), eq(NoResultReason()), any())
-      verify(builder, times(1)).build(eq(input), anyOrNull())
+      verify(builder, times(1)).exec(eq(input), anyOrNull())
     }
 
     verify(builder, atLeastOnce()).desc(input)
@@ -65,11 +66,11 @@ internal class BuildManagerTests {
     inOrder(builder, build1, build2) {
       verify(build1, times(1)).require(eq(app1))
       verify(build1, times(1)).rebuild(eq(app1), eq(NoResultReason()), any())
-      verify(builder, times(1)).build(eq(input1), anyOrNull())
+      verify(builder, times(1)).exec(eq(input1), anyOrNull())
 
       verify(build2, times(1)).require(eq(app2))
       verify(build2, times(1)).rebuild(eq(app2), eq(NoResultReason()), any())
-      verify(builder, times(1)).build(eq(input2), anyOrNull())
+      verify(builder, times(1)).exec(eq(input2), anyOrNull())
     }
   }
 
@@ -96,7 +97,7 @@ internal class BuildManagerTests {
     // Result is reused if rebuild is never called
     verify(build2, never()).rebuild(eq(app), eq(NoResultReason()), any())
 
-    verify(builder, atMost(1)).build(eq(input), anyOrNull())
+    verify(builder, atMost(1)).exec(eq(input), anyOrNull())
     verify(builder, atLeastOnce()).desc(input)
   }
 
@@ -220,7 +221,7 @@ internal class BuildManagerTests {
         assertEquals(filePath, reason!!.req.path)
       }, any())
       verify(build3, times(1)).rebuild(eq(a(combine, filePath)), check {
-        val reason = it as? InconsistentBuildReq
+        val reason = it as? InconsistentExecReq
         assertNotNull(reason)
         assertEquals(a(readPath, filePath), reason!!.req.app)
       }, any())
@@ -257,12 +258,14 @@ internal class BuildManagerTests {
 
     val filePath = p(fs, "/file")
     assertThrows(ValidationException::class.java) {
-      bm.buildAll(a(writePath, Pair("HELLO WORLD 1!", filePath)), a(writePath, Pair("HELLO WORLD 2!", filePath)))
+      val session = bm.newSession()
+      session.exec(a(writePath, Pair("HELLO WORLD 1!", filePath)))
+      session.exec(a(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
     // Overlapping generated path exception should also trigger between separate builds
     assertThrows(ValidationException::class.java) {
-      bm.build(a(writePath, Pair("HELLO WORLD 3!", filePath)))
+      bm.exec(a(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
 
@@ -279,13 +282,13 @@ internal class BuildManagerTests {
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
-      bm.build(a(readPath, filePath))
-      bm.build(a(writePath, Pair("HELLO WORLD!", filePath)))
+      bm.exec(a(readPath, filePath))
+      bm.exec(a(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate builds
     assertThrows(ValidationException::class.java) {
-      bm.build(a(writePath, Pair("HELLO WORLD!", filePath)))
+      bm.exec(a(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
 
@@ -300,7 +303,7 @@ internal class BuildManagerTests {
     val bm = bm()
 
     val combineIncorrect = spy(lb<Pair<String, PPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
-      requireBuild(a(indirection, a(writePath, Pair(text, path))))
+      requireExec(a(indirection, a(writePath, Pair(text, path))))
       requireOutput(a(readPath, path))
     })
     registerBuilder(combineIncorrect)
@@ -308,12 +311,12 @@ internal class BuildManagerTests {
     val filePath1 = p(fs, "/file1")
     // CHANGED: this dependency is now inferred automatically, so no exception is thrown
     // assertThrows(HiddenDependencyException::class.java) {
-    bm.build(a(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
+    bm.exec(a(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
     // }
 
     val combineStillIncorrect = spy(lb<Pair<String, PPath>, String>("combineStillIncorrect", { "combine$it" }) { (text, path) ->
-      requireBuild(a(indirection, a(writePath, Pair(text, path))))
-      requireBuild(a(writePath, Pair(text, path)))
+      requireExec(a(indirection, a(writePath, Pair(text, path))))
+      requireExec(a(writePath, Pair(text, path)))
       requireOutput(a(readPath, path))
     })
     registerBuilder(combineStillIncorrect)
@@ -321,7 +324,7 @@ internal class BuildManagerTests {
     val filePath2 = p(fs, "/file2")
     // CHANGED: this dependency is now inferred automatically, so no exception is thrown
     // assertThrows(HiddenDependencyException::class.java) {
-    bm.build(a(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
+    bm.exec(a(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
     // }
   }
 
@@ -334,7 +337,7 @@ internal class BuildManagerTests {
     val bm = bm()
 
     assertThrows(ValidationException::class.java) {
-      bm.build(a(b1, None.instance))
+      bm.exec(a(b1, None.instance))
     }
   }
 }

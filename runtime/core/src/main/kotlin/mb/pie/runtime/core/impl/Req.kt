@@ -5,11 +5,11 @@ import mb.vfs.path.PPath
 import java.io.Serializable
 
 interface Req : Serializable {
-  fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): BuildReason?
+  fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason?
 }
 
 data class PathReq(val path: PPath, val stamp: PathStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): InconsistentPathReq? {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): InconsistentPathReq? {
     logger.checkPathReqStart(requiringApp, this)
     val newStamp = stamp.stamper.stamp(path)
     val reason = if(stamp != newStamp) {
@@ -22,20 +22,20 @@ data class PathReq(val path: PPath, val stamp: PathStamp) : Req {
   }
 }
 
-data class BuildReq<out AI : In, out AO : Out>(val app: BuildApp<AI, AO>, val stamp: OutputStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): BuildReason? {
-    val result = build.require(app).result
+data class ExecReq<out AI : In, out AO : Out>(val app: FuncApp<AI, AO>, val stamp: OutputStamp) : Req {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason? {
+    val result = exec.require(app).result
     logger.checkBuildReqStart(requiringApp, this)
     val reason = if(!result.isConsistent) {
       // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
       // If output is not consistent, requirement is not requireEnd
       // TODO: is this necessary?
-      InconsistentBuildReqTransientOutput(requiringResult, this, result)
+      InconsistentExecReqTransientOutput(requiringResult, this, result)
     } else {
       val newStamp = stamp.stamper.stamp(result.output)
       if(stamp != newStamp) {
         // If stamp has changed, requirement is not consistent
-        InconsistentBuildReq(requiringResult, this, newStamp)
+        InconsistentExecReq(requiringResult, this, newStamp)
       } else {
         null
       }
@@ -44,7 +44,4 @@ data class BuildReq<out AI : In, out AO : Out>(val app: BuildApp<AI, AO>, val st
     return reason
   }
 }
-typealias UBuildReq = BuildReq<*, *>
-
-
-data class Gen(val path: PPath, val stamp: PathStamp) : Serializable
+typealias UExecReq = ExecReq<*, *>

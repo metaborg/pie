@@ -27,12 +27,12 @@ rules // definitions
     ; emptyReturn := <?VoidTy(); !"return Unit.instance" <+ !""> type
    |}
     with
-      rules(ModuleBindings :+= $[binder.bindBuilder<[className]>(builders, "[className]")])
+      rules(ModuleBindings :+= $[binder.bindFunc<[className]>(funcs, "[className]")])
     with
       str := 
-$[class [className] : Builder<[inputName], [outputName]> {
+$[class [className] : Func<[inputName], [outputName]> {
   [inputDataClass][outputDataClass]override val id = "[className]"
-  override fun BuildContext.build(input: [inputName]): [outputName] {
+  override fun ExecContext.exec(input: [inputName]): [outputName] {
     [buildImpl]
   }
 }

@@ -6,7 +6,7 @@ import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
 import mb.pie.runtime.core.TestGenerator
-import mb.pie.runtime.core.impl.BuildImpl
+import mb.pie.runtime.core.impl.PollingExec
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.TestFactory
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -20,7 +20,7 @@ internal class ConcurrencyTests {
 
     runBlocking {
       List(100) { index ->
-        launch(context + CommonPool) {
+        launch(coroutineContext + CommonPool) {
           val build = b()
           val app = a(toLowerCase, "HELLO WORLD $index!")
           build.require(app)
@@ -33,10 +33,10 @@ internal class ConcurrencyTests {
   fun testConcurrentReuse() = TestGenerator.generate("testConcurrentReuse") {
     registerBuilder(toLowerCase)
 
-    val spies = ConcurrentLinkedQueue<BuildImpl>()
+    val spies = ConcurrentLinkedQueue<PollingExec>()
     runBlocking {
       List(100) {
-        launch(context + CommonPool) {
+        launch(coroutineContext + CommonPool) {
           val build = spy(b())
           spies.add(build)
           val app = a(toLowerCase, "HELLO WORLD!")
@@ -47,7 +47,7 @@ internal class ConcurrencyTests {
 
     // Test that function 'rebuildInternal' has only been called once, even between all threads
     var invocations = 0
-    val javaFuncName = BuildImpl::class.memberFunctions.first { it.name == "rebuildInternal" }.javaMethod!!.name
+    val javaFuncName = PollingExec::class.memberFunctions.first { it.name == "rebuildInternal" }.javaMethod!!.name
     spies.forEach { spy ->
       mockingDetails(spy).invocations
         .filter { it.method.name == javaFuncName }

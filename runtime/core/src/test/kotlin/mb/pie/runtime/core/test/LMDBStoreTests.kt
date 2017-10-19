@@ -6,7 +6,7 @@ import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 import org.junit.jupiter.api.TestFactory
 import java.io.File
 
-internal class LMDBBuildStoreTests {
+internal class LMDBStoreTests {
   @TestFactory
   fun testReuse() = TestGenerator.generate("testReuse") {
     val factory = LMDBBuildStoreFactory(logger)
@@ -15,13 +15,13 @@ internal class LMDBBuildStoreTests {
 
     factory.create(File("build/test/lmdbstore")).use {
       it.writeTxn().use { it.drop() }
-      val build = b(it, cache, share, buildLayerProvider.get(), reporter)
+      val build = b(it, cache, share, layerProvider.get(), reporter)
       build.require(a(toLowerCase, "HELLO WORLD!"))
     }
 
     // Close and re-open the database
     factory.create(File("build/test/lmdbstore")).use {
-      val build = spy(b(it, cache, share, buildLayerProvider.get(), reporter))
+      val build = spy(b(it, cache, share, layerProvider.get(), reporter))
       val app = a(toLowerCase, "HELLO WORLD!")
       build.require(app)
       verify(build, never()).rebuild(eq(app), any(), any())

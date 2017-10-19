@@ -5,20 +5,20 @@ import kotlinx.coroutines.experimental.sync.Mutex
 import mb.pie.runtime.core.*
 
 class CoroutineBuildShare : BuildShare {
-  private val sharedBuilds = mutableMapOf<UBuildApp, Deferred<UBuildRes>>()
+  private val sharedBuilds = mutableMapOf<UFuncApp, Deferred<UExecRes>>()
   private val mutex = Mutex()
 
 
-  override fun <I : In, O : Out> reuseOrCreate(app: BuildApp<I, O>, cacheFunc: (BuildApp<I, O>) -> BuildRes<I, O>?, buildFunc: (BuildApp<I, O>) -> BuildRes<I, O>): BuildRes<I, O> {
-    return runBlocking { getResult(app, cacheFunc, buildFunc) }
+  override fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, cacheFunc: (FuncApp<I, O>) -> ExecRes<I, O>?, execFunc: (FuncApp<I, O>) -> ExecRes<I, O>): ExecRes<I, O> {
+    return runBlocking { getResult(app, cacheFunc, execFunc) }
   }
 
-  override fun <I : In, O : Out> reuseOrCreate(app: BuildApp<I, O>, buildFunc: (BuildApp<I, O>) -> BuildRes<I, O>): BuildRes<I, O> {
-    return runBlocking { getResult(app, null, buildFunc) }
+  override fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, execFunc: (FuncApp<I, O>) -> ExecRes<I, O>): ExecRes<I, O> {
+    return runBlocking { getResult(app, null, execFunc) }
   }
 
 
-  private suspend fun <I : In, O : Out> CoroutineScope.getResult(app: BuildApp<I, O>, cacheFunc: ((BuildApp<I, O>) -> BuildRes<I, O>?)?, buildFunc: (BuildApp<I, O>) -> BuildRes<I, O>): BuildRes<I, O> {
+  private suspend fun <I : In, O : Out> CoroutineScope.getResult(app: FuncApp<I, O>, cacheFunc: ((FuncApp<I, O>) -> ExecRes<I, O>?)?, execFunc: (FuncApp<I, O>) -> ExecRes<I, O>): ExecRes<I, O> {
     mutex.lock()
 
     val existingBuild = sharedBuilds[app]
@@ -26,7 +26,7 @@ class CoroutineBuildShare : BuildShare {
       // There is already a build for given app, wait for its result
       mutex.unlock()
       @Suppress("UNCHECKED_CAST")
-      return existingBuild.await() as BuildRes<I, O>
+      return existingBuild.await() as ExecRes<I, O>
     }
 
     if(cacheFunc != null) {
@@ -40,16 +40,16 @@ class CoroutineBuildShare : BuildShare {
     }
 
     // There is no build for given app yet, create a new rebuildStart and share it
-    val build: Deferred<BuildRes<I, O>>
+    val exec: Deferred<ExecRes<I, O>>
     try {
-      build = async(context) { buildFunc(app) }
-      sharedBuilds[app] = build
+      exec = async(coroutineContext) { execFunc(app) }
+      sharedBuilds[app] = exec
     } finally {
       mutex.unlock()
     }
 
     try {
-      return build.await()
+      return exec.await()
     } finally {
       // Remove shared build after it is finished
       mutex.lock()

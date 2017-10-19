@@ -2,6 +2,7 @@ package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
 
+
 class EqualsOutputStamper : OutputStamper {
   override fun <O : Out> stamp(output: O): OutputStamp {
     return ValueOutputStamp(output, this)
@@ -37,8 +38,6 @@ class InconsequentialOutputStamper : OutputStamper {
   override fun hashCode(): Int {
     return 0
   }
-
-
 }
 
 data class ValueOutputStamp<out V : Out>(val value: V, override val stamper: OutputStamper) : OutputStamp {

@@ -4,92 +4,92 @@ import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 import java.lang.management.ManagementFactory
 
-class TraceBuildLogger : BuildLogger {
+class TraceLogger : Logger {
   private val mxBean = ManagementFactory.getThreadMXBean()
   private inline val currentTime get() = mxBean.currentThreadCpuTime
 
   val traces = mutableListOf<Trace>()
 
 
-  override fun requireInitialStart(app: UBuildApp) {
+  override fun requireInitialStart(app: UFuncApp) {
     traces.add(RequireInitialStart(app, currentTime))
   }
 
-  override fun requireInitialEnd(app: UBuildApp, info: UBuildInfo) {
+  override fun requireInitialEnd(app: UFuncApp, info: UExecInfo) {
     traces.add(RequireInitialEnd(app, info, currentTime))
   }
 
 
-  override fun requireStart(app: UBuildApp) {
+  override fun requireStart(app: UFuncApp) {
     traces.add(RequireStart(app, currentTime))
   }
 
-  override fun requireEnd(app: UBuildApp, info: UBuildInfo) {
+  override fun requireEnd(app: UFuncApp, info: UExecInfo) {
     traces.add(RequireEnd(app, info, currentTime))
   }
 
 
-  override fun checkConsistentStart(app: UBuildApp) {
+  override fun checkConsistentStart(app: UFuncApp) {
     traces.add(CheckConsistentStart(app, currentTime))
   }
 
-  override fun checkConsistentEnd(app: UBuildApp, result: UBuildRes?) {
+  override fun checkConsistentEnd(app: UFuncApp, result: UExecRes?) {
     traces.add(CheckConsistentEnd(app, result, currentTime))
   }
 
 
-  override fun checkCachedStart(app: UBuildApp) {
+  override fun checkCachedStart(app: UFuncApp) {
     traces.add(CheckCachedStart(app, currentTime))
 
   }
 
-  override fun checkCachedEnd(app: UBuildApp, result: UBuildRes?) {
+  override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {
     traces.add(CheckCachedEnd(app, result, currentTime))
   }
 
 
-  override fun checkStoredStart(app: UBuildApp) {
+  override fun checkStoredStart(app: UFuncApp) {
     traces.add(CheckStoredStart(app, currentTime))
 
   }
 
-  override fun checkStoredEnd(app: UBuildApp, result: UBuildRes?) {
+  override fun checkStoredEnd(app: UFuncApp, result: UExecRes?) {
     traces.add(CheckStoredEnd(app, result, currentTime))
   }
 
 
-  override fun checkGenStart(app: UBuildApp, gen: Gen) {
+  override fun checkGenStart(app: UFuncApp, gen: Gen) {
     traces.add(CheckGenStart(app, gen, currentTime))
   }
 
-  override fun checkGenEnd(app: UBuildApp, gen: Gen, reason: InconsistentGenPath?) {
+  override fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?) {
     traces.add(CheckGenEnd(app, gen, reason, currentTime))
   }
 
 
-  override fun checkPathReqStart(app: UBuildApp, req: PathReq) {
+  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {
     traces.add(CheckPathReqStart(app, req, currentTime))
   }
 
-  override fun checkPathReqEnd(app: UBuildApp, req: PathReq, reason: InconsistentPathReq?) {
+  override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {
     traces.add(CheckPathReqEnd(app, req, reason, currentTime))
   }
 
 
-  override fun checkBuildReqStart(app: UBuildApp, req: UBuildReq) {
+  override fun checkBuildReqStart(app: UFuncApp, req: UExecReq) {
     traces.add(CheckBuildReqStart(app, req, currentTime))
   }
 
-  override fun checkBuildReqEnd(app: UBuildApp, req: UBuildReq, reason: BuildReason?) {
+  override fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?) {
     traces.add(CheckBuildReqEnd(app, req, reason, currentTime))
   }
 
 
-  override fun rebuildStart(app: UBuildApp, reason: BuildReason) {
+  override fun rebuildStart(app: UFuncApp, reason: ExecReason) {
     traces.add(RebuildStart(app, reason, currentTime))
   }
 
-  override fun rebuildEnd(app: UBuildApp, reason: BuildReason, result: UBuildRes) {
+  override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {
     traces.add(RebuildEnd(app, reason, result, currentTime))
   }
 }
@@ -98,21 +98,21 @@ interface Trace {
   val time: Long
 }
 
-data class RequireInitialStart(val app: UBuildApp, override val time: Long) : Trace
-data class RequireInitialEnd(val app: UBuildApp, val info: UBuildInfo, override val time: Long) : Trace
-data class RequireStart(val app: UBuildApp, override val time: Long) : Trace
-data class RequireEnd(val app: UBuildApp, val info: UBuildInfo, override val time: Long) : Trace
-data class CheckConsistentStart(val app: UBuildApp, override val time: Long) : Trace
-data class CheckConsistentEnd(val app: UBuildApp, val result: UBuildRes?, override val time: Long) : Trace
-data class CheckCachedStart(val app: UBuildApp, override val time: Long) : Trace
-data class CheckCachedEnd(val app: UBuildApp, val result: UBuildRes?, override val time: Long) : Trace
-data class CheckStoredStart(val app: UBuildApp, override val time: Long) : Trace
-data class CheckStoredEnd(val app: UBuildApp, val result: UBuildRes?, override val time: Long) : Trace
-data class CheckGenStart(val app: UBuildApp, val gen: Gen, override val time: Long) : Trace
-data class CheckGenEnd(val app: UBuildApp, val gen: Gen, val reason: InconsistentGenPath?, override val time: Long) : Trace
-data class CheckPathReqStart(val app: UBuildApp, val eq: PathReq, override val time: Long) : Trace
-data class CheckPathReqEnd(val app: UBuildApp, val eq: PathReq, val reason: InconsistentPathReq?, override val time: Long) : Trace
-data class CheckBuildReqStart(val app: UBuildApp, val req: UBuildReq, override val time: Long) : Trace
-data class CheckBuildReqEnd(val app: UBuildApp, val req: UBuildReq, val reason: BuildReason?, override val time: Long) : Trace
-data class RebuildStart(val app: UBuildApp, val reason: BuildReason, override val time: Long) : Trace
-data class RebuildEnd(val app: UBuildApp, val reason: BuildReason, val result: UBuildRes, override val time: Long) : Trace
+data class RequireInitialStart(val app: UFuncApp, override val time: Long) : Trace
+data class RequireInitialEnd(val app: UFuncApp, val info: UExecInfo, override val time: Long) : Trace
+data class RequireStart(val app: UFuncApp, override val time: Long) : Trace
+data class RequireEnd(val app: UFuncApp, val info: UExecInfo, override val time: Long) : Trace
+data class CheckConsistentStart(val app: UFuncApp, override val time: Long) : Trace
+data class CheckConsistentEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
+data class CheckCachedStart(val app: UFuncApp, override val time: Long) : Trace
+data class CheckCachedEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
+data class CheckStoredStart(val app: UFuncApp, override val time: Long) : Trace
+data class CheckStoredEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
+data class CheckGenStart(val app: UFuncApp, val gen: Gen, override val time: Long) : Trace
+data class CheckGenEnd(val app: UFuncApp, val gen: Gen, val reason: InconsistentGenPath?, override val time: Long) : Trace
+data class CheckPathReqStart(val app: UFuncApp, val eq: PathReq, override val time: Long) : Trace
+data class CheckPathReqEnd(val app: UFuncApp, val eq: PathReq, val reason: InconsistentPathReq?, override val time: Long) : Trace
+data class CheckBuildReqStart(val app: UFuncApp, val req: UExecReq, override val time: Long) : Trace
+data class CheckBuildReqEnd(val app: UFuncApp, val req: UExecReq, val reason: ExecReason?, override val time: Long) : Trace
+data class RebuildStart(val app: UFuncApp, val reason: ExecReason, override val time: Long) : Trace
+data class RebuildEnd(val app: UFuncApp, val reason: ExecReason, val result: UExecRes, override val time: Long) : Trace

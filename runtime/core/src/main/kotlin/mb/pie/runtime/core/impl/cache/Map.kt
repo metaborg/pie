@@ -3,14 +3,14 @@ package mb.pie.runtime.core.impl.cache
 import mb.pie.runtime.core.*
 import java.util.concurrent.ConcurrentHashMap
 
-class MapBuildCache : BuildCache {
-  private val map = ConcurrentHashMap<UBuildApp, UBuildRes>()
+class MapCache : Cache {
+  private val map = ConcurrentHashMap<UFuncApp, UExecRes>()
 
-  override fun set(app: UBuildApp, res: UBuildRes) {
+  override fun set(app: UFuncApp, res: UExecRes) {
     map[app] = res
   }
 
-  override fun get(app: UBuildApp): UBuildRes? {
+  override fun get(app: UFuncApp): UExecRes? {
     return map[app]
   }
 
@@ -20,6 +20,6 @@ class MapBuildCache : BuildCache {
 
 
   override fun toString(): String {
-    return "MapBuildCache"
+    return "MapCache"
   }
 }

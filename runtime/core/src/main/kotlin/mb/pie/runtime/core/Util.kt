@@ -2,14 +2,15 @@ package mb.pie.runtime.core
 
 import java.io.Serializable
 
+
 class None : Serializable {
   companion object {
     val instance = None()
   }
 
   override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other?.javaClass != javaClass) return false
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
     return true
   }
 
@@ -24,7 +25,7 @@ class None : Serializable {
 
 fun String.toShortString(maxLength: Int): String {
   val str = this.replace("\r", "\\r").replace("\n", "\\n")
-  return if (str.length > maxLength) {
+  return if(str.length > maxLength) {
     "${str.substring(0, maxLength - 1)}..."
   } else {
     str

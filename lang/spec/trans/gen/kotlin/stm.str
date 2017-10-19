@@ -112,7 +112,7 @@ rules // Return and fail
 
 
   p2k-stm:
-    Fail(exp) -> $[throw BuildException([expStr].toString())]
+    Fail(exp) -> $[throw ExecException([expStr].toString())]
     with
       expStr := <try-p2k-exp> exp
 

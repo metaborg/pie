@@ -2,40 +2,30 @@ package mb.pie.runtime.core.impl
 
 import com.google.inject.Injector
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.share.BuildShare
 
-interface Build {
-  fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O>
 
-  fun getUBuilder(id: String): UBuilder
-  fun getAnyBuilder(id: String): AnyBuilder
-  fun <I : In, O : Out> getBuilder(id: String): Builder<I, O>
-
-  fun storeReadTxn(): BuildStoreReadTxn
-}
-
-open class BuildImpl(
-  private val store: BuildStore,
-  private val cache: BuildCache,
+open class PollingExec(
+  private val store: Store,
+  private val cache: Cache,
   private val share: BuildShare,
-  private val buildLayer: BuildLayer,
-  private val logger: BuildLogger,
-  private val builders: Map<String, UBuilder>,
+  private val layer: Layer,
+  private val logger: Logger,
+  private val funcs: Map<String, UFunc>,
   private val injector: Injector)
-  : Build {
-  private val consistent = mutableMapOf<UBuildApp, UBuildRes>()
+  : Exec, Funcs {
+  private val consistent = mutableMapOf<UFuncApp, UExecRes>()
 
 
-  fun <I : In, O : Out> requireInitial(app: BuildApp<I, O>): BuildInfo<I, O> {
+  fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>): ExecInfo<I, O> {
     logger.requireInitialStart(app)
     val info = require(app)
     logger.requireInitialEnd(app, info)
     return info
   }
 
-  override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O> {
+  override fun <I : In, O : Out> require(app: FuncApp<I, O>): ExecInfo<I, O> {
     try {
-      buildLayer.requireStart(app)
+      layer.requireStart(app)
       logger.requireStart(app)
 
       // Check if builder application is already consistent this build.
@@ -43,8 +33,8 @@ open class BuildImpl(
       val consistentResult = consistent[app]?.cast<I, O>()
       if(consistentResult != null) {
         // Existing result is known to be consistent this build: reuse
-        val info = BuildInfo(consistentResult)
         logger.checkConsistentEnd(app, consistentResult)
+        val info = ExecInfo(consistentResult)
         logger.requireEnd(app, info)
         return info
       }
@@ -113,21 +103,21 @@ open class BuildImpl(
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      buildLayer.validate(app, existingResult, this)
+      store.readTxn().use { layer.validate(app, existingResult, this, it) }
       // Cache the result
       consistent[app] = existingResult
       cache[app] = existingResult
       // Reuse existing result
-      val info = BuildInfo(existingResult)
+      val info = ExecInfo(existingResult)
       logger.requireEnd(app, info)
       return info
     } finally {
-      buildLayer.requireEnd(app)
+      layer.requireEnd(app)
     }
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> rebuild(app: BuildApp<I, O>, reason: BuildReason, useCache: Boolean = false): BuildInfo<I, O> {
+  open internal fun <I : In, O : Out> rebuild(app: FuncApp<I, O>, reason: ExecReason, useCache: Boolean = false): ExecInfo<I, O> {
     logger.rebuildStart(app, reason)
     val result = if(useCache) {
       share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.produces(it)?.cast<I, O>() } }) { this.rebuildInternal(it) }
@@ -135,21 +125,21 @@ open class BuildImpl(
       share.reuseOrCreate(app) { this.rebuildInternal(it) }
     }
     logger.rebuildEnd(app, reason, result)
-    return BuildInfo(result, reason)
+    return ExecInfo(result, reason)
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> rebuildInternal(app: BuildApp<I, O>): BuildRes<I, O> {
+  open internal fun <I : In, O : Out> rebuildInternal(app: FuncApp<I, O>): ExecRes<I, O> {
     val (builderId, input) = app
-    val builder = getBuilder<I, O>(builderId)
+    val builder = getFunc<I, O>(builderId)
     val desc = builder.desc(input)
-    val context = BuildContextImpl(this, store, injector, app)
-    val output = builder.build(input, context)
+    val context = ExecContextImpl(this, store, injector, app)
+    val output = builder.exec(input, context)
     val (reqs, gens) = context.getReqsAndGens()
-    val result = BuildRes(builderId, desc, input, output, reqs, gens)
+    val result = ExecRes(builderId, desc, input, output, reqs, gens)
 
     // Validate well-formedness of the dependency graph
-    buildLayer.validate(app, result, this)
+    store.readTxn().use { layer.validate(app, result, this, it) }
     // Store result and path dependencies in build store
     store.writeTxn().use {
       it.setProduces(app, result)
@@ -163,22 +153,17 @@ open class BuildImpl(
   }
 
 
-  override fun getUBuilder(id: String): UBuilder {
-    return (builders[id] ?: error("Builder with identifier '$id' does not exist"))
+  override fun getUFunc(id: String): UFunc {
+    return (funcs[id] ?: error("Builder with identifier '$id' does not exist"))
   }
 
-  override fun getAnyBuilder(id: String): AnyBuilder {
+  override fun getAnyFunc(id: String): AnyFunc {
     @Suppress("UNCHECKED_CAST")
-    return getUBuilder(id) as AnyBuilder
+    return getUFunc(id) as AnyFunc
   }
 
-  override fun <I : In, O : Out> getBuilder(id: String): Builder<I, O> {
+  override fun <I : In, O : Out> getFunc(id: String): Func<I, O> {
     @Suppress("UNCHECKED_CAST")
-    return getUBuilder(id) as Builder<I, O>
-  }
-
-
-  override fun storeReadTxn(): BuildStoreReadTxn {
-    return store.readTxn()
+    return getUFunc(id) as Func<I, O>
   }
 }

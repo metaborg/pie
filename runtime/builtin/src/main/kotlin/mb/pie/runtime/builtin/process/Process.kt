@@ -2,7 +2,7 @@ package mb.pie.runtime.builtin.process
 
 import mb.pie.runtime.builtin.util.Tuple2
 import mb.pie.runtime.builtin.util.tuple
-import mb.pie.runtime.core.BuildException
+import mb.pie.runtime.core.ExecException
 import java.io.IOException
 
 fun execute(arguments: ArrayList<String>): Tuple2<String, String> {
@@ -18,6 +18,6 @@ fun execute(arguments: ArrayList<String>): Tuple2<String, String> {
     System.err.print(stderr)
     return tuple(stdout, stderr)
   } catch (e: IOException) {
-    throw BuildException("Failed to execute '${arguments.joinToString(" ")}'", e)
+    throw ExecException("Failed to execute '${arguments.joinToString(" ")}'", e)
   }
 }

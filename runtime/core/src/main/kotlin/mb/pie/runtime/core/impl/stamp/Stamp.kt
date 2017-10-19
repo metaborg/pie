@@ -4,6 +4,7 @@ import mb.pie.runtime.core.PathStamp
 import mb.pie.runtime.core.PathStamper
 import java.util.*
 
+
 data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStamper) : PathStamp {
   override fun toString(): String {
     return value.toString()

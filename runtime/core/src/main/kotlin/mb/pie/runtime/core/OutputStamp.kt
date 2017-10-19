@@ -4,6 +4,7 @@ import mb.pie.runtime.core.impl.EqualsOutputStamper
 import mb.pie.runtime.core.impl.InconsequentialOutputStamper
 import java.io.Serializable
 
+
 interface OutputStamper : Serializable {
   fun <O : Out> stamp(output: O): OutputStamp
 }

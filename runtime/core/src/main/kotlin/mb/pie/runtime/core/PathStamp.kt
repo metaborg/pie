@@ -6,6 +6,7 @@ import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
 import java.io.Serializable
 
+
 interface PathStamper : Serializable {
   fun stamp(path: PPath): PathStamp
 }

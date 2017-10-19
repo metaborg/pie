@@ -3,23 +3,23 @@ package mb.pie.runtime.core.impl.logger
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 
-class NoopBuildLogger : BuildLogger {
-  override fun requireInitialStart(app: UBuildApp) {}
-  override fun requireInitialEnd(app: UBuildApp, info: UBuildInfo) {}
-  override fun requireStart(app: UBuildApp) {}
-  override fun requireEnd(app: UBuildApp, info: UBuildInfo) {}
-  override fun checkConsistentStart(app: UBuildApp) {}
-  override fun checkConsistentEnd(app: UBuildApp, result: UBuildRes?) {}
-  override fun checkCachedStart(app: UBuildApp) {}
-  override fun checkCachedEnd(app: UBuildApp, result: UBuildRes?) {}
-  override fun checkStoredStart(app: UBuildApp) {}
-  override fun checkStoredEnd(app: UBuildApp, result: UBuildRes?) {}
-  override fun checkGenStart(app: UBuildApp, gen: Gen) {}
-  override fun checkGenEnd(app: UBuildApp, gen: Gen, reason: InconsistentGenPath?) {}
-  override fun checkPathReqStart(app: UBuildApp, req: PathReq) {}
-  override fun checkPathReqEnd(app: UBuildApp, req: PathReq, reason: InconsistentPathReq?) {}
-  override fun checkBuildReqStart(app: UBuildApp, req: UBuildReq) {}
-  override fun checkBuildReqEnd(app: UBuildApp, req: UBuildReq, reason: BuildReason?) {}
-  override fun rebuildStart(app: UBuildApp, reason: BuildReason) {}
-  override fun rebuildEnd(app: UBuildApp, reason: BuildReason, result: UBuildRes) {}
+class NoopLogger : Logger {
+  override fun requireInitialStart(app: UFuncApp) {}
+  override fun requireInitialEnd(app: UFuncApp, info: UExecInfo) {}
+  override fun requireStart(app: UFuncApp) {}
+  override fun requireEnd(app: UFuncApp, info: UExecInfo) {}
+  override fun checkConsistentStart(app: UFuncApp) {}
+  override fun checkConsistentEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun checkCachedStart(app: UFuncApp) {}
+  override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun checkStoredStart(app: UFuncApp) {}
+  override fun checkStoredEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun checkGenStart(app: UFuncApp, gen: Gen) {}
+  override fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?) {}
+  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {}
+  override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {}
+  override fun checkBuildReqStart(app: UFuncApp, req: UExecReq) {}
+  override fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?) {}
+  override fun rebuildStart(app: UFuncApp, reason: ExecReason) {}
+  override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {}
 }

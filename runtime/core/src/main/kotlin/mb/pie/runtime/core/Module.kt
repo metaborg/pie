@@ -5,33 +5,32 @@ import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.pie.runtime.core.impl.BuildManagerImpl
-import mb.pie.runtime.core.impl.cache.MapBuildCache
-import mb.pie.runtime.core.impl.cache.NoopBuildCache
-import mb.pie.runtime.core.impl.layer.ValidationBuildLayer
-import mb.pie.runtime.core.impl.logger.StreamBuildLogger
-import mb.pie.runtime.core.impl.share.BuildShare
+import mb.pie.runtime.core.impl.PollingExecManagerImpl
+import mb.pie.runtime.core.impl.cache.NoopCache
+import mb.pie.runtime.core.impl.layer.ValidationLayer
+import mb.pie.runtime.core.impl.logger.StreamLogger
 import mb.pie.runtime.core.impl.share.CoroutineBuildShare
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 
+
 open class PieModule : Module {
   override fun configure(binder: Binder) {
-    binder.bindBuildManager()
+    binder.bindExecManager()
     binder.bindStore()
     binder.bindShare()
     binder.bindCache()
     binder.bindLayer()
     binder.bindLogger()
 
-    val builders = binder.builderMapBinder()
-    binder.bindBuilders(builders)
+    val builders = binder.funcsMapBinder()
+    binder.bindFuncs(builders)
   }
 
 
-  open protected fun Binder.bindBuildManager() {
+  open protected fun Binder.bindExecManager() {
     install(FactoryModuleBuilder()
-      .implement(BuildManager::class.java, BuildManagerImpl::class.java)
-      .build(BuildManagerFactory::class.java))
+      .implement(PollingExecManager::class.java, PollingExecManagerImpl::class.java)
+      .build(PollingExecManagerFactory::class.java))
   }
 
   open protected fun Binder.bindStore() {
@@ -43,29 +42,29 @@ open class PieModule : Module {
   }
 
   open protected fun Binder.bindCache() {
-    bind<BuildCache>().to<NoopBuildCache>()
+    bind<Cache>().to<NoopCache>()
   }
 
   open protected fun Binder.bindLogger() {
-    bind<BuildLogger>().to<StreamBuildLogger>()
+    bind<Logger>().to<StreamLogger>()
   }
 
   open protected fun Binder.bindLayer() {
-    bind<BuildLayer>().to<ValidationBuildLayer>()
+    bind<Layer>().to<ValidationLayer>()
   }
 
 
-  open protected fun Binder.bindBuilders(builders: MapBinder<String, UBuilder>) {
+  open protected fun Binder.bindFuncs(builders: MapBinder<String, UFunc>) {
 
   }
 
 
-  inline protected fun <I : In, O : Out, reified B : Builder<I, O>> Binder.bindBuilder(builders: MapBinder<String, UBuilder>, builder: B) {
-    bind<B>().toObject(builder)
-    builders.addBinding(builder.id).toInstance(builder)
+  inline protected fun <I : In, O : Out, reified F : Func<I, O>> Binder.bindBuilder(funcs: MapBinder<String, UFunc>, func: F) {
+    bind<F>().toObject(func)
+    funcs.addBinding(func.id).toInstance(func)
   }
 
-  protected fun bindClasslessBuilder(builders: MapBinder<String, UBuilder>, builder: UBuilder) {
+  protected fun bindClasslessBuilder(builders: MapBinder<String, UFunc>, builder: UFunc) {
     builders.addBinding(builder.id).toInstance(builder)
   }
 }
@@ -78,18 +77,20 @@ inline fun <reified T> LinkedBindingBuilder<in T>.toSingleton() = to(T::class.ja
 
 inline fun <reified T> LinkedBindingBuilder<in T>.toObject(instance: T) = toInstance(instance)
 
+@Suppress("NOTHING_TO_INLINE")
 inline fun ScopedBindingBuilder.asSingleton() = `in`(Singleton::class.java)
 
 
-inline fun Binder.builderMapBinder(): MapBinder<String, UBuilder> {
-  return MapBinder.newMapBinder(this, object : TypeLiteral<String>() {}, object : TypeLiteral<UBuilder>() {})
+@Suppress("NOTHING_TO_INLINE")
+inline fun Binder.funcsMapBinder(): MapBinder<String, UFunc> {
+  return MapBinder.newMapBinder(this, object : TypeLiteral<String>() {}, object : TypeLiteral<UFunc>() {})
 }
 
-inline fun <reified B : UBuilder> Binder.bindBuilder(builderBinder: MapBinder<String, UBuilder>, id: String) {
+inline fun <reified B : UFunc> Binder.bindFunc(builderBinder: MapBinder<String, UFunc>, id: String) {
   bind<B>().asSingleton()
   builderBinder.addBinding(id).to<B>()
 }
 
-fun Binder.bindBuilder(builderBinder: MapBinder<String, UBuilder>, builder: UBuilder) {
+fun Binder.bindFunc(builderBinder: MapBinder<String, UFunc>, builder: UFunc) {
   builderBinder.addBinding(builder.id).toInstance(builder)
 }

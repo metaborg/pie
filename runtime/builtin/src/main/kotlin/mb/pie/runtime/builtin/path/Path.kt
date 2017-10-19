@@ -21,22 +21,22 @@ operator fun PPath.plus(other: String): PPath {
 }
 
 
-class Exists : Builder<PPath, Boolean> {
+class Exists : Func<PPath, Boolean> {
   companion object {
     val id = "exists"
   }
 
   override val id = Companion.id
-  override fun BuildContext.build(input: PPath): Boolean {
+  override fun ExecContext.exec(input: PPath): Boolean {
     require(input, PathStampers.exists)
     return input.exists()
   }
 }
 
-fun BuildContext.exists(input: PPath) = requireOutput(Exists::class.java, input)
+fun ExecContext.exists(input: PPath) = requireOutput(Exists::class.java, input)
 
 
-class ListContents @Inject constructor(val pathSrv: PathSrv) : Builder<ListContents.Input, ArrayList<PPath>> {
+class ListContents @Inject constructor(val pathSrv: PathSrv) : Func<ListContents.Input, ArrayList<PPath>> {
   companion object {
     val id = "listContents"
   }
@@ -44,25 +44,25 @@ class ListContents @Inject constructor(val pathSrv: PathSrv) : Builder<ListConte
   data class Input(val path: PPath, val matcher: PathMatcher?) : Serializable
 
   override val id = Companion.id
-  override fun BuildContext.build(input: Input): ArrayList<PPath> {
+  override fun ExecContext.exec(input: Input): ArrayList<PPath> {
     val (path, matcher) = input
     require(path, PathStampers.modified(matcher))
     if (!path.isDir) {
-      throw BuildException("Cannot list contents of '$input', it is not a directory")
+      throw ExecException("Cannot list contents of '$input', it is not a directory")
     }
     try {
       val stream = if (matcher != null) path.list(matcher) else path.list()
       return stream.collect(Collectors.toCollection { ArrayList<PPath>() })
     } catch (e: IOException) {
-      throw BuildException("Cannot list contents of '$input'", e)
+      throw ExecException("Cannot list contents of '$input'", e)
     }
   }
 }
 
-fun BuildContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class.java, input)
+fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class.java, input)
 
 
-class WalkContents @Inject constructor(val pathSrv: PathSrv) : Builder<WalkContents.Input, ArrayList<PPath>> {
+class WalkContents @Inject constructor(val pathSrv: PathSrv) : Func<WalkContents.Input, ArrayList<PPath>> {
   companion object {
     val id = "walkContents"
   }
@@ -70,31 +70,31 @@ class WalkContents @Inject constructor(val pathSrv: PathSrv) : Builder<WalkConte
   data class Input(val path: PPath, val walker: PathWalker?) : Serializable
 
   override val id = Companion.id
-  override fun BuildContext.build(input: Input): ArrayList<PPath> {
+  override fun ExecContext.exec(input: Input): ArrayList<PPath> {
     val (path, walker) = input
     require(path, PathStampers.modified(walker))
     if (!path.isDir) {
-      throw BuildException("Cannot walk contents of '$input', it is not a directory")
+      throw ExecException("Cannot walk contents of '$input', it is not a directory")
     }
     try {
       val stream = if (walker != null) path.walk(walker) else path.walk()
       return stream.collect(Collectors.toCollection { ArrayList<PPath>() })
     } catch (e: IOException) {
-      throw BuildException("Cannot walk contents of '$input'", e)
+      throw ExecException("Cannot walk contents of '$input'", e)
     }
   }
 }
 
-fun BuildContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, input)
+fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, input)
 
 
-class Read : Builder<PPath, String?> {
+class Read : Func<PPath, String?> {
   companion object {
     val id = "read"
   }
 
   override val id = Companion.id
-  override fun BuildContext.build(input: PPath): String? {
+  override fun ExecContext.exec(input: PPath): String? {
     require(input, PathStampers.hash)
     try {
       if(!input.exists()) {
@@ -103,15 +103,15 @@ class Read : Builder<PPath, String?> {
       val bytes = input.readAllBytes()
       return String(bytes)
     } catch (e: IOException) {
-      throw BuildException("Reading '$input' failed", e)
+      throw ExecException("Reading '$input' failed", e)
     }
   }
 }
 
-fun BuildContext.read(input: PPath) = requireOutput(Read::class.java, input)
+fun ExecContext.read(input: PPath) = requireOutput(Read::class.java, input)
 
 
-class Copy : OutEffectBuilder<Copy.Input> {
+class Copy : OutEffectFunc<Copy.Input> {
   companion object {
     val id = "copy"
   }
@@ -119,16 +119,16 @@ class Copy : OutEffectBuilder<Copy.Input> {
   data class Input(val from: PPath, val to: PPath) : In
 
   override val id = Companion.id
-  override fun BuildContext.effect(input: Input) {
+  override fun ExecContext.effect(input: Input) {
     val (from, to) = input
     require(from)
     try {
       Files.copy(from.javaPath, to.javaPath)
     } catch (e: IOException) {
-      throw BuildException("Copying '${input.from}' to '${input.to}' failed", e)
+      throw ExecException("Copying '${input.from}' to '${input.to}' failed", e)
     }
     generate(to)
   }
 }
 
-fun BuildContext.copy(input: Copy.Input) = requireOutput(Copy::class.java, input)
+fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class.java, input)

@@ -7,30 +7,30 @@ import mb.vfs.path.PPath
  * A build store that does not store anything and always returns null. For debugging or benchmarking purposes only.
  * DO NOT USE in production, as it makes the build algorithm inconsistent.
  */
-class NoopBuildStore : BuildStore, BuildStoreReadTxn, BuildStoreWriteTxn {
-  override fun readTxn(): BuildStoreReadTxn {
+class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
+  override fun readTxn(): StoreReadTxn {
     return this
   }
 
-  override fun writeTxn(): BuildStoreWriteTxn {
+  override fun writeTxn(): StoreWriteTxn {
     return this
   }
 
   override fun close() {}
 
 
-  override fun setProduces(app: UBuildApp, res: UBuildRes) {}
-  override fun produces(app: UBuildApp): UBuildRes? {
+  override fun setProduces(app: UFuncApp, res: UExecRes) {}
+  override fun produces(app: UFuncApp): UExecRes? {
     return null
   }
 
-  override fun setGeneratedBy(path: PPath, res: UBuildApp) {}
-  override fun generatedBy(path: PPath): UBuildApp? {
+  override fun setGeneratedBy(path: PPath, res: UFuncApp) {}
+  override fun generatedBy(path: PPath): UFuncApp? {
     return null
   }
 
-  override fun setRequiredBy(path: PPath, res: UBuildApp) {}
-  override fun requiredBy(path: PPath): UBuildApp? {
+  override fun setRequiredBy(path: PPath, res: UFuncApp) {}
+  override fun requiredBy(path: PPath): UFuncApp? {
     return null
   }
 
@@ -39,6 +39,6 @@ class NoopBuildStore : BuildStore, BuildStoreReadTxn, BuildStoreWriteTxn {
 
 
   override fun toString(): String {
-    return "NoopBuildStore"
+    return "NoopStore"
   }
 }

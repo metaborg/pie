@@ -4,46 +4,46 @@ import mb.pie.runtime.core.*
 import mb.vfs.path.PPath
 import java.util.concurrent.ConcurrentHashMap
 
-class InMemoryBuildStore : BuildStore, BuildStoreReadTxn, BuildStoreWriteTxn {
-  private val produces = ConcurrentHashMap<UBuildApp, UBuildRes>()
-  private val generatedBy = ConcurrentHashMap<PPath, UBuildApp>()
-  private val requiredBy = ConcurrentHashMap<PPath, UBuildApp>()
+class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
+  private val produces = ConcurrentHashMap<UFuncApp, UExecRes>()
+  private val generatedBy = ConcurrentHashMap<PPath, UFuncApp>()
+  private val requiredBy = ConcurrentHashMap<PPath, UFuncApp>()
 
 
-  override fun readTxn(): BuildStoreReadTxn {
+  override fun readTxn(): StoreReadTxn {
     return this
   }
 
-  override fun writeTxn(): BuildStoreWriteTxn {
+  override fun writeTxn(): StoreWriteTxn {
     return this
   }
 
   override fun close() {}
 
 
-  override fun setProduces(app: UBuildApp, res: UBuildRes) {
+  override fun setProduces(app: UFuncApp, res: UExecRes) {
     produces[app] = res
   }
 
-  override fun produces(app: UBuildApp): UBuildRes? {
+  override fun produces(app: UFuncApp): UExecRes? {
     return produces[app]
   }
 
 
-  override fun setGeneratedBy(path: PPath, res: UBuildApp) {
+  override fun setGeneratedBy(path: PPath, res: UFuncApp) {
     generatedBy[path] = res
   }
 
-  override fun generatedBy(path: PPath): UBuildApp? {
+  override fun generatedBy(path: PPath): UFuncApp? {
     return generatedBy[path]
   }
 
 
-  override fun setRequiredBy(path: PPath, res: UBuildApp) {
+  override fun setRequiredBy(path: PPath, res: UFuncApp) {
     requiredBy[path] = res
   }
 
-  override fun requiredBy(path: PPath): UBuildApp? {
+  override fun requiredBy(path: PPath): UFuncApp? {
     return requiredBy[path]
   }
 
@@ -56,6 +56,6 @@ class InMemoryBuildStore : BuildStore, BuildStoreReadTxn, BuildStoreWriteTxn {
 
 
   override fun toString(): String {
-    return "InMemoryBuildStore"
+    return "InMemoryStore"
   }
 }

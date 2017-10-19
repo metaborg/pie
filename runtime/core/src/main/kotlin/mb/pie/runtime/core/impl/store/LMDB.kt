@@ -17,12 +17,12 @@ typealias DbiB = Dbi<ByteBuffer>
 typealias TxnB = Txn<ByteBuffer>
 
 class LMDBBuildStoreFactory @Inject constructor(val logger: Logger) {
-  fun create(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, maxReaders: Int = 1024): LMDBBuildStore {
-    return LMDBBuildStore(logger.forContext(LMDBBuildStore::class.java), envDir, maxDbSize, maxReaders)
+  fun create(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, maxReaders: Int = 1024): LMDBStore {
+    return LMDBStore(logger.forContext(LMDBStore::class.java), envDir, maxDbSize, maxReaders)
   }
 }
 
-class LMDBBuildStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: Int) : BuildStore {
+class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: Int) : Store {
   val env: Env<ByteBuffer>
   val produces: Dbi<ByteBuffer>
   val generatedBy: Dbi<ByteBuffer>
@@ -42,30 +42,30 @@ class LMDBBuildStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReader
   }
 
 
-  override fun readTxn(): BuildStoreReadTxn {
+  override fun readTxn(): StoreReadTxn {
     val txn = env.txnRead()
-    return LMDBBuildStoreReadTxn(env, produces, generatedBy, requiredBy, txn, logger)
+    return LMDBStoreReadTxn(env, produces, generatedBy, requiredBy, txn, logger)
   }
 
-  override fun writeTxn(): BuildStoreWriteTxn {
+  override fun writeTxn(): StoreWriteTxn {
     val txn = env.txnWrite()
-    return LMDBBuildStoreWriteTxn(env, produces, generatedBy, requiredBy, txn, logger)
+    return LMDBStoreWriteTxn(env, produces, generatedBy, requiredBy, txn, logger)
   }
 
 
   override fun toString(): String {
-    return "LMDBBuildStore"
+    return "LMDBStore"
   }
 }
 
-open internal class LMDBBuildStoreReadTxn(
+open internal class LMDBStoreReadTxn(
   val env: EnvB, val produces: DbiB, val generatedBy: DbiB, val requiredBy: DbiB, val txn: TxnB, val logger: Logger)
-  : BuildStoreReadTxn {
-  override fun produces(app: UBuildApp): UBuildRes? {
+  : StoreReadTxn {
+  override fun produces(app: UFuncApp): UExecRes? {
     val keyBytes: ByteBuffer? = serialize(app, true)
     val valBytes: ByteBuffer? = produces.get(txn, keyBytes)
     if(valBytes != null) {
-      val result = deserialize<UBuildRes>(valBytes)
+      val result = deserialize<UExecRes>(valBytes)
       if(result != null) {
         return result
       }
@@ -76,11 +76,11 @@ open internal class LMDBBuildStoreReadTxn(
     return null
   }
 
-  override fun generatedBy(path: PPath): UBuildApp? {
+  override fun generatedBy(path: PPath): UFuncApp? {
     val keyBytes: ByteBuffer? = serialize(path, true)
     val valBytes: ByteBuffer? = generatedBy.get(txn, keyBytes)
     if(valBytes != null) {
-      val result = deserialize<UBuildApp>(valBytes)
+      val result = deserialize<UFuncApp>(valBytes)
       if(result != null) {
         return result
       }
@@ -91,11 +91,11 @@ open internal class LMDBBuildStoreReadTxn(
     return null
   }
 
-  override fun requiredBy(path: PPath): UBuildApp? {
+  override fun requiredBy(path: PPath): UFuncApp? {
     val keyBytes: ByteBuffer? = serialize(path, true)
     val valBytes: ByteBuffer? = requiredBy.get(txn, keyBytes)
     if(valBytes != null) {
-      val result = deserialize<UBuildApp>(valBytes)
+      val result = deserialize<UFuncApp>(valBytes)
       if(result != null) {
         return result
       }
@@ -158,22 +158,22 @@ open internal class LMDBBuildStoreReadTxn(
   }
 }
 
-internal class LMDBBuildStoreWriteTxn(
+internal class LMDBStoreWriteTxn(
   env: EnvB, produces: DbiB, generatedBy: DbiB, requiredBy: DbiB, txn: TxnB, logger: Logger)
-  : BuildStoreWriteTxn, LMDBBuildStoreReadTxn(env, produces, generatedBy, requiredBy, txn, logger) {
-  override fun setProduces(app: UBuildApp, res: UBuildRes) {
+  : StoreWriteTxn, LMDBStoreReadTxn(env, produces, generatedBy, requiredBy, txn, logger) {
+  override fun setProduces(app: UFuncApp, res: UExecRes) {
     val k = serialize(app, true)
     val v = serialize(res)
     produces.put(txn, k, v)
   }
 
-  override fun setGeneratedBy(path: PPath, res: UBuildApp) {
+  override fun setGeneratedBy(path: PPath, res: UFuncApp) {
     val k = serialize(path, true)
     val v = serialize(res)
     generatedBy.put(txn, k, v)
   }
 
-  override fun setRequiredBy(path: PPath, res: UBuildApp) {
+  override fun setRequiredBy(path: PPath, res: UFuncApp) {
     val k = serialize(path, true)
     val v = serialize(res)
     requiredBy.put(txn, k, v)

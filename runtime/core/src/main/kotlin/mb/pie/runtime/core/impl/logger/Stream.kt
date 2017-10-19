@@ -6,60 +6,60 @@ import java.io.OutputStream
 import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicInteger
 
-open class StreamBuildLogger(infoStream: OutputStream = System.out, traceStream: OutputStream? = System.out, private val descLimit: Int = 200) : BuildLogger {
+open class StreamLogger(infoStream: OutputStream = System.out, traceStream: OutputStream? = System.out, private val descLimit: Int = 200) : Logger {
   private val infoWriter: PrintWriter = PrintWriter(infoStream, true)
   private val traceWriter: PrintWriter? = if(traceStream == null) null else PrintWriter(traceStream, true)
   private var indentation = AtomicInteger(0)
   private val indent get() = " ".repeat(indentation.get())
 
 
-  override fun requireInitialStart(app: UBuildApp) {}
+  override fun requireInitialStart(app: UFuncApp) {}
 
-  override fun requireInitialEnd(app: UBuildApp, info: UBuildInfo) {}
+  override fun requireInitialEnd(app: UFuncApp, info: UExecInfo) {}
 
-  override fun requireStart(app: UBuildApp) {
+  override fun requireStart(app: UFuncApp) {
     traceWriter?.println("$indent? ${app.toShortString(descLimit)}")
     indentation.incrementAndGet()
   }
 
-  override fun requireEnd(app: UBuildApp, info: UBuildInfo) {
+  override fun requireEnd(app: UFuncApp, info: UExecInfo) {
     indentation.decrementAndGet()
     traceWriter?.println("$indent✔ ${app.toShortString(descLimit)}")
   }
 
 
-  override fun checkConsistentStart(app: UBuildApp) {
+  override fun checkConsistentStart(app: UFuncApp) {
 
   }
 
-  override fun checkConsistentEnd(app: UBuildApp, result: UBuildRes?) {
-
-  }
-
-
-  override fun checkCachedStart(app: UBuildApp) {
-
-  }
-
-  override fun checkCachedEnd(app: UBuildApp, result: UBuildRes?) {
+  override fun checkConsistentEnd(app: UFuncApp, result: UExecRes?) {
 
   }
 
 
-  override fun checkStoredStart(app: UBuildApp) {
+  override fun checkCachedStart(app: UFuncApp) {
 
   }
 
-  override fun checkStoredEnd(app: UBuildApp, result: UBuildRes?) {
+  override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {
 
   }
 
 
-  override fun checkGenStart(app: UBuildApp, gen: Gen) {
+  override fun checkStoredStart(app: UFuncApp) {
 
   }
 
-  override fun checkGenEnd(app: UBuildApp, gen: Gen, reason: InconsistentGenPath?) {
+  override fun checkStoredEnd(app: UFuncApp, result: UExecRes?) {
+
+  }
+
+
+  override fun checkGenStart(app: UFuncApp, gen: Gen) {
+
+  }
+
+  override fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?) {
     if(reason != null) {
       traceWriter?.println("$indent␦ ${gen.path} (inconsistent: ${gen.stamp} vs ${reason.newStamp})")
     } else {
@@ -68,11 +68,11 @@ open class StreamBuildLogger(infoStream: OutputStream = System.out, traceStream:
   }
 
 
-  override fun checkPathReqStart(app: UBuildApp, req: PathReq) {
+  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {
 
   }
 
-  override fun checkPathReqEnd(app: UBuildApp, req: PathReq, reason: InconsistentPathReq?) {
+  override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {
     if(reason != null) {
       traceWriter?.println("$indent␦ ${req.path} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
     } else {
@@ -81,15 +81,15 @@ open class StreamBuildLogger(infoStream: OutputStream = System.out, traceStream:
   }
 
 
-  override fun checkBuildReqStart(app: UBuildApp, req: UBuildReq) {
+  override fun checkBuildReqStart(app: UFuncApp, req: UExecReq) {
 
   }
 
-  override fun checkBuildReqEnd(app: UBuildApp, req: UBuildReq, reason: BuildReason?) {
+  override fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?) {
     when(reason) {
-      is InconsistentBuildReq ->
+      is InconsistentExecReq ->
         traceWriter?.println("$indent␦ ${req.app.toShortString(descLimit)} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
-      is InconsistentBuildReqTransientOutput ->
+      is InconsistentExecReqTransientOutput ->
         traceWriter?.println("$indent␦ ${req.app.toShortString(descLimit)} (inconsistent transient output: ${reason.inconsistentResult.toShortString(descLimit)})")
       null ->
         traceWriter?.println("$indent␦ ${req.app.toShortString(descLimit)} (consistent: ${req.stamp})")
@@ -97,11 +97,11 @@ open class StreamBuildLogger(infoStream: OutputStream = System.out, traceStream:
   }
 
 
-  override fun rebuildStart(app: UBuildApp, reason: BuildReason) {
+  override fun rebuildStart(app: UFuncApp, reason: ExecReason) {
     infoWriter.println("$indent> ${app.toShortString(descLimit)} (reason: $reason)")
   }
 
-  override fun rebuildEnd(app: UBuildApp, reason: BuildReason, result: UBuildRes) {
+  override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {
     infoWriter.println("$indent< ${result.toShortString(descLimit)}")
   }
 }
