@@ -3,6 +3,9 @@ package mb.pie.runtime.core
 import mb.pie.runtime.core.impl.*
 
 interface BuildLogger {
+  fun requireInitialStart(app: UBuildApp)
+  fun requireInitialEnd(app: UBuildApp, info: UBuildInfo)
+
   fun requireStart(app: UBuildApp)
   fun requireEnd(app: UBuildApp, info: UBuildInfo)
 

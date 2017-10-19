@@ -24,8 +24,8 @@ data class PathReq(val path: PPath, val stamp: PathStamp) : Req {
 
 data class BuildReq<out AI : In, out AO : Out>(val app: BuildApp<AI, AO>, val stamp: OutputStamp) : Req {
   override fun <I : In, O : Out> makeConsistent(requiringApp: BuildApp<I, O>, requiringResult: BuildRes<I, O>, build: Build, logger: BuildLogger): BuildReason? {
-    logger.checkBuildReqStart(requiringApp, this)
     val result = build.require(app).result
+    logger.checkBuildReqStart(requiringApp, this)
     val reason = if(!result.isConsistent) {
       // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
       // If output is not consistent, requirement is not requireEnd

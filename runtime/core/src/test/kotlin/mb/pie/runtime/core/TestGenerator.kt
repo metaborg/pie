@@ -6,11 +6,11 @@ import com.google.inject.Provider
 import mb.log.SLF4JLogger
 import mb.pie.runtime.core.impl.cache.MapBuildCache
 import mb.pie.runtime.core.impl.cache.NoopBuildCache
+import mb.pie.runtime.core.impl.layer.ValidationBuildLayer
 import mb.pie.runtime.core.impl.logger.StreamBuildLogger
 import mb.pie.runtime.core.impl.share.CoroutineBuildShare
 import mb.pie.runtime.core.impl.store.InMemoryBuildStore
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
-import mb.pie.runtime.core.impl.layer.ValidationBuildLayer
 import org.junit.jupiter.api.*
 import org.slf4j.LoggerFactory
 import java.io.File

@@ -3,19 +3,17 @@ package mb.pie.runtime.core.impl
 import com.google.inject.*
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.BuildCache
 import mb.pie.runtime.core.impl.share.BuildShare
-import mb.pie.runtime.core.BuildStore
 
 class BuildSessionImpl(private val build: BuildImpl, private val injector: Injector)
   : BuildSession {
   override fun <I : In, O : Out> buildToInfo(app: BuildApp<I, O>): BuildInfo<I, O> {
-    return build.require(app)
+    return build.requireInitial(app)
   }
 
   override fun <I : In, O : Out> buildAllToInfo(vararg apps: BuildApp<I, O>): List<BuildInfo<I, O>> {
     return apps.map {
-      build.require(it)
+      build.requireInitial(it)
     }
   }
 
@@ -29,7 +27,7 @@ class BuildSessionImpl(private val build: BuildImpl, private val injector: Injec
     val builder = injector.getInstance(clazz)
     val apps = inputs.map { BuildApp(builder, it) }
     return apps.map {
-      build.require(it)
+      build.requireInitial(it)
     }
   }
 
@@ -38,7 +36,7 @@ class BuildSessionImpl(private val build: BuildImpl, private val injector: Injec
 
   override fun <I : In, O : Out> buildAll(vararg apps: BuildApp<I, O>): List<O> {
     return apps.map {
-      build.require(it).result.output
+      build.requireInitial(it).result.output
     }
   }
 
@@ -48,7 +46,7 @@ class BuildSessionImpl(private val build: BuildImpl, private val injector: Injec
     val builder = injector.getInstance(clazz)
     val apps = inputs.map { BuildApp(builder, it) }
     return apps.map {
-      build.require(it).result.output
+      build.requireInitial(it).result.output
     }
   }
 }

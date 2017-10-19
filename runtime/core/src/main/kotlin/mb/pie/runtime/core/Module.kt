@@ -19,6 +19,7 @@ open class PieModule : Module {
     binder.bindBuildManager()
     binder.bindStore()
     binder.bindShare()
+    binder.bindCache()
     binder.bindLayer()
     binder.bindLogger()
 

@@ -4,6 +4,8 @@ import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 
 class NoopBuildLogger : BuildLogger {
+  override fun requireInitialStart(app: UBuildApp) {}
+  override fun requireInitialEnd(app: UBuildApp, info: UBuildInfo) {}
   override fun requireStart(app: UBuildApp) {}
   override fun requireEnd(app: UBuildApp, info: UBuildInfo) {}
   override fun checkConsistentStart(app: UBuildApp) {}

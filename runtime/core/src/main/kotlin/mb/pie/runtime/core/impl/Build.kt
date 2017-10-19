@@ -2,10 +2,7 @@ package mb.pie.runtime.core.impl
 
 import com.google.inject.Injector
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.BuildCache
 import mb.pie.runtime.core.impl.share.BuildShare
-import mb.pie.runtime.core.BuildStore
-import mb.pie.runtime.core.BuildStoreReadTxn
 
 interface Build {
   fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O>
@@ -28,6 +25,13 @@ open class BuildImpl(
   : Build {
   private val consistent = mutableMapOf<UBuildApp, UBuildRes>()
 
+
+  fun <I : In, O : Out> requireInitial(app: BuildApp<I, O>): BuildInfo<I, O> {
+    logger.requireInitialStart(app)
+    val info = require(app)
+    logger.requireInitialEnd(app, info)
+    return info
+  }
 
   override fun <I : In, O : Out> require(app: BuildApp<I, O>): BuildInfo<I, O> {
     try {

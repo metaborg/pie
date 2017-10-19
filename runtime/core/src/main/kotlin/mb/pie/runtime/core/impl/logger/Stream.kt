@@ -13,6 +13,10 @@ open class StreamBuildLogger(infoStream: OutputStream = System.out, traceStream:
   private val indent get() = " ".repeat(indentation.get())
 
 
+  override fun requireInitialStart(app: UBuildApp) {}
+
+  override fun requireInitialEnd(app: UBuildApp, info: UBuildInfo) {}
+
   override fun requireStart(app: UBuildApp) {
     traceWriter?.println("$indent? ${app.toShortString(descLimit)}")
     indentation.incrementAndGet()
