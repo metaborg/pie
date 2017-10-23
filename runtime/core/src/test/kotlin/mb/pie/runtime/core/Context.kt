@@ -3,22 +3,23 @@ package mb.pie.runtime.core
 import com.google.inject.*
 import mb.log.LogModule
 import mb.log.Logger
-import mb.pie.runtime.core.impl.*
+import mb.pie.runtime.core.impl.PullingExecImpl
+import mb.pie.runtime.core.impl.PullingExecutorImpl
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
 import org.slf4j.LoggerFactory
 import java.nio.file.*
 
 open class ParametrizedTestCtx(
-  logger: Logger,
+  metaborgLogger: Logger,
   val store: Store,
   val cache: Cache,
   val share: BuildShare,
   val layerProvider: Provider<Layer>,
-  val reporter: mb.pie.runtime.core.Logger,
+  val logger: mb.pie.runtime.core.Logger,
   val fs: FileSystem
 ) : TestCtx(), AutoCloseable {
-  val logger: Logger = logger.forContext("Test")
+  val metaborgLogger: Logger = metaborgLogger.forContext("Test")
 
   init {
     store.writeTxn().use { it.drop() }
@@ -30,65 +31,63 @@ open class ParametrizedTestCtx(
   }
 
 
-  fun b(): PollingExec {
-    return b(store, cache, share, layerProvider.get(), reporter)
+  fun pullingExec(): PullingExecImpl {
+    return pullingExec(store, cache, share, layerProvider.get(), logger)
   }
 
-  fun bm(): PollingExecManager {
-    return bm(store, cache, share, layerProvider)
+  fun pullingExecutor(): PullingExecutor {
+    return pullingExecutor(store, cache, share, layerProvider, logger)
   }
 }
 
 open class TestCtx {
-  protected val inj: Injector = Guice.createInjector(PieModule(), LogModule(LoggerFactory.getLogger("root")))
-  protected val builders = mutableMapOf<String, UFunc>()
+  private val inj: Injector = Guice.createInjector(PieModule(), LogModule(LoggerFactory.getLogger("root")))
+  private val funcs = mutableMapOf<String, UFunc>()
 
 
-  val toLowerCase = lb<String, String>("toLowerCase", { "toLowerCase($it)" }) {
+  val toLowerCase = func<String, String>("toLowerCase", { "toLowerCase($it)" }) {
     it.toLowerCase()
   }
-  val readPath = lb<PPath, String>("read", { "read($it)" }) {
+  val readPath = func<PPath, String>("read", { "read($it)" }) {
     require(it)
     read(it)
   }
-  val writePath = lb<Pair<String, PPath>, None>("write", { "write$it" }) { (text, path) ->
+  val writePath = func<Pair<String, PPath>, None>("write", { "write$it" }) { (text, path) ->
     write(text, path)
     generate(path)
     None.instance
   }
 
 
-  fun p(fs: FileSystem, path: String): PPath {
+  fun path(fs: FileSystem, path: String): PPath {
     return PPathImpl(fs.getPath(path))
   }
 
-  fun <I : In, O : Out> lb(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): Func<I, O> {
+  fun <I : In, O : Out> func(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): Func<I, O> {
     return LambdaFunc(id, descFunc, execFunc)
   }
 
-  fun <I : In, O : Out> a(func: Func<I, O>, input: I): FuncApp<I, O> {
+  fun <I : In, O : Out> app(func: Func<I, O>, input: I): FuncApp<I, O> {
     return FuncApp(func, input)
   }
 
-  fun <I : In, O : Out> a(builderId: String, input: I): FuncApp<I, O> {
+  fun <I : In, O : Out> app(builderId: String, input: I): FuncApp<I, O> {
     return FuncApp<I, O>(builderId, input)
   }
 
 
-  fun b(store: Store, cache: Cache, share: BuildShare, layer: Layer, logger: mb.pie.runtime.core.Logger): PollingExec {
-    return PollingExec(store, cache, share, layer, logger, builders, inj)
+  fun pullingExec(store: Store, cache: Cache, share: BuildShare, layer: Layer, logger: mb.pie.runtime.core.Logger): PullingExecImpl {
+    return PullingExecImpl(store, cache, share, layer, logger, funcs)
   }
 
-  fun bm(store: Store, cache: Cache, share: BuildShare, layerProvider: Provider<Layer>): PollingExecManager {
-    return PollingExecManagerImpl(store, cache, share, layerProvider, builders, inj)
+  fun pullingExecutor(store: Store, cache: Cache, share: BuildShare, layerProvider: Provider<Layer>, logger: mb.pie.runtime.core.Logger): PullingExecutor {
+    return PullingExecutorImpl(store, cache, share, layerProvider, funcs, logger)
   }
 
 
   fun read(path: PPath): String {
     Files.newInputStream(path.javaPath, StandardOpenOption.READ).use {
-      val bytes = it.readBytes()
-      val text = String(bytes)
-      return text
+      return String(it.readBytes())
     }
   }
 
@@ -103,12 +102,12 @@ open class TestCtx {
   }
 
 
-  fun registerBuilder(builder: UFunc) {
-    builders[builder.id] = builder
+  fun registerFunc(builder: UFunc) {
+    funcs[builder.id] = builder
   }
 
-  inline fun <reified I : In, reified O : Out> requireOutputBuilder(): Func<FuncApp<I, O>, O> {
-    return lb<FuncApp<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
+  inline fun <reified I : In, reified O : Out> requireOutputFunc(): Func<FuncApp<I, O>, O> {
+    return func<FuncApp<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
       requireOutput(it)
     }
   }

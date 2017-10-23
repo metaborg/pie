@@ -181,7 +181,7 @@ rules // Ceres builder calls
 
 
   p2k-exp-ceres-call(|javaClassId):
-   Call(funcId, exps) -> $[requireOutput([javaClassId]::class.java, [expStr])]
+   Call(funcId, exps) -> $[requireOutput([javaClassId]::class, [javaClassId].Companion.id, [expStr])]
     with
       expStr := <p2k-exp-ceres-call-inputexp(|javaClassId)> exps
 
@@ -210,13 +210,13 @@ rules // Ceres builder calls
 rules // Path operations
 
   p2k-exp:
-    ListPath(exp, filterOpt) -> $[requireOutput(ListContents::class.java, ListContents.Input([expStr], [filterStr]))]
+    ListPath(exp, filterOpt) -> $[requireOutput(ListContents::class, ListContents.Companion.id, ListContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
     ; filterStr := <p2k-filter-match> filterOpt
     
   p2k-exp:
-    WalkPath(exp, filterOpt) -> $[requireOutput(WalkContents::class.java, WalkContents.Input([expStr], [filterStr]))]
+    WalkPath(exp, filterOpt) -> $[requireOutput(WalkContents::class, WalkContents.Companion.id, WalkContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
     ; filterStr := <p2k-filter-walk> filterOpt
@@ -257,12 +257,12 @@ rules // Path operations
 
 
   p2k-exp:
-    ReadPath(exp) -> $[requireOutput(Read::class.java, [expStr])]
+    ReadPath(exp) -> $[requireOutput(Read::class, Read.Companion.id, [expStr])]
     with
       expStr := <p2k-exp> exp
       
   p2k-exp:
-    ExistsPath(exp) -> $[requireOutput(Exists::class.java, [expStr])]
+    ExistsPath(exp) -> $[requireOutput(Exists::class, Exists.Companion.id, [expStr])]
     with
       expStr := <p2k-exp> exp
 

@@ -5,17 +5,18 @@ import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.pie.runtime.core.impl.PollingExecManagerImpl
+import mb.pie.runtime.core.impl.PullingExecutorImpl
+import mb.pie.runtime.core.impl.PushingExecutorImpl
 import mb.pie.runtime.core.impl.cache.NoopCache
 import mb.pie.runtime.core.impl.layer.ValidationLayer
-import mb.pie.runtime.core.impl.logger.StreamLogger
+import mb.pie.runtime.core.impl.logger.NoopLogger
 import mb.pie.runtime.core.impl.share.CoroutineBuildShare
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 
 
 open class PieModule : Module {
   override fun configure(binder: Binder) {
-    binder.bindExecManager()
+    binder.bindExecutors()
     binder.bindStore()
     binder.bindShare()
     binder.bindCache()
@@ -27,10 +28,13 @@ open class PieModule : Module {
   }
 
 
-  open protected fun Binder.bindExecManager() {
+  open protected fun Binder.bindExecutors() {
     install(FactoryModuleBuilder()
-      .implement(PollingExecManager::class.java, PollingExecManagerImpl::class.java)
-      .build(PollingExecManagerFactory::class.java))
+      .implement(PullingExecutor::class.java, PullingExecutorImpl::class.java)
+      .build(PullingExecutorFactory::class.java))
+    install(FactoryModuleBuilder()
+      .implement(PushingExecutor::class.java, PushingExecutorImpl::class.java)
+      .build(PushingExecutorFactory::class.java))
   }
 
   open protected fun Binder.bindStore() {
@@ -46,7 +50,7 @@ open class PieModule : Module {
   }
 
   open protected fun Binder.bindLogger() {
-    bind<Logger>().to<StreamLogger>()
+    bind<Logger>().to<NoopLogger>()
   }
 
   open protected fun Binder.bindLayer() {

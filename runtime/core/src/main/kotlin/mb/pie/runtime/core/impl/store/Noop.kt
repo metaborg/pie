@@ -8,37 +8,29 @@ import mb.vfs.path.PPath
  * DO NOT USE in production, as it makes the build algorithm inconsistent.
  */
 class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
-  override fun readTxn(): StoreReadTxn {
-    return this
-  }
-
-  override fun writeTxn(): StoreWriteTxn {
-    return this
-  }
-
+  override fun readTxn() = this
+  override fun writeTxn() = this
   override fun close() {}
 
 
-  override fun setProduces(app: UFuncApp, res: UExecRes) {}
-  override fun produces(app: UFuncApp): UExecRes? {
-    return null
-  }
+  override fun isDirty(app: UFuncApp) = false
+  override fun setIsDirty(app: UFuncApp, isDirty: Boolean) {}
 
-  override fun setGeneratedBy(path: PPath, res: UFuncApp) {}
-  override fun generatedBy(path: PPath): UFuncApp? {
-    return null
-  }
+  override fun resultsIn(app: UFuncApp) = null
+  override fun setResultsIn(app: UFuncApp, resultsIn: UExecRes) {}
 
+  override fun calledBy(app: UFuncApp) = setOf<UFuncApp>()
+  override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {}
+
+  override fun requiredBy(path: PPath) = setOf<UFuncApp>()
   override fun setRequiredBy(path: PPath, res: UFuncApp) {}
-  override fun requiredBy(path: PPath): UFuncApp? {
-    return null
-  }
+
+  override fun generatedBy(path: PPath) = null
+  override fun setGeneratedBy(path: PPath, res: UFuncApp) {}
 
 
   override fun drop() {}
 
 
-  override fun toString(): String {
-    return "NoopStore"
-  }
+  override fun toString() = "NoopStore"
 }

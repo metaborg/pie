@@ -1,6 +1,5 @@
 package mb.pie.runtime.core.impl
 
-import com.google.inject.Injector
 import mb.pie.runtime.core.*
 import mb.vfs.path.PPath
 
@@ -8,30 +7,19 @@ import mb.vfs.path.PPath
 internal class ExecContextImpl(
   private val exec: Exec,
   private val store: Store,
-  private val injector: Injector,
-  private val currentApp: UFuncApp)
-  : ExecContext {
+  private val currentApp: UFuncApp
+) : ExecContext {
   private val reqs = mutableListOf<Req>()
   private val pathReqsToWrite = mutableListOf<PathReq>()
   private val gens = mutableListOf<Gen>()
   private val gensToWrite = mutableListOf<Gen>()
 
 
-  override fun <I : In, O : Out, B : Func<I, O>> requireOutput(clazz: Class<B>, input: I, stamper: OutputStamper): O {
-    val builder = injector.getInstance(clazz)
-    val app = FuncApp(builder, input)
-    return requireOutput(app, stamper)
-  }
-
-  override fun <I : In, B : Func<I, *>> requireExec(clazz: Class<B>, input: I, stamper: OutputStamper) {
-    val builder = injector.getInstance(clazz)
-    val app = FuncApp(builder, input)
-    requireExec(app, stamper)
-  }
-
-
   override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, stamper: OutputStamper): O {
-    store.writeTxn().use { writePathDepsToStore(it) }
+    store.writeTxn().use {
+      it.setCalledBy(app, currentApp)
+      writePathDepsToStore(it)
+    }
     val result = exec.require(app).result
     val stamp = stamper.stamp(result.output)
     val req = ExecReq(app, stamp)
@@ -40,7 +28,10 @@ internal class ExecContextImpl(
   }
 
   override fun requireExec(app: UFuncApp, stamper: OutputStamper) {
-    store.writeTxn().use { writePathDepsToStore(it) }
+    store.writeTxn().use {
+      it.setCalledBy(app, currentApp)
+      writePathDepsToStore(it)
+    }
     val result = exec.require(app).result
     val stamp = stamper.stamp(result.output)
     val req = ExecReq(app, stamp)
@@ -65,6 +56,11 @@ internal class ExecContextImpl(
     val gen = Gen(path, stamp)
     gens.add(gen)
     gensToWrite.add(gen)
+  }
+
+
+  override fun require(req: Req) {
+    reqs.add(req)
   }
 
 

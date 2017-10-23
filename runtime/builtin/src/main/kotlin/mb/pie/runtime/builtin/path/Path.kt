@@ -33,7 +33,7 @@ class Exists : Func<PPath, Boolean> {
   }
 }
 
-fun ExecContext.exists(input: PPath) = requireOutput(Exists::class.java, input)
+fun ExecContext.exists(input: PPath) = requireOutput(Exists::class, Exists.Companion.id, input)
 
 
 class ListContents @Inject constructor(val pathSrv: PathSrv) : Func<ListContents.Input, ArrayList<PPath>> {
@@ -59,7 +59,7 @@ class ListContents @Inject constructor(val pathSrv: PathSrv) : Func<ListContents
   }
 }
 
-fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class.java, input)
+fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class, ListContents.Companion.id, input)
 
 
 class WalkContents @Inject constructor(val pathSrv: PathSrv) : Func<WalkContents.Input, ArrayList<PPath>> {
@@ -85,7 +85,7 @@ class WalkContents @Inject constructor(val pathSrv: PathSrv) : Func<WalkContents
   }
 }
 
-fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, input)
+fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class, WalkContents.Companion.id, input)
 
 
 class Read : Func<PPath, String?> {
@@ -108,7 +108,7 @@ class Read : Func<PPath, String?> {
   }
 }
 
-fun ExecContext.read(input: PPath) = requireOutput(Read::class.java, input)
+fun ExecContext.read(input: PPath) = requireOutput(Read::class, Read.Companion.id, input)
 
 
 class Copy : OutEffectFunc<Copy.Input> {
@@ -131,4 +131,4 @@ class Copy : OutEffectFunc<Copy.Input> {
   }
 }
 
-fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class.java, input)
+fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class, Copy.Companion.id, input)

@@ -13,19 +13,27 @@ interface StoreTxn : AutoCloseable {
 }
 
 interface StoreReadTxn : StoreTxn {
-  fun produces(app: UFuncApp): UExecRes?
+  fun isDirty(app: UFuncApp): Boolean
+
+  fun resultsIn(app: UFuncApp): UExecRes?
+
+  fun calledBy(app: UFuncApp): Set<UFuncApp>
+
+  fun requiredBy(path: PPath): Set<UFuncApp>
 
   fun generatedBy(path: PPath): UFuncApp?
-
-  fun requiredBy(path: PPath): UFuncApp?
 }
 
 interface StoreWriteTxn : StoreReadTxn {
-  fun setProduces(app: UFuncApp, res: UExecRes)
+  fun setIsDirty(app: UFuncApp, isDirty: Boolean)
 
-  fun setGeneratedBy(path: PPath, res: UFuncApp)
+  fun setResultsIn(app: UFuncApp, resultsIn: UExecRes)
 
-  fun setRequiredBy(path: PPath, res: UFuncApp)
+  fun setCalledBy(app: UFuncApp, calledBy: UFuncApp)
+
+  fun setRequiredBy(path: PPath, requiredBy: UFuncApp)
+
+  fun setGeneratedBy(path: PPath, generatedBy: UFuncApp)
 
   fun drop()
 }

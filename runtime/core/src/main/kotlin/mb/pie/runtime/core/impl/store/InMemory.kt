@@ -5,53 +5,52 @@ import mb.vfs.path.PPath
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
-  private val produces = ConcurrentHashMap<UFuncApp, UExecRes>()
-  private val generatedBy = ConcurrentHashMap<PPath, UFuncApp>()
-  private val requiredBy = ConcurrentHashMap<PPath, UFuncApp>()
+  private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
+  private val results = ConcurrentHashMap<UFuncApp, UExecRes>()
+  private val called = ConcurrentHashMap<UFuncApp, MutableSet<UFuncApp>>()
+  private val required = ConcurrentHashMap<PPath, MutableSet<UFuncApp>>()
+  private val generated = ConcurrentHashMap<PPath, UFuncApp>()
 
 
-  override fun readTxn(): StoreReadTxn {
-    return this
-  }
-
-  override fun writeTxn(): StoreWriteTxn {
-    return this
-  }
+  override fun readTxn() = this
+  override fun writeTxn() = this
 
   override fun close() {}
 
 
-  override fun setProduces(app: UFuncApp, res: UExecRes) {
-    produces[app] = res
+  override fun isDirty(app: UFuncApp) = dirty.contains(app)
+  override fun setIsDirty(app: UFuncApp, isDirty: Boolean) {
+    if(isDirty)
+      dirty.add(app)
+    else
+      dirty.remove(app)
   }
 
-  override fun produces(app: UFuncApp): UExecRes? {
-    return produces[app]
+  override fun resultsIn(app: UFuncApp) = results[app]
+  override fun setResultsIn(app: UFuncApp, resultsIn: UExecRes) {
+    results[app] = resultsIn
   }
 
-
-  override fun setGeneratedBy(path: PPath, res: UFuncApp) {
-    generatedBy[path] = res
+  override fun calledBy(app: UFuncApp) = called.getOrPut(app, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
+  override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {
+    called.getOrPut(app, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(calledBy)
   }
 
-  override fun generatedBy(path: PPath): UFuncApp? {
-    return generatedBy[path]
+  override fun requiredBy(path: PPath) = required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
+  override fun setRequiredBy(path: PPath, requiredBy: UFuncApp) {
+    required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(requiredBy)
   }
 
-
-  override fun setRequiredBy(path: PPath, res: UFuncApp) {
-    requiredBy[path] = res
-  }
-
-  override fun requiredBy(path: PPath): UFuncApp? {
-    return requiredBy[path]
+  override fun generatedBy(path: PPath) = generated[path]
+  override fun setGeneratedBy(path: PPath, generatedBy: UFuncApp) {
+    generated[path] = generatedBy
   }
 
 
   override fun drop() {
-    produces.clear()
-    generatedBy.clear()
-    requiredBy.clear()
+    results.clear()
+    generated.clear()
+    required.clear()
   }
 
 

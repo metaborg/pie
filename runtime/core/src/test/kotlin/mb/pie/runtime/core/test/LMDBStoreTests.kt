@@ -9,22 +9,22 @@ import java.io.File
 internal class LMDBStoreTests {
   @TestFactory
   fun testReuse() = TestGenerator.generate("testReuse") {
-    val factory = LMDBBuildStoreFactory(logger)
+    val factory = LMDBBuildStoreFactory(metaborgLogger)
 
-    registerBuilder(toLowerCase)
+    registerFunc(toLowerCase)
 
     factory.create(File("build/test/lmdbstore")).use {
       it.writeTxn().use { it.drop() }
-      val build = b(it, cache, share, layerProvider.get(), reporter)
-      build.require(a(toLowerCase, "HELLO WORLD!"))
+      val exec = pullingExec(it, cache, share, layerProvider.get(), logger)
+      exec.require(app(toLowerCase, "HELLO WORLD!"))
     }
 
     // Close and re-open the database
     factory.create(File("build/test/lmdbstore")).use {
-      val build = spy(b(it, cache, share, layerProvider.get(), reporter))
-      val app = a(toLowerCase, "HELLO WORLD!")
-      build.require(app)
-      verify(build, never()).rebuild(eq(app), any(), any())
+      val exec = spy(pullingExec(it, cache, share, layerProvider.get(), logger))
+      val app = app(toLowerCase, "HELLO WORLD!")
+      exec.require(app)
+      verify(exec, never()).exec(eq(app), any(), any())
     }
   }
 }

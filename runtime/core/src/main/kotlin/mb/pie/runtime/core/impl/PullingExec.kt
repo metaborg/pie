@@ -1,18 +1,32 @@
 package mb.pie.runtime.core.impl
 
-import com.google.inject.Injector
+import com.google.inject.Inject
+import com.google.inject.Provider
+import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
 
 
-open class PollingExec(
+class PullingExecutorImpl @Inject constructor(
+  private @Assisted val store: Store,
+  private @Assisted val cache: Cache,
+  private val share: BuildShare,
+  private val layer: Provider<Layer>,
+  private val funcs: MutableMap<String, UFunc>,
+  private val logger: Logger
+) : PullingExecutor {
+  override fun newExec() = PullingExecImpl(store, cache, share, layer.get(), logger, funcs)
+  override fun dropStore() = store.writeTxn().use { it.drop() }
+  override fun dropCache() = cache.drop()
+}
+
+open class PullingExecImpl(
   private val store: Store,
   private val cache: Cache,
   private val share: BuildShare,
   private val layer: Layer,
   private val logger: Logger,
-  private val funcs: Map<String, UFunc>,
-  private val injector: Injector)
-  : Exec, Funcs {
+  private val funcs: Map<String, UFunc>
+) : PullingExec, Exec, Funcs by FuncsImpl(funcs) {
   private val consistent = mutableMapOf<UFuncApp, UExecRes>()
 
 
@@ -50,7 +64,7 @@ open class PollingExec(
         cachedResult
       } else {
         logger.checkStoredStart(app)
-        val result = store.readTxn().use { it.produces(app) }
+        val result = store.readTxn().use { it.resultsIn(app) }
         logger.checkStoredEnd(app, result)
         result
       }
@@ -59,7 +73,7 @@ open class PollingExec(
       val existingResult = existingUntypedResult?.cast<I, O>()
       if(existingResult == null) {
         // No cached or stored result was found: rebuild
-        val info = rebuild(app, NoResultReason(), true)
+        val info = exec(app, NoResultReason(), true)
         logger.requireEnd(app, info)
         return info
       }
@@ -67,9 +81,9 @@ open class PollingExec(
       // Check for inconsistencies and rebuild when found.
       // Internal consistency: output consistency
       run {
-        val inconsistencyReason = existingResult.inconsistencyReason
+        val inconsistencyReason = existingResult.internalInconsistencyReason
         if(inconsistencyReason != null) {
-          val info = rebuild(app, inconsistencyReason)
+          val info = exec(app, inconsistencyReason)
           logger.requireEnd(app, info)
           return info
         }
@@ -84,18 +98,19 @@ open class PollingExec(
           // If a generated file is outdated (i.e., its stamp changed): rebuild
           val reason = InconsistentGenPath(existingResult, gen, newStamp)
           logger.checkGenEnd(app, gen, reason)
-          val info = rebuild(app, reason)
+          val info = exec(app, reason)
           logger.requireEnd(app, info)
           return info
         } else {
           logger.checkGenEnd(app, gen, null)
         }
       }
+
       // Internal and total consistency: requirements
       for(req in existingResult.reqs) {
         val inconsistencyReason = req.makeConsistent(app, existingResult, this, logger)
         if(inconsistencyReason != null) {
-          val info = rebuild(app, inconsistencyReason)
+          val info = exec(app, inconsistencyReason)
           logger.requireEnd(app, info)
           return info
         }
@@ -117,23 +132,23 @@ open class PollingExec(
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> rebuild(app: FuncApp<I, O>, reason: ExecReason, useCache: Boolean = false): ExecInfo<I, O> {
+  open internal fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, useCache: Boolean = false): ExecInfo<I, O> {
     logger.rebuildStart(app, reason)
     val result = if(useCache) {
-      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.produces(it)?.cast<I, O>() } }) { this.rebuildInternal(it) }
+      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultsIn(it)?.cast<I, O>() } }) { this.execInternal(it) }
     } else {
-      share.reuseOrCreate(app) { this.rebuildInternal(it) }
+      share.reuseOrCreate(app) { this.execInternal(it) }
     }
     logger.rebuildEnd(app, reason, result)
     return ExecInfo(result, reason)
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> rebuildInternal(app: FuncApp<I, O>): ExecRes<I, O> {
+  open internal fun <I : In, O : Out> execInternal(app: FuncApp<I, O>): ExecRes<I, O> {
     val (builderId, input) = app
     val builder = getFunc<I, O>(builderId)
     val desc = builder.desc(input)
-    val context = ExecContextImpl(this, store, injector, app)
+    val context = ExecContextImpl(this, store, app)
     val output = builder.exec(input, context)
     val (reqs, gens) = context.getReqsAndGens()
     val result = ExecRes(builderId, desc, input, output, reqs, gens)
@@ -142,7 +157,7 @@ open class PollingExec(
     store.readTxn().use { layer.validate(app, result, this, it) }
     // Store result and path dependencies in build store
     store.writeTxn().use {
-      it.setProduces(app, result)
+      it.setResultsIn(app, result)
       context.writePathDepsToStore(it)
     }
     // Cache result
@@ -153,17 +168,6 @@ open class PollingExec(
   }
 
 
-  override fun getUFunc(id: String): UFunc {
-    return (funcs[id] ?: error("Builder with identifier '$id' does not exist"))
-  }
-
-  override fun getAnyFunc(id: String): AnyFunc {
-    @Suppress("UNCHECKED_CAST")
-    return getUFunc(id) as AnyFunc
-  }
-
-  override fun <I : In, O : Out> getFunc(id: String): Func<I, O> {
-    @Suppress("UNCHECKED_CAST")
-    return getUFunc(id) as Func<I, O>
-  }
+  override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>) = requireInitial(app).result.output
+  override fun <I : In, O : Out> requireInfo(app: FuncApp<I, O>) = requireInitial(app)
 }

@@ -4,6 +4,7 @@ import mb.pie.runtime.core.*
 import mb.vfs.path.PPath
 import java.io.Serializable
 
+
 interface Req : Serializable {
   fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason?
 }
@@ -26,7 +27,7 @@ data class ExecReq<out AI : In, out AO : Out>(val app: FuncApp<AI, AO>, val stam
   override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason? {
     val result = exec.require(app).result
     logger.checkBuildReqStart(requiringApp, this)
-    val reason = if(!result.isConsistent) {
+    val reason = if(!result.isInternallyConsistent) {
       // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
       // If output is not consistent, requirement is not requireEnd
       // TODO: is this necessary?

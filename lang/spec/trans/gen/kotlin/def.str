@@ -31,7 +31,10 @@ rules // definitions
     with
       str := 
 $[class [className] : Func<[inputName], [outputName]> {
-  [inputDataClass][outputDataClass]override val id = "[className]"
+  companion object {
+    val id = "[className]"
+  }
+  [inputDataClass][outputDataClass]override val id = Companion.id
   override fun ExecContext.exec(input: [inputName]): [outputName] {
     [buildImpl]
   }
