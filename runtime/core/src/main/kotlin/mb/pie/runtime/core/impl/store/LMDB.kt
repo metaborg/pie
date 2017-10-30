@@ -36,10 +36,8 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
     env = Env.create().setMapSize(maxDbSize.toLong()).setMaxReaders(maxReaders).setMaxDbs(7).open(envDir)
     dirty = env.openDbi("dirty", DbiFlags.MDB_CREATE)
     results = env.openDbi("results", DbiFlags.MDB_CREATE)
-    // TODO: use MDB_DUPFIXED since all values are equal size hashes?
     called = env.openDbi("called", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
     calledValues = env.openDbi("calledValues", DbiFlags.MDB_CREATE)
-    // TODO: use MDB_DUPFIXED since all values are equal size hashes?
     required = env.openDbi("required", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
     requiredValues = env.openDbi("requiredValues", DbiFlags.MDB_CREATE)
     generated = env.openDbi("generated", DbiFlags.MDB_CREATE)
@@ -202,9 +200,8 @@ open internal class LMDBStoreReadTxn(
         return setOf()
       }
       val apps = HashSet<UFuncApp>()
-      // TODO: does this count include the current key-value pair, or only duplicates? if not, add 1 to count.
       val numValues = cursor.count()
-      for(i in 0..numValues) {
+      for(i in 0 until numValues) {
         val hashedVal = cursor.`val`()
         // TODO: can we safely get from another database while iterating the cursor? if not, need to copy buffers and get results in another loop.
         val actualVal = requiredValues.get(txn, hashedVal)
@@ -280,7 +277,8 @@ internal class LMDBStoreWriteTxn(
     // TODO: serializing twice, not efficient.
     val hashedValue = serializeHashed(calledBy)
     val value = serialize(calledBy)
-    called.put(txn, key, hashedValue, PutFlags.MDB_NODUPDATA)
+    // TODO: use PutFlags.MDB_NODUPDATA to prevent storing duplicate key-value pairs?
+    called.put(txn, key, hashedValue)
     calledValues.put(txn, hashedValue, value)
   }
 
@@ -289,7 +287,8 @@ internal class LMDBStoreWriteTxn(
     // TODO: serializing twice, not efficient.
     val hashedValue = serializeHashed(requiredBy)
     val value = serialize(requiredBy)
-    required.put(txn, key, hashedValue, PutFlags.MDB_NODUPDATA)
+    // TODO: use PutFlags.MDB_NODUPDATA to prevent storing duplicate key-value pairs?
+    required.put(txn, key, hashedValue)
     requiredValues.put(txn, hashedValue, value)
   }
 

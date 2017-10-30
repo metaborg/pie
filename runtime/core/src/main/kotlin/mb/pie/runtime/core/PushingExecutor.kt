@@ -9,9 +9,9 @@ interface PushingExecutorFactory {
 
 interface PushingExecutor : Executor {
   @Throws(ExecException::class)
-  fun require(obsFuncs: List<AnyObsFunc>, changedPaths: List<PPath>)
+  fun require(obsFuncApps: List<AnyObsFuncApp>, changedPaths: List<PPath>)
 }
 
-data class ObsFunc<out I : In, O : Out>(val app: FuncApp<I, O>, val changedFunc: (O) -> Unit)
-typealias UObsFunc = ObsFunc<*, *>
-typealias AnyObsFunc = ObsFunc<In, Out>
+data class ObsFuncApp<out I : In, O : Out>(val app: FuncApp<I, O>, val observer: (O) -> Unit)
+typealias UObsFuncApp = ObsFuncApp<*, *>
+typealias AnyObsFuncApp = ObsFuncApp<In, Out>

@@ -47,13 +47,15 @@ class ListContents @Inject constructor(val pathSrv: PathSrv) : Func<ListContents
   override fun ExecContext.exec(input: Input): ArrayList<PPath> {
     val (path, matcher) = input
     require(path, PathStampers.modified(matcher))
-    if (!path.isDir) {
+    if(!path.isDir) {
       throw ExecException("Cannot list contents of '$input', it is not a directory")
     }
     try {
-      val stream = if (matcher != null) path.list(matcher) else path.list()
-      return stream.collect(Collectors.toCollection { ArrayList<PPath>() })
-    } catch (e: IOException) {
+      val stream = if(matcher != null) path.list(matcher) else path.list()
+      stream.use {
+        return it.collect(Collectors.toCollection { ArrayList<PPath>() })
+      }
+    } catch(e: IOException) {
       throw ExecException("Cannot list contents of '$input'", e)
     }
   }
@@ -73,13 +75,15 @@ class WalkContents @Inject constructor(val pathSrv: PathSrv) : Func<WalkContents
   override fun ExecContext.exec(input: Input): ArrayList<PPath> {
     val (path, walker) = input
     require(path, PathStampers.modified(walker))
-    if (!path.isDir) {
+    if(!path.isDir) {
       throw ExecException("Cannot walk contents of '$input', it is not a directory")
     }
     try {
-      val stream = if (walker != null) path.walk(walker) else path.walk()
-      return stream.collect(Collectors.toCollection { ArrayList<PPath>() })
-    } catch (e: IOException) {
+      val stream = if(walker != null) path.walk(walker) else path.walk()
+      stream.use {
+        return it.collect(Collectors.toCollection { ArrayList<PPath>() })
+      }
+    } catch(e: IOException) {
       throw ExecException("Cannot walk contents of '$input'", e)
     }
   }
@@ -102,7 +106,7 @@ class Read : Func<PPath, String?> {
       }
       val bytes = input.readAllBytes()
       return String(bytes)
-    } catch (e: IOException) {
+    } catch(e: IOException) {
       throw ExecException("Reading '$input' failed", e)
     }
   }
@@ -124,7 +128,7 @@ class Copy : OutEffectFunc<Copy.Input> {
     require(from)
     try {
       Files.copy(from.javaPath, to.javaPath)
-    } catch (e: IOException) {
+    } catch(e: IOException) {
       throw ExecException("Copying '${input.from}' to '${input.to}' failed", e)
     }
     generate(to)

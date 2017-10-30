@@ -48,9 +48,11 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
 
 
   override fun drop() {
+    dirty.clear()
     results.clear()
-    generated.clear()
+    called.clear()
     required.clear()
+    generated.clear()
   }
 
 

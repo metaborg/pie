@@ -5,7 +5,6 @@ import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
 import mb.vfs.path.PPath
-import java.util.*
 
 class PushingExecutorImpl @Inject constructor(
   private @Assisted val store: Store,
@@ -13,46 +12,31 @@ class PushingExecutorImpl @Inject constructor(
   private val share: BuildShare,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
-  private val funcs: MutableMap<String, UFunc>
+  private val funcs: MutableMap<String, UFunc>,
+  mbLogger: mb.log.Logger
 ) : PushingExecutor {
-  override fun require(obsFuncs: List<AnyObsFunc>, changedPaths: List<PPath>) {
-    // Find function applications that are directly marked dirty by changed paths
-    val directDirty = HashSet<UFuncApp>()
-    store.readTxn().use { txn ->
-      for(changedPath in changedPaths) {
-        val requiredBy = txn.requiredBy(changedPath)
-        directDirty += requiredBy
-        val generatedBy = txn.generatedBy(changedPath)
-        if(generatedBy != null) {
-          directDirty.add(generatedBy)
-        }
-      }
-    }
+  private val mbLogger = mbLogger.forContext(PushingExecutorImpl::class.java)
+  private val dirtyFlagger = DirtyFlaggerImpl(cache, mbLogger)
 
-    // Propagate dirty flags and persist to storage.
-    store.writeTxn().use { txn ->
-      val todo = ArrayDeque(directDirty)
-      while(!todo.isEmpty()) {
-        val app = todo.pop()
-        txn.setIsDirty(app, true)
-        val calledBy = txn.calledBy(app)
-        todo += calledBy;
-      }
+
+  override fun require(obsFuncApps: List<AnyObsFuncApp>, changedPaths: List<PPath>) {
+    store.writeTxn().use {
+      dirtyFlagger.flag(changedPaths, it)
     }
 
     // Execute observable functions, push result when function was executed.
-    val exec = PushingExec(store, cache, share, layer.get(), logger.get(), funcs)
-    for((app, changedFunc) in obsFuncs) {
-      val info = exec.require(app)
-      if(info.wasExecuted) {
-        changedFunc(info.result.output)
-      }
+    mbLogger.trace("Execution")
+    val exec = PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
+    for((funcApp, changedFunc) in obsFuncApps) {
+      mbLogger.trace("  requiring: ${funcApp.toShortString(200)}")
+      val info = exec.require(funcApp)
+      changedFunc(info.result.output)
     }
   }
 
 
   override fun dropStore() {
-    store.writeTxn().drop()
+    store.writeTxn().use { it.drop() };
   }
 
   override fun dropCache() {
@@ -66,7 +50,8 @@ open class PushingExec(
   private val share: BuildShare,
   private val layer: Layer,
   private val logger: Logger,
-  private val funcs: Map<String, UFunc>
+  private val funcs: Map<String, UFunc>,
+  private val dirtyFlagger: DirtyFlagger
 ) : Exec, Funcs by FuncsImpl(funcs) {
   private val consistent = mutableMapOf<UFuncApp, UExecRes>()
 
@@ -112,7 +97,7 @@ open class PushingExec(
         return info
       }
 
-      // Check if result is internally consistent.
+      // Internal consistency: result internal consistency
       run {
         val reason = existingResult.internalInconsistencyReason
         if(reason != null) {
@@ -122,18 +107,52 @@ open class PushingExec(
         }
       }
 
-      // Check if flagged dirty.
+      // Internal consistency: dirty flagged.
       if(store.readTxn().use { it.isDirty(app) }) {
         val info = exec(app, DirtyFlaggedReason())
         logger.requireEnd(app, info)
         return info
       }
 
+      // Internal consistency: path gens
+      for(gen in existingResult.gens) {
+        val (genPath, stamp) = gen
+        logger.checkGenStart(app, gen)
+        val newStamp = stamp.stamper.stamp(genPath)
+        if(stamp != newStamp) {
+          // If a generated file is outdated (i.e., its stamp changed): rebuild
+          val reason = InconsistentGenPath(existingResult, gen, newStamp)
+          logger.checkGenEnd(app, gen, reason)
+          val info = exec(app, reason)
+          logger.requireEnd(app, info)
+          return info
+        } else {
+          logger.checkGenEnd(app, gen, null)
+        }
+      }
+
+      // TODO: is checking path reqs necessary?
+      // Internal consistency: path reqs
+      for(req in existingResult.pathReqs) {
+        val inconsistencyReason = req.makeConsistent(app, existingResult, this, logger)
+        if(inconsistencyReason != null) {
+          val info = exec(app, inconsistencyReason)
+          logger.requireEnd(app, info)
+          return info
+        }
+      }
+
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validate(app, existingResult, this, it) }
-      // Mark not dirty.
-      store.writeTxn().use { it.setIsDirty(app, false) }
+      store.readTxn().use { txn -> layer.validate(app, existingResult, this, txn) }
+      store.writeTxn().use { txn ->
+        // Mark not dirty.
+        txn.setIsDirty(app, false)
+        // Flag generated files dirty.
+        // TODO: is this necessary? If this func app is not executed, its generated files cannot change?
+        // TODO: this could immediately mark this func app as dirty again, causing a loop?
+        dirtyFlagger.flag(existingResult.gens.map { it.path }, txn)
+      }
       // Mark consistent this execution
       consistent[app] = existingResult
       // Cache result
@@ -170,14 +189,17 @@ open class PushingExec(
     val result = ExecRes(builderId, desc, input, output, reqs, gens)
 
     // Validate well-formedness of the dependency graph
-    store.readTxn().use { layer.validate(app, result, this, it) }
-    store.writeTxn().use {
+    store.readTxn().use { txn -> layer.validate(app, result, this, txn) }
+    store.writeTxn().use { txn ->
       // Mark not dirty.
-      it.setIsDirty(app, false)
+      txn.setIsDirty(app, false)
       // Store result
-      it.setResultsIn(app, result)
+      txn.setResultsIn(app, result)
       // Store path dependencies
-      context.writePathDepsToStore(it)
+      context.writePathDepsToStore(txn)
+      // Flag generated files dirty.
+      // TODO: this could immediately mark this func app as dirty again, causing a loop?
+      dirtyFlagger.flag(result.gens.map { it.path }, txn)
     }
     // Mark consistent this execution
     consistent[app] = result

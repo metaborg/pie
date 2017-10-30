@@ -33,9 +33,11 @@ interface ModifiedPathStamperTrait : PathStamper {
 
   fun modifiedDirRec(dir: PPath, walker: PathWalker?): Long {
     var lastModified = unknown
-    for(subPath in walker?.walk(dir) ?: dir.walk()) {
-      val modified = subPath.lastModifiedTimeMs()
-      lastModified = Math.max(lastModified, modified)
+    walker?.walk(dir) ?: dir.walk().use { stream ->
+      for(subPath in stream) {
+        val modified = subPath.lastModifiedTimeMs()
+        lastModified = Math.max(lastModified, modified)
+      }
     }
     return lastModified
   }

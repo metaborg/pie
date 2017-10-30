@@ -9,7 +9,12 @@ interface Req : Serializable {
   fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason?
 }
 
-data class PathReq(val path: PPath, val stamp: PathStamp) : Req {
+data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChecker {
+  override fun isConsistent(): Boolean {
+    val newStamp = stamp.stamper.stamp(path)
+    return stamp == newStamp
+  }
+
   override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): InconsistentPathReq? {
     logger.checkPathReqStart(requiringApp, this)
     val newStamp = stamp.stamper.stamp(path)
@@ -29,7 +34,7 @@ data class ExecReq<out AI : In, out AO : Out>(val app: FuncApp<AI, AO>, val stam
     logger.checkBuildReqStart(requiringApp, this)
     val reason = if(!result.isInternallyConsistent) {
       // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
-      // If output is not consistent, requirement is not requireEnd
+      // If output is not consistent, requirement is not consistent.
       // TODO: is this necessary?
       InconsistentExecReqTransientOutput(requiringResult, this, result)
     } else {

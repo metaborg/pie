@@ -21,14 +21,18 @@ interface HashPathStamperTrait : PathStamper {
   }
 
   fun MessageDigest.updateDir(dir: PPath, matcher: PathMatcher?) {
-    for(subPath in matcher?.list(dir) ?: dir.list()) {
-      if(subPath.isFile) updateFile(subPath)
+    matcher?.list(dir) ?: dir.list().use { stream ->
+      for(subPath in stream) {
+        if(subPath.isFile) updateFile(subPath)
+      }
     }
   }
 
   fun MessageDigest.updateDirRec(dir: PPath, walker: PathWalker?) {
-    for(subPath in walker?.walk(dir) ?: dir.walk()) {
-      if(subPath.isFile) updateFile(subPath)
+    walker?.walk(dir) ?: dir.walk().use { stream ->
+      for(subPath in stream) {
+        if(subPath.isFile) updateFile(subPath)
+      }
     }
   }
 
