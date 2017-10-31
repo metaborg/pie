@@ -50,12 +50,12 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
 
   override fun readTxn(): StoreReadTxn {
     val txn = env.txnRead()
-    return LMDBStoreReadTxn(env, dirty, results, called, calledValues, required, requiredValues, generated, txn, logger)
+    return LMDBStoreTxn(env, txn, false, logger, dirty, results, called, calledValues, required, requiredValues, generated)
   }
 
   override fun writeTxn(): StoreWriteTxn {
     val txn = env.txnWrite()
-    return LMDBStoreWriteTxn(env, dirty, results, called, calledValues, required, requiredValues, generated, txn, logger)
+    return LMDBStoreTxn(env, txn, true, logger, dirty, results, called, calledValues, required, requiredValues, generated)
   }
 
 
@@ -64,8 +64,14 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
   }
 }
 
-interface LMDBStoreTxnTrait {
-  fun <T : Serializable> serialize(obj: T, maxKeySize: Int? = null): ByteBuffer {
+open internal class LMDBStoreTxnBase(
+  protected val env: EnvB,
+  protected val txn: TxnB,
+  protected val isWriteTxn: Boolean,
+  protected val logger: Logger
+) {
+  /// Serialization
+  private fun <T : Serializable> serialize(obj: T, maxKeySize: Int? = null): ByteBuffer {
     // TODO: copies the bytes: not efficient
     val bytes = serializeToBytes(obj)
     if(maxKeySize != null && bytes.size > maxKeySize) {
@@ -77,18 +83,29 @@ interface LMDBStoreTxnTrait {
     return buffer
   }
 
-  fun <T : Serializable> serializeHashed(obj: T): ByteBuffer {
+  private fun <T : Serializable> serializeHashed(obj: T): ByteBuffer {
     // TODO: copies the bytes: not efficient
     val bytes = serializeToBytes(obj)
     return hash(bytes)
   }
 
-  fun emptyBuffer(): ByteBuffer {
+  private fun <T : Serializable> serializeToBytes(obj: T): ByteArray {
+    ByteArrayOutputStream().use {
+      ObjectOutputStream(it).use {
+        it.writeObject(obj)
+      }
+      // TODO: ObjectOutputStream.toByteArray() copies the bytes: not efficient
+      return it.toByteArray()
+    }
+  }
+
+  private fun emptyBuffer(): ByteBuffer {
     return ByteBuffer.allocateDirect(0)
   }
 
 
-  fun <T : Serializable> deserialize(buffer: ByteBuffer, logger: Logger): T? {
+  /// Deserialization
+  private fun <T : Serializable> deserialize(buffer: ByteBuffer): T? {
     ByteBufferBackedInputStream(buffer).use {
       ObjectInputStream(it).use {
         try {
@@ -109,6 +126,18 @@ interface LMDBStoreTxnTrait {
   }
 
 
+  /// Copying buffer
+  private fun copyBuffer(buffer: ByteBuffer): ByteBuffer {
+    val readOnlyBuffer = buffer.asReadOnlyBuffer()
+    val newBuffer = ByteBuffer.allocateDirect(readOnlyBuffer.capacity())
+    readOnlyBuffer.rewind()
+    newBuffer.put(readOnlyBuffer)
+    newBuffer.flip()
+    return newBuffer
+  }
+
+
+  /// Hashing buffer
   private fun hash(bytes: ByteArray): ByteBuffer {
     val digest = MessageDigest.getInstance("SHA-1")
     val digestBytes = digest.digest(bytes)
@@ -118,195 +147,164 @@ interface LMDBStoreTxnTrait {
     return buffer
   }
 
-  private fun <T : Serializable> serializeToBytes(obj: T): ByteArray {
-    ByteArrayOutputStream().use {
-      ObjectOutputStream(it).use {
-        it.writeObject(obj)
+
+  /// Getting data
+  protected fun <T : Serializable> getBool(input: T, db: DbiB): Boolean {
+    val key = serialize(input, env.maxKeySize)
+    val value = db.get(txn, key)
+    return value != null
+  }
+
+  protected fun <T : Serializable, R : Serializable> getOne(input: T, db: DbiB): R? {
+    val key = serialize(input, env.maxKeySize)
+    val value = db.get(txn, key) ?: return null
+    return deserializeOrDelete<T, R>(key, value, db)
+  }
+
+  protected fun <T : Serializable, R : Serializable> getMultiple(input: T, dbDup: DbiB, dbVal: DbiB): Set<R> {
+    val key = serialize(input, env.maxKeySize)
+    val hashedValues = ArrayList<ByteBuffer>()
+    dbDup.openCursor(txn).use { cursor ->
+      // TODO: use GetOp.MDB_SET since we do not look at the key at all?
+      if(!cursor.get(key, GetOp.MDB_SET_KEY)) {
+        return setOf()
       }
-      // TODO: ObjectOutputStream.toByteArray() copies the bytes: not efficient
-      return it.toByteArray()
+      do {
+        val hashedValue = cursor.`val`()
+        val hashedValueCopy = copyBuffer(hashedValue)
+        hashedValues.add(hashedValueCopy)
+      } while(cursor.seek(SeekOp.MDB_NEXT_DUP))
     }
+    val results = HashSet<R>(hashedValues.size)
+    for(hashedValue in hashedValues) {
+      val value = dbVal.get(txn, hashedValue) ?: continue
+      val deserializedValue = deserializeOrDelete<T, R>(hashedValue, value, dbVal)
+      if(deserializedValue != null) {
+        results.add(deserializedValue)
+      } else {
+        // Also delete key-value pair from dbDup when value could not be deserialized.
+        if(isWriteTxn) {
+          dbDup.delete(txn, key)
+        } else {
+          env.txnWrite().use {
+            dbDup.delete(it, key, hashedValue)
+          }
+        }
+      }
+    }
+    return results
+  }
+
+  private fun <T : Serializable, R : Serializable> deserializeOrDelete(key: ByteBuffer, value: ByteBuffer, db: DbiB): R? {
+    val deserialized = deserialize<R>(value)
+    return if(deserialized != null) {
+      deserialized
+    } else {
+      if(isWriteTxn) {
+        db.delete(txn, key)
+      } else {
+        env.txnWrite().use {
+          db.delete(it, key)
+        }
+      }
+      null
+    }
+  }
+
+
+  /// Setting data
+  protected fun <K : Serializable> setBool(input: K, result: Boolean, db: DbiB): Boolean {
+    val key = serialize(input, env.maxKeySize)
+    return if(result) {
+      val value = emptyBuffer()
+      db.put(txn, key, value)
+    } else {
+      db.delete(txn, key)
+    }
+  }
+
+  protected fun <K : Serializable, V : Serializable> setOne(input: K, result: V, db: DbiB): Boolean {
+    val key = serialize(input, env.maxKeySize)
+    val value = serialize(result)
+    return db.put(txn, key, value)
+  }
+
+  protected fun <K : Serializable, V : Serializable> setDup(input: K, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
+    val key = serialize(input, env.maxKeySize)
+    // TODO: serializing twice, not efficient.
+    val hashedValue = serializeHashed(result)
+    val value = serialize(result)
+    // TODO: use PutFlags.MDB_NODUPDATA to prevent storing duplicate key-value pairs?
+    val put1 = dbDup.put(txn, key, hashedValue)
+    val put2 = dbVal.put(txn, hashedValue, value)
+    return put1 && put2
   }
 }
 
-open internal class LMDBStoreReadTxn(
-  protected val env: EnvB,
-  protected val dirty: DbiB,
-  protected val results: DbiB,
-  protected val called: DbiB,
-  protected val calledValues: DbiB,
-  protected val required: DbiB,
-  protected val requiredValues: DbiB,
-  protected val generated: DbiB,
-  protected val txn: TxnB,
-  protected val logger: Logger
-) : LMDBStoreTxnTrait, StoreReadTxn {
+open internal class LMDBStoreTxn(
+  env: EnvB,
+  txn: TxnB,
+  isWriteTxn: Boolean,
+  logger: Logger,
+  private val dirtyDb: DbiB,
+  private val resultsDb: DbiB,
+  private val calledDb: DbiB,
+  private val calledValuesDb: DbiB,
+  private val requiredDb: DbiB,
+  private val requiredValuesDb: DbiB,
+  private val generatedDb: DbiB
+) : StoreReadTxn, StoreWriteTxn, LMDBStoreTxnBase(env, txn, isWriteTxn, logger) {
   override fun isDirty(app: UFuncApp): Boolean {
-    val keyBytes = serialize(app, env.maxKeySize)
-    val result = dirty.get(txn, keyBytes)
-    return result != null
+    return getBool(app, dirtyDb)
   }
 
   override fun resultsIn(app: UFuncApp): UExecRes? {
-    val key = serialize(app, env.maxKeySize)
-    val value = results.get(txn, key)
-    if(value != null) {
-      val deserialized = deserialize<UExecRes>(value, logger)
-      if(deserialized != null) {
-        return deserialized
-      }
-      // Deserialization failed, remove entry
-      logger.error("Cannot get produced value for $app, deserialization failed")
-      results.delete(key)
-    }
-    return null
+    return getOne(app, resultsDb)
   }
 
   override fun calledBy(app: UFuncApp): Set<UFuncApp> {
-    val key = serialize(app, env.maxKeySize)
-    called.openCursor(txn).use { cursor ->
-      if(!cursor.get(key, GetOp.MDB_SET)) {
-        return setOf()
-      }
-      val apps = HashSet<UFuncApp>()
-      val numValues = cursor.count()
-      for(i in 0 until numValues) {
-        val hashedVal = cursor.`val`()
-        // TODO: can we safely get from another database while iterating the cursor? if not, need to copy buffers and get results in another loop.
-        val actualVal = calledValues.get(txn, hashedVal)
-        if(actualVal == null) {
-          logger.error("Could not find called function application for hash $hashedVal")
-        } else {
-          val deserialized = deserialize<UFuncApp>(actualVal, logger)
-          if(deserialized != null) {
-            apps.add(deserialized)
-          } else {
-            // Deserialization failed, remove entry
-            logger.error("Cannot get called by value for $app, deserialization failed")
-            // TODO: can we safely delete from another database while iterating the cursor?
-            calledValues.delete(hashedVal)
-          }
-        }
-        cursor.next()
-      }
-      return apps
-    }
+    return getMultiple(app, calledDb, calledValuesDb)
   }
 
   override fun requiredBy(path: PPath): Set<UFuncApp> {
-    val key = serialize(path, env.maxKeySize)
-    required.openCursor(txn).use { cursor ->
-      if(!cursor.get(key, GetOp.MDB_SET)) {
-        return setOf()
-      }
-      val apps = HashSet<UFuncApp>()
-      val numValues = cursor.count()
-      for(i in 0 until numValues) {
-        val hashedVal = cursor.`val`()
-        // TODO: can we safely get from another database while iterating the cursor? if not, need to copy buffers and get results in another loop.
-        val actualVal = requiredValues.get(txn, hashedVal)
-        if(actualVal == null) {
-          logger.error("Could not find required function application for hash $hashedVal")
-        } else {
-          val deserialized = deserialize<UFuncApp>(actualVal, logger)
-          if(deserialized != null) {
-            apps.add(deserialized)
-          } else {
-            // Deserialization failed, remove entry
-            logger.error("Cannot get required by value for $path, deserialization failed")
-            // TODO: can we safely delete from another database while iterating the cursor?
-            requiredValues.delete(hashedVal)
-          }
-        }
-        cursor.next()
-      }
-      return apps
-    }
+    return getMultiple(path, requiredDb, requiredValuesDb)
   }
 
   override fun generatedBy(path: PPath): UFuncApp? {
-    val key = serialize(path, env.maxKeySize)
-    val value = generated.get(txn, key)
-    if(value != null) {
-      val deserialized = deserialize<UFuncApp>(value, logger)
-      if(deserialized != null) {
-        return deserialized
-      }
-      // Deserialization failed, remove entry
-      logger.error("Cannot get generated by value for $path, deserialization failed")
-      generated.delete(key)
-    }
-    return null
+    return getOne(path, generatedDb)
   }
 
-  override fun close() {
-    txn.abort()
-  }
-}
 
-internal class LMDBStoreWriteTxn(
-  env: EnvB,
-  dirty: DbiB,
-  results: DbiB,
-  called: DbiB,
-  calledValues: DbiB,
-  required: DbiB,
-  requiredValues: DbiB,
-  generated: DbiB,
-  txn: TxnB,
-  logger: Logger
-) : LMDBStoreTxnTrait, StoreWriteTxn, LMDBStoreReadTxn(env, dirty, results, called, calledValues, required, requiredValues, generated, txn, logger) {
   override fun setIsDirty(app: UFuncApp, isDirty: Boolean) {
-    val k = serialize(app, env.maxKeySize)
-    if(isDirty) {
-      val v = emptyBuffer()
-      dirty.put(txn, k, v)
-    } else {
-      dirty.delete(txn, k)
-    }
+    setBool(app, isDirty, dirtyDb)
   }
 
   override fun setResultsIn(app: UFuncApp, resultsIn: UExecRes) {
-    val key = serialize(app, env.maxKeySize)
-    val value = serialize(resultsIn)
-    results.put(txn, key, value)
+    setOne(app, resultsIn, resultsDb)
   }
 
   override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {
-    val key = serialize(app, env.maxKeySize)
-    // TODO: serializing twice, not efficient.
-    val hashedValue = serializeHashed(calledBy)
-    val value = serialize(calledBy)
-    // TODO: use PutFlags.MDB_NODUPDATA to prevent storing duplicate key-value pairs?
-    called.put(txn, key, hashedValue)
-    calledValues.put(txn, hashedValue, value)
+    setDup(app, calledBy, calledDb, calledValuesDb)
   }
 
   override fun setRequiredBy(path: PPath, requiredBy: UFuncApp) {
-    val key = serialize(path, env.maxKeySize)
-    // TODO: serializing twice, not efficient.
-    val hashedValue = serializeHashed(requiredBy)
-    val value = serialize(requiredBy)
-    // TODO: use PutFlags.MDB_NODUPDATA to prevent storing duplicate key-value pairs?
-    required.put(txn, key, hashedValue)
-    requiredValues.put(txn, hashedValue, value)
+    setDup(path, requiredBy, requiredDb, requiredValuesDb)
   }
 
   override fun setGeneratedBy(path: PPath, generatedBy: UFuncApp) {
-    val key = serialize(path, env.maxKeySize)
-    val value = serialize(generatedBy)
-    this.generated.put(txn, key, value)
+    setOne(path, generatedBy, generatedDb)
   }
 
   override fun drop() {
-    dirty.drop(txn)
-    results.drop(txn)
-    called.drop(txn)
-    calledValues.drop(txn)
-    required.drop(txn)
-    requiredValues.drop(txn)
-    generated.drop(txn)
+    dirtyDb.drop(txn)
+    resultsDb.drop(txn)
+    calledDb.drop(txn)
+    calledValuesDb.drop(txn)
+    requiredDb.drop(txn)
+    requiredValuesDb.drop(txn)
+    generatedDb.drop(txn)
   }
+
 
   override fun close() {
     txn.commit()

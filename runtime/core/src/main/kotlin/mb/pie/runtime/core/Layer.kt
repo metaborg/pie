@@ -8,5 +8,5 @@ interface Layer {
 
   fun <I : In, O : Out> requireEnd(app: FuncApp<I, O>)
 
-  fun <I : In, O : Out> validate(app: FuncApp<I, O>, result: ExecRes<I, O>, funcs: Funcs, readTnx: StoreReadTxn)
+  fun <I : In, O : Out> validate(app: FuncApp<I, O>, result: ExecRes<I, O>, funcs: Funcs, txn: StoreReadTxn)
 }

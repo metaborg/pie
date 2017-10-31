@@ -23,10 +23,10 @@ class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {}
 
   override fun requiredBy(path: PPath) = setOf<UFuncApp>()
-  override fun setRequiredBy(path: PPath, res: UFuncApp) {}
+  override fun setRequiredBy(path: PPath, requiredBy: UFuncApp) {}
 
   override fun generatedBy(path: PPath) = null
-  override fun setGeneratedBy(path: PPath, res: UFuncApp) {}
+  override fun setGeneratedBy(path: PPath, generatedBy: UFuncApp) {}
 
 
   override fun drop() {}

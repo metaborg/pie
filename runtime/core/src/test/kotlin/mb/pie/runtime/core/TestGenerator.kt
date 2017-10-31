@@ -22,7 +22,7 @@ object TestGenerator {
     val stores = arrayOf({ InMemoryStore() }, { LMDBBuildStoreFactory(logger).create(File("target/lmdbstore")) })
     val caches = arrayOf({ NoopCache() }, { MapCache() })
     val shares = arrayOf({ CoroutineBuildShare() })
-    val validationLayerProvider = Provider<Layer> { ValidationLayer(logger) }
+    val layerProvider = Provider<Layer> { ValidationLayer(logger) }
     val reporterGen = { StreamLogger() }
     val fsGen = { Jimfs.newFileSystem(Configuration.unix()) }
 
@@ -36,7 +36,7 @@ object TestGenerator {
           val fs = fsGen()
 
           DynamicTest.dynamicTest("$store, $cache, $share", {
-            val context = ParametrizedTestCtx(logger, store, cache, share, validationLayerProvider, reporter, fs)
+            val context = ParametrizedTestCtx(logger, store, cache, share, layerProvider, reporter, fs)
             context.testFunc()
             context.close()
           })
