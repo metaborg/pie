@@ -4,7 +4,7 @@ import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.sync.Mutex
 import mb.pie.runtime.core.*
 
-class CoroutineBuildShare : BuildShare {
+class CoroutineShare : Share {
   private val sharedBuilds = mutableMapOf<UFuncApp, Deferred<UExecRes>>()
   private val mutex = Mutex()
 
@@ -60,6 +60,6 @@ class CoroutineBuildShare : BuildShare {
 
 
   override fun toString(): String {
-    return "CoroutineBuildShare"
+    return "CoroutineShare"
   }
 }

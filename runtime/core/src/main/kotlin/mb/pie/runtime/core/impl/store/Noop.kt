@@ -10,6 +10,7 @@ import mb.vfs.path.PPath
 class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun readTxn() = this
   override fun writeTxn() = this
+  override fun sync() {}
   override fun close() {}
 
 

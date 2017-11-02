@@ -14,6 +14,7 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
 
   override fun readTxn() = this
   override fun writeTxn() = this
+  override fun sync() {}
 
   override fun close() {}
 

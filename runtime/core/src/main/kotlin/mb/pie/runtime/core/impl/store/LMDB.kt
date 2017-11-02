@@ -4,15 +4,21 @@ import com.google.inject.Inject
 import mb.log.Logger
 import mb.pie.runtime.core.*
 import mb.vfs.path.PPath
+import org.agrona.DirectBuffer
+import org.agrona.ExpandableDirectByteBuffer
+import org.agrona.concurrent.UnsafeBuffer
+import org.agrona.io.DirectBufferInputStream
+import org.agrona.io.ExpandableDirectBufferOutputStream
 import org.lmdbjava.*
 import java.io.*
 import java.nio.ByteBuffer
+import java.security.DigestOutputStream
 import java.security.MessageDigest
 
-
-typealias EnvB = Env<ByteBuffer>
-typealias DbiB = Dbi<ByteBuffer>
-typealias TxnB = Txn<ByteBuffer>
+typealias Buf = DirectBuffer
+typealias EnvB = Env<Buf>
+typealias DbiB = Dbi<Buf>
+typealias TxnB = Txn<Buf>
 
 class LMDBBuildStoreFactory @Inject constructor(val logger: Logger) {
   fun create(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, maxReaders: Int = 1024): LMDBStore {
@@ -33,7 +39,11 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
 
   init {
     envDir.mkdirs()
-    env = Env.create().setMapSize(maxDbSize.toLong()).setMaxReaders(maxReaders).setMaxDbs(7).open(envDir)
+    env = Env.create(DirectBufferProxy.PROXY_DB)
+      .setMapSize(maxDbSize.toLong())
+      .setMaxReaders(maxReaders)
+      .setMaxDbs(7)
+      .open(envDir, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC)
     dirty = env.openDbi("dirty", DbiFlags.MDB_CREATE)
     results = env.openDbi("results", DbiFlags.MDB_CREATE)
     called = env.openDbi("called", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
@@ -58,6 +68,10 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
     return LMDBStoreTxn(env, txn, true, logger, dirty, results, called, calledValues, required, requiredValues, generated)
   }
 
+  override fun sync() {
+    env.sync(false)
+  }
+
 
   override fun toString(): String {
     return "LMDBStore"
@@ -65,48 +79,71 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
 }
 
 open internal class LMDBStoreTxnBase(
-  protected val env: EnvB,
+  private val env: EnvB,
   protected val txn: TxnB,
-  protected val isWriteTxn: Boolean,
+  private val isWriteTxn: Boolean,
   protected val logger: Logger
 ) {
   /// Serialization
-  private fun <T : Serializable> serialize(obj: T, maxKeySize: Int? = null): ByteBuffer {
-    // TODO: copies the bytes: not efficient
-    val bytes = serializeToBytes(obj)
-    if(maxKeySize != null && bytes.size > maxKeySize) {
-      return hash(bytes)
+  private fun <T : Serializable> serialize(obj: T, maxKeySize: Int? = null): Buf {
+    return if(maxKeySize != null) {
+      // TODO: always hashing when maxKeySize is set, but we could instead only hash when key exceeds the key size?
+      serializeHashed(obj)
+    } else {
+      serializeToBytes(obj)
     }
-    // TODO: this copies bytes again: not efficient
-    val buffer = ByteBuffer.allocateDirect(bytes.size)
-    buffer.put(bytes).flip()
-    return buffer
   }
 
-  private fun <T : Serializable> serializeHashed(obj: T): ByteBuffer {
-    // TODO: copies the bytes: not efficient
-    val bytes = serializeToBytes(obj)
-    return hash(bytes)
+  data class SerializedAndHashed(val serialized: Buf, val hashed: Buf)
+
+  private fun <T : Serializable> serializeAndHash(obj: T): SerializedAndHashed {
+    val stream = ExpandableDirectBufferOutputStream(ExpandableDirectByteBuffer(1024))
+    val digester = MessageDigest.getInstance("SHA-256")
+    stream.use {
+      // Internally digests to digester, and then passes written bytes to the expandable buffer stream.
+      DigestOutputStream(it, digester).use {
+        ObjectOutputStream(it).use {
+          it.writeObject(obj)
+        }
+      }
+    }
+    val serialized = UnsafeBuffer(stream.buffer(), 0, stream.position())
+    val digested = digester.digest()
+    val hashed = UnsafeBuffer(ByteBuffer.allocateDirect(digested.size))
+    hashed.putBytes(0, digested)
+    return SerializedAndHashed(serialized, hashed)
   }
 
-  private fun <T : Serializable> serializeToBytes(obj: T): ByteArray {
-    ByteArrayOutputStream().use {
+  private fun <T : Serializable> serializeHashed(obj: T): Buf {
+    val digester = MessageDigest.getInstance("SHA-256")
+    DigestingOutputStream(digester).use {
       ObjectOutputStream(it).use {
         it.writeObject(obj)
       }
-      // TODO: ObjectOutputStream.toByteArray() copies the bytes: not efficient
-      return it.toByteArray()
     }
+    val digested = digester.digest()
+    val buf = UnsafeBuffer(ByteBuffer.allocateDirect(digested.size))
+    buf.putBytes(0, digested)
+    return buf
   }
 
-  private fun emptyBuffer(): ByteBuffer {
-    return ByteBuffer.allocateDirect(0)
+  private fun <T : Serializable> serializeToBytes(obj: T): Buf {
+    val stream = ExpandableDirectBufferOutputStream(ExpandableDirectByteBuffer(1024))
+    stream.use {
+      ObjectOutputStream(it).use {
+        it.writeObject(obj)
+      }
+    }
+    return UnsafeBuffer(stream.buffer(), 0, stream.position())
   }
 
+  private fun emptyBuffer(): Buf {
+    return UnsafeBuffer()
+  }
 
   /// Deserialization
-  private fun <T : Serializable> deserialize(buffer: ByteBuffer): T? {
-    ByteBufferBackedInputStream(buffer).use {
+  private fun <T : Serializable> deserialize(buffer: Buf): T? {
+    DirectBufferInputStream(buffer).use {
       ObjectInputStream(it).use {
         try {
           @Suppress("UNCHECKED_CAST")
@@ -125,26 +162,11 @@ open internal class LMDBStoreTxnBase(
     }
   }
 
-
   /// Copying buffer
-  private fun copyBuffer(buffer: ByteBuffer): ByteBuffer {
-    val readOnlyBuffer = buffer.asReadOnlyBuffer()
-    val newBuffer = ByteBuffer.allocateDirect(readOnlyBuffer.capacity())
-    readOnlyBuffer.rewind()
-    newBuffer.put(readOnlyBuffer)
-    newBuffer.flip()
+  private fun copyBuffer(buffer: Buf): Buf {
+    val newBuffer = UnsafeBuffer(ByteBuffer.allocateDirect(buffer.capacity()))
+    newBuffer.putBytes(0, buffer, 0, buffer.capacity())
     return newBuffer
-  }
-
-
-  /// Hashing buffer
-  private fun hash(bytes: ByteArray): ByteBuffer {
-    val digest = MessageDigest.getInstance("SHA-1")
-    val digestBytes = digest.digest(bytes)
-    // TODO: this copies bytes again: not efficient
-    val buffer = ByteBuffer.allocateDirect(digestBytes.size)
-    buffer.put(digestBytes).flip()
-    return buffer
   }
 
 
@@ -158,15 +180,14 @@ open internal class LMDBStoreTxnBase(
   protected fun <T : Serializable, R : Serializable> getOne(input: T, db: DbiB): R? {
     val key = serialize(input, env.maxKeySize)
     val value = db.get(txn, key) ?: return null
-    return deserializeOrDelete<T, R>(key, value, db)
+    return deserializeOrDelete(key, value, db)
   }
 
   protected fun <T : Serializable, R : Serializable> getMultiple(input: T, dbDup: DbiB, dbVal: DbiB): Set<R> {
     val key = serialize(input, env.maxKeySize)
-    val hashedValues = ArrayList<ByteBuffer>()
+    val hashedValues = ArrayList<Buf>()
     dbDup.openCursor(txn).use { cursor ->
-      // TODO: use GetOp.MDB_SET since we do not look at the key at all?
-      if(!cursor.get(key, GetOp.MDB_SET_KEY)) {
+      if(!cursor.get(key, GetOp.MDB_SET)) {
         return setOf()
       }
       do {
@@ -178,7 +199,7 @@ open internal class LMDBStoreTxnBase(
     val results = HashSet<R>(hashedValues.size)
     for(hashedValue in hashedValues) {
       val value = dbVal.get(txn, hashedValue) ?: continue
-      val deserializedValue = deserializeOrDelete<T, R>(hashedValue, value, dbVal)
+      val deserializedValue = deserializeOrDelete<R>(hashedValue, value, dbVal)
       if(deserializedValue != null) {
         results.add(deserializedValue)
       } else {
@@ -195,7 +216,7 @@ open internal class LMDBStoreTxnBase(
     return results
   }
 
-  private fun <T : Serializable, R : Serializable> deserializeOrDelete(key: ByteBuffer, value: ByteBuffer, db: DbiB): R? {
+  private fun <R : Serializable> deserializeOrDelete(key: Buf, value: Buf, db: DbiB): R? {
     val deserialized = deserialize<R>(value)
     return if(deserialized != null) {
       deserialized
@@ -231,11 +252,8 @@ open internal class LMDBStoreTxnBase(
 
   protected fun <K : Serializable, V : Serializable> setDup(input: K, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
     val key = serialize(input, env.maxKeySize)
-    // TODO: serializing twice, not efficient.
-    val hashedValue = serializeHashed(result)
-    val value = serialize(result)
-    // TODO: use PutFlags.MDB_NODUPDATA to prevent storing duplicate key-value pairs?
-    val put1 = dbDup.put(txn, key, hashedValue)
+    val (value, hashedValue) = serializeAndHash(result)
+    val put1 = dbDup.put(txn, key, hashedValue, PutFlags.MDB_NODUPDATA)
     val put2 = dbVal.put(txn, hashedValue, value)
     return put1 && put2
   }
@@ -312,23 +330,14 @@ open internal class LMDBStoreTxn(
 }
 
 
-internal class ByteBufferBackedInputStream(private val buf: ByteBuffer) : InputStream() {
+class DigestingOutputStream(private val digest: MessageDigest) : OutputStream() {
   @Throws(IOException::class)
-  override fun read(): Int {
-    if(!buf.hasRemaining()) {
-      return -1
-    }
-    return buf.get().toInt() and 0xFF
+  override fun write(b: Int) {
+    digest.update(b.toByte())
   }
 
   @Throws(IOException::class)
-  override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
-    if(!buf.hasRemaining()) {
-      return -1
-    }
-
-    val minLength = Math.min(length, buf.remaining())
-    buf.get(bytes, offset, minLength)
-    return minLength
+  override fun write(b: ByteArray, off: Int, len: Int) {
+    digest.update(b, off, len)
   }
 }

@@ -1,14 +1,15 @@
 package mb.pie.runtime.core.test
 
 import com.nhaarman.mockito_kotlin.*
-import mb.pie.runtime.core.TestGenerator
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
+import mb.pie.runtime.core.impl.store.NoopStore
+import mb.pie.runtime.core.test.util.TestGenerator
 import org.junit.jupiter.api.TestFactory
 import java.io.File
 
 internal class LMDBStoreTests {
   @TestFactory
-  fun testReuse() = TestGenerator.generate("testReuse") {
+  fun testReuse() = TestGenerator.generate("testReuse", dStoreGens = arrayOf({ NoopStore() })) {
     val factory = LMDBBuildStoreFactory(metaborgLogger)
 
     registerFunc(toLowerCase)

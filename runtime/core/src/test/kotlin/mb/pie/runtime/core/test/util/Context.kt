@@ -1,8 +1,9 @@
-package mb.pie.runtime.core
+package mb.pie.runtime.core.test.util
 
 import com.google.inject.*
 import mb.log.LogModule
 import mb.log.Logger
+import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.PullingExecImpl
 import mb.pie.runtime.core.impl.PullingExecutorImpl
 import mb.vfs.path.PPath
@@ -14,7 +15,7 @@ open class ParametrizedTestCtx(
   metaborgLogger: Logger,
   val store: Store,
   val cache: Cache,
-  val share: BuildShare,
+  val share: Share,
   val layerProvider: Provider<Layer>,
   val logger: mb.pie.runtime.core.Logger,
   val fs: FileSystem
@@ -76,11 +77,11 @@ open class TestCtx {
   }
 
 
-  fun pullingExec(store: Store, cache: Cache, share: BuildShare, layer: Layer, logger: mb.pie.runtime.core.Logger): PullingExecImpl {
+  fun pullingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: mb.pie.runtime.core.Logger): PullingExecImpl {
     return PullingExecImpl(store, cache, share, layer, logger, funcs)
   }
 
-  fun pullingExecutor(store: Store, cache: Cache, share: BuildShare, layerProvider: Provider<Layer>, logger: mb.pie.runtime.core.Logger): PullingExecutor {
+  fun pullingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, logger: mb.pie.runtime.core.Logger): PullingExecutor {
     return PullingExecutorImpl(store, cache, share, layerProvider, funcs, logger)
   }
 

@@ -2,7 +2,7 @@ package mb.pie.runtime.core.impl.share
 
 import mb.pie.runtime.core.*
 
-class NonSharingBuildShare : BuildShare {
+class NonSharingShare : Share {
   override fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, cacheFunc: (FuncApp<I, O>) -> ExecRes<I, O>?, execFunc: (FuncApp<I, O>) -> ExecRes<I, O>): ExecRes<I, O> {
     return cacheFunc(app) ?: execFunc(app)
   }
@@ -12,5 +12,5 @@ class NonSharingBuildShare : BuildShare {
   }
 
 
-  override fun toString() = "NonSharingBuildShare"
+  override fun toString() = "NonSharingShare"
 }

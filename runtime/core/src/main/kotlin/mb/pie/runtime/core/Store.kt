@@ -6,6 +6,7 @@ import mb.vfs.path.PPath
 interface Store : AutoCloseable {
   fun readTxn(): StoreReadTxn
   fun writeTxn(): StoreWriteTxn
+  fun sync()
 }
 
 interface StoreTxn : AutoCloseable {

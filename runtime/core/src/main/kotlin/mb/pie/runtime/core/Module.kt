@@ -10,7 +10,7 @@ import mb.pie.runtime.core.impl.PushingExecutorImpl
 import mb.pie.runtime.core.impl.cache.NoopCache
 import mb.pie.runtime.core.impl.layer.ValidationLayer
 import mb.pie.runtime.core.impl.logger.NoopLogger
-import mb.pie.runtime.core.impl.share.CoroutineBuildShare
+import mb.pie.runtime.core.impl.share.CoroutineShare
 import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 
 
@@ -42,7 +42,7 @@ open class PieModule : Module {
   }
 
   open protected fun Binder.bindShare() {
-    bind<BuildShare>().toSingleton<CoroutineBuildShare>()
+    bind<Share>().toSingleton<CoroutineShare>()
   }
 
   open protected fun Binder.bindCache() {

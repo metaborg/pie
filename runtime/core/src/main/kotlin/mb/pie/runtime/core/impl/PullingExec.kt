@@ -9,20 +9,24 @@ import mb.pie.runtime.core.*
 class PullingExecutorImpl @Inject constructor(
   private @Assisted val store: Store,
   private @Assisted val cache: Cache,
-  private val share: BuildShare,
+  private val share: Share,
   private val layer: Provider<Layer>,
   private val funcs: MutableMap<String, UFunc>,
   private val logger: Logger
 ) : PullingExecutor {
   override fun newExec() = PullingExecImpl(store, cache, share, layer.get(), logger, funcs)
-  override fun dropStore() = store.writeTxn().use { it.drop() }
+  override fun dropStore() {
+    store.writeTxn().use { it.drop() }
+    store.sync()
+  }
+
   override fun dropCache() = cache.drop()
 }
 
 open class PullingExecImpl(
   private val store: Store,
   private val cache: Cache,
-  private val share: BuildShare,
+  private val share: Share,
   private val layer: Layer,
   private val logger: Logger,
   private val funcs: Map<String, UFunc>
@@ -31,10 +35,14 @@ open class PullingExecImpl(
 
 
   fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>): ExecInfo<I, O> {
-    logger.requireInitialStart(app)
-    val info = require(app)
-    logger.requireInitialEnd(app, info)
-    return info
+    try {
+      logger.requireInitialStart(app)
+      val info = require(app)
+      logger.requireInitialEnd(app, info)
+      return info
+    } finally {
+      store.sync()
+    }
   }
 
   override fun <I : In, O : Out> require(app: FuncApp<I, O>): ExecInfo<I, O> {

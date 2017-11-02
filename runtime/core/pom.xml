@@ -61,7 +61,12 @@
     <dependency>
       <groupId>org.lmdbjava</groupId>
       <artifactId>lmdbjava</artifactId>
-      <version>0.0.5</version>
+      <version>0.6.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <version>0.9.9</version>
     </dependency>
 
     <!-- JUnit 5 (http://junit.org/junit5/docs/current/user-guide/) -->

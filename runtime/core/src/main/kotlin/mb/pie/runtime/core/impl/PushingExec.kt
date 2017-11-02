@@ -9,7 +9,7 @@ import mb.vfs.path.PPath
 class PushingExecutorImpl @Inject constructor(
   private @Assisted val store: Store,
   private @Assisted val cache: Cache,
-  private val share: BuildShare,
+  private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
   private val funcs: MutableMap<String, UFunc>,
@@ -20,23 +20,28 @@ class PushingExecutorImpl @Inject constructor(
 
 
   override fun require(obsFuncApps: List<AnyObsFuncApp>, changedPaths: List<PPath>) {
-    store.writeTxn().use {
-      dirtyFlagger.flag(changedPaths, it)
-    }
+    try {
+      store.writeTxn().use {
+        dirtyFlagger.flag(changedPaths, it)
+      }
 
-    // Execute observable functions, push result when function was executed.
-    mbLogger.trace("Execution")
-    val exec = PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
-    for((funcApp, changedFunc) in obsFuncApps) {
-      mbLogger.trace("  requiring: ${funcApp.toShortString(200)}")
-      val info = exec.require(funcApp)
-      changedFunc(info.result.output)
+      // Execute observable functions, push result when function was executed.
+      mbLogger.trace("Execution")
+      val exec = PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
+      for((funcApp, changedFunc) in obsFuncApps) {
+        mbLogger.trace("  requiring: ${funcApp.toShortString(200)}")
+        val info = exec.require(funcApp)
+        changedFunc(info.result.output)
+      }
+    } finally {
+      store.sync()
     }
   }
 
 
   override fun dropStore() {
-    store.writeTxn().use { it.drop() };
+    store.writeTxn().use { it.drop() }
+    store.sync()
   }
 
   override fun dropCache() {
@@ -47,7 +52,7 @@ class PushingExecutorImpl @Inject constructor(
 open class PushingExec(
   private val store: Store,
   private val cache: Cache,
-  private val share: BuildShare,
+  private val share: Share,
   private val layer: Layer,
   private val logger: Logger,
   private val funcs: Map<String, UFunc>,
@@ -146,12 +151,11 @@ open class PushingExec(
       // Validate well-formedness of the dependency graph
       store.readTxn().use { txn -> layer.validate(app, existingResult, this, txn) }
       store.writeTxn().use { txn ->
-        // Mark not dirty.
-        txn.setIsDirty(app, false)
         // Flag generated files dirty.
         // TODO: is this necessary? If this func app is not executed, its generated files cannot change?
-        // TODO: this could immediately mark this func app as dirty again, causing a loop?
         dirtyFlagger.flag(existingResult.gens.map { it.path }, txn)
+        // Mark not dirty.
+        txn.setIsDirty(app, false)
       }
       // Mark consistent this execution
       consistent[app] = existingResult
@@ -191,15 +195,14 @@ open class PushingExec(
     // Validate well-formedness of the dependency graph
     store.readTxn().use { txn -> layer.validate(app, result, this, txn) }
     store.writeTxn().use { txn ->
+      // Flag generated files dirty.
+      dirtyFlagger.flag(result.gens.map { it.path }, txn)
       // Mark not dirty.
       txn.setIsDirty(app, false)
       // Store result
       txn.setResultsIn(app, result)
       // Store path dependencies
       context.writePathDepsToStore(txn)
-      // Flag generated files dirty.
-      // TODO: this could immediately mark this func app as dirty again, causing a loop?
-      dirtyFlagger.flag(result.gens.map { it.path }, txn)
     }
     // Mark consistent this execution
     consistent[app] = result
