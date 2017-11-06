@@ -1,13 +1,15 @@
 package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
+import mb.util.async.Cancelled
 import mb.vfs.path.PPath
 
 
 internal class ExecContextImpl(
   private val exec: Exec,
   private val store: Store,
-  private val currentApp: UFuncApp
+  private val currentApp: UFuncApp,
+  private val cancel: Cancelled
 ) : ExecContext {
   private val reqs = mutableListOf<Req>()
   private val pathReqsToWrite = mutableListOf<PathReq>()
@@ -16,11 +18,12 @@ internal class ExecContextImpl(
 
 
   override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, stamper: OutputStamper): O {
+    cancel.throwIfCancelled()
     store.writeTxn().use {
       it.setCalledBy(app, currentApp)
       writePathDepsToStore(it)
     }
-    val result = exec.require(app).result
+    val result = exec.require(app, cancel).result
     val stamp = stamper.stamp(result.output)
     val req = ExecReq(app, stamp)
     reqs.add(req)
@@ -28,11 +31,12 @@ internal class ExecContextImpl(
   }
 
   override fun requireExec(app: UFuncApp, stamper: OutputStamper) {
+    cancel.throwIfCancelled()
     store.writeTxn().use {
       it.setCalledBy(app, currentApp)
       writePathDepsToStore(it)
     }
-    val result = exec.require(app).result
+    val result = exec.require(app, cancel).result
     val stamp = stamper.stamp(result.output)
     val req = ExecReq(app, stamp)
     reqs.add(req)

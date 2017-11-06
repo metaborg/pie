@@ -25,7 +25,7 @@ internal class LMDBStoreTests {
       val exec = spy(pullingExec(it, cache, share, layerProvider.get(), logger))
       val app = app(toLowerCase, "HELLO WORLD!")
       exec.require(app)
-      verify(exec, never()).exec(eq(app), any(), any())
+      verify(exec, never()).exec(eq(app), any(), any(), any())
     }
   }
 }

@@ -6,10 +6,10 @@ import kotlin.reflect.KClass
 
 
 interface ExecContext {
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, stamper: OutputStamper = OutputStampers.equals): O
 
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun requireExec(app: UFuncApp, stamper: OutputStamper = OutputStampers.inconsequential)
 
   fun require(path: PPath, stamper: PathStamper = PathStampers.modified)

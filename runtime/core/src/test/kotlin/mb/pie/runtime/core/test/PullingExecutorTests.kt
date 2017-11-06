@@ -34,8 +34,8 @@ internal class PullingExecutorTests {
     assertEquals(0, result.gens.size)
 
     inOrder(exec, func) {
-      verify(exec, times(1)).require(eq(app))
-      verify(exec, times(1)).exec(eq(app), eq(NoResultReason()), any())
+      verify(exec, times(1)).require(eq(app), any())
+      verify(exec, times(1)).exec(eq(app), eq(NoResultReason()), any(), any())
       verify(func, times(1)).exec(eq(input), anyOrNull())
     }
 
@@ -70,12 +70,12 @@ internal class PullingExecutorTests {
     assertNotEquals(result1, result2)
 
     inOrder(func, exec1, exec2) {
-      verify(exec1, times(1)).require(eq(app1))
-      verify(exec1, times(1)).exec(eq(app1), eq(NoResultReason()), any())
+      verify(exec1, times(1)).require(eq(app1), any())
+      verify(exec1, times(1)).exec(eq(app1), eq(NoResultReason()), any(), any())
       verify(func, times(1)).exec(eq(input1), anyOrNull())
 
-      verify(exec2, times(1)).require(eq(app2))
-      verify(exec2, times(1)).exec(eq(app2), eq(NoResultReason()), any())
+      verify(exec2, times(1)).require(eq(app2), any())
+      verify(exec2, times(1)).exec(eq(app2), eq(NoResultReason()), any(), any())
       verify(func, times(1)).exec(eq(input2), anyOrNull())
     }
   }
@@ -100,7 +100,7 @@ internal class PullingExecutorTests {
     assertEquals(result1, result2)
 
     // Result is reused if rebuild is never called
-    verify(exec2, never()).exec(eq(app), eq(NoResultReason()), any())
+    verify(exec2, never()).exec(eq(app), eq(NoResultReason()), any(), any())
 
     verify(func, atMost(1)).exec(eq(input), anyOrNull())
     verify(func, atLeastOnce()).desc(input)
@@ -118,13 +118,13 @@ internal class PullingExecutorTests {
     val exec1 = spy(pullingExec())
     val result1 = exec1.require(app(readPath, filePath)).result
     assertEquals("HELLO WORLD!", result1.output)
-    verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any())
+    verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any(), any())
 
     // No changes - exec 'readPath', observe no rebuild
     val exec2 = spy(pullingExec())
     val result2 = exec2.require(app(readPath, filePath)).result
     assertEquals("HELLO WORLD!", result2.output)
-    verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any())
+    verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any(), any())
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
     write("!DLROW OLLEH", filePath)
@@ -137,7 +137,7 @@ internal class PullingExecutorTests {
       val reason = it as? InconsistentPathReq
       assertNotNull(reason)
       assertEquals(filePath, reason!!.req.path)
-    }, any())
+    }, any(), any())
   }
 
   @TestFactory
@@ -151,7 +151,7 @@ internal class PullingExecutorTests {
     // Build 'writePath', observe rebuild and existence of file
     val exec1 = spy(pullingExec())
     exec1.require(app(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(exec1, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), eq(NoResultReason()), any())
+    verify(exec1, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), eq(NoResultReason()), any(), any())
 
     assertTrue(Files.exists(filePath.javaPath))
     assertEquals("HELLO WORLD!", read(filePath))
@@ -159,7 +159,7 @@ internal class PullingExecutorTests {
     // No changes - exec 'writePath', observe no rebuild, no change to file
     val exec2 = spy(pullingExec())
     exec2.require(app(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(exec2, never()).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), any(), any())
+    verify(exec2, never()).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), any(), any(), any())
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
     write("!DLROW OLLEH", filePath)
@@ -171,7 +171,7 @@ internal class PullingExecutorTests {
       val reason = it as? InconsistentGenPath
       assertNotNull(reason)
       assertEquals(filePath, reason!!.gen.path)
-    }, any())
+    }, any(), any())
 
     assertEquals("HELLO WORLD!", read(filePath))
   }
@@ -196,18 +196,18 @@ internal class PullingExecutorTests {
     val result1 = exec1.require(app(combine, filePath)).result
     assertEquals("hello world!", result1.output)
     inOrder(exec1) {
-      verify(exec1, times(1)).exec(eq(app(combine, filePath)), eq(NoResultReason()), any())
-      verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any())
-      verify(exec1, times(1)).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoResultReason()), any())
+      verify(exec1, times(1)).exec(eq(app(combine, filePath)), eq(NoResultReason()), any(), any())
+      verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any(), any())
+      verify(exec1, times(1)).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoResultReason()), any(), any())
     }
 
     // No changes - exec 'combine', observe no rebuild
     val exec2 = spy(pullingExec())
     val result2 = exec2.require(app(combine, filePath)).result
     assertEquals("hello world!", result2.output)
-    verify(exec2, never()).exec(eq(app(combine, filePath)), any(), any())
-    verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any())
-    verify(exec2, never()).exec(eq(app(toLowerCase, "HELLO WORLD!")), any(), any())
+    verify(exec2, never()).exec(eq(app(combine, filePath)), any(), any(), any())
+    verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any(), any())
+    verify(exec2, never()).exec(eq(app(toLowerCase, "HELLO WORLD!")), any(), any(), any())
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
     write("!DLROW OLLEH", filePath)
@@ -217,18 +217,18 @@ internal class PullingExecutorTests {
     val result3 = exec3.require(app(combine, filePath)).result
     assertEquals("!dlrow olleh", result3.output)
     inOrder(exec3) {
-      verify(exec3, times(1)).require(app(combine, filePath))
+      verify(exec3, times(1)).require(eq(app(combine, filePath)), any())
       verify(exec3, times(1)).exec(eq(app(readPath, filePath)), check {
         val reason = it as? InconsistentPathReq
         assertNotNull(reason)
         assertEquals(filePath, reason!!.req.path)
-      }, any())
+      }, any(), any())
       verify(exec3, times(1)).exec(eq(app(combine, filePath)), check {
         val reason = it as? InconsistentExecReq
         assertNotNull(reason)
         assertEquals(app(readPath, filePath), reason!!.req.app)
-      }, any())
-      verify(exec3, times(1)).exec(eq(app(toLowerCase, "!DLROW OLLEH")), eq(NoResultReason()), any())
+      }, any(), any())
+      verify(exec3, times(1)).exec(eq(app(toLowerCase, "!DLROW OLLEH")), eq(NoResultReason()), any(), any())
     }
 
     // Change required file in such a way that the output of 'readPath' does not change (change modification date)
@@ -241,15 +241,15 @@ internal class PullingExecutorTests {
     val result4 = exec4.require(app(combine, filePath)).result
     assertEquals("!dlrow olleh", result4.output)
     inOrder(exec4) {
-      verify(exec4, times(1)).require(app(combine, filePath))
+      verify(exec4, times(1)).require(eq(app(combine, filePath)), any())
       verify(exec4, times(1)).exec(eq(app(readPath, filePath)), check {
         val reason = it as? InconsistentPathReq
         assertNotNull(reason)
         assertEquals(filePath, reason!!.req.path)
-      }, any())
+      }, any(), any())
     }
-    verify(exec4, never()).exec(eq(app(combine, filePath)), any(), any())
-    verify(exec4, never()).exec(eq(app(toLowerCase, "!DLROW OLLEH")), any(), any())
+    verify(exec4, never()).exec(eq(app(combine, filePath)), any(), any(), any())
+    verify(exec4, never()).exec(eq(app(toLowerCase, "!DLROW OLLEH")), any(), any(), any())
   }
 
   @TestFactory

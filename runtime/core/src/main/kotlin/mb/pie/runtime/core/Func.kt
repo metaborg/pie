@@ -2,10 +2,10 @@ package mb.pie.runtime.core
 
 
 interface Func<in I : In, out O : Out> {
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun ExecContext.exec(input: I): O
 
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun exec(input: I, ctx: ExecContext): O {
     return ctx.exec(input)
   }
@@ -21,10 +21,10 @@ typealias AnyFunc = Func<In, Out>
 
 
 interface OutEffectFunc<in I : In> : Func<I, None> {
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun ExecContext.effect(input: I)
 
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   override fun ExecContext.exec(input: I): None {
     this.effect(input)
     return None.instance
@@ -32,10 +32,10 @@ interface OutEffectFunc<in I : In> : Func<I, None> {
 }
 
 interface InEffectFunc<out O : Out> : Func<None, O> {
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun ExecContext.effect(): O
 
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   override fun ExecContext.exec(input: None): O {
     return this.effect()
   }
@@ -44,10 +44,10 @@ interface InEffectFunc<out O : Out> : Func<None, O> {
 }
 
 interface EffectFunc : Func<None, None> {
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   fun ExecContext.effect()
 
-  @Throws(ExecException::class)
+  @Throws(ExecException::class, InterruptedException::class)
   override fun ExecContext.exec(input: None): None {
     effect()
     return None.instance

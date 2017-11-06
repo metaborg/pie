@@ -4,6 +4,8 @@ import com.google.inject.Inject
 import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
+import mb.util.async.Cancelled
+import mb.util.async.NullCancelled
 
 
 class PullingExecutorImpl @Inject constructor(
@@ -34,10 +36,10 @@ open class PullingExecImpl(
   private val consistent = mutableMapOf<UFuncApp, UExecRes>()
 
 
-  fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>): ExecInfo<I, O> {
+  fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecInfo<I, O> {
     try {
       logger.requireInitialStart(app)
-      val info = require(app)
+      val info = require(app, cancel)
       logger.requireInitialEnd(app, info)
       return info
     } finally {
@@ -45,7 +47,9 @@ open class PullingExecImpl(
     }
   }
 
-  override fun <I : In, O : Out> require(app: FuncApp<I, O>): ExecInfo<I, O> {
+  override fun <I : In, O : Out> require(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
+    cancel.throwIfCancelled()
+
     try {
       layer.requireStart(app)
       logger.requireStart(app)
@@ -81,7 +85,7 @@ open class PullingExecImpl(
       val existingResult = existingUntypedResult?.cast<I, O>()
       if(existingResult == null) {
         // No cached or stored result was found: rebuild
-        val info = exec(app, NoResultReason(), true)
+        val info = exec(app, NoResultReason(), cancel, true)
         logger.requireEnd(app, info)
         return info
       }
@@ -91,7 +95,7 @@ open class PullingExecImpl(
       run {
         val inconsistencyReason = existingResult.internalInconsistencyReason
         if(inconsistencyReason != null) {
-          val info = exec(app, inconsistencyReason)
+          val info = exec(app, inconsistencyReason, cancel)
           logger.requireEnd(app, info)
           return info
         }
@@ -106,7 +110,7 @@ open class PullingExecImpl(
           // If a generated file is outdated (i.e., its stamp changed): rebuild
           val reason = InconsistentGenPath(existingResult, gen, newStamp)
           logger.checkGenEnd(app, gen, reason)
-          val info = exec(app, reason)
+          val info = exec(app, reason, cancel)
           logger.requireEnd(app, info)
           return info
         } else {
@@ -116,9 +120,9 @@ open class PullingExecImpl(
 
       // Internal and total consistency: requirements
       for(req in existingResult.reqs) {
-        val inconsistencyReason = req.makeConsistent(app, existingResult, this, logger)
+        val inconsistencyReason = req.makeConsistent(app, existingResult, this, cancel, logger)
         if(inconsistencyReason != null) {
-          val info = exec(app, inconsistencyReason)
+          val info = exec(app, inconsistencyReason, cancel)
           logger.requireEnd(app, info)
           return info
         }
@@ -140,42 +144,53 @@ open class PullingExecImpl(
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, useCache: Boolean = false): ExecInfo<I, O> {
+  open internal fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecInfo<I, O> {
+    cancel.throwIfCancelled()
+
     logger.rebuildStart(app, reason)
     val result = if(useCache) {
-      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultsIn(it)?.cast<I, O>() } }) { this.execInternal(it) }
+      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultsIn(it)?.cast<I, O>() } }) { this.execInternal(it, cancel) }
     } else {
-      share.reuseOrCreate(app) { this.execInternal(it) }
+      share.reuseOrCreate(app) { this.execInternal(it, cancel) }
     }
     logger.rebuildEnd(app, reason, result)
     return ExecInfo(result, reason)
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> execInternal(app: FuncApp<I, O>): ExecRes<I, O> {
+  open internal fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<I, O> {
+    cancel.throwIfCancelled()
+
     val (builderId, input) = app
     val builder = getFunc<I, O>(builderId)
     val desc = builder.desc(input)
-    val context = ExecContextImpl(this, store, app)
-    val output = builder.exec(input, context)
-    val (reqs, gens) = context.getReqsAndGens()
-    val result = ExecRes(builderId, desc, input, output, reqs, gens)
+    val context = ExecContextImpl(this, store, app, cancel)
+    try {
+      val output = builder.exec(input, context)
+      val (reqs, gens) = context.getReqsAndGens()
+      val result = ExecRes(builderId, desc, input, output, reqs, gens)
 
-    // Validate well-formedness of the dependency graph
-    store.readTxn().use { layer.validate(app, result, this, it) }
-    // Store result and path dependencies in build store
-    store.writeTxn().use {
-      it.setResultsIn(app, result)
-      context.writePathDepsToStore(it)
+      // Validate well-formedness of the dependency graph
+      store.readTxn().use { layer.validate(app, result, this, it) }
+      // Store result and path dependencies in build store
+      store.writeTxn().use {
+        it.setResultsIn(app, result)
+        context.writePathDepsToStore(it)
+      }
+      // Cache result
+      consistent[app] = result
+      cache[app] = result
+
+      return result
+    } catch(e: InterruptedException) {
+      store.writeTxn().use {
+        context.writePathDepsToStore(it)
+      }
+      throw e
     }
-    // Cache result
-    consistent[app] = result
-    cache[app] = result
-
-    return result
   }
 
 
-  override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>) = requireInitial(app).result.output
-  override fun <I : In, O : Out> requireInfo(app: FuncApp<I, O>) = requireInitial(app)
+  override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, cancel: Cancelled) = requireInitial(app, cancel).result.output
+  override fun <I : In, O : Out> requireInfo(app: FuncApp<I, O>, cancel: Cancelled) = requireInitial(app, cancel)
 }

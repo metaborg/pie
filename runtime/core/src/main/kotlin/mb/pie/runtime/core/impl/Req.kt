@@ -1,12 +1,13 @@
 package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
+import mb.util.async.Cancelled
 import mb.vfs.path.PPath
 import java.io.Serializable
 
 
 interface Req : Serializable {
-  fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason?
+  fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason?
 }
 
 data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChecker {
@@ -15,7 +16,7 @@ data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChec
     return stamp == newStamp
   }
 
-  override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): InconsistentPathReq? {
+  override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): InconsistentPathReq? {
     logger.checkPathReqStart(requiringApp, this)
     val newStamp = stamp.stamper.stamp(path)
     val reason = if(stamp != newStamp) {
@@ -29,8 +30,8 @@ data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChec
 }
 
 data class ExecReq<out AI : In, out AO : Out>(val app: FuncApp<AI, AO>, val stamp: OutputStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, logger: Logger): ExecReason? {
-    val result = exec.require(app).result
+  override fun <I : In, O : Out> makeConsistent(requiringApp: FuncApp<I, O>, requiringResult: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason? {
+    val result = exec.require(app, cancel).result
     logger.checkBuildReqStart(requiringApp, this)
     val reason = if(!result.isInternallyConsistent) {
       // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
