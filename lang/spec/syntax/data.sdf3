@@ -1,0 +1,26 @@
+module data
+
+imports
+  
+  lex/literal
+  func
+  
+context-free syntax // Data definition
+
+  DataDef.DataDef = <<DataDefMods> data <TYPEID><SuperType> = <DataImpl>>
+  
+  DataDefMod.Transient = <transient>
+  DataDefMods.DataDefMods = <<{DataDefMod " "}*>>
+  
+  SuperType.NoSuperType =
+  SuperType.SuperType = < : <TYPEID>>
+
+context-free syntax // Java foreign data definition
+
+  DataImpl.JavaDataImpl = <foreign java <JAVAQTYPEID> {
+  <{JavaDataMemb "\n"}*>
+}>
+  JavaDataMemb.JavaFuncDef = <func <FuncHead>>
+
+context-free syntax // TODO: PIE data definition
+

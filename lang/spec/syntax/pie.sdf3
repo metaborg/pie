@@ -5,13 +5,16 @@ imports
   lex/literal
   lex/layout
   lex/comment
-  top
   type
+  data
   func
-  impl/pipe
-  impl/java
-  impl/ceres
 
 context-free start-symbols
   
   Start
+
+context-free syntax
+
+  Start.Program = <<{Def "\n"}*>>
+  Def = DataDef
+  Def = FuncDef

@@ -1,4 +1,4 @@
-module statsem/bind
+module statsem/binder
 
 rules // Binders
 

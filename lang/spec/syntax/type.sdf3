@@ -5,10 +5,6 @@ imports
   lex/literal
   func
 
-lexical syntax
-
-  TYPEID = ID
-
 context-free syntax
 
   BaseType.VoidTy  = <void>

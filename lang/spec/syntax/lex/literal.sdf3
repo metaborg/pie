@@ -4,6 +4,13 @@ lexical syntax // Identifier
 
   ID  = [a-zA-Z\-\_] [a-zA-Z0-9\-\_]*
   QID = [a-zA-Z\-\_] [a-zA-Z0-9\-\_\.]*
+  
+  TYPEID      = ID
+  PIEQTYPEID  = QID
+  JAVAQTYPEID = QID
+  
+  FUNCID     = ID
+  JAVAFUNCID = ID
 
 lexical restrictions
 

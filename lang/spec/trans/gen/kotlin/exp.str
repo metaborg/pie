@@ -135,27 +135,18 @@ rules // References
     ; pie-occ-prop(|"mods")
     ; collect-one(?Transient())
 
-rules // External function calls
+rules // Java foreign function calls
 
   p2k-exp:
     Call(funcId, exps) -> $[[javaClassId].[javaMethodId]([expStr])]
     where
-      JavaStaticFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+      JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId  := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     ; javaMethodId := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
     ; expStr       := <map(try-p2k-exp); pie-concat-comma> exps
-    
-  p2k-exp:
-    Call(funcId, exps) -> $[[kotlinClassOrPackageId].[kotlinFuncId]([expStr])]
-    where
-      KotlinFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
-    with
-      kotlinClassOrPackageId := <pie-ast-ref-prop(|"Func", "kotlinClassOrPackageId")> funcId
-    ; kotlinFuncId           := <pie-ast-ref-prop(|"Func", "kotlinFuncId")> funcId
-    ; expStr                 := <map(try-p2k-exp); pie-concat-comma> exps
 
-rules // Data type function calls
+rules // Qualified function calls
 
   p2k-exp: 
     QCall(exp, funcId, argsExps) -> $[[expStr].[funcId]([argsExpStr])]
@@ -163,35 +154,35 @@ rules // Data type function calls
       argsExpStr := <map(try-p2k-exp); pie-concat-comma> argsExps
     ; expStr     := <try-p2k-exp> exp
 
-rules // Ceres builder calls
+rules // PIE function calls
   
   p2k-exp:
-    c@Call(funcId, _) -> <p2k-exp-ceres-call(|javaClassId)> c
+    c@Call(funcId, _) -> <p2k-exp-pie-call(|javaClassId)> c
     where
-      CeresBuilderFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+      PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     
   p2k-exp: 
-    c@Call(funcId, _) -> <p2k-exp-ceres-call(|javaClassId)> c 
+    c@Call(funcId, _) -> <p2k-exp-pie-call(|javaClassId)> c 
     where
-      PipelineFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+      PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-sanitize-class-id> funcId
 
 
-  p2k-exp-ceres-call(|javaClassId):
+  p2k-exp-pie-call(|javaClassId):
    Call(funcId, exps) -> $[requireOutput([javaClassId]::class, [javaClassId].Companion.id, [expStr])]
     with
-      expStr := <p2k-exp-ceres-call-inputexp(|javaClassId)> exps
+      expStr := <p2k-exp-pie-call-inputexp(|javaClassId)> exps
 
 
-  p2k-exp-ceres-call-inputexp(|javaClassId):
+  p2k-exp-pie-call-inputexp(|javaClassId):
     exps -> "None.instance"
     where
       0 := <length> exps
 
-  p2k-exp-ceres-call-inputexp(|javaClassId):
+  p2k-exp-pie-call-inputexp(|javaClassId):
     exps -> expStr
     where
       1 := <length> exps
@@ -199,7 +190,7 @@ rules // Ceres builder calls
       [exp]  := exps
     ; expStr := <try-p2k-exp> exp
     
-  p2k-exp-ceres-call-inputexp(|javaClassId):
+  p2k-exp-pie-call-inputexp(|javaClassId):
     exps -> $[[javaClassId].Input([expStr])]
     where
       length := <length> exps

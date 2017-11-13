@@ -1,10 +1,4 @@
-module statsem/pipe
-
-rules // Pipeline function implementation
-
-  [[ FuncImpl(stm) ^ (s, ty_func_outer, occ_func_outer) ]] :=
-    occ_func_outer.kind := PipelineFuncKind() !,
-    [[ stm ^ (s, ty_func_outer) ]].
+module statsem/func_body
 
 rules // Statements
 

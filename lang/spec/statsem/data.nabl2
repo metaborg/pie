@@ -1,6 +1,6 @@
-module statsem/top
+module statsem/data
 
-rules
+rules // Data definition
 
   [[ DataDef(DataDefMods(mods), id_type, super, impl) ^ (s) ]] :=
     Type{id_type} <- s,
@@ -23,17 +23,19 @@ rules
     t : ty,
     ty_type_outer <! ty.
 
-rules
+rules // Java foreign data definition
 
-  [[ FuncDef(FuncHead(id_func, params, ty_out), impl) ^ (s) ]] :=
+  [[ JavaDataImpl(id_class_java, membs) ^ (s, ty_type_outer) ]] :=
+    ty_type_outer == DataTy(occ_type_outer),
+    occ_type_outer.javaClassId := id_class_java !,
+    occ_type_outer.kind := JavaTypeKind() !,
+    Map1 [[ membs ^ (s) ]].
+
+  [[ JavaFuncDef(FuncHead(id_func, params, ty_out)) ^ (s) ]] :=
     Func{id_func} <- s,
-    new s_func,
-    s_func -P-> s,
-    [[ params ^ (s_func) : tys_in ]],
-    new s_func_out,
-    s_func_out -P-> s_func,
+    [[ params ^ (s) : tys_in ]],
     [[ ty_out ^ (s) : ty_out_bound ]],
     ty == FuncTy(tys_in, ty_out_bound),
-    Func{id_func} : ty !,
-    [[ impl ^ (s_func, ty, Func{id_func}) ]],
-    distinct/name D(s_func)/Var | error "Duplicate variables" @NAMES.
+    Func{id_func} : ty !.
+
+rules // TODO: PIE data definition

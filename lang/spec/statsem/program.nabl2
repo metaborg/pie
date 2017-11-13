@@ -3,7 +3,6 @@ module statsem/program
 imports
 
   signatures/-
-
   statsem/-
 
 signature
@@ -24,11 +23,9 @@ signature
     
     JavaTypeKind : TypeKind
     
-    JavaStaticFuncKind   : FuncKind
-    KotlinFuncKind       : FuncKind
-    PlutoBuilderFuncKind : FuncKind
-    CeresBuilderFuncKind : FuncKind
-    PipelineFuncKind     : FuncKind
+    JavaForeignFuncKind   : FuncKind
+    PieForeignFuncKind : FuncKind
+    PieFuncKind     : FuncKind
     
     LocalVarKind : VarKind
     InputVarKind : VarKind

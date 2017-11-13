@@ -16,7 +16,7 @@ imports
 rules // definitions
 
   p2k-def:
-    FuncDef(FuncHead(funcId, params, type), FuncImpl(Block(stms))) -> str
+    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(Block(stms))) -> str
     with
       className   := <pie-sanitize-class-id> funcId
     with

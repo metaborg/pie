@@ -1,20 +1,11 @@
-module impl/pipe
+module func_body
 
 imports
-
+  
   lex/literal
   type
-  func
 
-context-free syntax
-
-  DataImpl =
-
-context-free syntax
-
-  FuncImpl.FuncImpl = <<Block>>
-
-context-free syntax
+context-free syntax // PIE function body
 
   Block.Block = <{
   <{Stm "\n"}*>
