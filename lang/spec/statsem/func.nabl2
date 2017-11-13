@@ -40,6 +40,8 @@ rules // Function implementations
     occ_func_outer.kind        := PieForeignFuncKind() !,
     occ_func_outer.javaClassId := id_class_java !.
 
-  [[ PieFuncImpl(stm) ^ (s, ty_func_outer, occ_func_outer) ]] :=
+  [[ PieFuncImpl(body) ^ (s, ty_func_def, occ_func_outer) ]] :=
     occ_func_outer.kind := PieFuncKind() !,
-    [[ stm ^ (s, ty_func_outer) ]].
+    [[ body ^ (s, ty_func_def) : ty_body ]],
+    ty_func_def == FuncTy(_, ty_ret_expected),
+    ty_body <? ty_ret_expected | error $[Type mismatch: expected [ty_ret_expected], got [ty_body]] @ body.

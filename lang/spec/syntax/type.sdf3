@@ -7,13 +7,13 @@ imports
 
 context-free syntax
 
-  BaseType.VoidTy  = <void>
+  BaseType.UnitTy  = <unit>
   BaseType.BoolTy  = <bool>
   BaseType.IntTy   = <int>
   BaseType.StrTy   = <string>
   BaseType.PathTy  = <path>
   BaseType.DataTy  = <<TYPEID>> {avoid}
-  BaseType.TupleTy = <(<{Type ", "}*>)>
+  BaseType.TupleTy = <(<{Type ", "}+>)>
   BaseType.ListTy  = <<Type>*>
 
   TypeMod.NullableTy = <<BaseType>?>

@@ -15,7 +15,7 @@ imports
 
 rules
 
-  p2k-type-sig: VoidTy() -> "None"
+  p2k-type-sig: UnitTy() -> "Unit"
   p2k-type-sig: BoolTy() -> "Boolean"
   p2k-type-sig: IntTy()  -> "Int"
   p2k-type-sig: StrTy()  -> "String"

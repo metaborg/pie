@@ -2,7 +2,7 @@ module statsem/type
 
 rules // Simple types
 
-  [[ VoidTy() ^ (s) : VoidTy() ]] := true.
+  [[ UnitTy() ^ (s) : UnitTy() ]] := true.
   [[ BoolTy() ^ (s) : BoolTy() ]] := true.
   [[ IntTy()  ^ (s) : IntTy()  ]] := true.
   [[ StrTy()  ^ (s) : StrTy()  ]] := true.

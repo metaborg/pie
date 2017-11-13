@@ -7,71 +7,85 @@ imports
 
 context-free syntax // PIE function body
 
-  Block.Block = <{
-  <{Stm "\n"}*>
-}>
-  Stm = <<Block>>
+  PieFuncBody = Exp
 
-  Stm.IfStm     = <if(<Exp>) <Stm>>
-  Stm.IfElseStm = <if(<Exp>) <Stm> else <Stm>>
+context-free syntax // Binder
 
-  Binder.SingleBinder = <<Bind>>
-  Binder.TupleBinder  = <(<{Bind ", "}*>)>
+  Binder.SingleBinder        = <<Bind>>
+  Binder.TupleBinder         = <(<{Bind ", "}*>)>
+  Bind.Bind                  = <<ID>>
+  Bind.TBind                 = <<ID> : <Type>>
 
-  Bind.Bind  = <<ID>>
-  Bind.TBind = <<ID> : <Type>>
+context-free syntax // Composition
 
-  Stm.ValDec = <val <Binder> = <Exp>;>
+  Block.Block      = <{<{Exp ";"}+>}>
+  Block.EmptyBlock = <{}>
+  Exp              = <<Block>>
   
-  Stm.ListComprehensionStm = <<Stm> | <Binder> \<- <Exp>;>
-  
-  Stm.RequiresPath        = <requires <Exp> <FilterPart?> <StamperPart?>;>
-  Stm.GeneratesPath       = <generates <Exp> <StamperPart?>;>
-  
-  StamperPart.StamperPart = <by <StampKind>>
-  StampKind.Modified      = <modified>
-  StampKind.Hash          = <hash>
-  
-  Stm.Return = <return <Exp>;>
-  Stm.Fail = <fail <Exp>;>
-  
-  Stm.Exp = <<Exp>;>
+  Exp = <(<Exp>)> {bracket, prefer} // Prefer bracket over tuple literal with 1 element
 
-context-free syntax
+context-free syntax // Value Declaration
 
-  Exp.ToNullable    = <<Exp>?>
-  Exp.ToNonNullable = <<Exp>!>
-  Exp.Not           = <!<Exp>>
+  Exp.ValDec = <val <Binder> = <Exp>> {non-assoc}
+  
+context-free syntax // Return and failure
+  
+  Exp.Return = <return <Exp>> {non-assoc}
+  Exp.Fail = <fail <Exp>>     {non-assoc}
+
+context-free syntax // Unary  
+  
+  Exp.ToNullable    = <<Exp>?> {right}
+  Exp.ToNonNullable = <<Exp>!> {right}
+  Exp.Not           = <!<Exp>> {right}
+
+context-free syntax // Binary
 
   Exp.Eq   = <<Exp> == <Exp>> {left}
   Exp.Neq  = <<Exp> != <Exp>> {left}
   Exp.Lor  = <<Exp> || <Exp>> {left}
   Exp.Land = <<Exp> && <Exp>> {left}
   Exp.Add  = <<Exp> + <Exp>>  {left}
-  
-  Exp.If     = <if(<Exp>) <Exp>>
-  Exp.IfElse = <if(<Exp>) <Exp> else <Exp>>
 
-  Exp.ListComprehensionExp = <[<Exp> | <Binder> \<- <Exp>]>
+context-free syntax // Control flow
+
+  Exp.If     = <if(<Exp>) <Exp>>            {left}
+  Exp.IfElse = <if(<Exp>) <Exp> else <Exp>> {left}
+
+  Exp.ListComprehension = <[<Exp> | <Binder> \<- <Exp>]> {left}
+
+context-free syntax // References
 
   Ref.Ref = <<ID>> {avoid}
   Exp     = Ref
   
-  Exp.Call  = <<FUNCID>(<{Exp ", "}*>)>
-  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)>
+  Exp.Call  = <<FUNCID>(<{Exp ", "}*>)>       {left}
+  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)> {left}
+
+context-free syntax // Paths
+
+  StamperPart.StamperPart = <by <StampKind>>
+  StampKind.Modified      = <modified>
+  StampKind.Hash          = <hash>  
+  Exp.RequiresPath        = <requires <Exp> <FilterPart?> <StamperPart?>> {non-assoc}
+  Exp.GeneratesPath       = <generates <Exp> <StamperPart?>>              {non-assoc}
   
-  Exp.ListPath            = <list <Exp> <FilterPart?>> {left}
-  Exp.WalkPath            = <walk <Exp> <FilterPart?>> {left}
+  Exp.ListPath = <list <Exp> <FilterPart?>> {non-assoc}
+  Exp.WalkPath = <walk <Exp> <FilterPart?>> {non-assoc}
   
-  FilterPart.FilterPart   = <with <Filter>>
-  Filter.Regex            = <regex <Exp>>
-  Filter.Pattern          = <pattern <Exp>>
-  Filter.Patterns         = <patterns <Exp>> {prefer} // Prefer over pattern to avoid additional s from being used for something else
-  Filter.Extension        = <extension <Exp>>
-  Filter.Extensions       = <extensions <Exp>> {prefer} // Prefer over extension to avoid additional s from being used for something else
+  FilterPart.FilterPart = <with <Filter>>
+  Filter.Regex          = <regex <Exp>>      {non-assoc}
+  Filter.Pattern        = <pattern <Exp>>    {non-assoc}
+  Filter.Patterns       = <patterns <Exp>>   {non-assoc, prefer} // Prefer over pattern to avoid additional s from being used for something else
+  Filter.Extension      = <extension <Exp>>  {non-assoc}
+  Filter.Extensions     = <extensions <Exp>> {non-assoc, prefer} // Prefer over extension to avoid additional s from being used for something else
   
-  Exp.ReadPath            = <read <Exp>>
-  Exp.ExistsPath          = <exists <Exp>>
+  Exp.ReadPath   = <read <Exp>>   {non-assoc}
+  Exp.ExistsPath = <exists <Exp>> {non-assoc}
+
+context-free syntax // Literals
+
+  Exp.UnitLit = <unit>
 
   Exp.BoolLit = <<Bool>>
   Bool.True   = <true>
@@ -81,10 +95,8 @@ context-free syntax
 
   Exp.NullLit = <null>
 
-  Exp.TupleLit = <(<{Exp ","}+>)> 
-  Exp.ListLit  = <[<{Exp ","}*>]>
-
-  Exp = <(<Exp>)> {bracket, prefer} // Prefer bracket over tuple literal with 1 element
+  Exp.TupleLit = <(<{Exp ","}+>)> {left}
+  Exp.ListLit  = <[<{Exp ","}*>]> {left}
 
 syntax // Interpolated string literal
 
@@ -129,21 +141,52 @@ lexical restrictions
 
 context-free priorities
 
-  { left: 
-    Exp.ListPath
-    Exp.WalkPath
-  } > { 
-    left: 
+  { right:
+    Exp.Not
+  } > { right:
+    Exp.ToNullable
+    Exp.ToNonNullable
+  } > { left:
+    Exp.Add
+  } > { left: 
     Exp.Eq
     Exp.Neq
-  } > { 
-    left:
-    Exp.Lor
+  } > { left:
     Exp.Land
-  } > { 
-    left:
-    Exp.Add 
-  } 
+  } > { left:
+    Exp.Lor
+  } > { non-assoc: 
+    Exp.ListPath
+    Exp.WalkPath
+  } > { non-assoc: 
+    Exp.RequiresPath
+    Exp.GeneratesPath
+  } > { non-assoc: 
+    Exp.ReadPath
+    Exp.ExistsPath
+  } > { left:
+    Exp.Call
+    Exp.QCall
+  } > { non-assoc:
+    Filter.Regex
+    Filter.Pattern
+    Filter.Patterns
+    Filter.Extension
+    Filter.Extensions
+  } > { left:
+    Exp.TupleLit
+    Exp.ListLit
+  } > { left:
+    Exp.ListComprehension
+  } > { non-assoc:
+    Exp.ValDec
+  } > { non-assoc:
+    Exp.Return
+    Exp.Fail
+  } > { left:
+    Exp.If
+    Exp.IfElse
+  }
 
 lexical syntax
 

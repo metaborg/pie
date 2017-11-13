@@ -19,4 +19,4 @@ context-free syntax // Function definition
   FuncDef.FuncDef              = <func <FuncHead> = <FuncImpl>>
   FuncImpl.PieForeignFuncImpl  = <foreign <PIEQTYPEID>>
   FuncImpl.JavaForeignFuncImpl = <foreign java <JAVAQTYPEID>#<JAVAFUNCID>>
-  FuncImpl.PieFuncImpl         = <<Block>>
+  FuncImpl.PieFuncImpl         = <<PieFuncBody>>

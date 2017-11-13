@@ -22,6 +22,36 @@ rules
 
   try-p2k-exp = pie-try-debug(p2k-exp|"p2k-exp") <+ !"Any()"
   
+rules // Block
+
+  p2k-exp:
+    Block(exps) -> 
+$[run {
+  [str]
+}]
+    with
+      str := <map(try-p2k-exp); pie-sep-concat(|";\n")> exps
+
+rules // Value declaration
+
+  p2k-exp:
+    ValDec(binder, exp) -> $[val [binderStr] = [expStr]]
+    with
+      binderStr := <p2k-binder> binder
+    ; expStr    := <try-p2k-exp> exp
+
+rules // Return and fail
+
+  p2k-exp:
+    Return(exp) -> $[return [expStr]]
+    with
+      expStr := <p2k-funcdef-returnvalue> exp
+
+  p2k-exp:
+    Fail(exp) -> $[throw ExecException([expStr].toString())]
+    with
+      expStr := <try-p2k-exp> exp
+
 rules // Nullable
   
   p2k-exp:
@@ -86,7 +116,7 @@ rules // If else
 rules // List comprehension
 
   p2k-exp:
-    e@ListComprehensionExp(mapExp, binder, listExp) -> $[[listExpStr].map {[binderStr] -> [mapExpStr]}.toCollection([tyStr]())]
+    e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].map {[binderStr] -> [mapExpStr]}.toCollection([tyStr]())]
     with
       mapExpStr  := <try-p2k-exp> mapExp
     ; binderStr  := <p2k-binder> binder
@@ -201,6 +231,35 @@ rules // PIE function calls
 rules // Path operations
 
   p2k-exp:
+    RequiresPath(exp, filterOpt, stamper) -> $[require([expStr], [stamperStr])]
+    with
+      expStr     := <p2k-exp> exp
+    ; stamperStr := <p2k-stamper> (filterOpt, stamper)
+
+  p2k-exp:
+    GeneratesPath(exp, stamper) -> $[generate([expStr], [stamperStr])]
+    with
+      expStr     := <p2k-exp> exp
+    ; stamperStr := <p2k-stamper> (None(), stamper)
+  
+  p2k-stamper:
+    (None(), Modified()) -> "PathStampers.modified"
+  p2k-stamper:
+    (None(), Hash()    ) -> "PathStampers.hash"
+  p2k-stamper:
+    (filter, Modified()) -> $[PathStampers.modified([filterStr])]
+    where
+      <not(?None())> filter
+    with
+      filterStr := <p2k-filter-match> filter
+  p2k-stamper:
+    (filter, Hash()) -> $[PathStampers.hash([filterStr])]
+    where
+      <not(?None())> filter
+    with
+      filterStr := <p2k-filter-match> filter
+
+  p2k-exp:
     ListPath(exp, filterOpt) -> $[requireOutput(ListContents::class, ListContents.Companion.id, ListContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
@@ -299,6 +358,7 @@ rules // Interpolated path
 
 rules // Literals
 
+  p2k-exp: UnitLit()        -> $[Unit.instance]
   p2k-exp: BoolLit(True())  -> $[true]
   p2k-exp: BoolLit(False()) -> $[false]
   p2k-exp: IntLit(i)        -> i

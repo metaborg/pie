@@ -19,8 +19,7 @@ debug:
 language:
   sdf:
     pretty-print: pie
-    # If set to java, set the table in editor/Syntax.esv to target/metaborg/sdf-new.tbl
-    sdf2table: c
+    sdf2table: java
     placeholder:
       prefix: "$"
   stratego:

@@ -6,7 +6,6 @@ imports
 
   gen/util
   gen/kotlin/def
-  gen/kotlin/stm
   gen/kotlin/exp
 
 rules

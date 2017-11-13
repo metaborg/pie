@@ -8,23 +8,23 @@ imports
   signatures/lex/-
   signatures/impl/-
   
-  gen/kotlin/stm
   gen/kotlin/type
+  gen/kotlin/exp
   gen/idtype-tuples
   gen/util
 
 rules // definitions
 
   p2k-def:
-    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(Block(stms))) -> str
+    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body)) -> str
     with
       className   := <pie-sanitize-class-id> funcId
     with
     {| InputKind:
       (inputName , inputDataClass)  := <p2k-funcdef-inputsig(|className)> params
     ; (outputName, outputDataClass) := <p2k-funcdef-outputsig(|className)> type
-    ; buildImpl   := <p2k-stms> stms
-    ; emptyReturn := <?VoidTy(); !"return Unit.instance" <+ !""> type
+    ; buildImpl   := <p2k-funcdef-body> body
+    ; emptyReturn := <?UnitTy(); !"return Unit.instance" <+ !""> type
    |}
     with
       rules(ModuleBindings :+= $[binder.bindFunc<[className]>(funcs, "[className]")])
@@ -35,11 +35,46 @@ $[class [className] : Func<[inputName], [outputName]> {
     val id = "[className]"
   }
   [inputDataClass][outputDataClass]override val id = Companion.id
-  override fun ExecContext.exec(input: [inputName]): [outputName] {
-    [buildImpl]
-  }
+  override fun ExecContext.exec(input: [inputName]): [outputName] = [buildImpl]
 }
 ]
+
+  p2k-funcdef-body:
+    Block(exps) -> 
+$[run {
+  [restExpsStr]
+  [lastExpStr]
+}]
+    with
+      numExps     := <length> exps
+    ; restExps    := <take(|<dec> numExps)> exps 
+    ; restExpsStr := <map(try-p2k-exp); pie-sep-concat(|";\n")> restExps
+    ; lastExp     := <last> exps
+    ; lastExpStr  := <p2k-funcdef-returnvalue> lastExp
+
+  p2k-funcdef-body:
+    EmptyBlock() -> "run { Unit.instance }"
+
+  p2k-funcdef-body:
+    exp -> <try-p2k-exp> exp
+    where
+      <not(?Block(_) <+ ?EmptyBlock())> exp
+
+  
+  p2k-funcdef-returnvalue:
+    exp -> $[output([expStr])]
+    where
+      <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
+    with
+      expStr := <try-p2k-exp> exp
+      
+  p2k-funcdef-returnvalue:
+    exp -> expStr
+    where
+      <pie-ast-type; not(?TupleTy(_))> exp
+    with
+      expStr := <try-p2k-exp> exp
+
 
   p2k-funcdef-inputsig(|className):
     Params(params) -> ("None", "")
