@@ -256,18 +256,18 @@ internal class PullingExecutorTests {
   fun testOverlappingGeneratedPath() = TestGenerator.generate("testOverlappingGeneratedPath") {
     registerFunc(writePath)
 
-    val bm = pullingExecutor()
+    val executor = pullingExecutor()
 
     val filePath = path(fs, "/file")
     assertThrows(ValidationException::class.java) {
-      val exec = bm.newExec()
+      val exec = executor.newExec()
       exec.requireOutput(app(writePath, Pair("HELLO WORLD 1!", filePath)))
       exec.requireOutput(app(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
     // Overlapping generated path exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val exec = bm.newExec()
+      val exec = executor.newExec()
       exec.requireOutput(app(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
@@ -277,21 +277,20 @@ internal class PullingExecutorTests {
     registerFunc(readPath)
     registerFunc(writePath)
 
-    val bm = pullingExecutor()
-
+    val executor = pullingExecutor()
 
     val filePath = path(fs, "/file")
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
-      val exec = bm.newExec()
+      val exec = executor.newExec()
       exec.requireOutput(app(readPath, filePath))
       exec.requireOutput(app(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val exec = bm.newExec()
+      val exec = executor.newExec()
       exec.requireOutput(app(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
@@ -303,7 +302,7 @@ internal class PullingExecutorTests {
     val indirection = requireOutputFunc<Pair<String, PPath>, None>()
     registerFunc(indirection)
 
-    val bm = pullingExecutor()
+    val executor = pullingExecutor()
 
     val combineIncorrect = spy(func<Pair<String, PPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
       requireExec(app(indirection, app(writePath, Pair(text, path))))
@@ -315,7 +314,7 @@ internal class PullingExecutorTests {
       val filePath1 = path(fs, "/file1")
       // CHANGED: this dependency is now inferred automatically, so no exception is thrown
       // assertThrows(HiddenDependencyException::class.java) {
-      val exec = bm.newExec()
+      val exec = executor.newExec()
       exec.requireOutput(app(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
       // }
     }
@@ -331,7 +330,7 @@ internal class PullingExecutorTests {
       val filePath2 = path(fs, "/file2")
       // CHANGED: this dependency is now inferred automatically, so no exception is thrown
       // assertThrows(HiddenDependencyException::class.java) {
-      val exec = bm.newExec()
+      val exec = executor.newExec()
       exec.requireOutput(app(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
       // }
     }
