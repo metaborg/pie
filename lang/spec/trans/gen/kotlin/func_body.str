@@ -1,4 +1,4 @@
-module gen/kotlin/exp
+module gen/kotlin/func_body
 
 imports
 
@@ -9,9 +9,9 @@ imports
   signatures/lex/-
   signatures/impl/-
   
-  statsem/program
+  statsem/pie
   
-  gen/kotlin/def
+  gen/kotlin/func
   gen/kotlin/binder
   gen/kotlin/type
   gen/idtype-tuples
@@ -22,7 +22,7 @@ rules
 
   try-p2k-exp = pie-try-debug(p2k-exp|"p2k-exp") <+ !"Any()"
   
-rules // Block
+rules // Expression composition
 
   p2k-exp:
     Block(exps) -> 
@@ -32,27 +32,7 @@ $[run {
     with
       str := <map(try-p2k-exp); pie-sep-concat(|";\n")> exps
 
-rules // Value declaration
-
-  p2k-exp:
-    ValDec(binder, exp) -> $[val [binderStr] = [expStr]]
-    with
-      binderStr := <p2k-binder> binder
-    ; expStr    := <try-p2k-exp> exp
-
-rules // Return and fail
-
-  p2k-exp:
-    Return(exp) -> $[return [expStr]]
-    with
-      expStr := <p2k-funcdef-returnvalue> exp
-
-  p2k-exp:
-    Fail(exp) -> $[throw ExecException([expStr].toString())]
-    with
-      expStr := <try-p2k-exp> exp
-
-rules // Nullable
+rules // Unary expressions
   
   p2k-exp:
     ToNullable(exp) -> <p2k-exp> exp
@@ -74,6 +54,7 @@ rules // Nullable
     with
       expStr := <p2k-exp> exp
 
+
   p2k-exp:
     Not(exp) -> $[![expStr]]
     with
@@ -92,7 +73,7 @@ rules // Binary expressions
   p2k-exp: Lor(lExp, rExp) -> <p2k-binexp(|"||")> (lExp, rExp)
   p2k-exp: Land(lExp, rExp) -> <p2k-binexp(|"&&")> (lExp, rExp)
 
-rules // If else
+rules // Control flow
 
   p2k-exp:
     If(condExp, exp) -> $[if([condExpStr]) [expStr]]
@@ -112,8 +93,7 @@ rules // If else
     with
       lExpStr := <try-p2k-exp> lExp
     ; rExpStr := <try-p2k-exp> rExp
-    
-rules // List comprehension
+
 
   p2k-exp:
     e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].map {[binderStr] -> [mapExpStr]}.toCollection([tyStr]())]
@@ -123,6 +103,14 @@ rules // List comprehension
     ; listExpStr := <try-p2k-exp> listExp
     ; ty         := <pie-ast-type> e
     ; tyStr      := <p2k-type-sig> ty
+
+rules // Binding
+
+  p2k-exp:
+    ValDec(binder, exp) -> $[val [binderStr] = [expStr]]
+    with
+      binderStr := <p2k-binder> binder
+    ; expStr    := <try-p2k-exp> exp
 
 rules // References
 
@@ -316,7 +304,38 @@ rules // Path operations
     with
       expStr := <p2k-exp> exp
 
-rules // Interpolated string
+rules // Early return and failure
+
+  p2k-exp:
+    Return(exp) -> $[return [expStr]]
+    with
+      expStr := <p2k-funcdef-returnvalue> exp
+
+  p2k-exp:
+    Fail(exp) -> $[throw ExecException([expStr].toString())]
+    with
+      expStr := <try-p2k-exp> exp
+
+rules // Literals
+
+  p2k-exp: UnitLit()        -> $[Unit.instance]
+  p2k-exp: BoolLit(True())  -> $[true]
+  p2k-exp: BoolLit(False()) -> $[false]
+  p2k-exp: IntLit(i)        -> i
+  p2k-exp: NullLit()        -> $[null]
+
+
+  p2k-exp:
+    TupleLit(exps) -> $[tuple([expsStr])]
+    with
+      expsStr := <map(try-p2k-exp); pie-concat-comma> exps
+    
+  p2k-exp:
+    ListLit(exps) -> $[list([expsStr])]
+    with
+      expsStr := <map(try-p2k-exp); pie-concat-comma> exps
+
+rules // Interpolated string literal
 
   p2k-exp:
     StrLit(parts) -> $["[partsStr]"]
@@ -336,7 +355,7 @@ rules // Interpolated string
     with
       expStr := <try-p2k-exp> exp
 
-rules // Interpolated path
+rules // Interpolated path literal
 
   p2k-exp:
     PathLit(prefix, parts) -> $[PPathImpl(java.nio.file.FileSystems.getDefault().getPath("[prefix][partsStr]"))]
@@ -355,21 +374,3 @@ rules // Interpolated path
     PathInterpExp(exp) -> $[${[expStr]}]
     with
       expStr := <try-p2k-exp> exp
-
-rules // Literals
-
-  p2k-exp: UnitLit()        -> $[Unit.instance]
-  p2k-exp: BoolLit(True())  -> $[true]
-  p2k-exp: BoolLit(False()) -> $[false]
-  p2k-exp: IntLit(i)        -> i
-  p2k-exp: NullLit()        -> $[null]
-  
-  p2k-exp:
-    TupleLit(exps) -> $[tuple([expsStr])]
-    with
-      expsStr := <map(try-p2k-exp); pie-concat-comma> exps
-    
-  p2k-exp:
-    ListLit(exps) -> $[list([expsStr])]
-    with
-      expsStr := <map(try-p2k-exp); pie-concat-comma> exps

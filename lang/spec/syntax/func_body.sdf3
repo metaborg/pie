@@ -9,14 +9,7 @@ context-free syntax // PIE function body
 
   PieFuncBody = Exp
 
-context-free syntax // Binder
-
-  Binder.SingleBinder        = <<Bind>>
-  Binder.TupleBinder         = <(<{Bind ", "}*>)>
-  Bind.Bind                  = <<ID>>
-  Bind.TBind                 = <<ID> : <Type>>
-
-context-free syntax // Composition
+context-free syntax // Expression composition
 
   Block.Block      = <{<{Exp ";"}+>}>
   Block.EmptyBlock = <{}>
@@ -24,22 +17,13 @@ context-free syntax // Composition
   
   Exp = <(<Exp>)> {bracket, prefer} // Prefer bracket over tuple literal with 1 element
 
-context-free syntax // Value Declaration
-
-  Exp.ValDec = <val <Binder> = <Exp>> {non-assoc}
-  
-context-free syntax // Return and failure
-  
-  Exp.Return = <return <Exp>> {non-assoc}
-  Exp.Fail = <fail <Exp>>     {non-assoc}
-
-context-free syntax // Unary  
+context-free syntax // Unary expressions
   
   Exp.ToNullable    = <<Exp>?> {right}
   Exp.ToNonNullable = <<Exp>!> {right}
   Exp.Not           = <!<Exp>> {right}
 
-context-free syntax // Binary
+context-free syntax // Binary expressions
 
   Exp.Eq   = <<Exp> == <Exp>> {left}
   Exp.Neq  = <<Exp> != <Exp>> {left}
@@ -53,6 +37,15 @@ context-free syntax // Control flow
   Exp.IfElse = <if(<Exp>) <Exp> else <Exp>> {left}
 
   Exp.ListComprehension = <[<Exp> | <Binder> \<- <Exp>]> {left}
+
+context-free syntax // Binding
+
+  Binder.SingleBinder = <<Bind>>
+  Binder.TupleBinder  = <(<{Bind ", "}*>)>
+  Bind.Bind           = <<ID>>
+  Bind.TBind          = <<ID> : <Type>>
+
+  Exp.ValDec = <val <Binder> = <Exp>> {non-assoc}
 
 context-free syntax // References
 
@@ -83,18 +76,20 @@ context-free syntax // Paths
   Exp.ReadPath   = <read <Exp>>   {non-assoc}
   Exp.ExistsPath = <exists <Exp>> {non-assoc}
 
+context-free syntax // Early return and failure
+  
+  Exp.Return = <return <Exp>> {non-assoc}
+  Exp.Fail   = <fail <Exp>>   {non-assoc}
+
 context-free syntax // Literals
 
-  Exp.UnitLit = <unit>
-
-  Exp.BoolLit = <<Bool>>
-  Bool.True   = <true>
-  Bool.False  = <false>
-
-  Exp.IntLit  = <<INT>>
-
-  Exp.NullLit = <null>
-
+  Exp.UnitLit  = <unit>
+  Exp.BoolLit  = <<Bool>>
+  Bool.True    = <true>
+  Bool.False   = <false>
+  Exp.IntLit   = <<INT>>
+  Exp.NullLit  = <null>
+  
   Exp.TupleLit = <(<{Exp ","}+>)> {left}
   Exp.ListLit  = <[<{Exp ","}*>]> {left}
 
@@ -116,7 +111,7 @@ lexical syntax
 lexical restrictions
 
   StrChars -/- ~[\"\$\n\r]
-  
+
 syntax // Interpolated path literal
 
   Exp-CF.PathLit = PathStart-LEX PathPart-CF*
@@ -139,7 +134,7 @@ lexical restrictions
 
   PathChars -/- ~[\n\r\$\,\;\]\)\ ]
 
-context-free priorities
+context-free priorities // Expression priorities
 
   { right:
     Exp.Not
@@ -188,15 +183,10 @@ context-free priorities
     Exp.IfElse
   }
 
-lexical syntax
+lexical syntax // Reject keywords
 
-  FUNCID = "return" {reject}
-  FUNCID = "requires" {reject}
+  FUNCID = "return"    {reject}
+  FUNCID = "requires"  {reject}
   FUNCID = "generates" {reject}
-  FUNCID = "list" {reject}
-  FUNCID = "walk" {reject}
-  FUNCID = "regex" {reject}
-  FUNCID = "pattern" {reject}
-  FUNCID = "patterns" {reject}
-//  FUNCID = "extension" {reject}
-//  FUNCID = "extensions" {reject}
+  FUNCID = "list"      {reject}
+  FUNCID = "walk"      {reject}

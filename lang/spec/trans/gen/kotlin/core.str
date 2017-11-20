@@ -5,8 +5,8 @@ imports
   nabl2/api
 
   gen/util
-  gen/kotlin/def
-  gen/kotlin/exp
+  gen/kotlin/func
+  gen/kotlin/func_body
 
 rules
 

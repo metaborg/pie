@@ -8,7 +8,7 @@ imports
   signatures/lex/-
   signatures/impl/-
 
-  statsem/program
+  statsem/pie
   
   gen/idtype-tuples
   gen/util
@@ -61,4 +61,3 @@ $[data class [name]([params]) : [tupleSig] {
     ; tys             := <map(Snd)> idTypeTuples
     ; tupleSig        := <p2k-type-sig> TupleTy(tys)
     ; constructorCall := <range; map(\i -> $[tuple.component[i]()]\); pie-concat-comma> (1, <length; inc> tys)
-

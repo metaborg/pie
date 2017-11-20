@@ -22,5 +22,7 @@ context-free syntax // Java foreign data definition
 }>
   JavaDataMemb.JavaFuncDef = <func <FuncHead>>
 
-context-free syntax // TODO: PIE data definition
+lexical syntax // Reject keywords
 
+  TYPEID = "data"    {reject}
+  TYPEID = "foreign" {reject}

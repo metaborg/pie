@@ -1,4 +1,4 @@
-module gen/kotlin/def
+module gen/kotlin/func
 
 imports
 
@@ -9,11 +9,11 @@ imports
   signatures/impl/-
   
   gen/kotlin/type
-  gen/kotlin/exp
+  gen/kotlin/func_body
   gen/idtype-tuples
   gen/util
 
-rules // definitions
+rules // PIE function definitions
 
   p2k-def:
     FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body)) -> str
