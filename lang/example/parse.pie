@@ -1,0 +1,39 @@
+func normalize(file: path, includeDirs: path*) -> path = {
+  requires file;
+  [requires dir with extension "sdf" | dir <- includeDirs];
+  val normFile = file.replaceExtension("norm");
+  val depFile = file.replaceExtension("dep");
+  exec(["sdf2normalized"] + "$file" + ["-I$dir" | dir <- includeDirs] + "-o$normFile" + "-d$depFile");
+  [requires dep by hash | dep <- extract-deps(depFile)];
+  generates normFile;
+  normFile
+}
+func extract-deps(depFile: path) -> path* = foreign java pie.sdf#extractdeps
+func generate-table(normFiles: path*, outputFile: path) -> path = {
+  [requires file by hash | file <- normFiles];
+  exec(["sdf2table"] + ["$file" | file <- normFiles] + "-o$outputFile");
+  generates outputFile;
+  outputFile
+}
+
+func exec(arguments: string*) -> (string, string) = foreign java pie#execute
+
+
+data Ast = foreign java pie.Term {}
+data Token = foreign java pie.Token {}
+data Msg = foreign java pie.Msg {}
+data ParseTable = foreign java pie.sdf.Table {}
+func table2object(text: string) -> ParseTable = foreign pie.sdf.Table2Object
+func parse(text: string, table: ParseTable) -> (Ast, Token*, Msg*) = foreign pie.sdf.Parse
+
+data Styling = foreign java pie.style.Styling {}
+func style(tokenStream: Token*) -> Styling = foreign pie.style.Style
+
+func update-editor(text: string) -> (Styling, Msg*) = {
+  val sdfFiles = [./lexical.sdf, ./contextfree.sdf];
+  val normFiles = [normalize(file, [./include]) | file <- sdfFiles];
+  val parseTableFile = generate-table(normFiles, ./parse.tbl);
+  val parseTable = table2object((read parseTableFile)!);
+  val (ast, tokenStream, msgs) = parse(text, parseTable);
+  (style(tokenStream), msgs)
+}

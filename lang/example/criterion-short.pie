@@ -1,0 +1,37 @@
+func main(jmhArgs: string*) -> path** = {
+  val jar = build();
+  val pkg = "io.usethesource.criterion";
+  val javaSrcDir = ./src/main/java/io/usethesource/criterion;
+  val benchmarks: (string, string, path*)* = [
+    ("set", "$pkg.JmhSetBenchmarks.(*)\$", [javaSrcDir + "/JmhSetBenchmarks.java"])
+  , ("map", "$pkg.JmhMapBenchmarks.(*)\$", [javaSrcDir + "/JmhMapBenchmarks.java"])
+  ];
+  val subjects: (string, string, path*)* = [
+    ("clojure"     , "VF_CLOJURE"     , [./lib/clojure.jar     ])
+  , ("champ"       , "VF_CHAMP"       , [./lib/champ.jar       ])
+  , ("scala"       , "VF_SCALA"       , [./lib/scala.jar       ])
+  , ("javaslang"   , "VF_JAVASLANG"   , [./lib/javaslang.jar   ])
+  , ("unclejim"    , "VF_UNCLEJIM"    , [./lib/unclejim.jar    ])
+  , ("dexx"        , "VF_DEXX"        , [./lib/dexx.jar        ])
+  , ("pcollections", "VF_PCOLLECTIONS", [./lib/pcollections.jar])
+  ];
+  [[run_benchmark(jar, jmhArgs, bench, subj) | bench <- benchmarks] | subj <- subjects]
+}
+func build() -> path = {
+  val pomFile = ./pom.xml; requires pomFile;
+  [requires file | file <- walk ./src with extensions ["java", "scala"]];
+  exec(["mvn", "verify", "-f", "$pomFile"]);
+  val jar = ./target/benchmarks.jar;
+  generates jar; jar
+}
+func run_benchmark(jar: path, jmhArgs: string*, benchmark: (string, string, path*),
+  subject: (string, string, path*)) -> path = {
+  val (benchName, benchId, benchDeps) = benchmark;
+  val (subjName, subjId, subjDeps) = subject;
+  [requires dep | dep <- benchDeps]; [requires dep | dep <- subjDeps];
+  val csv = ./results/${benchName}_${subjName}.csv;
+  requires jar by hash;
+  exec(["java", "-jar", "$jar"] + benchId + ["-p", "subject=$subjId"] + jmhArgs + ["-rff", "$csv"]);
+  generates csv; csv
+}
+func exec(arguments: string*) -> (string, string) = foreign java pie#execute
