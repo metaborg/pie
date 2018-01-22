@@ -153,5 +153,20 @@ internal class ObservingExecutorTests {
     verify(exec3, never()).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
     verify(exec3, never()).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
     verify(exec3, never()).exec(eq(app(toLowerCase, newStr)), anyER(), anyC(), any())
+
+    // Change required file in such a way that the file changes, but the output of [readPath] does not.
+    write(newStr, filePath)
+
+    // Notify of path change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent
+    val exec4 = spy(observingExec())
+    exec4.pathsChanged(listOf(filePath), NullCancelled())
+    inOrder(exec4) {
+      verify(exec4).requireBottomUp(eq(app(readPath, filePath)), anyER(), anyC())
+      verify(exec4).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
+    }
+    verify(exec4, never()).requireBottomUp(eq(app(combine, filePath)), anyER(), anyC())
+    verify(exec4, never()).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
+    verify(exec4, never()).require(eq(app(toLowerCase, newStr)), anyC())
+    verify(exec4, never()).exec(eq(app(toLowerCase, newStr)), anyER(), anyC(), any())
   }
 }
