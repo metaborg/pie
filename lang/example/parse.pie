@@ -8,7 +8,7 @@ func normalize(file: path, includeDirs: path*) -> path = {
   generates normFile;
   normFile
 }
-func extract-deps(depFile: path) -> path* = foreign java pie.sdf#extractdeps
+func extract-deps(depFile: path) -> path* = foreign java ex.Api#extractSdfDeps
 func generate-table(normFiles: path*, outputFile: path) -> path = {
   [requires file by hash | file <- normFiles];
   exec(["sdf2table"] + ["$file" | file <- normFiles] + "-o$outputFile");
@@ -16,24 +16,26 @@ func generate-table(normFiles: path*, outputFile: path) -> path = {
   outputFile
 }
 
-func exec(arguments: string*) -> (string, string) = foreign java pie#execute
+func exec(arguments: string*) -> (string, string) = foreign java mb.pie.runtime.builtin.process#execute
 
 
-data Ast = foreign java pie.Term {}
-data Token = foreign java pie.Token {}
-data Msg = foreign java pie.Msg {}
-data ParseTable = foreign java pie.sdf.Table {}
-func table2object(text: string) -> ParseTable = foreign pie.sdf.Table2Object
-func parse(text: string, table: ParseTable) -> (Ast, Token*, Msg*) = foreign pie.sdf.Parse
+data Ast = foreign java ex.Ast {}
+data Token = foreign java ex.Token {}
+data Msg = foreign java ex.Msg {}
+data ParseTable = foreign java ex.ParseTable {}
+func table2object(text: string) -> ParseTable = foreign ex.pie.Table2Object
+func parse(text: string, table: ParseTable) -> (Ast, Token*, Msg*) = foreign ex.pie.Parse
 
-data Styling = foreign java pie.style.Styling {}
-func style(tokenStream: Token*) -> Styling = foreign pie.style.Style
+data Styling = foreign java ex.Styling {}
+func style(tokenStream: Token*) -> Styling = foreign ex.pie.Style
 
 func update-editor(text: string) -> (Styling, Msg*) = {
   val sdfFiles = [./lexical.sdf, ./contextfree.sdf];
   val normFiles = [normalize(file, [./include]) | file <- sdfFiles];
   val parseTableFile = generate-table(normFiles, ./parse.tbl);
-  val parseTable = table2object((read parseTableFile)!);
+  val parseTableContents = (read parseTableFile)!;
+  val parseTable = table2object(parseTableContents);
   val (ast, tokenStream, msgs) = parse(text, parseTable);
-  (style(tokenStream), msgs)
+  val styling = style(tokenStream);
+  (styling, msgs)
 }
