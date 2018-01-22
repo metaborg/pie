@@ -18,8 +18,8 @@ class NoopLogger : Logger {
   override fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?) {}
   override fun checkPathReqStart(app: UFuncApp, req: PathReq) {}
   override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {}
-  override fun checkBuildReqStart(app: UFuncApp, req: UExecReq) {}
-  override fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?) {}
+  override fun checkBuildReqStart(app: UFuncApp, req: UCallReq) {}
+  override fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?) {}
   override fun rebuildStart(app: UFuncApp, reason: ExecReason) {}
   override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {}
 }

@@ -27,24 +27,24 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
       dirty.remove(app)
   }
 
-  override fun resultsIn(app: UFuncApp) = results[app]
-  override fun setResultsIn(app: UFuncApp, resultsIn: UExecRes) {
-    results[app] = resultsIn
+  override fun resultOf(app: UFuncApp) = results[app]
+  override fun setResultOf(app: UFuncApp, result: UExecRes) {
+    results[app] = result
   }
 
-  override fun calledBy(app: UFuncApp) = called.getOrPut(app, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
-  override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {
-    called.getOrPut(app, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(calledBy)
+  override fun callersOf(callee: UFuncApp) = called.getOrPut(callee, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
+  override fun setCallerOf(caller: UFuncApp, callee: UFuncApp) {
+    called.getOrPut(callee, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(caller)
   }
 
-  override fun requiredBy(path: PPath) = required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
-  override fun setRequiredBy(path: PPath, requiredBy: UFuncApp) {
-    required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(requiredBy)
+  override fun requireesOf(path: PPath) = required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
+  override fun setRequireeOf(requiree: UFuncApp, path: PPath) {
+    required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(requiree)
   }
 
-  override fun generatedBy(path: PPath) = generated[path]
-  override fun setGeneratedBy(path: PPath, generatedBy: UFuncApp) {
-    generated[path] = generatedBy
+  override fun generatorOf(path: PPath) = generated[path]
+  override fun setGeneratorOf(generator: UFuncApp, path: PPath) {
+    generated[path] = generator
   }
 
 

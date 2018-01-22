@@ -2,25 +2,23 @@ package mb.pie.runtime.core.test.util
 
 import com.google.inject.*
 import mb.log.LogModule
-import mb.log.Logger
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.PullingExecImpl
-import mb.pie.runtime.core.impl.PullingExecutorImpl
+import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
 import org.slf4j.LoggerFactory
 import java.nio.file.*
 
 open class ParametrizedTestCtx(
-  metaborgLogger: Logger,
+  mbLogger: mb.log.Logger,
   val store: Store,
   val cache: Cache,
   val share: Share,
   val layerProvider: Provider<Layer>,
-  val logger: mb.pie.runtime.core.Logger,
+  val loggerProvider: Provider<Logger>,
   val fs: FileSystem
 ) : TestCtx(), AutoCloseable {
-  val metaborgLogger: Logger = metaborgLogger.forContext("Test")
+  val mbLogger: mb.log.Logger = mbLogger.forContext("Test")
 
   init {
     store.writeTxn().use { it.drop() }
@@ -31,13 +29,21 @@ open class ParametrizedTestCtx(
     store.close()
   }
 
-
-  fun pullingExec(): PullingExecImpl {
-    return pullingExec(store, cache, share, layerProvider.get(), logger)
+  fun pullingExecutor(): PullingExecutor {
+    return pullingExecutor(store, cache, share, layerProvider, loggerProvider)
   }
 
-  fun pullingExecutor(): PullingExecutor {
-    return pullingExecutor(store, cache, share, layerProvider, logger)
+  fun pullingExec(): PullingExecImpl {
+    return pullingExec(store, cache, share, layerProvider.get(), loggerProvider.get())
+  }
+
+
+  fun observingExecutor(): ObservingExecutor {
+    return observingExecutor(store, cache, share, layerProvider, loggerProvider, mbLogger)
+  }
+
+  fun observingExec(): ObservingExec {
+    return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), mbLogger)
   }
 }
 
@@ -65,7 +71,7 @@ open class TestCtx {
   }
 
   fun <I : In, O : Out> func(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): Func<I, O> {
-    return LambdaFunc(id, descFunc, execFunc)
+    return LambdaFuncD(id, descFunc, execFunc)
   }
 
   fun <I : In, O : Out> app(func: Func<I, O>, input: I): FuncApp<I, O> {
@@ -77,12 +83,21 @@ open class TestCtx {
   }
 
 
-  fun pullingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: mb.pie.runtime.core.Logger): PullingExecImpl {
+  fun pullingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): PullingExecutor {
+    return PullingExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
+  }
+
+  fun pullingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger): PullingExecImpl {
     return PullingExecImpl(store, cache, share, layer, logger, funcs)
   }
 
-  fun pullingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, logger: mb.pie.runtime.core.Logger): PullingExecutor {
-    return PullingExecutorImpl(store, cache, share, layerProvider, funcs, logger)
+
+  fun observingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>, mbLogger: mb.log.Logger): ObservingExecutorImpl {
+    return ObservingExecutorImpl(store, cache, share, layerProvider, loggerProvider, mbLogger, funcs)
+  }
+
+  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, mbLogger: mb.log.Logger): ObservingExec {
+    return ObservingExec(store, cache, share, layer, logger, mbLogger, funcs)
   }
 
 

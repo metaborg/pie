@@ -9,20 +9,24 @@ import mb.util.async.NullCancelled
 
 
 class PullingExecutorImpl @Inject constructor(
-  private @Assisted val store: Store,
-  private @Assisted val cache: Cache,
+  @Assisted private val store: Store,
+  @Assisted private val cache: Cache,
   private val share: Share,
   private val layer: Provider<Layer>,
-  private val funcs: MutableMap<String, UFunc>,
-  private val logger: Logger
+  private val logger: Provider<Logger>,
+  private val funcs: MutableMap<String, UFunc>
 ) : PullingExecutor {
-  override fun newExec() = PullingExecImpl(store, cache, share, layer.get(), logger, funcs)
+  override fun exec() = PullingExecImpl(store, cache, share, layer.get(), logger.get(), funcs)
+
+
   override fun dropStore() {
     store.writeTxn().use { it.drop() }
     store.sync()
   }
 
-  override fun dropCache() = cache.drop()
+  override fun dropCache() {
+    cache.drop()
+  }
 }
 
 open class PullingExecImpl(
@@ -54,11 +58,11 @@ open class PullingExecImpl(
       layer.requireStart(app)
       logger.requireStart(app)
 
-      // Check if builder application is already consistent this build.
+      // Check if builder application is already consistent this execution.
       logger.checkConsistentStart(app)
       val consistentResult = consistent[app]?.cast<I, O>()
       if(consistentResult != null) {
-        // Existing result is known to be consistent this build: reuse
+        // Existing result is known to be consistent this execution: reuse
         logger.checkConsistentEnd(app, consistentResult)
         val info = ExecInfo(consistentResult)
         logger.requireEnd(app, info)
@@ -66,22 +70,22 @@ open class PullingExecImpl(
       }
       logger.checkConsistentEnd(app, null)
 
-      // Check cache for result of build application.
+      // Check cache for result of function application.
       logger.checkCachedStart(app)
       val cachedResult = cache[app]
       logger.checkCachedEnd(app, cachedResult)
 
-      // Check store for result of build application.
+      // Check store for result of function application.
       val existingUntypedResult = if(cachedResult != null) {
         cachedResult
       } else {
         logger.checkStoredStart(app)
-        val result = store.readTxn().use { it.resultsIn(app) }
+        val result = store.readTxn().use { it.resultOf(app) }
         logger.checkStoredEnd(app, result)
         result
       }
 
-      // Check if rebuild is necessary.
+      // Check if re-execution is necessary.
       val existingResult = existingUntypedResult?.cast<I, O>()
       if(existingResult == null) {
         // No cached or stored result was found: rebuild
@@ -90,7 +94,7 @@ open class PullingExecImpl(
         return info
       }
 
-      // Check for inconsistencies and rebuild when found.
+      // Check for inconsistencies and re-execute when found.
       // Internal consistency: output consistency
       run {
         val inconsistencyReason = existingResult.internalInconsistencyReason
@@ -144,12 +148,12 @@ open class PullingExecImpl(
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecInfo<I, O> {
+  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecInfo<I, O> {
     cancel.throwIfCancelled()
 
     logger.rebuildStart(app, reason)
     val result = if(useCache) {
-      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultsIn(it)?.cast<I, O>() } }) { this.execInternal(it, cancel) }
+      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultOf(it)?.cast<I, O>() } }) { this.execInternal(it, cancel) }
     } else {
       share.reuseOrCreate(app) { this.execInternal(it, cancel) }
     }
@@ -158,7 +162,7 @@ open class PullingExecImpl(
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<I, O> {
+  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<I, O> {
     cancel.throwIfCancelled()
 
     val (builderId, input) = app
@@ -174,7 +178,7 @@ open class PullingExecImpl(
       store.readTxn().use { layer.validate(app, result, this, it) }
       // Store result and path dependencies in build store
       store.writeTxn().use {
-        it.setResultsIn(app, result)
+        it.setResultOf(app, result)
         context.writePathDepsToStore(it)
       }
       // Cache result

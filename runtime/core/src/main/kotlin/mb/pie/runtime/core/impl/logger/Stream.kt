@@ -81,18 +81,18 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   }
 
 
-  override fun checkBuildReqStart(app: UFuncApp, req: UExecReq) {
+  override fun checkBuildReqStart(app: UFuncApp, req: UCallReq) {
 
   }
 
-  override fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?) {
+  override fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?) {
     when(reason) {
       is InconsistentExecReq ->
-        traceWriter?.println("$indent␦ ${req.app.toShortString(descLimit)} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
+        traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
       is InconsistentExecReqTransientOutput ->
-        traceWriter?.println("$indent␦ ${req.app.toShortString(descLimit)} (inconsistent transient output: ${reason.inconsistentResult.toShortString(descLimit)})")
+        traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (inconsistent transient output: ${reason.inconsistentResult.toShortString(descLimit)})")
       null ->
-        traceWriter?.println("$indent␦ ${req.app.toShortString(descLimit)} (consistent: ${req.stamp})")
+        traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (consistent: ${req.stamp})")
     }
   }
 

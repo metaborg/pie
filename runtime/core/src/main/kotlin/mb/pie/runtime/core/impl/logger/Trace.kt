@@ -76,11 +76,11 @@ class TraceLogger : Logger {
   }
 
 
-  override fun checkBuildReqStart(app: UFuncApp, req: UExecReq) {
+  override fun checkBuildReqStart(app: UFuncApp, req: UCallReq) {
     traces.add(CheckBuildReqStart(app, req, currentTime))
   }
 
-  override fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?) {
+  override fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?) {
     traces.add(CheckBuildReqEnd(app, req, reason, currentTime))
   }
 
@@ -112,7 +112,7 @@ data class CheckGenStart(val app: UFuncApp, val gen: Gen, override val time: Lon
 data class CheckGenEnd(val app: UFuncApp, val gen: Gen, val reason: InconsistentGenPath?, override val time: Long) : Trace
 data class CheckPathReqStart(val app: UFuncApp, val eq: PathReq, override val time: Long) : Trace
 data class CheckPathReqEnd(val app: UFuncApp, val eq: PathReq, val reason: InconsistentPathReq?, override val time: Long) : Trace
-data class CheckBuildReqStart(val app: UFuncApp, val req: UExecReq, override val time: Long) : Trace
-data class CheckBuildReqEnd(val app: UFuncApp, val req: UExecReq, val reason: ExecReason?, override val time: Long) : Trace
+data class CheckBuildReqStart(val app: UFuncApp, val req: UCallReq, override val time: Long) : Trace
+data class CheckBuildReqEnd(val app: UFuncApp, val req: UCallReq, val reason: ExecReason?, override val time: Long) : Trace
 data class RebuildStart(val app: UFuncApp, val reason: ExecReason, override val time: Long) : Trace
 data class RebuildEnd(val app: UFuncApp, val reason: ExecReason, val result: UExecRes, override val time: Long) : Trace

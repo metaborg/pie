@@ -17,17 +17,17 @@ class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun isDirty(app: UFuncApp) = false
   override fun setIsDirty(app: UFuncApp, isDirty: Boolean) {}
 
-  override fun resultsIn(app: UFuncApp) = null
-  override fun setResultsIn(app: UFuncApp, resultsIn: UExecRes) {}
+  override fun resultOf(app: UFuncApp) = null
+  override fun setResultOf(app: UFuncApp, result: UExecRes) {}
 
-  override fun calledBy(app: UFuncApp) = setOf<UFuncApp>()
-  override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {}
+  override fun callersOf(callee: UFuncApp) = setOf<UFuncApp>()
+  override fun setCallerOf(caller: UFuncApp, callee: UFuncApp) {}
 
-  override fun requiredBy(path: PPath) = setOf<UFuncApp>()
-  override fun setRequiredBy(path: PPath, requiredBy: UFuncApp) {}
+  override fun requireesOf(path: PPath) = setOf<UFuncApp>()
+  override fun setRequireeOf(requiree: UFuncApp, path: PPath) {}
 
-  override fun generatedBy(path: PPath) = null
-  override fun setGeneratedBy(path: PPath, generatedBy: UFuncApp) {}
+  override fun generatorOf(path: PPath) = null
+  override fun setGeneratorOf(generator: UFuncApp, path: PPath) {}
 
 
   override fun drop() {}

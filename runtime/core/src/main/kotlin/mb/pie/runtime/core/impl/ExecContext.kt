@@ -20,12 +20,12 @@ internal class ExecContextImpl(
   override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, stamper: OutputStamper): O {
     cancel.throwIfCancelled()
     store.writeTxn().use {
-      it.setCalledBy(app, currentApp)
+      it.setCallerOf(currentApp, app)
       writePathDepsToStore(it)
     }
     val result = exec.require(app, cancel).result
     val stamp = stamper.stamp(result.output)
-    val req = ExecReq(app, stamp)
+    val req = CallReq(app, stamp)
     reqs.add(req)
     return result.output
   }
@@ -33,12 +33,12 @@ internal class ExecContextImpl(
   override fun requireExec(app: UFuncApp, stamper: OutputStamper) {
     cancel.throwIfCancelled()
     store.writeTxn().use {
-      it.setCalledBy(app, currentApp)
+      it.setCallerOf(currentApp, app)
       writePathDepsToStore(it)
     }
     val result = exec.require(app, cancel).result
     val stamp = stamper.stamp(result.output)
-    val req = ExecReq(app, stamp)
+    val req = CallReq(app, stamp)
     reqs.add(req)
   }
 
@@ -49,7 +49,7 @@ internal class ExecContextImpl(
     reqs.add(req)
     pathReqsToWrite.add(req)
 
-    val generatedBy = store.readTxn().use { it.generatedBy(path) }
+    val generatedBy = store.readTxn().use { it.generatorOf(path) }
     if(generatedBy != null) {
       requireExec(generatedBy)
     }
@@ -70,10 +70,10 @@ internal class ExecContextImpl(
 
   fun writePathDepsToStore(txn: StoreWriteTxn) {
     for((path, _) in pathReqsToWrite) {
-      txn.setRequiredBy(path, currentApp)
+      txn.setRequireeOf(currentApp, path)
     }
     for((path, _) in gensToWrite) {
-      txn.setGeneratedBy(path, currentApp)
+      txn.setGeneratorOf(currentApp, path)
     }
     pathReqsToWrite.clear()
     gensToWrite.clear()

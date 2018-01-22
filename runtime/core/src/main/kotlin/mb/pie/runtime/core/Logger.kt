@@ -25,8 +25,8 @@ interface Logger {
   fun checkPathReqStart(app: UFuncApp, req: PathReq)
   fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?)
 
-  fun checkBuildReqStart(app: UFuncApp, req: UExecReq)
-  fun checkBuildReqEnd(app: UFuncApp, req: UExecReq, reason: ExecReason?)
+  fun checkBuildReqStart(app: UFuncApp, req: UCallReq)
+  fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?)
 
   fun rebuildStart(app: UFuncApp, reason: ExecReason)
   fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes)
@@ -35,6 +35,21 @@ interface Logger {
 
 interface ExecReason {
   override fun toString(): String
+}
+
+class UnknownExecReason : ExecReason {
+  override fun toString() = "unknown/any"
+
+
+  override fun equals(other: Any?): Boolean {
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
 }
 
 class NoResultReason : ExecReason {
@@ -64,10 +79,10 @@ data class InconsistentPathReq(val requiringResult: UExecRes, val req: PathReq, 
   override fun toString() = "required path ${req.path} is inconsistent"
 }
 
-data class InconsistentExecReq(val requiringResult: UExecRes, val req: UExecReq, val newStamp: OutputStamp) : ExecReason {
-  override fun toString() = "required build ${req.app.toShortString(100)} is inconsistent"
+data class InconsistentExecReq(val requiringResult: UExecRes, val req: UCallReq, val newStamp: OutputStamp) : ExecReason {
+  override fun toString() = "required build ${req.callee.toShortString(100)} is inconsistent"
 }
 
-data class InconsistentExecReqTransientOutput(val requiringResult: UExecRes, val req: UExecReq, val inconsistentResult: UExecRes) : ExecReason {
-  override fun toString() = "transient output of required build ${req.app.toShortString(100)} is inconsistent"
+data class InconsistentExecReqTransientOutput(val requiringResult: UExecRes, val req: UCallReq, val inconsistentResult: UExecRes) : ExecReason {
+  override fun toString() = "transient output of required build ${req.callee.toShortString(100)} is inconsistent"
 }

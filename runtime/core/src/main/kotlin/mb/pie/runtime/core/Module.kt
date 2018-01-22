@@ -95,6 +95,11 @@ inline fun <reified B : UFunc> Binder.bindFunc(builderBinder: MapBinder<String, 
   builderBinder.addBinding(id).to<B>()
 }
 
+inline fun <reified B : UFunc> Binder.bindFunc(builderBinder: MapBinder<String, UFunc>) {
+  bind<B>().asSingleton()
+  builderBinder.addBinding(B::class.java.canonicalName!!).to<B>()
+}
+
 fun Binder.bindFunc(builderBinder: MapBinder<String, UFunc>, builder: UFunc) {
   builderBinder.addBinding(builder.id).toInstance(builder)
 }

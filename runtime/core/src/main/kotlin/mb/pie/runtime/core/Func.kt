@@ -6,13 +6,11 @@ interface Func<in I : In, out O : Out> {
   fun ExecContext.exec(input: I): O
 
   @Throws(ExecException::class, InterruptedException::class)
-  fun exec(input: I, ctx: ExecContext): O {
-    return ctx.exec(input)
-  }
+  fun exec(input: I, ctx: ExecContext): O = ctx.exec(input)
 
   fun mayOverlap(input1: I, input2: I): Boolean = input1 == input2
 
-  val id: String
+  val id: String get() = this::class.java.canonicalName!!
   fun desc(input: I): String = "$id(${input.toString().toShortString(100)})"
 }
 
@@ -36,9 +34,7 @@ interface InEffectFunc<out O : Out> : Func<None, O> {
   fun ExecContext.effect(): O
 
   @Throws(ExecException::class, InterruptedException::class)
-  override fun ExecContext.exec(input: None): O {
-    return this.effect()
-  }
+  override fun ExecContext.exec(input: None): O = this.effect()
 
   override fun mayOverlap(input1: None, input2: None) = true
 }
@@ -57,12 +53,12 @@ interface EffectFunc : Func<None, None> {
 }
 
 
-open class LambdaFunc<in I : In, out O : Out>(override val id: String, private val descFunc: (I) -> String, private val execFunc: ExecContext.(I) -> O) : Func<I, O> {
-  override fun desc(input: I): String {
-    return descFunc(input)
-  }
+open class LambdaFunc<in I : In, out O : Out>(override val id: String, private val execFunc: ExecContext.(I) -> O) : Func<I, O> {
+  override fun ExecContext.exec(input: I): O = execFunc(input)
+}
 
-  override fun ExecContext.exec(input: I): O {
-    return execFunc(input)
-  }
+open class LambdaFuncD<in I : In, out O : Out>(override val id: String, private val descFunc: (I) -> String, private val execFunc: ExecContext.(I) -> O) : Func<I, O> {
+  override fun desc(input: I): String = descFunc(input)
+
+  override fun ExecContext.exec(input: I): O = execFunc(input)
 }

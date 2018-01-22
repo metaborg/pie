@@ -8,7 +8,7 @@ interface PullingExecutorFactory {
 }
 
 interface PullingExecutor : Executor {
-  fun newExec(): PullingExec
+  fun exec(): PullingExec
 }
 
 interface PullingExec {

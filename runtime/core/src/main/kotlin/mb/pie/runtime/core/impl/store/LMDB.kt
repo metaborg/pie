@@ -276,19 +276,19 @@ open internal class LMDBStoreTxn(
     return getBool(app, dirtyDb)
   }
 
-  override fun resultsIn(app: UFuncApp): UExecRes? {
+  override fun resultOf(app: UFuncApp): UExecRes? {
     return getOne(app, resultsDb)
   }
 
-  override fun calledBy(app: UFuncApp): Set<UFuncApp> {
-    return getMultiple(app, calledDb, calledValuesDb)
+  override fun callersOf(callee: UFuncApp): Set<UFuncApp> {
+    return getMultiple(callee, calledDb, calledValuesDb)
   }
 
-  override fun requiredBy(path: PPath): Set<UFuncApp> {
+  override fun requireesOf(path: PPath): Set<UFuncApp> {
     return getMultiple(path, requiredDb, requiredValuesDb)
   }
 
-  override fun generatedBy(path: PPath): UFuncApp? {
+  override fun generatorOf(path: PPath): UFuncApp? {
     return getOne(path, generatedDb)
   }
 
@@ -297,20 +297,20 @@ open internal class LMDBStoreTxn(
     setBool(app, isDirty, dirtyDb)
   }
 
-  override fun setResultsIn(app: UFuncApp, resultsIn: UExecRes) {
-    setOne(app, resultsIn, resultsDb)
+  override fun setResultOf(app: UFuncApp, result: UExecRes) {
+    setOne(app, result, resultsDb)
   }
 
-  override fun setCalledBy(app: UFuncApp, calledBy: UFuncApp) {
-    setDup(app, calledBy, calledDb, calledValuesDb)
+  override fun setCallerOf(caller: UFuncApp, callee: UFuncApp) {
+    setDup(callee, caller, calledDb, calledValuesDb)
   }
 
-  override fun setRequiredBy(path: PPath, requiredBy: UFuncApp) {
-    setDup(path, requiredBy, requiredDb, requiredValuesDb)
+  override fun setRequireeOf(requiree: UFuncApp, path: PPath) {
+    setDup(path, requiree, requiredDb, requiredValuesDb)
   }
 
-  override fun setGeneratedBy(path: PPath, generatedBy: UFuncApp) {
-    setOne(path, generatedBy, generatedDb)
+  override fun setGeneratorOf(generator: UFuncApp, path: PPath) {
+    setOne(path, generator, generatedDb)
   }
 
   override fun drop() {

@@ -12,8 +12,8 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 class PushingExecutorImpl @Inject constructor(
-  private @Assisted val store: Store,
-  private @Assisted val cache: Cache,
+  @Assisted private val store: Store,
+  @Assisted private val cache: Cache,
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
@@ -28,11 +28,11 @@ class PushingExecutorImpl @Inject constructor(
 
 
   override fun add(key: Any, obsFuncApp: AnyObsFuncApp) {
-    obsFuncApps.put(key, obsFuncApp)
+    obsFuncApps[key] = obsFuncApp
   }
 
   override fun update(key: Any, obsFuncApp: AnyObsFuncApp) {
-    obsFuncApps.put(key, obsFuncApp)
+    obsFuncApps[key] = obsFuncApp
   }
 
   override fun remove(key: Any) {
@@ -80,18 +80,18 @@ class PushingExecutorImpl @Inject constructor(
   }
 
   override fun addAndExecute(key: Any, obsFuncApp: AnyObsFuncApp, cancel: Cancelled) {
-    obsFuncApps.put(key, obsFuncApp)
+    obsFuncApps[key] = obsFuncApp
     execOne(obsFuncApp, cancel)
   }
 
   override fun updateAndExecute(key: Any, obsFuncApp: AnyObsFuncApp, cancel: Cancelled) {
-    obsFuncApps.put(key, obsFuncApp)
+    obsFuncApps[key] = obsFuncApp
     execOne(obsFuncApp, cancel)
   }
 
   private fun execOne(obsFuncApp: AnyObsFuncApp, cancel: Cancelled) {
     lock.read {
-      val exec = PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
+      val exec = exec()
       try {
         val (funcApp, changedFunc) = obsFuncApp
         val info = exec.require(funcApp, cancel)
@@ -102,6 +102,10 @@ class PushingExecutorImpl @Inject constructor(
     }
   }
 
+
+  fun exec(): PushingExec {
+    return PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
+  }
 
   override fun dropStore() {
     store.writeTxn().use { it.drop() }
@@ -154,7 +158,7 @@ open class PushingExec(
         cachedResult
       } else {
         logger.checkStoredStart(app)
-        val result = store.readTxn().use { it.resultsIn(app) }
+        val result = store.readTxn().use { it.resultOf(app) }
         logger.checkStoredEnd(app, result)
         result
       }
@@ -237,12 +241,12 @@ open class PushingExec(
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecInfo<I, O> {
+  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecInfo<I, O> {
     cancel.throwIfCancelled()
 
     logger.rebuildStart(app, reason)
     val result = if(useCache) {
-      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultsIn(it)?.cast<I, O>() } }) { this.execInternal(it, cancel) }
+      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.resultOf(it)?.cast<I, O>() } }) { this.execInternal(it, cancel) }
     } else {
       share.reuseOrCreate(app) { this.execInternal(it, cancel) }
     }
@@ -251,7 +255,7 @@ open class PushingExec(
   }
 
   // Method is open internal for testability
-  open internal fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<I, O> {
+  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<I, O> {
     cancel.throwIfCancelled()
 
     val (builderId, input) = app
@@ -268,7 +272,7 @@ open class PushingExec(
       store.readTxn().use { txn -> layer.validate(app, result, this, txn) }
       store.writeTxn().use { txn ->
         // Store result
-        txn.setResultsIn(app, result)
+        txn.setResultOf(app, result)
         // Store path dependencies
         context.writePathDepsToStore(txn)
         // Flag generated files dirty.

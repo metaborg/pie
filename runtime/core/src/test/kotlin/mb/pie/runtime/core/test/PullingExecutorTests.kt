@@ -5,6 +5,7 @@ import kotlinx.coroutines.experimental.*
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.PullingExecImpl
 import mb.pie.runtime.core.impl.layer.ValidationException
+import mb.pie.runtime.core.impl.share.CoroutineShare
 import mb.pie.runtime.core.test.util.TestGenerator
 import mb.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
@@ -17,7 +18,7 @@ import kotlin.reflect.jvm.javaMethod
 
 internal class PullingExecutorTests {
   @TestFactory
-  fun testBuild() = TestGenerator.generate("testBuild") {
+  fun testExec() = TestGenerator.generate("testExec") {
     val input = "CAPITALIZED"
     val func = spy(toLowerCase)
     registerFunc(func)
@@ -43,7 +44,7 @@ internal class PullingExecutorTests {
   }
 
   @TestFactory
-  fun testMultipleBuilds() = TestGenerator.generate("testMultipleBuilds") {
+  fun testExecMultiple() = TestGenerator.generate("testExecMultiple") {
     val func = spy(toLowerCase)
     registerFunc(func)
 
@@ -177,7 +178,7 @@ internal class PullingExecutorTests {
   }
 
   @TestFactory
-  fun testBuildReq() = TestGenerator.generate("testBuildReq") {
+  fun testCallReq() = TestGenerator.generate("testCallReq") {
     val toLowerCase = spy(toLowerCase)
     registerFunc(toLowerCase)
     val readPath = spy(readPath)
@@ -226,7 +227,7 @@ internal class PullingExecutorTests {
       verify(exec3, times(1)).exec(eq(app(combine, filePath)), check {
         val reason = it as? InconsistentExecReq
         assertNotNull(reason)
-        assertEquals(app(readPath, filePath), reason!!.req.app)
+        assertEquals(app(readPath, filePath), reason!!.req.callee)
       }, any(), any())
       verify(exec3, times(1)).exec(eq(app(toLowerCase, "!DLROW OLLEH")), eq(NoResultReason()), any(), any())
     }
@@ -260,14 +261,14 @@ internal class PullingExecutorTests {
 
     val filePath = path(fs, "/file")
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newExec()
+      val exec = executor.exec()
       exec.requireOutput(app(writePath, Pair("HELLO WORLD 1!", filePath)))
       exec.requireOutput(app(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
     // Overlapping generated path exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newExec()
+      val exec = executor.exec()
       exec.requireOutput(app(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
@@ -283,14 +284,14 @@ internal class PullingExecutorTests {
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newExec()
+      val exec = executor.exec()
       exec.requireOutput(app(readPath, filePath))
       exec.requireOutput(app(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newExec()
+      val exec = executor.exec()
       exec.requireOutput(app(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
@@ -314,7 +315,7 @@ internal class PullingExecutorTests {
       val filePath1 = path(fs, "/file1")
       // CHANGED: this dependency is now inferred automatically, so no exception is thrown
       // assertThrows(HiddenDependencyException::class.java) {
-      val exec = executor.newExec()
+      val exec = executor.exec()
       exec.requireOutput(app(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
       // }
     }
@@ -330,7 +331,7 @@ internal class PullingExecutorTests {
       val filePath2 = path(fs, "/file2")
       // CHANGED: this dependency is now inferred automatically, so no exception is thrown
       // assertThrows(HiddenDependencyException::class.java) {
-      val exec = executor.newExec()
+      val exec = executor.exec()
       exec.requireOutput(app(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
       // }
     }
@@ -344,7 +345,7 @@ internal class PullingExecutorTests {
     val bm = pullingExecutor()
 
     assertThrows(ValidationException::class.java) {
-      val exec = bm.newExec()
+      val exec = bm.exec()
       exec.requireOutput(app(b1, None.instance))
     }
   }
@@ -365,7 +366,8 @@ internal class PullingExecutorTests {
   }
 
   @TestFactory
-  fun testConcurrentReuse() = TestGenerator.generate("testConcurrentReuse") {
+  fun testConcurrentReuse() = TestGenerator.generate("testConcurrentReuse",
+    dShareGens = arrayOf({ CoroutineShare() }) /* Testing sharing, so only use shares that correctly share */) {
     registerFunc(toLowerCase)
 
     val spies = ConcurrentLinkedQueue<PullingExecImpl>()
