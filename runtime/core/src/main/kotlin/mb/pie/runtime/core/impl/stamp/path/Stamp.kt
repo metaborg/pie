@@ -1,7 +1,7 @@
-package mb.pie.runtime.core.impl.stamp
+package mb.pie.runtime.core.impl.stamp.path
 
-import mb.pie.runtime.core.PathStamp
-import mb.pie.runtime.core.PathStamper
+import mb.pie.runtime.core.stamp.PathStamp
+import mb.pie.runtime.core.stamp.PathStamper
 import java.util.*
 
 

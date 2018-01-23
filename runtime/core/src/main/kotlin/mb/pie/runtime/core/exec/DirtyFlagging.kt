@@ -1,15 +1,16 @@
-package mb.pie.runtime.core
+package mb.pie.runtime.core.exec
 
+import mb.pie.runtime.core.*
 import mb.util.async.Cancelled
 import mb.util.async.NullCancelled
 import mb.vfs.path.PPath
 
 
-interface PushingExecutorFactory {
-  fun create(store: Store, cache: Cache): PushingExecutor
+interface DirtyFlaggingExecutorFactory {
+  fun create(store: Store, cache: Cache): DirtyFlaggingExecutor
 }
 
-interface PushingExecutor : Executor {
+interface DirtyFlaggingExecutor : Executor {
   fun add(key: Any, obsFuncApp: AnyObsFuncApp)
   fun update(key: Any, obsFuncApp: AnyObsFuncApp)
   fun remove(key: Any)

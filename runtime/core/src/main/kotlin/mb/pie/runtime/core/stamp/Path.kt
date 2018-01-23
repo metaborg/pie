@@ -1,6 +1,6 @@
-package mb.pie.runtime.core
+package mb.pie.runtime.core.stamp
 
-import mb.pie.runtime.core.impl.stamp.*
+import mb.pie.runtime.core.impl.stamp.path.*
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath

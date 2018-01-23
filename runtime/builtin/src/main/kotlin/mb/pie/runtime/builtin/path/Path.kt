@@ -2,6 +2,7 @@ package mb.pie.runtime.builtin.path
 
 import com.google.inject.Inject
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.stamp.PathStampers
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath

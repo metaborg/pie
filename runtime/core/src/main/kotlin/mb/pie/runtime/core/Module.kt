@@ -5,9 +5,10 @@ import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.pie.runtime.core.impl.PullingExecutorImpl
-import mb.pie.runtime.core.impl.PushingExecutorImpl
+import mb.pie.runtime.core.exec.*
 import mb.pie.runtime.core.impl.cache.NoopCache
+import mb.pie.runtime.core.impl.exec.DirtyFlaggingExecutorImpl
+import mb.pie.runtime.core.impl.exec.PullingExecutorImpl
 import mb.pie.runtime.core.impl.layer.ValidationLayer
 import mb.pie.runtime.core.impl.logger.NoopLogger
 import mb.pie.runtime.core.impl.share.CoroutineShare
@@ -28,42 +29,42 @@ open class PieModule : Module {
   }
 
 
-  open protected fun Binder.bindExecutors() {
+  protected open fun Binder.bindExecutors() {
     install(FactoryModuleBuilder()
       .implement(PullingExecutor::class.java, PullingExecutorImpl::class.java)
       .build(PullingExecutorFactory::class.java))
     install(FactoryModuleBuilder()
-      .implement(PushingExecutor::class.java, PushingExecutorImpl::class.java)
-      .build(PushingExecutorFactory::class.java))
+      .implement(DirtyFlaggingExecutor::class.java, DirtyFlaggingExecutorImpl::class.java)
+      .build(DirtyFlaggingExecutorFactory::class.java))
   }
 
-  open protected fun Binder.bindStore() {
+  protected open fun Binder.bindStore() {
     bind<LMDBBuildStoreFactory>().asSingleton()
   }
 
-  open protected fun Binder.bindShare() {
+  protected open fun Binder.bindShare() {
     bind<Share>().toSingleton<CoroutineShare>()
   }
 
-  open protected fun Binder.bindCache() {
+  protected open fun Binder.bindCache() {
     bind<Cache>().to<NoopCache>()
   }
 
-  open protected fun Binder.bindLogger() {
+  protected open fun Binder.bindLogger() {
     bind<Logger>().to<NoopLogger>()
   }
 
-  open protected fun Binder.bindLayer() {
+  protected open fun Binder.bindLayer() {
     bind<Layer>().to<ValidationLayer>()
   }
 
 
-  open protected fun Binder.bindFuncs(builders: MapBinder<String, UFunc>) {
+  protected open fun Binder.bindFuncs(builders: MapBinder<String, UFunc>) {
 
   }
 
 
-  inline protected fun <I : In, O : Out, reified F : Func<I, O>> Binder.bindBuilder(funcs: MapBinder<String, UFunc>, func: F) {
+  protected inline fun <I : In, O : Out, reified F : Func<I, O>> Binder.bindBuilder(funcs: MapBinder<String, UFunc>, func: F) {
     bind<F>().toObject(func)
     funcs.addBinding(func.id).toInstance(func)
   }

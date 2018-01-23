@@ -86,3 +86,12 @@ typealias UExecRes = ExecRes<*, *>
 
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 inline fun <I : In, O : Out> UExecRes.cast() = this as ExecRes<I, O>
+
+
+data class ExecInfo<out I : In, out O : Out>(val result: ExecRes<I, O>, val reason: ExecReason?) {
+  constructor(result: ExecRes<I, O>) : this(result, null)
+
+  val wasExecuted = reason != null
+}
+
+typealias UExecInfo = ExecInfo<*, *>

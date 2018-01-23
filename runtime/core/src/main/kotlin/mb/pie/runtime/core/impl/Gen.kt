@@ -1,6 +1,7 @@
 package mb.pie.runtime.core.impl
 
-import mb.pie.runtime.core.PathStamp
+import mb.pie.runtime.core.stamp.PathStamp
+import mb.pie.runtime.core.impl.exec.ConsistencyChecker
 import mb.vfs.path.PPath
 import java.io.Serializable
 

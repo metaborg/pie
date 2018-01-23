@@ -1,6 +1,8 @@
 package mb.pie.runtime.core
 
 import mb.pie.runtime.core.impl.*
+import mb.pie.runtime.core.stamp.OutputStamp
+import mb.pie.runtime.core.stamp.PathStamp
 
 
 interface Logger {

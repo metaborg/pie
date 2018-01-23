@@ -1,6 +1,8 @@
 package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.stamp.OutputStamper
+import mb.pie.runtime.core.stamp.PathStamper
 import mb.util.async.Cancelled
 import mb.vfs.path.PPath
 
