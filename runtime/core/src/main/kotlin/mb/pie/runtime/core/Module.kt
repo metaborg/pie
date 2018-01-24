@@ -7,8 +7,7 @@ import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
 import mb.pie.runtime.core.exec.*
 import mb.pie.runtime.core.impl.cache.NoopCache
-import mb.pie.runtime.core.impl.exec.DirtyFlaggingExecutorImpl
-import mb.pie.runtime.core.impl.exec.PullingExecutorImpl
+import mb.pie.runtime.core.impl.exec.*
 import mb.pie.runtime.core.impl.layer.ValidationLayer
 import mb.pie.runtime.core.impl.logger.NoopLogger
 import mb.pie.runtime.core.impl.share.CoroutineShare
@@ -36,6 +35,9 @@ open class PieModule : Module {
     install(FactoryModuleBuilder()
       .implement(DirtyFlaggingExecutor::class.java, DirtyFlaggingExecutorImpl::class.java)
       .build(DirtyFlaggingExecutorFactory::class.java))
+    install(FactoryModuleBuilder()
+      .implement(ObservingExecutor::class.java, ObservingExecutorImpl::class.java)
+      .build(ObservingExecutorFactory::class.java))
   }
 
   protected open fun Binder.bindStore() {

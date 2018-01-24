@@ -3,8 +3,7 @@ package mb.pie.runtime.core.test.util
 import com.google.inject.*
 import mb.log.LogModule
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.exec.ObservingExecutor
-import mb.pie.runtime.core.exec.PullingExecutor
+import mb.pie.runtime.core.exec.*
 import mb.pie.runtime.core.impl.exec.*
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
@@ -44,8 +43,8 @@ open class ParametrizedTestCtx(
     return observingExecutor(store, cache, share, layerProvider, loggerProvider, mbLogger)
   }
 
-  fun observingExec(): ObservingExec {
-    return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), mbLogger)
+  fun observingExec(observers: Map<UFuncApp, FuncAppObserver> = mapOf()): ObservingExec {
+    return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), mbLogger, observers)
   }
 }
 
@@ -98,8 +97,8 @@ open class TestCtx {
     return ObservingExecutorImpl(store, cache, share, layerProvider, loggerProvider, mbLogger, funcs)
   }
 
-  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, mbLogger: mb.log.Logger): ObservingExec {
-    return ObservingExec(store, cache, share, layer, logger, mbLogger, funcs)
+  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, mbLogger: mb.log.Logger, observers: Map<UFuncApp, FuncAppObserver>): ObservingExec {
+    return ObservingExec(store, cache, share, layer, logger, mbLogger, funcs, observers)
   }
 
 

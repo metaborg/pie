@@ -4,11 +4,13 @@ import com.google.inject.Inject
 import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.exec.FuncAppObserver
 import mb.pie.runtime.core.exec.ObservingExecutor
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.vfs.path.PPath
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 
 class ObservingExecutorImpl @Inject constructor(
@@ -22,50 +24,69 @@ class ObservingExecutorImpl @Inject constructor(
 ) : ObservingExecutor {
   private val mbLogger = mbLogger.forContext(ObservingExecutorImpl::class.java)
 
-//  private val observers = ConcurrentHashMap<UFuncApp, (Out) -> Unit>()
+  private val keyToApp = ConcurrentHashMap<Any, UFuncApp>()
+  private val appToObs = ConcurrentHashMap<UFuncApp, FuncAppObserver>()
 //  private val observed = ConcurrentHashMap.newKeySet<UFuncApp>()
 //  private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
 //  private val lock = ReentrantReadWriteLock()
 
 
-  @Throws(ExecException::class, InterruptedException::class)
-  override fun setObserver(app: UFuncApp, observer: (Out) -> Unit, cancel: Cancelled) {
+  override fun setObserver(key: Any, app: UFuncApp, observer: FuncAppObserver) {
     /* TODO:
     If function application was not executed before, execute it and set all (transitive) function applications to observed, notify observer of the result.
 
     If function application was executed before, go topdown over all (transitive) function applications, and set them to observed.
     Stop traversing dependency tree when an already observed node is encountered.
     */
-    val exec = exec()
-    exec.requireTopDown(app, cancel)
+
+    val existingApp = keyToApp[key]
+    if(existingApp != null) {
+      appToObs.remove(existingApp)
+    }
+    keyToApp[key] = app
+    appToObs[app] = observer
   }
 
-  override fun removeObserver(funcApp: UFuncApp) {
+  override fun removeObserver(key: Any) {
     /* TODO:
     If function application was not executed before, set function as not observed.
 
     If function application was executed before, go topdown over all (transitive) function applications, and set them to not-observed.
     Stop traversing dependency tree when an already not-observed node is encountered. TODO: that cannot happen?
     */
+
+    val app = keyToApp[key]
+    if(app != null) {
+      appToObs.remove(app)
+    }
+    keyToApp.remove(key)
+  }
+
+
+  @Throws(ExecException::class, InterruptedException::class)
+  override fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
+    val exec = exec()
+    return exec.requireTopDown(app, cancel)
   }
 
   @Throws(ExecException::class, InterruptedException::class)
-  override fun pathsChanged(changedPaths: List<PPath>, cancel: Cancelled) {
-    /* TODO:
-    Execute function applications that require or generate the path in a bottom-up fashion.
-    Only observed function applications need to be executed.
-    Notify observers of observed function applications.
-    */
+  override fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled) {
     val exec = exec()
     exec.pathsChanged(changedPaths, cancel)
   }
+
+  override fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean {
+    return (cache[app] ?: store.readTxn().use { it.resultOf(app) }) != null;
+  }
+
 
   override fun garbageCollect() {
     // TODO: Clean up all data for non-observed function applications.
   }
 
+
   fun exec(): ObservingExec {
-    return ObservingExec(store, cache, share, layer.get(), logger.get(), mbLogger, funcs)
+    return ObservingExec(store, cache, share, layer.get(), logger.get(), mbLogger, funcs, appToObs)
   }
 
 
@@ -86,7 +107,8 @@ open class ObservingExec(
   private val layer: Layer,
   private val logger: Logger,
   private val mbLogger: mb.log.Logger,
-  private val funcs: Map<String, UFunc>
+  private val funcs: Map<String, UFunc>,
+  private val observers: Map<UFuncApp, FuncAppObserver>
 ) : Exec, Funcs by FuncsImpl(funcs) {
   private val consistent = mutableMapOf<UFuncApp, UExecRes>()
 
@@ -169,6 +191,8 @@ open class ObservingExec(
     store.readTxn().use { layer.validate(app, existingResult, this, it) }
     // Cache
     cache[app] = existingResult
+    // Notify observer, if any.
+    observers[app]?.invoke(existingResult.output)
     // Reuse existing result
     return ExecInfo(existingResult)
   }
@@ -188,7 +212,6 @@ open class ObservingExec(
 
     // Re-execute.
     val res = exec(app, reason, cancel).result
-    // TODO: notify observer, if any.
 
     // Require all inconsistent callers of the current function application in a bottom-up manner.
     val inconsistentCallers = store.readTxn().use { txn ->
@@ -307,6 +330,9 @@ open class ObservingExec(
       consistent[app] = result
       cache[app] = result
       // TODO: mark observed, not-dirty
+
+      // Notify observer, if any.
+      observers[app]?.invoke(output)
 
       return result
     } catch(e: InterruptedException) {
