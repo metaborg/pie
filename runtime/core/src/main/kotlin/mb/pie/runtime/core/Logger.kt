@@ -6,14 +6,20 @@ import mb.pie.runtime.core.stamp.PathStamp
 
 
 interface Logger {
-  fun requireInitialStart(app: UFuncApp)
-  fun requireInitialEnd(app: UFuncApp, info: UExecInfo)
+  fun requireTopDownInitialStart(app: UFuncApp)
+  fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo)
 
-  fun requireStart(app: UFuncApp)
-  fun requireEnd(app: UFuncApp, info: UExecInfo)
+  fun requireTopDownStart(app: UFuncApp)
+  fun requireTopDownEnd(app: UFuncApp, info: UExecInfo)
 
-  fun checkConsistentStart(app: UFuncApp)
-  fun checkConsistentEnd(app: UFuncApp, result: UExecRes?)
+  fun requireBottomUpInitialStart(app: UFuncApp)
+  fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?)
+
+  fun requireBottomUpStart(app: UFuncApp)
+  fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?)
+  
+  fun checkVisitedStart(app: UFuncApp)
+  fun checkVisitedEnd(app: UFuncApp, result: UExecRes?)
 
   fun checkCachedStart(app: UFuncApp)
   fun checkCachedEnd(app: UFuncApp, result: UExecRes?)
@@ -32,6 +38,9 @@ interface Logger {
 
   fun rebuildStart(app: UFuncApp, reason: ExecReason)
   fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes)
+
+  fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out)
+  fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out)
 }
 
 

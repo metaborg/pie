@@ -8,6 +8,7 @@ import mb.pie.runtime.core.exec.FuncAppObserver
 import mb.pie.runtime.core.exec.ObservingExecutor
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
+import mb.util.async.NullCancelled
 import mb.vfs.path.PPath
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -66,7 +67,7 @@ class ObservingExecutorImpl @Inject constructor(
   @Throws(ExecException::class, InterruptedException::class)
   override fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
     val exec = exec()
-    return exec.requireTopDown(app, cancel)
+    return exec.requireTopDownInitial(app, cancel)
   }
 
   @Throws(ExecException::class, InterruptedException::class)
@@ -110,8 +111,19 @@ open class ObservingExec(
   private val funcs: Map<String, UFunc>,
   private val observers: Map<UFuncApp, FuncAppObserver>
 ) : Exec, Funcs by FuncsImpl(funcs) {
-  private val consistent = mutableMapOf<UFuncApp, UExecRes>()
+  private val visited = mutableMapOf<UFuncApp, UExecRes>()
 
+
+  fun <I : In, O : Out> requireTopDownInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecInfo<I, O> {
+    try {
+      logger.requireTopDownInitialStart(app)
+      val info = require(app, cancel)
+      logger.requireTopDownInitialEnd(app, info)
+      return info
+    } finally {
+      store.sync()
+    }
+  }
 
   /**
    * Require the result of an observable function application in a top-down manner.
@@ -152,7 +164,9 @@ open class ObservingExec(
     }
     for(app in affected) {
       // TODO: give proper execution reason
-      requireBottomUp(app, InvalidatedExecReason(), cancel)
+      logger.requireBottomUpInitialStart(app)
+      val info = requireBottomUp(app, InvalidatedExecReason(), cancel)
+      logger.requireBottomUpInitialEnd(app, info)
     }
   }
 
@@ -163,63 +177,116 @@ open class ObservingExec(
   internal open fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
     cancel.throwIfCancelled()
 
-    // Return result if it was already deemed consistent this execution.
-    val consistentResult = consistent[app]?.cast<I, O>()
-    if(consistentResult != null) {
-      return ExecInfo(consistentResult)
-    }
+    try {
+      layer.requireTopDownStart(app)
+      logger.requireTopDownStart(app)
 
-    // TODO: set function application as observed
-
-    // Consult cache or store for result of function application, or re-execute if not found
-    val existingResult = (cache[app] ?: store.readTxn().use { it.resultOf(app) })?.cast<I, O>()
-      ?: return exec(app, NoResultReason(), cancel, true)
-
-    // Check for inconsistencies and re-execute when found.
-    // Internal consistency: output consistency
-    run {
-      val inconsistencyReason = existingResult.internalInconsistencyReason
-      if(inconsistencyReason != null) {
-        return exec(app, inconsistencyReason, cancel)
+      // Return result immediately if function application was already visited this execution.
+      logger.checkVisitedStart(app)
+      val visitedResult = visited[app]?.cast<I, O>()
+      if(visitedResult != null) {
+        // Existing result is known to be consistent this execution: reuse
+        logger.checkVisitedEnd(app, visitedResult)
+        val info = ExecInfo(visitedResult)
+        logger.requireTopDownEnd(app, info)
+        return info
       }
+      logger.checkVisitedEnd(app, null)
+
+      // TODO: set function application as observed
+
+      // Check cache for result of function application.
+      logger.checkCachedStart(app)
+      val cachedResult = cache[app]
+      logger.checkCachedEnd(app, cachedResult)
+
+      // Check store for result of function application.
+      val existingResult = if(cachedResult != null) {
+        cachedResult
+      } else {
+        logger.checkStoredStart(app)
+        val result = store.readTxn().use { it.resultOf(app) }
+        logger.checkStoredEnd(app, result)
+        result
+      }?.cast<I, O>()
+
+      // Check if re-execution is necessary.
+      if(existingResult == null) {
+        // No cached or stored result was found: rebuild
+        val info = exec(app, NoResultReason(), cancel, true)
+        logger.requireTopDownEnd(app, info)
+        return info
+      }
+
+      // Check for inconsistencies and re-execute when found.
+      // Internal consistency: output consistency
+      run {
+        val inconsistencyReason = existingResult.internalInconsistencyReason
+        if(inconsistencyReason != null) {
+          return exec(app, inconsistencyReason, cancel)
+        }
+      }
+
+      // TODO: internal consistency: dirty flagged.
+
+      // No inconsistencies found
+      // Validate well-formedness of the dependency graph
+      store.readTxn().use { layer.validate(app, existingResult, this, it) }
+      // Cache and mark as visited
+      cache[app] = existingResult
+      visited[app] = existingResult
+      // Notify observer, if any.
+      val observer = observers[app]
+      if(observer != null) {
+        val output = existingResult.output;
+        logger.invokeObserverStart(observer, app, output)
+        observer.invoke(output)
+        logger.invokeObserverEnd(observer, app, output)
+      }
+      // Reuse existing result
+      val info = ExecInfo(existingResult)
+      logger.requireTopDownEnd(app, info)
+      return info
+    } finally {
+      layer.requireTopDownEnd(app)
     }
-
-    // TODO: internal consistency: dirty flagged.
-
-    // No inconsistencies found
-    // Validate well-formedness of the dependency graph
-    store.readTxn().use { layer.validate(app, existingResult, this, it) }
-    // Cache
-    cache[app] = existingResult
-    // Notify observer, if any.
-    observers[app]?.invoke(existingResult.output)
-    // Reuse existing result
-    return ExecInfo(existingResult)
   }
 
   /**
    * Require the result of a new observable function application in a bottom-up manner.
    */
-  internal open fun <I : In, O : Out> requireBottomUp(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled) {
+  internal open fun <I : In, O : Out> requireBottomUp(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled): ExecInfo<I, O>? {
     cancel.throwIfCancelled()
 
-    // Stop if function application was already deemed consistent this execution.
-    if(consistent.contains(app)) {
-      return
-    }
+    try {
+      //layer.requireTopDownStart(app)
+      logger.requireBottomUpStart(app)
 
-    // TODO: if function application is not observed, mark as dirty and stop.
+      // UNDONE: does not work, skips too many executions.
+      // Stop if function application was already visited this execution.
+      //    if(visited.contains(app)) {
+      //      return
+      //    }
 
-    // Re-execute.
-    val res = exec(app, reason, cancel).result
+      // TODO: if function application is not observed, mark as dirty and stop.
 
-    // Require all inconsistent callers of the current function application in a bottom-up manner.
-    val inconsistentCallers = store.readTxn().use { txn ->
-      txn.callersOf(app).filterNot { callIsConsistent(it, app, res, txn) }
-    }
-    for(inconsistentCaller in inconsistentCallers) {
-      // TODO: give proper execution reason
-      requireBottomUp(inconsistentCaller, InvalidatedExecReason(), cancel)
+      // Re-execute.
+      val res = exec(app, reason, cancel).result
+
+      // Require all inconsistent callers of the current function application in a bottom-up manner.
+      val inconsistentCallers = store.readTxn().use { txn ->
+        txn.callersOf(app).filterNot { callIsConsistent(it, app, res, txn) }
+      }
+      for(inconsistentCaller in inconsistentCallers) {
+        // TODO: give proper execution reason
+        requireBottomUp(inconsistentCaller, InvalidatedExecReason(), cancel)
+      }
+
+      val info = ExecInfo(res)
+      logger.requireBottomUpEnd(app, info)
+      return info
+    } finally {
+      //layer.requireTopDownEnd(app)
     }
   }
 
@@ -326,13 +393,18 @@ open class ObservingExec(
         context.writePathDepsToStore(txn)
       }
 
-      // Mark consistent and cached.
-      consistent[app] = result
+      // Cache and mark as visisted
       cache[app] = result
+      visited[app] = result
       // TODO: mark observed, not-dirty
 
       // Notify observer, if any.
-      observers[app]?.invoke(output)
+      val observer = observers[app]
+      if(observer != null) {
+        logger.invokeObserverStart(observer, app, output)
+        observer.invoke(output)
+        logger.invokeObserverEnd(observer, app, output)
+      }
 
       return result
     } catch(e: InterruptedException) {

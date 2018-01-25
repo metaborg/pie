@@ -28,7 +28,7 @@ class ValidationLayer @Inject constructor(logger: Logger) : Layer {
   private val stack = mutableSetOf<UFuncApp>()
 
 
-  override fun <I : In, O : Out> requireStart(app: FuncApp<I, O>) {
+  override fun <I : In, O : Out> requireTopDownStart(app: FuncApp<I, O>) {
     if(stack.contains(app)) {
       error("""Cyclic dependency. Cause:
         |requirement of
@@ -44,7 +44,7 @@ class ValidationLayer @Inject constructor(logger: Logger) : Layer {
     }
   }
 
-  override fun <I : In, O : Out> requireEnd(app: FuncApp<I, O>) {
+  override fun <I : In, O : Out> requireTopDownEnd(app: FuncApp<I, O>) {
     stack.remove(app)
   }
 

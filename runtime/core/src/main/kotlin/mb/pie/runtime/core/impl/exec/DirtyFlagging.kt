@@ -222,20 +222,20 @@ open class PushingExec(
     cancel.throwIfCancelled()
 
     try {
-      layer.requireStart(app)
-      logger.requireStart(app)
+      layer.requireTopDownStart(app)
+      logger.requireTopDownStart(app)
 
       // Check if function application is already consistent this execution.
-      logger.checkConsistentStart(app)
+      logger.checkVisitedStart(app)
       val consistentResult = consistent[app]?.cast<I, O>()
       if(consistentResult != null) {
         // Existing result is known to be consistent this build: reuse
-        logger.checkConsistentEnd(app, consistentResult)
+        logger.checkVisitedEnd(app, consistentResult)
         val info = ExecInfo(consistentResult)
-        logger.requireEnd(app, info)
+        logger.requireTopDownEnd(app, info)
         return info
       }
-      logger.checkConsistentEnd(app, null)
+      logger.checkVisitedEnd(app, null)
 
       // Check cache for result of build application.
       logger.checkCachedStart(app)
@@ -257,7 +257,7 @@ open class PushingExec(
       if(existingResult == null) {
         // No cached or stored result was found: rebuild
         val info = exec(app, NoResultReason(), cancel, true)
-        logger.requireEnd(app, info)
+        logger.requireTopDownEnd(app, info)
         return info
       }
 
@@ -266,7 +266,7 @@ open class PushingExec(
         val reason = existingResult.internalInconsistencyReason
         if(reason != null) {
           val info = exec(app, reason, cancel)
-          logger.requireEnd(app, info)
+          logger.requireTopDownEnd(app, info)
           return info
         }
       }
@@ -274,7 +274,7 @@ open class PushingExec(
       // Internal consistency: dirty flagged.
       if(store.readTxn().use { it.isDirty(app) }) {
         val info = exec(app, DirtyFlaggedReason(), cancel)
-        logger.requireEnd(app, info)
+        logger.requireTopDownEnd(app, info)
         return info
       }
 
@@ -288,7 +288,7 @@ open class PushingExec(
           val reason = InconsistentGenPath(existingResult, gen, newStamp)
           logger.checkGenEnd(app, gen, reason)
           val info = exec(app, reason, cancel)
-          logger.requireEnd(app, info)
+          logger.requireTopDownEnd(app, info)
           return info
         } else {
           logger.checkGenEnd(app, gen, null)
@@ -301,7 +301,7 @@ open class PushingExec(
         val inconsistencyReason = req.makeConsistent(app, existingResult, this, cancel, logger)
         if(inconsistencyReason != null) {
           val info = exec(app, inconsistencyReason, cancel)
-          logger.requireEnd(app, info)
+          logger.requireTopDownEnd(app, info)
           return info
         }
       }
@@ -322,10 +322,10 @@ open class PushingExec(
       cache[app] = existingResult
       // Reuse existing result
       val info = ExecInfo(existingResult)
-      logger.requireEnd(app, info)
+      logger.requireTopDownEnd(app, info)
       return info
     } finally {
-      layer.requireEnd(app)
+      layer.requireTopDownEnd(app)
     }
   }
 

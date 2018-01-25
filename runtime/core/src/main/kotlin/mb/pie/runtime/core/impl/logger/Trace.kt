@@ -11,30 +11,47 @@ class TraceLogger : Logger {
   val traces = mutableListOf<Trace>()
 
 
-  override fun requireInitialStart(app: UFuncApp) {
-    traces.add(RequireInitialStart(app, currentTime))
+  override fun requireTopDownInitialStart(app: UFuncApp) {
+    traces.add(RequireTopDownInitialStart(app, currentTime))
   }
 
-  override fun requireInitialEnd(app: UFuncApp, info: UExecInfo) {
-    traces.add(RequireInitialEnd(app, info, currentTime))
-  }
-
-
-  override fun requireStart(app: UFuncApp) {
-    traces.add(RequireStart(app, currentTime))
-  }
-
-  override fun requireEnd(app: UFuncApp, info: UExecInfo) {
-    traces.add(RequireEnd(app, info, currentTime))
+  override fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo) {
+    traces.add(RequireTopDownInitialEnd(app, info, currentTime))
   }
 
 
-  override fun checkConsistentStart(app: UFuncApp) {
-    traces.add(CheckConsistentStart(app, currentTime))
+  override fun requireTopDownStart(app: UFuncApp) {
+    traces.add(RequireTopDownStart(app, currentTime))
   }
 
-  override fun checkConsistentEnd(app: UFuncApp, result: UExecRes?) {
-    traces.add(CheckConsistentEnd(app, result, currentTime))
+  override fun requireTopDownEnd(app: UFuncApp, info: UExecInfo) {
+    traces.add(RequireTopDownEnd(app, info, currentTime))
+  }
+
+
+  override fun requireBottomUpInitialStart(app: UFuncApp) {
+    traces.add(RequireBottomUpInitialStart(app, currentTime))
+  }
+
+  override fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?) {
+    traces.add(RequireBottomUpInitialEnd(app, info, currentTime))
+  }
+
+  override fun requireBottomUpStart(app: UFuncApp) {
+    traces.add(RequireBottomUpStart(app, currentTime))
+  }
+
+  override fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?) {
+    traces.add(RequireBottomUpEnd(app, info, currentTime))
+  }
+
+
+  override fun checkVisitedStart(app: UFuncApp) {
+    traces.add(CheckVisitedStart(app, currentTime))
+  }
+
+  override fun checkVisitedEnd(app: UFuncApp, result: UExecRes?) {
+    traces.add(CheckVisitedEnd(app, result, currentTime))
   }
 
 
@@ -92,18 +109,31 @@ class TraceLogger : Logger {
   override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {
     traces.add(RebuildEnd(app, reason, result, currentTime))
   }
+
+
+  override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {
+    traces.add(InvokeObserverStart(observer, app, output, currentTime))
+  }
+
+  override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {
+    traces.add(InvokeObserverEnd(observer, app, output, currentTime))
+  }
 }
 
 interface Trace {
   val time: Long
 }
 
-data class RequireInitialStart(val app: UFuncApp, override val time: Long) : Trace
-data class RequireInitialEnd(val app: UFuncApp, val info: UExecInfo, override val time: Long) : Trace
-data class RequireStart(val app: UFuncApp, override val time: Long) : Trace
-data class RequireEnd(val app: UFuncApp, val info: UExecInfo, override val time: Long) : Trace
-data class CheckConsistentStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckConsistentEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
+data class RequireTopDownInitialStart(val app: UFuncApp, override val time: Long) : Trace
+data class RequireTopDownInitialEnd(val app: UFuncApp, val info: UExecInfo, override val time: Long) : Trace
+data class RequireTopDownStart(val app: UFuncApp, override val time: Long) : Trace
+data class RequireTopDownEnd(val app: UFuncApp, val info: UExecInfo, override val time: Long) : Trace
+data class RequireBottomUpInitialStart(val app: UFuncApp, override val time: Long) : Trace
+data class RequireBottomUpInitialEnd(val app: UFuncApp, val info: UExecInfo?, override val time: Long) : Trace
+data class RequireBottomUpStart(val app: UFuncApp, override val time: Long) : Trace
+data class RequireBottomUpEnd(val app: UFuncApp, val info: UExecInfo?, override val time: Long) : Trace
+data class CheckVisitedStart(val app: UFuncApp, override val time: Long) : Trace
+data class CheckVisitedEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
 data class CheckCachedStart(val app: UFuncApp, override val time: Long) : Trace
 data class CheckCachedEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
 data class CheckStoredStart(val app: UFuncApp, override val time: Long) : Trace
@@ -116,3 +146,5 @@ data class CheckBuildReqStart(val app: UFuncApp, val req: UCallReq, override val
 data class CheckBuildReqEnd(val app: UFuncApp, val req: UCallReq, val reason: ExecReason?, override val time: Long) : Trace
 data class RebuildStart(val app: UFuncApp, val reason: ExecReason, override val time: Long) : Trace
 data class RebuildEnd(val app: UFuncApp, val reason: ExecReason, val result: UExecRes, override val time: Long) : Trace
+data class InvokeObserverStart(val observer: Function<Unit>, val app: UFuncApp, val output: Out, override val time: Long) : Trace
+data class InvokeObserverEnd(val observer: Function<Unit>, val app: UFuncApp, val output: Out, override val time: Long) : Trace

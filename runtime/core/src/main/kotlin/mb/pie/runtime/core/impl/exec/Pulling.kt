@@ -40,14 +40,14 @@ open class PullingExecImpl(
   private val logger: Logger,
   private val funcs: Map<String, UFunc>
 ) : PullingExec, Exec, Funcs by FuncsImpl(funcs) {
-  private val consistent = mutableMapOf<UFuncApp, UExecRes>()
+  private val visited = mutableMapOf<UFuncApp, UExecRes>()
 
 
   fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecInfo<I, O> {
     try {
-      logger.requireInitialStart(app)
+      logger.requireTopDownInitialStart(app)
       val info = require(app, cancel)
-      logger.requireInitialEnd(app, info)
+      logger.requireTopDownInitialEnd(app, info)
       return info
     } finally {
       store.sync()
@@ -58,20 +58,20 @@ open class PullingExecImpl(
     cancel.throwIfCancelled()
 
     try {
-      layer.requireStart(app)
-      logger.requireStart(app)
+      layer.requireTopDownStart(app)
+      logger.requireTopDownStart(app)
 
-      // Check if builder application is already consistent this execution.
-      logger.checkConsistentStart(app)
-      val consistentResult = consistent[app]?.cast<I, O>()
-      if(consistentResult != null) {
+      // Return result immediately if function application was already visited this execution.
+      logger.checkVisitedStart(app)
+      val visitedResult = visited[app]?.cast<I, O>()
+      if(visitedResult != null) {
         // Existing result is known to be consistent this execution: reuse
-        logger.checkConsistentEnd(app, consistentResult)
-        val info = ExecInfo(consistentResult)
-        logger.requireEnd(app, info)
+        logger.checkVisitedEnd(app, visitedResult)
+        val info = ExecInfo(visitedResult)
+        logger.requireTopDownEnd(app, info)
         return info
       }
-      logger.checkConsistentEnd(app, null)
+      logger.checkVisitedEnd(app, null)
 
       // Check cache for result of function application.
       logger.checkCachedStart(app)
@@ -79,21 +79,20 @@ open class PullingExecImpl(
       logger.checkCachedEnd(app, cachedResult)
 
       // Check store for result of function application.
-      val existingUntypedResult = if(cachedResult != null) {
+      val existingResult = if(cachedResult != null) {
         cachedResult
       } else {
         logger.checkStoredStart(app)
         val result = store.readTxn().use { it.resultOf(app) }
         logger.checkStoredEnd(app, result)
         result
-      }
+      }?.cast<I, O>()
 
       // Check if re-execution is necessary.
-      val existingResult = existingUntypedResult?.cast<I, O>()
       if(existingResult == null) {
         // No cached or stored result was found: rebuild
         val info = exec(app, NoResultReason(), cancel, true)
-        logger.requireEnd(app, info)
+        logger.requireTopDownEnd(app, info)
         return info
       }
 
@@ -103,7 +102,7 @@ open class PullingExecImpl(
         val inconsistencyReason = existingResult.internalInconsistencyReason
         if(inconsistencyReason != null) {
           val info = exec(app, inconsistencyReason, cancel)
-          logger.requireEnd(app, info)
+          logger.requireTopDownEnd(app, info)
           return info
         }
       }
@@ -118,7 +117,7 @@ open class PullingExecImpl(
           val reason = InconsistentGenPath(existingResult, gen, newStamp)
           logger.checkGenEnd(app, gen, reason)
           val info = exec(app, reason, cancel)
-          logger.requireEnd(app, info)
+          logger.requireTopDownEnd(app, info)
           return info
         } else {
           logger.checkGenEnd(app, gen, null)
@@ -130,7 +129,7 @@ open class PullingExecImpl(
         val inconsistencyReason = req.makeConsistent(app, existingResult, this, cancel, logger)
         if(inconsistencyReason != null) {
           val info = exec(app, inconsistencyReason, cancel)
-          logger.requireEnd(app, info)
+          logger.requireTopDownEnd(app, info)
           return info
         }
       }
@@ -139,14 +138,14 @@ open class PullingExecImpl(
       // Validate well-formedness of the dependency graph
       store.readTxn().use { layer.validate(app, existingResult, this, it) }
       // Cache the result
-      consistent[app] = existingResult
+      visited[app] = existingResult
       cache[app] = existingResult
       // Reuse existing result
       val info = ExecInfo(existingResult)
-      logger.requireEnd(app, info)
+      logger.requireTopDownEnd(app, info)
       return info
     } finally {
-      layer.requireEnd(app)
+      layer.requireTopDownEnd(app)
     }
   }
 
@@ -185,7 +184,7 @@ open class PullingExecImpl(
         context.writePathDepsToStore(it)
       }
       // Cache result
-      consistent[app] = result
+      visited[app] = result
       cache[app] = result
 
       return result

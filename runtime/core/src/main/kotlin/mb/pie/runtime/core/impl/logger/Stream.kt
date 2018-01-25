@@ -13,51 +13,47 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   private val indent get() = " ".repeat(indentation.get())
 
 
-  override fun requireInitialStart(app: UFuncApp) {}
+  override fun requireTopDownInitialStart(app: UFuncApp) {}
+  override fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo) {}
 
-  override fun requireInitialEnd(app: UFuncApp, info: UExecInfo) {}
-
-  override fun requireStart(app: UFuncApp) {
+  override fun requireTopDownStart(app: UFuncApp) {
     traceWriter?.println("$indent? ${app.toShortString(descLimit)}")
     indentation.incrementAndGet()
   }
 
-  override fun requireEnd(app: UFuncApp, info: UExecInfo) {
+  override fun requireTopDownEnd(app: UFuncApp, info: UExecInfo) {
     indentation.decrementAndGet()
     traceWriter?.println("$indent✔ ${app.toShortString(descLimit)}")
   }
 
 
-  override fun checkConsistentStart(app: UFuncApp) {
+  override fun requireBottomUpInitialStart(app: UFuncApp) {}
+  override fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?) {}
 
+  override fun requireBottomUpStart(app: UFuncApp) {
+    traceWriter?.println("$indent? ${app.toShortString(descLimit)}")
+    indentation.incrementAndGet()
   }
 
-  override fun checkConsistentEnd(app: UFuncApp, result: UExecRes?) {
-
-  }
-
-
-  override fun checkCachedStart(app: UFuncApp) {
-
-  }
-
-  override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {
-
+  override fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?) {
+    indentation.decrementAndGet()
+    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)}")
   }
 
 
-  override fun checkStoredStart(app: UFuncApp) {
-
-  }
-
-  override fun checkStoredEnd(app: UFuncApp, result: UExecRes?) {
-
-  }
+  override fun checkVisitedStart(app: UFuncApp) {}
+  override fun checkVisitedEnd(app: UFuncApp, result: UExecRes?) {}
 
 
-  override fun checkGenStart(app: UFuncApp, gen: Gen) {
+  override fun checkCachedStart(app: UFuncApp) {}
+  override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {}
 
-  }
+
+  override fun checkStoredStart(app: UFuncApp) {}
+  override fun checkStoredEnd(app: UFuncApp, result: UExecRes?) {}
+
+
+  override fun checkGenStart(app: UFuncApp, gen: Gen) {}
 
   override fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?) {
     if(reason != null) {
@@ -68,9 +64,7 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   }
 
 
-  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {
-
-  }
+  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {}
 
   override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {
     if(reason != null) {
@@ -81,9 +75,7 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   }
 
 
-  override fun checkBuildReqStart(app: UFuncApp, req: UCallReq) {
-
-  }
+  override fun checkBuildReqStart(app: UFuncApp, req: UCallReq) {}
 
   override fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?) {
     when(reason) {
@@ -104,4 +96,11 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {
     infoWriter.println("$indent< ${result.toShortString(descLimit)}")
   }
+
+
+  override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {
+    infoWriter.println("$indent@ ${observer.toString().toShortString(50)}(${output.toString().toShortString(200)})")
+  }
+
+  override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {}
 }

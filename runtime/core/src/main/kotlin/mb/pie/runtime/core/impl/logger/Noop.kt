@@ -4,12 +4,16 @@ import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 
 class NoopLogger : Logger {
-  override fun requireInitialStart(app: UFuncApp) {}
-  override fun requireInitialEnd(app: UFuncApp, info: UExecInfo) {}
-  override fun requireStart(app: UFuncApp) {}
-  override fun requireEnd(app: UFuncApp, info: UExecInfo) {}
-  override fun checkConsistentStart(app: UFuncApp) {}
-  override fun checkConsistentEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun requireTopDownInitialStart(app: UFuncApp) {}
+  override fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo) {}
+  override fun requireTopDownStart(app: UFuncApp) {}
+  override fun requireTopDownEnd(app: UFuncApp, info: UExecInfo) {}
+  override fun requireBottomUpInitialStart(app: UFuncApp) {}
+  override fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?) {}
+  override fun requireBottomUpStart(app: UFuncApp) {}
+  override fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?) {}
+  override fun checkVisitedStart(app: UFuncApp) {}
+  override fun checkVisitedEnd(app: UFuncApp, result: UExecRes?) {}
   override fun checkCachedStart(app: UFuncApp) {}
   override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {}
   override fun checkStoredStart(app: UFuncApp) {}
@@ -22,4 +26,6 @@ class NoopLogger : Logger {
   override fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?) {}
   override fun rebuildStart(app: UFuncApp, reason: ExecReason) {}
   override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {}
+  override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {}
+  override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {}
 }
