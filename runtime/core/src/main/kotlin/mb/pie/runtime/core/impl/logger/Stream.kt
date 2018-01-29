@@ -17,13 +17,13 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   override fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo) {}
 
   override fun requireTopDownStart(app: UFuncApp) {
-    traceWriter?.println("$indent? ${app.toShortString(descLimit)}")
+    traceWriter?.println("${indent}v ${app.toShortString(descLimit)}")
     indentation.incrementAndGet()
   }
 
   override fun requireTopDownEnd(app: UFuncApp, info: UExecInfo) {
     indentation.decrementAndGet()
-    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)}")
+    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)} -> ${info.result.toShortString(descLimit)}")
   }
 
 
@@ -31,13 +31,13 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   override fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?) {}
 
   override fun requireBottomUpStart(app: UFuncApp) {
-    traceWriter?.println("$indent? ${app.toShortString(descLimit)}")
+    traceWriter?.println("$indent^ ${app.toShortString(descLimit)}")
     indentation.incrementAndGet()
   }
 
   override fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?) {
     indentation.decrementAndGet()
-    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)}")
+    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)} -> ${info?.result?.toShortString(descLimit)}")
   }
 
 
@@ -103,4 +103,21 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   }
 
   override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {}
+
+
+  override fun error(message: String) {
+    infoWriter.println("$indent$message")
+  }
+
+  override fun warn(message: String) {
+    infoWriter.println("$indent$message")
+  }
+
+  override fun info(message: String) {
+    infoWriter.println("$indent$message")
+  }
+
+  override fun trace(message: String) {
+    traceWriter?.println("$indent$message")
+  }
 }

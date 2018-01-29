@@ -30,6 +30,10 @@ data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChec
     logger.checkPathReqEnd(requiree, this, reason)
     return reason
   }
+
+  override fun toString(): String {
+    return "PathReq($path, $stamp)";
+  }
 }
 
 data class CallReq<out AI : In, out AO : Out>(val callee: FuncApp<AI, AO>, val stamp: OutputStamp) : Req {
@@ -57,7 +61,10 @@ data class CallReq<out AI : In, out AO : Out>(val callee: FuncApp<AI, AO>, val s
   /**
    * @return `true` when this call requirement is consistent w.r.t. [calleeRes], `false` otherwise.
    */
-  fun isConsistent(calleeRes: UExecRes) = stamp.stamper.stamp(calleeRes.output) == stamp
+  fun isConsistent(calleeRes: UExecRes): Boolean {
+    val newStamp = stamp.stamper.stamp(calleeRes.output)
+    return newStamp == stamp
+  }
 
   /**
    * @return `true` when this call requirement's callee is equal to [other], or when it overlaps with a call to [other], `false` otherwise.
@@ -74,6 +81,10 @@ data class CallReq<out AI : In, out AO : Out>(val callee: FuncApp<AI, AO>, val s
         }
       }
     }
+  }
+
+  override fun toString(): String {
+    return "CallReq(${callee.toShortString(100)}, $stamp)";
   }
 }
 

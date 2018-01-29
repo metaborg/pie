@@ -41,6 +41,11 @@ interface Logger {
 
   fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out)
   fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out)
+
+  fun error(message: String)
+  fun warn(message: String)
+  fun info(message: String)
+  fun trace(message: String)
 }
 
 

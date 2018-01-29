@@ -51,6 +51,10 @@ data class ModifiedPathStamper(private val matcher: PathMatcher? = null) : Modif
     val modified = modified(path, matcher)
     return ValuePathStamp(modified, this)
   }
+
+  override fun toString(): String {
+    return "Modified($matcher)"
+  }
 }
 
 data class RecModifiedPathStamper(private val walker: PathWalker? = null) : ModifiedPathStamperTrait {
@@ -60,5 +64,9 @@ data class RecModifiedPathStamper(private val walker: PathWalker? = null) : Modi
     }
     val modified = modifiedRec(path, walker)
     return ValuePathStamp(modified, this)
+  }
+
+  override fun toString(): String {
+    return "RecModified($walker)"
   }
 }

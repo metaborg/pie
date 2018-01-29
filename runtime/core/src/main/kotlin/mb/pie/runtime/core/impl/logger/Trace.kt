@@ -118,6 +118,12 @@ class TraceLogger : Logger {
   override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {
     traces.add(InvokeObserverEnd(observer, app, output, currentTime))
   }
+
+
+  override fun error(message: String) {}
+  override fun warn(message: String) {}
+  override fun info(message: String) {}
+  override fun trace(message: String) {}
 }
 
 interface Trace {

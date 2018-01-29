@@ -51,6 +51,10 @@ data class HashPathStamper(private val matcher: PathMatcher? = null) : HashPathS
     val bytes = digest.digest()
     return ByteArrayPathStamp(bytes, this)
   }
+
+  override fun toString(): String {
+    return "Hash($matcher)"
+  }
 }
 
 data class RecHashPathStamper(private val walker: PathWalker? = null) : HashPathStamperTrait {
@@ -62,5 +66,9 @@ data class RecHashPathStamper(private val walker: PathWalker? = null) : HashPath
     digest.updateRec(path, walker)
     val bytes = digest.digest()
     return ByteArrayPathStamp(bytes, this)
+  }
+
+  override fun toString(): String {
+    return "RecHash($walker)"
   }
 }

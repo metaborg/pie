@@ -19,6 +19,10 @@ class EqualsOutputStamper : OutputStamper {
   override fun hashCode(): Int {
     return 0
   }
+
+  override fun toString(): String {
+    return "Equals"
+  }
 }
 
 class InconsequentialOutputStamper : OutputStamper {
@@ -39,6 +43,10 @@ class InconsequentialOutputStamper : OutputStamper {
 
   override fun hashCode(): Int {
     return 0
+  }
+
+  override fun toString(): String {
+    return "Inconsequential";
   }
 }
 
@@ -70,5 +78,9 @@ data class ValueOutputStamp<out V : Out>(val value: V, override val stamper: Out
     }
     result = 31 * result + stamper.hashCode()
     return result
+  }
+
+  override fun toString(): String {
+    return "$stamper(${value.toString().toShortString(100)})"
   }
 }

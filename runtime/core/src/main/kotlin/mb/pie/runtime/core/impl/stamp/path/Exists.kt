@@ -19,4 +19,8 @@ class ExistsPathStamper : PathStamper {
   override fun hashCode(): Int {
     return 0
   }
+
+  override fun toString(): String {
+    return "Exists"
+  }
 }

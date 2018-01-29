@@ -28,4 +28,8 @@ class NoopLogger : Logger {
   override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {}
   override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {}
   override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {}
+  override fun error(message: String) {}
+  override fun warn(message: String) {}
+  override fun info(message: String) {}
+  override fun trace(message: String) {}
 }
