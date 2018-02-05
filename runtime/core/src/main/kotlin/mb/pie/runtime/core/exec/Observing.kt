@@ -7,7 +7,11 @@ import java.io.Serializable
 
 
 interface ObservingExecutorFactory {
-  fun create(store: Store, cache: Cache): ObservingExecutor
+  fun create(store: Store, cache: Cache, executionVariant: ExecutionVariant): ObservingExecutor
+}
+
+enum class ExecutionVariant {
+  Naive, DirtyFlagging, TopologicalSort
 }
 
 // TODO: replace [Serializable]? by [Out], when IntelliJ bug is fixed.

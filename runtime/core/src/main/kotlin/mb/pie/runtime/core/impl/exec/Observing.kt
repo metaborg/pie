@@ -4,8 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.exec.FuncAppObserver
-import mb.pie.runtime.core.exec.ObservingExecutor
+import mb.pie.runtime.core.exec.*
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.util.async.NullCancelled
@@ -17,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ObservingExecutorImpl @Inject constructor(
   @Assisted private val store: Store,
   @Assisted private val cache: Cache,
+  @Assisted private val executionVariant: ExecutionVariant,
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
@@ -27,9 +27,10 @@ class ObservingExecutorImpl @Inject constructor(
 
   private val keyToApp = ConcurrentHashMap<Any, UFuncApp>()
   private val appToObs = ConcurrentHashMap<UFuncApp, FuncAppObserver>()
-//  private val observed = ConcurrentHashMap.newKeySet<UFuncApp>()
+  //  private val observed = ConcurrentHashMap.newKeySet<UFuncApp>()
 //  private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
 //  private val lock = ReentrantReadWriteLock()
+  private val dirty = DirtyState()
 
 
   override fun setObserver(key: Any, app: UFuncApp, observer: FuncAppObserver) {
@@ -73,11 +74,11 @@ class ObservingExecutorImpl @Inject constructor(
   @Throws(ExecException::class, InterruptedException::class)
   override fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled) {
     val exec = exec()
-    exec.pathsChanged(changedPaths, cancel)
+    exec.requireBottomUpInitial(changedPaths, cancel)
   }
 
   override fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean {
-    return (cache[app] ?: store.readTxn().use { it.resultOf(app) }) != null;
+    return (cache[app] ?: store.readTxn().use { it.resultOf(app) }) != null
   }
 
 
@@ -87,7 +88,7 @@ class ObservingExecutorImpl @Inject constructor(
 
 
   fun exec(): ObservingExec {
-    return ObservingExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs)
+    return ObservingExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs, executionVariant, dirty)
   }
 
 
@@ -101,6 +102,23 @@ class ObservingExecutorImpl @Inject constructor(
   }
 }
 
+class DirtyState {
+  private val dirty: MutableMap<UFuncApp, Int> = mutableMapOf()
+  private var roundMarker: Int = 0
+
+
+  fun nextRound() = ++roundMarker
+
+  fun isDirty(app: UFuncApp): Boolean {
+    val mark = dirty[app] ?: return false
+    return mark >= roundMarker
+  }
+
+  fun setDirty(app: UFuncApp) {
+    dirty[app] = roundMarker
+  }
+}
+
 open class ObservingExec(
   private val store: Store,
   private val cache: Cache,
@@ -108,11 +126,16 @@ open class ObservingExec(
   private val layer: Layer,
   private val logger: Logger,
   private val funcs: Map<String, UFunc>,
-  private val observers: Map<UFuncApp, FuncAppObserver>
+  private val observers: Map<UFuncApp, FuncAppObserver>,
+  private val executionVariant: ExecutionVariant,
+  private val dirty: DirtyState
 ) : Exec, Funcs by FuncsImpl(funcs) {
   private val visited = mutableMapOf<UFuncApp, UExecRes>()
 
 
+  /**
+   * Require the result of an observable function application in a top-down manner.
+   */
   fun <I : In, O : Out> requireTopDownInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecInfo<I, O> {
     try {
       logger.requireTopDownInitialStart(app)
@@ -125,16 +148,9 @@ open class ObservingExec(
   }
 
   /**
-   * Require the result of an observable function application in a top-down manner.
-   */
-  override fun <I : In, O : Out> require(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
-    return requireTopDown(app, cancel)
-  }
-
-  /**
    * Execute function applications affected by a changed path in a bottom-up manner.
    */
-  fun pathsChanged(changedPaths: List<PPath>, cancel: Cancelled) {
+  fun requireBottomUpInitial(changedPaths: List<PPath>, cancel: Cancelled) {
     if(changedPaths.isEmpty()) return
 
     // Find all function applications that are affected by changed paths.
@@ -160,13 +176,48 @@ open class ObservingExec(
           }
         }
       }
+
+      if(executionVariant == ExecutionVariant.DirtyFlagging) {
+        // Set affected to dirty
+        logger.trace("Dirty flagging")
+        for(app in affected) {
+          logger.trace("* dirty: ${app.toShortString(200)}")
+          dirty.setDirty(app)
+        }
+
+        // Propagate dirty flags
+        logger.trace("Dirty flag propagation")
+        val todo = ArrayDeque(affected)
+        val seen = HashSet<UFuncApp>()
+        while(!todo.isEmpty()) {
+          val app = todo.pop()
+          if(!seen.contains(app)) {
+            logger.trace("* dirty: ${app.toShortString(200)}")
+            // Optimisation: check if app was already dirty flagged. Don't do transitive flagging if so. Be sure to add to seen.
+            dirty.setDirty(app)
+            seen.add(app)
+            val callersOf = txn.callersOf(app)
+            callersOf.forEach { logger.trace("  - called by: ${it.toShortString(200)}") }
+            todo += callersOf
+          }
+        }
+      }
     }
+
     for(app in affected) {
       logger.requireBottomUpInitialStart(app)
       // TODO: give proper execution reason
       val info = requireBottomUp(app, InvalidatedExecReason(), cancel)
       logger.requireBottomUpInitialEnd(app, info)
     }
+  }
+
+
+  /**
+   * Require the result of an observable function application in a top-down manner.
+   */
+  override fun <I : In, O : Out> require(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
+    return requireTopDown(app, cancel)
   }
 
 
@@ -217,10 +268,22 @@ open class ObservingExec(
         return info
       }
 
-      // TODO: internal consistency: dirty flagged.
-
       // Check for inconsistencies and re-execute when found.
+      // Internal consistency: dirty flagged.
+      if(executionVariant == ExecutionVariant.DirtyFlagging) {
+        if(dirty.isDirty(app)) {
+          val info = exec(app, DirtyFlaggedReason(), cancel)
+          logger.requireTopDownEnd(app, info)
+          return info
+        }
+      }
+
       // Internal consistency: output consistency
+      /*
+      Required for transient outputs. When a function application has a transient output, its output cannot be persisted
+      and instead can only be stored in memory. After a restart of the JVM, this memory must be restored by re-executing
+      the function application. This check ensures that this happens.
+      */
       run {
         val inconsistencyReason = existingResult.internalInconsistencyReason
         if(inconsistencyReason != null) {
@@ -229,6 +292,12 @@ open class ObservingExec(
       }
 
       // Internal consistency: generated files
+      /*
+      Required for overlapping generated paths. When two function applications generate the same path, and those
+      function applications overlap (meaning they are allowed to both generate the same path), we must ensure that the
+      path is generated by the correct function application. This check ensures that by triggering re-execution of the
+      function application if one of its generated paths is inconsistent.
+      */
       for(gen in existingResult.gens) {
         val (genPath, stamp) = gen
         logger.checkGenStart(app, gen)
@@ -254,7 +323,7 @@ open class ObservingExec(
       // Notify observer, if any.
       val observer = observers[app]
       if(observer != null) {
-        val output = existingResult.output;
+        val output = existingResult.output
         logger.invokeObserverStart(observer, app, output)
         observer.invoke(output)
         logger.invokeObserverEnd(observer, app, output)
@@ -278,16 +347,32 @@ open class ObservingExec(
       //layer.requireTopDownStart(app)
       logger.requireBottomUpStart(app)
 
-      // UNDONE: does not work, skips too many executions.
-      // Stop if function application was already visited this execution.
-      //    if(visited.contains(app)) {
-      //      return
-      //    }
-
       // TODO: if function application is not observed, mark as dirty and stop.
 
-      // Re-execute.
-      val info = exec(app, reason, cancel)
+      // Execute, or skip execution if possible.
+      val info = when(executionVariant) {
+        ExecutionVariant.Naive -> {
+          // Cannot skip executions in native execution, as it would skip too many executions and be unsound.
+          exec(app, reason, cancel)
+        }
+        ExecutionVariant.DirtyFlagging -> {
+          // Only skip execution when function application is not dirty.
+          if(!dirty.isDirty(app) && visited.contains(app)) {
+            val result = visited[app]!!.cast<I, O>()
+            ExecInfo(result, null)
+          } else {
+            exec(app, reason, cancel)
+          }
+        }
+        ExecutionVariant.TopologicalSort -> {
+          if(visited.contains(app)) {
+            val result = visited[app]!!.cast<I, O>()
+            ExecInfo(result, null)
+          } else {
+            exec(app, reason, cancel)
+          }
+        }
+      }
 
       // Require all inconsistent callers of the current function application in a bottom-up manner.
       logger.trace("finding inconsistent callers of ${app.toShortString(200)}")
@@ -341,6 +426,11 @@ open class ObservingExec(
   internal open fun callIsConsistent(caller: UFuncApp, callee: UFuncApp, calleeRes: UExecRes, txn: StoreReadTxn): Boolean {
     logger.trace("* caller: ${caller.toShortString(200)}")
 
+    if(dirty.isDirty(caller)) {
+      logger.trace("  - dirty: ${caller.toShortString(200)}")
+      return false
+    }
+
     val callerRes =
       cache[caller] ?: txn.resultOf(caller) ?: run {
         // Can occur when an execution is cancelled and its result is not stored. Log and assume that it is not consistent.
@@ -362,7 +452,7 @@ open class ObservingExec(
       return false
     }
 
-    var allConsistent = true;
+    var allConsistent = true
     for(callReq in callReqs) {
       val consistent = callReq.isConsistent(calleeRes)
       if(consistent) {

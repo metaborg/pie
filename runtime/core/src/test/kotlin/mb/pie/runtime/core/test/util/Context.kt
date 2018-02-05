@@ -39,12 +39,12 @@ open class ParametrizedTestCtx(
   }
 
 
-  fun observingExecutor(): ObservingExecutor {
-    return observingExecutor(store, cache, share, layerProvider, loggerProvider, mbLogger)
+  fun observingExecutor(executionVariant: ExecutionVariant): ObservingExecutor {
+    return observingExecutor(store, cache, executionVariant, share, layerProvider, loggerProvider, mbLogger)
   }
 
-  fun observingExec(observers: Map<UFuncApp, FuncAppObserver> = mapOf()): ObservingExec {
-    return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), mbLogger, observers)
+  fun observingExec(executionVariant: ExecutionVariant = ExecutionVariant.Naive, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): ObservingExec {
+    return observingExec(store, cache, executionVariant, share, layerProvider.get(), loggerProvider.get(), observers)
   }
 }
 
@@ -93,12 +93,12 @@ open class TestCtx {
   }
 
 
-  fun observingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>, mbLogger: mb.log.Logger): ObservingExecutorImpl {
-    return ObservingExecutorImpl(store, cache, share, layerProvider, loggerProvider, mbLogger, funcs)
+  fun observingExecutor(store: Store, cache: Cache, executionVariant: ExecutionVariant, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>, mbLogger: mb.log.Logger): ObservingExecutorImpl {
+    return ObservingExecutorImpl(store, cache, executionVariant, share, layerProvider, loggerProvider, mbLogger, funcs)
   }
 
-  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, mbLogger: mb.log.Logger, observers: Map<UFuncApp, FuncAppObserver>): ObservingExec {
-    return ObservingExec(store, cache, share, layer, logger, mbLogger, funcs, observers)
+  fun observingExec(store: Store, cache: Cache, executionVariant: ExecutionVariant, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): ObservingExec {
+    return ObservingExec(store, cache, share, layer, logger, funcs, observers, executionVariant, DirtyState())
   }
 
 
