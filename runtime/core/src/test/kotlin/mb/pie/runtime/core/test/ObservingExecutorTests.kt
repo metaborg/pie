@@ -17,7 +17,7 @@ fun anyC() = safeAny<Cancelled>(NullCancelled())
 
 internal class ObservingExecutorTests {
   @TestFactory
-  fun testTopdownExec() = TestGenerator.generate("testTopdownExec") {
+  fun testTopDownExec() = TestGenerator.generate("testTopDownExec") {
     val input = "CAPITALIZED"
     val func = spy(toLowerCase)
     registerFunc(func)
@@ -43,7 +43,7 @@ internal class ObservingExecutorTests {
   }
 
   @TestFactory
-  fun testExecMultiple() = TestGenerator.generate("testExecMultiple") {
+  fun testTopDownExecMultiple() = TestGenerator.generate("testTopDownExecMultiple") {
     val func = spy(toLowerCase)
     registerFunc(func)
 
@@ -81,7 +81,7 @@ internal class ObservingExecutorTests {
   }
 
   @TestFactory
-  fun testReuse() = TestGenerator.generate("testReuse") {
+  fun testTopDownReuse() = TestGenerator.generate("testTopDownReuse") {
     val func = spy(toLowerCase)
     registerFunc(func)
 
@@ -107,7 +107,7 @@ internal class ObservingExecutorTests {
   }
 
   @TestFactory
-  fun testPathChange() = TestGenerator.generate("testReuse") {
+  fun testPathChange() = TestGenerator.generate("testPathChange") {
     val toLowerCase = spy(toLowerCase)
     registerFunc(toLowerCase)
     val readPath = spy(readPath)
@@ -139,9 +139,9 @@ internal class ObservingExecutorTests {
     val exec2 = spy(observingExec())
     exec2.requireBottomUpInitial(listOf(filePath), NullCancelled())
     inOrder(exec2) {
-      verify(exec2).requireBottomUp(eq(app(readPath, filePath)), anyER(), anyC())
+      verify(exec2).requireBottomUp(eq(app(readPath, filePath)), anyOrNull(), anyOrNull(), anyC())
       verify(exec2).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
-      verify(exec2).requireBottomUp(eq(app(combine, filePath)), anyER(), anyC())
+      verify(exec2).requireBottomUp(eq(app(combine, filePath)), anyOrNull(), anyOrNull(), anyC())
       verify(exec2).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
       verify(exec2).require(eq(app(toLowerCase, newStr)), anyC())
       verify(exec2).exec(eq(app(toLowerCase, newStr)), anyER(), anyC(), any())
@@ -161,10 +161,9 @@ internal class ObservingExecutorTests {
     val exec4 = spy(observingExec())
     exec4.requireBottomUpInitial(listOf(filePath), NullCancelled())
     inOrder(exec4) {
-      verify(exec4).requireBottomUp(eq(app(readPath, filePath)), anyER(), anyC())
+      verify(exec4).requireBottomUp(eq(app(readPath, filePath)), anyOrNull(), anyOrNull(), anyC())
       verify(exec4).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
     }
-    verify(exec4, never()).requireBottomUp(eq(app(combine, filePath)), anyER(), anyC())
     verify(exec4, never()).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
     verify(exec4, never()).require(eq(app(toLowerCase, newStr)), anyC())
     verify(exec4, never()).exec(eq(app(toLowerCase, newStr)), anyER(), anyC(), any())

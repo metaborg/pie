@@ -67,12 +67,14 @@ class ObservingExecutorImpl @Inject constructor(
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O> {
+    dirty.nextRound()
     val exec = exec()
     return exec.requireTopDownInitial(app, cancel)
   }
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled) {
+    dirty.nextRound()
     val exec = exec()
     exec.requireBottomUpInitial(changedPaths, cancel)
   }
@@ -155,7 +157,7 @@ open class ObservingExec(
 
     // Find all function applications that are affected by changed paths.
     val affected = HashSet<UFuncApp>()
-    logger.trace("finding affected function applications for changed paths")
+    logger.trace("Finding affected function applications for changed paths")
     store.readTxn().use { txn ->
       for(changedPath in changedPaths) {
         logger.trace("* changed path: $changedPath")
@@ -206,8 +208,7 @@ open class ObservingExec(
 
     for(app in affected) {
       logger.requireBottomUpInitialStart(app)
-      // TODO: give proper execution reason
-      val info = requireBottomUp(app, InvalidatedExecReason(), cancel)
+      val info = requireBottomUp(app, null, null, cancel)
       logger.requireBottomUpInitialEnd(app, info)
     }
   }
@@ -245,20 +246,8 @@ open class ObservingExec(
 
       // TODO: set function application as observed
 
-      // Check cache for result of function application.
-      logger.checkCachedStart(app)
-      val cachedResult = cache[app]
-      logger.checkCachedEnd(app, cachedResult)
-
-      // Check store for result of function application.
-      val existingResult = if(cachedResult != null) {
-        cachedResult
-      } else {
-        logger.checkStoredStart(app)
-        val result = store.readTxn().use { it.resultOf(app) }
-        logger.checkStoredEnd(app, result)
-        result
-      }?.cast<I, O>()
+      // Get cached or stored result.
+      val existingResult = existingResult(app)
 
       // Check if re-execution is necessary.
       if(existingResult == null) {
@@ -269,8 +258,8 @@ open class ObservingExec(
       }
 
       // Check for inconsistencies and re-execute when found.
-      // Internal consistency: dirty flagged.
       if(executionVariant == ExecutionVariant.DirtyFlagging) {
+        // Internal consistency: dirty flagged.
         if(dirty.isDirty(app)) {
           val info = exec(app, DirtyFlaggedReason(), cancel)
           logger.requireTopDownEnd(app, info)
@@ -340,57 +329,109 @@ open class ObservingExec(
   /**
    * Require the result of a new observable function application in a bottom-up manner.
    */
-  internal open fun <I : In, O : Out> requireBottomUp(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled): ExecInfo<I, O>? {
+  internal open fun <I : In, O : Out> requireBottomUp(caller: FuncApp<I, O>, callee: UFuncApp?, calleeRes: UExecRes?, cancel: Cancelled): ExecInfo<I, O>? {
     cancel.throwIfCancelled()
-
-    try {
-      //layer.requireTopDownStart(app)
-      logger.requireBottomUpStart(app)
-
-      // TODO: if function application is not observed, mark as dirty and stop.
-
-      // Execute, or skip execution if possible.
-      val info = when(executionVariant) {
-        ExecutionVariant.Naive -> {
-          // Cannot skip executions in native execution, as it would skip too many executions and be unsound.
-          exec(app, reason, cancel)
-        }
-        ExecutionVariant.DirtyFlagging -> {
-          // Only skip execution when function application is not dirty.
-          if(!dirty.isDirty(app) && visited.contains(app)) {
-            val result = visited[app]!!.cast<I, O>()
-            ExecInfo(result, null)
-          } else {
-            exec(app, reason, cancel)
-          }
-        }
-        ExecutionVariant.TopologicalSort -> {
-          if(visited.contains(app)) {
-            val result = visited[app]!!.cast<I, O>()
-            ExecInfo(result, null)
-          } else {
-            exec(app, reason, cancel)
-          }
-        }
-      }
-
-      // Require all inconsistent callers of the current function application in a bottom-up manner.
-      logger.trace("finding inconsistent callers of ${app.toShortString(200)}")
-      val inconsistentCallers = store.readTxn().use { txn ->
-        txn.callersOf(app).filterNot { callIsConsistent(it, app, info.result, txn) }
-      }
-      for(inconsistentCaller in inconsistentCallers) {
-        // TODO: give proper execution reason
-        requireBottomUp(inconsistentCaller, InvalidatedExecReason(), cancel)
-      }
-
-      logger.requireBottomUpEnd(app, info)
-      return info
-    } finally {
-      //layer.requireTopDownEnd(app)
+    logger.requireBottomUpStart(caller)
+    val info = bottomUpResult(caller, callee, calleeRes, cancel)
+    logger.trace("Recursing bottom-up over inconsistent callers of ${caller.toShortString(100)}")
+    for(callerOfCaller in store.readTxn().use { txn -> txn.callersOf(caller) }) {
+      cancel.throwIfCancelled()
+      logger.trace("* caller: ${callerOfCaller.toShortString(100)}")
+      requireBottomUp(callerOfCaller, caller, info.result, cancel)
     }
+    logger.requireBottomUpEnd(caller, info)
+    return info
   }
 
+  internal open fun <I : In, O : Out> bottomUpResult(caller: FuncApp<I, O>, callee: UFuncApp?, calleeRes: UExecRes?, cancel: Cancelled): ExecInfo<I, O> {
+    if(callee == null || calleeRes == null) {
+      // When callee is null, caller is directly affected: execute.
+      return exec(caller, InvalidatedExecReason(), cancel)
+    }
+
+    when {
+      executionVariant == ExecutionVariant.Naive -> {
+        // Naive variant cannot skip execution when already visited, it would be unsound.
+      }
+      executionVariant == ExecutionVariant.DirtyFlagging -> {
+        val visitedRes = visited[caller]
+        if(visitedRes != null && !dirty.isDirty(caller)) {
+          // If non-dirty function application was already visited: skip execution.
+          return ExecInfo(visitedRes.cast<I, O>(), null)
+        }
+      }
+      executionVariant == ExecutionVariant.TopologicalSort -> {
+        val visitedRes = visited[caller]
+        if(visitedRes != null) {
+          // If function application was already visited: skip execution.
+          return ExecInfo(visitedRes.cast<I, O>(), null)
+        }
+      }
+    }
+
+    val existingRes = existingResult(caller)
+    if(existingRes == null) {
+      // When there is no existing result: execute.
+      /*
+      Required for cancellation and exception support, which model early termination. When execution is terminated
+      early, dependencies may have been stored in the store, whereas the result of execution has not.
+      */
+      return exec(caller, NoResultReason(), cancel)
+    }
+
+    val internalInconsistencyReason = existingRes.internalInconsistencyReason
+    if(internalInconsistencyReason != null) {
+      // When output is internally inconsistent: execute.
+      /*
+      Required for transient outputs. When a function application has a transient output, its output cannot be persisted
+      and instead can only be stored in memory. After a restart of the JVM, this memory must be restored by re-executing
+      the function application. This check ensures that this happens.
+      */
+      return exec(caller, internalInconsistencyReason, cancel)
+    }
+
+    logger.trace("Checking if call from ${caller.toShortString(100)} to ${callee.toShortString(100)} is consistent")
+    // Caller result is available, callee and calleeRes are not null (first if check)
+    if(!store.readTxn().use { txn -> callIsConsistent(caller, existingRes, callee, calleeRes, txn) }) {
+      // If a call requirement from caller to callee is inconsistent: execute
+      return exec(caller, InvalidatedExecReason(), cancel)
+    }
+
+    // Skip execution
+    // TODO: Validate well-formedness of the dependency graph?
+    // Cache and mark as visited
+    // TODO: is this valid for naive execution?
+    cache[caller] = existingRes
+    visited[caller] = existingRes
+    // Notify observer, if any.
+    val observer = observers[caller]
+    if(observer != null) {
+      val output = existingRes.output
+      logger.invokeObserverStart(observer, caller, output)
+      observer.invoke(output)
+      logger.invokeObserverEnd(observer, caller, output)
+    }
+    // Reuse existing result
+    return ExecInfo(existingRes)
+  }
+
+
+  internal open fun <I : In, O : Out> existingResult(app: FuncApp<I, O>): ExecRes<I, O>? {
+    // Check cache for result of function application.
+    logger.checkCachedStart(app)
+    val cachedResult = cache[app]
+    logger.checkCachedEnd(app, cachedResult)
+
+    // Check store for result of function application.
+    return if(cachedResult != null) {
+      cachedResult
+    } else {
+      logger.checkStoredStart(app)
+      val result = store.readTxn().use { it.resultOf(app) }
+      logger.checkStoredEnd(app, result)
+      result
+    }?.cast<I, O>()
+  }
 
   /**
    * @return `true` when [requiree]'s path requirement to [path] is consistent, `false` otherwise.
@@ -423,27 +464,8 @@ open class ObservingExec(
   /**
    * @return `true` when [caller]'s call requirement to [callee] is consistent, `false` otherwise.
    */
-  internal open fun callIsConsistent(caller: UFuncApp, callee: UFuncApp, calleeRes: UExecRes, txn: StoreReadTxn): Boolean {
-    logger.trace("* caller: ${caller.toShortString(200)}")
-
-    if(dirty.isDirty(caller)) {
-      logger.trace("  - dirty: ${caller.toShortString(200)}")
-      return false
-    }
-
-    val callerRes =
-      cache[caller] ?: txn.resultOf(caller) ?: run {
-        // Can occur when an execution is cancelled and its result is not stored. Log and assume that it is not consistent.
-        logger.trace("  - no result: ${caller.toShortString(200)}")
-        return false
-      }
-
-    if(!callerRes.isInternallyConsistent) {
-      logger.trace("  - not internally consistent: ${callerRes.toShortString(200)}")
-      return false
-    }
-
-    // Omit internal consistency check for calleeRes, it is assumed to be internally consistent.
+  internal open fun callIsConsistent(caller: UFuncApp, callerRes: UExecRes, callee: UFuncApp, calleeRes: UExecRes, txn: StoreReadTxn): Boolean {
+    // caller and callee results are assumed to be internally consistent.
 
     val callReqs = callerRes.callReqs(callee, this)
     if(callReqs.isEmpty()) {

@@ -43,7 +43,7 @@ open class ParametrizedTestCtx(
     return observingExecutor(store, cache, executionVariant, share, layerProvider, loggerProvider, mbLogger)
   }
 
-  fun observingExec(executionVariant: ExecutionVariant = ExecutionVariant.Naive, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): ObservingExec {
+  fun observingExec(executionVariant: ExecutionVariant = ExecutionVariant.DirtyFlagging, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): ObservingExec {
     return observingExec(store, cache, executionVariant, share, layerProvider.get(), loggerProvider.get(), observers)
   }
 }
