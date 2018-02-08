@@ -30,14 +30,14 @@ open class PieModule : Module {
 
   protected open fun Binder.bindExecutors() {
     install(FactoryModuleBuilder()
-      .implement(PullingExecutor::class.java, PullingExecutorImpl::class.java)
-      .build(PullingExecutorFactory::class.java))
+      .implement(TopDownExecutor::class.java, TopDownExecutorImpl::class.java)
+      .build(TopDownExecutorFactory::class.java))
     install(FactoryModuleBuilder()
-      .implement(DirtyFlaggingExecutor::class.java, DirtyFlaggingExecutorImpl::class.java)
-      .build(DirtyFlaggingExecutorFactory::class.java))
+      .implement(DirtyFlaggingTopDownExecutor::class.java, DirtyFlaggingTopDownExecutorImpl::class.java)
+      .build(DirtyFlaggingTopDownExecutorFactory::class.java))
     install(FactoryModuleBuilder()
-      .implement(ObservingExecutor::class.java, ObservingExecutorImpl::class.java)
-      .build(ObservingExecutorFactory::class.java))
+      .implement(BottomUpObservingExecutor::class.java, BottomUpObservingExecutorImpl::class.java)
+      .build(BottomUpObservingExecutorFactory::class.java))
   }
 
   protected open fun Binder.bindStore() {

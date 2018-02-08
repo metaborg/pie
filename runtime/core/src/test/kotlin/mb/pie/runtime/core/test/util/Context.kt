@@ -4,6 +4,7 @@ import com.google.inject.*
 import mb.log.LogModule
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.exec.*
+import mb.pie.runtime.core.exec.BottomUpObservingExecutorFactory.Variant
 import mb.pie.runtime.core.impl.exec.*
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
@@ -30,21 +31,21 @@ open class ParametrizedTestCtx(
     store.close()
   }
 
-  fun pullingExecutor(): PullingExecutor {
+  fun pullingExecutor(): TopDownExecutor {
     return pullingExecutor(store, cache, share, layerProvider, loggerProvider)
   }
 
-  fun pullingExec(): PullingExecImpl {
+  fun pullingExec(): TopDownExecImpl {
     return pullingExec(store, cache, share, layerProvider.get(), loggerProvider.get())
   }
 
 
-  fun observingExecutor(executionVariant: ExecutionVariant): ObservingExecutor {
-    return observingExecutor(store, cache, executionVariant, share, layerProvider, loggerProvider, mbLogger)
+  fun observingExecutor(variant: Variant): BottomUpObservingExecutor {
+    return observingExecutor(store, cache, variant, share, layerProvider, loggerProvider, mbLogger)
   }
 
-  fun observingExec(executionVariant: ExecutionVariant = ExecutionVariant.DirtyFlagging, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): ObservingExec {
-    return observingExec(store, cache, executionVariant, share, layerProvider.get(), loggerProvider.get(), observers)
+  fun observingExec(variant: Variant = Variant.DirtyFlagging, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpObservingExec {
+    return observingExec(store, cache, variant, share, layerProvider.get(), loggerProvider.get(), observers)
   }
 }
 
@@ -84,21 +85,21 @@ open class TestCtx {
   }
 
 
-  fun pullingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): PullingExecutor {
-    return PullingExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
+  fun pullingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): TopDownExecutor {
+    return TopDownExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
   }
 
-  fun pullingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger): PullingExecImpl {
-    return PullingExecImpl(store, cache, share, layer, logger, funcs)
+  fun pullingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger): TopDownExecImpl {
+    return TopDownExecImpl(store, cache, share, layer, logger, funcs)
   }
 
 
-  fun observingExecutor(store: Store, cache: Cache, executionVariant: ExecutionVariant, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>, mbLogger: mb.log.Logger): ObservingExecutorImpl {
-    return ObservingExecutorImpl(store, cache, executionVariant, share, layerProvider, loggerProvider, mbLogger, funcs)
+  fun observingExecutor(store: Store, cache: Cache, variant: Variant, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>, mbLogger: mb.log.Logger): BottomUpObservingExecutorImpl {
+    return BottomUpObservingExecutorImpl(store, cache, variant, share, layerProvider, loggerProvider, mbLogger, funcs)
   }
 
-  fun observingExec(store: Store, cache: Cache, executionVariant: ExecutionVariant, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): ObservingExec {
-    return ObservingExec(store, cache, share, layer, logger, funcs, observers, executionVariant, DirtyState())
+  fun observingExec(store: Store, cache: Cache, variant: Variant, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpObservingExec {
+    return BottomUpObservingExec(store, cache, share, layer, logger, funcs, observers, variant, DirtyState())
   }
 
 

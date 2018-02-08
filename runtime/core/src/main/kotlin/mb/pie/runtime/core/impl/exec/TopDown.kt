@@ -4,22 +4,22 @@ import com.google.inject.Inject
 import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.exec.PullingExec
-import mb.pie.runtime.core.exec.PullingExecutor
+import mb.pie.runtime.core.exec.TopDownExec
+import mb.pie.runtime.core.exec.TopDownExecutor
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.util.async.NullCancelled
 
 
-class PullingExecutorImpl @Inject constructor(
+class TopDownExecutorImpl @Inject constructor(
   @Assisted private val store: Store,
   @Assisted private val cache: Cache,
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
   private val funcs: MutableMap<String, UFunc>
-) : PullingExecutor {
-  override fun exec() = PullingExecImpl(store, cache, share, layer.get(), logger.get(), funcs)
+) : TopDownExecutor {
+  override fun exec() = TopDownExecImpl(store, cache, share, layer.get(), logger.get(), funcs)
 
 
   override fun dropStore() {
@@ -32,14 +32,14 @@ class PullingExecutorImpl @Inject constructor(
   }
 }
 
-open class PullingExecImpl(
+open class TopDownExecImpl(
   private val store: Store,
   private val cache: Cache,
   private val share: Share,
   private val layer: Layer,
   private val logger: Logger,
   private val funcs: Map<String, UFunc>
-) : PullingExec, Exec, Funcs by FuncsImpl(funcs) {
+) : TopDownExec, Exec, Funcs by FuncsImpl(funcs) {
   private val visited = mutableMapOf<UFuncApp, UExecRes>()
 
 

@@ -5,7 +5,7 @@ import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.exec.AnyObsFuncApp
-import mb.pie.runtime.core.exec.DirtyFlaggingExecutor
+import mb.pie.runtime.core.exec.DirtyFlaggingTopDownExecutor
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.vfs.path.PPath
@@ -16,7 +16,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 
-class DirtyFlaggingExecutorImpl @Inject constructor(
+class DirtyFlaggingTopDownExecutorImpl @Inject constructor(
   @Assisted private val store: Store,
   @Assisted private val cache: Cache,
   private val share: Share,
@@ -24,8 +24,8 @@ class DirtyFlaggingExecutorImpl @Inject constructor(
   private val logger: Provider<Logger>,
   private val funcs: MutableMap<String, UFunc>,
   mbLogger: mb.log.Logger
-) : DirtyFlaggingExecutor {
-  private val mbLogger = mbLogger.forContext(DirtyFlaggingExecutorImpl::class.java)
+) : DirtyFlaggingTopDownExecutor {
+  private val mbLogger = mbLogger.forContext(DirtyFlaggingTopDownExecutorImpl::class.java)
   private val dirtyFlagger = DirtyFlaggerImpl(cache, mbLogger)
   private val obsFuncApps = ConcurrentHashMap<Any, AnyObsFuncApp>()
   private val changedPaths = HashSet<PPath>()
@@ -71,7 +71,7 @@ class DirtyFlaggingExecutorImpl @Inject constructor(
     lock.read {
       try {
         mbLogger.trace("Execution")
-        val exec = PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
+        val exec = DirtyFlaggingTopDownExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
         // TODO: observable functions may change during iteration, and will not be updated. Is this a problem?
         for((funcApp, changedFunc) in obsFuncApps.values) {
           mbLogger.trace("  requiring: ${funcApp.toShortString(200)}")
@@ -108,8 +108,8 @@ class DirtyFlaggingExecutorImpl @Inject constructor(
   }
 
 
-  fun exec(): PushingExec {
-    return PushingExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
+  fun exec(): DirtyFlaggingTopDownExec {
+    return DirtyFlaggingTopDownExec(store, cache, share, layer.get(), logger.get(), funcs, dirtyFlagger)
   }
 
   override fun dropStore() {
@@ -206,7 +206,7 @@ class DirtyFlaggerImpl @Inject constructor(
 }
 
 
-open class PushingExec(
+open class DirtyFlaggingTopDownExec(
   private val store: Store,
   private val cache: Cache,
   private val share: Share,

@@ -5,6 +5,7 @@ import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.exec.*
+import mb.pie.runtime.core.exec.BottomUpObservingExecutorFactory.Variant.*
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.util.async.NullCancelled
@@ -13,17 +14,17 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 
-class ObservingExecutorImpl @Inject constructor(
+class BottomUpObservingExecutorImpl @Inject constructor(
   @Assisted private val store: Store,
   @Assisted private val cache: Cache,
-  @Assisted private val executionVariant: ExecutionVariant,
+  @Assisted private val variant: BottomUpObservingExecutorFactory.Variant,
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
   mbLogger: mb.log.Logger,
   private val funcs: MutableMap<String, UFunc>
-) : ObservingExecutor {
-  private val mbLogger = mbLogger.forContext(ObservingExecutorImpl::class.java)
+) : BottomUpObservingExecutor {
+  private val mbLogger = mbLogger.forContext(BottomUpObservingExecutorImpl::class.java)
 
   private val keyToApp = ConcurrentHashMap<Any, UFuncApp>()
   private val appToObs = ConcurrentHashMap<UFuncApp, FuncAppObserver>()
@@ -89,8 +90,8 @@ class ObservingExecutorImpl @Inject constructor(
   }
 
 
-  fun exec(): ObservingExec {
-    return ObservingExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs, executionVariant, dirty)
+  fun exec(): BottomUpObservingExec {
+    return BottomUpObservingExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs, variant, dirty)
   }
 
 
@@ -121,7 +122,7 @@ class DirtyState {
   }
 }
 
-open class ObservingExec(
+open class BottomUpObservingExec(
   private val store: Store,
   private val cache: Cache,
   private val share: Share,
@@ -129,7 +130,7 @@ open class ObservingExec(
   private val logger: Logger,
   private val funcs: Map<String, UFunc>,
   private val observers: Map<UFuncApp, FuncAppObserver>,
-  private val executionVariant: ExecutionVariant,
+  private val variant: BottomUpObservingExecutorFactory.Variant,
   private val dirty: DirtyState
 ) : Exec, Funcs by FuncsImpl(funcs) {
   private val visited = mutableMapOf<UFuncApp, UExecRes>()
@@ -179,7 +180,7 @@ open class ObservingExec(
         }
       }
 
-      if(executionVariant == ExecutionVariant.DirtyFlagging) {
+      if(variant == DirtyFlagging) {
         // Set affected to dirty
         logger.trace("Dirty flagging")
         for(app in affected) {
@@ -258,7 +259,7 @@ open class ObservingExec(
       }
 
       // Check for inconsistencies and re-execute when found.
-      if(executionVariant == ExecutionVariant.DirtyFlagging) {
+      if(variant == DirtyFlagging) {
         // Internal consistency: dirty flagged.
         if(dirty.isDirty(app)) {
           val info = exec(app, DirtyFlaggedReason(), cancel)
@@ -350,17 +351,17 @@ open class ObservingExec(
     }
 
     when {
-      executionVariant == ExecutionVariant.Naive -> {
+      variant == Naive -> {
         // Naive variant cannot skip execution when already visited, it would be unsound.
       }
-      executionVariant == ExecutionVariant.DirtyFlagging -> {
+      variant == DirtyFlagging -> {
         val visitedRes = visited[caller]
         if(visitedRes != null && !dirty.isDirty(caller)) {
           // If non-dirty function application was already visited: skip execution.
           return ExecInfo(visitedRes.cast<I, O>(), null)
         }
       }
-      executionVariant == ExecutionVariant.TopologicalSort -> {
+      variant == TopologicalSort -> {
         val visitedRes = visited[caller]
         if(visitedRes != null) {
           // If function application was already visited: skip execution.

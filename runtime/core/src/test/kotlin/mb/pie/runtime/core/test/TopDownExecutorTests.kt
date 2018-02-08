@@ -3,7 +3,7 @@ package mb.pie.runtime.core.test
 import com.nhaarman.mockito_kotlin.*
 import kotlinx.coroutines.experimental.*
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.exec.PullingExecImpl
+import mb.pie.runtime.core.impl.exec.TopDownExecImpl
 import mb.pie.runtime.core.impl.layer.ValidationException
 import mb.pie.runtime.core.impl.share.CoroutineShare
 import mb.pie.runtime.core.test.util.TestGenerator
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.javaMethod
 
-internal class PullingExecutorTests {
+internal class TopDownExecutorTests {
   @TestFactory
   fun testExec() = TestGenerator.generate("testExec") {
     val input = "CAPITALIZED"
@@ -370,7 +370,7 @@ internal class PullingExecutorTests {
     dShareGens = arrayOf({ CoroutineShare() }) /* Testing sharing, so only use shares that correctly share */) {
     registerFunc(toLowerCase)
 
-    val spies = ConcurrentLinkedQueue<PullingExecImpl>()
+    val spies = ConcurrentLinkedQueue<TopDownExecImpl>()
     runBlocking {
       List(100) {
         launch(coroutineContext + CommonPool) {
@@ -384,7 +384,7 @@ internal class PullingExecutorTests {
 
     // Test that function 'execInternal' has only been called once, even between all threads
     var invocations = 0
-    val javaFuncName = PullingExecImpl::class.memberFunctions.first { it.name == "execInternal" }.javaMethod!!.name
+    val javaFuncName = TopDownExecImpl::class.memberFunctions.first { it.name == "execInternal" }.javaMethod!!.name
     spies.forEach { spy ->
       mockingDetails(spy).invocations
         .filter { it.method.name == javaFuncName }

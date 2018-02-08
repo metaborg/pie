@@ -6,18 +6,18 @@ import mb.vfs.path.PPath
 import java.io.Serializable
 
 
-interface ObservingExecutorFactory {
-  fun create(store: Store, cache: Cache, executionVariant: ExecutionVariant): ObservingExecutor
-}
+interface BottomUpObservingExecutorFactory {
+  enum class Variant {
+    Naive, DirtyFlagging, TopologicalSort
+  }
 
-enum class ExecutionVariant {
-  Naive, DirtyFlagging, TopologicalSort
+  fun create(store: Store, cache: Cache, variant: Variant): BottomUpObservingExecutor
 }
 
 // TODO: replace [Serializable]? by [Out], when IntelliJ bug is fixed.
 typealias FuncAppObserver = (Serializable?) -> Unit
 
-interface ObservingExecutor : Executor {
+interface BottomUpObservingExecutor : Executor {
   fun setObserver(key: Any, app: UFuncApp, observer: FuncAppObserver)
 
   fun removeObserver(key: Any)

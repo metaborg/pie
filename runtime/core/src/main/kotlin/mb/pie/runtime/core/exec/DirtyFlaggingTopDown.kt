@@ -6,11 +6,11 @@ import mb.util.async.NullCancelled
 import mb.vfs.path.PPath
 
 
-interface DirtyFlaggingExecutorFactory {
-  fun create(store: Store, cache: Cache): DirtyFlaggingExecutor
+interface DirtyFlaggingTopDownExecutorFactory {
+  fun create(store: Store, cache: Cache): DirtyFlaggingTopDownExecutor
 }
 
-interface DirtyFlaggingExecutor : Executor {
+interface DirtyFlaggingTopDownExecutor : Executor {
   fun add(key: Any, obsFuncApp: AnyObsFuncApp)
   fun update(key: Any, obsFuncApp: AnyObsFuncApp)
   fun remove(key: Any)

@@ -4,15 +4,15 @@ import mb.pie.runtime.core.*
 import mb.util.async.*
 
 
-interface PullingExecutorFactory {
-  fun create(store: Store, cache: Cache): PullingExecutor
+interface TopDownExecutorFactory {
+  fun create(store: Store, cache: Cache): TopDownExecutor
 }
 
-interface PullingExecutor : Executor {
-  fun exec(): PullingExec
+interface TopDownExecutor : Executor {
+  fun exec(): TopDownExec
 }
 
-interface PullingExec {
+interface TopDownExec {
   @Throws(ExecException::class, InterruptedException::class)
   fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): O
 
