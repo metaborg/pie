@@ -21,16 +21,10 @@ class BottomUpObservingExecutorImpl @Inject constructor(
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
-  mbLogger: mb.log.Logger,
   private val funcs: MutableMap<String, UFunc>
 ) : BottomUpObservingExecutor {
-  private val mbLogger = mbLogger.forContext(BottomUpObservingExecutorImpl::class.java)
-
   private val keyToApp = ConcurrentHashMap<Any, UFuncApp>()
   private val appToObs = ConcurrentHashMap<UFuncApp, FuncAppObserver>()
-  //  private val observed = ConcurrentHashMap.newKeySet<UFuncApp>()
-//  private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
-//  private val lock = ReentrantReadWriteLock()
   private val dirty = DirtyState()
 
 
@@ -350,18 +344,18 @@ open class BottomUpObservingExec(
       return exec(caller, InvalidatedExecReason(), cancel)
     }
 
-    when {
-      variant == Naive -> {
+    when(variant) {
+      Naive -> {
         // Naive variant cannot skip execution when already visited, it would be unsound.
       }
-      variant == DirtyFlagging -> {
+      DirtyFlagging -> {
         val visitedRes = visited[caller]
         if(visitedRes != null && !dirty.isDirty(caller)) {
           // If non-dirty function application was already visited: skip execution.
           return ExecInfo(visitedRes.cast<I, O>(), null)
         }
       }
-      variant == TopologicalSort -> {
+      TopologicalSort -> {
         val visitedRes = visited[caller]
         if(visitedRes != null) {
           // If function application was already visited: skip execution.
@@ -371,6 +365,7 @@ open class BottomUpObservingExec(
     }
 
     val existingRes = existingResult(caller)
+    @Suppress("FoldInitializerAndIfToElvis")
     if(existingRes == null) {
       // When there is no existing result: execute.
       /*

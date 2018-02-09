@@ -41,7 +41,7 @@ open class ParametrizedTestCtx(
 
 
   fun observingExecutor(variant: Variant): BottomUpObservingExecutor {
-    return observingExecutor(store, cache, variant, share, layerProvider, loggerProvider, mbLogger)
+    return observingExecutor(store, cache, variant, share, layerProvider, loggerProvider)
   }
 
   fun observingExec(variant: Variant = Variant.DirtyFlagging, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpObservingExec {
@@ -94,8 +94,8 @@ open class TestCtx {
   }
 
 
-  fun observingExecutor(store: Store, cache: Cache, variant: Variant, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>, mbLogger: mb.log.Logger): BottomUpObservingExecutorImpl {
-    return BottomUpObservingExecutorImpl(store, cache, variant, share, layerProvider, loggerProvider, mbLogger, funcs)
+  fun observingExecutor(store: Store, cache: Cache, variant: Variant, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): BottomUpObservingExecutorImpl {
+    return BottomUpObservingExecutorImpl(store, cache, variant, share, layerProvider, loggerProvider, funcs)
   }
 
   fun observingExec(store: Store, cache: Cache, variant: Variant, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpObservingExec {
