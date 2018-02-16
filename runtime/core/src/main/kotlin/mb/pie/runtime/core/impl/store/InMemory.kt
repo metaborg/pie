@@ -1,59 +1,119 @@
 package mb.pie.runtime.core.impl.store
 
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
-  private val results = ConcurrentHashMap<UFuncApp, UExecRes>()
-  private val called = ConcurrentHashMap<UFuncApp, MutableSet<UFuncApp>>()
-  private val required = ConcurrentHashMap<PPath, MutableSet<UFuncApp>>()
-  private val generated = ConcurrentHashMap<PPath, UFuncApp>()
+  private val outputs = ConcurrentHashMap<UFuncApp, Out>()
+  private val callReqs = ConcurrentHashMap<UFuncApp, ArrayList<CallReq>>()
+  private val callersOf = ConcurrentHashMap<UFuncApp, MutableSet<UFuncApp>>()
+  private val pathReqs = ConcurrentHashMap<UFuncApp, ArrayList<PathReq>>()
+  private val requireesOf = ConcurrentHashMap<PPath, MutableSet<UFuncApp>>()
+  private val pathGens = ConcurrentHashMap<UFuncApp, ArrayList<PathGen>>()
+  private val generatorOf = ConcurrentHashMap<PPath, UFuncApp?>()
 
 
   override fun readTxn() = this
   override fun writeTxn() = this
   override fun sync() {}
-
   override fun close() {}
 
-
-  override fun isDirty(app: UFuncApp) = dirty.contains(app)
-  override fun setIsDirty(app: UFuncApp, isDirty: Boolean) {
+  override fun dirty(app: UFuncApp) = dirty.contains(app)
+  override fun setDirty(app: UFuncApp, isDirty: Boolean) {
     if(isDirty)
       dirty.add(app)
     else
       dirty.remove(app)
   }
 
-  override fun resultOf(app: UFuncApp) = results[app]
-  override fun setResultOf(app: UFuncApp, result: UExecRes) {
-    results[app] = result
+  override fun output(app: UFuncApp) = outputs[app]
+  override fun setOutput(app: UFuncApp, output: Out) {
+    outputs[app] = output
   }
 
-  override fun callersOf(callee: UFuncApp) = called.getOrPut(callee, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
-  override fun setCallerOf(caller: UFuncApp, callee: UFuncApp) {
-    called.getOrPut(callee, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(caller)
+  override fun callReqs(app: UFuncApp) = callReqs.getOrEmptyList(app)
+  override fun callersOf(app: UFuncApp) = callersOf.getOrPutSet(app)
+  override fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>) {
+    // Remove old call requirements
+    val oldCallReqs = this.callReqs.remove(app)
+    if(oldCallReqs != null) {
+      for(callReq in oldCallReqs) {
+        callersOf.getOrPutSet(callReq.callee).remove(app)
+      }
+    }
+    // OPTO: diff callReqs and oldCallReqs, remove/add entries based on diff.
+    // Add new call requirements
+    this.callReqs[app] = callReqs
+    for(callReq in callReqs) {
+      callersOf.getOrPutSet(callReq.callee).add(app)
+    }
   }
 
-  override fun requireesOf(path: PPath) = required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() })!!
-  override fun setRequireeOf(requiree: UFuncApp, path: PPath) {
-    required.getOrPut(path, { ConcurrentHashMap.newKeySet<UFuncApp>() }).add(requiree)
+  override fun pathReqs(app: UFuncApp) = pathReqs.getOrEmptyList(app)
+  override fun requireesOf(path: PPath) = requireesOf.getOrPutSet(path)
+  override fun setPathReqs(app: UFuncApp, pathReqs: ArrayList<PathReq>) {
+    // Remove old path requirements
+    val oldPathReqs = this.pathReqs.remove(app)
+    if(oldPathReqs != null) {
+      for(pathReq in oldPathReqs) {
+        requireesOf.getOrPutSet(pathReq.path).remove(app)
+      }
+    }
+    // OPTO: diff pathReqs and oldPathReqs, remove/add entries based on diff.
+    // Add new call requirements
+    this.pathReqs[app] = pathReqs
+    for(pathReq in pathReqs) {
+      requireesOf.getOrPutSet(pathReq.path).add(app)
+    }
   }
 
-  override fun generatorOf(path: PPath) = generated[path]
-  override fun setGeneratorOf(generator: UFuncApp, path: PPath) {
-    generated[path] = generator
+  override fun pathGens(app: UFuncApp) = pathGens.getOrEmptyList(app)
+  override fun generatorOf(path: PPath) = generatorOf[path]
+  override fun setPathGens(app: UFuncApp, pathGens: ArrayList<PathGen>) {
+    // Remove old path generators
+    val oldPathGens = this.pathGens.remove(app)
+    if(oldPathGens != null) {
+      for(pathGen in oldPathGens) {
+        generatorOf.remove(pathGen.path)
+      }
+    }
+    // OPTO: diff pathGens and oldPathGens, remove/add entries based on diff.
+    // Add new path generators
+    this.pathGens[app] = pathGens
+    for(pathGen in pathGens) {
+      generatorOf[pathGen.path] = app
+    }
+  }
+
+  override fun data(app: UFuncApp): UFuncAppData? {
+    val output = output(app) ?: return null
+    val callReqs = callReqs(app)
+    val pathReqs = pathReqs(app)
+    val pathGens = pathGens(app)
+    return FuncAppData(output, callReqs, pathReqs, pathGens)
+  }
+
+  override fun setData(app: UFuncApp, data: UFuncAppData) {
+    val (output, callReqs, pathReqs, pathGens) = data
+    setOutput(app, output)
+    setCallReqs(app, callReqs)
+    setPathReqs(app, pathReqs)
+    setPathGens(app, pathGens)
   }
 
 
   override fun drop() {
     dirty.clear()
-    results.clear()
-    called.clear()
-    required.clear()
-    generated.clear()
+    outputs.clear()
+    callReqs.clear()
+    callersOf.clear()
+    pathReqs.clear()
+    requireesOf.clear()
+    pathGens.clear()
+    generatorOf.clear()
   }
 
 
@@ -61,3 +121,6 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     return "InMemoryStore"
   }
 }
+
+private fun <K, V> ConcurrentHashMap<K, MutableSet<V>>.getOrPutSet(key: K) = this.getOrPut(key, { ConcurrentHashMap.newKeySet<V>() })!!
+private fun <K, V> ConcurrentHashMap<K, ArrayList<V>>.getOrEmptyList(key: K) = this.getOrElse(key) { arrayListOf() }

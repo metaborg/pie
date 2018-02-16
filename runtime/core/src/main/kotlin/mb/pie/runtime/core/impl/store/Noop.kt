@@ -1,6 +1,7 @@
 package mb.pie.runtime.core.impl.store
 
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
 
 /**
@@ -13,25 +14,23 @@ class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun sync() {}
   override fun close() {}
 
+  override fun dirty(app: UFuncApp): Boolean = false
+  override fun output(app: UFuncApp): Out? = null
+  override fun callReqs(app: UFuncApp): List<CallReq> = listOf()
+  override fun callersOf(app: UFuncApp): Set<UFuncApp> = setOf()
+  override fun pathReqs(app: UFuncApp): List<PathReq> = listOf()
+  override fun requireesOf(path: PPath): Set<UFuncApp> = setOf()
+  override fun pathGens(app: UFuncApp): List<PathGen> = listOf()
+  override fun generatorOf(path: PPath): UFuncApp? = null
+  override fun data(app: UFuncApp): UFuncAppData? = null
 
-  override fun isDirty(app: UFuncApp) = false
-  override fun setIsDirty(app: UFuncApp, isDirty: Boolean) {}
-
-  override fun resultOf(app: UFuncApp) = null
-  override fun setResultOf(app: UFuncApp, result: UExecRes) {}
-
-  override fun callersOf(callee: UFuncApp) = setOf<UFuncApp>()
-  override fun setCallerOf(caller: UFuncApp, callee: UFuncApp) {}
-
-  override fun requireesOf(path: PPath) = setOf<UFuncApp>()
-  override fun setRequireeOf(requiree: UFuncApp, path: PPath) {}
-
-  override fun generatorOf(path: PPath) = null
-  override fun setGeneratorOf(generator: UFuncApp, path: PPath) {}
-
-
+  override fun setDirty(app: UFuncApp, isDirty: Boolean) {}
+  override fun setOutput(app: UFuncApp, output: Out) {}
+  override fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>) {}
+  override fun setPathReqs(app: UFuncApp, pathReqs: ArrayList<PathReq>) {}
+  override fun setPathGens(app: UFuncApp, pathGens: ArrayList<PathGen>) {}
+  override fun setData(app: UFuncApp, data: UFuncAppData) {}
   override fun drop() {}
-
 
   override fun toString() = "NoopStore"
 }

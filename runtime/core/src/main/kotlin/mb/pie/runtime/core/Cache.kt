@@ -2,7 +2,7 @@ package mb.pie.runtime.core
 
 
 interface Cache {
-  operator fun set(app: UFuncApp, res: UExecRes)
-  operator fun get(app: UFuncApp): UExecRes?
+  operator fun set(app: UFuncApp, data: UFuncAppData)
+  operator fun get(app: UFuncApp): UFuncAppData?
   fun drop()
 }

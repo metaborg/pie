@@ -1,7 +1,7 @@
 package mb.pie.runtime.core
 
+import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
-import java.io.Closeable
 
 
 interface Store : AutoCloseable {
@@ -34,57 +34,93 @@ interface StoreReadTxn : StoreTxn {
   /**
    * @return `true` if [app] is marked as dirty, `false` otherwise.
    */
-  fun isDirty(app: UFuncApp): Boolean
+  fun dirty(app: UFuncApp): Boolean
 
   /**
-   * @return execution result of [app], or `null` if no result was stored.
+   * @return output of [app], or `null` when no output was stored.
    */
-  fun resultOf(app: UFuncApp): UExecRes?
+  fun output(app: UFuncApp): Out?
+
 
   /**
-   * @return function applications that are callers of [callee].
+   * @return call requirements of [app].
    */
-  fun callersOf(callee: UFuncApp): Set<UFuncApp>
+  fun callReqs(app: UFuncApp): List<CallReq>
 
   /**
-   * @return function applications that are a requiree of [path].
+   * @return function applications that call [app].
+   */
+  fun callersOf(app: UFuncApp): Set<UFuncApp>
+
+
+  /**
+   * @return path requirements of [app].
+   */
+  fun pathReqs(app: UFuncApp): List<PathReq>
+
+  /**
+   * @return function applications that require [path].
    */
   fun requireesOf(path: PPath): Set<UFuncApp>
 
+
   /**
-   * @return function application that is a generator of [path], or `null` if no function applications generate [path].
+   * @return path generates of [app].
+   */
+  fun pathGens(app: UFuncApp): List<PathGen>
+
+  /**
+   * @return function application that generates [path], or `null` if it does not exist.
    */
   fun generatorOf(path: PPath): UFuncApp?
+
+
+  /**
+   * @return output, call requirements, path reqs, and path generates for [app], or `null` when no output was stored.
+   */
+  fun data(app: UFuncApp): UFuncAppData?
 }
 
 interface StoreWriteTxn : StoreReadTxn {
   /**
    * Marks [app] as dirty when [isDirty] is `true`, or as not-dirty when [isDirty] is `false`.
    */
-  fun setIsDirty(app: UFuncApp, isDirty: Boolean)
+  fun setDirty(app: UFuncApp, isDirty: Boolean)
 
   /**
-   * Sets the result of [app] to [result].
+   * Sets the output of [app] to [output].
    */
-  fun setResultOf(app: UFuncApp, result: UExecRes)
+  fun setOutput(app: UFuncApp, output: Out)
 
   /**
-   * Sets [caller] as a caller of [callee].
+   * Sets the call requirements of [app] to [callReqs].
    */
-  fun setCallerOf(caller: UFuncApp, callee: UFuncApp)
+  fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>)
 
   /**
-   * Sets [requiree] as a requiree of [path].
+   * Sets the path requirements of [app] to [pathReqs].
    */
-  fun setRequireeOf(requiree: UFuncApp, path: PPath)
+  fun setPathReqs(app: UFuncApp, pathReqs: ArrayList<PathReq>)
 
   /**
-   * Sets [generator] as a generator of [path].
+   * Sets the generated pathGens of [app] to [pathGens].
    */
-  fun setGeneratorOf(generator: UFuncApp, path: PPath)
+  fun setPathGens(app: UFuncApp, pathGens: ArrayList<PathGen>)
+
+  /**
+   * Sets the output, call requirements, path reqs, and path generates for [app] to [data].
+   */
+  fun setData(app: UFuncApp, data: UFuncAppData)
 
   /**
    * Removes all data from (drops) the store.
    */
   fun drop()
 }
+
+
+data class FuncAppData<out O : Out>(val output: O, val callReqs: ArrayList<CallReq>, val pathReqs: ArrayList<PathReq>, val pathGens: ArrayList<PathGen>)
+typealias UFuncAppData = FuncAppData<*>
+
+@Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
+internal inline fun <O : Out> UFuncAppData.cast() = this as FuncAppData<O>

@@ -1,6 +1,5 @@
 package mb.pie.runtime.core
 
-import mb.pie.runtime.core.impl.Req
 import mb.pie.runtime.core.stamp.*
 import mb.vfs.path.PPath
 import kotlin.reflect.KClass
@@ -35,9 +34,6 @@ interface ExecContext {
 
   fun require(path: PPath, stamper: PathStamper = PathStampers.modified)
   fun generate(path: PPath, stamper: PathStamper = PathStampers.hash)
-
-
-  fun require(req: Req)
 }
 
 class ExecException(message: String, cause: Exception?) : Exception(message, cause) {

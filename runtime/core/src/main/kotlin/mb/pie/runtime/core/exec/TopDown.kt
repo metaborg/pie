@@ -1,6 +1,7 @@
 package mb.pie.runtime.core.exec
 
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.ExecRes
 import mb.util.async.*
 
 
@@ -17,5 +18,5 @@ interface TopDownExec {
   fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): O
 
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> requireInfo(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecInfo<I, O>
+  fun <I : In, O : Out> requireResult(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecRes<O>
 }

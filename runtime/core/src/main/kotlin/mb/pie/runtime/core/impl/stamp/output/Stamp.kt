@@ -25,31 +25,6 @@ class EqualsOutputStamper : OutputStamper {
   }
 }
 
-class InconsequentialOutputStamper : OutputStamper {
-  companion object {
-    val instance = InconsequentialOutputStamper()
-    val inconsequentialStamp = ValueOutputStamp(null, instance)
-  }
-
-  override fun <O : Out> stamp(output: O): OutputStamp {
-    return inconsequentialStamp
-  }
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
-
-  override fun toString(): String {
-    return "Inconsequential";
-  }
-}
-
 data class ValueOutputStamp<out V : Out>(val value: V, override val stamper: OutputStamper) : OutputStamp {
   override fun equals(other: Any?): Boolean {
     if(this === other) return true
@@ -82,5 +57,51 @@ data class ValueOutputStamp<out V : Out>(val value: V, override val stamper: Out
 
   override fun toString(): String {
     return "$stamper(${value.toString().toShortString(100)})"
+  }
+}
+
+class InconsequentialOutputStamper : OutputStamper {
+  companion object {
+    val instance = InconsequentialOutputStamper()
+  }
+
+  override fun <O : Out> stamp(output: O): OutputStamp {
+    return InconsequentialStamp.instance
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
+
+  override fun toString(): String {
+    return "Inconsequential";
+  }
+}
+
+class InconsequentialStamp : OutputStamp {
+  companion object {
+    val instance = InconsequentialStamp()
+  }
+
+  override val stamper: OutputStamper = InconsequentialOutputStamper.instance
+
+  override fun equals(other: Any?): Boolean {
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
+
+  override fun toString(): String {
+    return "InconsequentialStamp"
   }
 }

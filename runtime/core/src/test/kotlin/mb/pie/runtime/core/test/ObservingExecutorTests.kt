@@ -24,22 +24,15 @@ internal class ObservingExecutorTests {
     val app = app(func, input)
 
     val exec = spy(observingExec())
-    val info = exec.require(app)
-    Assertions.assertEquals(NoResultReason(), info.reason)
-    val result = info.result
-    Assertions.assertEquals(func.id, result.id)
-    Assertions.assertEquals(input, result.input)
-    Assertions.assertEquals("capitalized", result.output)
-    Assertions.assertEquals(0, result.reqs.size)
-    Assertions.assertEquals(0, result.gens.size)
+    val res = exec.require(app)
+    Assertions.assertEquals(NoResultReason(), res.reason)
+    Assertions.assertEquals("capitalized", res.output)
 
     inOrder(exec, func) {
       verify(exec, times(1)).require(eq(app), any())
       verify(exec, times(1)).exec(eq(app), eq(NoResultReason()), any(), any())
       verify(func, times(1)).exec(eq(input), anyOrNull())
     }
-
-    verify(func, atLeastOnce()).desc(input)
   }
 
   @TestFactory
@@ -50,24 +43,18 @@ internal class ObservingExecutorTests {
     val input1 = "CAPITALIZED"
     val app1 = app(func, input1)
     val exec1 = spy(observingExec())
-    val info1 = exec1.require(app1)
-    Assertions.assertEquals(NoResultReason(), info1.reason)
-    val result1 = info1.result
-    Assertions.assertEquals(func.id, result1.id)
-    Assertions.assertEquals(input1, result1.input)
-    Assertions.assertEquals("capitalized", result1.output)
+    val res1 = exec1.require(app1)
+    Assertions.assertEquals(NoResultReason(), res1.reason)
+    Assertions.assertEquals("capitalized", res1.output)
 
     val input2 = "CAPITALIZED_EVEN_MORE"
     val app2 = app(func, input2)
     val exec2 = spy(observingExec())
-    val info2 = exec2.require(app2)
-    Assertions.assertEquals(NoResultReason(), info2.reason)
-    val result2 = info2.result
-    Assertions.assertEquals(func.id, result2.id)
-    Assertions.assertEquals(input2, result2.input)
-    Assertions.assertEquals("capitalized_even_more", result2.output)
+    val res2 = exec2.require(app2)
+    Assertions.assertEquals(NoResultReason(), res2.reason)
+    Assertions.assertEquals("capitalized_even_more", res2.output)
 
-    Assertions.assertNotEquals(result1, result2)
+    Assertions.assertNotEquals(res1, res2)
 
     inOrder(func, exec1, exec2) {
       verify(exec1, times(1)).require(eq(app1), any())
@@ -88,22 +75,20 @@ internal class ObservingExecutorTests {
     val input = "CAPITALIZED"
     val app = app(func, input)
     val exec1 = observingExec()
-    val info1 = exec1.require(app)
-    Assertions.assertEquals(NoResultReason(), info1.reason)
-    val result1 = info1.result
+    val res1 = exec1.require(app)
+    Assertions.assertEquals(NoResultReason(), res1.reason)
 
     val exec2 = spy(observingExec())
-    val info2 = exec2.require(app)
-    Assertions.assertNull(info2.reason)
-    val result2 = info2.result
+    val res2 = exec2.require(app)
+    Assertions.assertNull(res2.reason)
 
-    Assertions.assertEquals(result1, result2)
+    Assertions.assertNotEquals(res1.reason, res2.reason)
+    Assertions.assertEquals(res1.output, res2.output)
 
     // Result is reused if rebuild is never called
     verify(exec2, never()).exec(eq(app), eq(NoResultReason()), any(), any())
 
     verify(func, atMost(1)).exec(eq(input), anyOrNull())
-    verify(func, atLeastOnce()).desc(input)
   }
 
   @TestFactory
@@ -123,8 +108,8 @@ internal class ObservingExecutorTests {
 
     // Build 'combine', observe rebuild of all
     val exec1 = spy(observingExec())
-    val result1 = exec1.require(app(combine, filePath)).result
-    Assertions.assertEquals("hello world!", result1.output)
+    val res1 = exec1.require(app(combine, filePath))
+    Assertions.assertEquals("hello world!", res1.output)
     inOrder(exec1) {
       verify(exec1).exec(eq(app(combine, filePath)), eq(NoResultReason()), anyC(), any())
       verify(exec1).exec(eq(app(readPath, filePath)), eq(NoResultReason()), anyC(), any())

@@ -3,7 +3,7 @@ package mb.pie.runtime.core
 import java.io.Serializable
 
 
-typealias In = Serializable?
+typealias In = Serializable
 
 data class FuncApp<out I : In, out O : Out>(val id: String, val input: I) : Serializable {
   companion object {
@@ -24,7 +24,7 @@ data class FuncApp<out I : In, out O : Out>(val id: String, val input: I) : Seri
     return true
   }
 
-  val hashCode: Int = id.hashCode() + 31 * (input?.hashCode() ?: 0)
+  val hashCode: Int = id.hashCode() + 31 * input.hashCode()
   override fun hashCode(): Int {
     return hashCode
   }

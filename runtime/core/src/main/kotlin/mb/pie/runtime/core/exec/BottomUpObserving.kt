@@ -24,7 +24,7 @@ interface BottomUpObservingExecutor : Executor {
 
 
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): ExecInfo<I, O>
+  fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O
 
   @Throws(ExecException::class, InterruptedException::class)
   fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled)

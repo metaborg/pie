@@ -1,34 +1,39 @@
 package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.exec.ConsistencyChecker
 import mb.pie.runtime.core.stamp.OutputStamp
 import mb.pie.runtime.core.stamp.PathStamp
-import mb.util.async.Cancelled
 import mb.vfs.path.PPath
 import java.io.Serializable
 
 
-interface Req : Serializable {
-  fun <I : In, O : Out> makeConsistent(requiree: FuncApp<I, O>, requireeRes: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason?
+//interface Req : Serializable {
+//  fun <I : In, O : Out> makeConsistent(requiree: FuncApp<I, O>, requireeRes: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason?
+//}
+
+internal interface PathConsistencyChecker {
+  fun checkConsistency(): ExecReason?
+  fun isConsistent(): Boolean
 }
 
-data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChecker {
+data class PathReq(val path: PPath, val stamp: PathStamp) : PathConsistencyChecker, Serializable {
+  /**
+   * @return an execution reason when this path requirement is inconsistent, `null` otherwise.
+   */
+  override fun checkConsistency(): InconsistentPathReq? {
+    val newStamp = stamp.stamper.stamp(path)
+    if(stamp != newStamp) {
+      return InconsistentPathReq(this, newStamp)
+    }
+    return null
+  }
+
+  /**
+   * @return `true` when this path requirement is consistent, `false` otherwise.
+   */
   override fun isConsistent(): Boolean {
     val newStamp = stamp.stamper.stamp(path)
     return stamp == newStamp
-  }
-
-  override fun <I : In, O : Out> makeConsistent(requiree: FuncApp<I, O>, requireeRes: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): InconsistentPathReq? {
-    logger.checkPathReqStart(requiree, this)
-    val newStamp = stamp.stamper.stamp(path)
-    val reason = if(stamp != newStamp) {
-      InconsistentPathReq(requireeRes, this, newStamp)
-    } else {
-      null
-    }
-    logger.checkPathReqEnd(requiree, this, reason)
-    return reason
   }
 
   override fun toString(): String {
@@ -36,33 +41,44 @@ data class PathReq(val path: PPath, val stamp: PathStamp) : Req, ConsistencyChec
   }
 }
 
-data class CallReq<out AI : In, out AO : Out>(val callee: FuncApp<AI, AO>, val stamp: OutputStamp) : Req {
-  override fun <I : In, O : Out> makeConsistent(requiree: FuncApp<I, O>, requireeRes: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason? {
-    val result = exec.require(callee, cancel).result
-    logger.checkBuildReqStart(requiree, this)
-    val reason = if(!result.isInternallyConsistent) {
-      // CHANGED: paper algorithm did not check if the output changed, which would cause inconsistencies.
-      // If output is not consistent, requirement is not consistent.
-      // TODO: is this necessary?
-      InconsistentExecReqTransientOutput(requireeRes, this, result)
-    } else {
-      val newStamp = stamp.stamper.stamp(result.output)
-      if(stamp != newStamp) {
-        // If stamp has changed, requirement is not consistent
-        InconsistentExecReq(requireeRes, this, newStamp)
-      } else {
-        null
-      }
+data class PathGen(val path: PPath, val stamp: PathStamp) : PathConsistencyChecker, Serializable {
+  /**
+   * @return an execution reason when this path generates is inconsistent, `null` otherwise.
+   */
+  override fun checkConsistency(): InconsistentPathGen? {
+    val newStamp = stamp.stamper.stamp(path)
+    if(stamp != newStamp) {
+      return InconsistentPathGen(this, newStamp)
     }
-    logger.checkBuildReqEnd(requiree, this, reason)
-    return reason
+    return null
   }
 
   /**
-   * @return `true` when this call requirement is consistent w.r.t. [calleeRes], `false` otherwise.
+   * @return `true` when this path generates is consistent, `false` otherwise.
    */
-  fun isConsistent(calleeRes: UExecRes): Boolean {
-    val newStamp = stamp.stamper.stamp(calleeRes.output)
+  override fun isConsistent(): Boolean {
+    val newStamp = stamp.stamper.stamp(path)
+    return stamp == newStamp
+  }
+}
+
+data class CallReq(val callee: UFuncApp, val stamp: OutputStamp) : Serializable {
+  /**
+   * @return an execution reason when this call requirement is inconsistent w.r.t. [output], `null` otherwise.
+   */
+  fun checkConsistency(output: Out): InconsistentCallReq? {
+    val newStamp = stamp.stamper.stamp(output)
+    if(stamp != newStamp) {
+      return InconsistentCallReq(this, newStamp)
+    }
+    return null
+  }
+
+  /**
+   * @return `true` when this call requirement is consistent w.r.t. [output], `false` otherwise.
+   */
+  fun isConsistent(output: Out): Boolean {
+    val newStamp = stamp.stamper.stamp(output)
     return newStamp == stamp
   }
 
@@ -87,9 +103,3 @@ data class CallReq<out AI : In, out AO : Out>(val callee: FuncApp<AI, AO>, val s
     return "CallReq(${callee.toShortString(100)}, $stamp)";
   }
 }
-
-
-typealias UCallReq = CallReq<*, *>
-
-@Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <I : In, O : Out> UCallReq.cast() = this as CallReq<I, O>

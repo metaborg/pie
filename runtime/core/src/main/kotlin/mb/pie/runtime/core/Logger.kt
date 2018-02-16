@@ -7,37 +7,37 @@ import mb.pie.runtime.core.stamp.PathStamp
 
 interface Logger {
   fun requireTopDownInitialStart(app: UFuncApp)
-  fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo)
+  fun requireTopDownInitialEnd(app: UFuncApp, result: UExecRes)
 
   fun requireTopDownStart(app: UFuncApp)
-  fun requireTopDownEnd(app: UFuncApp, info: UExecInfo)
+  fun requireTopDownEnd(app: UFuncApp, result: UExecRes)
 
   fun requireBottomUpInitialStart(app: UFuncApp)
-  fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?)
+  fun requireBottomUpInitialEnd(app: UFuncApp, result: UExecRes?)
 
   fun requireBottomUpStart(app: UFuncApp)
-  fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?)
-  
+  fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?)
+
   fun checkVisitedStart(app: UFuncApp)
-  fun checkVisitedEnd(app: UFuncApp, result: UExecRes?)
+  fun checkVisitedEnd(app: UFuncApp, output: Out?)
 
   fun checkCachedStart(app: UFuncApp)
-  fun checkCachedEnd(app: UFuncApp, result: UExecRes?)
+  fun checkCachedEnd(app: UFuncApp, output: Out?)
 
   fun checkStoredStart(app: UFuncApp)
-  fun checkStoredEnd(app: UFuncApp, result: UExecRes?)
+  fun checkStoredEnd(app: UFuncApp, output: Out?)
 
-  fun checkGenStart(app: UFuncApp, gen: Gen)
-  fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?)
+  fun checkPathGenStart(app: UFuncApp, pathGen: PathGen)
+  fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?)
 
   fun checkPathReqStart(app: UFuncApp, req: PathReq)
   fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?)
 
-  fun checkBuildReqStart(app: UFuncApp, req: UCallReq)
-  fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?)
+  fun checkCallReqStart(app: UFuncApp, req: CallReq)
+  fun checkCallReqEnd(app: UFuncApp, req: CallReq, reason: InconsistentCallReq?)
 
-  fun rebuildStart(app: UFuncApp, reason: ExecReason)
-  fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes)
+  fun executeStart(app: UFuncApp, reason: ExecReason)
+  fun executeEnd(app: UFuncApp, reason: ExecReason, result: UExecRes)
 
   fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out)
   fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out)
@@ -69,7 +69,7 @@ class UnknownExecReason : ExecReason {
 }
 
 class NoResultReason : ExecReason {
-  override fun toString() = "no stored or cached result"
+  override fun toString() = "no stored or cached output"
 
 
   override fun equals(other: Any?): Boolean {
@@ -83,22 +83,22 @@ class NoResultReason : ExecReason {
   }
 }
 
-data class InconsistentTransientOutput(val inconsistentResult: UExecRes) : ExecReason {
+data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) : ExecReason {
   override fun toString() = "transient output is inconsistent"
 }
 
-data class InconsistentGenPath(val generatingResult: UExecRes, val gen: Gen, val newStamp: PathStamp) : ExecReason {
-  override fun toString() = "generated path ${gen.path} is inconsistent"
+data class InconsistentPathGen(val pathGen: PathGen, val newStamp: PathStamp) : ExecReason {
+  override fun toString() = "generated path ${pathGen.path} is inconsistent"
 }
 
-data class InconsistentPathReq(val requiringResult: UExecRes, val req: PathReq, val newStamp: PathStamp) : ExecReason {
+data class InconsistentPathReq(val req: PathReq, val newStamp: PathStamp) : ExecReason {
   override fun toString() = "required path ${req.path} is inconsistent"
 }
 
-data class InconsistentExecReq(val requiringResult: UExecRes, val req: UCallReq, val newStamp: OutputStamp) : ExecReason {
+data class InconsistentCallReq(val req: CallReq, val newStamp: OutputStamp) : ExecReason {
   override fun toString() = "required build ${req.callee.toShortString(100)} is inconsistent"
 }
 
-data class InconsistentExecReqTransientOutput(val requiringResult: UExecRes, val req: UCallReq, val inconsistentResult: UExecRes) : ExecReason {
-  override fun toString() = "transient output of required build ${req.callee.toShortString(100)} is inconsistent"
-}
+//data class InconsistentExecReqTransientOutput(val req: CallReq, val inconsistentResult: UExecRes) : ExecReason {
+//  override fun toString() = "transient output of required build ${req.callee.toShortString(100)} is inconsistent"
+//}

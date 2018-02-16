@@ -5,27 +5,27 @@ import mb.pie.runtime.core.impl.*
 
 class NoopLogger : Logger {
   override fun requireTopDownInitialStart(app: UFuncApp) {}
-  override fun requireTopDownInitialEnd(app: UFuncApp, info: UExecInfo) {}
+  override fun requireTopDownInitialEnd(app: UFuncApp, result: UExecRes) {}
   override fun requireTopDownStart(app: UFuncApp) {}
-  override fun requireTopDownEnd(app: UFuncApp, info: UExecInfo) {}
+  override fun requireTopDownEnd(app: UFuncApp, result: UExecRes) {}
   override fun requireBottomUpInitialStart(app: UFuncApp) {}
-  override fun requireBottomUpInitialEnd(app: UFuncApp, info: UExecInfo?) {}
+  override fun requireBottomUpInitialEnd(app: UFuncApp, result: UExecRes?) {}
   override fun requireBottomUpStart(app: UFuncApp) {}
-  override fun requireBottomUpEnd(app: UFuncApp, info: UExecInfo?) {}
+  override fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?) {}
   override fun checkVisitedStart(app: UFuncApp) {}
-  override fun checkVisitedEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun checkVisitedEnd(app: UFuncApp, output: Out?) {}
   override fun checkCachedStart(app: UFuncApp) {}
-  override fun checkCachedEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun checkCachedEnd(app: UFuncApp, output: Out?) {}
   override fun checkStoredStart(app: UFuncApp) {}
-  override fun checkStoredEnd(app: UFuncApp, result: UExecRes?) {}
-  override fun checkGenStart(app: UFuncApp, gen: Gen) {}
-  override fun checkGenEnd(app: UFuncApp, gen: Gen, reason: InconsistentGenPath?) {}
+  override fun checkStoredEnd(app: UFuncApp, output: Out?) {}
+  override fun checkPathGenStart(app: UFuncApp, pathGen: PathGen) {}
+  override fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?) {}
   override fun checkPathReqStart(app: UFuncApp, req: PathReq) {}
   override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {}
-  override fun checkBuildReqStart(app: UFuncApp, req: UCallReq) {}
-  override fun checkBuildReqEnd(app: UFuncApp, req: UCallReq, reason: ExecReason?) {}
-  override fun rebuildStart(app: UFuncApp, reason: ExecReason) {}
-  override fun rebuildEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {}
+  override fun checkCallReqStart(app: UFuncApp, req: CallReq) {}
+  override fun checkCallReqEnd(app: UFuncApp, req: CallReq, reason: InconsistentCallReq?) {}
+  override fun executeStart(app: UFuncApp, reason: ExecReason) {}
+  override fun executeEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {}
   override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {}
   override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {}
   override fun error(message: String) {}
