@@ -1,12 +1,13 @@
 package mb.pie.runtime.core.impl.exec
 
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.Funcs
 import mb.vfs.path.PPath
 import java.util.*
 
 fun directlyAffectedApps(changedPaths: Collection<PPath>, txn: StoreReadTxn, logger: Logger): HashSet<UFuncApp> {
   val directlyAffected = HashSet<UFuncApp>()
-  if(changedPaths.isEmpty()) return directlyAffected;
+  if(changedPaths.isEmpty()) return directlyAffected
 
   // Find function applications that are directly affected by changed paths.
   logger.trace("Affected function applications")
@@ -51,8 +52,38 @@ fun dirtyFlaggingAndPropagation(changedPaths: Collection<PPath>, txn: StoreWrite
   }
 }
 
+fun hasCallReq(caller: UFuncApp, callee: UFuncApp, funcs: Funcs, txn: StoreReadTxn): Boolean {
+  // TODO: more efficient implementation for figuring out if an app transitively calls on another app?
+  val toCheckQueue: Queue<UFuncApp> = LinkedList()
+  toCheckQueue.add(caller)
+  while(!toCheckQueue.isEmpty()) {
+    val toCheck = toCheckQueue.poll()
+    val callReqs = txn.callReqs(toCheck);
+    if(callReqs.any { it.equalsOrOverlaps(callee, funcs) }) {
+      return true
+    }
+    toCheckQueue.addAll(callReqs.map { it.callee })
+  }
+  return false
+}
+
 class DirtyFlaggedReason : ExecReason {
   override fun toString() = "flagged dirty"
+
+
+  override fun equals(other: Any?): Boolean {
+    if(this === other) return true
+    if(other?.javaClass != javaClass) return false
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return 0
+  }
+}
+
+class InvalidatedExecReason : ExecReason {
+  override fun toString() = "invalidated"
 
 
   override fun equals(other: Any?): Boolean {

@@ -3,11 +3,11 @@ package mb.pie.runtime.core.impl.share
 import mb.pie.runtime.core.*
 
 class NonSharingShare : Share {
-  override fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, cacheFunc: (FuncApp<I, O>) -> O?, execFunc: (FuncApp<I, O>) -> O): O {
+  override fun reuseOrCreate(app: UFuncApp, cacheFunc: (UFuncApp) -> UFuncAppData?, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
     return cacheFunc(app) ?: execFunc(app)
   }
 
-  override fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, execFunc: (FuncApp<I, O>) -> O): O {
+  override fun reuseOrCreate(app: UFuncApp, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
     return execFunc(app)
   }
 

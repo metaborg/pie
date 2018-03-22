@@ -2,6 +2,8 @@ package mb.pie.runtime.core.test
 
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.Exec
+import mb.pie.runtime.core.impl.ExecContextImpl
 import mb.pie.runtime.core.test.util.TestGenerator
 import mb.util.async.Cancelled
 import mb.util.async.NullCancelled
@@ -13,6 +15,7 @@ import org.mockito.Mockito
 inline fun <reified T : Any> safeAny(default: T) = Mockito.any(T::class.java) ?: default
 
 fun anyER() = safeAny<ExecReason>(UnknownExecReason())
+fun anyEC(exec: Exec, store: Store) = safeAny<ExecContext>(ExecContextImpl(exec, store, NullCancelled()))
 fun anyC() = safeAny<Cancelled>(NullCancelled())
 
 internal class ObservingExecutorTests {
@@ -59,11 +62,11 @@ internal class ObservingExecutorTests {
     inOrder(func, exec1, exec2) {
       verify(exec1, times(1)).require(eq(app1), any())
       verify(exec1, times(1)).exec(eq(app1), eq(NoResultReason()), any(), any())
-      verify(func, times(1)).exec(eq(input1), anyOrNull())
+      verify(func, times(1)).exec(eq(input1), anyEC(exec2, store))
 
       verify(exec2, times(1)).require(eq(app2), any())
       verify(exec2, times(1)).exec(eq(app2), eq(NoResultReason()), any(), any())
-      verify(func, times(1)).exec(eq(input2), anyOrNull())
+      verify(func, times(1)).exec(eq(input2), anyEC(exec2, store))
     }
   }
 
@@ -88,7 +91,7 @@ internal class ObservingExecutorTests {
     // Result is reused if rebuild is never called
     verify(exec2, never()).exec(eq(app), eq(NoResultReason()), any(), any())
 
-    verify(func, atMost(1)).exec(eq(input), anyOrNull())
+    verify(func, atMost(1)).exec(eq(input), anyEC(exec2, store))
   }
 
   @TestFactory

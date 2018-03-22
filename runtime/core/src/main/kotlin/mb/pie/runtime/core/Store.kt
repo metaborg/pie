@@ -1,5 +1,6 @@
 package mb.pie.runtime.core
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
 
@@ -37,9 +38,9 @@ interface StoreReadTxn : StoreTxn {
   fun dirty(app: UFuncApp): Boolean
 
   /**
-   * @return output of [app], or `null` when no output was stored.
+   * @return wrapper around output for [app], or `null` if no output is stored.
    */
-  fun output(app: UFuncApp): Out?
+  fun output(app: UFuncApp): UOutput?
 
 
   /**
@@ -117,6 +118,13 @@ interface StoreWriteTxn : StoreReadTxn {
    */
   fun drop()
 }
+
+
+data class Output<out O : Out>(val output: O)
+typealias UOutput = Output<*>
+
+@Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
+internal inline fun <O : Out> UOutput.cast() = Output(this.output as O)
 
 
 data class FuncAppData<out O : Out>(val output: O, val callReqs: ArrayList<CallReq>, val pathReqs: ArrayList<PathReq>, val pathGens: ArrayList<PathGen>)

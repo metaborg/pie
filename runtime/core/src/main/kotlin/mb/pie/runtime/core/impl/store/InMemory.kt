@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
-  private val outputs = ConcurrentHashMap<UFuncApp, Out>()
+  private val outputs = ConcurrentHashMap<UFuncApp, UOutput>()
   private val callReqs = ConcurrentHashMap<UFuncApp, ArrayList<CallReq>>()
   private val callersOf = ConcurrentHashMap<UFuncApp, MutableSet<UFuncApp>>()
   private val pathReqs = ConcurrentHashMap<UFuncApp, ArrayList<PathReq>>()
@@ -29,9 +29,16 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
       dirty.remove(app)
   }
 
-  override fun output(app: UFuncApp) = outputs[app]
+  override fun output(app: UFuncApp) = if(!outputs.containsKey(app)) {
+    null
+  } else {
+    val wrapper = outputs[app]!!
+    Output(wrapper.output)
+  }
+
   override fun setOutput(app: UFuncApp, output: Out) {
-    outputs[app] = output
+    // ConcurrentHashMap does not support null values, so also wrap outputs (which can be null) in an Output object.
+    outputs[app] = Output(output)
   }
 
   override fun callReqs(app: UFuncApp) = callReqs.getOrEmptyList(app)
@@ -93,7 +100,7 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     val callReqs = callReqs(app)
     val pathReqs = pathReqs(app)
     val pathGens = pathGens(app)
-    return FuncAppData(output, callReqs, pathReqs, pathGens)
+    return FuncAppData(output.output, callReqs, pathReqs, pathGens)
   }
 
   override fun setData(app: UFuncApp, data: UFuncAppData) {

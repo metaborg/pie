@@ -3,7 +3,7 @@ package mb.pie.runtime.core
 import java.io.Serializable
 
 
-typealias Out = Serializable
+typealias Out = Serializable?
 
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 internal inline fun <O : Out> Out.cast() = this as O

@@ -13,11 +13,11 @@ class NoopLogger : Logger {
   override fun requireBottomUpStart(app: UFuncApp) {}
   override fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?) {}
   override fun checkVisitedStart(app: UFuncApp) {}
-  override fun checkVisitedEnd(app: UFuncApp, output: Out?) {}
+  override fun checkVisitedEnd(app: UFuncApp, output: Out) {}
   override fun checkCachedStart(app: UFuncApp) {}
-  override fun checkCachedEnd(app: UFuncApp, output: Out?) {}
+  override fun checkCachedEnd(app: UFuncApp, output: Out) {}
   override fun checkStoredStart(app: UFuncApp) {}
-  override fun checkStoredEnd(app: UFuncApp, output: Out?) {}
+  override fun checkStoredEnd(app: UFuncApp, output: Out) {}
   override fun checkPathGenStart(app: UFuncApp, pathGen: PathGen) {}
   override fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?) {}
   override fun checkPathReqStart(app: UFuncApp, req: PathReq) {}

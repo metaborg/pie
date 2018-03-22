@@ -38,6 +38,9 @@ open class PieModule : Module {
     install(FactoryModuleBuilder()
       .implement(BottomUpObservingExecutor::class.java, BottomUpObservingExecutorImpl::class.java)
       .build(BottomUpObservingExecutorFactory::class.java))
+    install(FactoryModuleBuilder()
+      .implement(BottomUpTopsortExecutor::class.java, BottomUpTopsortExecutorImpl::class.java)
+      .build(BottomUpTopsortExecutorFactory::class.java))
   }
 
   protected open fun Binder.bindStore() {

@@ -2,14 +2,21 @@ package mb.pie.runtime.core.test
 
 import com.nhaarman.mockito_kotlin.*
 import kotlinx.coroutines.experimental.*
+import mb.log.SLF4JLogger
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.impl.cache.NoopCache
 import mb.pie.runtime.core.impl.exec.TopDownExecImpl
 import mb.pie.runtime.core.impl.layer.ValidationException
 import mb.pie.runtime.core.impl.share.CoroutineShare
+import mb.pie.runtime.core.impl.share.NonSharingShare
+import mb.pie.runtime.core.impl.store.InMemoryStore
+import mb.pie.runtime.core.impl.store.LMDBBuildStoreFactory
 import mb.pie.runtime.core.test.util.TestGenerator
 import mb.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
+import org.slf4j.LoggerFactory
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -69,7 +76,11 @@ internal class TopDownExecutorTests {
   }
 
   @TestFactory
-  fun testReuse() = TestGenerator.generate("testReuse") {
+  fun testReuse() = TestGenerator.generate("testReuse"//,
+//    dStoreGens = arrayOf({ LMDBBuildStoreFactory(SLF4JLogger(LoggerFactory.getLogger("root"))).create(File("target/lmdbstore")) }),
+//    dCacheGens = arrayOf({ NoopCache() }),
+//    dShareGens = arrayOf({NonSharingShare() })
+  ) {
     val func = spy(toLowerCase)
     registerFunc(func)
 

@@ -3,7 +3,6 @@ package mb.pie.runtime.core.impl.exec
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
-import mb.vfs.path.PPath
 
 @Suppress("DataClassPrivateConstructor")
 data class ResOrData<out O : Out> private constructor(val res: ExecRes<O>?, val data: FuncAppData<O>?) {
@@ -17,8 +16,7 @@ internal open class TopDownExecShared(
   private val share: Share,
   private val layer: Layer,
   private val logger: Logger,
-  private val visited: MutableMap<UFuncApp, UFuncAppData>,
-  private val generatorOfLocal: MutableMap<PPath, UFuncApp>
+  private val visited: MutableMap<UFuncApp, UFuncAppData>
 ) {
   fun <I : In, O : Out> existingData(app: FuncApp<I, O>): FuncAppData<O>? {
     // Check cache for output of function application.
@@ -34,7 +32,7 @@ internal open class TopDownExecShared(
       val data = store.readTxn().use { it.data(app) }
       logger.checkStoredEnd(app, data?.output)
       data
-    }?.cast()
+    }?.cast<O>()
   }
 
   fun <I : In, O : Out> topdownPrelude(app: FuncApp<I, O>): ResOrData<O> {
@@ -58,25 +56,25 @@ internal open class TopDownExecShared(
   }
 
 
-  fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false, execFunc: (FuncApp<I, O>, Cancelled) -> O): ExecRes<O> {
+  fun exec(app: UFuncApp, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false, execFunc: (UFuncApp, Cancelled) -> UFuncAppData): UFuncAppData {
     cancel.throwIfCancelled()
     logger.executeStart(app, reason)
-    val output = if(useCache) {
-      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.output(it)?.cast() } }) { execFunc(it, cancel) }
+    val data = if(useCache) {
+      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.data(it) } }) { execFunc(it, cancel) }
     } else {
       share.reuseOrCreate(app) { execFunc(it, cancel) }
     }
-    val result = ExecRes(output, reason)
+    val result = ExecRes(data.output, reason)
     logger.executeEnd(app, reason, result)
-    return result
+    return data
   }
 
-  fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled, exec: Exec, funcs: Funcs, writeFunc: (StoreWriteTxn, FuncAppData<O>) -> Unit): O {
+  fun execInternal(app: UFuncApp, cancel: Cancelled, exec: Exec, funcs: Funcs, writeFunc: (StoreWriteTxn, UFuncAppData) -> Unit): UFuncAppData {
     cancel.throwIfCancelled()
     val (id, input) = app
-    val builder = funcs.getFunc<I, O>(id)
-    val context = ExecContextImpl(exec, store, app, generatorOfLocal, cancel)
-    val output = builder.exec(input, context)
+    val builder = funcs.getUFunc(id)
+    val context = ExecContextImpl(exec, store, cancel)
+    val output = builder.execUntyped(input, context)
     val (callReqs, pathReqs, pathGens) = context.reqs()
     val data = FuncAppData(output, callReqs, pathReqs, pathGens)
     // Validate well-formedness of the dependency graph, before writing.
@@ -88,6 +86,6 @@ internal open class TopDownExecShared(
     // Cache data
     visited[app] = data
     cache[app] = data
-    return output
+    return data
   }
 }

@@ -50,7 +50,7 @@ class TraceLogger : Logger {
     traces.add(CheckVisitedStart(app, currentTime))
   }
 
-  override fun checkVisitedEnd(app: UFuncApp, output: Out?) {
+  override fun checkVisitedEnd(app: UFuncApp, output: Out) {
     traces.add(CheckVisitedEnd(app, output, currentTime))
   }
 
@@ -60,7 +60,7 @@ class TraceLogger : Logger {
 
   }
 
-  override fun checkCachedEnd(app: UFuncApp, output: Out?) {
+  override fun checkCachedEnd(app: UFuncApp, output: Out) {
     traces.add(CheckCachedEnd(app, output, currentTime))
   }
 
@@ -70,7 +70,7 @@ class TraceLogger : Logger {
 
   }
 
-  override fun checkStoredEnd(app: UFuncApp, output: Out?) {
+  override fun checkStoredEnd(app: UFuncApp, output: Out) {
     traces.add(CheckStoredEnd(app, output, currentTime))
   }
 
@@ -139,11 +139,11 @@ data class RequireBottomUpInitialEnd(val app: UFuncApp, val result: UExecRes?, o
 data class RequireBottomUpStart(val app: UFuncApp, override val time: Long) : Trace
 data class RequireBottomUpEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
 data class CheckVisitedStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckVisitedEnd(val app: UFuncApp, val output: Out?, override val time: Long) : Trace
+data class CheckVisitedEnd(val app: UFuncApp, val output: Out, override val time: Long) : Trace
 data class CheckCachedStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckCachedEnd(val app: UFuncApp, val output: Out?, override val time: Long) : Trace
+data class CheckCachedEnd(val app: UFuncApp, val output: Out, override val time: Long) : Trace
 data class CheckStoredStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckStoredEnd(val app: UFuncApp, val output: Out?, override val time: Long) : Trace
+data class CheckStoredEnd(val app: UFuncApp, val output: Out, override val time: Long) : Trace
 data class CheckGenStart(val app: UFuncApp, val pathGen: PathGen, override val time: Long) : Trace
 data class CheckGenEnd(val app: UFuncApp, val pathGen: PathGen, val reason: InconsistentPathGen?, override val time: Long) : Trace
 data class CheckPathReqStart(val app: UFuncApp, val eq: PathReq, override val time: Long) : Trace

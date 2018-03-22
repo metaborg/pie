@@ -17,6 +17,9 @@ interface Func<in I : In, out O : Out> {
 typealias UFunc = Func<*, *>
 typealias AnyFunc = Func<In, Out>
 
+@Throws(ExecException::class, InterruptedException::class)
+internal fun <I : In> Func<I, *>.execUntyped(input: In, ctx: ExecContext): Out = exec(input.cast(), ctx)
+
 
 interface OutEffectFunc<in I : In> : Func<I, None> {
   @Throws(ExecException::class, InterruptedException::class)

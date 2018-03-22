@@ -36,14 +36,13 @@ class TopDownExecutorImpl @Inject constructor(
 open class TopDownExecImpl(
   private val store: Store,
   private val cache: Cache,
-  private val share: Share,
+  share: Share,
   private val layer: Layer,
   private val logger: Logger,
   private val funcs: Map<String, UFunc>
 ) : TopDownExec, Exec, Funcs by FuncsImpl(funcs) {
   private val visited = mutableMapOf<UFuncApp, UFuncAppData>()
-  private val generatorOfLocal = mutableMapOf<PPath, UFuncApp>()
-  private val shared = TopDownExecShared(store, cache, share, layer, logger, visited, generatorOfLocal)
+  private val shared = TopDownExecShared(store, cache, share, layer, logger, visited)
 
 
   fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecRes<O> {
@@ -70,7 +69,9 @@ open class TopDownExecImpl(
       // Check if re-execution is necessary.
       if(data == null) {
         // No cached or stored output was found: rebuild
-        val res = exec(app, NoResultReason(), cancel, true)
+        val reason = NoResultReason()
+        val execData = exec(app, reason, cancel, true)
+        val res = ExecRes(execData.output.cast<O>(), reason)
         logger.requireTopDownEnd(app, res)
         return res
       }
@@ -81,7 +82,8 @@ open class TopDownExecImpl(
         // Internal consistency: transient output consistency
         val reason = output.isTransientInconsistent()
         if(reason != null) {
-          val res = exec(app, reason, cancel)
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
           logger.requireTopDownEnd(app, res)
           return res
         }
@@ -94,7 +96,8 @@ open class TopDownExecImpl(
         if(reason != null) {
           // If a required file is outdated (i.e., its stamp changed): rebuild
           logger.checkPathReqEnd(app, pathReq, reason)
-          val res = exec(app, reason, cancel)
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
           logger.requireTopDownEnd(app, res)
           return res
         } else {
@@ -109,7 +112,8 @@ open class TopDownExecImpl(
         if(reason != null) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
           logger.checkPathGenEnd(app, pathGen, reason)
-          val res = exec(app, reason, cancel)
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
           logger.requireTopDownEnd(app, res)
           return res
         } else {
@@ -124,9 +128,10 @@ open class TopDownExecImpl(
         val reason = callReq.checkConsistency(callReqOutput)
         logger.checkCallReqEnd(app, callReq, reason)
         if(reason != null) {
-          val info = exec(app, reason, cancel)
-          logger.requireTopDownEnd(app, info)
-          return info
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
+          logger.requireTopDownEnd(app, res)
+          return res
         }
       }
 
@@ -145,12 +150,12 @@ open class TopDownExecImpl(
     }
   }
 
-  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecRes<O> {
-    return shared.exec(app, reason, cancel, useCache, this::execInternal)
+  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UFuncAppData {
+    return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
-  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): O {
-    return shared.execInternal(app, cancel, this, this) { txn, data -> }
+  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): UFuncAppData {
+    return shared.execInternal(app, cancel, this, this) { _, _ -> }
   }
 
 

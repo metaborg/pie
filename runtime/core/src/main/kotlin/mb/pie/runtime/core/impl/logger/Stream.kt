@@ -42,15 +42,15 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
 
 
   override fun checkVisitedStart(app: UFuncApp) {}
-  override fun checkVisitedEnd(app: UFuncApp, output: Out?) {}
+  override fun checkVisitedEnd(app: UFuncApp, output: Out) {}
 
 
   override fun checkCachedStart(app: UFuncApp) {}
-  override fun checkCachedEnd(app: UFuncApp, output: Out?) {}
+  override fun checkCachedEnd(app: UFuncApp, output: Out) {}
 
 
   override fun checkStoredStart(app: UFuncApp) {}
-  override fun checkStoredEnd(app: UFuncApp, output: Out?) {}
+  override fun checkStoredEnd(app: UFuncApp, output: Out) {}
 
 
   override fun checkPathGenStart(app: UFuncApp, pathGen: PathGen) {}

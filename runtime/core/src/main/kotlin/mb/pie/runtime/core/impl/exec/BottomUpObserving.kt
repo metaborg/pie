@@ -128,8 +128,7 @@ open class BottomUpObservingExec(
   private val dirty: DirtyState
 ) : Exec, Funcs by FuncsImpl(funcs) {
   private val visited = mutableMapOf<UFuncApp, UFuncAppData>()
-  private val generatorOfLocal = mutableMapOf<PPath, UFuncApp>()
-  private val shared = TopDownExecShared(store, cache, share, layer, logger, visited, generatorOfLocal)
+  private val shared = TopDownExecShared(store, cache, share, layer, logger, visited)
 
 
   /**
@@ -218,7 +217,9 @@ open class BottomUpObservingExec(
       // Check if re-execution is necessary.
       if(data == null) {
         // No cached or stored output was found: rebuild
-        val res = exec(app, NoResultReason(), cancel, true)
+        val reason = NoResultReason()
+        val execData = exec(app, reason, cancel, true)
+        val res = ExecRes(execData.output.cast<O>(), reason)
         logger.requireTopDownEnd(app, res)
         return res
       }
@@ -234,7 +235,8 @@ open class BottomUpObservingExec(
         */
         val reason = output.isTransientInconsistent()
         if(reason != null) {
-          val res = exec(app, reason, cancel)
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
           logger.requireTopDownEnd(app, res)
           return res
         }
@@ -243,9 +245,11 @@ open class BottomUpObservingExec(
       if(variant == DirtyFlagging) {
         // Internal consistency: dirty flagged.
         if(dirty.isDirty(app)) {
-          val info = exec(app, DirtyFlaggedReason(), cancel)
-          logger.requireTopDownEnd(app, info)
-          return info
+          val reason = DirtyFlaggedReason()
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
+          logger.requireTopDownEnd(app, res)
+          return res
         }
       }
 
@@ -262,7 +266,8 @@ open class BottomUpObservingExec(
         if(reason != null) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
           logger.checkPathGenEnd(app, pathGen, reason)
-          val res = exec(app, reason, cancel)
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
           logger.requireTopDownEnd(app, res)
           return res
         } else {
@@ -295,7 +300,7 @@ open class BottomUpObservingExec(
   /**
    * Require the result of a new observable function application in a bottom-up manner.
    */
-  internal open fun <I : In, O : Out> requireBottomUp(caller: FuncApp<I, O>, callee: UFuncApp?, calleeOutput: Out?, cancel: Cancelled): ExecRes<O>? {
+  internal open fun <I : In, O : Out> requireBottomUp(caller: FuncApp<I, O>, callee: UFuncApp?, calleeOutput: Out, cancel: Cancelled): ExecRes<O>? {
     cancel.throwIfCancelled()
     logger.requireBottomUpStart(caller)
     val res = bottomUpResult(caller, callee, calleeOutput, cancel)
@@ -309,10 +314,12 @@ open class BottomUpObservingExec(
     return res
   }
 
-  internal open fun <I : In, O : Out> bottomUpResult(caller: FuncApp<I, O>, callee: UFuncApp?, calleeOutput: Out?, cancel: Cancelled): ExecRes<O> {
+  internal open fun <I : In, O : Out> bottomUpResult(caller: FuncApp<I, O>, callee: UFuncApp?, calleeOutput: Out, cancel: Cancelled): ExecRes<O> {
     if(callee == null || calleeOutput == null) {
       // When callee is null, caller is directly affected: execute.
-      return exec(caller, InvalidatedExecReason(), cancel)
+      val reason = InvalidatedExecReason()
+      val execData = exec(caller, reason, cancel)
+      return ExecRes(execData.output.cast<O>(), reason)
     }
 
     when(variant) {
@@ -323,14 +330,7 @@ open class BottomUpObservingExec(
         val visitedData = visited[caller]
         if(visitedData != null && !dirty.isDirty(caller)) {
           // If non-dirty function application was already visited: skip execution.
-          return ExecRes(visitedData.output.cast())
-        }
-      }
-      TopologicalSort -> {
-        val visitedData = visited[caller]
-        if(visitedData != null) {
-          // If function application was already visited: skip execution.
-          return ExecRes(visitedData.output.cast())
+          return ExecRes(visitedData.output.cast<O>())
         }
       }
     }
@@ -343,7 +343,9 @@ open class BottomUpObservingExec(
       Required for cancellation and exception support, which model early termination. When execution is terminated
       early, dependencies may have been stored in the store, whereas the result of execution has not.
       */
-      return exec(caller, NoResultReason(), cancel)
+      val reason = NoResultReason()
+      val execData = exec(caller, reason, cancel)
+      return ExecRes(execData.output.cast<O>(), reason)
     }
 
     val transientInconsistencyReason = callerData.output.isTransientInconsistent()
@@ -354,14 +356,17 @@ open class BottomUpObservingExec(
       and instead can only be stored in memory. After a restart of the JVM, this memory must be restored by re-executing
       the function application. This check ensures that this happens.
       */
-      return exec(caller, transientInconsistencyReason, cancel)
+      val execData = exec(caller, transientInconsistencyReason, cancel)
+      return ExecRes(execData.output.cast<O>(), transientInconsistencyReason)
     }
 
     logger.trace("Checking if call from ${caller.toShortString(100)} to ${callee.toShortString(100)} is consistent")
     // Caller's call requirements are available, callee and calleeOutput are not null.
     if(!callerData.callReqs.filter { it.callee == callee }.all { it.isConsistent(calleeOutput) }) {
       // If a call requirement from caller to callee is inconsistent: execute
-      return exec(caller, InvalidatedExecReason(), cancel)
+      val reason = InvalidatedExecReason()
+      val execData = exec(caller, reason, cancel)
+      return ExecRes(execData.output.cast<O>(), reason)
     }
 
     // Skip execution
@@ -385,14 +390,14 @@ open class BottomUpObservingExec(
   /**
    * Executes [app] and returns it result. Tries to share [app]'s execution with other threads using [share].
    */
-  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): ExecRes<O> {
-    return shared.exec(app, reason, cancel, useCache, this::execInternal)
+  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UFuncAppData {
+    return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
   /**
    * Performs the actual execution of [app] and returns it result.
    */
-  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): O {
+  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): UFuncAppData {
     return shared.execInternal(app, cancel, this, this) { _, data ->
       // Notify observer, if any.
       val observer = observers[app]
@@ -404,20 +409,5 @@ open class BottomUpObservingExec(
       }
       // TODO: mark observed, not-dirty
     }
-  }
-}
-
-class InvalidatedExecReason : ExecReason {
-  override fun toString() = "invalidated"
-
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
   }
 }

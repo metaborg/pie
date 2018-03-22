@@ -114,7 +114,7 @@ internal open class LMDBStoreTxnBase(
   protected val logger: Logger
 ) {
   /// Serialization
-  protected fun <T : Serializable> serialize(obj: T, maxKeySize: Int? = null): Buf {
+  protected fun <T : Serializable?> serialize(obj: T, maxKeySize: Int? = null): Buf {
     return if(maxKeySize != null) {
       // TODO: always hashing when maxKeySize is set, but we could instead only hash when key exceeds the key size?
       serializeHashed(obj)
@@ -125,7 +125,7 @@ internal open class LMDBStoreTxnBase(
 
   data class SerializedAndHashed(val serialized: Buf, val hashed: Buf)
 
-  protected fun <T : Serializable> serializeAndHash(obj: T): SerializedAndHashed {
+  protected fun <T : Serializable?> serializeAndHash(obj: T): SerializedAndHashed {
     val stream = ExpandableDirectBufferOutputStream(ExpandableDirectByteBuffer(1024))
     val digester = MessageDigest.getInstance("SHA-256")
     stream.use {
@@ -143,7 +143,7 @@ internal open class LMDBStoreTxnBase(
     return SerializedAndHashed(serialized, hashed)
   }
 
-  private fun <T : Serializable> serializeHashed(obj: T): Buf {
+  private fun <T : Serializable?> serializeHashed(obj: T): Buf {
     val digester = MessageDigest.getInstance("SHA-256")
     DigestingOutputStream(digester).use {
       ObjectOutputStream(it).use {
@@ -156,7 +156,7 @@ internal open class LMDBStoreTxnBase(
     return buf
   }
 
-  private fun <T : Serializable> serializeToBytes(obj: T): Buf {
+  private fun <T : Serializable?> serializeToBytes(obj: T): Buf {
     val stream = ExpandableDirectBufferOutputStream(ExpandableDirectByteBuffer(1024))
     stream.use {
       ObjectOutputStream(it).use {
@@ -171,21 +171,19 @@ internal open class LMDBStoreTxnBase(
   }
 
   /// Deserialization
-  private fun <T : Serializable> deserialize(buffer: Buf): T? {
+  private fun <T : Serializable?> deserialize(buffer: Buf): DeserializedOrDeleted<T> {
     DirectBufferInputStream(buffer).use {
       ObjectInputStream(it).use {
-        try {
+        return try {
           @Suppress("UNCHECKED_CAST")
-          return it.readObject() as T
+          val deserialized = it.readObject() as T
+          DeserializedOrDeleted(deserialized)
         } catch(e: ClassNotFoundException) {
           logger.error("Deserialization failed", e)
-          return null
-        } catch(e: ObjectStreamException) {
-          logger.error("Deserialization failed", e)
-          return null
+          DeserializedOrDeleted<T>()
         } catch(e: IOException) {
           logger.error("Deserialization failed", e)
-          return null
+          DeserializedOrDeleted<T>()
         }
       }
     }
@@ -207,19 +205,19 @@ internal open class LMDBStoreTxnBase(
   }
 
 
-  protected fun <T : Serializable, R : Serializable> getOne(input: T, db: DbiB): R? {
+  protected fun <T : Serializable, R : Serializable?> getOne(input: T, db: DbiB): DeserializedOrDeleted<R>? {
     val key = serialize(input, env.maxKeySize)
     val value = db.get(txn, key) ?: return null
-    return deserializeOrDelete(key, value, db)
+    return deserializeOrDelete<R>(key, value, db)
   }
 
-  protected fun <R : Serializable> getOne(key: Buf, db: DbiB): R? {
+  protected fun <R : Serializable?> getOne(key: Buf, db: DbiB): DeserializedOrDeleted<R>? {
     val value = db.get(txn, key) ?: return null
-    return deserializeOrDelete(key, value, db)
+    return deserializeOrDelete<R>(key, value, db)
   }
 
 
-  protected fun <T : Serializable, R : Serializable> getMultiple(input: T, dbDup: DbiB, dbVal: DbiB): Set<R> {
+  protected fun <T : Serializable, R : Serializable?> getMultiple(input: T, dbDup: DbiB, dbVal: DbiB): Set<R> {
     val key = serialize(input, env.maxKeySize)
     val hashedValues = ArrayList<Buf>()
     dbDup.openCursor(txn).use { cursor ->
@@ -236,12 +234,12 @@ internal open class LMDBStoreTxnBase(
     for(hashedValue in hashedValues) {
       val value = dbVal.get(txn, hashedValue) ?: continue
       val deserializedValue = deserializeOrDelete<R>(hashedValue, value, dbVal)
-      if(deserializedValue != null) {
-        results.add(deserializedValue)
+      if(!deserializedValue.deleted) {
+        results.add(deserializedValue.deserialized)
       } else {
         // Also delete key-value pair from dbDup when value could not be deserialized.
         if(isWriteTxn) {
-          dbDup.delete(txn, key)
+          dbDup.delete(txn, key, hashedValue)
         } else {
           env.txnWrite().use {
             dbDup.delete(it, key, hashedValue)
@@ -252,11 +250,9 @@ internal open class LMDBStoreTxnBase(
     return results
   }
 
-  private fun <R : Serializable> deserializeOrDelete(key: Buf, value: Buf, db: DbiB): R? {
+  private fun <R : Serializable?> deserializeOrDelete(key: Buf, value: Buf, db: DbiB): DeserializedOrDeleted<R> {
     val deserialized = deserialize<R>(value)
-    return if(deserialized != null) {
-      deserialized
-    } else {
+    if(deserialized.deleted) {
       if(isWriteTxn) {
         db.delete(txn, key)
       } else {
@@ -264,8 +260,8 @@ internal open class LMDBStoreTxnBase(
           db.delete(it, key)
         }
       }
-      null
     }
+    return deserialized
   }
 
 
@@ -281,12 +277,12 @@ internal open class LMDBStoreTxnBase(
   }
 
 
-  protected fun <K : Serializable, V : Serializable> setOne(input: K, result: V, db: DbiB): Boolean {
+  protected fun <K : Serializable, V : Serializable?> setOne(input: K, result: V, db: DbiB): Boolean {
     val key = serialize(input, env.maxKeySize)
     return setOne(key, result, db)
   }
 
-  protected fun <V : Serializable> setOne(key: Buf, result: V, db: DbiB): Boolean {
+  protected fun <V : Serializable?> setOne(key: Buf, result: V, db: DbiB): Boolean {
     val value = serialize(result)
     return setOne(key, value, db)
   }
@@ -311,13 +307,13 @@ internal open class LMDBStoreTxnBase(
   }
 
 
-  protected fun <K : Serializable, V : Serializable> setDup(input: K, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
+  protected fun <K : Serializable, V : Serializable?> setDup(input: K, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
     val key = serialize(input, env.maxKeySize)
     val (value, hashedValue) = serializeAndHash(result)
     return setDup(key, value, hashedValue, dbDup, dbVal)
   }
 
-  protected fun <V : Serializable> setDup(key: Buf, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
+  protected fun <V : Serializable?> setDup(key: Buf, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
     val (value, hashedValue) = serializeAndHash(result)
     return setDup(key, value, hashedValue, dbDup, dbVal)
   }
@@ -334,12 +330,12 @@ internal open class LMDBStoreTxnBase(
   }
 
 
-  protected fun <K : Serializable, V : Serializable> deleteDup(input: K, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
+  protected fun <K : Serializable, V : Serializable?> deleteDup(input: K, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
     val key = serialize(input, env.maxKeySize)
     return deleteDup(key, result, dbDup, dbVal)
   }
 
-  protected fun <V : Serializable> deleteDup(key: Buf, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
+  protected fun <V : Serializable?> deleteDup(key: Buf, result: V, dbDup: DbiB, dbVal: DbiB): Boolean {
     val hashedValue = serialize(result, env.maxKeySize)
     return deleteDup(key, hashedValue, dbDup, dbVal)
   }
@@ -351,7 +347,7 @@ internal open class LMDBStoreTxnBase(
 
   protected fun deleteDup(key: Buf, hashedValue: Buf, dbDup: DbiB, @Suppress("UNUSED_PARAMETER") dbVal: DbiB): Boolean {
     return dbDup.delete(txn, key, hashedValue)
-    // PROB: cannot delete (hashedValue, value) from value database, since there can be multiple hashedValue values in dbDup.
+    // PROB: cannot delete (hashedValue, value) from value database, since multiple entries from dbDup may refer to it.
   }
 }
 
@@ -375,12 +371,14 @@ internal open class LMDBStoreTxn(
     return getBool(app, dirtyDb)
   }
 
-  override fun output(app: UFuncApp): Out? {
-    return getOne(app, outputDb)
+  override fun output(app: UFuncApp): UOutput? {
+    return getOne<UFuncApp, Out>(app, outputDb).mapOrElse(null) { value ->
+      Output(value)
+    }
   }
 
   override fun callReqs(app: UFuncApp): ArrayList<CallReq> {
-    return getOne(app, callReqsDb) ?: arrayListOf()
+    return getOne<UFuncApp, ArrayList<CallReq>>(app, callReqsDb).orElse(arrayListOf())
   }
 
   override fun callersOf(app: UFuncApp): Set<UFuncApp> {
@@ -388,7 +386,7 @@ internal open class LMDBStoreTxn(
   }
 
   override fun pathReqs(app: UFuncApp): ArrayList<PathReq> {
-    return getOne(app, pathReqsDb) ?: arrayListOf()
+    return getOne<UFuncApp, ArrayList<PathReq>>(app, pathReqsDb).orElse(arrayListOf())
   }
 
   override fun requireesOf(path: PPath): Set<UFuncApp> {
@@ -396,20 +394,24 @@ internal open class LMDBStoreTxn(
   }
 
   override fun pathGens(app: UFuncApp): ArrayList<PathGen> {
-    return getOne(app, pathGensDb) ?: arrayListOf()
+    return getOne<UFuncApp, ArrayList<PathGen>>(app, pathGensDb).orElse(arrayListOf())
   }
 
   override fun generatorOf(path: PPath): UFuncApp? {
-    return getOne(path, generatorOfDb)
+    return getOne<PPath, UFuncApp?>(path, generatorOfDb).orElse(null)
   }
 
   override fun data(app: UFuncApp): UFuncAppData? {
     // TODO: buffer copies required?
     val appKey = serialize(app, env.maxKeySize)
-    val output: Serializable = getOne(copyBuffer(appKey), outputDb) ?: return null
-    val callReqs = getOne<ArrayList<CallReq>>(copyBuffer(appKey), callReqsDb) ?: arrayListOf()
-    val pathReqs = getOne<ArrayList<PathReq>>(copyBuffer(appKey), pathReqsDb) ?: arrayListOf()
-    val pathGens = getOne<ArrayList<PathGen>>(appKey, pathGensDb) ?: arrayListOf()
+    val outputDeserialized = getOne<Out>(copyBuffer(appKey), outputDb)
+    if(outputDeserialized == null || outputDeserialized.deleted) {
+      return null
+    }
+    val output = outputDeserialized.deserialized
+    val callReqs = getOne<ArrayList<CallReq>>(copyBuffer(appKey), callReqsDb).orElse(arrayListOf())
+    val pathReqs = getOne<ArrayList<PathReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
+    val pathGens = getOne<ArrayList<PathGen>>(appKey, pathGensDb).orElse(arrayListOf())
     return FuncAppData(output, callReqs, pathReqs, pathGens)
   }
 
@@ -423,20 +425,27 @@ internal open class LMDBStoreTxn(
   }
 
   override fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>) {
+    logger.trace("Setting call reqs of ${app.toShortString(100)} to $callReqs")
     // TODO: buffer copies required?
-    val (appValue, appKey) = serializeAndHash(app)
+    val (callerAppVal, callerAppKey) = serializeAndHash(app)
     // Remove old inverse call requirements.
-    val oldCallReqs = getOne<ArrayList<CallReq>>(copyBuffer(appKey), callReqsDb)
-    if(oldCallReqs != null) {
-      for(oldCallReq in oldCallReqs) {
-        deleteDup(oldCallReq.callee, copyBuffer(appKey), callersOfDb, callersOfValuesDb)
-      }
+    logger.trace(" * removing old inverse callers")
+    val oldCallReqs = getOne<ArrayList<CallReq>>(copyBuffer(callerAppKey), callReqsDb).orElse(arrayListOf())
+    for(oldCallReq in oldCallReqs) {
+      logger.trace("   * removing: ${oldCallReq.callee.toShortString(50)} -> ${app.toShortString(50)}")
+      val deleted = deleteDup(oldCallReq.callee, copyBuffer(callerAppKey), callersOfDb, callersOfValuesDb)
+      logger.trace("   * deletion success: $deleted")
     }
     // OPTO: diff callReqs and oldCallReqs, remove/add entries based on diff.
     // Add new call requirements.
-    setOne(copyBuffer(appKey), callReqs, callReqsDb)
+    logger.trace(" * setting call requirements")
+    val set = setOne(copyBuffer(callerAppKey), callReqs, callReqsDb)
+    logger.trace(" * setting success: $set")
+    logger.trace(" * adding new inverse callers")
     for(callReq in callReqs) {
-      setDup(callReq.callee, copyBuffer(appValue), copyBuffer(appKey), callersOfDb, callersOfValuesDb)
+      logger.trace("   * adding: ${callReq.callee.toShortString(50)} -> ${app.toShortString(50)}")
+      val added = setDup(callReq.callee, copyBuffer(callerAppVal), copyBuffer(callerAppKey), callersOfDb, callersOfValuesDb)
+      logger.trace("   * addition success: $added")
     }
   }
 
@@ -444,11 +453,9 @@ internal open class LMDBStoreTxn(
     // TODO: buffer copies required?
     val (appValue, appKey) = serializeAndHash(app)
     // Remove old inverse path requirements.
-    val oldPathReqs = getOne<ArrayList<PathReq>>(copyBuffer(appKey), pathReqsDb)
-    if(oldPathReqs != null) {
-      for(oldPathReq in oldPathReqs) {
-        deleteDup(oldPathReq.path, copyBuffer(appKey), requireesOfDb, requireesOfValuesDb)
-      }
+    val oldPathReqs = getOne<ArrayList<PathReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
+    for(oldPathReq in oldPathReqs) {
+      deleteDup(oldPathReq.path, copyBuffer(appKey), requireesOfDb, requireesOfValuesDb)
     }
     // OPTO: diff pathReqs and oldPathReqs, remove/add entries based on diff.
     // Add new path requirements.
@@ -462,11 +469,9 @@ internal open class LMDBStoreTxn(
     // TODO: buffer copies required?
     val (appValue, appKey) = serializeAndHash(app)
     // Remove old inverse path generates.
-    val oldPathGens = getOne<ArrayList<PathGen>>(copyBuffer(appKey), pathGensDb)
-    if(oldPathGens != null) {
-      for(oldPathGen in oldPathGens) {
-        deleteOne(oldPathGen.path, generatorOfDb)
-      }
+    val oldPathGens = getOne<ArrayList<PathGen>>(copyBuffer(appKey), pathGensDb).orElse(arrayListOf())
+    for(oldPathGen in oldPathGens) {
+      deleteOne(oldPathGen.path, generatorOfDb)
     }
     // OPTO: diff pathGens and oldPathGens, remove/add entries based on diff.
     // Add new path generates.
@@ -487,11 +492,14 @@ internal open class LMDBStoreTxn(
   override fun drop() {
     dirtyDb.drop(txn)
     outputDb.drop(txn)
+    callReqsDb.drop(txn)
     callersOfDb.drop(txn)
     callersOfValuesDb.drop(txn)
+    pathReqsDb.drop(txn)
     requireesOfDb.drop(txn)
     requireesOfValuesDb.drop(txn)
     pathGensDb.drop(txn)
+    generatorOfDb.drop(txn)
   }
 
 
@@ -510,5 +518,29 @@ class DigestingOutputStream(private val digest: MessageDigest) : OutputStream() 
   @Throws(IOException::class)
   override fun write(b: ByteArray, off: Int, len: Int) {
     digest.update(b, off, len)
+  }
+}
+
+
+data class DeserializedOrDeleted<out R : Serializable?>(val deserialized: R, val deleted: Boolean) {
+  constructor(deserialized: R) : this(deserialized, false)
+  @Suppress("UNCHECKED_CAST")
+  constructor() : this(null as R, true)
+}
+
+fun <R : Serializable?> DeserializedOrDeleted<R>?.orElse(default: R): R {
+  return if(this == null || this.deleted) {
+    default
+  } else {
+    this.deserialized
+  }
+}
+
+
+fun <R : Serializable?, RR> DeserializedOrDeleted<R>?.mapOrElse(default: RR, func: (R) -> RR): RR {
+  return if(this == null || this.deleted) {
+    default
+  } else {
+    func(this.deserialized)
   }
 }

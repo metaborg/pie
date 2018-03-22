@@ -15,7 +15,7 @@ class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun close() {}
 
   override fun dirty(app: UFuncApp): Boolean = false
-  override fun output(app: UFuncApp): Out? = null
+  override fun output(app: UFuncApp): Output<Out>? = null
   override fun callReqs(app: UFuncApp): List<CallReq> = listOf()
   override fun callersOf(app: UFuncApp): Set<UFuncApp> = setOf()
   override fun pathReqs(app: UFuncApp): List<PathReq> = listOf()

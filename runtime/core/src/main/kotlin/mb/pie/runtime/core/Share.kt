@@ -2,6 +2,6 @@ package mb.pie.runtime.core
 
 
 interface Share {
-  fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, cacheFunc: (FuncApp<I, O>) -> O?, execFunc: (FuncApp<I, O>) -> O): O
-  fun <I : In, O : Out> reuseOrCreate(app: FuncApp<I, O>, execFunc: (FuncApp<I, O>) -> O): O
+  fun reuseOrCreate(app: UFuncApp, cacheFunc: (UFuncApp) -> UFuncAppData?, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData
+  fun reuseOrCreate(app: UFuncApp, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData
 }

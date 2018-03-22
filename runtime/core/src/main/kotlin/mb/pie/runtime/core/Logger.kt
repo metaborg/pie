@@ -19,13 +19,13 @@ interface Logger {
   fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?)
 
   fun checkVisitedStart(app: UFuncApp)
-  fun checkVisitedEnd(app: UFuncApp, output: Out?)
+  fun checkVisitedEnd(app: UFuncApp, output: Out)
 
   fun checkCachedStart(app: UFuncApp)
-  fun checkCachedEnd(app: UFuncApp, output: Out?)
+  fun checkCachedEnd(app: UFuncApp, output: Out)
 
   fun checkStoredStart(app: UFuncApp)
-  fun checkStoredEnd(app: UFuncApp, output: Out?)
+  fun checkStoredEnd(app: UFuncApp, output: Out)
 
   fun checkPathGenStart(app: UFuncApp, pathGen: PathGen)
   fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?)
