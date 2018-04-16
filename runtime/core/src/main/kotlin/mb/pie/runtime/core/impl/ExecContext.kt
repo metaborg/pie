@@ -22,6 +22,7 @@ internal class ExecContextImpl(
     val output = exec.require(app, cancel).output
     val stamp = stamper.stamp(output)
     callReqs.add(CallReq(app, stamp))
+    Stats.addCallReq()
     return output
   }
 
@@ -30,6 +31,7 @@ internal class ExecContextImpl(
     val output = exec.require(app, cancel).output
     val stamp = stamper.stamp(output)
     callReqs.add(CallReq(app, stamp))
+    Stats.addCallReq()
   }
 
 
@@ -41,11 +43,13 @@ internal class ExecContextImpl(
     if(generatedBy != null) {
       requireExec(generatedBy)
     }
+    Stats.addFileReq()
   }
 
   override fun generate(path: PPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
     pathGens.add(PathGen(path, stamp))
+    Stats.addFileGen()
   }
 
   data class Reqs(val callReqs: ArrayList<CallReq>, val pathReqs: ArrayList<PathReq>, val pathGens: ArrayList<PathGen>)

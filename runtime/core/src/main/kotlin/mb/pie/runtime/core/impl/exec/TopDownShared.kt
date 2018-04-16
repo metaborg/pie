@@ -36,6 +36,7 @@ internal open class TopDownExecShared(
   }
 
   fun <I : In, O : Out> topdownPrelude(app: FuncApp<I, O>): ResOrData<O> {
+    Stats.addRequires()
     layer.requireTopDownStart(app)
     logger.requireTopDownStart(app)
 
@@ -75,6 +76,7 @@ internal open class TopDownExecShared(
     val builder = funcs.getUFunc(id)
     val context = ExecContextImpl(exec, store, cancel)
     val output = builder.execUntyped(input, context)
+    Stats.addExecution()
     val (callReqs, pathReqs, pathGens) = context.reqs()
     val data = FuncAppData(output, callReqs, pathReqs, pathGens)
     // Validate well-formedness of the dependency graph, before writing.

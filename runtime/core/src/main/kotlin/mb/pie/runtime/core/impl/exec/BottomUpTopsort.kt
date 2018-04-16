@@ -156,7 +156,7 @@ open class BottomUpTopsortExec(
         logger.requireTopDownEnd(app, res)
         return res
       }
-      val (output, _, _, pathGens) = data
+      val (output, _, pathReqs, pathGens) = data
 
       // Check for inconsistencies and re-execute when found.
       run {
@@ -172,6 +172,22 @@ open class BottomUpTopsortExec(
           val res = ExecRes(execData.output.cast<O>(), reason)
           logger.requireTopDownEnd(app, res)
           return res
+        }
+      }
+
+      // Internal consistency: path requirements
+      for(pathReq in pathReqs) {
+        logger.checkPathReqStart(app, pathReq)
+        val reason = pathReq.checkConsistency()
+        if(reason != null) {
+          // If a required file is outdated (i.e., its stamp changed): rebuild
+          logger.checkPathReqEnd(app, pathReq, reason)
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
+          logger.requireTopDownEnd(app, res)
+          return res
+        } else {
+          logger.checkPathReqEnd(app, pathReq, null)
         }
       }
 
