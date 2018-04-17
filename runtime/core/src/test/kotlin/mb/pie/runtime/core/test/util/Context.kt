@@ -4,7 +4,6 @@ import com.google.inject.*
 import mb.log.LogModule
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.exec.*
-import mb.pie.runtime.core.exec.BottomUpObservingExecutorFactory.Variant
 import mb.pie.runtime.core.impl.exec.*
 import mb.vfs.path.PPath
 import mb.vfs.path.PPathImpl
@@ -40,12 +39,12 @@ open class ParametrizedTestCtx(
   }
 
 
-  fun observingExecutor(variant: Variant): BottomUpObservingExecutor {
-    return observingExecutor(store, cache, variant, share, layerProvider, loggerProvider)
+  fun observingExecutor(): BottomUpTopsortExecutor {
+    return observingExecutor(store, cache, share, layerProvider, loggerProvider)
   }
 
-  fun observingExec(variant: Variant = Variant.DirtyFlagging, observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpObservingExec {
-    return observingExec(store, cache, variant, share, layerProvider.get(), loggerProvider.get(), observers)
+  fun observingExec(observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpTopsortExec {
+    return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), observers)
   }
 }
 
@@ -94,12 +93,12 @@ open class TestCtx {
   }
 
 
-  fun observingExecutor(store: Store, cache: Cache, variant: Variant, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): BottomUpObservingExecutorImpl {
-    return BottomUpObservingExecutorImpl(store, cache, variant, share, layerProvider, loggerProvider, funcs)
+  fun observingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): BottomUpTopsortExecutorImpl {
+    return BottomUpTopsortExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
   }
 
-  fun observingExec(store: Store, cache: Cache, variant: Variant, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpObservingExec {
-    return BottomUpObservingExec(store, cache, share, layer, logger, funcs, observers, variant, DirtyState())
+  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpTopsortExec {
+    return BottomUpTopsortExec(store, cache, share, layer, logger, funcs, observers)
   }
 
 

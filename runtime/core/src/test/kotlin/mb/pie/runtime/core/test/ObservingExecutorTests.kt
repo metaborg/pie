@@ -125,11 +125,10 @@ internal class ObservingExecutorTests {
 
     // Notify of path change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
     val exec2 = spy(observingExec())
-    exec2.requireBottomUpInitial(listOf(filePath), NullCancelled())
+    exec2.scheduleAffectedByFiles(listOf(filePath))
+    exec2.execScheduled(NullCancelled())
     inOrder(exec2) {
-      verify(exec2).requireBottomUp(eq(app(readPath, filePath)), anyOrNull(), anyOrNull(), anyC())
       verify(exec2).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
-      verify(exec2).requireBottomUp(eq(app(combine, filePath)), anyOrNull(), anyOrNull(), anyC())
       verify(exec2).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
       verify(exec2).require(eq(app(toLowerCase, newStr)), anyC())
       verify(exec2).exec(eq(app(toLowerCase, newStr)), anyER(), anyC(), any())
@@ -137,7 +136,8 @@ internal class ObservingExecutorTests {
 
     // Notify of path change, but path hasn't actually changed, observe no execution.
     val exec3 = spy(observingExec())
-    exec3.requireBottomUpInitial(listOf(filePath), NullCancelled())
+    exec3.scheduleAffectedByFiles(listOf(filePath))
+    exec3.execScheduled(NullCancelled())
     verify(exec3, never()).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
     verify(exec3, never()).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
     verify(exec3, never()).exec(eq(app(toLowerCase, newStr)), anyER(), anyC(), any())
@@ -147,9 +147,9 @@ internal class ObservingExecutorTests {
 
     // Notify of path change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent
     val exec4 = spy(observingExec())
-    exec4.requireBottomUpInitial(listOf(filePath), NullCancelled())
+    exec4.scheduleAffectedByFiles(listOf(filePath))
+    exec4.execScheduled(NullCancelled())
     inOrder(exec4) {
-      verify(exec4).requireBottomUp(eq(app(readPath, filePath)), anyOrNull(), anyOrNull(), anyC())
       verify(exec4).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
     }
     verify(exec4, never()).exec(eq(app(combine, filePath)), anyER(), anyC(), any())

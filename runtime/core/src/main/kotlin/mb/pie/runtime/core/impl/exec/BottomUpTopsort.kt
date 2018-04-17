@@ -8,7 +8,6 @@ import mb.pie.runtime.core.exec.BottomUpTopsortExecutor
 import mb.pie.runtime.core.exec.FuncAppObserver
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
-import mb.util.async.NullCancelled
 import mb.vfs.path.PPath
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -46,14 +45,16 @@ class BottomUpTopsortExecutorImpl @Inject constructor(
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O {
-    val exec = exec(false)
-    return exec.requireTopDownInitial(app, cancel).output
+    val exec = topDownExec()
+    return exec.requireInitial(app, cancel).output
   }
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled) {
-    val exec = exec(true)
-    exec.requireBottomUpInitial(changedPaths, cancel)
+    if(changedPaths.isEmpty()) return
+    val exec = bottomUpExec()
+    exec.scheduleAffectedByFiles(changedPaths)
+    exec.execScheduled(cancel)
   }
 
   override fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean {
@@ -61,8 +62,12 @@ class BottomUpTopsortExecutorImpl @Inject constructor(
   }
 
 
-  fun exec(hybrid: Boolean): BottomUpTopsortExec {
-    return BottomUpTopsortExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs, hybrid)
+  private fun topDownExec(): TopDownExecImpl {
+    return TopDownExecImpl(store, cache, share, layer.get(), logger.get(), funcs)
+  }
+
+  private fun bottomUpExec(): BottomUpTopsortExec {
+    return BottomUpTopsortExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs)
   }
 
 
@@ -83,224 +88,195 @@ open class BottomUpTopsortExec(
   private val layer: Layer,
   private val logger: Logger,
   private val funcs: Map<String, UFunc>,
-  private val observers: Map<UFuncApp, FuncAppObserver>,
-  private val hybrid: Boolean
+  private val observers: Map<UFuncApp, FuncAppObserver>
 ) : Exec, Funcs by FuncsImpl(funcs) {
   private val visited = mutableMapOf<UFuncApp, UFuncAppData>()
-  private val queue = PriorityQueue<UFuncApp>(Comparator<UFuncApp> { app1, app2 ->
+  private val queue = DistinctPriorityQueue(Comparator { app1, app2 ->
     when {
       app1 == app2 -> 0
       store.readTxn().use { txn -> hasCallReq(app1, app2, this, txn) } -> 1
       else -> -1
     }
   })
-  private val queuedSet = mutableSetOf<UFuncApp>()
   private val shared = TopDownExecShared(store, cache, share, layer, logger, visited)
 
 
   /**
-   * Require the result of an observable function application in a top-down manner.
+   * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
    */
-  fun <I : In, O : Out> requireTopDownInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecRes<O> {
-    try {
-      logger.requireTopDownInitialStart(app)
-      val res = require(app, cancel)
-      logger.requireTopDownInitialEnd(app, res)
-      return res
-    } finally {
-      store.sync()
+  fun execScheduled(cancel: Cancelled) {
+    logger.trace("Executing scheduled tasks: $queue")
+    while(queue.isNotEmpty()) {
+      cancel.throwIfCancelled()
+      val next = queue.poll()
+      logger.trace("Polling: ${next.toShortString(200)}")
+      execAndSchedule(next, true, cancel)
     }
   }
 
   /**
-   * Execute function applications affected by a changed path in a bottom-up manner.
+   * Executes given task, and schedules new tasks based on given task's generated paths and output.
    */
-  fun requireBottomUpInitial(changedPaths: List<PPath>, cancel: Cancelled) {
-    if(changedPaths.isEmpty()) return
-
-    // Find all function applications that are affected by changed paths.
-    val affected = store.readTxn().use { txn -> directlyAffectedApps(changedPaths, txn, logger) }
-    queue.addAll(affected)
-    queuedSet.addAll(affected)
-    requireBottomUp(cancel)
+  private fun execAndSchedule(next: UFuncApp, scheduleCallers: Boolean, cancel: Cancelled): UFuncAppData {
+    val data = exec(next, InvalidatedExecReason(), cancel)
+    scheduleAffectedByFiles(data.pathGens.map { it.path })
+    if(scheduleCallers) {
+      scheduleAffectedCallersOf(next, data.output)
+    }
+    return data
   }
 
-
   /**
-   * Require the result of an observable function application in a top-down manner.
+   * Require the result of a task.
    */
-  override fun <I : In, O : Out> require(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<O> {
-    return requireTopDown(app, cancel)
-  }
-
-
-  /**
-   * Require the result of an observable function application in a topdown manner.
-   */
-  internal open fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<O> {
+  override fun <I : In, O : Out> require(task: FuncApp<I, O>, cancel: Cancelled): ExecRes<O> {
+    Stats.addRequires()
     cancel.throwIfCancelled()
+    layer.requireTopDownStart(task)
+    logger.requireTopDownStart(task)
 
     try {
-      val resOrData = shared.topdownPrelude(app)
-      if(resOrData.res != null) {
-        return resOrData.res
-      }
-      val data = resOrData.data
-
-      // Check if re-execution is necessary.
-      if(data == null) {
-        // No cached or stored output was found: rebuild
-        val reason = NoResultReason()
-        val execData = exec(app, reason, cancel, true)
-        val res = ExecRes(execData.output.cast<O>(), reason)
-        logger.requireTopDownEnd(app, res)
+      // If already visited: return cached.
+      val visitedData = visited[task]?.cast<O>()
+      if(visitedData != null) {
+        val res = ExecRes(visitedData.output)
+        logger.requireTopDownEnd(task, res)
         return res
       }
-      val (output, callReqs, pathReqs, pathGens) = data
 
-      // Check for inconsistencies and re-execute when found.
-      run {
-        // Internal consistency: transient output consistency
-        /*
-        Required for transient outputs. When a function application has a transient output, its output cannot be persisted
-        and instead can only be stored in memory. After a restart of the JVM, this memory must be restored by re-executing
-        the function application. This check ensures that this happens.
-        */
-        val reason = output.isTransientInconsistent()
-        if(reason != null) {
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
-        }
-      }
-
-      // Total consistency: call requirements
-      /*
-      Required for checking if all required function calls are consistent.
-      */
-      for(callReq in callReqs) {
-        val callReqOutput = require(callReq.callee, cancel).output
-        logger.checkCallReqStart(app, callReq)
-        val reason = callReq.checkConsistency(callReqOutput)
-        logger.checkCallReqEnd(app, callReq, reason)
-        if(reason != null) {
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
-        }
-      }
-
-      // Internal consistency: path requirements
-      /*
-      Required for checking if all required paths are consistent.
-      */
-      for(pathReq in pathReqs) {
-        logger.checkPathReqStart(app, pathReq)
-        val reason = pathReq.checkConsistency()
-        if(reason != null) {
-          // If a required file is outdated (i.e., its stamp changed): rebuild
-          logger.checkPathReqEnd(app, pathReq, reason)
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
+      val data = store.readTxn().use { it.data(task) }
+      if(data != null) {
+        // Task is in dependency graph.
+        val (output, _, _, pathGens) = data
+        if(queue.contains(task)) {
+          // Task is scheduled to be run, but needs to be run *now*.
+          val execData = requireScheduledNow(task, cancel)
+          val res = ExecRes(execData.output.cast<O>(), InvalidatedExecReason())
+          logger.requireTopDownEnd(task, res)
           return res
         } else {
-          logger.checkPathReqEnd(app, pathReq, null)
-        }
-      }
-
-      // Internal consistency: path generates
-      /*
-      Required for checking if all generated paths are consistent.
-
-      Also, required for overlapping generated paths. When two function applications generate the same path, and those
-      function applications overlap (meaning they are allowed to both generate the same path), we must ensure that the
-      path is generated by the correct function application. This check ensures that by triggering re-execution of the
-      function application if one of its generated paths is inconsistent.
-      */
-      for(pathGen in pathGens) {
-        logger.checkPathGenStart(app, pathGen)
-        val reason = pathGen.checkConsistency()
-        if(reason != null) {
-          // If a generated file is outdated (i.e., its stamp changed): rebuild
-          logger.checkPathGenEnd(app, pathGen, reason)
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
-        } else {
-          logger.checkPathGenEnd(app, pathGen, null)
-        }
-      }
-
-      // No inconsistencies found
-      // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validatePostWrite(app, data, this, it) }
-      // Cache and mark as visited
-      cache[app] = data
-      visited[app] = data
-      // Notify observer, if any.
-      val observer = observers[app]
-      if(observer != null) {
-        logger.invokeObserverStart(observer, app, output)
-        observer.invoke(output)
-        logger.invokeObserverEnd(observer, app, output)
-      }
-      // Reuse existing result
-      val res = ExecRes(output)
-      logger.requireTopDownEnd(app, res)
-      return res
-    } finally {
-      layer.requireTopDownEnd(app)
-    }
-  }
-
-  internal open fun requireBottomUp(cancel: Cancelled) {
-    logger.trace("Requiring bottom-up: $queue")
-    while(queue.isNotEmpty()) {
-      val callee = queue.poll()
-      logger.trace("Popped element off queue: ${callee.toShortString(200)}")
-      queuedSet.remove(callee)
-      val calleeData = exec(callee, InvalidatedExecReason(), cancel)
-      logger.trace("Finding out-of-date callers of ${callee.toShortString(200)}")
-      val callers = store.readTxn().use { txn -> txn.callersOf(callee) }
-      @Suppress("LoopToCallChain")
-      for(caller in callers) {
-        logger.trace(" * caller: ${caller.toShortString(200)}")
-        // OPTO: prevent creating a read transaction twice? cannot create encompassing txn because queue insertion requires read transaction for sorting.
-        val callReqs = store.readTxn().use { txn -> txn.callReqs(caller) }
-        logger.trace("   * call requirements:")
-        for(callReq in callReqs) {
-          logger.trace("     * $callReq")
-        }
-        val relevantCallReqs = callReqs.filter { it.equalsOrOverlaps(callee, this) }
-        logger.trace("   * relevant call requirements:")
-        for(callReq in relevantCallReqs) {
-          logger.trace("     * $callReq")
-        }
-        val consistent = relevantCallReqs.all { it.isConsistent(calleeData.output) }
-        if(consistent) {
-          logger.trace("   * is up-to-date")
-        } else {
-          logger.trace("   * is OUT-OF-DATE")
-          if(!queuedSet.contains(caller)) {
-            queue.add(caller)
-            queuedSet.add(caller)
+          // Internal consistency: transient output consistency
+          /*
+          Required for transient outputs. When a function application has a transient output, its output cannot be persisted
+          and instead can only be stored in memory. After a restart of the JVM, this memory must be restored by re-executing
+          the function application. This check ensures that this happens.
+          */
+          run {
+            val reason = output.isTransientInconsistent()
+            if(reason != null) {
+              val execData = exec(task, reason, cancel)
+              val res = ExecRes(execData.output.cast<O>(), reason)
+              logger.requireTopDownEnd(task, res)
+              return res
+            }
           }
+
+          // Internal consistency: path generates
+          /*
+          Required for overlapping generated paths. When two function applications generate the same path, and those
+          function applications overlap (meaning they are allowed to both generate the same path), we must ensure that the
+          path is generated by the correct function application. This check ensures that by triggering re-execution of the
+          function application if one of its generated paths is inconsistent.
+          */
+          for(pathGen in pathGens) {
+            logger.checkPathGenStart(task, pathGen)
+            val reason = pathGen.checkConsistency()
+            if(reason != null) {
+              // If a generated file is outdated (i.e., its stamp changed): rebuild
+              logger.checkPathGenEnd(task, pathGen, reason)
+              val execData = exec(task, reason, cancel)
+              val res = ExecRes(execData.output.cast<O>(), reason)
+              logger.requireTopDownEnd(task, res)
+              return res
+            } else {
+              logger.checkPathGenEnd(task, pathGen, null)
+            }
+          }
+
+          // Task has already been executed (scheduled before), or does not need to be executed (not affected): return stored.
+          logger.trace("Task already executed, or no execution necessary, returning stored/cached output")
+
+          // Notify observer, if any.
+          val observer = observers[task]
+          if(observer != null) {
+            logger.invokeObserverStart(observer, task, output)
+            observer.invoke(output)
+            logger.invokeObserverEnd(observer, task, output)
+          }
+          val res = ExecRes(output.cast<O>())
+          logger.requireTopDownEnd(task, res)
+          return res
         }
+      } else {
+        // Task is not in dependency graph: execute and schedule new tasks based on file changes. This tasks's output cannot affect other
+        // tasks since it is new.
+        val execData = execAndSchedule(task, false, cancel)
+        val res = ExecRes(execData.output.cast<O>(), NoResultReason())
+        logger.requireTopDownEnd(task, res)
+        return res
+      }
+    } finally {
+      layer.requireTopDownEnd(task)
+    }
+  }
+
+  /**
+   * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
+   */
+  private fun requireScheduledNow(task: UFuncApp, cancel: Cancelled): UFuncAppData {
+    logger.trace("Executing scheduled (and its dependencies) task NOW: ${task.toShortString(200)}")
+    while(queue.isNotEmpty()) {
+      cancel.throwIfCancelled()
+      val min = store.readTxn().use {
+        queue.pollLeastElemLessThanOrEqual(task, this, it)
+          ?: throw RuntimeException("Cannot find task smaller or equal to: ${task.toShortString(200)}")
+      }
+      logger.trace("- least element less than task: ${min.toShortString(200)}")
+      val data = execAndSchedule(min, true, cancel)
+      if(min == task) {
+        return data
+      }
+    }
+    throw RuntimeException("Did not find scheduled task equal to: ${task.toShortString(200)}")
+  }
+
+  /**
+   * Schedules tasks affected by (changes to) files.
+   */
+  fun scheduleAffectedByFiles(files: List<PPath>) {
+    logger.trace("Scheduling tasks affected by files: $files")
+    val affected = store.readTxn().use { txn -> directlyAffectedApps(files, txn, logger) }
+    for(task in affected) {
+      logger.trace("- scheduling: ${task.toShortString(200)}")
+      queue.addAll(affected)
+    }
+  }
+
+  /**
+   * Schedules tasks affected by (changes to the) output of a task.
+   */
+  fun scheduleAffectedCallersOf(task: UFuncApp, output: Out) {
+    logger.trace("Scheduling tasks affected by output of task: ${task.toShortString(200)}")
+    val callers = store.readTxn().use { txn -> txn.callersOf(task) }
+    for(caller in callers) {
+      // OPTO: prevent creating a read transaction twice? cannot create encompassing txn because queue insertion requires read transaction for sorting.
+      val callReqs = store.readTxn().use { txn -> txn.callReqs(caller) }
+      val relevantCallReqs = callReqs.filter { it.equalsOrOverlaps(task, this) }
+      val consistent = relevantCallReqs.all { it.isConsistent(output) }
+      if(!consistent) {
+        logger.trace("- scheduling: ${caller.toShortString(200)}")
+        queue.add(caller)
       }
     }
   }
 
 
-  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UFuncAppData {
+  internal open fun exec(app: UFuncApp, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UFuncAppData {
     return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
-  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): UFuncAppData {
-    return shared.execInternal(app, cancel, this, this) { txn, data ->
+  internal open fun execInternal(app: UFuncApp, cancel: Cancelled): UFuncAppData {
+    return shared.execInternal(app, cancel, this, this) { _, data ->
       // Notify observer, if any.
       val observer = observers[app]
       if(observer != null) {
@@ -309,15 +285,55 @@ open class BottomUpTopsortExec(
         observer.invoke(output)
         logger.invokeObserverEnd(observer, app, output)
       }
+    }
+  }
+}
 
-      if(hybrid) {
-        // Schedule bottom-up execution for function applications affected by generated files.
-        val genPaths = data.pathGens.map { it.path }
-        logger.trace("Checking which function applications are affected by generated paths: $genPaths")
-        val affected = directlyAffectedApps(genPaths, txn, logger)
-        queue.addAll(affected)
-        queuedSet.addAll(affected)
+class DistinctPriorityQueue(comparator: Comparator<UFuncApp>) {
+  private val queue = PriorityQueue<UFuncApp>(comparator)
+  private val set = hashSetOf<UFuncApp>()
+
+
+  fun isNotEmpty(): Boolean {
+    return queue.isNotEmpty()
+  }
+
+  fun contains(elem: UFuncApp): Boolean {
+    return set.contains(elem)
+  }
+
+  fun poll(): UFuncApp {
+    val elem = queue.remove()
+    set.remove(elem)
+    return elem
+  }
+
+  fun pollLeastElemLessThanOrEqual(other: UFuncApp, funcs: Funcs, txn: StoreReadTxn): UFuncApp? {
+    val array = queue.toArray(Array<UFuncApp?>(queue.size) { _ -> null })
+    Arrays.sort(array, queue.comparator())
+    for(elem in array) {
+      if(elem == other || hasCallReq(other, elem!!, funcs, txn)) {
+        queue.remove(elem)
+        set.remove(elem)
+        return elem
       }
     }
+    return null
+  }
+
+  fun add(elem: UFuncApp) {
+    if(set.contains(elem)) return
+    queue.add(elem)
+    set.add(elem)
+  }
+
+  fun addAll(elems: Collection<UFuncApp>) {
+    for(elem in elems) {
+      add(elem)
+    }
+  }
+
+  override fun toString(): String {
+    return queue.toString()
   }
 }
