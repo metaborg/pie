@@ -45,14 +45,16 @@ class BottomUpTopsortExecutorImpl @Inject constructor(
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O {
-    val exec = topDownExec()
-    return exec.requireInitial(app, cancel).output
+    val exec = exec()
+    val output = exec.require(app, cancel).output
+    exec.execScheduled(cancel)
+    return output
   }
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled) {
     if(changedPaths.isEmpty()) return
-    val exec = bottomUpExec()
+    val exec = exec()
     exec.scheduleAffectedByFiles(changedPaths)
     exec.execScheduled(cancel)
   }
@@ -62,11 +64,7 @@ class BottomUpTopsortExecutorImpl @Inject constructor(
   }
 
 
-  private fun topDownExec(): TopDownExecImpl {
-    return TopDownExecImpl(store, cache, share, layer.get(), logger.get(), funcs)
-  }
-
-  private fun bottomUpExec(): BottomUpTopsortExec {
+  private fun exec(): BottomUpTopsortExec {
     return BottomUpTopsortExec(store, cache, share, layer.get(), logger.get(), funcs, appToObs)
   }
 
@@ -164,7 +162,7 @@ open class BottomUpTopsortExec(
           run {
             val reason = output.isTransientInconsistent()
             if(reason != null) {
-              val execData = exec(task, reason, cancel)
+              val execData = execAndSchedule(task, false, cancel)
               val res = ExecRes(execData.output.cast<O>(), reason)
               logger.requireTopDownEnd(task, res)
               return res
@@ -184,7 +182,7 @@ open class BottomUpTopsortExec(
             if(reason != null) {
               // If a generated file is outdated (i.e., its stamp changed): rebuild
               logger.checkPathGenEnd(task, pathGen, reason)
-              val execData = exec(task, reason, cancel)
+              val execData = execAndSchedule(task, false, cancel)
               val res = ExecRes(execData.output.cast<O>(), reason)
               logger.requireTopDownEnd(task, res)
               return res

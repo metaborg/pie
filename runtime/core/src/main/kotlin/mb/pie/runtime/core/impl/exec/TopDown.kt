@@ -9,7 +9,6 @@ import mb.pie.runtime.core.exec.TopDownExecutor
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.util.async.NullCancelled
-import mb.vfs.path.PPath
 
 
 class TopDownExecutorImpl @Inject constructor(
@@ -89,20 +88,6 @@ open class TopDownExecImpl(
         }
       }
 
-      // Total consistency: call requirements
-      for(callReq in callReqs) {
-        val callReqOutput = require(callReq.callee, cancel).output
-        logger.checkCallReqStart(app, callReq)
-        val reason = callReq.checkConsistency(callReqOutput)
-        logger.checkCallReqEnd(app, callReq, reason)
-        if(reason != null) {
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
-        }
-      }
-
       // Internal consistency: path requirements
       for(pathReq in pathReqs) {
         logger.checkPathReqStart(app, pathReq)
@@ -132,6 +117,20 @@ open class TopDownExecImpl(
           return res
         } else {
           logger.checkPathGenEnd(app, pathGen, null)
+        }
+      }
+
+      // Total consistency: call requirements
+      for(callReq in callReqs) {
+        val callReqOutput = require(callReq.callee, cancel).output
+        logger.checkCallReqStart(app, callReq)
+        val reason = callReq.checkConsistency(callReqOutput)
+        logger.checkCallReqEnd(app, callReq, reason)
+        if(reason != null) {
+          val execData = exec(app, reason, cancel)
+          val res = ExecRes(execData.output.cast<O>(), reason)
+          logger.requireTopDownEnd(app, res)
+          return res
         }
       }
 
