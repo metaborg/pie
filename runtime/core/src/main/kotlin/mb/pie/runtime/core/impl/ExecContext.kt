@@ -38,11 +38,6 @@ internal class ExecContextImpl(
   override fun require(path: PPath, stamper: PathStamper) {
     val stamp = stamper.stamp(path)
     pathReqs.add(PathReq(path, stamp))
-
-    val generatedBy = store.readTxn().use { it.generatorOf(path) }
-    if(generatedBy != null) {
-      requireExec(generatedBy)
-    }
     Stats.addFileReq()
   }
 

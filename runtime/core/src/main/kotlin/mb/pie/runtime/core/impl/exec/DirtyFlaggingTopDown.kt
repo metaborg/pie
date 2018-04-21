@@ -212,7 +212,7 @@ open class DirtyFlaggingTopDownExec(
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validatePostWrite(app, data, this, it) }
+      store.readTxn().use { layer.validate(app, data, this, it) }
       store.writeTxn().use { txn ->
         // Flag generated files dirty.
         // TODO: is this necessary? If this func app is not executed, its generated files cannot change?

@@ -79,12 +79,11 @@ internal open class TopDownExecShared(
     Stats.addExecution()
     val (callReqs, pathReqs, pathGens) = context.reqs()
     val data = FuncAppData(output, callReqs, pathReqs, pathGens)
-    // Validate well-formedness of the dependency graph, before writing.
-    store.readTxn().use { layer.validatePostWrite(app, data, funcs, it) }
+
     // Write output and dependencies to the store.
     store.writeTxn().use { it.setData(app, data); writeFunc(it, data) }
     // Validate well-formedness of the dependency graph, after writing.
-    store.readTxn().use { layer.validatePostWrite(app, data, funcs, it) }
+    store.readTxn().use { layer.validate(app, data, funcs, it) }
     // Cache data
     visited[app] = data
     cache[app] = data

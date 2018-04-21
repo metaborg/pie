@@ -1,0 +1,25 @@
+func update-editor(text: string) -> Msg* = {
+  val syntaxDef = ./syntax/Java8.sdf;
+  val parseTable = compile-parse-table(syntaxDef);
+  val (_, messages) = parse(text, parseTable);
+  messages
+}
+
+func compile-parse-table(defFile: path) -> path = {
+  requires defFile;
+  val depFile = defFile.replaceExtension("dep");
+  val tblFile = defFile.replaceExtension("tbl");
+  exec(["sdf2table"] + "$defFile" + "-o$tblFile" + "-d$depFile");
+  [requires dep | dep <- extract-deps(depFile)];
+  generates tblFile;
+  tblFile
+}
+func exec(arguments: string*) -> unit
+  = foreign java pie.builtin#exec
+func extract-deps(depFile: path) -> path*
+  = foreign java spoofax.sdf#extractDeps
+
+data Ast = foreign java spoofax.Ast {}
+data Msg = foreign java spoofax.Msg {}
+func parse(text: string, parseTable: path) -> (Ast, Msg*)
+  = foreign spoofax.sdf.Parse
