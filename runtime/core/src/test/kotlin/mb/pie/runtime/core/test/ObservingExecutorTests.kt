@@ -125,7 +125,7 @@ internal class ObservingExecutorTests {
 
     // Notify of path change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
     val exec2 = spy(observingExec())
-    exec2.scheduleAffectedByFiles(listOf(filePath))
+    exec2.scheduleAffectedByFiles(setOf(filePath))
     exec2.execScheduled(NullCancelled())
     inOrder(exec2) {
       verify(exec2).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
@@ -136,7 +136,7 @@ internal class ObservingExecutorTests {
 
     // Notify of path change, but path hasn't actually changed, observe no execution.
     val exec3 = spy(observingExec())
-    exec3.scheduleAffectedByFiles(listOf(filePath))
+    exec3.scheduleAffectedByFiles(setOf(filePath))
     exec3.execScheduled(NullCancelled())
     verify(exec3, never()).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
     verify(exec3, never()).exec(eq(app(combine, filePath)), anyER(), anyC(), any())
@@ -147,7 +147,7 @@ internal class ObservingExecutorTests {
 
     // Notify of path change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent
     val exec4 = spy(observingExec())
-    exec4.scheduleAffectedByFiles(listOf(filePath))
+    exec4.scheduleAffectedByFiles(setOf(filePath))
     exec4.execScheduled(NullCancelled())
     inOrder(exec4) {
       verify(exec4).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())

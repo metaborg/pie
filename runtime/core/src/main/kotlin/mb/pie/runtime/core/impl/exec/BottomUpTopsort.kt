@@ -1,5 +1,6 @@
 package mb.pie.runtime.core.impl.exec
 
+import com.google.common.collect.Sets
 import com.google.inject.Inject
 import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
@@ -52,7 +53,7 @@ class BottomUpTopsortExecutorImpl @Inject constructor(
   }
 
   @Throws(ExecException::class, InterruptedException::class)
-  override fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled) {
+  override fun requireBottomUp(changedPaths: Set<PPath>, cancel: Cancelled) {
     if(changedPaths.isEmpty()) return
     val exec = exec()
     exec.scheduleAffectedByFiles(changedPaths)
@@ -117,7 +118,7 @@ open class BottomUpTopsortExec(
    */
   private fun execAndSchedule(next: UFuncApp, scheduleCallers: Boolean, cancel: Cancelled): UFuncAppData {
     val data = exec(next, InvalidatedExecReason(), cancel)
-    scheduleAffectedByFiles(data.pathGens.map { it.path })
+    scheduleAffectedByFiles(data.pathGens.map { it.path }.toHashSet())
     if(scheduleCallers) {
       scheduleAffectedCallersOf(next, data.output)
     }
@@ -241,7 +242,7 @@ open class BottomUpTopsortExec(
   /**
    * Schedules tasks affected by (changes to) files.
    */
-  fun scheduleAffectedByFiles(files: List<PPath>) {
+  fun scheduleAffectedByFiles(files: Set<PPath>) {
     logger.trace("Scheduling tasks affected by files: $files")
     val affected = store.readTxn().use { txn -> directlyAffectedApps(files, txn, logger) }
     for(task in affected) {
@@ -307,9 +308,9 @@ class DistinctPriorityQueue(comparator: Comparator<UFuncApp>) {
   }
 
   fun pollLeastElemLessThanOrEqual(other: UFuncApp, funcs: Funcs, txn: StoreReadTxn): UFuncApp? {
-    val array = queue.toArray(Array<UFuncApp?>(queue.size) { _ -> null })
-    Arrays.sort(array, queue.comparator())
-    for(elem in array) {
+    val queueCopy = PriorityQueue(queue)
+    while(queueCopy.isNotEmpty()) {
+      val elem = queueCopy.poll()
       if(elem == other || hasCallReq(other, elem!!, funcs, txn)) {
         queue.remove(elem)
         set.remove(elem)

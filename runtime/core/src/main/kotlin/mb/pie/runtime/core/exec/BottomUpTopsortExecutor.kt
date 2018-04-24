@@ -20,7 +20,7 @@ interface BottomUpTopsortExecutor : Executor {
   fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O
 
   @Throws(ExecException::class, InterruptedException::class)
-  fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled)
+  fun requireBottomUp(changedPaths: Set<PPath>, cancel: Cancelled)
 
   fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean
 }
