@@ -5,7 +5,7 @@ import com.google.inject.Provider
 import com.google.inject.assistedinject.Assisted
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.exec.BottomUpExecutor
-import mb.pie.runtime.core.exec.FuncAppObserver
+import mb.pie.runtime.core.exec.TaskObserver
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 import mb.vfs.path.PPath
@@ -19,19 +19,19 @@ class BottomUpExecutorImpl @Inject constructor(
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
-  private val funcs: MutableMap<String, UFunc>
+  private val funcs: MutableMap<String, UTaskDef>
 ) : BottomUpExecutor {
-  private val keyToApp = ConcurrentHashMap<Any, UFuncApp>()
-  private val appToObs = ConcurrentHashMap<UFuncApp, FuncAppObserver>()
+  private val keyToApp = ConcurrentHashMap<Any, UTask>()
+  private val appToObs = ConcurrentHashMap<UTask, TaskObserver>()
 
 
-  override fun setObserver(key: Any, app: UFuncApp, observer: FuncAppObserver) {
+  override fun setObserver(key: Any, task: UTask, observer: TaskObserver) {
     val existingApp = keyToApp[key]
     if(existingApp != null) {
       appToObs.remove(existingApp)
     }
-    keyToApp[key] = app
-    appToObs[app] = observer
+    keyToApp[key] = task
+    appToObs[task] = observer
   }
 
   override fun removeObserver(key: Any) {
@@ -44,15 +44,15 @@ class BottomUpExecutorImpl @Inject constructor(
 
 
   @Throws(ExecException::class, InterruptedException::class)
-  override fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O {
+  override fun <I : In, O : Out> requireTopDown(task: Task<I, O>, cancel: Cancelled): O {
     val exec = exec()
-    return exec.require(app, cancel).output
+    return exec.require(task, cancel)
   }
 
   @Throws(ExecException::class, InterruptedException::class)
-  override fun requireBottomUp(changedPaths: Set<PPath>, cancel: Cancelled) {
-    if(changedPaths.isEmpty()) return
-    val changedRate = changedPaths.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
+  override fun requireBottomUp(changedFiles: Set<PPath>, cancel: Cancelled) {
+    if(changedFiles.isEmpty()) return
+    val changedRate = changedFiles.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
     logger.get().trace("- rate of changed source files: $changedRate")
     if(changedRate > 0.5) {
       logger.get().trace("- rate of changed source files is larger than 50%, running a top-down build on all observed tasks instead")
@@ -62,13 +62,13 @@ class BottomUpExecutorImpl @Inject constructor(
       }
     } else {
       val exec = exec()
-      exec.scheduleAffectedByFiles(changedPaths)
+      exec.scheduleAffectedByFiles(changedFiles)
       exec.execScheduled(cancel)
     }
   }
 
-  override fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean {
-    return (cache[app] ?: store.readTxn().use { it.output(app) }) != null
+  override fun <I : In, O : Out> hasBeenRequired(task: Task<I, O>): Boolean {
+    return (cache[task] ?: store.readTxn().use { it.output(task) }) != null
   }
 
 
@@ -89,14 +89,14 @@ class BottomUpExecutorImpl @Inject constructor(
 
 open class BottomUpExec(
   private val store: Store,
-  private val cache: Cache,
+  cache: Cache,
   share: Share,
   private val layer: Layer,
   private val logger: Logger,
-  private val funcs: Map<String, UFunc>,
-  private val observers: Map<UFuncApp, FuncAppObserver>
-) : Exec, Funcs by FuncsImpl(funcs) {
-  private val visited = mutableMapOf<UFuncApp, UFuncAppData>()
+  private val funcs: Map<String, UTaskDef>,
+  private val observers: Map<UTask, TaskObserver>
+) : RequireTask, TaskDefs by TaskDefsImpl(funcs) {
+  private val visited = mutableMapOf<UTask, UTaskData>()
   private val queue = DistinctPriorityQueue(Comparator { app1, app2 ->
     when {
       app1 == app2 -> 0
@@ -123,7 +123,7 @@ open class BottomUpExec(
   /**
    * Executes given task, and schedules new tasks based on given task's output.
    */
-  private fun execAndSchedule(next: UFuncApp, cancel: Cancelled): UFuncAppData {
+  private fun execAndSchedule(next: UTask, cancel: Cancelled): UTaskData {
     val data = exec(next, InvalidatedExecReason(), cancel)
     scheduleAffectedCallersOf(next, data.output)
     return data
@@ -132,25 +132,25 @@ open class BottomUpExec(
   /**
    * Require the result of a task.
    */
-  override fun <I : In, O : Out> require(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<O> {
+  override fun <I : In, O : Out> require(task: Task<I, O>, cancel: Cancelled): O {
     Stats.addRequires()
     cancel.throwIfCancelled()
-    layer.requireTopDownStart(app)
-    logger.requireTopDownStart(app)
+    layer.requireTopDownStart(task)
+    logger.requireTopDownStart(task)
 
     try {
       // If already visited: return cached.
-      val visitedData = visited[app]?.cast<O>()
+      val visitedData = visited[task]?.cast<O>()
       if(visitedData != null) {
-        val res = ExecRes(visitedData.output)
-        logger.requireTopDownEnd(app, res)
-        return res
+        val output = visitedData.output
+        logger.requireTopDownEnd(task, output)
+        return output
       }
 
-      val data = store.readTxn().use { it.data(app) }
+      val data = store.readTxn().use { it.data(task) }
       if(data != null) {
         // Task is in dependency graph.
-        val (output, _, _, _) = data
+        val (existingOutput, _, _, _) = data
 
         // Internal consistency: transient output consistency
         /*
@@ -159,53 +159,53 @@ open class BottomUpExec(
         the function application. This check ensures that this happens.
         */
         run {
-          val reason = output.isTransientInconsistent()
+          val reason = existingOutput.isTransientInconsistent()
           if(reason != null) {
-            val execData = execAndSchedule(app, cancel)
-            val res = ExecRes(execData.output.cast<O>(), reason)
-            logger.requireTopDownEnd(app, res)
-            return res
+            val execData = execAndSchedule(task, cancel)
+            val execOutput = execData.output.cast<O>()
+            logger.requireTopDownEnd(task, execOutput)
+            return execOutput
           }
         }
 
         // Task is scheduled to be run, but needs to be run *now*.
-        val requireNowData = requireScheduledNow(app, cancel)
+        val requireNowData = requireScheduledNow(task, cancel)
         if(requireNowData != null) {
           // Task was affected and has been executed.
-          val res = ExecRes(requireNowData.output.cast<O>(), InvalidatedExecReason())
-          logger.requireTopDownEnd(app, res)
-          return res
+          val requireNowOutput = requireNowData.output.cast<O>();
+          logger.requireTopDownEnd(task, requireNowOutput)
+          return requireNowOutput
         } else {
           // Task was not affected.
           // Notify observer, if any.
-          val observer = observers[app]
+          val observer = observers[task]
           if(observer != null) {
-            logger.invokeObserverStart(observer, app, output)
-            observer.invoke(output)
-            logger.invokeObserverEnd(observer, app, output)
+            logger.invokeObserverStart(observer, task, existingOutput)
+            observer.invoke(existingOutput)
+            logger.invokeObserverEnd(observer, task, existingOutput)
           }
           // Return stored result.
-          val res = ExecRes(data.output.cast<O>())
-          logger.requireTopDownEnd(app, res)
-          return res
+          val output = existingOutput.cast<O>()
+          logger.requireTopDownEnd(task, output)
+          return output
         }
       } else {
         // Task is not in dependency graph: execute. This tasks's output cannot affect other tasks since it is new.
         val reason = NoResultReason()
-        val execData = exec(app, reason, cancel)
-        val res = ExecRes(execData.output.cast<O>(), reason)
-        logger.requireTopDownEnd(app, res)
-        return res
+        val execData = exec(task, reason, cancel)
+        val execOutput = execData.output.cast<O>()
+        logger.requireTopDownEnd(task, execOutput)
+        return execOutput
       }
     } finally {
-      layer.requireTopDownEnd(app)
+      layer.requireTopDownEnd(task)
     }
   }
 
   /**
    * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
    */
-  private fun requireScheduledNow(task: UFuncApp, cancel: Cancelled): UFuncAppData? {
+  private fun requireScheduledNow(task: UTask, cancel: Cancelled): UTaskData? {
     logger.trace("Executing scheduled (and its dependencies) task NOW: ${task.toShortString(200)}")
     while(queue.isNotEmpty()) {
       cancel.throwIfCancelled()
@@ -222,7 +222,7 @@ open class BottomUpExec(
   }
 
 
-  private fun affectedByFiles(files: Set<PPath>): HashSet<UFuncApp> {
+  private fun affectedByFiles(files: Set<PPath>): HashSet<UTask> {
     return store.readTxn().use { txn -> directlyAffectedApps(files, txn, logger) }
   }
 
@@ -240,12 +240,12 @@ open class BottomUpExec(
   /**
    * Schedules tasks affected by (changes to the) output of a task.
    */
-  private fun scheduleAffectedCallersOf(task: UFuncApp, output: Out) {
+  private fun scheduleAffectedCallersOf(task: UTask, output: Out) {
     logger.trace("Scheduling tasks affected by output of task: ${task.toShortString(200)}")
     val callers = store.readTxn().use { txn -> txn.callersOf(task) }
     for(caller in callers) {
       // OPTO: prevent creating a read transaction twice? cannot create encompassing txn because queue insertion requires read transaction for sorting.
-      val callReqs = store.readTxn().use { txn -> txn.callReqs(caller) }
+      val callReqs = store.readTxn().use { txn -> txn.taskReqs(caller) }
       val relevantCallReqs = callReqs.filter { it.calleeEqual(task) }
       val consistent = relevantCallReqs.all { it.isConsistent(output) }
       if(!consistent) {
@@ -254,70 +254,70 @@ open class BottomUpExec(
     }
   }
 
-  private fun schedule(task: UFuncApp) {
+  private fun schedule(task: UTask) {
     logger.trace("- scheduling: ${task.toShortString(200)}")
     queue.add(task)
   }
 
 
-  internal open fun exec(app: UFuncApp, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UFuncAppData {
-    return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
+  internal open fun exec(task: UTask, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
+    return shared.exec(task, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
-  internal open fun execInternal(app: UFuncApp, cancel: Cancelled): UFuncAppData {
-    return shared.execInternal(app, cancel, this, this) { _, data ->
+  internal open fun execInternal(task: UTask, cancel: Cancelled): UTaskData {
+    return shared.execInternal(task, cancel, this, this) { _, data ->
       // Notify observer, if any.
-      val observer = observers[app]
+      val observer = observers[task]
       if(observer != null) {
         val output = data.output
-        logger.invokeObserverStart(observer, app, output)
+        logger.invokeObserverStart(observer, task, output)
         observer.invoke(output)
-        logger.invokeObserverEnd(observer, app, output)
+        logger.invokeObserverEnd(observer, task, output)
       }
     }
   }
 }
 
-class DistinctPriorityQueue(comparator: Comparator<UFuncApp>) {
-  private val queue = PriorityQueue<UFuncApp>(comparator)
-  private val set = hashSetOf<UFuncApp>()
+class DistinctPriorityQueue(comparator: Comparator<UTask>) {
+  private val queue = PriorityQueue<UTask>(comparator)
+  private val set = hashSetOf<UTask>()
 
 
   fun isNotEmpty(): Boolean {
     return queue.isNotEmpty()
   }
 
-  fun contains(elem: UFuncApp): Boolean {
-    return set.contains(elem)
+  fun contains(task: UTask): Boolean {
+    return set.contains(task)
   }
 
-  fun poll(): UFuncApp {
-    val elem = queue.remove()
-    set.remove(elem)
-    return elem
+  fun poll(): UTask {
+    val task = queue.remove()
+    set.remove(task)
+    return task
   }
 
-  fun pollLeastElemLessThanOrEqual(other: UFuncApp, txn: StoreReadTxn): UFuncApp? {
+  fun pollLeastElemLessThanOrEqual(other: UTask, txn: StoreReadTxn): UTask? {
     val queueCopy = PriorityQueue(queue)
     while(queueCopy.isNotEmpty()) {
-      val elem = queueCopy.poll()
-      if(elem == other || hasCallReq(other, elem!!, txn)) {
-        queue.remove(elem)
-        set.remove(elem)
-        return elem
+      val task = queueCopy.poll()
+      if(task == other || hasCallReq(other, task!!, txn)) {
+        queue.remove(task)
+        set.remove(task)
+        return task
       }
     }
     return null
   }
 
-  fun add(elem: UFuncApp) {
-    if(set.contains(elem)) return
-    queue.add(elem)
-    set.add(elem)
+  fun add(task: UTask) {
+    if(set.contains(task)) return
+    queue.add(task)
+    set.add(task)
   }
 
-  fun addAll(elems: Collection<UFuncApp>) {
-    for(elem in elems) {
+  fun addAll(tasks: Collection<UTask>) {
+    for(elem in tasks) {
       add(elem)
     }
   }

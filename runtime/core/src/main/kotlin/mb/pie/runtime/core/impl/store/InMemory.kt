@@ -6,14 +6,13 @@ import mb.vfs.path.PPath
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
-  private val dirty = ConcurrentHashMap.newKeySet<UFuncApp>()
-  private val outputs = ConcurrentHashMap<UFuncApp, UOutput>()
-  private val callReqs = ConcurrentHashMap<UFuncApp, ArrayList<CallReq>>()
-  private val callersOf = ConcurrentHashMap<UFuncApp, MutableSet<UFuncApp>>()
-  private val pathReqs = ConcurrentHashMap<UFuncApp, ArrayList<PathReq>>()
-  private val requireesOf = ConcurrentHashMap<PPath, MutableSet<UFuncApp>>()
-  private val pathGens = ConcurrentHashMap<UFuncApp, ArrayList<PathGen>>()
-  private val generatorOf = ConcurrentHashMap<PPath, UFuncApp?>()
+  private val outputs = ConcurrentHashMap<UTask, UOutput>()
+  private val callReqs = ConcurrentHashMap<UTask, ArrayList<TaskReq>>()
+  private val callersOf = ConcurrentHashMap<UTask, MutableSet<UTask>>()
+  private val pathReqs = ConcurrentHashMap<UTask, ArrayList<FileReq>>()
+  private val requireesOf = ConcurrentHashMap<PPath, MutableSet<UTask>>()
+  private val pathGens = ConcurrentHashMap<UTask, ArrayList<FileGen>>()
+  private val generatorOf = ConcurrentHashMap<PPath, UTask?>()
 
 
   override fun readTxn() = this
@@ -21,99 +20,92 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun sync() {}
   override fun close() {}
 
-  override fun dirty(app: UFuncApp) = dirty.contains(app)
-  override fun setDirty(app: UFuncApp, isDirty: Boolean) {
-    if(isDirty)
-      dirty.add(app)
-    else
-      dirty.remove(app)
-  }
 
-  override fun output(app: UFuncApp) = if(!outputs.containsKey(app)) {
+  override fun output(task: UTask) = if(!outputs.containsKey(task)) {
     null
   } else {
-    val wrapper = outputs[app]!!
+    val wrapper = outputs[task]!!
     Output(wrapper.output)
   }
 
-  override fun setOutput(app: UFuncApp, output: Out) {
+  override fun setOutput(task: UTask, output: Out) {
     // ConcurrentHashMap does not support null values, so also wrap outputs (which can be null) in an Output object.
-    outputs[app] = Output(output)
+    outputs[task] = Output(output)
   }
 
-  override fun callReqs(app: UFuncApp) = callReqs.getOrEmptyList(app)
-  override fun callersOf(app: UFuncApp) = callersOf.getOrPutSet(app)
-  override fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>) {
+  override fun taskReqs(task: UTask) = callReqs.getOrEmptyList(task)
+  override fun callersOf(task: UTask) = callersOf.getOrPutSet(task)
+  override fun setTaskReqs(task: UTask, taskReqs: ArrayList<TaskReq>) {
     // Remove old call requirements
-    val oldCallReqs = this.callReqs.remove(app)
+    val oldCallReqs = this.callReqs.remove(task)
     if(oldCallReqs != null) {
       for(callReq in oldCallReqs) {
-        callersOf.getOrPutSet(callReq.callee).remove(app)
+        callersOf.getOrPutSet(callReq.callee).remove(task)
       }
     }
-    // OPTO: diff callReqs and oldCallReqs, remove/add entries based on diff.
+    // OPTO: diff taskReqs and oldCallReqs, remove/add entries based on diff.
     // Add new call requirements
-    this.callReqs[app] = callReqs
-    for(callReq in callReqs) {
-      callersOf.getOrPutSet(callReq.callee).add(app)
+    this.callReqs[task] = taskReqs
+    for(callReq in taskReqs) {
+      callersOf.getOrPutSet(callReq.callee).add(task)
     }
   }
 
-  override fun pathReqs(app: UFuncApp) = pathReqs.getOrEmptyList(app)
-  override fun requireesOf(path: PPath) = requireesOf.getOrPutSet(path)
-  override fun setPathReqs(app: UFuncApp, pathReqs: ArrayList<PathReq>) {
-    // Remove old path requirements
-    val oldPathReqs = this.pathReqs.remove(app)
+  override fun fileReqs(task: UTask) = pathReqs.getOrEmptyList(task)
+  override fun requireesOf(file: PPath) = requireesOf.getOrPutSet(file)
+  override fun setFileReqs(task: UTask, fileReqs: ArrayList<FileReq>) {
+    // Remove old file requirements
+    val oldPathReqs = this.pathReqs.remove(task)
     if(oldPathReqs != null) {
       for(pathReq in oldPathReqs) {
-        requireesOf.getOrPutSet(pathReq.path).remove(app)
+        requireesOf.getOrPutSet(pathReq.file).remove(task)
       }
     }
-    // OPTO: diff pathReqs and oldPathReqs, remove/add entries based on diff.
+    // OPTO: diff fileReqs and oldPathReqs, remove/add entries based on diff.
     // Add new call requirements
-    this.pathReqs[app] = pathReqs
-    for(pathReq in pathReqs) {
-      requireesOf.getOrPutSet(pathReq.path).add(app)
+    this.pathReqs[task] = fileReqs
+    for(pathReq in fileReqs) {
+      requireesOf.getOrPutSet(pathReq.file).add(task)
     }
   }
 
-  override fun pathGens(app: UFuncApp) = pathGens.getOrEmptyList(app)
-  override fun generatorOf(path: PPath) = generatorOf[path]
-  override fun setPathGens(app: UFuncApp, pathGens: ArrayList<PathGen>) {
-    // Remove old path generators
-    val oldPathGens = this.pathGens.remove(app)
+  override fun fileGens(task: UTask) = pathGens.getOrEmptyList(task)
+  override fun generatorOf(file: PPath) = generatorOf[file]
+  override fun setFileGens(task: UTask, fileGens: ArrayList<FileGen>) {
+    // Remove old file generators
+    val oldPathGens = this.pathGens.remove(task)
     if(oldPathGens != null) {
       for(pathGen in oldPathGens) {
-        generatorOf.remove(pathGen.path)
+        generatorOf.remove(pathGen.file)
       }
     }
-    // OPTO: diff pathGens and oldPathGens, remove/add entries based on diff.
-    // Add new path generators
-    this.pathGens[app] = pathGens
-    for(pathGen in pathGens) {
-      generatorOf[pathGen.path] = app
+    // OPTO: diff fileGens and oldPathGens, remove/add entries based on diff.
+    // Add new file generators
+    this.pathGens[task] = fileGens
+    for(pathGen in fileGens) {
+      generatorOf[pathGen.file] = task
     }
   }
 
-  override fun data(app: UFuncApp): UFuncAppData? {
-    val output = output(app) ?: return null
-    val callReqs = callReqs(app)
-    val pathReqs = pathReqs(app)
-    val pathGens = pathGens(app)
-    return FuncAppData(output.output, callReqs, pathReqs, pathGens)
+  override fun data(task: UTask): UTaskData? {
+    val output = output(task) ?: return null
+    val callReqs = taskReqs(task)
+    val pathReqs = fileReqs(task)
+    val pathGens = fileGens(task)
+    return TaskData(output.output, callReqs, pathReqs, pathGens)
   }
 
-  override fun setData(app: UFuncApp, data: UFuncAppData) {
+  override fun setData(task: UTask, data: UTaskData) {
     val (output, callReqs, pathReqs, pathGens) = data
-    setOutput(app, output)
-    setCallReqs(app, callReqs)
-    setPathReqs(app, pathReqs)
-    setPathGens(app, pathGens)
+    setOutput(task, output)
+    setTaskReqs(task, callReqs)
+    setFileReqs(task, pathReqs)
+    setFileGens(task, pathGens)
   }
 
 
   override fun numSourceFiles(): Int {
-    val requiredFiles = pathReqs.values.flatMap { it.map { it.path } }.toHashSet()
+    val requiredFiles = pathReqs.values.flatMap { it.map { it.file } }.toHashSet()
     var numSourceFiles = 0
     for(file in requiredFiles) {
       if(!generatorOf.containsKey(file)) {
@@ -125,7 +117,6 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
 
 
   override fun drop() {
-    dirty.clear()
     outputs.clear()
     callReqs.clear()
     callersOf.clear()

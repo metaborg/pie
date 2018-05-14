@@ -3,6 +3,9 @@ package mb.pie.runtime.core
 import java.io.Serializable
 
 
+/**
+ * Serializable none/void type.
+ */
 class None : Serializable {
   companion object {
     val instance = None()
@@ -23,6 +26,9 @@ class None : Serializable {
   }
 }
 
+/**
+ * Truncates a string to given [maxLength], and reifies newlines.
+ */
 fun String.toShortString(maxLength: Int): String {
   val str = this.replace("\r", "\\r").replace("\n", "\\n")
   return if(str.length > maxLength) {

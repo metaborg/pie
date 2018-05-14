@@ -27,12 +27,12 @@ rules // PIE function definitions
     ; emptyReturn := <?UnitTy(); !"return Unit.instance" <+ !""> type
    |}
     with
-      rules(ModuleBindings :+= $[binder.bindFunc<[className]>(funcs, "[className]")])
+      rules(ModuleBindings :+= $[binder.bindTaskDef<[className]>(taskDefsBinder, "[className]")])
     with
       str := 
-$[class [className] : Func<[inputName], [outputName]> {
+$[class [className] : TaskDef<[inputName], [outputName]> {
   companion object {
-    val id = "[className]"
+    const val id = "[className]"
   }
   [inputDataClass][outputDataClass]override val id = Companion.id
   override fun ExecContext.exec(input: [inputName]): [outputName] = [buildImpl]

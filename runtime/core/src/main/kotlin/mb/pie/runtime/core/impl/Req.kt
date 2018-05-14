@@ -2,74 +2,74 @@ package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.stamp.OutputStamp
-import mb.pie.runtime.core.stamp.PathStamp
+import mb.pie.runtime.core.stamp.FileStamp
 import mb.vfs.path.PPath
 import java.io.Serializable
 
 
 //interface Req : Serializable {
-//  fun <I : In, O : Out> makeConsistent(requiree: FuncApp<I, O>, requireeRes: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason?
+//  fun <I : In, O : Out> makeConsistent(requiree: Task<I, O>, requireeRes: ExecRes<I, O>, exec: Exec, cancel: Cancelled, logger: Logger): ExecReason?
 //}
 
-internal interface PathConsistencyChecker {
+internal interface FileConsistencyChecker {
   fun checkConsistency(): ExecReason?
   fun isConsistent(): Boolean
 }
 
-data class PathReq(val path: PPath, val stamp: PathStamp) : PathConsistencyChecker, Serializable {
+data class FileReq(val file: PPath, val stamp: FileStamp) : FileConsistencyChecker, Serializable {
   /**
-   * @return an execution reason when this path requirement is inconsistent, `null` otherwise.
+   * @return an execution reason when this file requirement is inconsistent, `null` otherwise.
    */
-  override fun checkConsistency(): InconsistentPathReq? {
-    val newStamp = stamp.stamper.stamp(path)
+  override fun checkConsistency(): InconsistentFileReq? {
+    val newStamp = stamp.stamper.stamp(file)
     if(stamp != newStamp) {
-      return InconsistentPathReq(this, newStamp)
+      return InconsistentFileReq(this, newStamp)
     }
     return null
   }
 
   /**
-   * @return `true` when this path requirement is consistent, `false` otherwise.
+   * @return `true` when this file requirement is consistent, `false` otherwise.
    */
   override fun isConsistent(): Boolean {
-    val newStamp = stamp.stamper.stamp(path)
+    val newStamp = stamp.stamper.stamp(file)
     return stamp == newStamp
   }
 
   override fun toString(): String {
-    return "PathReq($path, $stamp)";
+    return "FileReq($file, $stamp)";
   }
 }
 
-data class PathGen(val path: PPath, val stamp: PathStamp) : PathConsistencyChecker, Serializable {
+data class FileGen(val file: PPath, val stamp: FileStamp) : FileConsistencyChecker, Serializable {
   /**
-   * @return an execution reason when this path generates is inconsistent, `null` otherwise.
+   * @return an execution reason when this file generates is inconsistent, `null` otherwise.
    */
-  override fun checkConsistency(): InconsistentPathGen? {
-    val newStamp = stamp.stamper.stamp(path)
+  override fun checkConsistency(): InconsistentFileGen? {
+    val newStamp = stamp.stamper.stamp(file)
     if(stamp != newStamp) {
-      return InconsistentPathGen(this, newStamp)
+      return InconsistentFileGen(this, newStamp)
     }
     return null
   }
 
   /**
-   * @return `true` when this path generates is consistent, `false` otherwise.
+   * @return `true` when this file generates is consistent, `false` otherwise.
    */
   override fun isConsistent(): Boolean {
-    val newStamp = stamp.stamper.stamp(path)
+    val newStamp = stamp.stamper.stamp(file)
     return stamp == newStamp
   }
 }
 
-data class CallReq(val callee: UFuncApp, val stamp: OutputStamp) : Serializable {
+data class TaskReq(val callee: UTask, val stamp: OutputStamp) : Serializable {
   /**
    * @return an execution reason when this call requirement is inconsistent w.r.t. [output], `null` otherwise.
    */
-  fun checkConsistency(output: Out): InconsistentCallReq? {
+  fun checkConsistency(output: Out): InconsistentTaskReq? {
     val newStamp = stamp.stamper.stamp(output)
     if(stamp != newStamp) {
-      return InconsistentCallReq(this, newStamp)
+      return InconsistentTaskReq(this, newStamp)
     }
     return null
   }
@@ -85,7 +85,7 @@ data class CallReq(val callee: UFuncApp, val stamp: OutputStamp) : Serializable 
   /**
    * @return `true` when this call requirement's callee is equal to [other], `false` otherwise.
    */
-  fun calleeEqual(other: UFuncApp): Boolean {
+  fun calleeEqual(other: UTask): Boolean {
     return when {
       other.id != callee.id -> false
       other == callee -> true
@@ -94,6 +94,6 @@ data class CallReq(val callee: UFuncApp, val stamp: OutputStamp) : Serializable 
   }
 
   override fun toString(): String {
-    return "CallReq(${callee.toShortString(100)}, $stamp)";
+    return "TaskReq(${callee.toShortString(100)}, $stamp)";
   }
 }

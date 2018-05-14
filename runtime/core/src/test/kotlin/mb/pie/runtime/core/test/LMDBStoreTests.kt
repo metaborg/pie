@@ -17,14 +17,14 @@ internal class LMDBStoreTests {
     factory.create(File("build/test/lmdbstore")).use {
       it.writeTxn().use { it.drop() }
       val exec = pullingExec(it, cache, share, layerProvider.get(), loggerProvider.get())
-      exec.require(app(toLowerCase, "HELLO WORLD!"))
+      exec.requireInitial(app(toLowerCase, "HELLO WORLD!"))
     }
 
     // Close and re-open the database
     factory.create(File("build/test/lmdbstore")).use {
       val exec = spy(pullingExec(it, cache, share, layerProvider.get(), loggerProvider.get()))
       val app = app(toLowerCase, "HELLO WORLD!")
-      exec.require(app)
+      exec.requireInitial(app)
       verify(exec, never()).exec(eq(app), any(), any(), any())
     }
   }

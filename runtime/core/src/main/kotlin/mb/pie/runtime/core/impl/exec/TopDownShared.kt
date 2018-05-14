@@ -6,9 +6,9 @@ import mb.util.async.Cancelled
 
 
 @Suppress("DataClassPrivateConstructor")
-data class ResOrData<out O : Out> private constructor(val res: ExecRes<O>?, val data: FuncAppData<O>?) {
-  constructor(res: ExecRes<O>) : this(res, null)
-  constructor(data: FuncAppData<O>?) : this(null, data)
+data class VisitedOrData<out O : Out> private constructor(val visited: O?, val data: TaskData<O>?) {
+  constructor(visited: O) : this(visited, null)
+  constructor(data: TaskData<O>?) : this(null, data)
 }
 
 internal open class TopDownExecShared(
@@ -17,79 +17,81 @@ internal open class TopDownExecShared(
   private val share: Share,
   private val layer: Layer,
   private val logger: Logger,
-  private val visited: MutableMap<UFuncApp, UFuncAppData>
+  private val visited: MutableMap<UTask, UTaskData>
 ) {
-  fun <I : In, O : Out> existingData(app: FuncApp<I, O>): FuncAppData<O>? {
+  private fun <I : In, O : Out> existingData(task: Task<I, O>): TaskData<O>? {
     // Check cache for output of function application.
-    logger.checkCachedStart(app)
-    val cachedData = cache[app]
-    logger.checkCachedEnd(app, cachedData?.output)
+    logger.checkCachedStart(task)
+    val cachedData = cache[task]
+    logger.checkCachedEnd(task, cachedData?.output)
 
     // Check store for output of function application.
     return if(cachedData != null) {
       cachedData
     } else {
-      logger.checkStoredStart(app)
-      val data = store.readTxn().use { it.data(app) }
-      logger.checkStoredEnd(app, data?.output)
+      logger.checkStoredStart(task)
+      val data = store.readTxn().use { it.data(task) }
+      logger.checkStoredEnd(task, data?.output)
       data
     }?.cast<O>()
   }
 
-  fun <I : In, O : Out> topdownPrelude(app: FuncApp<I, O>): ResOrData<O> {
+  fun <I : In, O : Out> topdownPrelude(task: Task<I, O>): VisitedOrData<O> {
     Stats.addRequires()
-    layer.requireTopDownStart(app)
-    logger.requireTopDownStart(app)
+    layer.requireTopDownStart(task)
+    logger.requireTopDownStart(task)
 
     // Check visited cache for output of function application.
-    logger.checkVisitedStart(app)
-    val visitedData = visited[app]?.cast<O>()
+    logger.checkVisitedStart(task)
+    val visitedData = visited[task]?.cast<O>()
     if(visitedData != null) {
       // Return output immediately if function application was already visited this execution.
-      logger.checkVisitedEnd(app, visitedData.output)
-      val res = ExecRes(visitedData.output)
-      logger.requireTopDownEnd(app, res)
-      return ResOrData(res)
+      val visitedOutput = visitedData.output
+      logger.checkVisitedEnd(task, visitedOutput)
+      logger.requireTopDownEnd(task, visitedOutput)
+      return VisitedOrData(visitedOutput)
     }
-    logger.checkVisitedEnd(app, null)
+    logger.checkVisitedEnd(task, null)
 
-    val data = existingData(app)
-    return ResOrData(data)
+    val data = existingData(task)
+    return VisitedOrData(data)
   }
 
 
-  fun exec(app: UFuncApp, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false, execFunc: (UFuncApp, Cancelled) -> UFuncAppData): UFuncAppData {
+  fun exec(task: UTask, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false, execFunc: (UTask, Cancelled) -> UTaskData): UTaskData {
     cancel.throwIfCancelled()
-    logger.executeStart(app, reason)
+    logger.executeStart(task, reason)
     val data = if(useCache) {
-      share.reuseOrCreate(app, { store.readTxn().use { txn -> txn.data(it) } }) { execFunc(it, cancel) }
+      share.reuseOrCreate(task, { store.readTxn().use { txn -> txn.data(it) } }) { execFunc(it, cancel) }
     } else {
-      share.reuseOrCreate(app) { execFunc(it, cancel) }
+      share.reuseOrCreate(task) { execFunc(it, cancel) }
     }
-    val result = ExecRes(data.output, reason)
-    logger.executeEnd(app, reason, result)
+    logger.executeEnd(task, reason, data)
     return data
   }
 
-  fun execInternal(app: UFuncApp, cancel: Cancelled, exec: Exec, funcs: Funcs, writeFunc: (StoreWriteTxn, UFuncAppData) -> Unit): UFuncAppData {
+  fun execInternal(task: UTask, cancel: Cancelled, requireTask: RequireTask, taskDefs: TaskDefs, writeFunc: (StoreWriteTxn, UTaskData) -> Unit): UTaskData {
     cancel.throwIfCancelled()
-    val (id, input) = app
-    val builder = funcs.getUFunc(id)
-    val context = ExecContextImpl(exec, store, cancel)
+    val (id, input) = task
+    val builder = taskDefs.getGTaskDef(id)
+    val context = ExecContextImpl(requireTask, cancel)
     val output = builder.execUntyped(input, context)
     Stats.addExecution()
     val (callReqs, pathReqs, pathGens) = context.reqs()
-    val data = FuncAppData(output, callReqs, pathReqs, pathGens)
+    val data = TaskData(output, callReqs, pathReqs, pathGens)
 
     // Validate well-formedness of the dependency graph, before writing.
-    store.readTxn().use { layer.validatePreWrite(app, data, it) }
+    store.readTxn().use { layer.validatePreWrite(task, data, it) }
     // Write output and dependencies to the store.
-    store.writeTxn().use { it.setData(app, data); writeFunc(it, data) }
+    store.writeTxn().use { it.setData(task, data); writeFunc(it, data) }
     // Validate well-formedness of the dependency graph, after writing.
-    store.readTxn().use { layer.validatePostWrite(app, data, it) }
+    store.readTxn().use { layer.validatePostWrite(task, data, it) }
+
     // Cache data
-    visited[app] = data
-    cache[app] = data
+    visited[task] = data
+    cache[task] = data
     return data
   }
 }
+
+private fun TaskDef<In, *>.execUntyped(input: In, ctx: ExecContext): Out = ctx.exec(input.cast())

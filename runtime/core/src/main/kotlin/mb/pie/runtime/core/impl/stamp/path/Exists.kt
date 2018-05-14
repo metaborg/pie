@@ -1,13 +1,13 @@
 package mb.pie.runtime.core.impl.stamp.path
 
-import mb.pie.runtime.core.stamp.PathStamp
-import mb.pie.runtime.core.stamp.PathStamper
+import mb.pie.runtime.core.stamp.FileStamp
+import mb.pie.runtime.core.stamp.FileStamper
 import mb.vfs.path.PPath
 
 
-class ExistsPathStamper : PathStamper {
-  override fun stamp(path: PPath): PathStamp {
-    return ValuePathStamp(path.exists(), this)
+class ExistsFileStamper : FileStamper {
+  override fun stamp(path: PPath): FileStamp {
+    return ValueFileStamp(path.exists(), this)
   }
 
 

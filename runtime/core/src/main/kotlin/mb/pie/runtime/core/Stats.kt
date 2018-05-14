@@ -1,6 +1,8 @@
 package mb.pie.runtime.core
 
-
+/**
+ * HACK: global object for collecting build statistics.
+ */
 object Stats {
   var requires = 0
   var executions = 0

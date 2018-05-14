@@ -1,13 +1,13 @@
 package mb.pie.runtime.core.impl.stamp.path
 
-import mb.pie.runtime.core.stamp.PathStamp
-import mb.pie.runtime.core.stamp.PathStamper
+import mb.pie.runtime.core.stamp.FileStamp
+import mb.pie.runtime.core.stamp.FileStamper
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
 
 
-interface ModifiedPathStamperTrait : PathStamper {
+interface ModifiedFileStamperTrait : FileStamper {
   val unknown get() = Long.MIN_VALUE
 
   fun modified(path: PPath, matcher: PathMatcher?): Long {
@@ -44,13 +44,13 @@ interface ModifiedPathStamperTrait : PathStamper {
   }
 }
 
-data class ModifiedPathStamper(private val matcher: PathMatcher? = null) : ModifiedPathStamperTrait {
-  override fun stamp(path: PPath): PathStamp {
+data class ModifiedFileStamper(private val matcher: PathMatcher? = null) : ModifiedFileStamperTrait {
+  override fun stamp(path: PPath): FileStamp {
     if(!path.exists()) {
-      return ValuePathStamp(null, this)
+      return ValueFileStamp(null, this)
     }
     val modified = modified(path, matcher)
-    return ValuePathStamp(modified, this)
+    return ValueFileStamp(modified, this)
   }
 
   override fun toString(): String {
@@ -58,13 +58,13 @@ data class ModifiedPathStamper(private val matcher: PathMatcher? = null) : Modif
   }
 }
 
-data class RecModifiedPathStamper(private val walker: PathWalker? = null) : ModifiedPathStamperTrait {
-  override fun stamp(path: PPath): PathStamp {
+data class RecModifiedFileStamper(private val walker: PathWalker? = null) : ModifiedFileStamperTrait {
+  override fun stamp(path: PPath): FileStamp {
     if(!path.exists()) {
-      return ValuePathStamp(null, this)
+      return ValueFileStamp(null, this)
     }
     val modified = modifiedRec(path, walker)
-    return ValuePathStamp(modified, this)
+    return ValueFileStamp(modified, this)
   }
 
   override fun toString(): String {

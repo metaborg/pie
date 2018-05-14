@@ -44,14 +44,14 @@ open class ParametrizedTestCtx(
     return observingExecutor(store, cache, share, layerProvider, loggerProvider)
   }
 
-  fun bottomUpExec(observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpExec {
+  fun bottomUpExec(observers: Map<UTask, TaskObserver> = mapOf()): BottomUpExec {
     return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), observers)
   }
 }
 
 open class TestCtx {
   private val inj: Injector = Guice.createInjector(PieModule(), LogModule(LoggerFactory.getLogger("root")))
-  private val funcs = mutableMapOf<String, UFunc>()
+  private val funcs = mutableMapOf<String, UTaskDef>()
 
 
   val toLowerCase = func<String, String>("toLowerCase", { "toLowerCase($it)" }) {
@@ -72,16 +72,16 @@ open class TestCtx {
     return PPathImpl(fs.getPath(path))
   }
 
-  fun <I : In, O : Out> func(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): Func<I, O> {
-    return LambdaFuncD(id, descFunc, execFunc)
+  fun <I : In, O : Out> func(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+    return LambdaTaskDef(id, execFunc, descFunc)
   }
 
-  fun <I : In, O : Out> app(func: Func<I, O>, input: I): FuncApp<I, O> {
-    return FuncApp(func, input)
+  fun <I : In, O : Out> app(taskDef: TaskDef<I, O>, input: I): Task<I, O> {
+    return Task(taskDef, input)
   }
 
-  fun <I : In, O : Out> app(builderId: String, input: I): FuncApp<I, O> {
-    return FuncApp<I, O>(builderId, input)
+  fun <I : In, O : Out> app(builderId: String, input: I): Task<I, O> {
+    return Task<I, O>(builderId, input)
   }
 
 
@@ -98,7 +98,7 @@ open class TestCtx {
     return BottomUpExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
   }
 
-  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpExec {
+  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, observers: Map<UTask, TaskObserver>): BottomUpExec {
     return BottomUpExec(store, cache, share, layer, logger, funcs, observers)
   }
 
@@ -120,12 +120,12 @@ open class TestCtx {
   }
 
 
-  fun registerFunc(builder: UFunc) {
+  fun registerFunc(builder: UTaskDef) {
     funcs[builder.id] = builder
   }
 
-  inline fun <reified I : In, reified O : Out> requireOutputFunc(): Func<FuncApp<I, O>, O> {
-    return func<FuncApp<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
+  inline fun <reified I : In, reified O : Out> requireOutputFunc(): TaskDef<Task<I, O>, O> {
+    return func<Task<I, O>, O>("requireOutput(${I::class}):${O::class}", { "requireOutput($it)" }) {
       requireOutput(it)
     }
   }

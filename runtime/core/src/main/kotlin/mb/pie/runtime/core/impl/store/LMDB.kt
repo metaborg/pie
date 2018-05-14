@@ -29,7 +29,6 @@ class LMDBBuildStoreFactory @Inject constructor(val logger: Logger) {
 
 class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: Int) : Store {
   private val env: EnvB
-  private val dirty: DbiB
   private val output: DbiB
   private val callReqs: DbiB
   private val callersOf: DbiB
@@ -46,11 +45,10 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
     env = Env.create(DirectBufferProxy.PROXY_DB)
       .setMapSize(maxDbSize.toLong())
       .setMaxReaders(maxReaders)
-      .setMaxDbs(10)
+      .setMaxDbs(9)
       .open(envDir, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC)
-    dirty = env.openDbi("dirty", DbiFlags.MDB_CREATE)
     output = env.openDbi("output", DbiFlags.MDB_CREATE)
-    callReqs = env.openDbi("callReqs", DbiFlags.MDB_CREATE)
+    callReqs = env.openDbi("taskReqs", DbiFlags.MDB_CREATE)
     callersOf = env.openDbi("callersOf", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
     callersOfValues = env.openDbi("callersOfValues", DbiFlags.MDB_CREATE)
     pathReqs = env.openDbi("pathReqs", DbiFlags.MDB_CREATE)
@@ -68,7 +66,6 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
   override fun readTxn(): StoreReadTxn {
     val txn = env.txnRead()
     return LMDBStoreTxn(env, txn, false, logger,
-      dirtyDb = dirty,
       outputDb = output,
       callReqsDb = callReqs,
       callersOfDb = callersOf,
@@ -84,7 +81,6 @@ class LMDBStore(val logger: Logger, envDir: File, maxDbSize: Int, maxReaders: In
   override fun writeTxn(): StoreWriteTxn {
     val txn = env.txnWrite()
     return LMDBStoreTxn(env, txn, true, logger,
-      dirtyDb = dirty,
       outputDb = output,
       callReqsDb = callReqs,
       callersOfDb = callersOf,
@@ -356,7 +352,6 @@ internal open class LMDBStoreTxn(
   txn: TxnB,
   isWriteTxn: Boolean,
   logger: Logger,
-  private val dirtyDb: DbiB,
   private val outputDb: DbiB,
   private val callReqsDb: DbiB,
   private val callersOfDb: DbiB,
@@ -371,130 +366,121 @@ internal open class LMDBStoreTxn(
     TODO("implement numSourceFiles in LMDBStoreTxn")
   }
 
-  override fun dirty(app: UFuncApp): Boolean {
-    return getBool(app, dirtyDb)
-  }
-
-  override fun output(app: UFuncApp): UOutput? {
-    return getOne<UFuncApp, Out>(app, outputDb).mapOrElse(null) { value ->
+  override fun output(task: UTask): UOutput? {
+    return getOne<UTask, Out>(task, outputDb).mapOrElse(null) { value ->
       Output(value)
     }
   }
 
-  override fun callReqs(app: UFuncApp): ArrayList<CallReq> {
-    return getOne<UFuncApp, ArrayList<CallReq>>(app, callReqsDb).orElse(arrayListOf())
+  override fun taskReqs(task: UTask): ArrayList<TaskReq> {
+    return getOne<UTask, ArrayList<TaskReq>>(task, callReqsDb).orElse(arrayListOf())
   }
 
-  override fun callersOf(app: UFuncApp): Set<UFuncApp> {
-    return getMultiple(app, callersOfDb, callersOfValuesDb)
+  override fun callersOf(task: UTask): Set<UTask> {
+    return getMultiple(task, callersOfDb, callersOfValuesDb)
   }
 
-  override fun pathReqs(app: UFuncApp): ArrayList<PathReq> {
-    return getOne<UFuncApp, ArrayList<PathReq>>(app, pathReqsDb).orElse(arrayListOf())
+  override fun fileReqs(task: UTask): ArrayList<FileReq> {
+    return getOne<UTask, ArrayList<FileReq>>(task, pathReqsDb).orElse(arrayListOf())
   }
 
-  override fun requireesOf(path: PPath): Set<UFuncApp> {
-    return getMultiple(path, requireesOfDb, requireesOfValuesDb)
+  override fun requireesOf(file: PPath): Set<UTask> {
+    return getMultiple(file, requireesOfDb, requireesOfValuesDb)
   }
 
-  override fun pathGens(app: UFuncApp): ArrayList<PathGen> {
-    return getOne<UFuncApp, ArrayList<PathGen>>(app, pathGensDb).orElse(arrayListOf())
+  override fun fileGens(task: UTask): ArrayList<FileGen> {
+    return getOne<UTask, ArrayList<FileGen>>(task, pathGensDb).orElse(arrayListOf())
   }
 
-  override fun generatorOf(path: PPath): UFuncApp? {
-    return getOne<PPath, UFuncApp?>(path, generatorOfDb).orElse(null)
+  override fun generatorOf(file: PPath): UTask? {
+    return getOne<PPath, UTask?>(file, generatorOfDb).orElse(null)
   }
 
-  override fun data(app: UFuncApp): UFuncAppData? {
+  override fun data(task: UTask): UTaskData? {
     // TODO: buffer copies required?
-    val appKey = serialize(app, env.maxKeySize)
+    val appKey = serialize(task, env.maxKeySize)
     val outputDeserialized = getOne<Out>(copyBuffer(appKey), outputDb)
     if(outputDeserialized == null || outputDeserialized.deleted) {
       return null
     }
     val output = outputDeserialized.deserialized
-    val callReqs = getOne<ArrayList<CallReq>>(copyBuffer(appKey), callReqsDb).orElse(arrayListOf())
-    val pathReqs = getOne<ArrayList<PathReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
-    val pathGens = getOne<ArrayList<PathGen>>(appKey, pathGensDb).orElse(arrayListOf())
-    return FuncAppData(output, callReqs, pathReqs, pathGens)
+    val callReqs = getOne<ArrayList<TaskReq>>(copyBuffer(appKey), callReqsDb).orElse(arrayListOf())
+    val pathReqs = getOne<ArrayList<FileReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
+    val pathGens = getOne<ArrayList<FileGen>>(appKey, pathGensDb).orElse(arrayListOf())
+    return TaskData(output, callReqs, pathReqs, pathGens)
   }
 
 
-  override fun setDirty(app: UFuncApp, isDirty: Boolean) {
-    setBool(app, isDirty, dirtyDb)
+  override fun setOutput(task: UTask, output: Out) {
+    setOne(task, output, outputDb)
   }
 
-  override fun setOutput(app: UFuncApp, output: Out) {
-    setOne(app, output, outputDb)
-  }
-
-  override fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>) {
-    logger.trace("Setting call reqs of ${app.toShortString(100)} to $callReqs")
+  override fun setTaskReqs(task: UTask, taskReqs: ArrayList<TaskReq>) {
+    logger.trace("Setting call reqs of ${task.toShortString(100)} to $taskReqs")
     // TODO: buffer copies required?
-    val (callerAppVal, callerAppKey) = serializeAndHash(app)
+    val (callerAppVal, callerAppKey) = serializeAndHash(task)
     // Remove old inverse call requirements.
     logger.trace(" * removing old inverse callers")
-    val oldCallReqs = getOne<ArrayList<CallReq>>(copyBuffer(callerAppKey), callReqsDb).orElse(arrayListOf())
+    val oldCallReqs = getOne<ArrayList<TaskReq>>(copyBuffer(callerAppKey), callReqsDb).orElse(arrayListOf())
     for(oldCallReq in oldCallReqs) {
-      logger.trace("   * removing: ${oldCallReq.callee.toShortString(50)} -> ${app.toShortString(50)}")
+      logger.trace("   * removing: ${oldCallReq.callee.toShortString(50)} -> ${task.toShortString(50)}")
       val deleted = deleteDup(oldCallReq.callee, copyBuffer(callerAppKey), callersOfDb, callersOfValuesDb)
       logger.trace("   * deletion success: $deleted")
     }
-    // OPTO: diff callReqs and oldCallReqs, remove/add entries based on diff.
+    // OPTO: diff taskReqs and oldCallReqs, remove/add entries based on diff.
     // Add new call requirements.
     logger.trace(" * setting call requirements")
-    val set = setOne(copyBuffer(callerAppKey), callReqs, callReqsDb)
+    val set = setOne(copyBuffer(callerAppKey), taskReqs, callReqsDb)
     logger.trace(" * setting success: $set")
     logger.trace(" * adding new inverse callers")
-    for(callReq in callReqs) {
-      logger.trace("   * adding: ${callReq.callee.toShortString(50)} -> ${app.toShortString(50)}")
+    for(callReq in taskReqs) {
+      logger.trace("   * adding: ${callReq.callee.toShortString(50)} -> ${task.toShortString(50)}")
       val added = setDup(callReq.callee, copyBuffer(callerAppVal), copyBuffer(callerAppKey), callersOfDb, callersOfValuesDb)
       logger.trace("   * addition success: $added")
     }
   }
 
-  override fun setPathReqs(app: UFuncApp, pathReqs: ArrayList<PathReq>) {
+  override fun setFileReqs(task: UTask, fileReqs: ArrayList<FileReq>) {
     // TODO: buffer copies required?
-    val (appValue, appKey) = serializeAndHash(app)
-    // Remove old inverse path requirements.
-    val oldPathReqs = getOne<ArrayList<PathReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
+    val (appValue, appKey) = serializeAndHash(task)
+    // Remove old inverse file requirements.
+    val oldPathReqs = getOne<ArrayList<FileReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
     for(oldPathReq in oldPathReqs) {
-      deleteDup(oldPathReq.path, copyBuffer(appKey), requireesOfDb, requireesOfValuesDb)
+      deleteDup(oldPathReq.file, copyBuffer(appKey), requireesOfDb, requireesOfValuesDb)
     }
-    // OPTO: diff pathReqs and oldPathReqs, remove/add entries based on diff.
-    // Add new path requirements.
-    setOne(copyBuffer(appKey), pathReqs, pathReqsDb)
-    for(pathReq in pathReqs) {
-      setDup(pathReq.path, copyBuffer(appValue), copyBuffer(appKey), requireesOfDb, requireesOfValuesDb)
+    // OPTO: diff fileReqs and oldPathReqs, remove/add entries based on diff.
+    // Add new file requirements.
+    setOne(copyBuffer(appKey), fileReqs, pathReqsDb)
+    for(pathReq in fileReqs) {
+      setDup(pathReq.file, copyBuffer(appValue), copyBuffer(appKey), requireesOfDb, requireesOfValuesDb)
     }
   }
 
-  override fun setPathGens(app: UFuncApp, pathGens: ArrayList<PathGen>) {
+  override fun setFileGens(task: UTask, fileGens: ArrayList<FileGen>) {
     // TODO: buffer copies required?
-    val (appValue, appKey) = serializeAndHash(app)
-    // Remove old inverse path generates.
-    val oldPathGens = getOne<ArrayList<PathGen>>(copyBuffer(appKey), pathGensDb).orElse(arrayListOf())
+    val (appValue, appKey) = serializeAndHash(task)
+    // Remove old inverse file generates.
+    val oldPathGens = getOne<ArrayList<FileGen>>(copyBuffer(appKey), pathGensDb).orElse(arrayListOf())
     for(oldPathGen in oldPathGens) {
-      deleteOne(oldPathGen.path, generatorOfDb)
+      deleteOne(oldPathGen.file, generatorOfDb)
     }
-    // OPTO: diff pathGens and oldPathGens, remove/add entries based on diff.
-    // Add new path generates.
-    setOne(appKey, pathGens, pathGensDb)
-    for(pathGen in pathGens) {
-      setOne(pathGen.path, copyBuffer(appValue), generatorOfDb)
+    // OPTO: diff fileGens and oldPathGens, remove/add entries based on diff.
+    // Add new file generates.
+    setOne(appKey, fileGens, pathGensDb)
+    for(pathGen in fileGens) {
+      setOne(pathGen.file, copyBuffer(appValue), generatorOfDb)
     }
   }
 
-  override fun setData(app: UFuncApp, data: UFuncAppData) {
-    // OPTO: serialize and hash app only once
-    setOutput(app, data.output)
-    setCallReqs(app, data.callReqs)
-    setPathReqs(app, data.pathReqs)
-    setPathGens(app, data.pathGens)
+  override fun setData(task: UTask, data: UTaskData) {
+    // OPTO: serialize and hash task only once
+    setOutput(task, data.output)
+    setTaskReqs(task, data.taskReqs)
+    setFileReqs(task, data.fileReqs)
+    setFileGens(task, data.fileGens)
   }
 
   override fun drop() {
-    dirtyDb.drop(txn)
     outputDb.drop(txn)
     callReqsDb.drop(txn)
     callersOfDb.drop(txn)

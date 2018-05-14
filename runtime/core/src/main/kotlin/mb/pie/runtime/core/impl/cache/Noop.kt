@@ -4,8 +4,8 @@ import mb.pie.runtime.core.*
 
 
 class NoopCache : Cache {
-  override fun set(app: UFuncApp, data: UFuncAppData) = Unit
-  override fun get(app: UFuncApp): UFuncAppData? = null
+  override fun set(task: UTask, data: UTaskData) = Unit
+  override fun get(task: UTask): UTaskData? = null
   override fun drop() = Unit
 
 

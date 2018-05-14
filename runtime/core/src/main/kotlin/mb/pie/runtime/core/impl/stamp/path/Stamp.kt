@@ -1,22 +1,22 @@
 package mb.pie.runtime.core.impl.stamp.path
 
-import mb.pie.runtime.core.stamp.PathStamp
-import mb.pie.runtime.core.stamp.PathStamper
+import mb.pie.runtime.core.stamp.FileStamp
+import mb.pie.runtime.core.stamp.FileStamper
 import java.util.*
 
 
-data class ValuePathStamp<out V>(private val value: V?, override val stamper: PathStamper) : PathStamp {
+data class ValueFileStamp<out V>(private val value: V?, override val stamper: FileStamper) : FileStamp {
   override fun toString(): String {
     return value.toString()
   }
 }
 
-data class ByteArrayPathStamp(private val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
+data class ByteArrayFileStamp(private val value: ByteArray?, override val stamper: FileStamper) : FileStamp {
   override fun equals(other: Any?): Boolean {
     if(this === other) return true
     if(other?.javaClass != javaClass) return false
 
-    other as ByteArrayPathStamp
+    other as ByteArrayFileStamp
 
     if(!Arrays.equals(value, other.value)) return false // Override required for array equality
     if(stamper != other.stamper) return false

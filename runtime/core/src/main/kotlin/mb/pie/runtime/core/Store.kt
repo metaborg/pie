@@ -3,7 +3,9 @@ package mb.pie.runtime.core
 import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
 
-
+/**
+ * Internal storage for tasks, outputs, and dependency information.
+ */
 interface Store : AutoCloseable {
   /**
    * Opens a read transaction. Transaction must be [closed][close] after usage to free up internal resources.
@@ -22,6 +24,9 @@ interface Store : AutoCloseable {
   fun sync()
 }
 
+/**
+ * Storage transaction. Must be closed after use.
+ */
 interface StoreTxn : AutoCloseable {
   /**
    * Closes the transaction. Commits written data and frees up internal resources. Failure to close a transaction may
@@ -30,55 +35,53 @@ interface StoreTxn : AutoCloseable {
   override fun close()
 }
 
+/**
+ * Storage read transaction. Must be closed after use.
+ */
 interface StoreReadTxn : StoreTxn {
   /**
-   * @return `true` if [app] is marked as dirty, `false` otherwise.
+   * @return wrapper around output for [task], or `null` if no output is stored.
    */
-  fun dirty(app: UFuncApp): Boolean
-
-  /**
-   * @return wrapper around output for [app], or `null` if no output is stored.
-   */
-  fun output(app: UFuncApp): UOutput?
+  fun output(task: UTask): UOutput?
 
 
   /**
-   * @return call requirements of [app].
+   * @return task requirements (calls) of [task].
    */
-  fun callReqs(app: UFuncApp): List<CallReq>
+  fun taskReqs(task: UTask): List<TaskReq>
 
   /**
-   * @return function applications that call [app].
+   * @return callers of [task].
    */
-  fun callersOf(app: UFuncApp): Set<UFuncApp>
-
-
-  /**
-   * @return path requirements of [app].
-   */
-  fun pathReqs(app: UFuncApp): List<PathReq>
-
-  /**
-   * @return function applications that require [path].
-   */
-  fun requireesOf(path: PPath): Set<UFuncApp>
+  fun callersOf(task: UTask): Set<UTask>
 
 
   /**
-   * @return path generates of [app].
+   * @return file requirements of [task].
    */
-  fun pathGens(app: UFuncApp): List<PathGen>
+  fun fileReqs(task: UTask): List<FileReq>
 
   /**
-   * @return function application that generates [path], or `null` if it does not exist.
+   * @return tasks that require [file].
    */
-  fun generatorOf(path: PPath): UFuncApp?
+  fun requireesOf(file: PPath): Set<UTask>
 
 
   /**
-   * @return output, call requirements, path reqs, and path generates for [app], or `null` when no output was stored.
+   * @return file generates of [task].
    */
-  fun data(app: UFuncApp): UFuncAppData?
+  fun fileGens(task: UTask): List<FileGen>
+
+  /**
+   * @return file that generates [file], or `null` if it does not exist.
+   */
+  fun generatorOf(file: PPath): UTask?
+
+
+  /**
+   * @return output, task requirements, file requirements, and file generates for [task], or `null` when no output was stored.
+   */
+  fun data(task: UTask): UTaskData?
 
 
   /**
@@ -87,36 +90,34 @@ interface StoreReadTxn : StoreTxn {
   fun numSourceFiles(): Int
 }
 
+/**
+ * Storage read/write transaction. Must be closed after use.
+ */
 interface StoreWriteTxn : StoreReadTxn {
   /**
-   * Marks [app] as dirty when [isDirty] is `true`, or as not-dirty when [isDirty] is `false`.
+   * Sets the output of [task] to [output].
    */
-  fun setDirty(app: UFuncApp, isDirty: Boolean)
+  fun setOutput(task: UTask, output: Out)
 
   /**
-   * Sets the output of [app] to [output].
+   * Sets the task requirements of [task] to [taskReqs].
    */
-  fun setOutput(app: UFuncApp, output: Out)
+  fun setTaskReqs(task: UTask, taskReqs: ArrayList<TaskReq>)
 
   /**
-   * Sets the call requirements of [app] to [callReqs].
+   * Sets the file requirements of [task] to [fileReqs].
    */
-  fun setCallReqs(app: UFuncApp, callReqs: ArrayList<CallReq>)
+  fun setFileReqs(task: UTask, fileReqs: ArrayList<FileReq>)
 
   /**
-   * Sets the path requirements of [app] to [pathReqs].
+   * Sets the generated fileGens of [task] to [fileGens].
    */
-  fun setPathReqs(app: UFuncApp, pathReqs: ArrayList<PathReq>)
+  fun setFileGens(task: UTask, fileGens: ArrayList<FileGen>)
 
   /**
-   * Sets the generated pathGens of [app] to [pathGens].
+   * Sets the output, call requirements, file reqs, and file generates for [task] to [data].
    */
-  fun setPathGens(app: UFuncApp, pathGens: ArrayList<PathGen>)
-
-  /**
-   * Sets the output, call requirements, path reqs, and path generates for [app] to [data].
-   */
-  fun setData(app: UFuncApp, data: UFuncAppData)
+  fun setData(task: UTask, data: UTaskData)
 
   /**
    * Removes all data from (drops) the store.
@@ -125,15 +126,35 @@ interface StoreWriteTxn : StoreReadTxn {
 }
 
 
+/**
+ * Wrapper for a task output, to distinguish a null output object from a non-existent output.
+ */
 data class Output<out O : Out>(val output: O)
+
+/**
+ * Untyped wrapper for a task output, to distinguish a null output object from a non-existent output.
+ */
 typealias UOutput = Output<*>
 
+/**
+ * Attempts to cast untyped output to typed output.
+ */
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 internal inline fun <O : Out> UOutput.cast() = Output(this.output as O)
 
 
-data class FuncAppData<out O : Out>(val output: O, val callReqs: ArrayList<CallReq>, val pathReqs: ArrayList<PathReq>, val pathGens: ArrayList<PathGen>)
-typealias UFuncAppData = FuncAppData<*>
+/**
+ * Wrapper for task data: outputs and dependencies.
+ */
+data class TaskData<out O : Out>(val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
 
+/**
+ * Untyped wrapper for task data: outputs and dependencies.
+ */
+typealias UTaskData = TaskData<*>
+
+/**
+ * Attempts to cast untyped task data to typed task data.
+ */
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-internal inline fun <O : Out> UFuncAppData.cast() = this as FuncAppData<O>
+internal inline fun <O : Out> UTaskData.cast() = this as TaskData<O>

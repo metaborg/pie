@@ -1,14 +1,14 @@
 package mb.pie.runtime.core.impl.stamp.path
 
-import mb.pie.runtime.core.stamp.PathStamp
-import mb.pie.runtime.core.stamp.PathStamper
+import mb.pie.runtime.core.stamp.FileStamp
+import mb.pie.runtime.core.stamp.FileStamper
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
 import java.security.MessageDigest
 
 
-interface HashPathStamperTrait : PathStamper {
+interface HashFileStamperTrait : FileStamper {
   fun createDigester() = MessageDigest.getInstance("SHA-1")!!
 
   fun MessageDigest.update(path: PPath, matcher: PathMatcher?) {
@@ -42,15 +42,15 @@ interface HashPathStamperTrait : PathStamper {
   }
 }
 
-data class HashPathStamper(private val matcher: PathMatcher? = null) : HashPathStamperTrait {
-  override fun stamp(path: PPath): PathStamp {
+data class HashFileStamper(private val matcher: PathMatcher? = null) : HashFileStamperTrait {
+  override fun stamp(path: PPath): FileStamp {
     if(!path.exists()) {
-      return ByteArrayPathStamp(null, this)
+      return ByteArrayFileStamp(null, this)
     }
     val digest = createDigester()
     digest.update(path, matcher)
     val bytes = digest.digest()
-    return ByteArrayPathStamp(bytes, this)
+    return ByteArrayFileStamp(bytes, this)
   }
 
   override fun toString(): String {
@@ -58,15 +58,15 @@ data class HashPathStamper(private val matcher: PathMatcher? = null) : HashPathS
   }
 }
 
-data class RecHashPathStamper(private val walker: PathWalker? = null) : HashPathStamperTrait {
-  override fun stamp(path: PPath): PathStamp {
+data class RecHashFileStamper(private val walker: PathWalker? = null) : HashFileStamperTrait {
+  override fun stamp(path: PPath): FileStamp {
     if(!path.exists()) {
-      return ByteArrayPathStamp(null, this)
+      return ByteArrayFileStamp(null, this)
     }
     val digest = createDigester()
     digest.updateRec(path, walker)
     val bytes = digest.digest()
-    return ByteArrayPathStamp(bytes, this)
+    return ByteArrayFileStamp(bytes, this)
   }
 
   override fun toString(): String {

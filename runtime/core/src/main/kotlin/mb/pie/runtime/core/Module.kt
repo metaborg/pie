@@ -24,8 +24,8 @@ open class PieModule : Module {
     binder.bindLayer()
     binder.bindLogger()
 
-    val builders = binder.funcsMapBinder()
-    binder.bindFuncs(builders)
+    val taskDefsBinder = binder.taskDefsBinder()
+    binder.bindTaskDefs(taskDefsBinder)
   }
 
 
@@ -59,18 +59,8 @@ open class PieModule : Module {
   }
 
 
-  protected open fun Binder.bindFuncs(builders: MapBinder<String, UFunc>) {
+  protected open fun Binder.bindTaskDefs(builders: MapBinder<String, UTaskDef>) {
 
-  }
-
-
-  protected inline fun <I : In, O : Out, reified F : Func<I, O>> Binder.bindBuilder(funcs: MapBinder<String, UFunc>, func: F) {
-    bind<F>().toObject(func)
-    funcs.addBinding(func.id).toInstance(func)
-  }
-
-  protected fun bindClasslessBuilder(builders: MapBinder<String, UFunc>, builder: UFunc) {
-    builders.addBinding(builder.id).toInstance(builder)
   }
 }
 
@@ -80,27 +70,16 @@ inline fun <reified T> LinkedBindingBuilder<in T>.to() = to(T::class.java)!!
 
 inline fun <reified T> LinkedBindingBuilder<in T>.toSingleton() = to(T::class.java)!!.asSingleton()
 
-inline fun <reified T> LinkedBindingBuilder<in T>.toObject(instance: T) = toInstance(instance)
-
 @Suppress("NOTHING_TO_INLINE")
 inline fun ScopedBindingBuilder.asSingleton() = `in`(Singleton::class.java)
 
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun Binder.funcsMapBinder(): MapBinder<String, UFunc> {
-  return MapBinder.newMapBinder(this, object : TypeLiteral<String>() {}, object : TypeLiteral<UFunc>() {})
+inline fun Binder.taskDefsBinder(): MapBinder<String, UTaskDef> {
+  return MapBinder.newMapBinder(this, object : TypeLiteral<String>() {}, object : TypeLiteral<UTaskDef>() {})
 }
 
-inline fun <reified B : UFunc> Binder.bindFunc(builderBinder: MapBinder<String, UFunc>, id: String) {
+inline fun <reified B : UTaskDef> Binder.bindTaskDef(builderBinder: MapBinder<String, UTaskDef>, id: String) {
   bind<B>().asSingleton()
   builderBinder.addBinding(id).to<B>()
-}
-
-inline fun <reified B : UFunc> Binder.bindFunc(builderBinder: MapBinder<String, UFunc>) {
-  bind<B>().asSingleton()
-  builderBinder.addBinding(B::class.java.canonicalName!!).to<B>()
-}
-
-fun Binder.bindFunc(builderBinder: MapBinder<String, UFunc>, builder: UFunc) {
-  builderBinder.addBinding(builder.id).toInstance(builder)
 }

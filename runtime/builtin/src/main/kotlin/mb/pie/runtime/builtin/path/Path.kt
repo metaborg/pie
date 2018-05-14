@@ -2,7 +2,7 @@ package mb.pie.runtime.builtin.path
 
 import com.google.inject.Inject
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.stamp.PathStampers
+import mb.pie.runtime.core.stamp.FileStampers
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
@@ -22,24 +22,24 @@ operator fun PPath.plus(other: String): PPath {
 }
 
 
-class Exists : Func<PPath, Boolean> {
+class Exists : TaskDef<PPath, Boolean> {
   companion object {
     const val id = "path.Exists"
   }
 
   override val id = Companion.id
   override fun ExecContext.exec(input: PPath): Boolean {
-    require(input, PathStampers.exists)
+    require(input, FileStampers.exists)
     return input.exists()
   }
 }
 
-fun ExecContext.exists(input: PPath) = requireOutput(Exists::class, Exists.Companion.id, input)
+fun ExecContext.exists(input: PPath) = requireOutput(Exists::class.java, Exists.id, input)
 
 
 class ListContents @Inject constructor(
   val pathSrv: PathSrv
-) : Func<ListContents.Input, ArrayList<PPath>> {
+) : TaskDef<ListContents.Input, ArrayList<PPath>> {
   companion object {
     const val id = "path.ListContents"
   }
@@ -49,7 +49,7 @@ class ListContents @Inject constructor(
   override val id = Companion.id
   override fun ExecContext.exec(input: Input): ArrayList<PPath> {
     val (path, matcher) = input
-    require(path, PathStampers.modified(matcher))
+    require(path, FileStampers.modified(matcher))
     if(!path.isDir) {
       throw ExecException("Cannot list contents of '$input', it is not a directory")
     }
@@ -64,12 +64,12 @@ class ListContents @Inject constructor(
   }
 }
 
-fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class, ListContents.Companion.id, input)
+fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class.java, ListContents.id, input)
 
 
 class WalkContents @Inject constructor(
   val pathSrv: PathSrv
-) : Func<WalkContents.Input, ArrayList<PPath>> {
+) : TaskDef<WalkContents.Input, ArrayList<PPath>> {
   companion object {
     const val id = "path.WalkContents"
   }
@@ -79,7 +79,7 @@ class WalkContents @Inject constructor(
   override val id = Companion.id
   override fun ExecContext.exec(input: Input): ArrayList<PPath> {
     val (path, walker) = input
-    require(path, PathStampers.modified(walker))
+    require(path, FileStampers.modified(walker))
     if(!path.isDir) {
       throw ExecException("Cannot walk contents of '$input', it is not a directory")
     }
@@ -94,17 +94,17 @@ class WalkContents @Inject constructor(
   }
 }
 
-fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class, WalkContents.Companion.id, input)
+fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, WalkContents.id, input)
 
 
-class Read : Func<PPath, String?> {
+class Read : TaskDef<PPath, String?> {
   companion object {
     const val id = "path.Read"
   }
 
   override val id = Companion.id
   override fun ExecContext.exec(input: PPath): String? {
-    require(input, PathStampers.hash)
+    require(input, FileStampers.hash)
     try {
       if(!input.exists()) {
         return null
@@ -117,10 +117,10 @@ class Read : Func<PPath, String?> {
   }
 }
 
-fun ExecContext.read(input: PPath) = requireOutput(Read::class, Read.Companion.id, input)
+fun ExecContext.read(input: PPath) = requireOutput(Read::class.java, Read.id, input)
 
 
-class Copy : OutEffectFunc<Copy.Input> {
+class Copy : TaskDef<Copy.Input, None> {
   companion object {
     const val id = "path.Copy"
   }
@@ -128,7 +128,7 @@ class Copy : OutEffectFunc<Copy.Input> {
   data class Input(val from: PPath, val to: PPath) : In
 
   override val id = Companion.id
-  override fun ExecContext.effect(input: Input) {
+  override fun ExecContext.exec(input: Input): None {
     val (from, to) = input
     require(from)
     try {
@@ -137,7 +137,8 @@ class Copy : OutEffectFunc<Copy.Input> {
       throw ExecException("Copying '${input.from}' to '${input.to}' failed", e)
     }
     generate(to)
+    return None.instance
   }
 }
 
-fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class, Copy.Companion.id, input)
+fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class.java, Copy.id, input)

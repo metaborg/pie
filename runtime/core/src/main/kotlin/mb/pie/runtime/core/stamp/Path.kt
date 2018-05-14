@@ -7,22 +7,31 @@ import mb.vfs.path.PPath
 import java.io.Serializable
 
 
-interface PathStamper : Serializable {
-  fun stamp(path: PPath): PathStamp
+/**
+ * Stamper for customizable change detection on file contents. Stampers must be [Serializable].
+ */
+interface FileStamper : Serializable {
+  fun stamp(path: PPath): FileStamp
 }
 
-interface PathStamp : Serializable {
-  val stamper: PathStamper
+/**
+ * Stamp produced by a [FileStamper]. Stamps must be [Serializable].
+ */
+interface FileStamp : Serializable {
+  val stamper: FileStamper
 }
 
-object PathStampers {
-  val hash = HashPathStamper()
-  fun hash(matcher: PathMatcher?) = HashPathStamper(matcher)
-  fun hash(walker: PathWalker?) = RecHashPathStamper(walker)
+/**
+ * Common file stampers.
+ */
+object FileStampers {
+  val hash = HashFileStamper()
+  fun hash(matcher: PathMatcher?) = HashFileStamper(matcher)
+  fun hash(walker: PathWalker?) = RecHashFileStamper(walker)
 
-  val modified = ModifiedPathStamper()
-  fun modified(matcher: PathMatcher?) = ModifiedPathStamper(matcher)
-  fun modified(walker: PathWalker?) = RecModifiedPathStamper(walker)
+  val modified = ModifiedFileStamper()
+  fun modified(matcher: PathMatcher?) = ModifiedFileStamper(matcher)
+  fun modified(walker: PathWalker?) = RecModifiedFileStamper(walker)
 
-  val exists = ExistsPathStamper()
+  val exists = ExistsFileStamper()
 }

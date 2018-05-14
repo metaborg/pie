@@ -1,8 +1,8 @@
 package mb.pie.runtime.core.exec
 
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.ExecRes
-import mb.util.async.*
+import mb.util.async.Cancelled
+import mb.util.async.NullCancelled
 
 
 interface TopDownExecutorFactory {
@@ -15,8 +15,5 @@ interface TopDownExecutor : Executor {
 
 interface TopDownExec {
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): O
-
-  @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> requireResult(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecRes<O>
+  fun <I : In, O : Out> requireInitial(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O
 }

@@ -2,8 +2,8 @@ package mb.pie.runtime.core.exec
 
 import mb.pie.runtime.core.*
 import mb.util.async.Cancelled
+import mb.util.async.NullCancelled
 import mb.vfs.path.PPath
-import java.io.Serializable
 
 
 interface BottomUpExecutorFactory {
@@ -11,19 +11,19 @@ interface BottomUpExecutorFactory {
 }
 
 interface BottomUpExecutor : Executor {
-  fun setObserver(key: Any, app: UFuncApp, observer: FuncAppObserver)
+  @Throws(ExecException::class, InterruptedException::class)
+  fun <I : In, O : Out> requireTopDown(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O
+
+  @Throws(ExecException::class, InterruptedException::class)
+  fun requireBottomUp(changedFiles: Set<PPath>, cancel: Cancelled = NullCancelled())
+
+
+  fun <I : In, O : Out> hasBeenRequired(task: Task<I, O>): Boolean
+
+
+  fun setObserver(key: Any, task: UTask, observer: TaskObserver)
 
   fun removeObserver(key: Any)
-
-
-  @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O
-
-  @Throws(ExecException::class, InterruptedException::class)
-  fun requireBottomUp(changedPaths: Set<PPath>, cancel: Cancelled)
-
-  fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean
 }
 
-// TODO: replace [Serializable]? by [Out], when IntelliJ bug is fixed.
-typealias FuncAppObserver = (Serializable?) -> Unit
+typealias TaskObserver = (Out) -> Unit

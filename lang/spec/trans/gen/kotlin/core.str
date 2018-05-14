@@ -40,7 +40,7 @@ import mb.pie.runtime.builtin.util.*
 
 class PieBuilderModule_[mod] : Module {
   override fun configure(binder: Binder) {
-    val funcs = binder.funcsMapBinder()
+    val taskDefsBinder = binder.taskDefsBinder()
 
     [bindings]
   }

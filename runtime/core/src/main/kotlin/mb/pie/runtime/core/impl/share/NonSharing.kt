@@ -4,12 +4,12 @@ import mb.pie.runtime.core.*
 
 
 class NonSharingShare : Share {
-  override fun reuseOrCreate(app: UFuncApp, cacheFunc: (UFuncApp) -> UFuncAppData?, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
-    return cacheFunc(app) ?: execFunc(app)
+  override fun reuseOrCreate(task: UTask, cacheFunc: (UTask) -> UTaskData?, execFunc: (UTask) -> UTaskData): UTaskData {
+    return cacheFunc(task) ?: execFunc(task)
   }
 
-  override fun reuseOrCreate(app: UFuncApp, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
-    return execFunc(app)
+  override fun reuseOrCreate(task: UTask, execFunc: (UTask) -> UTaskData): UTaskData {
+    return execFunc(task)
   }
 
 

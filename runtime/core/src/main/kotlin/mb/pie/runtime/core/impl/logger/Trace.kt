@@ -11,112 +11,112 @@ class TraceLogger : Logger {
   val traces = mutableListOf<Trace>()
 
 
-  override fun requireTopDownInitialStart(app: UFuncApp) {
-    traces.add(RequireTopDownInitialStart(app, currentTime))
+  override fun requireTopDownInitialStart(task: UTask) {
+    traces.add(RequireTopDownInitialStart(task, currentTime))
   }
 
-  override fun requireTopDownInitialEnd(app: UFuncApp, result: UExecRes) {
-    traces.add(RequireTopDownInitialEnd(app, result, currentTime))
-  }
-
-
-  override fun requireTopDownStart(app: UFuncApp) {
-    traces.add(RequireTopDownStart(app, currentTime))
-  }
-
-  override fun requireTopDownEnd(app: UFuncApp, result: UExecRes) {
-    traces.add(RequireTopDownEnd(app, result, currentTime))
+  override fun requireTopDownInitialEnd(task: UTask, output: Out) {
+    traces.add(RequireTopDownInitialEnd(task, output, currentTime))
   }
 
 
-  override fun requireBottomUpInitialStart(app: UFuncApp) {
-    traces.add(RequireBottomUpInitialStart(app, currentTime))
+  override fun requireTopDownStart(task: UTask) {
+    traces.add(RequireTopDownStart(task, currentTime))
   }
 
-  override fun requireBottomUpInitialEnd(app: UFuncApp, result: UExecRes?) {
-    traces.add(RequireBottomUpInitialEnd(app, result, currentTime))
-  }
-
-  override fun requireBottomUpStart(app: UFuncApp) {
-    traces.add(RequireBottomUpStart(app, currentTime))
-  }
-
-  override fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?) {
-    traces.add(RequireBottomUpEnd(app, result, currentTime))
+  override fun requireTopDownEnd(task: UTask, output: Out) {
+    traces.add(RequireTopDownEnd(task, output, currentTime))
   }
 
 
-  override fun checkVisitedStart(app: UFuncApp) {
-    traces.add(CheckVisitedStart(app, currentTime))
+  override fun requireBottomUpInitialStart(task: UTask) {
+    traces.add(RequireBottomUpInitialStart(task, currentTime))
   }
 
-  override fun checkVisitedEnd(app: UFuncApp, output: Out) {
-    traces.add(CheckVisitedEnd(app, output, currentTime))
+  override fun requireBottomUpInitialEnd(task: UTask, output: Out) {
+    traces.add(RequireBottomUpInitialEnd(task, output, currentTime))
   }
 
-
-  override fun checkCachedStart(app: UFuncApp) {
-    traces.add(CheckCachedStart(app, currentTime))
-
+  override fun requireBottomUpStart(task: UTask) {
+    traces.add(RequireBottomUpStart(task, currentTime))
   }
 
-  override fun checkCachedEnd(app: UFuncApp, output: Out) {
-    traces.add(CheckCachedEnd(app, output, currentTime))
-  }
-
-
-  override fun checkStoredStart(app: UFuncApp) {
-    traces.add(CheckStoredStart(app, currentTime))
-
-  }
-
-  override fun checkStoredEnd(app: UFuncApp, output: Out) {
-    traces.add(CheckStoredEnd(app, output, currentTime))
+  override fun requireBottomUpEnd(task: UTask, output: Out) {
+    traces.add(RequireBottomUpEnd(task, output, currentTime))
   }
 
 
-  override fun checkPathGenStart(app: UFuncApp, pathGen: PathGen) {
-    traces.add(CheckGenStart(app, pathGen, currentTime))
+  override fun checkVisitedStart(task: UTask) {
+    traces.add(CheckVisitedStart(task, currentTime))
   }
 
-  override fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?) {
-    traces.add(CheckGenEnd(app, pathGen, reason, currentTime))
-  }
-
-
-  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {
-    traces.add(CheckPathReqStart(app, req, currentTime))
-  }
-
-  override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {
-    traces.add(CheckPathReqEnd(app, req, reason, currentTime))
+  override fun checkVisitedEnd(task: UTask, output: Out) {
+    traces.add(CheckVisitedEnd(task, output, currentTime))
   }
 
 
-  override fun checkCallReqStart(app: UFuncApp, req: CallReq) {
-    traces.add(CheckBuildReqStart(app, req, currentTime))
+  override fun checkCachedStart(task: UTask) {
+    traces.add(CheckCachedStart(task, currentTime))
+
   }
 
-  override fun checkCallReqEnd(app: UFuncApp, req: CallReq, reason: InconsistentCallReq?) {
-    traces.add(CheckBuildReqEnd(app, req, reason, currentTime))
-  }
-
-
-  override fun executeStart(app: UFuncApp, reason: ExecReason) {
-    traces.add(RebuildStart(app, reason, currentTime))
-  }
-
-  override fun executeEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {
-    traces.add(RebuildEnd(app, reason, result, currentTime))
+  override fun checkCachedEnd(task: UTask, output: Out) {
+    traces.add(CheckCachedEnd(task, output, currentTime))
   }
 
 
-  override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {
-    traces.add(InvokeObserverStart(observer, app, output, currentTime))
+  override fun checkStoredStart(task: UTask) {
+    traces.add(CheckStoredStart(task, currentTime))
+
   }
 
-  override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {
-    traces.add(InvokeObserverEnd(observer, app, output, currentTime))
+  override fun checkStoredEnd(task: UTask, output: Out) {
+    traces.add(CheckStoredEnd(task, output, currentTime))
+  }
+
+
+  override fun checkFileGenStart(task: UTask, fileGen: FileGen) {
+    traces.add(CheckGenStart(task, fileGen, currentTime))
+  }
+
+  override fun checkFileGenEnd(task: UTask, fileGen: FileGen, reason: InconsistentFileGen?) {
+    traces.add(CheckGenEnd(task, fileGen, reason, currentTime))
+  }
+
+
+  override fun checkFileReqStart(task: UTask, fileReq: FileReq) {
+    traces.add(CheckPathReqStart(task, fileReq, currentTime))
+  }
+
+  override fun checkFileReqEnd(task: UTask, fileReq: FileReq, reason: InconsistentFileReq?) {
+    traces.add(CheckPathReqEnd(task, fileReq, reason, currentTime))
+  }
+
+
+  override fun checkTaskReqStart(task: UTask, taskReq: TaskReq) {
+    traces.add(CheckBuildReqStart(task, taskReq, currentTime))
+  }
+
+  override fun checkTaskReqEnd(task: UTask, taskReq: TaskReq, reason: InconsistentTaskReq?) {
+    traces.add(CheckBuildReqEnd(task, taskReq, reason, currentTime))
+  }
+
+
+  override fun executeStart(task: UTask, reason: ExecReason) {
+    traces.add(RebuildStart(task, reason, currentTime))
+  }
+
+  override fun executeEnd(task: UTask, reason: ExecReason, data: UTaskData) {
+    traces.add(RebuildEnd(task, reason, data, currentTime))
+  }
+
+
+  override fun invokeObserverStart(observer: Function<Unit>, task: UTask, output: Out) {
+    traces.add(InvokeObserverStart(observer, task, output, currentTime))
+  }
+
+  override fun invokeObserverEnd(observer: Function<Unit>, task: UTask, output: Out) {
+    traces.add(InvokeObserverEnd(observer, task, output, currentTime))
   }
 
 
@@ -130,27 +130,27 @@ interface Trace {
   val time: Long
 }
 
-data class RequireTopDownInitialStart(val app: UFuncApp, override val time: Long) : Trace
-data class RequireTopDownInitialEnd(val app: UFuncApp, val result: UExecRes, override val time: Long) : Trace
-data class RequireTopDownStart(val app: UFuncApp, override val time: Long) : Trace
-data class RequireTopDownEnd(val app: UFuncApp, val result: UExecRes, override val time: Long) : Trace
-data class RequireBottomUpInitialStart(val app: UFuncApp, override val time: Long) : Trace
-data class RequireBottomUpInitialEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
-data class RequireBottomUpStart(val app: UFuncApp, override val time: Long) : Trace
-data class RequireBottomUpEnd(val app: UFuncApp, val result: UExecRes?, override val time: Long) : Trace
-data class CheckVisitedStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckVisitedEnd(val app: UFuncApp, val output: Out, override val time: Long) : Trace
-data class CheckCachedStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckCachedEnd(val app: UFuncApp, val output: Out, override val time: Long) : Trace
-data class CheckStoredStart(val app: UFuncApp, override val time: Long) : Trace
-data class CheckStoredEnd(val app: UFuncApp, val output: Out, override val time: Long) : Trace
-data class CheckGenStart(val app: UFuncApp, val pathGen: PathGen, override val time: Long) : Trace
-data class CheckGenEnd(val app: UFuncApp, val pathGen: PathGen, val reason: InconsistentPathGen?, override val time: Long) : Trace
-data class CheckPathReqStart(val app: UFuncApp, val eq: PathReq, override val time: Long) : Trace
-data class CheckPathReqEnd(val app: UFuncApp, val eq: PathReq, val reason: InconsistentPathReq?, override val time: Long) : Trace
-data class CheckBuildReqStart(val app: UFuncApp, val req: CallReq, override val time: Long) : Trace
-data class CheckBuildReqEnd(val app: UFuncApp, val req: CallReq, val reason: ExecReason?, override val time: Long) : Trace
-data class RebuildStart(val app: UFuncApp, val reason: ExecReason, override val time: Long) : Trace
-data class RebuildEnd(val app: UFuncApp, val reason: ExecReason, val result: UExecRes, override val time: Long) : Trace
-data class InvokeObserverStart(val observer: Function<Unit>, val app: UFuncApp, val output: Out, override val time: Long) : Trace
-data class InvokeObserverEnd(val observer: Function<Unit>, val app: UFuncApp, val output: Out, override val time: Long) : Trace
+data class RequireTopDownInitialStart(val app: UTask, override val time: Long) : Trace
+data class RequireTopDownInitialEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class RequireTopDownStart(val app: UTask, override val time: Long) : Trace
+data class RequireTopDownEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class RequireBottomUpInitialStart(val app: UTask, override val time: Long) : Trace
+data class RequireBottomUpInitialEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class RequireBottomUpStart(val app: UTask, override val time: Long) : Trace
+data class RequireBottomUpEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class CheckVisitedStart(val app: UTask, override val time: Long) : Trace
+data class CheckVisitedEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class CheckCachedStart(val app: UTask, override val time: Long) : Trace
+data class CheckCachedEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class CheckStoredStart(val app: UTask, override val time: Long) : Trace
+data class CheckStoredEnd(val app: UTask, val output: Out, override val time: Long) : Trace
+data class CheckGenStart(val app: UTask, val fileGen: FileGen, override val time: Long) : Trace
+data class CheckGenEnd(val app: UTask, val fileGen: FileGen, val reason: InconsistentFileGen?, override val time: Long) : Trace
+data class CheckPathReqStart(val app: UTask, val eq: FileReq, override val time: Long) : Trace
+data class CheckPathReqEnd(val app: UTask, val eq: FileReq, val reason: InconsistentFileReq?, override val time: Long) : Trace
+data class CheckBuildReqStart(val app: UTask, val req: TaskReq, override val time: Long) : Trace
+data class CheckBuildReqEnd(val app: UTask, val req: TaskReq, val reason: ExecReason?, override val time: Long) : Trace
+data class RebuildStart(val app: UTask, val reason: ExecReason, override val time: Long) : Trace
+data class RebuildEnd(val app: UTask, val reason: ExecReason, val data: UTaskData, override val time: Long) : Trace
+data class InvokeObserverStart(val observer: Function<Unit>, val app: UTask, val output: Out, override val time: Long) : Trace
+data class InvokeObserverEnd(val observer: Function<Unit>, val app: UTask, val output: Out, override val time: Long) : Trace

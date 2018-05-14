@@ -190,7 +190,7 @@ rules // PIE function calls
 
 
   p2k-exp-pie-call(|javaClassId):
-   Call(funcId, exps) -> $[requireOutput([javaClassId]::class, [javaClassId].Companion.id, [expStr])]
+   Call(funcId, exps) -> $[requireOutput([javaClassId]::class.java, [javaClassId].id, [expStr])]
     with
       expStr := <p2k-exp-pie-call-inputexp(|javaClassId)> exps
 
@@ -248,13 +248,13 @@ rules // Path operations
       filterStr := <p2k-filter-match> filter
 
   p2k-exp:
-    ListPath(exp, filterOpt) -> $[requireOutput(ListContents::class, ListContents.Companion.id, ListContents.Input([expStr], [filterStr]))]
+    ListPath(exp, filterOpt) -> $[requireOutput(ListContents::class.java, ListContents.id, ListContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
     ; filterStr := <p2k-filter-match> filterOpt
     
   p2k-exp:
-    WalkPath(exp, filterOpt) -> $[requireOutput(WalkContents::class, WalkContents.Companion.id, WalkContents.Input([expStr], [filterStr]))]
+    WalkPath(exp, filterOpt) -> $[requireOutput(WalkContents::class.java, WalkContents.id, WalkContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
     ; filterStr := <p2k-filter-walk> filterOpt
@@ -295,12 +295,12 @@ rules // Path operations
 
 
   p2k-exp:
-    ReadPath(exp) -> $[requireOutput(Read::class, Read.Companion.id, [expStr])]
+    ReadPath(exp) -> $[requireOutput(Read::class.java, Read.id, [expStr])]
     with
       expStr := <p2k-exp> exp
       
   p2k-exp:
-    ExistsPath(exp) -> $[requireOutput(Exists::class, Exists.Companion.id, [expStr])]
+    ExistsPath(exp) -> $[requireOutput(Exists::class.java, Exists.id, [expStr])]
     with
       expStr := <p2k-exp> exp
 

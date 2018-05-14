@@ -1,53 +1,59 @@
 package mb.pie.runtime.core.impl
 
 import mb.pie.runtime.core.*
+import mb.pie.runtime.core.stamp.FileStamper
 import mb.pie.runtime.core.stamp.OutputStamper
-import mb.pie.runtime.core.stamp.PathStamper
 import mb.util.async.Cancelled
+import mb.util.async.NullCancelled
 import mb.vfs.path.PPath
 
 
+interface RequireTask {
+  fun <I : In, O : Out> require(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O
+}
+
 internal class ExecContextImpl(
-  private val exec: Exec,
-  private val store: Store,
+  private val requireTask: RequireTask,
   private val cancel: Cancelled
 ) : ExecContext {
-  private val callReqs = arrayListOf<CallReq>()
-  private val pathReqs = arrayListOf<PathReq>()
-  private val pathGens = arrayListOf<PathGen>()
+  private val taskReqs = arrayListOf<TaskReq>()
+  private val fileReqs = arrayListOf<FileReq>()
+  private val fileGens = arrayListOf<FileGen>()
 
 
-  override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, stamper: OutputStamper): O {
+  override fun <I : In, O : Out> requireOutput(task: Task<I, O>, stamper: OutputStamper): O {
     cancel.throwIfCancelled()
-    val output = exec.require(app, cancel).output
+    val output = requireTask.require(task, cancel)
     val stamp = stamper.stamp(output)
-    callReqs.add(CallReq(app, stamp))
+    taskReqs.add(TaskReq(task, stamp))
     Stats.addCallReq()
     return output
   }
 
-  override fun requireExec(app: UFuncApp, stamper: OutputStamper) {
+  override fun requireExec(task: UTask, stamper: OutputStamper) {
     cancel.throwIfCancelled()
-    val output = exec.require(app, cancel).output
+    val output = requireTask.require(task, cancel)
     val stamp = stamper.stamp(output)
-    callReqs.add(CallReq(app, stamp))
+    taskReqs.add(TaskReq(task, stamp))
     Stats.addCallReq()
   }
 
 
-  override fun require(path: PPath, stamper: PathStamper) {
-    val stamp = stamper.stamp(path)
-    pathReqs.add(PathReq(path, stamp))
+  override fun require(file: PPath, stamper: FileStamper) {
+    val stamp = stamper.stamp(file)
+    fileReqs.add(FileReq(file, stamp))
     Stats.addFileReq()
   }
 
-  override fun generate(path: PPath, stamper: PathStamper) {
-    val stamp = stamper.stamp(path)
-    pathGens.add(PathGen(path, stamp))
+  override fun generate(file: PPath, stamper: FileStamper) {
+    val stamp = stamper.stamp(file)
+    fileGens.add(FileGen(file, stamp))
     Stats.addFileGen()
   }
 
-  data class Reqs(val callReqs: ArrayList<CallReq>, val pathReqs: ArrayList<PathReq>, val pathGens: ArrayList<PathGen>)
 
-  fun reqs() = Reqs(callReqs, pathReqs, pathGens)
+  data class Reqs(val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
+
+  fun reqs() = Reqs(taskReqs, fileReqs, fileGens)
 }
+

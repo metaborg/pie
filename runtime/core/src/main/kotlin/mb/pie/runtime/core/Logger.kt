@@ -1,46 +1,49 @@
 package mb.pie.runtime.core
 
 import mb.pie.runtime.core.impl.*
+import mb.pie.runtime.core.stamp.FileStamp
 import mb.pie.runtime.core.stamp.OutputStamp
-import mb.pie.runtime.core.stamp.PathStamp
 
 
+/**
+ * Internal logger.
+ */
 interface Logger {
-  fun requireTopDownInitialStart(app: UFuncApp)
-  fun requireTopDownInitialEnd(app: UFuncApp, result: UExecRes)
+  fun requireTopDownInitialStart(task: UTask)
+  fun requireTopDownInitialEnd(task: UTask, output: Out)
 
-  fun requireTopDownStart(app: UFuncApp)
-  fun requireTopDownEnd(app: UFuncApp, result: UExecRes)
+  fun requireTopDownStart(task: UTask)
+  fun requireTopDownEnd(task: UTask, output: Out)
 
-  fun requireBottomUpInitialStart(app: UFuncApp)
-  fun requireBottomUpInitialEnd(app: UFuncApp, result: UExecRes?)
+  fun requireBottomUpInitialStart(task: UTask)
+  fun requireBottomUpInitialEnd(task: UTask, output: Out)
 
-  fun requireBottomUpStart(app: UFuncApp)
-  fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?)
+  fun requireBottomUpStart(task: UTask)
+  fun requireBottomUpEnd(task: UTask, output: Out)
 
-  fun checkVisitedStart(app: UFuncApp)
-  fun checkVisitedEnd(app: UFuncApp, output: Out)
+  fun checkVisitedStart(task: UTask)
+  fun checkVisitedEnd(task: UTask, output: Out)
 
-  fun checkCachedStart(app: UFuncApp)
-  fun checkCachedEnd(app: UFuncApp, output: Out)
+  fun checkCachedStart(task: UTask)
+  fun checkCachedEnd(task: UTask, output: Out)
 
-  fun checkStoredStart(app: UFuncApp)
-  fun checkStoredEnd(app: UFuncApp, output: Out)
+  fun checkStoredStart(task: UTask)
+  fun checkStoredEnd(task: UTask, output: Out)
 
-  fun checkPathGenStart(app: UFuncApp, pathGen: PathGen)
-  fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?)
+  fun checkFileGenStart(task: UTask, fileGen: FileGen)
+  fun checkFileGenEnd(task: UTask, fileGen: FileGen, reason: InconsistentFileGen?)
 
-  fun checkPathReqStart(app: UFuncApp, req: PathReq)
-  fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?)
+  fun checkFileReqStart(task: UTask, fileReq: FileReq)
+  fun checkFileReqEnd(task: UTask, fileReq: FileReq, reason: InconsistentFileReq?)
 
-  fun checkCallReqStart(app: UFuncApp, req: CallReq)
-  fun checkCallReqEnd(app: UFuncApp, req: CallReq, reason: InconsistentCallReq?)
+  fun checkTaskReqStart(task: UTask, taskReq: TaskReq)
+  fun checkTaskReqEnd(task: UTask, taskReq: TaskReq, reason: InconsistentTaskReq?)
 
-  fun executeStart(app: UFuncApp, reason: ExecReason)
-  fun executeEnd(app: UFuncApp, reason: ExecReason, result: UExecRes)
+  fun executeStart(task: UTask, reason: ExecReason)
+  fun executeEnd(task: UTask, reason: ExecReason, data: UTaskData)
 
-  fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out)
-  fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out)
+  fun invokeObserverStart(observer: Function<Unit>, task: UTask, output: Out)
+  fun invokeObserverEnd(observer: Function<Unit>, task: UTask, output: Out)
 
   fun error(message: String)
   fun warn(message: String)
@@ -87,14 +90,14 @@ data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) 
   override fun toString() = "transient output is inconsistent"
 }
 
-data class InconsistentPathGen(val pathGen: PathGen, val newStamp: PathStamp) : ExecReason {
-  override fun toString() = "generated path ${pathGen.path} is inconsistent"
+data class InconsistentFileGen(val fileGen: FileGen, val newStamp: FileStamp) : ExecReason {
+  override fun toString() = "generated file ${fileGen.file} is inconsistent"
 }
 
-data class InconsistentPathReq(val req: PathReq, val newStamp: PathStamp) : ExecReason {
-  override fun toString() = "required path ${req.path} is inconsistent"
+data class InconsistentFileReq(val req: FileReq, val newStamp: FileStamp) : ExecReason {
+  override fun toString() = "required file ${req.file} is inconsistent"
 }
 
-data class InconsistentCallReq(val req: CallReq, val newStamp: OutputStamp) : ExecReason {
+data class InconsistentTaskReq(val req: TaskReq, val newStamp: OutputStamp) : ExecReason {
   override fun toString() = "required build ${req.callee.toShortString(100)} is inconsistent"
 }

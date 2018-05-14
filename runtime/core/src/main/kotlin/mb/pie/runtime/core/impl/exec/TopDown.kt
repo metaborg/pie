@@ -8,7 +8,6 @@ import mb.pie.runtime.core.exec.TopDownExec
 import mb.pie.runtime.core.exec.TopDownExecutor
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
-import mb.util.async.NullCancelled
 
 
 class TopDownExecutorImpl @Inject constructor(
@@ -17,7 +16,7 @@ class TopDownExecutorImpl @Inject constructor(
   private val share: Share,
   private val layer: Provider<Layer>,
   private val logger: Provider<Logger>,
-  private val funcs: MutableMap<String, UFunc>
+  private val funcs: MutableMap<String, UTaskDef>
 ) : TopDownExecutor {
   override fun exec() = TopDownExecImpl(store, cache, share, layer.get(), logger.get(), funcs)
 
@@ -38,126 +37,121 @@ open class TopDownExecImpl(
   share: Share,
   private val layer: Layer,
   private val logger: Logger,
-  private val funcs: Map<String, UFunc>
-) : TopDownExec, Exec, Funcs by FuncsImpl(funcs) {
-  private val visited = mutableMapOf<UFuncApp, UFuncAppData>()
+  private val funcs: Map<String, UTaskDef>
+) : TopDownExec, RequireTask, TaskDefs by TaskDefsImpl(funcs) {
+  private val visited = mutableMapOf<UTask, UTaskData>()
   private val shared = TopDownExecShared(store, cache, share, layer, logger, visited)
 
 
-  fun <I : In, O : Out> requireInitial(app: FuncApp<I, O>, cancel: Cancelled = NullCancelled()): ExecRes<O> {
+  override fun <I : In, O : Out> requireInitial(task: Task<I, O>, cancel: Cancelled): O {
     try {
-      logger.requireTopDownInitialStart(app)
-      val info = require(app, cancel)
-      logger.requireTopDownInitialEnd(app, info)
+      logger.requireTopDownInitialStart(task)
+      val info = require(task, cancel)
+      logger.requireTopDownInitialEnd(task, info)
       return info
     } finally {
       store.sync()
     }
   }
 
-  override fun <I : In, O : Out> require(app: FuncApp<I, O>, cancel: Cancelled): ExecRes<O> {
+  override fun <I : In, O : Out> require(task: Task<I, O>, cancel: Cancelled): O {
     cancel.throwIfCancelled()
 
     try {
-      val resOrData = shared.topdownPrelude(app)
-      if(resOrData.res != null) {
-        return resOrData.res
+      val outputOrData = shared.topdownPrelude(task)
+      if(outputOrData.visited != null) {
+        return outputOrData.visited
       }
-      val data = resOrData.data
+      val data = outputOrData.data
 
       // Check if re-execution is necessary.
       if(data == null) {
         // No cached or stored output was found: rebuild
         val reason = NoResultReason()
-        val execData = exec(app, reason, cancel, true)
-        val res = ExecRes(execData.output.cast<O>(), reason)
-        logger.requireTopDownEnd(app, res)
-        return res
+        val execData = exec(task, reason, cancel, true)
+        val output = execData.output.cast<O>()
+        logger.requireTopDownEnd(task, output)
+        return output
       }
-      val (output, callReqs, pathReqs, pathGens) = data
+      val (existingOutput, callReqs, pathReqs, pathGens) = data
 
       // Check for inconsistencies and re-execute when found.
       run {
         // Internal consistency: transient output consistency
-        val reason = output.isTransientInconsistent()
+        val reason = existingOutput.isTransientInconsistent()
         if(reason != null) {
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
+          val execData = exec(task, reason, cancel)
+          val execOutput = execData.output.cast<O>()
+          logger.requireTopDownEnd(task, execOutput)
+          return execOutput
         }
       }
 
-      // Internal consistency: path requirements
+      // Internal consistency: file requirements
       for(pathReq in pathReqs) {
-        logger.checkPathReqStart(app, pathReq)
+        logger.checkFileReqStart(task, pathReq)
         val reason = pathReq.checkConsistency()
         if(reason != null) {
           // If a required file is outdated (i.e., its stamp changed): rebuild
-          logger.checkPathReqEnd(app, pathReq, reason)
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
+          logger.checkFileReqEnd(task, pathReq, reason)
+          val execData = exec(task, reason, cancel)
+          val execOutput = execData.output.cast<O>()
+          logger.requireTopDownEnd(task, execOutput)
+          return execOutput
         } else {
-          logger.checkPathReqEnd(app, pathReq, null)
+          logger.checkFileReqEnd(task, pathReq, null)
         }
       }
 
-      // Internal consistency: path generates
+      // Internal consistency: file generates
       for(pathGen in pathGens) {
-        logger.checkPathGenStart(app, pathGen)
+        logger.checkFileGenStart(task, pathGen)
         val reason = pathGen.checkConsistency()
         if(reason != null) {
           // If a generated file is outdated (i.e., its stamp changed): rebuild
-          logger.checkPathGenEnd(app, pathGen, reason)
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
+          logger.checkFileGenEnd(task, pathGen, reason)
+          val execData = exec(task, reason, cancel)
+          val execOutput = execData.output.cast<O>()
+          logger.requireTopDownEnd(task, execOutput)
+          return execOutput
         } else {
-          logger.checkPathGenEnd(app, pathGen, null)
+          logger.checkFileGenEnd(task, pathGen, null)
         }
       }
 
       // Total consistency: call requirements
       for(callReq in callReqs) {
-        val callReqOutput = require(callReq.callee, cancel).output
-        logger.checkCallReqStart(app, callReq)
+        val callReqOutput = require(callReq.callee, cancel)
+        logger.checkTaskReqStart(task, callReq)
         val reason = callReq.checkConsistency(callReqOutput)
-        logger.checkCallReqEnd(app, callReq, reason)
+        logger.checkTaskReqEnd(task, callReq, reason)
         if(reason != null) {
-          val execData = exec(app, reason, cancel)
-          val res = ExecRes(execData.output.cast<O>(), reason)
-          logger.requireTopDownEnd(app, res)
-          return res
+          val execData = exec(task, reason, cancel)
+          val execOutput = execData.output.cast<O>()
+          logger.requireTopDownEnd(task, execOutput)
+          return execOutput
         }
       }
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validatePostWrite(app, data, it) }
+      store.readTxn().use { layer.validatePostWrite(task, data, it) }
       // Cache and mark as visited
-      cache[app] = data
-      visited[app] = data
+      cache[task] = data
+      visited[task] = data
       // Reuse existing result
-      val res = ExecRes(output)
-      logger.requireTopDownEnd(app, res)
-      return res
+      logger.requireTopDownEnd(task, existingOutput)
+      return existingOutput
     } finally {
-      layer.requireTopDownEnd(app)
+      layer.requireTopDownEnd(task)
     }
   }
 
-  internal open fun <I : In, O : Out> exec(app: FuncApp<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UFuncAppData {
+  internal open fun <I : In, O : Out> exec(app: Task<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
     return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
-  internal open fun <I : In, O : Out> execInternal(app: FuncApp<I, O>, cancel: Cancelled): UFuncAppData {
+  internal open fun <I : In, O : Out> execInternal(app: Task<I, O>, cancel: Cancelled): UTaskData {
     return shared.execInternal(app, cancel, this, this) { _, _ -> }
   }
-
-
-  override fun <I : In, O : Out> requireOutput(app: FuncApp<I, O>, cancel: Cancelled) = requireInitial(app, cancel).output
-  override fun <I : In, O : Out> requireResult(app: FuncApp<I, O>, cancel: Cancelled) = requireInitial(app, cancel)
 }

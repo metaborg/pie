@@ -6,20 +6,20 @@ import mb.pie.runtime.core.*
 
 
 class CoroutineShare : Share {
-  private val sharedBuilds = mutableMapOf<UFuncApp, Deferred<UFuncAppData>>()
+  private val sharedBuilds = mutableMapOf<UTask, Deferred<UTaskData>>()
   private val mutex = Mutex()
 
 
-  override fun reuseOrCreate(app: UFuncApp, cacheFunc: (UFuncApp) -> UFuncAppData?, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
-    return runBlocking { getResult(app, cacheFunc, execFunc) }
+  override fun reuseOrCreate(task: UTask, cacheFunc: (UTask) -> UTaskData?, execFunc: (UTask) -> UTaskData): UTaskData {
+    return runBlocking { getResult(task, cacheFunc, execFunc) }
   }
 
-  override fun reuseOrCreate(app: UFuncApp, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
-    return runBlocking { getResult(app, null, execFunc) }
+  override fun reuseOrCreate(task: UTask, execFunc: (UTask) -> UTaskData): UTaskData {
+    return runBlocking { getResult(task, null, execFunc) }
   }
 
 
-  private suspend fun CoroutineScope.getResult(app: UFuncApp, cacheFunc: ((UFuncApp) -> UFuncAppData?)?, execFunc: (UFuncApp) -> UFuncAppData): UFuncAppData {
+  private suspend fun CoroutineScope.getResult(app: UTask, cacheFunc: ((UTask) -> UTaskData?)?, execFunc: (UTask) -> UTaskData): UTaskData {
     mutex.lock()
 
     val existingBuild = sharedBuilds[app]
@@ -41,7 +41,7 @@ class CoroutineShare : Share {
     }
 
     // There is no build for given app yet, execute and share it
-    val exec: Deferred<UFuncAppData>
+    val exec: Deferred<UTaskData>
     try {
       exec = async(coroutineContext) { execFunc(app) }
       sharedBuilds[app] = exec

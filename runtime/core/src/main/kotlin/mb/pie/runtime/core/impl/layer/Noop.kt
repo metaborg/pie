@@ -1,7 +1,6 @@
 package mb.pie.runtime.core.impl.layer
 
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.Funcs
 
 
 /**
@@ -9,11 +8,11 @@ import mb.pie.runtime.core.impl.Funcs
  * DO NOT USE in production, as it disables checking for inconsistencies in the build.
  */
 class NoopLayer : Layer {
-  override fun <I : In, O : Out> requireTopDownStart(app: FuncApp<I, O>) {}
+  override fun <I : In, O : Out> requireTopDownStart(task: Task<I, O>) {}
 
-  override fun <I : In, O : Out> requireTopDownEnd(app: FuncApp<I, O>) {}
+  override fun <I : In, O : Out> requireTopDownEnd(task: Task<I, O>) {}
 
-  override fun <I : In, O : Out> validatePreWrite(app: FuncApp<I, O>, data: FuncAppData<O>, txn: StoreReadTxn) {}
+  override fun <I : In, O : Out> validatePreWrite(task: Task<I, O>, data: TaskData<O>, txn: StoreReadTxn) {}
 
-  override fun <I : In, O : Out> validatePostWrite(app: FuncApp<I, O>, data: FuncAppData<O>, txn: StoreReadTxn) {}
+  override fun <I : In, O : Out> validatePostWrite(task: Task<I, O>, data: TaskData<O>, txn: StoreReadTxn) {}
 }

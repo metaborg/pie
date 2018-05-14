@@ -14,94 +14,94 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
   private val indent get() = " ".repeat(indentation.get())
 
 
-  override fun requireTopDownInitialStart(app: UFuncApp) {}
-  override fun requireTopDownInitialEnd(app: UFuncApp, result: UExecRes) {}
+  override fun requireTopDownInitialStart(task: UTask) {}
+  override fun requireTopDownInitialEnd(task: UTask, output: Out) {}
 
-  override fun requireTopDownStart(app: UFuncApp) {
-    traceWriter?.println("${indent}v ${app.toShortString(descLimit)}")
+  override fun requireTopDownStart(task: UTask) {
+    traceWriter?.println("${indent}v ${task.toShortString(descLimit)}")
     indentation.incrementAndGet()
   }
 
-  override fun requireTopDownEnd(app: UFuncApp, result: UExecRes) {
+  override fun requireTopDownEnd(task: UTask, output: Out) {
     indentation.decrementAndGet()
-    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)} -> ${result.toShortString(descLimit)}")
+    traceWriter?.println("$indent✔ ${task.toShortString(descLimit)} -> ${output.toString().toShortString(descLimit)}")
   }
 
 
-  override fun requireBottomUpInitialStart(app: UFuncApp) {}
-  override fun requireBottomUpInitialEnd(app: UFuncApp, result: UExecRes?) {}
+  override fun requireBottomUpInitialStart(task: UTask) {}
+  override fun requireBottomUpInitialEnd(task: UTask, output: Out) {}
 
-  override fun requireBottomUpStart(app: UFuncApp) {
-    traceWriter?.println("$indent^ ${app.toShortString(descLimit)}")
+  override fun requireBottomUpStart(task: UTask) {
+    traceWriter?.println("$indent^ ${task.toShortString(descLimit)}")
     indentation.incrementAndGet()
   }
 
-  override fun requireBottomUpEnd(app: UFuncApp, result: UExecRes?) {
+  override fun requireBottomUpEnd(task: UTask, output: Out) {
     indentation.decrementAndGet()
-    traceWriter?.println("$indent✔ ${app.toShortString(descLimit)} -> ${result?.toShortString(descLimit)}")
+    traceWriter?.println("$indent✔ ${task.toShortString(descLimit)} -> ${output.toString().toShortString(descLimit)}")
   }
 
 
-  override fun checkVisitedStart(app: UFuncApp) {}
-  override fun checkVisitedEnd(app: UFuncApp, output: Out) {}
+  override fun checkVisitedStart(task: UTask) {}
+  override fun checkVisitedEnd(task: UTask, output: Out) {}
 
 
-  override fun checkCachedStart(app: UFuncApp) {}
-  override fun checkCachedEnd(app: UFuncApp, output: Out) {}
+  override fun checkCachedStart(task: UTask) {}
+  override fun checkCachedEnd(task: UTask, output: Out) {}
 
 
-  override fun checkStoredStart(app: UFuncApp) {}
-  override fun checkStoredEnd(app: UFuncApp, output: Out) {}
+  override fun checkStoredStart(task: UTask) {}
+  override fun checkStoredEnd(task: UTask, output: Out) {}
 
 
-  override fun checkPathGenStart(app: UFuncApp, pathGen: PathGen) {}
+  override fun checkFileGenStart(task: UTask, fileGen: FileGen) {}
 
-  override fun checkPathGenEnd(app: UFuncApp, pathGen: PathGen, reason: InconsistentPathGen?) {
+  override fun checkFileGenEnd(task: UTask, fileGen: FileGen, reason: InconsistentFileGen?) {
     if(reason != null) {
-      traceWriter?.println("$indent␦ ${pathGen.path} (inconsistent: ${pathGen.stamp} vs ${reason.newStamp})")
+      traceWriter?.println("$indent␦ ${fileGen.file} (inconsistent: ${fileGen.stamp} vs ${reason.newStamp})")
     } else {
-      traceWriter?.println("$indent␦ ${pathGen.path} (consistent: ${pathGen.stamp})")
+      traceWriter?.println("$indent␦ ${fileGen.file} (consistent: ${fileGen.stamp})")
     }
   }
 
 
-  override fun checkPathReqStart(app: UFuncApp, req: PathReq) {}
+  override fun checkFileReqStart(task: UTask, fileReq: FileReq) {}
 
-  override fun checkPathReqEnd(app: UFuncApp, req: PathReq, reason: InconsistentPathReq?) {
+  override fun checkFileReqEnd(task: UTask, fileReq: FileReq, reason: InconsistentFileReq?) {
     if(reason != null) {
-      traceWriter?.println("$indent␦ ${req.path} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
+      traceWriter?.println("$indent␦ ${fileReq.file} (inconsistent: ${fileReq.stamp} vs ${reason.newStamp})")
     } else {
-      traceWriter?.println("$indent␦ ${req.path} (consistent: ${req.stamp})")
+      traceWriter?.println("$indent␦ ${fileReq.file} (consistent: ${fileReq.stamp})")
     }
   }
 
 
-  override fun checkCallReqStart(app: UFuncApp, req: CallReq) {}
+  override fun checkTaskReqStart(task: UTask, taskReq: TaskReq) {}
 
-  override fun checkCallReqEnd(app: UFuncApp, req: CallReq, reason: InconsistentCallReq?) {
+  override fun checkTaskReqEnd(task: UTask, taskReq: TaskReq, reason: InconsistentTaskReq?) {
     when(reason) {
-      is InconsistentCallReq ->
-        traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
+      is InconsistentTaskReq ->
+        traceWriter?.println("$indent␦ ${taskReq.callee.toShortString(descLimit)} (inconsistent: ${taskReq.stamp} vs ${reason.newStamp})")
       null ->
-        traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (consistent: ${req.stamp})")
+        traceWriter?.println("$indent␦ ${taskReq.callee.toShortString(descLimit)} (consistent: ${taskReq.stamp})")
     }
   }
 
 
-  override fun executeStart(app: UFuncApp, reason: ExecReason) {
-    infoWriter.println("$indent> ${app.toShortString(descLimit)} (reason: $reason)")
+  override fun executeStart(task: UTask, reason: ExecReason) {
+    infoWriter.println("$indent> ${task.toShortString(descLimit)} (reason: $reason)")
   }
 
-  override fun executeEnd(app: UFuncApp, reason: ExecReason, result: UExecRes) {
-    infoWriter.println("$indent< ${result.toShortString(descLimit)}")
+  override fun executeEnd(task: UTask, reason: ExecReason, data: UTaskData) {
+    infoWriter.println("$indent< ${data.output.toString().toShortString(descLimit)}")
   }
 
 
-  override fun invokeObserverStart(observer: Function<Unit>, app: UFuncApp, output: Out) {
+  override fun invokeObserverStart(observer: Function<Unit>, task: UTask, output: Out) {
     infoWriter.println("$indent@ ${observer.toString().toShortString(50)}(${output.toString().toShortString(200)})")
   }
 
-  override fun invokeObserverEnd(observer: Function<Unit>, app: UFuncApp, output: Out) {}
+  override fun invokeObserverEnd(observer: Function<Unit>, task: UTask, output: Out) {}
 
 
   override fun error(message: String) {

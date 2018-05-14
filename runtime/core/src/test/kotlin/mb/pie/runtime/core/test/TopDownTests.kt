@@ -25,14 +25,12 @@ internal class TopDownTests {
     val app = app(func, input)
 
     val exec = spy(topDownExec())
-    val res = exec.require(app)
-    assertEquals(NoResultReason(), res.reason)
-    assertEquals("capitalized", res.output)
+    val output = exec.requireInitial(app)
+    assertEquals("capitalized", output)
 
     inOrder(exec, func) {
-      verify(exec, times(1)).require(eq(app), any())
+      verify(exec, times(1)).requireInitial(eq(app), any())
       verify(exec, times(1)).exec(eq(app), eq(NoResultReason()), any(), any())
-      verify(func, times(1)).exec(eq(input), anyOrNull())
     }
   }
 
@@ -44,56 +42,45 @@ internal class TopDownTests {
     val input1 = "CAPITALIZED"
     val app1 = app(func, input1)
     val exec1 = spy(topDownExec())
-    val res1 = exec1.require(app1)
-    assertEquals(NoResultReason(), res1.reason)
-    assertEquals("capitalized", res1.output)
+    val output1 = exec1.requireInitial(app1)
+    assertEquals("capitalized", output1)
 
     val input2 = "CAPITALIZED_EVEN_MORE"
     val app2 = app(func, input2)
     val exec2 = spy(topDownExec())
-    val res2 = exec2.require(app2)
-    assertEquals(NoResultReason(), res2.reason)
-    assertEquals("capitalized_even_more", res2.output)
+    val output2 = exec2.requireInitial(app2)
+    assertEquals("capitalized_even_more", output2)
 
-    assertNotEquals(res1, res2)
+    assertNotEquals(output1, output2)
 
     inOrder(func, exec1, exec2) {
-      verify(exec1, times(1)).require(eq(app1), any())
+      verify(exec1, times(1)).requireInitial(eq(app1), any())
       verify(exec1, times(1)).exec(eq(app1), eq(NoResultReason()), any(), any())
-      verify(func, times(1)).exec(eq(input1), anyOrNull())
 
-      verify(exec2, times(1)).require(eq(app2), any())
+      verify(exec2, times(1)).requireInitial(eq(app2), any())
       verify(exec2, times(1)).exec(eq(app2), eq(NoResultReason()), any(), any())
-      verify(func, times(1)).exec(eq(input2), anyOrNull())
     }
   }
 
   @TestFactory
-  fun testReuse() = TestGenerator.generate("testReuse"//,
-//    dStoreGens = arrayOf({ LMDBBuildStoreFactory(SLF4JLogger(LoggerFactory.getLogger("root"))).create(File("target/lmdbstore")) }),
-//    dCacheGens = arrayOf({ NoopCache() }),
-//    dShareGens = arrayOf({NonSharingShare() })
-  ) {
+  fun testReuse() = TestGenerator.generate("testReuse") {
     val func = spy(toLowerCase)
     registerFunc(func)
 
     val input = "CAPITALIZED"
     val app = app(func, input)
     val exec1 = topDownExec()
-    val res1 = exec1.require(app)
-    assertEquals(NoResultReason(), res1.reason)
+    val output1 = exec1.requireInitial(app)
+    assertEquals("capitalized", output1)
 
     val exec2 = spy(topDownExec())
-    val res2 = exec2.require(app)
-    assertNull(res2.reason)
+    val output2 = exec2.requireInitial(app)
+    assertEquals("capitalized", output2)
 
-    assertNotEquals(res1.reason, res2.reason)
-    assertEquals(res1.output, res2.output)
+    assertEquals(output1, output2)
 
-    // Result is reused if rebuild is never called
+    // Result is reused if rebuild is never called.
     verify(exec2, never()).exec(eq(app), eq(NoResultReason()), any(), any())
-
-    verify(func, atMost(1)).exec(eq(input), anyOrNull())
   }
 
   @TestFactory
@@ -106,14 +93,14 @@ internal class TopDownTests {
 
     // Build 'readPath', observe rebuild
     val exec1 = spy(topDownExec())
-    val res1 = exec1.require(app(readPath, filePath))
-    assertEquals("HELLO WORLD!", res1.output)
+    val output1 = exec1.requireInitial(app(readPath, filePath))
+    assertEquals("HELLO WORLD!", output1)
     verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any(), any())
 
     // No changes - exec 'readPath', observe no rebuild
     val exec2 = spy(topDownExec())
-    val res2 = exec2.require(app(readPath, filePath))
-    assertEquals("HELLO WORLD!", res2.output)
+    val output2 = exec2.requireInitial(app(readPath, filePath))
+    assertEquals("HELLO WORLD!", output2)
     verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any(), any())
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
@@ -121,12 +108,12 @@ internal class TopDownTests {
 
     // Run again - expect rebuild
     val exec3 = spy(topDownExec())
-    val res3 = exec3.require(app(readPath, filePath))
-    assertEquals("!DLROW OLLEH", res3.output)
+    val output3 = exec3.requireInitial(app(readPath, filePath))
+    assertEquals("!DLROW OLLEH", output3)
     verify(exec3, times(1)).exec(eq(app(readPath, filePath)), check {
-      val reason = it as? InconsistentPathReq
+      val reason = it as? InconsistentFileReq
       assertNotNull(reason)
-      assertEquals(filePath, reason!!.req.path)
+      assertEquals(filePath, reason!!.req.file)
     }, any(), any())
   }
 
@@ -140,7 +127,7 @@ internal class TopDownTests {
 
     // Build 'writePath', observe rebuild and existence of file
     val exec1 = spy(topDownExec())
-    exec1.require(app(writePath, Pair("HELLO WORLD!", filePath)))
+    exec1.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
     verify(exec1, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), eq(NoResultReason()), any(), any())
 
     assertTrue(Files.exists(filePath.javaPath))
@@ -148,7 +135,7 @@ internal class TopDownTests {
 
     // No changes - exec 'writePath', observe no rebuild, no change to file
     val exec2 = spy(topDownExec())
-    exec2.require(app(writePath, Pair("HELLO WORLD!", filePath)))
+    exec2.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
     verify(exec2, never()).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), any(), any(), any())
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
@@ -156,11 +143,11 @@ internal class TopDownTests {
 
     // Build 'writePath', observe rebuild and change of file
     val exec3 = spy(topDownExec())
-    exec3.require(app(writePath, Pair("HELLO WORLD!", filePath)))
+    exec3.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
     verify(exec3, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), check {
-      val reason = it as? InconsistentPathGen
+      val reason = it as? InconsistentFileGen
       assertNotNull(reason)
-      assertEquals(filePath, reason!!.pathGen.path)
+      assertEquals(filePath, reason!!.fileGen.file)
     }, any(), any())
 
     assertEquals("HELLO WORLD!", read(filePath))
@@ -183,8 +170,8 @@ internal class TopDownTests {
 
     // Build 'combine', observe rebuild of all
     val exec1 = spy(topDownExec())
-    val res1 = exec1.require(app(combine, filePath))
-    assertEquals("hello world!", res1.output)
+    val output1 = exec1.requireInitial(app(combine, filePath))
+    assertEquals("hello world!", output1)
     inOrder(exec1) {
       verify(exec1, times(1)).exec(eq(app(combine, filePath)), eq(NoResultReason()), any(), any())
       verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any(), any())
@@ -193,8 +180,8 @@ internal class TopDownTests {
 
     // No changes - exec 'combine', observe no rebuild
     val exec2 = spy(topDownExec())
-    val res2 = exec2.require(app(combine, filePath))
-    assertEquals("hello world!", res2.output)
+    val output2 = exec2.requireInitial(app(combine, filePath))
+    assertEquals("hello world!", output2)
     verify(exec2, never()).exec(eq(app(combine, filePath)), any(), any(), any())
     verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any(), any())
     verify(exec2, never()).exec(eq(app(toLowerCase, "HELLO WORLD!")), any(), any(), any())
@@ -204,17 +191,17 @@ internal class TopDownTests {
 
     // Build 'combine', observe rebuild of all in dependency order
     val exec3 = spy(topDownExec())
-    val res3 = exec3.require(app(combine, filePath))
-    assertEquals("!dlrow olleh", res3.output)
+    val output3 = exec3.requireInitial(app(combine, filePath))
+    assertEquals("!dlrow olleh", output3)
     inOrder(exec3) {
-      verify(exec3, times(1)).require(eq(app(combine, filePath)), any())
+      verify(exec3, times(1)).requireInitial(eq(app(combine, filePath)), any())
       verify(exec3, times(1)).exec(eq(app(readPath, filePath)), check {
-        val reason = it as? InconsistentPathReq
+        val reason = it as? InconsistentFileReq
         assertNotNull(reason)
-        assertEquals(filePath, reason!!.req.path)
+        assertEquals(filePath, reason!!.req.file)
       }, any(), any())
       verify(exec3, times(1)).exec(eq(app(combine, filePath)), check {
-        val reason = it as? InconsistentCallReq
+        val reason = it as? InconsistentTaskReq
         assertNotNull(reason)
         assertEquals(app(readPath, filePath), reason!!.req.callee)
       }, any(), any())
@@ -228,14 +215,14 @@ internal class TopDownTests {
 
     // Build 'combine', observe rebuild of 'readPath' only
     val exec4 = spy(topDownExec())
-    val res4 = exec4.require(app(combine, filePath))
-    assertEquals("!dlrow olleh", res4.output)
+    val output4 = exec4.requireInitial(app(combine, filePath))
+    assertEquals("!dlrow olleh", output4)
     inOrder(exec4) {
-      verify(exec4, times(1)).require(eq(app(combine, filePath)), any())
+      verify(exec4, times(1)).requireInitial(eq(app(combine, filePath)), any())
       verify(exec4, times(1)).exec(eq(app(readPath, filePath)), check {
-        val reason = it as? InconsistentPathReq
+        val reason = it as? InconsistentFileReq
         assertNotNull(reason)
-        assertEquals(filePath, reason!!.req.path)
+        assertEquals(filePath, reason!!.req.file)
       }, any(), any())
     }
     verify(exec4, never()).exec(eq(app(combine, filePath)), any(), any(), any())
@@ -251,14 +238,14 @@ internal class TopDownTests {
     val filePath = path(fs, "/file")
     assertThrows(ValidationException::class.java) {
       val exec = executor.exec()
-      exec.requireOutput(app(writePath, Pair("HELLO WORLD 1!", filePath)))
-      exec.requireOutput(app(writePath, Pair("HELLO WORLD 2!", filePath)))
+      exec.requireInitial(app(writePath, Pair("HELLO WORLD 1!", filePath)))
+      exec.requireInitial(app(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
-    // Overlapping generated path exception should also trigger between separate execs
+    // Overlapping generated file exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
       val exec = executor.exec()
-      exec.requireOutput(app(writePath, Pair("HELLO WORLD 3!", filePath)))
+      exec.requireInitial(app(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
 
@@ -274,14 +261,14 @@ internal class TopDownTests {
 
     assertThrows(ValidationException::class.java) {
       val exec = executor.exec()
-      exec.requireOutput(app(readPath, filePath))
-      exec.requireOutput(app(writePath, Pair("HELLO WORLD!", filePath)))
+      exec.requireInitial(app(readPath, filePath))
+      exec.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
       val exec = executor.exec()
-      exec.requireOutput(app(writePath, Pair("HELLO WORLD!", filePath)))
+      exec.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
 
@@ -304,7 +291,7 @@ internal class TopDownTests {
       val filePath1 = path(fs, "/file1")
       assertThrows(ValidationException::class.java) {
         val exec = executor.exec()
-        exec.requireOutput(app(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
+        exec.requireInitial(app(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
       }
     }
 
@@ -319,7 +306,7 @@ internal class TopDownTests {
       val filePath2 = path(fs, "/file2")
       assertThrows(ValidationException::class.java) {
         val exec = executor.exec()
-        exec.requireOutput(app(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
+        exec.requireInitial(app(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
       }
     }
   }
@@ -333,7 +320,7 @@ internal class TopDownTests {
 
     assertThrows(ValidationException::class.java) {
       val exec = bm.exec()
-      exec.requireOutput(app(b1, None.instance))
+      exec.requireInitial(app(b1, None.instance))
     }
   }
 
@@ -346,7 +333,7 @@ internal class TopDownTests {
         launch(coroutineContext + CommonPool) {
           val exec = topDownExec()
           val app = app(toLowerCase, "HELLO WORLD $index!")
-          exec.require(app)
+          exec.requireInitial(app)
         }
       }.forEach { it.join() }
     }
@@ -364,7 +351,7 @@ internal class TopDownTests {
           val exec = spy(topDownExec())
           spies.add(exec)
           val app = app(toLowerCase, "HELLO WORLD!")
-          exec.require(app)
+          exec.requireInitial(app)
         }
       }.forEach { it.join() }
     }
