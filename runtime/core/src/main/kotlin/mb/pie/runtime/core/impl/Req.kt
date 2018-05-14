@@ -83,19 +83,13 @@ data class CallReq(val callee: UFuncApp, val stamp: OutputStamp) : Serializable 
   }
 
   /**
-   * @return `true` when this call requirement's callee is equal to [other], or when it overlaps with a call to [other], `false` otherwise.
+   * @return `true` when this call requirement's callee is equal to [other], `false` otherwise.
    */
-  fun equalsOrOverlaps(other: UFuncApp, funcs: Funcs): Boolean {
+  fun calleeEqual(other: UFuncApp): Boolean {
     return when {
       other.id != callee.id -> false
       other == callee -> true
-      else -> {
-        val func = funcs.getAnyFunc(other.id);
-        when {
-          func.mayOverlap(callee.input, other.input) -> true
-          else -> false
-        }
-      }
+      else -> false
     }
   }
 

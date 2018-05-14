@@ -6,6 +6,7 @@ import java.io.OutputStream
 import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicInteger
 
+
 open class StreamLogger(infoStream: OutputStream = System.out, traceStream: OutputStream? = System.out, private val descLimit: Int = 200) : Logger {
   private val infoWriter: PrintWriter = PrintWriter(infoStream, true)
   private val traceWriter: PrintWriter? = if(traceStream == null) null else PrintWriter(traceStream, true)
@@ -81,8 +82,6 @@ open class StreamLogger(infoStream: OutputStream = System.out, traceStream: Outp
     when(reason) {
       is InconsistentCallReq ->
         traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (inconsistent: ${req.stamp} vs ${reason.newStamp})")
-//      is InconsistentExecReqTransientOutput ->
-//        traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (inconsistent transient output: ${reason.inconsistentResult.toShortString(descLimit)})")
       null ->
         traceWriter?.println("$indent␦ ${req.callee.toShortString(descLimit)} (consistent: ${req.stamp})")
     }

@@ -3,6 +3,7 @@ package mb.pie.runtime.core.impl.logger
 import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 
+
 class NoopLogger : Logger {
   override fun requireTopDownInitialStart(app: UFuncApp) {}
   override fun requireTopDownInitialEnd(app: UFuncApp, result: UExecRes) {}

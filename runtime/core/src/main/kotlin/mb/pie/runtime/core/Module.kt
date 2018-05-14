@@ -7,7 +7,8 @@ import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
 import mb.pie.runtime.core.exec.*
 import mb.pie.runtime.core.impl.cache.NoopCache
-import mb.pie.runtime.core.impl.exec.*
+import mb.pie.runtime.core.impl.exec.BottomUpExecutorImpl
+import mb.pie.runtime.core.impl.exec.TopDownExecutorImpl
 import mb.pie.runtime.core.impl.layer.ValidationLayer
 import mb.pie.runtime.core.impl.logger.NoopLogger
 import mb.pie.runtime.core.impl.share.CoroutineShare
@@ -33,14 +34,8 @@ open class PieModule : Module {
       .implement(TopDownExecutor::class.java, TopDownExecutorImpl::class.java)
       .build(TopDownExecutorFactory::class.java))
     install(FactoryModuleBuilder()
-      .implement(DirtyFlaggingTopDownExecutor::class.java, DirtyFlaggingTopDownExecutorImpl::class.java)
-      .build(DirtyFlaggingTopDownExecutorFactory::class.java))
-    install(FactoryModuleBuilder()
-      .implement(BottomUpObservingExecutor::class.java, BottomUpObservingExecutorImpl::class.java)
-      .build(BottomUpObservingExecutorFactory::class.java))
-    install(FactoryModuleBuilder()
-      .implement(BottomUpTopsortExecutor::class.java, BottomUpTopsortExecutorImpl::class.java)
-      .build(BottomUpTopsortExecutorFactory::class.java))
+      .implement(BottomUpExecutor::class.java, BottomUpExecutorImpl::class.java)
+      .build(BottomUpExecutorFactory::class.java))
   }
 
   protected open fun Binder.bindStore() {

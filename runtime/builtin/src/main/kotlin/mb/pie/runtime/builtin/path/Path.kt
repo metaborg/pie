@@ -24,7 +24,7 @@ operator fun PPath.plus(other: String): PPath {
 
 class Exists : Func<PPath, Boolean> {
   companion object {
-    val id = "exists"
+    const val id = "path.Exists"
   }
 
   override val id = Companion.id
@@ -37,9 +37,11 @@ class Exists : Func<PPath, Boolean> {
 fun ExecContext.exists(input: PPath) = requireOutput(Exists::class, Exists.Companion.id, input)
 
 
-class ListContents @Inject constructor(val pathSrv: PathSrv) : Func<ListContents.Input, ArrayList<PPath>> {
+class ListContents @Inject constructor(
+  val pathSrv: PathSrv
+) : Func<ListContents.Input, ArrayList<PPath>> {
   companion object {
-    val id = "listContents"
+    const val id = "path.ListContents"
   }
 
   data class Input(val path: PPath, val matcher: PathMatcher?) : Serializable
@@ -65,9 +67,11 @@ class ListContents @Inject constructor(val pathSrv: PathSrv) : Func<ListContents
 fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class, ListContents.Companion.id, input)
 
 
-class WalkContents @Inject constructor(val pathSrv: PathSrv) : Func<WalkContents.Input, ArrayList<PPath>> {
+class WalkContents @Inject constructor(
+  val pathSrv: PathSrv
+) : Func<WalkContents.Input, ArrayList<PPath>> {
   companion object {
-    val id = "walkContents"
+    const val id = "path.WalkContents"
   }
 
   data class Input(val path: PPath, val walker: PathWalker?) : Serializable
@@ -95,7 +99,7 @@ fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkCont
 
 class Read : Func<PPath, String?> {
   companion object {
-    val id = "read"
+    const val id = "path.Read"
   }
 
   override val id = Companion.id
@@ -118,7 +122,7 @@ fun ExecContext.read(input: PPath) = requireOutput(Read::class, Read.Companion.i
 
 class Copy : OutEffectFunc<Copy.Input> {
   companion object {
-    val id = "copy"
+    const val id = "path.Copy"
   }
 
   data class Input(val from: PPath, val to: PPath) : In

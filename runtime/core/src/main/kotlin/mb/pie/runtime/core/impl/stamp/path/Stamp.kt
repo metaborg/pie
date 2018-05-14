@@ -5,13 +5,13 @@ import mb.pie.runtime.core.stamp.PathStamper
 import java.util.*
 
 
-data class ValuePathStamp<out V>(val value: V?, override val stamper: PathStamper) : PathStamp {
+data class ValuePathStamp<out V>(private val value: V?, override val stamper: PathStamper) : PathStamp {
   override fun toString(): String {
     return value.toString()
   }
 }
 
-data class ByteArrayPathStamp(val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
+data class ByteArrayPathStamp(private val value: ByteArray?, override val stamper: PathStamper) : PathStamp {
   override fun equals(other: Any?): Boolean {
     if(this === other) return true
     if(other?.javaClass != javaClass) return false

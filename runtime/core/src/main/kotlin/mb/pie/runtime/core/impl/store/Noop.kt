@@ -23,6 +23,7 @@ class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun pathGens(app: UFuncApp): List<PathGen> = listOf()
   override fun generatorOf(path: PPath): UFuncApp? = null
   override fun data(app: UFuncApp): UFuncAppData? = null
+  override fun numSourceFiles(): Int = 0
 
   override fun setDirty(app: UFuncApp, isDirty: Boolean) {}
   override fun setOutput(app: UFuncApp, output: Out) {}

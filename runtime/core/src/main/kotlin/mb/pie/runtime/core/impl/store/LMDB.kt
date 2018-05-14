@@ -367,6 +367,10 @@ internal open class LMDBStoreTxn(
   private val pathGensDb: DbiB,
   private val generatorOfDb: DbiB
 ) : StoreReadTxn, StoreWriteTxn, LMDBStoreTxnBase(env, txn, isWriteTxn, logger) {
+  override fun numSourceFiles(): Int {
+    TODO("implement numSourceFiles in LMDBStoreTxn")
+  }
+
   override fun dirty(app: UFuncApp): Boolean {
     return getBool(app, dirtyDb)
   }

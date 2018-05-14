@@ -3,6 +3,7 @@ package mb.pie.runtime.builtin.util
 import mb.pie.runtime.core.Out
 import java.util.*
 
+
 fun <T : Out> list(vararg elements: T): ArrayList<T> {
   val list = ArrayList<T>()
   list.addAll(elements)

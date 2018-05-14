@@ -1,9 +1,9 @@
 package mb.pie.runtime.core.impl.exec
 
 import mb.pie.runtime.core.*
-import mb.pie.runtime.core.impl.Funcs
 import mb.vfs.path.PPath
 import java.util.*
+
 
 fun directlyAffectedApps(changedPaths: Collection<PPath>, txn: StoreReadTxn, logger: Logger): HashSet<UFuncApp> {
   val directlyAffected = HashSet<UFuncApp>()
@@ -30,53 +30,19 @@ fun directlyAffectedApps(changedPaths: Collection<PPath>, txn: StoreReadTxn, log
   return directlyAffected
 }
 
-fun dirtyFlaggingAndPropagation(changedPaths: Collection<PPath>, txn: StoreWriteTxn, logger: Logger) {
-  val directlyAffected = directlyAffectedApps(changedPaths, txn, logger)
-  logger.trace("Dirty flagging and propagation")
-  val todo = ArrayDeque(directlyAffected)
-  val seen = HashSet<UFuncApp>()
-  while(!todo.isEmpty()) {
-    val app = todo.pop()
-    if(!seen.contains(app)) {
-      logger.trace("  dirty: ${app.toShortString(200)}")
-      // Optimisation: check if app was already dirty flagged. Don't do transitive flagging if so. Be sure to add to seen.
-      txn.setDirty(app, true)
-      seen.add(app)
-      val calledBy = txn.callersOf(app)
-      calledBy.forEach { logger.trace("  called by: ${it.toShortString(200)}") }
-      todo += calledBy
-    }
-  }
-}
-
-fun hasCallReq(caller: UFuncApp, callee: UFuncApp, funcs: Funcs, txn: StoreReadTxn): Boolean {
+fun hasCallReq(caller: UFuncApp, callee: UFuncApp, txn: StoreReadTxn): Boolean {
   // TODO: more efficient implementation for figuring out if an app transitively calls on another app?
   val toCheckQueue: Queue<UFuncApp> = LinkedList()
   toCheckQueue.add(caller)
   while(!toCheckQueue.isEmpty()) {
     val toCheck = toCheckQueue.poll()
     val callReqs = txn.callReqs(toCheck);
-    if(callReqs.any { it.equalsOrOverlaps(callee, funcs) }) {
+    if(callReqs.any { it.calleeEqual(callee) }) {
       return true
     }
     toCheckQueue.addAll(callReqs.map { it.callee })
   }
   return false
-}
-
-class DirtyFlaggedReason : ExecReason {
-  override fun toString() = "flagged dirty"
-
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
 }
 
 class InvalidatedExecReason : ExecReason {

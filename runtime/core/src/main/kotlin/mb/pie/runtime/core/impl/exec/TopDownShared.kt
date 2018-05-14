@@ -4,6 +4,7 @@ import mb.pie.runtime.core.*
 import mb.pie.runtime.core.impl.*
 import mb.util.async.Cancelled
 
+
 @Suppress("DataClassPrivateConstructor")
 data class ResOrData<out O : Out> private constructor(val res: ExecRes<O>?, val data: FuncAppData<O>?) {
   constructor(res: ExecRes<O>) : this(res, null)
@@ -80,10 +81,12 @@ internal open class TopDownExecShared(
     val (callReqs, pathReqs, pathGens) = context.reqs()
     val data = FuncAppData(output, callReqs, pathReqs, pathGens)
 
+    // Validate well-formedness of the dependency graph, before writing.
+    store.readTxn().use { layer.validatePreWrite(app, data, it) }
     // Write output and dependencies to the store.
     store.writeTxn().use { it.setData(app, data); writeFunc(it, data) }
     // Validate well-formedness of the dependency graph, after writing.
-    store.readTxn().use { layer.validate(app, data, funcs, it) }
+    store.readTxn().use { layer.validatePostWrite(app, data, it) }
     // Cache data
     visited[app] = data
     cache[app] = data

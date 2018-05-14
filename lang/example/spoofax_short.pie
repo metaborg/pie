@@ -52,7 +52,7 @@ func processFile(file: path, langSpec: LangSpec) -> (Msg*, Styling?) = processSt
 // 5) Keep files of an Eclipse project up-to-date
 func updateProject(root: path, project: path) -> (path, Msg*, Styling?)* = {
   val workspace = getWorkspace(root);
-  val relevantFiles = walk project with extensions workspace.extensions();
+  val relevantFiles = walk project with extensions (workspace.extensions());
   [updateFile(file, workspace) | file <- relevantFiles]
 }
 func updateFile(file: path, workspace: Workspace) -> (path, Msg*, Styling?) = {

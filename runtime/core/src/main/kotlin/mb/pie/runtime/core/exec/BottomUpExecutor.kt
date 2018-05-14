@@ -6,18 +6,11 @@ import mb.vfs.path.PPath
 import java.io.Serializable
 
 
-interface BottomUpObservingExecutorFactory {
-  enum class Variant {
-    Naive, DirtyFlagging
-  }
-
-  fun create(store: Store, cache: Cache, variant: Variant): BottomUpObservingExecutor
+interface BottomUpExecutorFactory {
+  fun create(store: Store, cache: Cache): BottomUpExecutor
 }
 
-// TODO: replace [Serializable]? by [Out], when IntelliJ bug is fixed.
-typealias FuncAppObserver = (Serializable?) -> Unit
-
-interface BottomUpObservingExecutor : Executor {
+interface BottomUpExecutor : Executor {
   fun setObserver(key: Any, app: UFuncApp, observer: FuncAppObserver)
 
   fun removeObserver(key: Any)
@@ -27,10 +20,10 @@ interface BottomUpObservingExecutor : Executor {
   fun <I : In, O : Out> requireTopDown(app: FuncApp<I, O>, cancel: Cancelled): O
 
   @Throws(ExecException::class, InterruptedException::class)
-  fun requireBottomUp(changedPaths: List<PPath>, cancel: Cancelled)
+  fun requireBottomUp(changedPaths: Set<PPath>, cancel: Cancelled)
 
   fun <I : In, O : Out> hasBeenRequired(app: FuncApp<I, O>): Boolean
-
-
-  fun garbageCollect()
 }
+
+// TODO: replace [Serializable]? by [Out], when IntelliJ bug is fixed.
+typealias FuncAppObserver = (Serializable?) -> Unit

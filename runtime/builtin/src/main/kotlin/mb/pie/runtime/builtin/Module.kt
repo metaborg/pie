@@ -2,13 +2,10 @@ package mb.pie.runtime.builtin
 
 import com.google.inject.Binder
 import com.google.inject.Module
-import mb.pie.runtime.builtin.path.Copy
-import mb.pie.runtime.builtin.path.Exists
-import mb.pie.runtime.builtin.path.ListContents
-import mb.pie.runtime.builtin.path.Read
-import mb.pie.runtime.builtin.path.WalkContents
+import mb.pie.runtime.builtin.path.*
 import mb.pie.runtime.core.bindFunc
 import mb.pie.runtime.core.funcsMapBinder
+
 
 open class PieBuiltinModule : Module {
   override fun configure(binder: Binder) {

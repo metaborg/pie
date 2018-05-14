@@ -3,6 +3,7 @@ package mb.pie.runtime.core.impl.cache
 import mb.pie.runtime.core.*
 import java.util.concurrent.ConcurrentHashMap
 
+
 class MapCache : Cache {
   private val map = ConcurrentHashMap<UFuncApp, UFuncAppData>()
 

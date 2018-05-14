@@ -25,7 +25,7 @@ class EqualsOutputStamper : OutputStamper {
   }
 }
 
-data class ValueOutputStamp<out V : Out>(val value: V, override val stamper: OutputStamper) : OutputStamp {
+data class ValueOutputStamp<out V : Out>(private val value: V, override val stamper: OutputStamper) : OutputStamp {
   override fun equals(other: Any?): Boolean {
     if(this === other) return true
     if(javaClass != other?.javaClass) return false

@@ -112,6 +112,18 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   }
 
 
+  override fun numSourceFiles(): Int {
+    val requiredFiles = pathReqs.values.flatMap { it.map { it.path } }.toHashSet()
+    var numSourceFiles = 0
+    for(file in requiredFiles) {
+      if(!generatorOf.containsKey(file)) {
+        ++numSourceFiles
+      }
+    }
+    return numSourceFiles
+  }
+
+
   override fun drop() {
     dirty.clear()
     outputs.clear()

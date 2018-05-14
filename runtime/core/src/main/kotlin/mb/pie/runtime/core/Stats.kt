@@ -2,11 +2,11 @@ package mb.pie.runtime.core
 
 
 object Stats {
-  public var requires = 0
-  public var executions = 0
-  public var fileReqs = 0
-  public var fileGens = 0
-  public var callReqs = 0
+  var requires = 0
+  var executions = 0
+  var fileReqs = 0
+  var fileGens = 0
+  var callReqs = 0
 
   fun reset() {
     requires = 0

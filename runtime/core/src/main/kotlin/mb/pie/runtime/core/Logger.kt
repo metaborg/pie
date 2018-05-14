@@ -98,7 +98,3 @@ data class InconsistentPathReq(val req: PathReq, val newStamp: PathStamp) : Exec
 data class InconsistentCallReq(val req: CallReq, val newStamp: OutputStamp) : ExecReason {
   override fun toString() = "required build ${req.callee.toShortString(100)} is inconsistent"
 }
-
-//data class InconsistentExecReqTransientOutput(val req: CallReq, val inconsistentResult: UExecRes) : ExecReason {
-//  override fun toString() = "transient output of required build ${req.callee.toShortString(100)} is inconsistent"
-//}

@@ -18,7 +18,7 @@ fun anyER() = safeAny<ExecReason>(UnknownExecReason())
 fun anyEC(exec: Exec, store: Store) = safeAny<ExecContext>(ExecContextImpl(exec, store, NullCancelled()))
 fun anyC() = safeAny<Cancelled>(NullCancelled())
 
-internal class ObservingExecutorTests {
+internal class BottomUpTests {
   @TestFactory
   fun testTopDownExec() = TestGenerator.generate("testTopDownExec") {
     val input = "CAPITALIZED"
@@ -26,7 +26,7 @@ internal class ObservingExecutorTests {
     registerFunc(func)
     val app = app(func, input)
 
-    val exec = spy(observingExec())
+    val exec = spy(bottomUpExec())
     val res = exec.require(app)
     Assertions.assertEquals(NoResultReason(), res.reason)
     Assertions.assertEquals("capitalized", res.output)
@@ -45,14 +45,14 @@ internal class ObservingExecutorTests {
 
     val input1 = "CAPITALIZED"
     val app1 = app(func, input1)
-    val exec1 = spy(observingExec())
+    val exec1 = spy(bottomUpExec())
     val res1 = exec1.require(app1)
     Assertions.assertEquals(NoResultReason(), res1.reason)
     Assertions.assertEquals("capitalized", res1.output)
 
     val input2 = "CAPITALIZED_EVEN_MORE"
     val app2 = app(func, input2)
-    val exec2 = spy(observingExec())
+    val exec2 = spy(bottomUpExec())
     val res2 = exec2.require(app2)
     Assertions.assertEquals(NoResultReason(), res2.reason)
     Assertions.assertEquals("capitalized_even_more", res2.output)
@@ -77,11 +77,11 @@ internal class ObservingExecutorTests {
 
     val input = "CAPITALIZED"
     val app = app(func, input)
-    val exec1 = observingExec()
+    val exec1 = bottomUpExec()
     val res1 = exec1.require(app)
     Assertions.assertEquals(NoResultReason(), res1.reason)
 
-    val exec2 = spy(observingExec())
+    val exec2 = spy(bottomUpExec())
     val res2 = exec2.require(app)
     Assertions.assertNull(res2.reason)
 
@@ -110,7 +110,7 @@ internal class ObservingExecutorTests {
     write("HELLO WORLD!", filePath)
 
     // Build 'combine', observe rebuild of all
-    val exec1 = spy(observingExec())
+    val exec1 = spy(bottomUpExec())
     val res1 = exec1.require(app(combine, filePath))
     Assertions.assertEquals("hello world!", res1.output)
     inOrder(exec1) {
@@ -124,7 +124,7 @@ internal class ObservingExecutorTests {
     write(newStr, filePath)
 
     // Notify of path change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
-    val exec2 = spy(observingExec())
+    val exec2 = spy(bottomUpExec())
     exec2.scheduleAffectedByFiles(setOf(filePath))
     exec2.execScheduled(NullCancelled())
     inOrder(exec2) {
@@ -135,7 +135,7 @@ internal class ObservingExecutorTests {
     }
 
     // Notify of path change, but path hasn't actually changed, observe no execution.
-    val exec3 = spy(observingExec())
+    val exec3 = spy(bottomUpExec())
     exec3.scheduleAffectedByFiles(setOf(filePath))
     exec3.execScheduled(NullCancelled())
     verify(exec3, never()).exec(eq(app(readPath, filePath)), anyER(), anyC(), any())
@@ -146,7 +146,7 @@ internal class ObservingExecutorTests {
     write(newStr, filePath)
 
     // Notify of path change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent
-    val exec4 = spy(observingExec())
+    val exec4 = spy(bottomUpExec())
     exec4.scheduleAffectedByFiles(setOf(filePath))
     exec4.execScheduled(NullCancelled())
     inOrder(exec4) {

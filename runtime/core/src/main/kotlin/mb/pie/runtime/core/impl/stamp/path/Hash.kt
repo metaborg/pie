@@ -7,6 +7,7 @@ import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
 import java.security.MessageDigest
 
+
 interface HashPathStamperTrait : PathStamper {
   fun createDigester() = MessageDigest.getInstance("SHA-1")!!
 

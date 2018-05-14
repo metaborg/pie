@@ -136,7 +136,7 @@ open class TopDownExecImpl(
 
       // No inconsistencies found
       // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validate(app, data, this, it) }
+      store.readTxn().use { layer.validatePostWrite(app, data, it) }
       // Cache and mark as visited
       cache[app] = data
       visited[app] = data

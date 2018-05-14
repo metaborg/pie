@@ -8,8 +8,6 @@ interface Func<in I : In, out O : Out> {
   @Throws(ExecException::class, InterruptedException::class)
   fun exec(input: I, ctx: ExecContext): O = ctx.exec(input)
 
-  fun mayOverlap(input1: I, input2: I): Boolean = input1 == input2
-
   val id: String get() = this::class.java.canonicalName!!
   fun desc(input: I): String = "$id(${input.toString().toShortString(100)})"
 }
@@ -38,8 +36,6 @@ interface InEffectFunc<out O : Out> : Func<None, O> {
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun ExecContext.exec(input: None): O = this.effect()
-
-  override fun mayOverlap(input1: None, input2: None) = true
 }
 
 interface EffectFunc : Func<None, None> {
@@ -51,8 +47,6 @@ interface EffectFunc : Func<None, None> {
     effect()
     return None.instance
   }
-
-  override fun mayOverlap(input1: None, input2: None) = true
 }
 
 

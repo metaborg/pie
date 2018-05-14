@@ -6,6 +6,7 @@ import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
 
+
 interface ModifiedPathStamperTrait : PathStamper {
   val unknown get() = Long.MIN_VALUE
 

@@ -5,6 +5,7 @@ import mb.pie.runtime.builtin.util.tuple
 import mb.pie.runtime.core.ExecException
 import java.io.IOException
 
+
 fun execute(arguments: ArrayList<String>): Tuple2<String, String> {
   try {
     val proc = ProcessBuilder(arguments)
@@ -17,7 +18,7 @@ fun execute(arguments: ArrayList<String>): Tuple2<String, String> {
     val stderr = proc.errorStream.bufferedReader().readText()
     System.err.print(stderr)
     return tuple(stdout, stderr)
-  } catch (e: IOException) {
+  } catch(e: IOException) {
     throw ExecException("Failed to execute '${arguments.joinToString(" ")}'", e)
   }
 }

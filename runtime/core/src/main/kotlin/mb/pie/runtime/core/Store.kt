@@ -1,6 +1,5 @@
 package mb.pie.runtime.core
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import mb.pie.runtime.core.impl.*
 import mb.vfs.path.PPath
 
@@ -80,6 +79,12 @@ interface StoreReadTxn : StoreTxn {
    * @return output, call requirements, path reqs, and path generates for [app], or `null` when no output was stored.
    */
   fun data(app: UFuncApp): UFuncAppData?
+
+
+  /**
+   * @return number of source files: required files for which there is no generator.
+   */
+  fun numSourceFiles(): Int
 }
 
 interface StoreWriteTxn : StoreReadTxn {

@@ -10,6 +10,7 @@ import mb.vfs.path.PPathImpl
 import org.slf4j.LoggerFactory
 import java.nio.file.*
 
+
 open class ParametrizedTestCtx(
   mbLogger: mb.log.Logger,
   val store: Store,
@@ -30,20 +31,20 @@ open class ParametrizedTestCtx(
     store.close()
   }
 
-  fun pullingExecutor(): TopDownExecutor {
+  fun topDownExecutor(): TopDownExecutor {
     return pullingExecutor(store, cache, share, layerProvider, loggerProvider)
   }
 
-  fun pullingExec(): TopDownExecImpl {
+  fun topDownExec(): TopDownExecImpl {
     return pullingExec(store, cache, share, layerProvider.get(), loggerProvider.get())
   }
 
 
-  fun observingExecutor(): BottomUpTopsortExecutor {
+  fun bottomUpExecutor(): BottomUpExecutor {
     return observingExecutor(store, cache, share, layerProvider, loggerProvider)
   }
 
-  fun observingExec(observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpTopsortExec {
+  fun bottomUpExec(observers: Map<UFuncApp, FuncAppObserver> = mapOf()): BottomUpExec {
     return observingExec(store, cache, share, layerProvider.get(), loggerProvider.get(), observers)
   }
 }
@@ -93,12 +94,12 @@ open class TestCtx {
   }
 
 
-  fun observingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): BottomUpTopsortExecutorImpl {
-    return BottomUpTopsortExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
+  fun observingExecutor(store: Store, cache: Cache, share: Share, layerProvider: Provider<Layer>, loggerProvider: Provider<Logger>): BottomUpExecutorImpl {
+    return BottomUpExecutorImpl(store, cache, share, layerProvider, loggerProvider, funcs)
   }
 
-  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpTopsortExec {
-    return BottomUpTopsortExec(store, cache, share, layer, logger, funcs, observers)
+  fun observingExec(store: Store, cache: Cache, share: Share, layer: Layer, logger: Logger, observers: Map<UFuncApp, FuncAppObserver>): BottomUpExec {
+    return BottomUpExec(store, cache, share, layer, logger, funcs, observers)
   }
 
 
