@@ -2,7 +2,7 @@ package mb.pie.builtin.process
 
 import mb.pie.builtin.util.Tuple2
 import mb.pie.builtin.util.tuple
-import mb.pie.runtime.ExecException
+import mb.pie.api.ExecException
 import java.io.IOException
 
 

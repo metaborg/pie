@@ -31,6 +31,11 @@
     </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
+      <artifactId>pie.taskdefs.guice</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
       <artifactId>vfs</artifactId>
       <version>${mb.version}</version>
     </dependency>

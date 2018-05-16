@@ -1,8 +1,8 @@
 package mb.pie.builtin.path
 
 import com.google.inject.Inject
-import mb.pie.runtime.*
-import mb.pie.runtime.stamp.FileStampers
+import mb.pie.api.*
+import mb.pie.api.stamp.FileStampers
 import mb.vfs.list.PathMatcher
 import mb.vfs.list.PathWalker
 import mb.vfs.path.PPath
