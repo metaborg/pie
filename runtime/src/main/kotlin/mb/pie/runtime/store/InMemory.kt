@@ -1,7 +1,7 @@
 package mb.pie.runtime.store
 
 import mb.pie.api.*
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {

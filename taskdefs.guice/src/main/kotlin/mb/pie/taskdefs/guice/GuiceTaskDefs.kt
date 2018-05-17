@@ -4,7 +4,9 @@ import com.google.inject.*
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
-import mb.pie.api.*
+import mb.pie.api.PieBuilder
+import mb.pie.api.UTaskDef
+import mb.pie.runtime.taskdefs.MapTaskDefs
 
 fun PieBuilder.withGuiceTaskDefs(vararg modules: TaskDefsModule): PieBuilder {
   val injector = Guice.createInjector(modules.asList())

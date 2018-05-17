@@ -2,9 +2,11 @@ package mb.pie.runtime.util
 
 import mb.pie.api.*
 import mb.pie.api.exec.TopDownExecutor
+import mb.pie.api.stamp.FileStampers
 import mb.pie.runtime.exec.*
-import mb.vfs.path.PPath
-import mb.vfs.path.PPathImpl
+import mb.pie.runtime.taskdefs.MutableMapTaskDefs
+import mb.pie.vfs.path.PPath
+import mb.pie.vfs.path.PPathImpl
 import java.nio.file.*
 
 open class TestCtx(
@@ -49,7 +51,7 @@ open class TestCtx(
     it.toLowerCase()
   }
   val readPath = func<PPath, String>("read", { "read($it)" }) {
-    require(it)
+    require(it, FileStampers.modified)
     read(it)
   }
   val writePath = func<Pair<String, PPath>, None>("write", { "write$it" }) { (text, path) ->

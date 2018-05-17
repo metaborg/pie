@@ -25,65 +25,65 @@ class PieBuilderImpl : PieBuilder {
   private var logger: Logger = NoopLogger()
   private var executorLoggerFactory: (Logger) -> ExecutorLogger = { logger -> LoggerExecutorLogger(logger) }
 
-  override fun withTaskDefs(taskDefs: TaskDefs): PieBuilder {
+  override fun withTaskDefs(taskDefs: TaskDefs): PieBuilderImpl {
     this.taskDefs = taskDefs
     return this
   }
 
-  override fun withStore(store: (Logger) -> Store): PieBuilder {
+  override fun withStore(store: (Logger) -> Store): PieBuilderImpl {
     this.store = store
     return this
   }
 
-  override fun withCache(cache: (Logger) -> Cache): PieBuilder {
+  override fun withCache(cache: (Logger) -> Cache): PieBuilderImpl {
     this.cache = cache
     return this
   }
 
-  override fun withShare(share: (Logger) -> Share): PieBuilder {
+  override fun withShare(share: (Logger) -> Share): PieBuilderImpl {
     this.share = share
     return this
   }
 
-  override fun withDefaultOutputStamper(stamper: OutputStamper): PieBuilder {
+  override fun withDefaultOutputStamper(stamper: OutputStamper): PieBuilderImpl {
     this.defaultOutputStamper = stamper
     return this
   }
 
-  override fun withDefaultFileReqStamper(stamper: FileStamper): PieBuilder {
+  override fun withDefaultFileReqStamper(stamper: FileStamper): PieBuilderImpl {
     this.defaultReqFileStamper = stamper
     return this
   }
 
-  override fun withDefaultFileGenStamper(stamper: FileStamper): PieBuilder {
+  override fun withDefaultFileGenStamper(stamper: FileStamper): PieBuilderImpl {
     this.defaultGenFileStamper = stamper
     return this
   }
 
-  override fun withLayerFactory(layer: (Logger) -> Layer): PieBuilder {
+  override fun withLayerFactory(layer: (Logger) -> Layer): PieBuilderImpl {
     this.layerFactory = layer
     return this
   }
 
-  override fun withLogger(logger: Logger): PieBuilder {
+  override fun withLogger(logger: Logger): PieBuilderImpl {
     this.logger = logger
     return this
   }
 
-  override fun withExecutorLoggerFactory(executorLogger: (Logger) -> ExecutorLogger): PieBuilder {
+  override fun withExecutorLoggerFactory(executorLogger: (Logger) -> ExecutorLogger): PieBuilderImpl {
     this.executorLoggerFactory = executorLogger
     return this
   }
 
 
-  override fun build(): Pie {
+  override fun build(): PieImpl {
     val taskDefs = this.taskDefs ?: throw RuntimeException("Task definitions were not set before building")
     val store = this.store(logger)
     val cache = this.cache(logger)
     val share = this.share(logger)
     val topDownExecutor = TopDownExecutorImpl(taskDefs, store, cache, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
     val bottomUpExecutor = BottomUpExecutorImpl(taskDefs, store, cache, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
-    return PieImpl(topDownExecutor, bottomUpExecutor, store, cache)
+    return PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, store, cache, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
   }
 }
 
@@ -91,11 +91,20 @@ operator fun PieBuilder.invoke(): PieBuilderImpl {
   return PieBuilderImpl()
 }
 
+@Suppress("unused")
 class PieImpl(
   override val topDownExecutor: TopDownExecutor,
   override val bottomUpExecutor: BottomUpExecutor,
-  private val store: Store,
-  private val cache: Cache
+  internal val taskDefs: TaskDefs,
+  internal val store: Store,
+  internal val cache: Cache,
+  internal val share: Share,
+  internal val defaultOutputStamper: OutputStamper,
+  internal val defaultFileReqStamper: FileStamper,
+  internal val defaultFileGenStamper: FileStamper,
+  internal val layerFactory: (Logger) -> Layer,
+  internal val logger: Logger,
+  internal val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : Pie {
   override fun dropStore() {
     store.writeTxn().drop()

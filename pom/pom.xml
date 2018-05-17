@@ -18,18 +18,26 @@
     <kotlin.api.version>1.2</kotlin.api.version>
     <kotlin.runtime.version>1.2.41</kotlin.runtime.version>
 
-    <junit.platform.version>1.0.1</junit.platform.version>
-    <junit.jupiter.version>5.0.1</junit.jupiter.version>
+    <junit.platform.version>1.2.0</junit.platform.version>
+    <junit.jupiter.version>5.2.0</junit.jupiter.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <!-- Kotlin -->
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-stdlib-jdk8</artifactId>
         <version>${kotlin.runtime.version}</version>
       </dependency>
-
+      <!-- Nullable annotation -->
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>3.0.2</version>
+        <scope>provided</scope>
+      </dependency>
+      <!-- JUnit 5 -->
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>

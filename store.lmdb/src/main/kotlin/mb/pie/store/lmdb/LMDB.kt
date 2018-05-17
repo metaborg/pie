@@ -1,7 +1,7 @@
 package mb.pie.store.lmdb
 
 import mb.pie.api.*
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 import org.agrona.DirectBuffer
 import org.agrona.ExpandableDirectByteBuffer
 import org.agrona.concurrent.UnsafeBuffer

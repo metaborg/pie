@@ -2,10 +2,10 @@ package mb.pie.runtime
 
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.api.*
-import mb.pie.runtime.util.TestGenerator
 import mb.pie.runtime.exec.NoResultReason
 import mb.pie.runtime.layer.ValidationException
-import mb.vfs.path.PPath
+import mb.pie.runtime.util.TestGenerator
+import mb.pie.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
 import java.nio.file.Files

@@ -16,6 +16,7 @@ import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
+import mb.pie.runtime.taskdefs.MutableMapTaskDefs
 import org.junit.jupiter.api.*
 import java.util.stream.Stream
 
@@ -27,8 +28,8 @@ object TestGenerator {
     shareGens: Array<(Logger) -> Share> = arrayOf({ _ -> NonSharingShare() }),
     layerGens: Array<(Logger) -> Layer> = arrayOf({ l -> ValidationLayer(l) }),
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
-    defaultFileReqStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper()),
-    defaultFileGenStampers: Array<FileStamper> = arrayOf(HashFileStamper()),
+    defaultFileReqStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper(), HashFileStamper()),
+    defaultFileGenStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper(), HashFileStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
     logger: Logger = StreamLogger(),
     testFunc: TestCtx.() -> Unit
@@ -43,21 +44,21 @@ object TestGenerator {
               defaultOutputStampers.flatMap { defaultOutputStamper ->
                 defaultFileReqStampers.flatMap { defaultFileReqStamper ->
                   defaultFileGenStampers.map { defaultFileGenStamper ->
-                    DynamicTest.dynamicTest("$storeGen, $cacheGen, $shareGen, $defaultOutputStamper, $defaultFileReqStamper, $defaultFileGenStamper, $layerGen", {
-                      val fs = fsGen()
-                      val taskDefs = MutableMapTaskDefs()
-                      val pieBuilder = PieBuilderImpl()
-                        .withTaskDefs(taskDefs)
-                        .withStore(storeGen)
-                        .withCache(cacheGen)
-                        .withShare(shareGen)
-                        .withDefaultOutputStamper(defaultOutputStamper)
-                        .withDefaultFileReqStamper(defaultFileReqStamper)
-                        .withDefaultFileGenStamper(defaultFileGenStamper)
-                        .withLayerFactory(layerGen)
-                        .withLogger(logger)
-                        .withExecutorLoggerFactory(executorLoggerGen)
-                      val pie = pieBuilder.build()
+                    val fs = fsGen()
+                    val taskDefs = MutableMapTaskDefs()
+                    val pieBuilder = PieBuilderImpl()
+                      .withTaskDefs(taskDefs)
+                      .withStore(storeGen)
+                      .withCache(cacheGen)
+                      .withShare(shareGen)
+                      .withDefaultOutputStamper(defaultOutputStamper)
+                      .withDefaultFileReqStamper(defaultFileReqStamper)
+                      .withDefaultFileGenStamper(defaultFileGenStamper)
+                      .withLayerFactory(layerGen)
+                      .withLogger(logger)
+                      .withExecutorLoggerFactory(executorLoggerGen)
+                    val pie = pieBuilder.build()
+                    DynamicTest.dynamicTest("${pie.store}, ${pie.cache}, ${pie.share}, ${pie.defaultOutputStamper}, ${pie.defaultFileReqStamper}, ${pie.defaultFileGenStamper}, ${pie.layerFactory(pie.logger)}", {
                       val context = TestCtx(pie, taskDefs, fs)
                       context.testFunc()
                       context.close()

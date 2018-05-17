@@ -2,7 +2,7 @@ package mb.pie.runtime.logger.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.ExecReason
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 import java.lang.management.ManagementFactory
 
 class TraceExecutorLogger : ExecutorLogger {

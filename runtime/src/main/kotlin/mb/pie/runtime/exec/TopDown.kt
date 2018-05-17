@@ -4,7 +4,6 @@ import mb.pie.api.*
 import mb.pie.api.exec.*
 import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.util.async.Cancelled
 
 class TopDownExecutorImpl constructor(
   private val taskDefs: TaskDefs,

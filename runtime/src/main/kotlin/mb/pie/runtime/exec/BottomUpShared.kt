@@ -2,7 +2,7 @@ package mb.pie.runtime.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.ExecReason
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 import java.util.*
 
 fun directlyAffectedApps(changedFiles: Collection<PPath>, txn: StoreReadTxn, logger: Logger): HashSet<UTask> {

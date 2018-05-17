@@ -1,9 +1,9 @@
 package mb.pie.api.stamp
 
 import mb.pie.api.stamp.path.*
-import mb.vfs.list.PathMatcher
-import mb.vfs.list.PathWalker
-import mb.vfs.path.PPath
+import mb.pie.vfs.list.PathMatcher
+import mb.pie.vfs.list.PathWalker
+import mb.pie.vfs.path.PPath
 import java.io.Serializable
 
 /**

@@ -1,9 +1,7 @@
 package mb.pie.api.exec
 
 import mb.pie.api.*
-import mb.util.async.Cancelled
-import mb.util.async.NullCancelled
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 /**
  * Executor using a bottom-up build algorithm and observers for pushing new observed outputs.

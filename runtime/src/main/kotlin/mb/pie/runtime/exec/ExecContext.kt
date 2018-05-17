@@ -1,12 +1,12 @@
 package mb.pie.runtime.exec
 
 import mb.pie.api.*
+import mb.pie.api.exec.Cancelled
+import mb.pie.api.exec.NullCancelled
 import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.output.InconsequentialOutputStamper
-import mb.util.async.Cancelled
-import mb.util.async.NullCancelled
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 interface RequireTask {
   fun <I : In, O : Out> require(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O

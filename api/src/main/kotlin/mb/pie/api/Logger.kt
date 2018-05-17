@@ -1,7 +1,7 @@
 package mb.pie.api
 
 import mb.pie.api.exec.ExecReason
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 /**
  * Logger interface.

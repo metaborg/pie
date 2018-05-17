@@ -1,8 +1,6 @@
 package mb.pie.api.exec
 
 import mb.pie.api.*
-import mb.util.async.Cancelled
-import mb.util.async.NullCancelled
 
 /**
  * Executor using a top-down build algorithm.

@@ -3,7 +3,7 @@ package mb.pie.api
 import mb.pie.api.exec.ExecReason
 import mb.pie.api.stamp.FileStamp
 import mb.pie.api.stamp.OutputStamp
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 import java.io.Serializable
 
 interface FileDep {

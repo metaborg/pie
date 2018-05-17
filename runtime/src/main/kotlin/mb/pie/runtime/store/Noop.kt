@@ -1,7 +1,7 @@
 package mb.pie.runtime.store
 
 import mb.pie.api.*
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 /**
  * A build store that does not store anything and always returns null. For debugging or benchmarking purposes only.

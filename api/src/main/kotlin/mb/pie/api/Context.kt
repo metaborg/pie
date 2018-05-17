@@ -2,7 +2,7 @@ package mb.pie.api
 
 import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 /**
  * Execution context used in execution of [tasks][Task], to require other tasks, and record dependencies to files.

@@ -2,9 +2,9 @@ package mb.pie.api.stamp.path
 
 import mb.pie.api.stamp.FileStamp
 import mb.pie.api.stamp.FileStamper
-import mb.vfs.list.PathMatcher
-import mb.vfs.list.PathWalker
-import mb.vfs.path.PPath
+import mb.pie.vfs.list.PathMatcher
+import mb.pie.vfs.list.PathWalker
+import mb.pie.vfs.path.PPath
 
 interface ModifiedFileStamperTrait : FileStamper {
   val unknown get() = Long.MIN_VALUE

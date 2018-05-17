@@ -300,6 +300,9 @@ class ValidationLayer constructor(
       logger.warn(message, exception)
     }
   }
+
+
+  override fun toString() = "ValidationLayer"
 }
 
 class ValidationException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

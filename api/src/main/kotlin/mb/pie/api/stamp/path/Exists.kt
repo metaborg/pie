@@ -2,7 +2,7 @@ package mb.pie.api.stamp.path
 
 import mb.pie.api.stamp.FileStamp
 import mb.pie.api.stamp.FileStamper
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 class ExistsFileStamper : FileStamper {
   override fun stamp(path: PPath): FileStamp {

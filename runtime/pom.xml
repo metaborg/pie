@@ -14,10 +14,6 @@
     <relativePath>../pom</relativePath>
   </parent>
 
-  <properties>
-    <mb.version>2.5.0-SNAPSHOT</mb.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
@@ -31,44 +27,33 @@
     </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
-      <artifactId>vfs</artifactId>
-      <version>${mb.version}</version>
+      <artifactId>pie.vfs</artifactId>
+      <version>0.1.0</version>
     </dependency>
 
-
-    <!-- Testing dependencies -->
-    <!-- JUnit 5 (http://junit.org/junit5/docs/current/user-guide/) -->
+    <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
-    <!-- In-memory filesystem implementation for testing (https://github.com/google/jimfs) -->
     <dependency>
       <groupId>com.google.jimfs</groupId>
       <artifactId>jimfs</artifactId>
       <version>1.1</version>
       <scope>test</scope>
     </dependency>
-    <!-- Mockito for Kotlin (https://medium.com/@elye.project/befriending-kotlin-and-mockito-1c2e7b0ef791) -->
     <dependency>
       <groupId>com.nhaarman</groupId>
       <artifactId>mockito-kotlin</artifactId>
       <version>1.5.0</version>
       <scope>test</scope>
     </dependency>
-    <!-- Sync version of kotlin-reflect with ${kotlin.runtime.version}, since mockito-kotlin depends on an older
-      version -->
+    <!-- Sync version of kotlin-reflect with ${kotlin.runtime.version}, since mockito-kotlin depends on an older version -->
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-reflect</artifactId>
-      <version>${kotlin.runtime.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-test</artifactId>
       <version>${kotlin.runtime.version}</version>
       <scope>test</scope>
     </dependency>

@@ -1,6 +1,6 @@
 package mb.pie.api
 
-import mb.vfs.path.PPath
+import mb.pie.vfs.path.PPath
 
 /**
  * Internal storage for tasks, outputs, and dependency information.
