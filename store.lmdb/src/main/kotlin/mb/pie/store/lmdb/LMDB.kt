@@ -13,6 +13,7 @@ import java.nio.ByteBuffer
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 
+@JvmOverloads
 fun PieBuilder.withLMDBStore(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, maxReaders: Int = 1024): PieBuilder {
   this.withStore { logger -> LMDBStore(logger, envDir, maxDbSize, maxReaders) }
   return this

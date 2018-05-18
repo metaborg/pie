@@ -14,6 +14,10 @@ open class StreamLogger(
   private var indentation = AtomicInteger(0)
   private val indent get() = " ".repeat(indentation.get())
 
+  companion object {
+    fun non_verbose(): StreamLogger = StreamLogger(debugWriter = null, traceWriter = null)
+    fun verbose(): StreamLogger = StreamLogger()
+  }
 
   override fun error(message: String, throwable: Throwable?) {
     errorWriter.println("$indent$message")

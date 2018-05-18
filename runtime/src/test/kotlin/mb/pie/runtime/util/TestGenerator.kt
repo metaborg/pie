@@ -54,9 +54,9 @@ object TestGenerator {
                       .withDefaultOutputStamper(defaultOutputStamper)
                       .withDefaultFileReqStamper(defaultFileReqStamper)
                       .withDefaultFileGenStamper(defaultFileGenStamper)
-                      .withLayerFactory(layerGen)
+                      .withLayer(layerGen)
                       .withLogger(logger)
-                      .withExecutorLoggerFactory(executorLoggerGen)
+                      .withExecutorLogger(executorLoggerGen)
                     val pie = pieBuilder.build()
                     DynamicTest.dynamicTest("${pie.store}, ${pie.cache}, ${pie.share}, ${pie.defaultOutputStamper}, ${pie.defaultFileReqStamper}, ${pie.defaultFileGenStamper}, ${pie.layerFactory(pie.logger)}", {
                       val context = TestCtx(pie, taskDefs, fs)

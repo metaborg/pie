@@ -5,7 +5,7 @@ import mb.pie.api.exec.ExecReason
 import mb.pie.vfs.path.PPath
 import java.util.concurrent.atomic.AtomicInteger
 
-class LoggerExecutorLogger(
+class LoggerExecutorLogger @JvmOverloads constructor(
   private val logger: Logger,
   private val descLimit: Int = 200
 ) : ExecutorLogger {

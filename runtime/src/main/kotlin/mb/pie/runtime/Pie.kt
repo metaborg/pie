@@ -60,7 +60,7 @@ class PieBuilderImpl : PieBuilder {
     return this
   }
 
-  override fun withLayerFactory(layer: (Logger) -> Layer): PieBuilderImpl {
+  override fun withLayer(layer: (Logger) -> Layer): PieBuilderImpl {
     this.layerFactory = layer
     return this
   }
@@ -70,7 +70,7 @@ class PieBuilderImpl : PieBuilder {
     return this
   }
 
-  override fun withExecutorLoggerFactory(executorLogger: (Logger) -> ExecutorLogger): PieBuilderImpl {
+  override fun withExecutorLogger(executorLogger: (Logger) -> ExecutorLogger): PieBuilderImpl {
     this.executorLoggerFactory = executorLogger
     return this
   }

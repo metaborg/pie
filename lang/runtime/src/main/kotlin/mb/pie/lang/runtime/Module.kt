@@ -7,7 +7,7 @@ import mb.pie.lang.runtime.path.*
 import mb.pie.taskdefs.guice.TaskDefsModule
 import mb.pie.taskdefs.guice.bindTaskDef
 
-class BuiltinTaskDefsModule : TaskDefsModule() {
+class PieLangRuntimeModule : TaskDefsModule() {
   override fun Binder.bindTaskDefs(builders: MapBinder<String, UTaskDef>) {
     bindTaskDef<Exists>(builders, Exists.id)
     bindTaskDef<ListContents>(builders, ListContents.id)

@@ -1,8 +1,6 @@
 package mb.pie.taskdefs.guice
 
 import com.google.inject.*
-import com.google.inject.binder.LinkedBindingBuilder
-import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.multibindings.MapBinder
 import mb.pie.api.PieBuilder
 import mb.pie.api.UTaskDef
@@ -10,6 +8,11 @@ import mb.pie.runtime.taskdefs.MapTaskDefs
 
 fun PieBuilder.withGuiceTaskDefs(vararg modules: TaskDefsModule): PieBuilder {
   val injector = Guice.createInjector(modules.asList())
+  withGuiceTaskDefs(injector)
+  return this
+}
+
+fun PieBuilder.withGuiceTaskDefs(injector: Injector): PieBuilder {
   val taskDefsMap = injector.getInstance(Key.get(object : TypeLiteral<MutableMap<String, UTaskDef>>() {}))
   val taskDefs = MapTaskDefs(taskDefsMap)
   this.withTaskDefs(taskDefs)
@@ -27,16 +30,11 @@ abstract class TaskDefsModule : Module {
 }
 
 
-fun Binder.taskDefsBinder(): MapBinder<String, UTaskDef> {
-  return MapBinder.newMapBinder(this, object : TypeLiteral<String>() {}, object : TypeLiteral<UTaskDef>() {})
-}
+fun Binder.taskDefsBinder(): MapBinder<String, UTaskDef> =
+  MapBinder.newMapBinder(this, object : TypeLiteral<String>() {}, object : TypeLiteral<UTaskDef>() {})
 
 inline fun <reified B : UTaskDef> Binder.bindTaskDef(builderBinder: MapBinder<String, UTaskDef>, id: String) {
-  bind<B>().asSingleton()
-  builderBinder.addBinding(id).to<B>()
+  bind(B::class.java).`in`(Singleton::class.java)
+  builderBinder.addBinding(id).to(B::class.java)
 }
 
-inline fun <reified T> Binder.bind() = bind(T::class.java)!!
-inline fun <reified T> LinkedBindingBuilder<in T>.to() = to(T::class.java)!!
-inline fun <reified T> LinkedBindingBuilder<in T>.toSingleton() = to(T::class.java)!!.asSingleton()
-fun ScopedBindingBuilder.asSingleton() = `in`(Singleton::class.java)

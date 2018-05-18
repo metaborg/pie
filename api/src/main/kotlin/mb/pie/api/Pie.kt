@@ -12,8 +12,8 @@ interface Pie : AutoCloseable {
   val topDownExecutor: TopDownExecutor
   val bottomUpExecutor: BottomUpExecutor
 
-  fun dropStore()
   fun dropCache()
+  fun dropStore()
 }
 
 /**
@@ -27,8 +27,8 @@ interface PieBuilder {
   fun withDefaultOutputStamper(stamper: OutputStamper): PieBuilder
   fun withDefaultFileReqStamper(stamper: FileStamper): PieBuilder
   fun withDefaultFileGenStamper(stamper: FileStamper): PieBuilder
-  fun withLayerFactory(layer: (Logger) -> Layer): PieBuilder
+  fun withLayer(layer: (Logger) -> Layer): PieBuilder
   fun withLogger(logger: Logger): PieBuilder
-  fun withExecutorLoggerFactory(executorLogger: (Logger) -> ExecutorLogger): PieBuilder
+  fun withExecutorLogger(executorLogger: (Logger) -> ExecutorLogger): PieBuilder
   fun build(): Pie
 }
