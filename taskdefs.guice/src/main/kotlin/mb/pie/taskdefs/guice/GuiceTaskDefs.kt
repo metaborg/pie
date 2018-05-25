@@ -48,7 +48,7 @@ abstract class TaskDefsModule : Module {
     binder.bindTaskDefs(taskDefsBinder)
   }
 
-  abstract fun Binder.bindTaskDefs(builders: MapBinder<String, UTaskDef>)
+  abstract fun Binder.bindTaskDefs(taskDefsBinder: MapBinder<String, UTaskDef>)
 
   protected inline fun <reified B : UTaskDef> Binder.bindTaskDef(builderBinder: MapBinder<String, UTaskDef>, id: String) {
     bind(B::class.java).`in`(Singleton::class.java)

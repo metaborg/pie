@@ -5,18 +5,13 @@
 >
   <modelVersion>4.0.0</modelVersion>
   <artifactId>pie.lang.runtime</artifactId>
-  <version>0.1.0</version>
 
   <parent>
     <groupId>org.metaborg</groupId>
-    <artifactId>pie.parent</artifactId>
+    <artifactId>pie.parent.kotlin</artifactId>
     <version>0.1.0</version>
-    <relativePath>../../pom</relativePath>
+    <relativePath>../../pom/kotlin</relativePath>
   </parent>
-
-  <properties>
-    <mb.version>2.5.0-SNAPSHOT</mb.version>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -27,24 +22,21 @@
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>pie.api</artifactId>
-      <version>0.1.0</version>
+      <version>${pie.version}</version>
     </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>pie.vfs</artifactId>
-      <version>0.1.0</version>
+      <version>${pie.version}</version>
     </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>pie.taskdefs.guice</artifactId>
-      <version>0.1.0</version>
+      <version>${pie.version}</version>
     </dependency>
   </dependencies>
 
   <build>
-    <sourceDirectory>src/main/kotlin</sourceDirectory>
-    <testSourceDirectory>src/test/kotlin</testSourceDirectory>
-
     <plugins>
       <plugin>
         <artifactId>kotlin-maven-plugin</artifactId>
@@ -56,7 +48,7 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-source-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

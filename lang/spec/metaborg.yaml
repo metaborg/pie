@@ -1,5 +1,5 @@
 ---
-id: org.metaborg:pie.lang:0.1.0-SNAPSHOT
+id: org.metaborg:pie.lang:0.1.0
 name: pie
 dependencies:
   compile:
@@ -39,3 +39,5 @@ language:
     - stratego-sdf
     - -la
     - strc
+build:
+  useBuildSystemSpec: true

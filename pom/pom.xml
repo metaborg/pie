@@ -12,12 +12,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <java.lang.version>1.8</java.lang.version>
+    <pie.version>${project.version}</pie.version>
 
-    <kotlin.lang.version>1.2</kotlin.lang.version>
-    <kotlin.api.version>1.2</kotlin.api.version>
-    <kotlin.runtime.version>1.2.41</kotlin.runtime.version>
-    <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+    <java.lang.version>1.8</java.lang.version>
 
     <junit.platform.version>1.2.0</junit.platform.version>
     <junit.jupiter.version>5.2.0</junit.jupiter.version>
@@ -25,12 +22,6 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Kotlin -->
-      <dependency>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-stdlib-jdk8</artifactId>
-        <version>${kotlin.runtime.version}</version>
-      </dependency>
       <!-- Nullable annotation -->
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -58,77 +49,16 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <artifactId>kotlin-maven-plugin</artifactId>
-          <groupId>org.jetbrains.kotlin</groupId>
-          <version>${kotlin.runtime.version}</version>
-          <configuration>
-            <languageVersion>${kotlin.lang.version}</languageVersion>
-            <apiVersion>${kotlin.api.version}</apiVersion>
-            <jvmTarget>${java.lang.version}</jvmTarget>
-            <experimentalCoroutines>enable</experimentalCoroutines>
-          </configuration>
-          <executions>
-            <execution>
-              <id>compile</id>
-              <phase>compile</phase>
-              <goals>
-                <goal>compile</goal>
-              </goals>
-            </execution>
-            <execution>
-              <id>test-compile</id>
-              <phase>test-compile</phase>
-              <goals>
-                <goal>test-compile</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.7.0</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-compiler-eclipse</artifactId>
-              <version>2.8.2</version>
-            </dependency>
-          </dependencies>
           <configuration>
-            <compilerId>eclipse</compilerId>
             <compilerVersion>${java.lang.version}</compilerVersion>
             <source>${java.lang.version}</source>
             <target>${java.lang.version}</target>
             <debug>true</debug>
           </configuration>
-          <executions>
-            <execution>
-              <id>default-compile</id>
-              <phase>none</phase>
-            </execution>
-            <execution>
-              <id>default-testCompile</id>
-              <phase>none</phase>
-            </execution>
-            <execution>
-              <id>java-compile</id>
-              <phase>compile</phase>
-              <goals>
-                <goal>compile</goal>
-              </goals>
-            </execution>
-            <execution>
-              <id>java-test-compile</id>
-              <phase>test-compile</phase>
-              <goals>
-                <goal>testCompile</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
-
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.21.0</version>
@@ -153,20 +83,73 @@
             </dependency>
           </dependencies>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+          <configuration>
+            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>wagon-maven-plugin</artifactId>
+          <version>2.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
+
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-http</artifactId>
+        <version>3.0.0</version>
+      </extension>
+    </extensions>
   </build>
 
-  <repositories>
+  <distributionManagement>
     <repository>
-      <id>jcenter</id>
-      <url>https://jcenter.bintray.com/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
+      <id>bintray-maven-metaborg-pie</id>
+      <url>https://api.bintray.com/maven/metaborg/maven/pie/</url>
     </repository>
-  </repositories>
+  </distributionManagement>
 </project>

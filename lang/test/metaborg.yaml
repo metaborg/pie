@@ -1,9 +1,9 @@
 ---
-id: org.metaborg:pie.lang.test:0.1.0-SNAPSHOT
-name: pipeline
+id: org.metaborg:pie.lang.test:0.1.0
+name: pie
 dependencies:
   compile:
-  - org.metaborg:pie.lang:0.1.0-SNAPSHOT
+  - org.metaborg:pie.lang:0.1.0
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 build:
   useBuildSystemSpec: true

@@ -3,6 +3,7 @@ package mb.pie.runtime.util
 import mb.pie.api.*
 import mb.pie.api.exec.TopDownExecutor
 import mb.pie.api.stamp.FileStampers
+import mb.pie.runtime.PieImpl
 import mb.pie.runtime.exec.*
 import mb.pie.runtime.taskdefs.MutableMapTaskDefs
 import mb.pie.vfs.path.PPath
@@ -10,7 +11,7 @@ import mb.pie.vfs.path.PPathImpl
 import java.nio.file.*
 
 open class TestCtx(
-  private val pie: Pie,
+  private val pie: PieImpl,
   private val taskDefs: MutableMapTaskDefs,
   private val fs: FileSystem
 ) : AutoCloseable {
@@ -85,7 +86,7 @@ open class TestCtx(
   }
 
   fun write(text: String, path: PPath) {
-    println("Write $text")
+    pie.logger.trace("Write $text")
     Files.newOutputStream(path.javaPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
       StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC).use {
       it.write(text.toByteArray())

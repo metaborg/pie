@@ -6,58 +6,53 @@
 >
   <modelVersion>4.0.0</modelVersion>
   <artifactId>pie.lang</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
   <packaging>spoofax-language</packaging>
 
   <parent>
     <groupId>org.metaborg</groupId>
-    <artifactId>parent.language</artifactId>
-    <version>2.5.0-SNAPSHOT</version>
+    <artifactId>pie.parent.spoofax</artifactId>
+    <version>0.1.0</version>
+    <relativePath>../../pom/spoofax</relativePath>
   </parent>
-  
-  <repositories>
-    <repository>
-      <id>metaborg-release-repo</id>
-      <url>http://artifacts.metaborg.org/content/repositories/releases/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>metaborg-snapshot-repo</id>
-      <url>http://artifacts.metaborg.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  
-  <pluginRepositories>
-    <pluginRepository>
-      <id>metaborg-release-repo</id>
-      <url>http://artifacts.metaborg.org/content/repositories/releases/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>metaborg-snapshot-repo</id>
-      <url>http://artifacts.metaborg.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
+
+  <dependencies>
+    <!-- Compile meta-language dependencies -->
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.lang.esv</artifactId>
+      <version>${spoofax.version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.lang.template</artifactId>
+      <version>${spoofax.version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.nabl2.lang</artifactId>
+      <version>${spoofax.version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <!-- Source meta-language dependencies -->
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>meta.lib.spoofax</artifactId>
+      <version>${spoofax.version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.nabl2.shared</artifactId>
+      <version>${spoofax.version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.nabl2.runtime</artifactId>
+      <version>${spoofax.version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+  </dependencies>
 </project>

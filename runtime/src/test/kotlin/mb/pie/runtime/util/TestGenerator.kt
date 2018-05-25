@@ -31,7 +31,7 @@ object TestGenerator {
     defaultFileReqStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper(), HashFileStamper()),
     defaultFileGenStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper(), HashFileStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
-    logger: Logger = StreamLogger(),
+    logger: Logger = StreamLogger.only_errors(),
     testFunc: TestCtx.() -> Unit
   ): Stream<out DynamicNode> {
     val fsGen = { Jimfs.newFileSystem(Configuration.unix()) }
