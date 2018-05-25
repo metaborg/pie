@@ -17,6 +17,7 @@
     <kotlin.lang.version>1.2</kotlin.lang.version>
     <kotlin.api.version>1.2</kotlin.api.version>
     <kotlin.runtime.version>1.2.41</kotlin.runtime.version>
+    <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 
     <junit.platform.version>1.2.0</junit.platform.version>
     <junit.jupiter.version>5.2.0</junit.jupiter.version>

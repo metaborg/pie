@@ -4,13 +4,19 @@ import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.sync.Mutex
 import mb.pie.api.*
 
+/**
+ * Sets the share of this builder to the [CoroutineShare].
+ */
 fun PieBuilder.withCoroutineShare(): PieBuilder {
   this.withShare { CoroutineShare() }
   return this
 }
 
+/**
+ * [Share] implementation that shares concurrently executing tasks using Kotlin coroutines.
+ */
 class CoroutineShare : Share {
-  private val sharedBuilds = mutableMapOf<UTask, Deferred<UTaskData>>()
+  private val sharedTasks = mutableMapOf<UTask, Deferred<UTaskData>>()
   private val mutex = Mutex()
 
 
@@ -26,7 +32,7 @@ class CoroutineShare : Share {
   private suspend fun CoroutineScope.getResult(app: UTask, cacheFunc: ((UTask) -> UTaskData?)?, execFunc: (UTask) -> UTaskData): UTaskData {
     mutex.lock()
 
-    val existingBuild = sharedBuilds[app]
+    val existingBuild = sharedTasks[app]
     if(existingBuild != null) {
       // There is already a build for given app, wait for its result
       mutex.unlock()
@@ -36,7 +42,7 @@ class CoroutineShare : Share {
 
     if(cacheFunc != null) {
       /* First check if there is already a cached value. This handles the case where a build was removed from
-      sharedBuilds before another coroutine could acquire the first lock, causing a recomputation. */
+      sharedTasks before another coroutine could acquire the first lock, causing a recomputation. */
       val cached = cacheFunc(app)
       if(cached != null) {
         mutex.unlock()
@@ -48,7 +54,7 @@ class CoroutineShare : Share {
     val exec: Deferred<UTaskData>
     try {
       exec = async(coroutineContext) { execFunc(app) }
-      sharedBuilds[app] = exec
+      sharedTasks[app] = exec
     } finally {
       mutex.unlock()
     }
@@ -58,7 +64,7 @@ class CoroutineShare : Share {
     } finally {
       // Remove shared build after it is finished
       mutex.lock()
-      sharedBuilds.remove(app)
+      sharedTasks.remove(app)
       mutex.unlock()
     }
   }

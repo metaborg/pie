@@ -13,6 +13,10 @@ import java.nio.ByteBuffer
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 
+/**
+ * Sets the store of this builder to the [LMDBStore], stored at given [envDir], with parameters [maxDbSize] determining the maximum
+ * database size and [maxReaders] determining the maximum concurrent readers.
+ */
 @JvmOverloads
 fun PieBuilder.withLMDBStore(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, maxReaders: Int = 1024): PieBuilder {
   this.withStore { logger -> LMDBStore(logger, envDir, maxDbSize, maxReaders) }
