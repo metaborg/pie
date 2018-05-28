@@ -10,7 +10,7 @@
   <parent>
     <groupId>org.metaborg</groupId>
     <artifactId>pie.parent</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -64,6 +64,33 @@
             </execution>
           </executions>
         </plugin>
+        <!-- Create empty javadoc JAR for Maven central (https://central.sonatype.org/pages/requirements.html#supply-javadoc-and-sources) -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <phase>package</phase>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <!-- Must set classes directory to ${basedir}, as it defaults to target/classes. -->
+                <classesDirectory>${basedir}</classesDirectory>
+                <!-- Don't add unneccessary Maven descriptor files. -->
+                <archive>
+                  <addMavenDescriptor>false</addMavenDescriptor>
+                </archive>
+                <!-- Just include the README.md file. -->
+                <includes>
+                  <include>README.md</include>
+                </includes>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -80,4 +107,6 @@
       </snapshots>
     </repository>
   </repositories>
+
+  <description>PIE parent POM for Kotlin projects</description>
 </project>

@@ -1,5 +1,5 @@
 ---
-id: org.metaborg:pie.lang:0.1.0
+id: org.metaborg:pie.lang:0.1.1
 name: pie
 dependencies:
   compile:
