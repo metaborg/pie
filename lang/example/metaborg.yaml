@@ -1,9 +1,11 @@
 ---
-id: org.metaborg:pie.lang.example:0.1.1
+pie:
+  version: 0.1.1
+id: org.metaborg:pie.lang.example:${pie.version}
 name: pie
 dependencies:
   compile:
-  - org.metaborg:pie.lang:0.1.1
+  - org.metaborg:pie.lang:${pie.version}
 debug:
   typesmart: false
 runtime:

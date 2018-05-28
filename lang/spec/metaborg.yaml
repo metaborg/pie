@@ -1,5 +1,7 @@
 ---
-id: org.metaborg:pie.lang:0.1.1
+pie:
+  version: 0.1.1
+id: org.metaborg:pie.lang:${pie.version}
 name: pie
 dependencies:
   compile:
