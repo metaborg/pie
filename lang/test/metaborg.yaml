@@ -1,9 +1,11 @@
 ---
-id: org.metaborg:pie.lang.test:0.1.1
+pie:
+  version: 0.2.0-SNAPSHOT
+id: org.metaborg:pie.lang.test:${pie.version}
 name: pie
 dependencies:
   compile:
-  - org.metaborg:pie.lang:0.1.1
+  - org.metaborg:pie.lang:${pie.version}
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 build:
   useBuildSystemSpec: true
