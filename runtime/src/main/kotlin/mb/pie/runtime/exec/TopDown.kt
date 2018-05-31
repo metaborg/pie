@@ -132,7 +132,7 @@ open class TopDownSessionImpl(
       // Validate well-formedness of the dependency graph
       store.readTxn().use { layer.validatePostWrite(task, data, it) }
       // Cache and mark as visited
-      cache[task] = data
+      cache.set(task, data)
       visited[task] = data
       // Reuse existing result
       executorLogger.requireTopDownEnd(task, existingOutput)

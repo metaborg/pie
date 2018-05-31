@@ -3,7 +3,12 @@ package mb.pie.api
 import java.io.Serializable
 
 /**
- * Type for task outputs. Must be [Serializable], may be `null`.
+ * Type for task outputs. It must adhere to the following properties:
+ *
+ * * Implements [Serializable].
+ * * Implements [equals][Object.equals].
+ *
+ * Failure to adhere to these properties will cause unsound incrementality.
  */
 typealias Out = Serializable?
 

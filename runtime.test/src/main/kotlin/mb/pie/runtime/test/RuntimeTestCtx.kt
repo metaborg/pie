@@ -22,7 +22,7 @@ open class RuntimeTestCtx(
 
   fun bottomUpExec(observers: Map<UTask, TaskObserver> = mapOf()): BottomUpSession {
     for(pair in observers) {
-      bottomUpExecutor.setObserver(pair.key, pair.key, pair.value)
+      bottomUpExecutor.setObserver(pair.key, pair.value)
     }
     return bottomUpExecutor.newSession()
   }

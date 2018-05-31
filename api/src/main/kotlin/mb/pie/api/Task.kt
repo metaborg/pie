@@ -3,40 +3,15 @@ package mb.pie.api
 import java.io.Serializable
 
 /**
- * Type for task inputs. Must be [Serializable], may NOT be `null`.
+ * Executable task, consisting of a task identifier and an input.
  */
-typealias In = Serializable
-
-
-/**
- * Executable task, consisting of a [TaskDef] and an input.
- */
-data class Task<out I : In, out O : Out>(val id: String, val input: I) : Serializable {
-  companion object {
-    operator fun <I : In, O : Out, F : TaskDef<I, O>> invoke(@Suppress("UNUSED_PARAMETER") clazz: Class<F>, id: String, input: I): Task<I, O> {
-      return Task<I, O>(id, input)
-    }
+data class Task<I : In, out O : Out>(val taskDef: TaskDef<I, O>, val input: I) {
+  fun key(): TaskKey {
+    val key = taskDef.key(input)
+    return TaskKey(taskDef.id, key)
   }
 
-  constructor(taskDef: TaskDef<I, O>, input: I) : this(taskDef.id, input)
-
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(javaClass != other?.javaClass) return false
-    other as Task<*, *>
-    if(id != other.id) return false
-    if(input != other.input) return false
-    return true
-  }
-
-  private val hashCode: Int = id.hashCode() + 31 * input.hashCode()
-  override fun hashCode(): Int {
-    return hashCode
-  }
-
-  override fun toString() = "$id($input)"
-  fun toShortString(maxLength: Int) = "$id(${input.toString().toShortString(maxLength)})"
+  override fun toString() = taskDef.desc(input)
 }
 
 /**
@@ -48,3 +23,28 @@ typealias UTask = Task<*, *>
  * Generically typed executable task.
  */
 typealias GTask = Task<In, Out>
+
+/**
+ * Key of an executable task, consisting of a task identifier and a key.
+ */
+data class TaskKey(val id: String, val key: Key) : Serializable {
+  fun equals(other: TaskKey): Boolean {
+    if(id != other.id) return false
+    if(key != other.key) return false
+    return true
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if(this === other) return true
+    if(javaClass != other?.javaClass) return false
+    return equals(other as TaskKey)
+  }
+
+  @Transient
+  private val hashCode: Int = id.hashCode() + 31 * key.hashCode()
+
+  override fun hashCode() = hashCode
+
+  override fun toString() = "$id::Key($key)"
+  fun toShortString(maxLength: Int) = "$id::Key(${key.toString().toShortString(maxLength)})"
+}

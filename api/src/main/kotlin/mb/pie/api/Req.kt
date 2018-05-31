@@ -70,7 +70,7 @@ data class InconsistentFileGen(val fileGen: FileGen, val newStamp: FileStamp) : 
 
 
 data class TaskReq(
-  val callee: UTask,
+  val callee: TaskKey,
   val stamp: OutputStamp
 ) : Serializable {
   /**
@@ -95,12 +95,8 @@ data class TaskReq(
   /**
    * @return `true` when this call requirement's callee is equal to [other], `false` otherwise.
    */
-  fun calleeEqual(other: UTask): Boolean {
-    return when {
-      other.id != callee.id -> false
-      other == callee -> true
-      else -> false
-    }
+  fun calleeEqual(other: TaskKey): Boolean {
+    return other == callee
   }
 
   override fun toString(): String {

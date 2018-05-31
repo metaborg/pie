@@ -19,8 +19,8 @@ interface ExecContext {
    * The class is used for type inference.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out, F : TaskDef<I, O>> requireOutput(clazz: Class<F>, id: String, input: I, stamper: OutputStamper? = null): O =
-    requireOutput(Task<I, O>(id, input), stamper)
+  fun <I : In, O : Out> requireOutput(taskDef: TaskDef<I, O>, input: I, stamper: OutputStamper? = null): O
+  // fun <I : In, O : Out, F : TaskDef<I, O>> requireOutput(clazz: Class<F>, id: String, input: I, stamper: OutputStamper? = null): O
 
 
   /**
@@ -28,16 +28,15 @@ interface ExecContext {
    * output object is ignored.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun requireExec(task: UTask)
+  fun <I : In> requireExec(task: Task<I, *>)
 
   /**
    * Requires execution of a task, constructed from given task identifier and input, ignoring its output, and creates a task dependency.
    * The class is used for type inference. By default, no change detection is performed, since the output object is ignored.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out, F : TaskDef<I, O>> requireExec(clazz: Class<F>, id: String, input: I) {
-    requireExec(Task<I, O>(id, input))
-  }
+  fun <I : In> requireExec(taskDef: TaskDef<I, *>, input: I)
+  // fun <I : In, O : Out, F : TaskDef<I, O>> requireExec(clazz: Class<F>, id: String, input: I)
 
 
   /**

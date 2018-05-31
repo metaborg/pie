@@ -372,39 +372,39 @@ internal open class LMDBStoreTxn(
     TODO("implement numSourceFiles in LMDBStoreTxn")
   }
 
-  override fun output(task: UTask): UOutput? {
-    return getOne<UTask, Out>(task, outputDb).mapOrElse(null) { value ->
+  override fun output(key: TaskKey): UOutput? {
+    return getOne<UTask, Out>(key, outputDb).mapOrElse(null) { value ->
       Output(value)
     }
   }
 
-  override fun taskReqs(task: UTask): ArrayList<TaskReq> {
-    return getOne<UTask, ArrayList<TaskReq>>(task, callReqsDb).orElse(arrayListOf())
+  override fun taskReqs(key: TaskKey): ArrayList<TaskReq> {
+    return getOne<UTask, ArrayList<TaskReq>>(key, callReqsDb).orElse(arrayListOf())
   }
 
-  override fun callersOf(task: UTask): Set<UTask> {
-    return getMultiple(task, callersOfDb, callersOfValuesDb)
+  override fun callersOf(key: TaskKey): Set<TaskKey> {
+    return getMultiple(key, callersOfDb, callersOfValuesDb)
   }
 
-  override fun fileReqs(task: UTask): ArrayList<FileReq> {
-    return getOne<UTask, ArrayList<FileReq>>(task, pathReqsDb).orElse(arrayListOf())
+  override fun fileReqs(key: TaskKey): ArrayList<FileReq> {
+    return getOne<UTask, ArrayList<FileReq>>(key, pathReqsDb).orElse(arrayListOf())
   }
 
-  override fun requireesOf(file: PPath): Set<UTask> {
+  override fun requireesOf(file: PPath): Set<TaskKey> {
     return getMultiple(file, requireesOfDb, requireesOfValuesDb)
   }
 
-  override fun fileGens(task: UTask): ArrayList<FileGen> {
-    return getOne<UTask, ArrayList<FileGen>>(task, pathGensDb).orElse(arrayListOf())
+  override fun fileGens(key: TaskKey): ArrayList<FileGen> {
+    return getOne<UTask, ArrayList<FileGen>>(key, pathGensDb).orElse(arrayListOf())
   }
 
-  override fun generatorOf(file: PPath): UTask? {
+  override fun generatorOf(file: PPath): TaskKey? {
     return getOne<PPath, UTask?>(file, generatorOfDb).orElse(null)
   }
 
-  override fun data(task: UTask): UTaskData? {
+  override fun data(key: TaskKey): UTaskData? {
     // TODO: buffer copies required?
-    val appKey = serialize(task, env.maxKeySize)
+    val appKey = serialize(key, env.maxKeySize)
     val outputDeserialized = getOne<Out>(copyBuffer(appKey), outputDb)
     if(outputDeserialized == null || outputDeserialized.deleted) {
       return null
@@ -417,19 +417,19 @@ internal open class LMDBStoreTxn(
   }
 
 
-  override fun setOutput(task: UTask, output: Out) {
-    setOne(task, output, outputDb)
+  override fun setOutput(key: TaskKey, output: Out) {
+    setOne(key, output, outputDb)
   }
 
-  override fun setTaskReqs(task: UTask, taskReqs: ArrayList<TaskReq>) {
-    logger.trace("Setting call reqs of ${task.toShortString(100)} to $taskReqs")
+  override fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>) {
+    logger.trace("Setting call reqs of ${key.toShortString(100)} to $taskReqs")
     // TODO: buffer copies required?
-    val (callerAppVal, callerAppKey) = serializeAndHash(task)
+    val (callerAppVal, callerAppKey) = serializeAndHash(key)
     // Remove old inverse call requirements.
     logger.trace(" * removing old inverse callers")
     val oldCallReqs = getOne<ArrayList<TaskReq>>(copyBuffer(callerAppKey), callReqsDb).orElse(arrayListOf())
     for(oldCallReq in oldCallReqs) {
-      logger.trace("   * removing: ${oldCallReq.callee.toShortString(50)} -> ${task.toShortString(50)}")
+      logger.trace("   * removing: ${oldCallReq.callee.toShortString(50)} -> ${key.toShortString(50)}")
       val deleted = deleteDup(oldCallReq.callee, copyBuffer(callerAppKey), callersOfDb, callersOfValuesDb)
       logger.trace("   * deletion success: $deleted")
     }
@@ -440,15 +440,15 @@ internal open class LMDBStoreTxn(
     logger.trace(" * setting success: $set")
     logger.trace(" * adding new inverse callers")
     for(callReq in taskReqs) {
-      logger.trace("   * adding: ${callReq.callee.toShortString(50)} -> ${task.toShortString(50)}")
+      logger.trace("   * adding: ${callReq.callee.toShortString(50)} -> ${key.toShortString(50)}")
       val added = setDup(callReq.callee, copyBuffer(callerAppVal), copyBuffer(callerAppKey), callersOfDb, callersOfValuesDb)
       logger.trace("   * addition success: $added")
     }
   }
 
-  override fun setFileReqs(task: UTask, fileReqs: ArrayList<FileReq>) {
+  override fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>) {
     // TODO: buffer copies required?
-    val (appValue, appKey) = serializeAndHash(task)
+    val (appValue, appKey) = serializeAndHash(key)
     // Remove old inverse file requirements.
     val oldPathReqs = getOne<ArrayList<FileReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
     for(oldPathReq in oldPathReqs) {
@@ -462,9 +462,9 @@ internal open class LMDBStoreTxn(
     }
   }
 
-  override fun setFileGens(task: UTask, fileGens: ArrayList<FileGen>) {
+  override fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>) {
     // TODO: buffer copies required?
-    val (appValue, appKey) = serializeAndHash(task)
+    val (appValue, appKey) = serializeAndHash(key)
     // Remove old inverse file generates.
     val oldPathGens = getOne<ArrayList<FileGen>>(copyBuffer(appKey), pathGensDb).orElse(arrayListOf())
     for(oldPathGen in oldPathGens) {
@@ -478,12 +478,12 @@ internal open class LMDBStoreTxn(
     }
   }
 
-  override fun setData(task: UTask, data: UTaskData) {
+  override fun setData(key: TaskKey, data: UTaskData) {
     // OPTO: serialize and hash task only once
-    setOutput(task, data.output)
-    setTaskReqs(task, data.taskReqs)
-    setFileReqs(task, data.fileReqs)
-    setFileGens(task, data.fileGens)
+    setOutput(key, data.output)
+    setTaskReqs(key, data.taskReqs)
+    setFileReqs(key, data.fileReqs)
+    setFileGens(key, data.fileGens)
   }
 
   override fun drop() {

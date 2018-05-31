@@ -13,21 +13,21 @@ class NoopStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun sync() {}
   override fun close() {}
 
-  override fun output(task: UTask): Output<Out>? = null
-  override fun taskReqs(task: UTask): List<TaskReq> = listOf()
-  override fun callersOf(task: UTask): Set<UTask> = setOf()
-  override fun fileReqs(task: UTask): List<FileReq> = listOf()
-  override fun requireesOf(file: PPath): Set<UTask> = setOf()
-  override fun fileGens(task: UTask): List<FileGen> = listOf()
-  override fun generatorOf(file: PPath): UTask? = null
-  override fun data(task: UTask): UTaskData? = null
+  override fun output(key: TaskKey): Output<Out>? = null
+  override fun taskReqs(key: TaskKey): List<TaskReq> = listOf()
+  override fun callersOf(key: TaskKey): Set<TaskKey> = setOf()
+  override fun fileReqs(key: TaskKey): List<FileReq> = listOf()
+  override fun requireesOf(file: PPath): Set<TaskKey> = setOf()
+  override fun fileGens(key: TaskKey): List<FileGen> = listOf()
+  override fun generatorOf(file: PPath): TaskKey? = null
+  override fun data(key: TaskKey): UTaskData? = null
   override fun numSourceFiles(): Int = 0
 
-  override fun setOutput(task: UTask, output: Out) {}
-  override fun setTaskReqs(task: UTask, taskReqs: ArrayList<TaskReq>) {}
-  override fun setFileReqs(task: UTask, fileReqs: ArrayList<FileReq>) {}
-  override fun setFileGens(task: UTask, fileGens: ArrayList<FileGen>) {}
-  override fun setData(task: UTask, data: UTaskData) {}
+  override fun setOutput(key: TaskKey, output: Out) {}
+  override fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>) {}
+  override fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>) {}
+  override fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>) {}
+  override fun setData(key: TaskKey, data: UTaskData) {}
   override fun drop() {}
 
   override fun toString() = "NoopStore"

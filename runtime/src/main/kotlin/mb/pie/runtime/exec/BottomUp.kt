@@ -48,20 +48,20 @@ class BottomUpExecutorImpl constructor(
     }
   }
 
-  override fun <I : In, O : Out> hasBeenRequired(task: Task<I, O>): Boolean {
-    return (cache[task] ?: store.readTxn().use { it.output(task) }) != null
+  override fun <I : In, O : Out> hasBeenRequired(key: TaskKey): Boolean {
+    return (cache.get(key) ?: store.readTxn().use { it.output(key) }) != null
   }
 
-  override fun setObserver(key: Any, task: UTask, observer: TaskObserver) {
+  override fun setObserver(key: TaskKey, observer: (Out) -> Unit) {
     val existingApp = keyToApp[key]
     if(existingApp != null) {
       appToObs.remove(existingApp)
     }
-    keyToApp[key] = task
-    appToObs[task] = observer
+    keyToApp[key] = key
+    appToObs[key] = observer
   }
 
-  override fun removeObserver(key: Any) {
+  override fun removeObserver(key: TaskKey) {
     val app = keyToApp[key]
     if(app != null) {
       appToObs.remove(app)

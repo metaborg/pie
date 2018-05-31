@@ -31,7 +31,7 @@ internal open class TopDownExecShared(
   private fun <I : In, O : Out> existingData(task: Task<I, O>): TaskData<O>? {
     // Check cache for output of function application.
     executorLogger.checkCachedStart(task)
-    val cachedData = cache[task]
+    val cachedData = cache.get(task)
     executorLogger.checkCachedEnd(task, cachedData?.output)
 
     // Check store for output of function application.
@@ -98,7 +98,7 @@ internal open class TopDownExecShared(
 
     // Cache data
     visited[task] = data
-    cache[task] = data
+    cache.set(task, data)
     return data
   }
 }

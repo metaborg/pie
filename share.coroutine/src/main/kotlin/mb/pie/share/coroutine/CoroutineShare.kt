@@ -20,12 +20,12 @@ class CoroutineShare : Share {
   private val mutex = Mutex()
 
 
-  override fun reuseOrCreate(task: UTask, cacheFunc: (UTask) -> UTaskData?, execFunc: (UTask) -> UTaskData): UTaskData {
-    return runBlocking { getResult(task, cacheFunc, execFunc) }
+  override fun reuseOrCreate(key: TaskKey, cacheFunc: (TaskKey) -> UTaskData?, execFunc: (UTask) -> UTaskData): UTaskData {
+    return runBlocking { getResult(key, cacheFunc, execFunc) }
   }
 
-  override fun reuseOrCreate(task: UTask, execFunc: (UTask) -> UTaskData): UTaskData {
-    return runBlocking { getResult(task, null, execFunc) }
+  override fun reuseOrCreate(key: TaskKey, execFunc: (UTask) -> UTaskData): UTaskData {
+    return runBlocking { getResult(key, null, execFunc) }
   }
 
 
