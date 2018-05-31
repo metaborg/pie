@@ -20,7 +20,9 @@
     <module>pom/spoofax</module>
     <module>vfs</module>
     <module>api</module>
+    <module>api.test</module>
     <module>runtime</module>
+    <module>runtime.test</module>
     <module>share.coroutine</module>
     <module>taskdefs.guice</module>
     <module>store.lmdb</module>

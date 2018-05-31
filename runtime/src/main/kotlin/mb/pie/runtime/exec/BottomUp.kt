@@ -71,7 +71,7 @@ class BottomUpExecutorImpl constructor(
 
 
   @Suppress("MemberVisibilityCanBePrivate")
-  internal fun newSession(): BottomUpSession {
+  fun newSession(): BottomUpSession {
     return BottomUpSession(taskDefs, appToObs, store, cache, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
   }
 }
@@ -132,7 +132,7 @@ open class BottomUpSession(
   /**
    * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
    */
-  internal fun execScheduled(cancel: Cancelled) {
+  fun execScheduled(cancel: Cancelled) {
     logger.trace("Executing scheduled tasks: $queue")
     while(queue.isNotEmpty()) {
       cancel.throwIfCancelled()
@@ -154,7 +154,7 @@ open class BottomUpSession(
   /**
    * Schedules tasks affected by (changes to) files.
    */
-  internal fun scheduleAffectedByFiles(files: Set<PPath>) {
+  fun scheduleAffectedByFiles(files: Set<PPath>) {
     logger.trace("Scheduling tasks affected by files: $files")
     val affected = store.readTxn().use { txn -> directlyAffectedApps(files, txn, logger) }
     for(task in affected) {
@@ -275,11 +275,11 @@ open class BottomUpSession(
   }
 
 
-  internal open fun exec(task: UTask, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
+  open fun exec(task: UTask, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
     return shared.exec(task, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
-  internal open fun execInternal(task: UTask, cancel: Cancelled): UTaskData {
+  open fun execInternal(task: UTask, cancel: Cancelled): UTaskData {
     return shared.execInternal(task, cancel, this) { _, data ->
       // Notify observer, if any.
       val observer = observers[task]

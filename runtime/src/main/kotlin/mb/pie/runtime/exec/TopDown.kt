@@ -142,11 +142,11 @@ open class TopDownSessionImpl(
     }
   }
 
-  internal open fun <I : In, O : Out> exec(app: Task<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
+  open fun <I : In, O : Out> exec(app: Task<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
     return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
   }
 
-  internal open fun <I : In, O : Out> execInternal(app: Task<I, O>, cancel: Cancelled): UTaskData {
+  open fun <I : In, O : Out> execInternal(app: Task<I, O>, cancel: Cancelled): UTaskData {
     return shared.execInternal(app, cancel, this) { _, _ -> }
   }
 }

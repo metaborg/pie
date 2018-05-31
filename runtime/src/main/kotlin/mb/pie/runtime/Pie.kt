@@ -95,19 +95,19 @@ operator fun PieBuilder.invoke(): PieBuilderImpl {
 class PieImpl(
   override val topDownExecutor: TopDownExecutor,
   override val bottomUpExecutor: BottomUpExecutor,
-  internal val taskDefs: TaskDefs,
-  internal val store: Store,
-  internal val cache: Cache,
-  internal val share: Share,
-  internal val defaultOutputStamper: OutputStamper,
-  internal val defaultFileReqStamper: FileStamper,
-  internal val defaultFileGenStamper: FileStamper,
-  internal val layerFactory: (Logger) -> Layer,
-  internal val logger: Logger,
-  internal val executorLoggerFactory: (Logger) -> ExecutorLogger
+  val taskDefs: TaskDefs,
+  val store: Store,
+  val cache: Cache,
+  val share: Share,
+  val defaultOutputStamper: OutputStamper,
+  val defaultFileReqStamper: FileStamper,
+  val defaultFileGenStamper: FileStamper,
+  val layerFactory: (Logger) -> Layer,
+  val logger: Logger,
+  val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : Pie {
   override fun dropStore() {
-    store.writeTxn().drop()
+    store.writeTxn().use { it.drop() }
   }
 
   override fun dropCache() {
@@ -117,4 +117,7 @@ class PieImpl(
   override fun close() {
     store.close()
   }
+
+  override fun toString() =
+    "PieImpl($store, $cache, $share, $defaultOutputStamper, $defaultFileReqStamper, $defaultFileGenStamper, ${layerFactory(logger)})"
 }

@@ -4,7 +4,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>pie.runtime</artifactId>
+  <artifactId>pie.api.test</artifactId>
 
   <parent>
     <groupId>org.metaborg</groupId>
@@ -25,9 +25,19 @@
       <version>${pie.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>pie.vfs</artifactId>
-      <version>${pie.version}</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.jupiter.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.jimfs</groupId>
+      <artifactId>jimfs</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.nhaarman</groupId>
+      <artifactId>mockito-kotlin</artifactId>
+      <version>1.5.0</version>
     </dependency>
   </dependencies>
 
@@ -43,6 +53,10 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
       </plugin>
       <plugin>
@@ -52,5 +66,5 @@
     </plugins>
   </build>
 
-  <description>PIE runtime</description>
+  <description>PIE API testing framework and unit tests</description>
 </project>

@@ -1,10 +1,10 @@
-package mb.pie.runtime
+package mb.pie.runtime.test
 
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.api.*
+import mb.pie.api.test.*
 import mb.pie.runtime.exec.NoResultReason
 import mb.pie.runtime.layer.ValidationException
-import mb.pie.runtime.util.TestGenerator
 import mb.pie.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
@@ -13,7 +13,7 @@ import java.nio.file.attribute.FileTime
 
 internal class TopDownTests {
   @TestFactory
-  fun testExec() = TestGenerator.generate("testExec") {
+  fun testExec() = RuntimeTestGenerator.generate("testExec") {
     val input = "CAPITALIZED"
     val func = spy(toLowerCase)
     addTaskDef(func)
@@ -30,7 +30,7 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testExecMultiple() = TestGenerator.generate("testExecMultiple") {
+  fun testExecMultiple() = RuntimeTestGenerator.generate("testExecMultiple") {
     val func = spy(toLowerCase)
     addTaskDef(func)
 
@@ -58,7 +58,7 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testReuse() = TestGenerator.generate("testReuse") {
+  fun testReuse() = RuntimeTestGenerator.generate("testReuse") {
     val func = spy(toLowerCase)
     addTaskDef(func)
 
@@ -79,7 +79,7 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testPathReq() = TestGenerator.generate("testPathReq") {
+  fun testPathReq() = RuntimeTestGenerator.generate("testPathReq") {
     val readPath = spy(readPath)
     addTaskDef(readPath)
 
@@ -113,7 +113,7 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testPathGen() = TestGenerator.generate("testPathGen") {
+  fun testPathGen() = RuntimeTestGenerator.generate("testPathGen") {
     val writePath = spy(writePath)
     addTaskDef(writePath)
 
@@ -149,7 +149,7 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testCallReq() = TestGenerator.generate("testCallReq") {
+  fun testCallReq() = RuntimeTestGenerator.generate("testCallReq") {
     val toLowerCase = spy(toLowerCase)
     addTaskDef(toLowerCase)
     val readPath = spy(readPath)
@@ -225,10 +225,10 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testOverlappingGeneratedPath() = TestGenerator.generate("testOverlappingGeneratedPath") {
+  fun testOverlappingGeneratedPath() = RuntimeTestGenerator.generate("testOverlappingGeneratedPath") {
     addTaskDef(writePath)
 
-    val executor = topDownExecutor()
+    val executor = topDownExecutor
 
     val filePath = path("/file")
     assertThrows(ValidationException::class.java) {
@@ -245,11 +245,11 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testGenerateRequiredHiddenDep() = TestGenerator.generate("testGenerateRequiredHiddenDep") {
+  fun testGenerateRequiredHiddenDep() = RuntimeTestGenerator.generate("testGenerateRequiredHiddenDep") {
     addTaskDef(readPath)
     addTaskDef(writePath)
 
-    val executor = topDownExecutor()
+    val executor = topDownExecutor
 
     val filePath = path("/file")
     write("HELLO WORLD!", filePath)
@@ -268,13 +268,13 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testRequireGeneratedHiddenDep() = TestGenerator.generate("testRequireGeneratedHiddenDep") {
+  fun testRequireGeneratedHiddenDep() = RuntimeTestGenerator.generate("testRequireGeneratedHiddenDep") {
     addTaskDef(writePath)
     addTaskDef(readPath)
     val indirection = requireOutputFunc<Pair<String, PPath>, None>()
     addTaskDef(indirection)
 
-    val executor = topDownExecutor()
+    val executor = topDownExecutor
 
     val combineIncorrect = spy(func<Pair<String, PPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
       requireExec(app(indirection, app(writePath, Pair(text, path))))
@@ -307,60 +307,15 @@ internal class TopDownTests {
   }
 
   @TestFactory
-  fun testCyclicDependency() = TestGenerator.generate("testCyclicDependency") {
+  fun testCyclicDependency() = RuntimeTestGenerator.generate("testCyclicDependency") {
     val b1 = func<None, None>("b1", { "b1" }) { requireOutput(app("b1", None.instance)) }
     addTaskDef(b1)
 
-    val bm = topDownExecutor()
+    val bm = topDownExecutor
 
     assertThrows(ValidationException::class.java) {
       val exec = bm.newSession()
       exec.requireInitial(app(b1, None.instance))
     }
   }
-
-//  // TODO: move to share.coroutine
-//  @TestFactory
-//  fun testThreadSafety() = TestGenerator.generate("testThreadSafety") {
-//    addTaskDef(toLowerCase)
-//
-//    runBlocking {
-//      List(100) { index ->
-//        launch(coroutineContext + CommonPool) {
-//          val exec = topDownExec()
-//          val app = app(toLowerCase, "HELLO WORLD $index!")
-//          exec.requireInitial(app)
-//        }
-//      }.forEach { it.join() }
-//    }
-//  }
-//
-//  // TODO: move to share.coroutine
-//  @TestFactory
-//  fun testConcurrentReuse() = TestGenerator.generate("testConcurrentReuse",
-//    dShareGens = arrayOf({ CoroutineShare() }) /* Testing sharing, so only use shares that correctly share */) {
-//    addTaskDef(toLowerCase)
-//
-//    val spies = ConcurrentLinkedQueue<TopDownSessionImpl>()
-//    runBlocking {
-//      List(100) {
-//        launch(coroutineContext + CommonPool) {
-//          val exec = spy(topDownExec())
-//          spies.add(exec)
-//          val app = app(toLowerCase, "HELLO WORLD!")
-//          exec.requireInitial(app)
-//        }
-//      }.forEach { it.join() }
-//    }
-//
-//    // Test that function 'execInternal' has only been called once, even between all threads
-//    var invocations = 0
-//    val javaFuncName = TopDownSessionImpl::class.memberFunctions.first { it.name == "execInternal" }.javaMethod!!.name
-//    spies.forEach { spy ->
-//      mockingDetails(spy).invocations
-//        .filter { it.method.name == javaFuncName }
-//        .forEach { ++invocations }
-//    }
-//    assertEquals(1, invocations)
-//  }
 }

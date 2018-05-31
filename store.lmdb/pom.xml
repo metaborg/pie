@@ -37,7 +37,21 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
-      <version>0.9.18</version>
+      <version>0.9.16</version>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>pie.runtime.test</artifactId>
+      <version>${pie.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.nhaarman</groupId>
+      <artifactId>mockito-kotlin</artifactId>
+      <version>1.5.0</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -50,6 +64,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

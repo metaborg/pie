@@ -31,8 +31,8 @@ typealias TxnB = Txn<Buf>
 class LMDBStore(
   private val logger: Logger,
   envDir: File,
-  maxDbSize: Int,
-  maxReaders: Int
+  maxDbSize: Int = 1024 * 1024 * 1024,
+  maxReaders: Int = 1024
 ) : Store {
   private val env: EnvB
   private val output: DbiB

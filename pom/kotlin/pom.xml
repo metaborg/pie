@@ -28,6 +28,11 @@
         <artifactId>kotlin-stdlib-jdk8</artifactId>
         <version>${kotlin.runtime.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-reflect</artifactId>
+        <version>${kotlin.runtime.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
