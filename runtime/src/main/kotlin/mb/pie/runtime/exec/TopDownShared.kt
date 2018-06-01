@@ -1,7 +1,6 @@
 package mb.pie.runtime.exec
 
 import mb.pie.api.*
-import mb.pie.api.exec.ExecReason
 
 @Suppress("DataClassPrivateConstructor")
 data class VisitedOrData<I : In, O : Out> private constructor(
@@ -45,25 +44,5 @@ internal open class TopDownShared(
     val data = store.readTxn().use { it.data(key) }
     executorLogger.checkStoredEnd(key, data?.output)
     return data
-  }
-}
-
-/**
- * [Execution reason][ExecReason] for when the transient output of a task is inconsistent.
- */
-data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) : ExecReason {
-  override fun toString() = "transient output is inconsistent"
-}
-
-/**
- * @return an [execution reason][ExecReason] when this output is transient and not consistent, `null` otherwise.
- */
-fun Out.isTransientInconsistent(): ExecReason? {
-  return when(this) {
-    is OutTransient<*> -> when {
-      this.consistent -> null
-      else -> InconsistentTransientOutput(this)
-    }
-    else -> null
   }
 }

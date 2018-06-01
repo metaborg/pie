@@ -54,20 +54,3 @@ class TaskExecutor(
     return data
   }
 }
-
-/**
- * [Execution reason][ExecReason] for when there is no output of a task.
- */
-class NoOutputReason : ExecReason {
-  override fun toString() = "no stored or cached output"
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
-}

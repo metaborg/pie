@@ -55,7 +55,7 @@ fun StoreReadTxn.hasTransitiveTaskReq(caller: TaskKey, callee: TaskKey): Boolean
  * [Execution reason][ExecReason] for when a task is (directly or indirectly) affected by a change.
  */
 class AffectedExecReason : ExecReason {
-  override fun toString() = "affected"
+  override fun toString() = "directly or indirectly affected by change"
 
   override fun equals(other: Any?): Boolean {
     if(this === other) return true

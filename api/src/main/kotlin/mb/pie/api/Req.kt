@@ -42,7 +42,7 @@ data class FileReq(
 }
 
 data class InconsistentFileReq(val req: FileReq, val newStamp: FileStamp) : ExecReason {
-  override fun toString() = "required file ${req.file} is inconsistent"
+  override fun toString() = "inconsistent required file ${req.file}"
 }
 
 
@@ -65,7 +65,7 @@ data class FileGen(
 }
 
 data class InconsistentFileGen(val fileGen: FileGen, val newStamp: FileStamp) : ExecReason {
-  override fun toString() = "generated file ${fileGen.file} is inconsistent"
+  override fun toString() = "inconsistent generated file ${fileGen.file}"
 }
 
 
@@ -105,5 +105,5 @@ data class TaskReq(
 }
 
 data class InconsistentTaskReq(val req: TaskReq, val newStamp: OutputStamp) : ExecReason {
-  override fun toString() = "required task ${req.callee.toShortString(100)} is inconsistent"
+  override fun toString() = "inconsistent required task ${req.callee.toShortString(100)}"
 }

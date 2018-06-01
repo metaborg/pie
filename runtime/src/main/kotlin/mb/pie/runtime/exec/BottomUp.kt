@@ -5,7 +5,6 @@ import mb.pie.api.exec.*
 import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.vfs.path.PPath
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 typealias TaskObserver = (Out) -> Unit
@@ -79,13 +78,7 @@ open class BottomUpSession(
   private val executorLogger: ExecutorLogger
 ) : RequireTask {
   private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
-  private val queue = DistinctPriorityQueue(Comparator { key1, key2 ->
-    when {
-      key1 == key2 -> 0
-      store.readTxn().use { txn -> txn.hasTransitiveTaskReq(key1, key2) } -> 1
-      else -> -1
-    }
-  })
+  private val queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store)
   private val executor = TaskExecutor(visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger) { key, data ->
     // Notify observer, if any.
     val observer = observers[key]
@@ -199,36 +192,40 @@ open class BottomUpSession(
         return output
       }
 
-      val existingWrappedOutput = store.readTxn().use { it.output(key) }
-      if(existingWrappedOutput != null) {
-        // Task is in dependency graph.
-        val existingOutput = existingWrappedOutput.output
-
-        // Internal consistency: transient output consistency
-        /*
-        Required for transient outputs. When a function application has a transient output, its output cannot be persisted
-        and instead can only be stored in memory. After a restart of the JVM, this memory must be restored by re-executing
-        the function application. This check ensures that this happens.
-        */
-        run {
-          val reason = existingOutput.isTransientInconsistent()
-          if(reason != null) {
-            val execData = execAndSchedule(key, task, cancel)
-            val execOutput = execData.output.cast<O>()
-            executorLogger.requireTopDownEnd(task, execOutput)
-            return execOutput
-          }
-        }
-
-        // Task is scheduled to be run, but needs to be run *now*.
+      val existingData = store.readTxn().use { it.data(key) }
+      if(existingData != null) {
+        // Task is in dependency graph. It may be scheduled to be run, but we need its output *now*.
         val requireNowData = requireScheduledNow(key, cancel)
         if(requireNowData != null) {
-          // Task was affected and has been executed.
+          // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been executed.
           val requireNowOutput = requireNowData.output.cast<O>()
           executorLogger.requireTopDownEnd(task, requireNowOutput)
           return requireNowOutput
         } else {
-          // Task was not affected.
+          // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
+          // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
+          val (input, existingOutput, _, _, _) = existingData
+          
+          // Internal consistency: consistent input.
+          if(input != task.input) {
+            val reason = InconsistentInput(input, task.input)
+            val execData = exec(key, task, reason, cancel)
+            val execOutput = execData.output.cast<O>()
+            executorLogger.requireTopDownEnd(key, task, execOutput)
+            return execOutput
+          }
+
+          // Internal consistency: consistent transient output.
+          run {
+            val reason = existingOutput.isTransientInconsistent()
+            if(reason != null) {
+              val execData = execAndSchedule(key, task, cancel)
+              val execOutput = execData.output.cast<O>()
+              executorLogger.requireTopDownEnd(task, execOutput)
+              return execOutput
+            }
+          }
+
           // Notify observer, if any.
           val observer = observers[key]
           if(observer != null) {
@@ -236,6 +233,7 @@ open class BottomUpSession(
             observer.invoke(existingOutput)
             executorLogger.invokeObserverEnd(observer, task, existingOutput)
           }
+
           // Return stored result.
           val output = existingOutput.cast<O>()
           executorLogger.requireTopDownEnd(task, output)
@@ -243,7 +241,7 @@ open class BottomUpSession(
         }
       } else {
         // Task is not in dependency graph: execute. This tasks's output cannot affect other tasks since it is new.
-        val reason = NoOutputReason()
+        val reason = NoData()
         val execData = exec(key, task, reason, cancel)
         val execOutput = execData.output.cast<O>()
         executorLogger.requireTopDownEnd(task, execOutput)
@@ -282,45 +280,4 @@ open class BottomUpSession(
   open fun <I : In, O : Out> exec(key: TaskKey, task: Task<I, O>, reason: ExecReason, cancel: Cancelled): TaskData<I, O> {
     return executor.exec(key, task, reason, this, cancel)
   }
-}
-
-class DistinctPriorityQueue(comparator: Comparator<TaskKey>) {
-  private val queue = PriorityQueue<TaskKey>(comparator)
-  private val set = hashSetOf<TaskKey>()
-
-
-  fun isNotEmpty(): Boolean {
-    return queue.isNotEmpty()
-  }
-
-  fun contains(key: TaskKey): Boolean {
-    return set.contains(key)
-  }
-
-  fun poll(): TaskKey {
-    val key = queue.remove()
-    set.remove(key)
-    return key
-  }
-
-  fun pollLeastElemLessThanOrEqual(key: TaskKey, txn: StoreReadTxn): TaskKey? {
-    val queueCopy = PriorityQueue(queue)
-    while(queueCopy.isNotEmpty()) {
-      val queuedKey = queueCopy.poll()
-      if(queuedKey == key || txn.hasTransitiveTaskReq(key, queuedKey)) {
-        queue.remove(queuedKey)
-        set.remove(queuedKey)
-        return queuedKey
-      }
-    }
-    return null
-  }
-
-  fun add(key: TaskKey) {
-    if(set.contains(key)) return
-    queue.add(key)
-    set.add(key)
-  }
-
-  override fun toString() = queue.toString()
 }

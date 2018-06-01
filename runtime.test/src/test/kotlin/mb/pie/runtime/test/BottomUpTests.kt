@@ -3,7 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.api.exec.NullCancelled
 import mb.pie.api.test.*
-import mb.pie.runtime.exec.NoOutputReason
+import mb.pie.runtime.exec.NoData
 import mb.pie.vfs.path.PPath
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestFactory
@@ -22,7 +22,7 @@ internal class BottomUpTests {
 
     inOrder(exec, func) {
       verify(exec, times(1)).require(eq(app), any())
-      verify(exec, times(1)).exec(eq(app), eq(NoOutputReason()), any(), any())
+      verify(exec, times(1)).exec(eq(app), eq(NoData()), any(), any())
     }
   }
 
@@ -47,10 +47,10 @@ internal class BottomUpTests {
 
     inOrder(func, exec1, exec2) {
       verify(exec1, times(1)).require(eq(app1), any())
-      verify(exec1, times(1)).exec(eq(app1), eq(NoOutputReason()), any(), any())
+      verify(exec1, times(1)).exec(eq(app1), eq(NoData()), any(), any())
 
       verify(exec2, times(1)).require(eq(app2), any())
-      verify(exec2, times(1)).exec(eq(app2), eq(NoOutputReason()), any(), any())
+      verify(exec2, times(1)).exec(eq(app2), eq(NoData()), any(), any())
     }
   }
 
@@ -72,7 +72,7 @@ internal class BottomUpTests {
     Assertions.assertEquals(output1, output2)
 
     // Result is reused if rebuild is never called.
-    verify(exec2, never()).exec(eq(app), eq(NoOutputReason()), any(), any())
+    verify(exec2, never()).exec(eq(app), eq(NoData()), any(), any())
   }
 
   @TestFactory
@@ -95,9 +95,9 @@ internal class BottomUpTests {
     val output1 = exec1.require(app(combine, filePath))
     Assertions.assertEquals("hello world!", output1)
     inOrder(exec1) {
-      verify(exec1).exec(eq(app(combine, filePath)), eq(NoOutputReason()), anyC(), any())
-      verify(exec1).exec(eq(app(readPath, filePath)), eq(NoOutputReason()), anyC(), any())
-      verify(exec1).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoOutputReason()), anyC(), any())
+      verify(exec1).exec(eq(app(combine, filePath)), eq(NoData()), anyC(), any())
+      verify(exec1).exec(eq(app(readPath, filePath)), eq(NoData()), anyC(), any())
+      verify(exec1).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoData()), anyC(), any())
     }
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)

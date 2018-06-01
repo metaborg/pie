@@ -2,7 +2,7 @@ package mb.pie.store.lmdb
 
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.api.test.toLowerCase
-import mb.pie.runtime.exec.NoOutputReason
+import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.test.RuntimeTestGenerator
 import org.junit.jupiter.api.TestFactory
 import java.io.File
@@ -18,6 +18,6 @@ internal class LMDBStoreTests {
 
     val exec2 = spy(topDownExec())
     exec2.requireInitial(app)
-    verify(exec2, never()).exec(eq(app), eq(NoOutputReason()), any(), any())
+    verify(exec2, never()).exec(eq(app), eq(NoData()), any(), any())
   }
 }

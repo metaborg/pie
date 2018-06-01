@@ -63,15 +63,24 @@ open class TopDownSessionImpl(
       // Check if re-execution is necessary.
       if(data == null) {
         // No cached or stored output was found: re-execute.
-        val reason = NoOutputReason()
+        val reason = NoData()
         val execData = exec(key, task, reason, cancel)
         val output = execData.output
         executorLogger.requireTopDownEnd(key, task, output)
         return output
       }
-      val (_, existingOutput, taskReqs, pathReqs, pathGens) = data
+      val (existingInput, existingOutput, taskReqs, pathReqs, pathGens) = data
 
       // Check for inconsistencies and re-execute when found.
+      // Internal consistency: input changes
+      if(existingInput != task.input) {
+        val reason = InconsistentInput(existingInput, task.input)
+        val execData = exec(key, task, reason, cancel)
+        val execOutput = execData.output.cast<O>()
+        executorLogger.requireTopDownEnd(key, task, execOutput)
+        return execOutput
+      }
+
       run {
         // Internal consistency: transient output consistency
         val reason = existingOutput.isTransientInconsistent()

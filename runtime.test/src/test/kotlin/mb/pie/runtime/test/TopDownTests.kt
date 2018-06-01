@@ -3,7 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.api.*
 import mb.pie.api.test.*
-import mb.pie.runtime.exec.NoOutputReason
+import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.layer.ValidationException
 import mb.pie.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
@@ -25,7 +25,7 @@ internal class TopDownTests {
 
     inOrder(exec, func) {
       verify(exec, times(1)).requireInitial(eq(app), any())
-      verify(exec, times(1)).exec(eq(app), eq(NoOutputReason()), any(), any())
+      verify(exec, times(1)).exec(eq(app), eq(NoData()), any(), any())
     }
   }
 
@@ -50,10 +50,10 @@ internal class TopDownTests {
 
     inOrder(func, exec1, exec2) {
       verify(exec1, times(1)).requireInitial(eq(app1), any())
-      verify(exec1, times(1)).exec(eq(app1), eq(NoOutputReason()), any(), any())
+      verify(exec1, times(1)).exec(eq(app1), eq(NoData()), any(), any())
 
       verify(exec2, times(1)).requireInitial(eq(app2), any())
-      verify(exec2, times(1)).exec(eq(app2), eq(NoOutputReason()), any(), any())
+      verify(exec2, times(1)).exec(eq(app2), eq(NoData()), any(), any())
     }
   }
 
@@ -75,7 +75,7 @@ internal class TopDownTests {
     assertEquals(output1, output2)
 
     // Result is reused if rebuild is never called.
-    verify(exec2, never()).exec(eq(app), eq(NoOutputReason()), any(), any())
+    verify(exec2, never()).exec(eq(app), eq(NoData()), any(), any())
   }
 
   @TestFactory
@@ -90,7 +90,7 @@ internal class TopDownTests {
     val exec1 = spy(topDownExec())
     val output1 = exec1.requireInitial(app(readPath, filePath))
     assertEquals("HELLO WORLD!", output1)
-    verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoOutputReason()), any(), any())
+    verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoData()), any(), any())
 
     // No changes - exec 'readPath', observe no rebuild
     val exec2 = spy(topDownExec())
@@ -123,7 +123,7 @@ internal class TopDownTests {
     // Build 'writePath', observe rebuild and existence of file
     val exec1 = spy(topDownExec())
     exec1.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(exec1, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), eq(NoOutputReason()), any(), any())
+    verify(exec1, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), eq(NoData()), any(), any())
 
     assertTrue(Files.exists(filePath.javaPath))
     assertEquals("HELLO WORLD!", read(filePath))
@@ -168,9 +168,9 @@ internal class TopDownTests {
     val output1 = exec1.requireInitial(app(combine, filePath))
     assertEquals("hello world!", output1)
     inOrder(exec1) {
-      verify(exec1, times(1)).exec(eq(app(combine, filePath)), eq(NoOutputReason()), any(), any())
-      verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoOutputReason()), any(), any())
-      verify(exec1, times(1)).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoOutputReason()), any(), any())
+      verify(exec1, times(1)).exec(eq(app(combine, filePath)), eq(NoData()), any(), any())
+      verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoData()), any(), any())
+      verify(exec1, times(1)).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoData()), any(), any())
     }
 
     // No changes - exec 'combine', observe no rebuild
@@ -200,7 +200,7 @@ internal class TopDownTests {
         assertNotNull(reason)
         assertEquals(app(readPath, filePath), reason!!.req.callee)
       }, any(), any())
-      verify(exec3, times(1)).exec(eq(app(toLowerCase, "!DLROW OLLEH")), eq(NoOutputReason()), any(), any())
+      verify(exec3, times(1)).exec(eq(app(toLowerCase, "!DLROW OLLEH")), eq(NoData()), any(), any())
     }
 
     // Change required file in such a way that the output of 'readPath' does not change (change modification date)
