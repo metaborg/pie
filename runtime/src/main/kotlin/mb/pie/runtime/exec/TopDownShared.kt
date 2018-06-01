@@ -1,127 +1,59 @@
 package mb.pie.runtime.exec
 
 import mb.pie.api.*
-import mb.pie.api.exec.Cancelled
 import mb.pie.api.exec.ExecReason
-import mb.pie.api.stamp.FileStamper
-import mb.pie.api.stamp.OutputStamper
 
 @Suppress("DataClassPrivateConstructor")
-data class VisitedOrData<out O : Out> private constructor(
+data class VisitedOrData<I : In, O : Out> private constructor(
   val visited: O?,
-  val data: TaskData<O>?
+  val data: TaskData<I, O>?
 ) {
   constructor(visited: O) : this(visited, null)
-  constructor(data: TaskData<O>?) : this(null, data)
+  constructor(data: TaskData<I, O>?) : this(null, data)
 }
 
-internal open class TopDownExecShared(
-  private val taskDefs: TaskDefs,
-  private val visited: MutableMap<UTask, UTaskData>,
+internal open class TopDownShared(
+  private val visited: MutableMap<TaskKey, TaskData<*, *>>,
   private val store: Store,
-  private val cache: Cache,
-  private val share: Share,
-  private val defaultOutputStamper: OutputStamper,
-  private val defaultFileReqStamper: FileStamper,
-  private val defaultFileGenStamper: FileStamper,
   private val layer: Layer,
-  private val logger: Logger,
   private val executorLogger: ExecutorLogger
 ) {
-  private fun <I : In, O : Out> existingData(task: Task<I, O>): TaskData<O>? {
-    // Check cache for output of function application.
-    executorLogger.checkCachedStart(task)
-    val cachedData = cache.get(task)
-    executorLogger.checkCachedEnd(task, cachedData?.output)
-
-    // Check store for output of function application.
-    return if(cachedData != null) {
-      cachedData
-    } else {
-      executorLogger.checkStoredStart(task)
-      val data = store.readTxn().use { it.data(task) }
-      executorLogger.checkStoredEnd(task, data?.output)
-      data
-    }?.cast<O>()
-  }
-
-  fun <I : In, O : Out> topdownPrelude(task: Task<I, O>): VisitedOrData<O> {
+  fun topdownPrelude(key: TaskKey, task: Task<*, *>): VisitedOrData<*, *> {
     Stats.addRequires()
-    layer.requireTopDownStart(task)
-    executorLogger.requireTopDownStart(task)
+    layer.requireTopDownStart(key, task.input)
+    executorLogger.requireTopDownStart(key, task)
 
     // Check visited cache for output of function application.
-    executorLogger.checkVisitedStart(task)
-    val visitedData = visited[task]?.cast<O>()
+    executorLogger.checkVisitedStart(key)
+    val visitedData = visited[key]
     if(visitedData != null) {
       // Return output immediately if function application was already visited this execution.
       val visitedOutput = visitedData.output
-      executorLogger.checkVisitedEnd(task, visitedOutput)
-      executorLogger.requireTopDownEnd(task, visitedOutput)
-      return VisitedOrData(visitedOutput)
+      executorLogger.checkVisitedEnd(key, visitedOutput)
+      executorLogger.requireTopDownEnd(key, task, visitedOutput)
+      return VisitedOrData<Nothing, Out>(visitedOutput)
     }
-    executorLogger.checkVisitedEnd(task, null)
+    executorLogger.checkVisitedEnd(key, null)
 
-    val data = existingData(task)
+    val data = existingData(key)
     return VisitedOrData(data)
   }
 
-
-  fun exec(task: UTask, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false, execFunc: (UTask, Cancelled) -> UTaskData): UTaskData {
-    cancel.throwIfCancelled()
-    executorLogger.executeStart(task, reason)
-    val data = if(useCache) {
-      share.reuseOrCreate(task, { store.readTxn().use { txn -> txn.data(it) } }) { execFunc(it, cancel) }
-    } else {
-      share.reuseOrCreate(task) { execFunc(it, cancel) }
-    }
-    executorLogger.executeEnd(task, reason, data)
-    return data
-  }
-
-  fun execInternal(task: UTask, cancel: Cancelled, requireTask: RequireTask, writeFunc: (StoreWriteTxn, UTaskData) -> Unit): UTaskData {
-    cancel.throwIfCancelled()
-    val (id, input) = task
-    val builder = taskDefs.getGTaskDef(id)
-    val context = ExecContextImpl(logger, requireTask, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, cancel)
-    val output = builder.execUntyped(input, context)
-    Stats.addExecution()
-    val (callReqs, pathReqs, pathGens) = context.reqs()
-    val data = TaskData(output, callReqs, pathReqs, pathGens)
-
-    // Validate well-formedness of the dependency graph, before writing.
-    store.readTxn().use { layer.validatePreWrite(task, data, it) }
-    // Write output and dependencies to the store.
-    store.writeTxn().use { it.setData(task, data); writeFunc(it, data) }
-    // Validate well-formedness of the dependency graph, after writing.
-    store.readTxn().use { layer.validatePostWrite(task, data, it) }
-
-    // Cache data
-    visited[task] = data
-    cache.set(task, data)
+  private fun existingData(key: TaskKey): TaskData<*, *>? {
+    // Check store for output of function application.
+    executorLogger.checkStoredStart(key)
+    val data = store.readTxn().use { it.data(key) }
+    executorLogger.checkStoredEnd(key, data?.output)
     return data
   }
 }
 
-
-private fun TaskDef<In, *>.execUntyped(input: In, ctx: ExecContext): Out = ctx.exec(input.cast())
-
-
-class NoResultReason : ExecReason {
-  override fun toString() = "no stored or cached output"
-
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
+/**
+ * [Execution reason][ExecReason] for when the transient output of a task is inconsistent.
+ */
+data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) : ExecReason {
+  override fun toString() = "transient output is inconsistent"
 }
-
 
 /**
  * @return an [execution reason][ExecReason] when this output is transient and not consistent, `null` otherwise.
@@ -134,8 +66,4 @@ fun Out.isTransientInconsistent(): ExecReason? {
     }
     else -> null
   }
-}
-
-data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) : ExecReason {
-  override fun toString() = "transient output is inconsistent"
 }

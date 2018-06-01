@@ -6,7 +6,7 @@ import java.io.Serializable
  * Type for task outputs. It must adhere to the following properties:
  *
  * * Implements [Serializable].
- * * Implements [equals][Object.equals].
+ * * Implements [equals][Object.equals] and [hashCode][Object.hashCode].
  *
  * Failure to adhere to these properties will cause unsound incrementality.
  */

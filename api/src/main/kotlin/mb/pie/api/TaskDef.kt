@@ -6,7 +6,7 @@ import java.io.Serializable
  * Type for task inputs. It must adhere to the following properties:
  *
  * * Implements [Serializable].
- * * Implements [equals][Object.equals].
+ * * Implements [equals][Object.equals] and [hashCode][Object.hashCode].
  * * Must NOT be `null`.
  * * If they input is used as a [key][Key], it must also adhere to [key][Key]'s properties.
  *
@@ -53,7 +53,7 @@ interface TaskDef<in I : In, out O : Out> {
   /**
    * Returns the description of task for given input.
    */
-  fun desc(input: I): String = "$id(${input.toString().toShortString(100)})"
+  fun desc(input: I, maxLength: Int = 100): String = "$id(${input.toString().toShortString(maxLength)})"
 }
 
 /**
@@ -73,9 +73,9 @@ open class LambdaTaskDef<in I : In, out O : Out>(
   override val id: String,
   private val execFunc: ExecContext.(I) -> O,
   private val keyFunc: ((I) -> Key)? = null,
-  private val descFunc: ((I) -> String)? = null
+  private val descFunc: ((I, Int) -> String)? = null
 ) : TaskDef<I, O> {
   override fun ExecContext.exec(input: I): O = execFunc(input)
   override fun key(input: I) = keyFunc?.invoke(input) ?: super.key(input)
-  override fun desc(input: I): String = descFunc?.invoke(input) ?: super.desc(input)
+  override fun desc(input: I, maxLength: Int): String = descFunc?.invoke(input, maxLength) ?: super.desc(input, maxLength)
 }

@@ -28,6 +28,6 @@ open class RuntimeTestCtx(
   }
 
   fun addTaskDef(taskDef: UTaskDef) {
-    taskDefs.addTaskDef(taskDef.id, taskDef)
+    taskDefs.add(taskDef.id, taskDef)
   }
 }

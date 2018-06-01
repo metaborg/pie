@@ -9,7 +9,7 @@ import mb.pie.api.stamp.output.InconsequentialOutputStamper
 import mb.pie.vfs.path.PPath
 
 interface RequireTask {
-  fun <I : In, O : Out> require(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O
+  fun <I : In, O : Out> require(key: TaskKey, task: Task<I, O>, cancel: Cancelled = NullCancelled()): O
 }
 
 internal class ExecContextImpl(
@@ -27,18 +27,20 @@ internal class ExecContextImpl(
 
   override fun <I : In, O : Out> requireOutput(task: Task<I, O>, stamper: OutputStamper?): O {
     cancel.throwIfCancelled()
-    val output = requireTask.require(task, cancel)
+    val key = task.key()
+    val output = requireTask.require(key, task, cancel)
     val stamp = (stamper ?: defaultOutputStamper).stamp(output)
-    taskReqs.add(TaskReq(task, stamp))
+    taskReqs.add(TaskReq(key, stamp))
     Stats.addCallReq()
     return output
   }
 
-  override fun requireExec(task: UTask) {
+  override fun <I : In> requireExec(task: Task<I, *>) {
     cancel.throwIfCancelled()
-    val output = requireTask.require(task, cancel)
+    val key = task.key()
+    val output = requireTask.require(key, task, cancel)
     val stamp = InconsequentialOutputStamper.instance.stamp(output)
-    taskReqs.add(TaskReq(task, stamp))
+    taskReqs.add(TaskReq(key, stamp))
     Stats.addCallReq()
   }
 
