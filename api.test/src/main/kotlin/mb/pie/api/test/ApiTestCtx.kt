@@ -11,7 +11,6 @@ open class ApiTestCtx(
   private val fs: FileSystem
 ) : AutoCloseable {
   init {
-    pieImpl.dropCache()
     pieImpl.dropStore()
   }
 
@@ -23,23 +22,27 @@ open class ApiTestCtx(
   open val pie: Pie get() = pieImpl
   open val topDownExecutor: TopDownExecutor get() = pie.topDownExecutor
   open val bottomUpExecutor: BottomUpExecutor get() = pie.bottomUpExecutor
-  open fun topDownExec(): TopDownSession = pie.topDownExecutor.newSession()
+  open fun topDownSession(): TopDownSession = pie.topDownExecutor.newSession()
 
 
-  fun path(path: String): PPath {
+  fun file(path: String): PPath {
     return PPathImpl(fs.getPath(path))
   }
 
-  fun <I : In, O : Out> func(id: String, descFunc: (I) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
-    return LambdaTaskDef(id, execFunc, descFunc)
+  fun <I : In, O : Out> taskDef(id: String, descFunc: (I, Int) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+    return LambdaTaskDef(id, execFunc, null, descFunc)
   }
 
-  fun <I : In, O : Out> app(taskDef: TaskDef<I, O>, input: I): Task<I, O> {
+  fun <I : In, O : Out> task(taskDef: TaskDef<I, O>, input: I): Task<I, O> {
     return Task(taskDef, input)
   }
 
-  fun <I : In, O : Out> app(builderId: String, input: I): Task<I, O> {
-    return Task<I, O>(builderId, input)
+  fun <I : In> stask(taskDef: TaskDef<I, *>, input: I): STask<I> {
+    return STask(taskDef.id, input)
+  }
+
+  fun <I : In> stask(taskDefId: String, input: I): STask<I> {
+    return STask(taskDefId, input)
   }
 
 

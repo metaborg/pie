@@ -8,7 +8,6 @@ import mb.pie.api.stamp.OutputStamper
 class TopDownExecutorImpl constructor(
   private val taskDefs: TaskDefs,
   private val store: Store,
-  private val cache: Cache,
   private val share: Share,
   private val defaultOutputStamper: OutputStamper,
   private val defaultFileReqStamper: FileStamper,
@@ -18,14 +17,13 @@ class TopDownExecutorImpl constructor(
   private val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : TopDownExecutor {
   override fun newSession(): TopDownSession {
-    return TopDownSessionImpl(taskDefs, store, cache, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return TopDownSessionImpl(taskDefs, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
   }
 }
 
 open class TopDownSessionImpl(
   taskDefs: TaskDefs,
   private val store: Store,
-  private val cache: Cache,
   share: Share,
   defaultOutputStamper: OutputStamper,
   defaultFileReqStamper: FileStamper,
@@ -34,119 +32,114 @@ open class TopDownSessionImpl(
   logger: Logger,
   private val executorLogger: ExecutorLogger
 ) : TopDownSession, RequireTask {
-  private val visited = mutableMapOf<UTask, UTaskData>()
-  private val shared = TopDownExecShared(taskDefs, visited, store, cache, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger)
+  private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
+  private val executor = TaskExecutor(taskDefs, visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger, null)
+  private val requireShared = RequireShared(taskDefs, visited, store, executorLogger)
 
 
   override fun <I : In, O : Out> requireInitial(task: Task<I, O>, cancel: Cancelled): O {
     try {
-      executorLogger.requireTopDownInitialStart(task)
-      val info = require(task, cancel)
-      executorLogger.requireTopDownInitialEnd(task, info)
-      return info
+      val key = task.key()
+      executorLogger.requireTopDownInitialStart(key, task)
+      val output = require(key, task, cancel)
+      executorLogger.requireTopDownInitialEnd(key, task, output)
+      return output
     } finally {
       store.sync()
     }
   }
 
-  override fun <I : In, O : Out> require(task: Task<I, O>, cancel: Cancelled): O {
+  override fun <I : In, O : Out> require(key: TaskKey, task: Task<I, O>, cancel: Cancelled): O {
     cancel.throwIfCancelled()
-
+    Stats.addRequires()
+    layer.requireTopDownStart(key, task.input)
+    executorLogger.requireTopDownStart(key, task)
     try {
-      val outputOrData = shared.topdownPrelude(task)
-      if(outputOrData.visited != null) {
-        return outputOrData.visited
+      val (data, wasExecuted) = getData(key, task, cancel)
+      val output = data.output
+      if(!wasExecuted) {
+        // Validate well-formedness of the dependency graph.
+        store.readTxn().use { layer.validatePostWrite(key, data, it) }
+        // Mark task as visited.
+        visited[key] = data
       }
-      val data = outputOrData.data
-
-      // Check if re-execution is necessary.
-      if(data == null) {
-        // No cached or stored output was found: rebuild
-        val reason = NoResultReason()
-        val execData = exec(task, reason, cancel, true)
-        val output = execData.output.cast<O>()
-        executorLogger.requireTopDownEnd(task, output)
-        return output
-      }
-      val (existingOutput, callReqs, pathReqs, pathGens) = data
-
-      // Check for inconsistencies and re-execute when found.
-      run {
-        // Internal consistency: transient output consistency
-        val reason = existingOutput.isTransientInconsistent()
-        if(reason != null) {
-          val execData = exec(task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(task, execOutput)
-          return execOutput
-        }
-      }
-
-      // Internal consistency: file requirements
-      for(pathReq in pathReqs) {
-        executorLogger.checkFileReqStart(task, pathReq)
-        val reason = pathReq.checkConsistency()
-        if(reason != null) {
-          // If a required file is outdated (i.e., its stamp changed): rebuild
-          executorLogger.checkFileReqEnd(task, pathReq, reason)
-          val execData = exec(task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(task, execOutput)
-          return execOutput
-        } else {
-          executorLogger.checkFileReqEnd(task, pathReq, null)
-        }
-      }
-
-      // Internal consistency: file generates
-      for(pathGen in pathGens) {
-        executorLogger.checkFileGenStart(task, pathGen)
-        val reason = pathGen.checkConsistency()
-        if(reason != null) {
-          // If a generated file is outdated (i.e., its stamp changed): rebuild
-          executorLogger.checkFileGenEnd(task, pathGen, reason)
-          val execData = exec(task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(task, execOutput)
-          return execOutput
-        } else {
-          executorLogger.checkFileGenEnd(task, pathGen, null)
-        }
-      }
-
-      // Total consistency: call requirements
-      for(callReq in callReqs) {
-        val callReqOutput = require(callReq.callee, cancel)
-        executorLogger.checkTaskReqStart(task, callReq)
-        val reason = callReq.checkConsistency(callReqOutput)
-        executorLogger.checkTaskReqEnd(task, callReq, reason)
-        if(reason != null) {
-          val execData = exec(task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(task, execOutput)
-          return execOutput
-        }
-      }
-
-      // No inconsistencies found
-      // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validatePostWrite(task, data, it) }
-      // Cache and mark as visited
-      cache[task] = data
-      visited[task] = data
-      // Reuse existing result
-      executorLogger.requireTopDownEnd(task, existingOutput)
-      return existingOutput
+      executorLogger.requireTopDownEnd(key, task, output)
+      return output
     } finally {
-      layer.requireTopDownEnd(task)
+      layer.requireTopDownEnd(key)
     }
   }
 
-  open fun <I : In, O : Out> exec(app: Task<I, O>, reason: ExecReason, cancel: Cancelled, useCache: Boolean = false): UTaskData {
-    return shared.exec(app, reason, cancel, useCache) { appL, cancelL -> this.execInternal(appL, cancelL) }
+  data class DataW<I : In, O : Out>(val data: TaskData<I, O>, val executed: Boolean) {
+    constructor(data: TaskData<I, O>) : this(data, true)
   }
 
-  open fun <I : In, O : Out> execInternal(app: Task<I, O>, cancel: Cancelled): UTaskData {
-    return shared.execInternal(app, cancel, this) { _, _ -> }
+  /**
+   * Get data for given task/key, either by getting existing data or through execution.
+   */
+  private fun <I : In, O : Out> getData(key: TaskKey, task: Task<I, O>, cancel: Cancelled): DataW<I, O> {
+    // Check if task was already visited this execution. Return immediately if so.
+    val visitedData = requireShared.dataFromVisited(key)
+    if(visitedData != null) {
+      return DataW(visitedData.cast<I, O>(), false)
+    }
+
+    // Check if data is stored for task. Execute if not.
+    val storedData = requireShared.dataFromStore(key)
+    if(storedData == null) {
+      return DataW(exec(key, task, NoData(), cancel))
+    }
+
+    // Check consistency of task.
+    val existingData = storedData.cast<I, O>()
+    val (input, output, taskReqs, fileReqs, fileGens) = existingData
+
+    // Internal consistency: input changes.
+    with(requireShared.checkInput(input, task)) {
+      if(this != null) {
+        return DataW(exec(key, task, this, cancel))
+      }
+    }
+
+    // Internal consistency: transient output consistency.
+    with(requireShared.checkOutputConsistency(output)) {
+      if(this != null) {
+        return DataW(exec(key, task, this, cancel))
+      }
+    }
+
+    // Internal consistency: file requirements.
+    for(fileReq in fileReqs) {
+      with(requireShared.checkFileReq(key, task, fileReq)) {
+        if(this != null) {
+          return DataW(exec(key, task, this, cancel))
+        }
+      }
+    }
+
+    // Internal consistency: file generates.
+    for(fileGen in fileGens) {
+      with(requireShared.checkFileGen(key, task, fileGen)) {
+        if(this != null) {
+          return DataW(exec(key, task, this, cancel))
+        }
+      }
+    }
+
+    // Total consistency: call requirements.
+    for(taskReq in taskReqs) {
+      with(requireShared.checkTaskReq(key, task, taskReq, this, cancel)) {
+        if(this != null) {
+          return DataW(exec(key, task, this, cancel))
+        }
+      }
+    }
+
+    // Task is consistent.
+    return DataW(existingData, false)
+  }
+
+  open fun <I : In, O : Out> exec(key: TaskKey, task: Task<I, O>, reason: ExecReason, cancel: Cancelled): TaskData<I, O> {
+    return executor.exec(key, task, reason, this, cancel)
   }
 }

@@ -18,12 +18,31 @@ fun anyER() = safeAny<ExecReason>(NoExecReason())
 
 
 class NoExecContext : ExecContext {
-  override fun <I : In, O : Out> requireOutput(task: Task<I, O>, stamper: OutputStamper?): O {
+  override fun <I : In, O : Out> require(task: Task<I, O>, stamper: OutputStamper?): O {
     @Suppress("UNCHECKED_CAST")
     return null as O
   }
 
-  override fun requireExec(task: UTask) {}
+  override fun <I : In, O : Out> require(taskDef: TaskDef<I, O>, input: I, stamper: OutputStamper?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
+  override fun <I : In, O : Out> require(task: STask<I>, stamper: OutputStamper?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
+  override fun <I : In, O : Out> require(taskDefId: String, input: I, stamper: OutputStamper?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
+  override fun <O : Out> require(key: TaskKey, stamper: OutputStamper?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
   override fun require(file: PPath, stamper: FileStamper?) {}
   override fun generate(file: PPath, stamper: FileStamper?) {}
   override val logger: Logger = null!!

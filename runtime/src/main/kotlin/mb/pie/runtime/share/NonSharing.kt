@@ -3,14 +3,10 @@ package mb.pie.runtime.share
 import mb.pie.api.*
 
 class NonSharingShare : Share {
-  override fun reuseOrCreate(task: UTask, cacheFunc: (UTask) -> UTaskData?, execFunc: (UTask) -> UTaskData): UTaskData {
-    return cacheFunc(task) ?: execFunc(task)
+  @Suppress("OVERRIDE_BY_INLINE")
+  override inline fun share(key: TaskKey, crossinline execFunc: () -> TaskData<*, *>, crossinline visitedFunc: () -> TaskData<*, *>?): TaskData<*, *> {
+    return visitedFunc() ?: execFunc()
   }
-
-  override fun reuseOrCreate(task: UTask, execFunc: (UTask) -> UTaskData): UTaskData {
-    return execFunc(task)
-  }
-
 
   override fun toString() = "NonSharingShare"
 }

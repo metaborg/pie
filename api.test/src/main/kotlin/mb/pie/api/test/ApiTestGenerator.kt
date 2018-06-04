@@ -18,7 +18,6 @@ object ApiTestGenerator {
     pieBuilderGen: () -> PieBuilder,
     taskDefsGen: () -> TaskDefs,
     storeGens: Array<(Logger) -> Store>,
-    cacheGens: Array<(Logger) -> Cache>,
     shareGens: Array<(Logger) -> Share>,
     layerGens: Array<(Logger) -> Layer>,
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
@@ -30,39 +29,36 @@ object ApiTestGenerator {
     testFunc: Ctx.() -> Unit
   ): Stream<out DynamicNode> {
     val fsGen = { Jimfs.newFileSystem(Configuration.unix()) }
-
     val tests =
       storeGens.flatMap { storeGen ->
-        cacheGens.flatMap { cacheGen ->
-          shareGens.flatMap { shareGen ->
-            layerGens.flatMap { layerGen ->
-              defaultOutputStampers.flatMap { defaultOutputStamper ->
-                defaultFileReqStampers.flatMap { defaultFileReqStamper ->
-                  defaultFileGenStampers.map { defaultFileGenStamper ->
-                    val fs = fsGen()
-                    val taskDefs = taskDefsGen()
-                    val pieBuilder = pieBuilderGen()
-                      .withTaskDefs(taskDefs)
-                      .withStore(storeGen)
-                      .withCache(cacheGen)
-                      .withShare(shareGen)
-                      .withDefaultOutputStamper(defaultOutputStamper)
-                      .withDefaultFileReqStamper(defaultFileReqStamper)
-                      .withDefaultFileGenStamper(defaultFileGenStamper)
-                      .withLayer(layerGen)
-                      .withLogger(logger)
-                      .withExecutorLogger(executorLoggerGen)
-                    val pie = pieBuilder.build()
-                    DynamicTest.dynamicTest("$pie", {
-                      val context = testCtxGen(pie, taskDefs, fs)
-                      context.testFunc()
-                      context.close()
-                    })
-                  }
+        shareGens.flatMap { shareGen ->
+          layerGens.flatMap { layerGen ->
+            defaultOutputStampers.flatMap { defaultOutputStamper ->
+              defaultFileReqStampers.flatMap { defaultFileReqStamper ->
+                defaultFileGenStampers.map { defaultFileGenStamper ->
+                  val fs = fsGen()
+                  val taskDefs = taskDefsGen()
+                  val pieBuilder = pieBuilderGen()
+                    .withTaskDefs(taskDefs)
+                    .withStore(storeGen)
+                    .withShare(shareGen)
+                    .withDefaultOutputStamper(defaultOutputStamper)
+                    .withDefaultFileReqStamper(defaultFileReqStamper)
+                    .withDefaultFileGenStamper(defaultFileGenStamper)
+                    .withLayer(layerGen)
+                    .withLogger(logger)
+                    .withExecutorLogger(executorLoggerGen)
+                  val pie = pieBuilder.build()
+                  DynamicTest.dynamicTest("$pie", {
+                    val context = testCtxGen(pie, taskDefs, fs)
+                    context.testFunc()
+                    context.close()
+                  })
                 }
               }
             }
           }
+
         }
       }.stream()
     return Stream.of(DynamicContainer.dynamicContainer(name, tests))

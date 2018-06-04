@@ -3,7 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockito_kotlin.*
 import mb.pie.api.*
 import mb.pie.api.test.*
-import mb.pie.runtime.exec.NoResultReason
+import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.layer.ValidationException
 import mb.pie.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
@@ -14,214 +14,240 @@ import java.nio.file.attribute.FileTime
 internal class TopDownTests {
   @TestFactory
   fun testExec() = RuntimeTestGenerator.generate("testExec") {
-    val input = "CAPITALIZED"
-    val func = spy(toLowerCase)
-    addTaskDef(func)
-    val app = app(func, input)
+    val taskDef = spy(toLowerCase)
+    addTaskDef(taskDef)
 
-    val exec = spy(topDownExec())
-    val output = exec.requireInitial(app)
+    val input = "CAPITALIZED"
+    val task = task(taskDef, input)
+    val key = task.key()
+
+    val session = spy(topDownSession())
+    val output = session.requireInitial(task)
     assertEquals("capitalized", output)
 
-    inOrder(exec, func) {
-      verify(exec, times(1)).requireInitial(eq(app), any())
-      verify(exec, times(1)).exec(eq(app), eq(NoResultReason()), any(), any())
+    inOrder(session, taskDef) {
+      verify(session, times(1)).requireInitial(eq(task), anyC())
+      verify(session, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
     }
   }
 
   @TestFactory
   fun testExecMultiple() = RuntimeTestGenerator.generate("testExecMultiple") {
-    val func = spy(toLowerCase)
-    addTaskDef(func)
+    val taskDef = spy(toLowerCase)
+    addTaskDef(taskDef)
 
     val input1 = "CAPITALIZED"
-    val app1 = app(func, input1)
-    val exec1 = spy(topDownExec())
-    val output1 = exec1.requireInitial(app1)
+    val task1 = task(taskDef, input1)
+    val key1 = task1.key()
+    val session1 = spy(topDownSession())
+    val output1 = session1.requireInitial(task1)
     assertEquals("capitalized", output1)
 
     val input2 = "CAPITALIZED_EVEN_MORE"
-    val app2 = app(func, input2)
-    val exec2 = spy(topDownExec())
-    val output2 = exec2.requireInitial(app2)
+    val task2 = task(taskDef, input2)
+    val key2 = task2.key()
+    val session2 = spy(topDownSession())
+    val output2 = session2.requireInitial(task2)
     assertEquals("capitalized_even_more", output2)
 
     assertNotEquals(output1, output2)
 
-    inOrder(func, exec1, exec2) {
-      verify(exec1, times(1)).requireInitial(eq(app1), any())
-      verify(exec1, times(1)).exec(eq(app1), eq(NoResultReason()), any(), any())
+    inOrder(taskDef, session1, session2) {
+      verify(session1, times(1)).requireInitial(eq(task1), anyC())
+      verify(session1, times(1)).exec(eq(key1), eq(task1), eq(NoData()), anyC())
 
-      verify(exec2, times(1)).requireInitial(eq(app2), any())
-      verify(exec2, times(1)).exec(eq(app2), eq(NoResultReason()), any(), any())
+      verify(session2, times(1)).requireInitial(eq(task2), anyC())
+      verify(session2, times(1)).exec(eq(key2), eq(task2), eq(NoData()), anyC())
     }
   }
 
   @TestFactory
   fun testReuse() = RuntimeTestGenerator.generate("testReuse") {
-    val func = spy(toLowerCase)
-    addTaskDef(func)
+    val taskDef = spy(toLowerCase)
+    addTaskDef(taskDef)
 
     val input = "CAPITALIZED"
-    val app = app(func, input)
-    val exec1 = topDownExec()
-    val output1 = exec1.requireInitial(app)
+    val task = task(taskDef, input)
+    val key = task.key()
+
+    val session1 = topDownSession()
+    val output1 = session1.requireInitial(task)
     assertEquals("capitalized", output1)
 
-    val exec2 = spy(topDownExec())
-    val output2 = exec2.requireInitial(app)
+    val session2 = spy(topDownSession())
+    val output2 = session2.requireInitial(task)
     assertEquals("capitalized", output2)
 
     assertEquals(output1, output2)
 
     // Result is reused if rebuild is never called.
-    verify(exec2, never()).exec(eq(app), eq(NoResultReason()), any(), any())
+    verify(session2, never()).exec(eq(key), eq(task), eq(NoData()), anyC())
   }
 
   @TestFactory
-  fun testPathReq() = RuntimeTestGenerator.generate("testPathReq") {
+  fun testFileReq() = RuntimeTestGenerator.generate("testFileReq") {
     val readPath = spy(readPath)
     addTaskDef(readPath)
 
-    val filePath = path("/file")
+    val filePath = file("/file")
+    val task = task(readPath, filePath)
+    val key = task.key()
     write("HELLO WORLD!", filePath)
 
     // Build 'readPath', observe rebuild
-    val exec1 = spy(topDownExec())
-    val output1 = exec1.requireInitial(app(readPath, filePath))
+    val session1 = spy(topDownSession())
+    val output1 = session1.requireInitial(task(readPath, filePath))
     assertEquals("HELLO WORLD!", output1)
-    verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any(), any())
+    verify(session1, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
 
     // No changes - exec 'readPath', observe no rebuild
-    val exec2 = spy(topDownExec())
-    val output2 = exec2.requireInitial(app(readPath, filePath))
+    val session2 = spy(topDownSession())
+    val output2 = session2.requireInitial(task(readPath, filePath))
     assertEquals("HELLO WORLD!", output2)
-    verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any(), any())
+    verify(session2, never()).exec(eq(key), eq(task), anyER(), anyC())
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
     write("!DLROW OLLEH", filePath)
 
     // Run again - expect rebuild
-    val exec3 = spy(topDownExec())
-    val output3 = exec3.requireInitial(app(readPath, filePath))
+    val session3 = spy(topDownSession())
+    val output3 = session3.requireInitial(task(readPath, filePath))
     assertEquals("!DLROW OLLEH", output3)
-    verify(exec3, times(1)).exec(eq(app(readPath, filePath)), check {
+    verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentFileReq
       assertNotNull(reason)
       assertEquals(filePath, reason!!.req.file)
-    }, any(), any())
+    }, anyC())
   }
 
   @TestFactory
-  fun testPathGen() = RuntimeTestGenerator.generate("testPathGen") {
+  fun testFileGen() = RuntimeTestGenerator.generate("testFileGen") {
     val writePath = spy(writePath)
     addTaskDef(writePath)
 
-    val filePath = path("/file")
+    val filePath = file("/file")
     assertTrue(Files.notExists(filePath.javaPath))
 
+    val task = task(writePath, Pair("HELLO WORLD!", filePath))
+    val key = task.key()
+
     // Build 'writePath', observe rebuild and existence of file
-    val exec1 = spy(topDownExec())
-    exec1.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(exec1, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), eq(NoResultReason()), any(), any())
+    val session1 = spy(topDownSession())
+    session1.requireInitial(task)
+    verify(session1, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
 
     assertTrue(Files.exists(filePath.javaPath))
     assertEquals("HELLO WORLD!", read(filePath))
 
     // No changes - exec 'writePath', observe no rebuild, no change to file
-    val exec2 = spy(topDownExec())
-    exec2.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(exec2, never()).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), any(), any(), any())
+    val session2 = spy(topDownSession())
+    session2.requireInitial(task)
+    verify(session2, never()).exec(eq(key), eq(task), anyER(), anyC())
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
     write("!DLROW OLLEH", filePath)
 
     // Build 'writePath', observe rebuild and change of file
-    val exec3 = spy(topDownExec())
-    exec3.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
-    verify(exec3, times(1)).exec(eq(app(writePath, Pair("HELLO WORLD!", filePath))), check {
+    val session3 = spy(topDownSession())
+    session3.requireInitial(task)
+    verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentFileGen
       assertNotNull(reason)
       assertEquals(filePath, reason!!.fileGen.file)
-    }, any(), any())
+    }, anyC())
 
     assertEquals("HELLO WORLD!", read(filePath))
   }
 
   @TestFactory
-  fun testCallReq() = RuntimeTestGenerator.generate("testCallReq") {
-    val toLowerCase = spy(toLowerCase)
-    addTaskDef(toLowerCase)
-    val readPath = spy(readPath)
-    addTaskDef(readPath)
-    val combine = spy(func<PPath, String>("combine", { "toLowerCase(read($it))" }) {
-      val text = requireOutput(app(readPath, it))
-      requireOutput(app(toLowerCase, text))
+  fun testTaskReq() = RuntimeTestGenerator.generate("testTaskReq") {
+    val lowerDef = spy(toLowerCase)
+    addTaskDef(lowerDef)
+    val readDef = spy(readPath)
+    addTaskDef(readDef)
+
+    val filePath = file("/file")
+
+    val readTask = task(readDef, filePath)
+    val readKey = readTask.key()
+
+    val combDef = spy(taskDef<PPath, String>("combine", { it, _ -> "combine($it)" }) {
+      val text = require(readTask)
+      require(lowerDef, text)
     })
-    addTaskDef(combine)
+    addTaskDef(combDef)
 
-    val filePath = path("/file")
-    write("HELLO WORLD!", filePath)
+    val str = "HELLO WORLD!"
+    write(str, filePath)
 
-    // Build 'combine', observe rebuild of all
-    val exec1 = spy(topDownExec())
-    val output1 = exec1.requireInitial(app(combine, filePath))
+    val lowerTask = task(lowerDef, str)
+    val lowerKey = lowerTask.key()
+    val combTask = task(combDef, filePath)
+    val combKey = combTask.key()
+
+    // Build 'combine', observe rebuild of all.
+    val session1 = spy(topDownSession())
+    val output1 = session1.requireInitial(combTask)
     assertEquals("hello world!", output1)
-    inOrder(exec1) {
-      verify(exec1, times(1)).exec(eq(app(combine, filePath)), eq(NoResultReason()), any(), any())
-      verify(exec1, times(1)).exec(eq(app(readPath, filePath)), eq(NoResultReason()), any(), any())
-      verify(exec1, times(1)).exec(eq(app(toLowerCase, "HELLO WORLD!")), eq(NoResultReason()), any(), any())
+    inOrder(session1) {
+      verify(session1, times(1)).exec(eq(combKey), eq(combTask), eq(NoData()), anyC())
+      verify(session1, times(1)).exec(eq(readKey), eq(readTask), eq(NoData()), anyC())
+      verify(session1, times(1)).exec(eq(lowerKey), eq(lowerTask), eq(NoData()), anyC())
     }
 
-    // No changes - exec 'combine', observe no rebuild
-    val exec2 = spy(topDownExec())
-    val output2 = exec2.requireInitial(app(combine, filePath))
+    // No changes - exec 'combine', observe no rebuild.
+    val session2 = spy(topDownSession())
+    val output2 = session2.requireInitial(combTask)
     assertEquals("hello world!", output2)
-    verify(exec2, never()).exec(eq(app(combine, filePath)), any(), any(), any())
-    verify(exec2, never()).exec(eq(app(readPath, filePath)), any(), any(), any())
-    verify(exec2, never()).exec(eq(app(toLowerCase, "HELLO WORLD!")), any(), any(), any())
+    verify(session2, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
+    verify(session2, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
+    verify(session2, never()).exec(eq(lowerKey), eq(lowerTask), anyER(), anyC())
 
-    // Change required file in such a way that the output of 'readPath' changes (change file content)
-    write("!DLROW OLLEH", filePath)
+    // Change required file in such a way that the output of 'readPath' changes (change file content).
+    val newStr = "!DLROW OLLEH"
+    write(newStr, filePath)
+
+    val lowerRevTask = task(lowerDef, newStr)
+    val lowerRevKey = lowerRevTask.key()
 
     // Build 'combine', observe rebuild of all in dependency order
-    val exec3 = spy(topDownExec())
-    val output3 = exec3.requireInitial(app(combine, filePath))
+    val session3 = spy(topDownSession())
+    val output3 = session3.requireInitial(combTask)
     assertEquals("!dlrow olleh", output3)
-    inOrder(exec3) {
-      verify(exec3, times(1)).requireInitial(eq(app(combine, filePath)), any())
-      verify(exec3, times(1)).exec(eq(app(readPath, filePath)), check {
+    inOrder(session3) {
+      verify(session3, times(1)).requireInitial(eq(combTask), anyC())
+      verify(session3, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentFileReq
         assertNotNull(reason)
         assertEquals(filePath, reason!!.req.file)
-      }, any(), any())
-      verify(exec3, times(1)).exec(eq(app(combine, filePath)), check {
+      }, anyC())
+      verify(session3, times(1)).exec(eq(combKey), eq(combTask), check {
         val reason = it as? InconsistentTaskReq
         assertNotNull(reason)
-        assertEquals(app(readPath, filePath), reason!!.req.callee)
-      }, any(), any())
-      verify(exec3, times(1)).exec(eq(app(toLowerCase, "!DLROW OLLEH")), eq(NoResultReason()), any(), any())
+        assertEquals(readKey, reason!!.req.callee)
+      }, anyC())
+      verify(session3, times(1)).exec(eq(lowerRevKey), eq(lowerRevTask), eq(NoData()), anyC())
     }
 
-    // Change required file in such a way that the output of 'readPath' does not change (change modification date)
+    // Change required file in such a way that the output of 'readPath' does not change (change modification date).
     val lastModified = Files.getLastModifiedTime(filePath.javaPath)
     val newLastModified = FileTime.fromMillis(lastModified.toMillis() + 1)
     Files.setLastModifiedTime(filePath.javaPath, newLastModified)
 
     // Build 'combine', observe rebuild of 'readPath' only
-    val exec4 = spy(topDownExec())
-    val output4 = exec4.requireInitial(app(combine, filePath))
+    val session4 = spy(topDownSession())
+    val output4 = session4.requireInitial(combTask)
     assertEquals("!dlrow olleh", output4)
-    inOrder(exec4) {
-      verify(exec4, times(1)).requireInitial(eq(app(combine, filePath)), any())
-      verify(exec4, times(1)).exec(eq(app(readPath, filePath)), check {
+    inOrder(session4) {
+      verify(session4, times(1)).requireInitial(eq(combTask), anyC())
+      verify(session4, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentFileReq
         assertNotNull(reason)
         assertEquals(filePath, reason!!.req.file)
-      }, any(), any())
+      }, anyC())
     }
-    verify(exec4, never()).exec(eq(app(combine, filePath)), any(), any(), any())
-    verify(exec4, never()).exec(eq(app(toLowerCase, "!DLROW OLLEH")), any(), any(), any())
+    verify(session4, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
+    verify(session4, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
   }
 
   @TestFactory
@@ -230,17 +256,17 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val filePath = path("/file")
+    val filePath = file("/file")
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newSession()
-      exec.requireInitial(app(writePath, Pair("HELLO WORLD 1!", filePath)))
-      exec.requireInitial(app(writePath, Pair("HELLO WORLD 2!", filePath)))
+      val session = executor.newSession()
+      session.requireInitial(task(writePath, Pair("HELLO WORLD 1!", filePath)))
+      session.requireInitial(task(writePath, Pair("HELLO WORLD 2!", filePath)))
     }
 
     // Overlapping generated file exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newSession()
-      exec.requireInitial(app(writePath, Pair("HELLO WORLD 3!", filePath)))
+      val session = executor.newSession()
+      session.requireInitial(task(writePath, Pair("HELLO WORLD 3!", filePath)))
     }
   }
 
@@ -251,19 +277,19 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val filePath = path("/file")
+    val filePath = file("/file")
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newSession()
-      exec.requireInitial(app(readPath, filePath))
-      exec.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
+      val session = executor.newSession()
+      session.requireInitial(task(readPath, filePath))
+      session.requireInitial(task(writePath, Pair("HELLO WORLD!", filePath)))
     }
 
     // Hidden dependency exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val exec = executor.newSession()
-      exec.requireInitial(app(writePath, Pair("HELLO WORLD!", filePath)))
+      val session = executor.newSession()
+      session.requireInitial(task(writePath, Pair("HELLO WORLD!", filePath)))
     }
   }
 
@@ -276,46 +302,45 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val combineIncorrect = spy(func<Pair<String, PPath>, String>("combineIncorrect", { "combine$it" }) { (text, path) ->
-      requireExec(app(indirection, app(writePath, Pair(text, path))))
-      requireOutput(app(readPath, path))
+    val combineIncorrect = spy(taskDef<Pair<String, PPath>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+      require(task(indirection, stask(writePath, Pair(text, path))))
+      require(task(readPath, path))
     })
     addTaskDef(combineIncorrect)
 
     run {
-      val filePath1 = path("/file1")
+      val filePath1 = file("/file1")
       assertThrows(ValidationException::class.java) {
-        val exec = executor.newSession()
-        exec.requireInitial(app(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
+        val session = executor.newSession()
+        session.requireInitial(task(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
       }
     }
 
-    val combineStillIncorrect = spy(func<Pair<String, PPath>, String>("combineStillIncorrect", { "combine$it" }) { (text, path) ->
-      requireExec(app(indirection, app(writePath, Pair(text, path))))
-      requireExec(app(writePath, Pair(text, path)))
-      requireOutput(app(readPath, path))
+    val combineStillIncorrect = spy(taskDef<Pair<String, PPath>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+      require(task(indirection, stask(writePath, Pair(text, path))))
+      require(task(writePath, Pair(text, path)))
+      require(task(readPath, path))
     })
     addTaskDef(combineStillIncorrect)
 
     run {
-      val filePath2 = path("/file2")
+      val filePath2 = file("/file2")
       assertThrows(ValidationException::class.java) {
         val exec = executor.newSession()
-        exec.requireInitial(app(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
+        exec.requireInitial(task(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
       }
     }
   }
 
   @TestFactory
   fun testCyclicDependency() = RuntimeTestGenerator.generate("testCyclicDependency") {
-    val b1 = func<None, None>("b1", { "b1" }) { requireOutput(app("b1", None.instance)) }
-    addTaskDef(b1)
+    val cyclicTaskDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(stask("b1", None.instance)) }
+    addTaskDef(cyclicTaskDef)
 
-    val bm = topDownExecutor
-
+    val executor = topDownExecutor
     assertThrows(ValidationException::class.java) {
-      val exec = bm.newSession()
-      exec.requireInitial(app(b1, None.instance))
+      val session = executor.newSession()
+      session.requireInitial(task(cyclicTaskDef, None.instance))
     }
   }
 }

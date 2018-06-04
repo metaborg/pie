@@ -9,35 +9,34 @@ import mb.pie.vfs.path.PPath
  */
 interface ExecContext {
   /**
-   * Requires given task, returning its output, and creates a task dependency.
+   * Requires given task and returns its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> requireOutput(task: Task<I, O>, stamper: OutputStamper? = null): O
+  fun <I : In, O : Out> require(task: Task<I, O>, stamper: OutputStamper? = null): O
 
   /**
-   * Requires a task, constructed from given task identifier and input, returning its output, and creates a task dependency.
-   * The class is used for type inference.
+   * Requires task given by its task definition and input, and returns its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out, F : TaskDef<I, O>> requireOutput(clazz: Class<F>, id: String, input: I, stamper: OutputStamper? = null): O =
-    requireOutput(Task<I, O>(id, input), stamper)
-
+  fun <I : In, O : Out> require(taskDef: TaskDef<I, O>, input: I, stamper: OutputStamper? = null): O
 
   /**
-   * Requires execution of given task, ignoring its output, and creates a task dependency. No change detection is performed, since the
-   * output object is ignored.
+   * Requires task given by its serializable task form, and returns its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun requireExec(task: UTask)
+  fun <I : In, O : Out> require(task: STask<I>, stamper: OutputStamper? = null): O
 
   /**
-   * Requires execution of a task, constructed from given task identifier and input, ignoring its output, and creates a task dependency.
-   * The class is used for type inference. By default, no change detection is performed, since the output object is ignored.
+   * Requires task given by the identifier of its task definition and input, and returns its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out, F : TaskDef<I, O>> requireExec(clazz: Class<F>, id: String, input: I) {
-    requireExec(Task<I, O>(id, input))
-  }
+  fun <I : In, O : Out> require(taskDefId: String, input: I, stamper: OutputStamper? = null): O
+
+  /**
+   * Requires task given by its key, and return its output.
+   */
+  @Throws(ExecException::class, InterruptedException::class)
+  fun <O : Out> require(key: TaskKey, stamper: OutputStamper? = null): O
 
 
   /**

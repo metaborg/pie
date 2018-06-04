@@ -7,8 +7,8 @@ import mb.pie.api.*
  * DO NOT USE in production, as it disables checking for inconsistencies in the build.
  */
 class NoopLayer : Layer {
-  override fun <I : In, O : Out> requireTopDownStart(task: Task<I, O>) {}
-  override fun <I : In, O : Out> requireTopDownEnd(task: Task<I, O>) {}
-  override fun <I : In, O : Out> validatePreWrite(task: Task<I, O>, data: TaskData<O>, txn: StoreReadTxn) {}
-  override fun <I : In, O : Out> validatePostWrite(task: Task<I, O>, data: TaskData<O>, txn: StoreReadTxn) {}
+  override fun requireTopDownStart(key: TaskKey, input: In) {}
+  override fun requireTopDownEnd(key: TaskKey) {}
+  override fun <I : In, O : Out> validatePreWrite(key: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn) {}
+  override fun <I : In, O : Out> validatePostWrite(key: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn) {}
 }

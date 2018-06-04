@@ -1,10 +1,10 @@
 package mb.pie.runtime
 
+import com.sun.corba.se.impl.util.RepositoryId.cache
 import mb.pie.api.*
 import mb.pie.api.exec.BottomUpExecutor
 import mb.pie.api.exec.TopDownExecutor
 import mb.pie.api.stamp.*
-import mb.pie.runtime.cache.NoopCache
 import mb.pie.runtime.exec.BottomUpExecutorImpl
 import mb.pie.runtime.exec.TopDownExecutorImpl
 import mb.pie.runtime.layer.ValidationLayer
@@ -16,7 +16,6 @@ import mb.pie.runtime.store.InMemoryStore
 class PieBuilderImpl : PieBuilder {
   private var taskDefs: TaskDefs? = null
   private var store: (Logger) -> Store = { InMemoryStore() }
-  private var cache: (Logger) -> Cache = { NoopCache() }
   private var share: (Logger) -> Share = { NonSharingShare() }
   private var defaultOutputStamper: OutputStamper = OutputStampers.equals
   private var defaultReqFileStamper: FileStamper = FileStampers.modified
@@ -32,11 +31,6 @@ class PieBuilderImpl : PieBuilder {
 
   override fun withStore(store: (Logger) -> Store): PieBuilderImpl {
     this.store = store
-    return this
-  }
-
-  override fun withCache(cache: (Logger) -> Cache): PieBuilderImpl {
-    this.cache = cache
     return this
   }
 
@@ -79,11 +73,10 @@ class PieBuilderImpl : PieBuilder {
   override fun build(): PieImpl {
     val taskDefs = this.taskDefs ?: throw RuntimeException("Task definitions were not set before building")
     val store = this.store(logger)
-    val cache = this.cache(logger)
     val share = this.share(logger)
-    val topDownExecutor = TopDownExecutorImpl(taskDefs, store, cache, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
-    val bottomUpExecutor = BottomUpExecutorImpl(taskDefs, store, cache, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
-    return PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, store, cache, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
+    val topDownExecutor = TopDownExecutorImpl(taskDefs, store, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
+    val bottomUpExecutor = BottomUpExecutorImpl(taskDefs, store, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
+    return PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, store, share, defaultOutputStamper, defaultReqFileStamper, defaultGenFileStamper, layerFactory, logger, executorLoggerFactory)
   }
 }
 
@@ -97,7 +90,6 @@ class PieImpl(
   override val bottomUpExecutor: BottomUpExecutor,
   val taskDefs: TaskDefs,
   val store: Store,
-  val cache: Cache,
   val share: Share,
   val defaultOutputStamper: OutputStamper,
   val defaultFileReqStamper: FileStamper,
@@ -108,10 +100,6 @@ class PieImpl(
 ) : Pie {
   override fun dropStore() {
     store.writeTxn().use { it.drop() }
-  }
-
-  override fun dropCache() {
-    cache.drop()
   }
 
   override fun close() {

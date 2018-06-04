@@ -42,7 +42,7 @@ data class FileReq(
 }
 
 data class InconsistentFileReq(val req: FileReq, val newStamp: FileStamp) : ExecReason {
-  override fun toString() = "required file ${req.file} is inconsistent"
+  override fun toString() = "inconsistent required file ${req.file}"
 }
 
 
@@ -65,12 +65,12 @@ data class FileGen(
 }
 
 data class InconsistentFileGen(val fileGen: FileGen, val newStamp: FileStamp) : ExecReason {
-  override fun toString() = "generated file ${fileGen.file} is inconsistent"
+  override fun toString() = "inconsistent generated file ${fileGen.file}"
 }
 
 
 data class TaskReq(
-  val callee: UTask,
+  val callee: TaskKey,
   val stamp: OutputStamp
 ) : Serializable {
   /**
@@ -95,12 +95,8 @@ data class TaskReq(
   /**
    * @return `true` when this call requirement's callee is equal to [other], `false` otherwise.
    */
-  fun calleeEqual(other: UTask): Boolean {
-    return when {
-      other.id != callee.id -> false
-      other == callee -> true
-      else -> false
-    }
+  fun calleeEqual(other: TaskKey): Boolean {
+    return other == callee
   }
 
   override fun toString(): String {
@@ -109,5 +105,5 @@ data class TaskReq(
 }
 
 data class InconsistentTaskReq(val req: TaskReq, val newStamp: OutputStamp) : ExecReason {
-  override fun toString() = "required task ${req.callee.toShortString(100)} is inconsistent"
+  override fun toString() = "inconsistent required task ${req.callee.toShortString(100)}"
 }
