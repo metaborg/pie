@@ -57,16 +57,6 @@ interface TaskDef<in I : In, out O : Out> {
 }
 
 /**
- * Untyped [TaskDef].
- */
-typealias UTaskDef = TaskDef<*, *>
-
-/**
- * Generically typed [TaskDef].
- */
-typealias GTaskDef = TaskDef<In, Out>
-
-/**
  * [TaskDef] implementation using anonymous functions.
  */
 open class LambdaTaskDef<in I : In, out O : Out>(

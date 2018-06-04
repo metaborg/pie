@@ -12,9 +12,6 @@ import java.io.Serializable
  */
 typealias Out = Serializable?
 
-@Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <O : Out> Out.cast() = this as O
-
 
 /**
  * Wrapper for transient outputs; outputs that cannot be serialized. A transient output will be recreated when an attempt is made to

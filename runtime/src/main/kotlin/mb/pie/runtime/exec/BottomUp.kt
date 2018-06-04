@@ -79,7 +79,7 @@ open class BottomUpSession(
 ) : RequireTask {
   private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
   private val queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store)
-  private val executor = TaskExecutor(visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger) { key, data ->
+  private val executor = TaskExecutor(taskDefs, visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger) { key, data ->
     // Notify observer, if any.
     val observer = observers[key]
     if(observer != null) {
@@ -89,18 +89,18 @@ open class BottomUpSession(
       executorLogger.invokeObserverEnd(observer, key, output)
     }
   }
-  private val shared = TopDownShared(visited, store, layer, executorLogger)
+  private val requireShared = RequireShared(taskDefs, visited, store, executorLogger)
 
 
   /**
    * Entry point for top-down builds.
    */
-  fun <I : In, O : Out> requireTopDownInitial(task: Task<I, O>, cancel: Cancelled): O {
+  open fun <I : In, O : Out> requireTopDownInitial(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O {
     try {
-      executorLogger.requireTopDownInitialStart(task)
       val key = task.key()
+      executorLogger.requireTopDownInitialStart(key, task)
       val output = require(key, task, cancel)
-      executorLogger.requireTopDownInitialEnd(task, output)
+      executorLogger.requireTopDownInitialEnd(key, task, output)
       return output
     } finally {
       store.sync()
@@ -110,7 +110,7 @@ open class BottomUpSession(
   /**
    * Entry point for bottom-up builds.
    */
-  fun requireBottomUpInitial(changedFiles: Set<PPath>, cancel: Cancelled) {
+  open fun requireBottomUpInitial(changedFiles: Set<PPath>, cancel: Cancelled = NullCancelled()) {
     try {
       executorLogger.requireBottomUpInitialStart(changedFiles)
       scheduleAffectedByFiles(changedFiles)
@@ -125,7 +125,7 @@ open class BottomUpSession(
   /**
    * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
    */
-  fun execScheduled(cancel: Cancelled) {
+  private fun execScheduled(cancel: Cancelled) {
     logger.trace("Executing scheduled tasks: $queue")
     while(queue.isNotEmpty()) {
       cancel.throwIfCancelled()
@@ -148,7 +148,7 @@ open class BottomUpSession(
   /**
    * Schedules tasks affected by (changes to) files.
    */
-  fun scheduleAffectedByFiles(files: Set<PPath>) {
+  private fun scheduleAffectedByFiles(files: Set<PPath>) {
     logger.trace("Scheduling tasks affected by files: $files")
     val affected = store.readTxn().use { txn -> txn.directlyAffectedTaskKeys(files, logger) }
     for(key in affected) {
@@ -162,12 +162,12 @@ open class BottomUpSession(
    */
   private fun scheduleAffectedCallersOf(callee: TaskKey, output: Out) {
     logger.trace("Scheduling tasks affected by output of: ${callee.toShortString(200)}")
-    val inconsistentTaskKeys = store.readTxn().use { txn ->
+    val inconsistentCallers = store.readTxn().use { txn ->
       txn.callersOf(callee).filter { caller ->
-        txn.taskReqs(caller).filter { it.calleeEqual(callee) }.all { it.isConsistent(output) }
+        txn.taskReqs(caller).filter { it.calleeEqual(callee) }.any { !it.isConsistent(output) }
       }
     }
-    for(key in inconsistentTaskKeys) {
+    for(key in inconsistentCallers) {
       logger.trace("- scheduling: $key")
       queue.add(key)
     }
@@ -181,74 +181,69 @@ open class BottomUpSession(
     Stats.addRequires()
     cancel.throwIfCancelled()
     layer.requireTopDownStart(key, task.input)
-    executorLogger.requireTopDownStart(task)
-
+    executorLogger.requireTopDownStart(key, task)
     try {
-      // If already visited: return cached.
-      val visitedData = visited[key]
-      if(visitedData != null) {
-        val output = visitedData.output.cast<O>()
-        executorLogger.requireTopDownEnd(task, output)
-        return output
-      }
-
-      val existingData = store.readTxn().use { it.data(key) }
-      if(existingData != null) {
-        // Task is in dependency graph. It may be scheduled to be run, but we need its output *now*.
-        val requireNowData = requireScheduledNow(key, cancel)
-        if(requireNowData != null) {
-          // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been executed.
-          val requireNowOutput = requireNowData.output.cast<O>()
-          executorLogger.requireTopDownEnd(task, requireNowOutput)
-          return requireNowOutput
-        } else {
-          // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
-          // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
-          val (input, existingOutput, _, _, _) = existingData
-          
-          // Internal consistency: consistent input.
-          if(input != task.input) {
-            val reason = InconsistentInput(input, task.input)
-            val execData = exec(key, task, reason, cancel)
-            val execOutput = execData.output.cast<O>()
-            executorLogger.requireTopDownEnd(key, task, execOutput)
-            return execOutput
-          }
-
-          // Internal consistency: consistent transient output.
-          run {
-            val reason = existingOutput.isTransientInconsistent()
-            if(reason != null) {
-              val execData = execAndSchedule(key, task, cancel)
-              val execOutput = execData.output.cast<O>()
-              executorLogger.requireTopDownEnd(task, execOutput)
-              return execOutput
-            }
-          }
-
-          // Notify observer, if any.
-          val observer = observers[key]
-          if(observer != null) {
-            executorLogger.invokeObserverStart(observer, task, existingOutput)
-            observer.invoke(existingOutput)
-            executorLogger.invokeObserverEnd(observer, task, existingOutput)
-          }
-
-          // Return stored result.
-          val output = existingOutput.cast<O>()
-          executorLogger.requireTopDownEnd(task, output)
-          return output
-        }
-      } else {
-        // Task is not in dependency graph: execute. This tasks's output cannot affect other tasks since it is new.
-        val reason = NoData()
-        val execData = exec(key, task, reason, cancel)
-        val execOutput = execData.output.cast<O>()
-        executorLogger.requireTopDownEnd(task, execOutput)
-        return execOutput
-      }
+      val data = getData(key, task, cancel)
+      val output = data.output
+      executorLogger.requireTopDownEnd(key, task, output)
+      return output
     } finally {
       layer.requireTopDownEnd(key)
+    }
+  }
+
+  /**
+   * Get data for given task/key, either by getting existing data or through execution.
+   */
+  private fun <I : In, O : Out> getData(key: TaskKey, task: Task<I, O>, cancel: Cancelled): TaskData<I, O> {
+    // Check if task was already visited this execution. Return immediately if so.
+    val visitedData = requireShared.dataFromVisited(key)
+    if(visitedData != null) {
+      return visitedData.cast<I, O>()
+    }
+
+    // Check if data is stored for task. Execute if not.
+    val storedData = requireShared.dataFromStore(key)
+    if(storedData == null) {
+      // This tasks's output cannot affect other tasks since it is new. Therefore, we do not have to schedule new tasks.
+      return exec(key, task, NoData(), cancel)
+    }
+
+    // Task is in dependency graph. It may be scheduled to be run, but we need its output *now*.
+    val requireNowData = requireScheduledNow(key, cancel)
+    if(requireNowData != null) {
+      // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been executed.
+      return requireNowData.cast<I, O>()
+    } else {
+      // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
+      // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
+      val existingData = storedData.cast<I, O>()
+      val (input, output, _, _, _) = existingData
+
+      // Internal consistency: input changes.
+      with(requireShared.checkInput(input, task)) {
+        if(this != null) {
+          return exec(key, task, this, cancel)
+        }
+      }
+
+      // Internal consistency: transient output consistency.
+      with(requireShared.checkOutputConsistency(output)) {
+        if(this != null) {
+          return exec(key, task, this, cancel)
+        }
+      }
+
+      // Notify observer.
+      val observer = observers[key]
+      if(observer != null) {
+        executorLogger.invokeObserverStart(observer, key, output)
+        observer.invoke(output)
+        executorLogger.invokeObserverEnd(observer, key, output)
+      }
+
+      // Task is consistent.
+      return existingData
     }
   }
 
@@ -260,7 +255,7 @@ open class BottomUpSession(
     while(queue.isNotEmpty()) {
       cancel.throwIfCancelled()
       val txn = store.readTxn()
-      val minTaskKey = queue.pollLeastElemLessThanOrEqual(key, txn)
+      val minTaskKey = queue.pollLeastTaskWithDepTo(key, txn)
       if(minTaskKey == null) {
         txn.close()
         break

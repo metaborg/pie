@@ -31,7 +31,7 @@ class DistinctTaskKeyPriorityQueue(comparator: Comparator<TaskKey>) {
     return key
   }
 
-  fun pollLeastElemLessThanOrEqual(key: TaskKey, txn: StoreReadTxn): TaskKey? {
+  fun pollLeastTaskWithDepTo(key: TaskKey, txn: StoreReadTxn): TaskKey? {
     val queueCopy = PriorityQueue(queue)
     while(queueCopy.isNotEmpty()) {
       val queuedKey = queueCopy.poll()

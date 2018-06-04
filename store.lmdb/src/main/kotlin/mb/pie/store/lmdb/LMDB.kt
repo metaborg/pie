@@ -35,6 +35,7 @@ class LMDBStore(
   maxReaders: Int = 1024
 ) : Store {
   private val env: EnvB
+  private val input: DbiB
   private val output: DbiB
   private val callReqs: DbiB
   private val callersOf: DbiB
@@ -51,8 +52,9 @@ class LMDBStore(
     env = Env.create(DirectBufferProxy.PROXY_DB)
       .setMapSize(maxDbSize.toLong())
       .setMaxReaders(maxReaders)
-      .setMaxDbs(9)
-      .open(envDir, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC)
+      .setMaxDbs(10)
+      .open(envDir/*, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC*/)
+    input = env.openDbi("input", DbiFlags.MDB_CREATE)
     output = env.openDbi("output", DbiFlags.MDB_CREATE)
     callReqs = env.openDbi("taskReqs", DbiFlags.MDB_CREATE)
     callersOf = env.openDbi("callersOf", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
@@ -72,6 +74,7 @@ class LMDBStore(
   override fun readTxn(): StoreReadTxn {
     val txn = env.txnRead()
     return LMDBStoreTxn(env, txn, false, logger,
+      inputDb = input,
       outputDb = output,
       callReqsDb = callReqs,
       callersOfDb = callersOf,
@@ -87,6 +90,7 @@ class LMDBStore(
   override fun writeTxn(): StoreWriteTxn {
     val txn = env.txnWrite()
     return LMDBStoreTxn(env, txn, true, logger,
+      inputDb = input,
       outputDb = output,
       callReqsDb = callReqs,
       callersOfDb = callersOf,
@@ -358,6 +362,7 @@ internal open class LMDBStoreTxn(
   txn: TxnB,
   isWriteTxn: Boolean,
   logger: Logger,
+  private val inputDb: DbiB,
   private val outputDb: DbiB,
   private val callReqsDb: DbiB,
   private val callersOfDb: DbiB,
@@ -372,14 +377,18 @@ internal open class LMDBStoreTxn(
     TODO("implement numSourceFiles in LMDBStoreTxn")
   }
 
-  override fun output(key: TaskKey): UOutput? {
-    return getOne<UTask, Out>(key, outputDb).mapOrElse(null) { value ->
+  override fun input(key: TaskKey): In? {
+    return getOne<TaskKey, In>(key, inputDb).orElse(null)
+  }
+
+  override fun output(key: TaskKey): Output<*>? {
+    return getOne<TaskKey, Out>(key, outputDb).mapOrElse(null) { value ->
       Output(value)
     }
   }
 
   override fun taskReqs(key: TaskKey): ArrayList<TaskReq> {
-    return getOne<UTask, ArrayList<TaskReq>>(key, callReqsDb).orElse(arrayListOf())
+    return getOne<TaskKey, ArrayList<TaskReq>>(key, callReqsDb).orElse(arrayListOf())
   }
 
   override fun callersOf(key: TaskKey): Set<TaskKey> {
@@ -387,7 +396,7 @@ internal open class LMDBStoreTxn(
   }
 
   override fun fileReqs(key: TaskKey): ArrayList<FileReq> {
-    return getOne<UTask, ArrayList<FileReq>>(key, pathReqsDb).orElse(arrayListOf())
+    return getOne<TaskKey, ArrayList<FileReq>>(key, pathReqsDb).orElse(arrayListOf())
   }
 
   override fun requireesOf(file: PPath): Set<TaskKey> {
@@ -395,27 +404,35 @@ internal open class LMDBStoreTxn(
   }
 
   override fun fileGens(key: TaskKey): ArrayList<FileGen> {
-    return getOne<UTask, ArrayList<FileGen>>(key, pathGensDb).orElse(arrayListOf())
+    return getOne<TaskKey, ArrayList<FileGen>>(key, pathGensDb).orElse(arrayListOf())
   }
 
   override fun generatorOf(file: PPath): TaskKey? {
-    return getOne<PPath, UTask?>(file, generatorOfDb).orElse(null)
+    return getOne<PPath, TaskKey?>(file, generatorOfDb).orElse(null)
   }
 
-  override fun data(key: TaskKey): UTaskData? {
+  override fun data(key: TaskKey): TaskData<*, *>? {
     // TODO: buffer copies required?
-    val appKey = serialize(key, env.maxKeySize)
-    val outputDeserialized = getOne<Out>(copyBuffer(appKey), outputDb)
+    val keySerializedHashed = serialize(key, env.maxKeySize)
+    val inputDeserialized = getOne<In>(copyBuffer(keySerializedHashed), inputDb)
+    if(inputDeserialized == null || inputDeserialized.deleted) {
+      return null
+    }
+    val outputDeserialized = getOne<Out>(copyBuffer(keySerializedHashed), outputDb)
     if(outputDeserialized == null || outputDeserialized.deleted) {
       return null
     }
+    val input = inputDeserialized.deserialized
     val output = outputDeserialized.deserialized
-    val callReqs = getOne<ArrayList<TaskReq>>(copyBuffer(appKey), callReqsDb).orElse(arrayListOf())
-    val pathReqs = getOne<ArrayList<FileReq>>(copyBuffer(appKey), pathReqsDb).orElse(arrayListOf())
-    val pathGens = getOne<ArrayList<FileGen>>(appKey, pathGensDb).orElse(arrayListOf())
-    return TaskData(output, callReqs, pathReqs, pathGens)
+    val callReqs = getOne<ArrayList<TaskReq>>(copyBuffer(keySerializedHashed), callReqsDb).orElse(arrayListOf())
+    val pathReqs = getOne<ArrayList<FileReq>>(copyBuffer(keySerializedHashed), pathReqsDb).orElse(arrayListOf())
+    val pathGens = getOne<ArrayList<FileGen>>(keySerializedHashed, pathGensDb).orElse(arrayListOf())
+    return TaskData(input, output, callReqs, pathReqs, pathGens)
   }
 
+  override fun setInput(key: TaskKey, input: In) {
+    setOne(key, input, inputDb)
+  }
 
   override fun setOutput(key: TaskKey, output: Out) {
     setOne(key, output, outputDb)
@@ -478,8 +495,9 @@ internal open class LMDBStoreTxn(
     }
   }
 
-  override fun setData(key: TaskKey, data: UTaskData) {
+  override fun setData(key: TaskKey, data: TaskData<*, *>) {
     // OPTO: serialize and hash task only once
+    setInput(key, data.input)
     setOutput(key, data.output)
     setTaskReqs(key, data.taskReqs)
     setFileReqs(key, data.fileReqs)

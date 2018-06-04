@@ -35,7 +35,7 @@ data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) 
 /**
  * @return an [execution reason][ExecReason] when this output is transient and not consistent, `null` otherwise.
  */
-fun Out.isTransientInconsistent(): ExecReason? {
+fun Out.isTransientInconsistent(): InconsistentTransientOutput? {
   return when(this) {
     is OutTransient<*> -> when {
       this.consistent -> null

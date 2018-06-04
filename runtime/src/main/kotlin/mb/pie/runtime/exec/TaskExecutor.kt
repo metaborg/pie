@@ -7,6 +7,7 @@ import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
 
 class TaskExecutor(
+  private val taskDefs: TaskDefs,
   private val visited: MutableMap<TaskKey, TaskData<*, *>>,
   private val store: Store,
   private val share: Share,
@@ -20,17 +21,17 @@ class TaskExecutor(
 ) {
   fun <I : In, O : Out> exec(key: TaskKey, task: Task<I, O>, reason: ExecReason, requireTask: RequireTask, cancel: Cancelled): TaskData<I, O> {
     cancel.throwIfCancelled()
-    executorLogger.executeStart(task, reason)
+    executorLogger.executeStart(key, task, reason)
     // OPTO: Inline share functions. Requires statically knowledge of the specific Share type to use.
     val data = share.share(key, { execInternal(key, task, requireTask, cancel) }, { visited[key] })
-    executorLogger.executeEnd(task, reason, data)
+    executorLogger.executeEnd(key, task, reason, data)
     return data.cast<I, O>()
   }
 
   private fun <I : In, O : Out> execInternal(key: TaskKey, task: Task<I, O>, requireTask: RequireTask, cancel: Cancelled): TaskData<I, O> {
     cancel.throwIfCancelled()
     // Execute
-    val context = ExecContextImpl(logger, requireTask, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, cancel)
+    val context = ExecContextImpl(requireTask, cancel, taskDefs, store, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, logger)
     val output = task.exec(context)
     Stats.addExecution()
     val (callReqs, pathReqs, pathGens) = context.reqs()

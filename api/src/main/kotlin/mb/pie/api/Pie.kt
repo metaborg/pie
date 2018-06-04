@@ -12,7 +12,6 @@ interface Pie : AutoCloseable {
   val topDownExecutor: TopDownExecutor
   val bottomUpExecutor: BottomUpExecutor
 
-  fun dropCache()
   fun dropStore()
 }
 
@@ -22,7 +21,6 @@ interface Pie : AutoCloseable {
 interface PieBuilder {
   fun withTaskDefs(taskDefs: TaskDefs): PieBuilder
   fun withStore(store: (Logger) -> Store): PieBuilder
-  fun withCache(cache: (Logger) -> Cache): PieBuilder
   fun withShare(share: (Logger) -> Share): PieBuilder
   fun withDefaultOutputStamper(stamper: OutputStamper): PieBuilder
   fun withDefaultFileReqStamper(stamper: FileStamper): PieBuilder

@@ -22,7 +22,7 @@ class TopDownExecutorImpl constructor(
 }
 
 open class TopDownSessionImpl(
-  private val taskDefs: TaskDefs,
+  taskDefs: TaskDefs,
   private val store: Store,
   share: Share,
   defaultOutputStamper: OutputStamper,
@@ -32,9 +32,9 @@ open class TopDownSessionImpl(
   logger: Logger,
   private val executorLogger: ExecutorLogger
 ) : TopDownSession, RequireTask {
-  private val visited = mutableMapOf<TaskKey, UTaskData>()
-  private val executor = TaskExecutor(visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger, null)
-  private val shared = TopDownShared(visited, store, layer, executorLogger)
+  private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
+  private val executor = TaskExecutor(taskDefs, visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger, null)
+  private val requireShared = RequireShared(taskDefs, visited, store, executorLogger)
 
 
   override fun <I : In, O : Out> requireInitial(task: Task<I, O>, cancel: Cancelled): O {
@@ -51,106 +51,92 @@ open class TopDownSessionImpl(
 
   override fun <I : In, O : Out> require(key: TaskKey, task: Task<I, O>, cancel: Cancelled): O {
     cancel.throwIfCancelled()
-
+    Stats.addRequires()
+    layer.requireTopDownStart(key, task.input)
+    executorLogger.requireTopDownStart(key, task)
     try {
-      val outputOrData = shared.topdownPrelude(key, task)
-      if(outputOrData.visited != null) {
-        // Task was already visited this execution, return cached output.
-        return outputOrData.visited.cast<O>()
+      val (data, wasExecuted) = getData(key, task, cancel)
+      val output = data.output
+      if(!wasExecuted) {
+        // Validate well-formedness of the dependency graph.
+        store.readTxn().use { layer.validatePostWrite(key, data, it) }
+        // Mark task as visited.
+        visited[key] = data
       }
-      val data = outputOrData.data
-
-      // Check if re-execution is necessary.
-      if(data == null) {
-        // No cached or stored output was found: re-execute.
-        val reason = NoData()
-        val execData = exec(key, task, reason, cancel)
-        val output = execData.output
-        executorLogger.requireTopDownEnd(key, task, output)
-        return output
-      }
-      val (existingInput, existingOutput, taskReqs, pathReqs, pathGens) = data
-
-      // Check for inconsistencies and re-execute when found.
-      // Internal consistency: input changes
-      if(existingInput != task.input) {
-        val reason = InconsistentInput(existingInput, task.input)
-        val execData = exec(key, task, reason, cancel)
-        val execOutput = execData.output.cast<O>()
-        executorLogger.requireTopDownEnd(key, task, execOutput)
-        return execOutput
-      }
-
-      run {
-        // Internal consistency: transient output consistency
-        val reason = existingOutput.isTransientInconsistent()
-        if(reason != null) {
-          val execData = exec(key, task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(key, task, execOutput)
-          return execOutput
-        }
-      }
-
-      // Internal consistency: file requirements
-      for(pathReq in pathReqs) {
-        executorLogger.checkFileReqStart(key, task, pathReq)
-        val reason = pathReq.checkConsistency()
-        if(reason != null) {
-          // If a required file is outdated (i.e., its stamp changed): rebuild
-          executorLogger.checkFileReqEnd(key, task, pathReq, reason)
-          val execData = exec(key, task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(key, task, execOutput)
-          return execOutput
-        } else {
-          executorLogger.checkFileReqEnd(key, task, pathReq, null)
-        }
-      }
-
-      // Internal consistency: file generates
-      for(pathGen in pathGens) {
-        executorLogger.checkFileGenStart(key, task, pathGen)
-        val reason = pathGen.checkConsistency()
-        if(reason != null) {
-          // If a generated file is outdated (i.e., its stamp changed): rebuild
-          executorLogger.checkFileGenEnd(key, task, pathGen, reason)
-          val execData = exec(key, task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(key, task, execOutput)
-          return execOutput
-        } else {
-          executorLogger.checkFileGenEnd(key, task, pathGen, null)
-        }
-      }
-
-      // Total consistency: call requirements
-      for(taskReq in taskReqs) {
-        val calleeKey = taskReq.callee
-        val calleeTask = store.readTxn().use { txn -> calleeKey.toTask(taskDefs, txn) }
-        val calleeOutput = require(calleeKey, calleeTask, cancel)
-        executorLogger.checkTaskReqStart(key, task, taskReq)
-        val reason = taskReq.checkConsistency(calleeOutput)
-        executorLogger.checkTaskReqEnd(key, task, taskReq, reason)
-        if(reason != null) {
-          val execData = exec(key, task, reason, cancel)
-          val execOutput = execData.output.cast<O>()
-          executorLogger.requireTopDownEnd(key, task, execOutput)
-          return execOutput
-        }
-      }
-
-      // No inconsistencies found
-      // Validate well-formedness of the dependency graph
-      store.readTxn().use { layer.validatePostWrite(key, data, it) }
-      // Cache and mark as visited
-      visited[key] = data
-      // Reuse existing result
-      executorLogger.requireTopDownEnd(key, task, existingOutput)
-      return existingOutput.cast<O>()
+      executorLogger.requireTopDownEnd(key, task, output)
+      return output
     } finally {
       layer.requireTopDownEnd(key)
     }
+  }
+
+  data class DataW<I : In, O : Out>(val data: TaskData<I, O>, val executed: Boolean) {
+    constructor(data: TaskData<I, O>) : this(data, true)
+  }
+
+  /**
+   * Get data for given task/key, either by getting existing data or through execution.
+   */
+  private fun <I : In, O : Out> getData(key: TaskKey, task: Task<I, O>, cancel: Cancelled): DataW<I, O> {
+    // Check if task was already visited this execution. Return immediately if so.
+    val visitedData = requireShared.dataFromVisited(key)
+    if(visitedData != null) {
+      return DataW(visitedData.cast<I, O>(), false)
+    }
+
+    // Check if data is stored for task. Execute if not.
+    val storedData = requireShared.dataFromStore(key)
+    if(storedData == null) {
+      return DataW(exec(key, task, NoData(), cancel))
+    }
+
+    // Check consistency of task.
+    val existingData = storedData.cast<I, O>()
+    val (input, output, taskReqs, fileReqs, fileGens) = existingData
+
+    // Internal consistency: input changes.
+    with(requireShared.checkInput(input, task)) {
+      if(this != null) {
+        return DataW(exec(key, task, this, cancel))
+      }
+    }
+
+    // Internal consistency: transient output consistency.
+    with(requireShared.checkOutputConsistency(output)) {
+      if(this != null) {
+        return DataW(exec(key, task, this, cancel))
+      }
+    }
+
+    // Internal consistency: file requirements.
+    for(fileReq in fileReqs) {
+      with(requireShared.checkFileReq(key, task, fileReq)) {
+        if(this != null) {
+          return DataW(exec(key, task, this, cancel))
+        }
+      }
+    }
+
+    // Internal consistency: file generates.
+    for(fileGen in fileGens) {
+      with(requireShared.checkFileGen(key, task, fileGen)) {
+        if(this != null) {
+          return DataW(exec(key, task, this, cancel))
+        }
+      }
+    }
+
+    // Total consistency: call requirements.
+    for(taskReq in taskReqs) {
+      with(requireShared.checkTaskReq(key, task, taskReq, this, cancel)) {
+        if(this != null) {
+          return DataW(exec(key, task, this, cancel))
+        }
+      }
+    }
+
+    // Task is consistent.
+    return DataW(existingData, false)
   }
 
   open fun <I : In, O : Out> exec(key: TaskKey, task: Task<I, O>, reason: ExecReason, cancel: Cancelled): TaskData<I, O> {

@@ -34,7 +34,7 @@ class Exists : TaskDef<PPath, Boolean> {
   }
 }
 
-fun ExecContext.exists(input: PPath) = requireOutput(Exists::class.java, Exists.id, input)
+fun ExecContext.exists(input: PPath) = this.require<PPath, Boolean>(Exists.id, input)
 
 
 class ListContents @Inject constructor(
@@ -64,7 +64,7 @@ class ListContents @Inject constructor(
   }
 }
 
-fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class.java, ListContents.id, input)
+fun ExecContext.listContents(input: ListContents.Input) = this.require<ListContents.Input, ArrayList<PPath>>(ListContents.id, input)
 
 
 class WalkContents @Inject constructor(
@@ -94,7 +94,7 @@ class WalkContents @Inject constructor(
   }
 }
 
-fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, WalkContents.id, input)
+fun ExecContext.walkContents(input: WalkContents.Input) = this.require<WalkContents.Input, ArrayList<PPath>>(WalkContents.id, input)
 
 
 class Read : TaskDef<PPath, String?> {
@@ -117,7 +117,7 @@ class Read : TaskDef<PPath, String?> {
   }
 }
 
-fun ExecContext.read(input: PPath) = requireOutput(Read::class.java, Read.id, input)
+fun ExecContext.read(input: PPath) = this.require<PPath, String?>(Read.id, input)
 
 
 class Copy : TaskDef<Copy.Input, None> {
@@ -141,4 +141,4 @@ class Copy : TaskDef<Copy.Input, None> {
   }
 }
 
-fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class.java, Copy.id, input)
+fun ExecContext.copy(input: Copy.Input) = this.require<Copy.Input, None>(Copy.id, input)

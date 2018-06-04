@@ -46,7 +46,7 @@ interface StoreReadTxn : StoreTxn {
   /**
    * @return wrapper around output for [key], or `null` if no output is stored.
    */
-  fun output(key: TaskKey): UOutput?
+  fun output(key: TaskKey): Output<*>?
 
 
   /**
@@ -85,7 +85,7 @@ interface StoreReadTxn : StoreTxn {
   /**
    * @return output, task requirements, file requirements, and file generates for [key], or `null` when no output was stored.
    */
-  fun data(key: TaskKey): UTaskData?
+  fun data(key: TaskKey): TaskData<*, *>?
 
 
   /**
@@ -126,7 +126,7 @@ interface StoreWriteTxn : StoreReadTxn {
   /**
    * Sets the output, call requirements, file reqs, and file generates for [key] to [data].
    */
-  fun setData(key: TaskKey, data: UTaskData)
+  fun setData(key: TaskKey, data: TaskData<*, *>)
 
   /**
    * Removes all data from (drops) the store.
@@ -141,15 +141,10 @@ interface StoreWriteTxn : StoreReadTxn {
 data class Output<out O : Out>(val output: O)
 
 /**
- * Untyped wrapper for a task output, to distinguish a null output object from a non-existent output.
- */
-typealias UOutput = Output<*>
-
-/**
  * Attempts to cast untyped output to typed output.
  */
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <O : Out> UOutput.cast() = Output(this.output as O)
+inline fun <O : Out> Output<*>.cast() = Output(this.output as O)
 
 
 /**
@@ -158,17 +153,7 @@ inline fun <O : Out> UOutput.cast() = Output(this.output as O)
 data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
 
 /**
- * Untyped wrapper for task data.
- */
-typealias UTaskData = TaskData<*, *>
-
-/**
- * Generically typed wrapper for task data.
- */
-typealias GTaskData = TaskData<In, Out>
-
-/**
  * Attempts to cast untyped task data to typed task data.
  */
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <I : In, O : Out> UTaskData.cast() = this as TaskData<I, O>
+inline fun <I : In, O : Out> TaskData<*, *>.cast() = this as TaskData<I, O>

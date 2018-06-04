@@ -16,7 +16,7 @@ fun PieBuilder.withCoroutineShare(): PieBuilder {
  * [Share] implementation that shares concurrently executing tasks using Kotlin coroutines.
  */
 class CoroutineShare : Share {
-  private val deferredTasks = mutableMapOf<TaskKey, Deferred<UTaskData>>()
+  private val deferredTasks = mutableMapOf<TaskKey, Deferred<TaskData<*, *>>>()
   private val mutex = Mutex()
 
 
@@ -46,7 +46,7 @@ class CoroutineShare : Share {
     }
 
     // Task has not been visited yet, execute the task asynchronously.
-    val deferredExec: Deferred<UTaskData>
+    val deferredExec: Deferred<TaskData<*, *>>
     try {
       deferredExec = async(coroutineContext) { execFunc() }
       deferredTasks[key] = deferredExec

@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   private val inputs = ConcurrentHashMap<TaskKey, In>()
-  private val outputs = ConcurrentHashMap<TaskKey, UOutput>()
+  private val outputs = ConcurrentHashMap<TaskKey, Output<*>>()
   private val callReqs = ConcurrentHashMap<TaskKey, ArrayList<TaskReq>>()
   private val callersOf = ConcurrentHashMap<TaskKey, MutableSet<TaskKey>>()
   private val pathReqs = ConcurrentHashMap<TaskKey, ArrayList<FileReq>>()
@@ -92,7 +92,7 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     }
   }
 
-  override fun data(key: TaskKey): UTaskData? {
+  override fun data(key: TaskKey): TaskData<*, *>? {
     val input = input(key) ?: return null
     val output = output(key) ?: return null
     val callReqs = taskReqs(key)
@@ -101,7 +101,7 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     return TaskData(input, output.output, callReqs, pathReqs, pathGens)
   }
 
-  override fun setData(key: TaskKey, data: UTaskData) {
+  override fun setData(key: TaskKey, data: TaskData<*, *>) {
     val (input, output, callReqs, pathReqs, pathGens) = data
     setInput(key, input)
     setOutput(key, output)

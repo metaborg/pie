@@ -12,49 +12,32 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   private var indentation = AtomicInteger(0)
   private val indent get() = " ".repeat(indentation.get())
 
-  override fun requireTopDownInitialStart(task: UTask) {}
-  override fun requireTopDownInitialEnd(task: UTask, output: Out) {}
+  override fun requireTopDownInitialStart(key: TaskKey, task: Task<*, *>) {}
+  override fun requireTopDownInitialEnd(key: TaskKey, task: Task<*, *>, output: Out) {}
 
-  override fun requireTopDownStart(task: UTask) {
-    logger.trace("${indent}v ${task.toShortString(descLimit)}")
+  override fun requireTopDownStart(key: TaskKey, task: Task<*, *>) {
+    logger.trace("${indent}v ${task.desc(descLimit)}")
     indentation.incrementAndGet()
   }
 
-  override fun requireTopDownEnd(task: UTask, output: Out) {
+  override fun requireTopDownEnd(key: TaskKey, task: Task<*, *>, output: Out) {
     indentation.decrementAndGet()
-    logger.trace("$indent✔ ${task.toShortString(descLimit)} -> ${output.toString().toShortString(descLimit)}")
+    logger.trace("$indent✔ ${task.desc(descLimit)} -> ${output.toString().toShortString(descLimit)}")
   }
 
 
   override fun requireBottomUpInitialStart(changedFiles: Set<PPath>) {}
   override fun requireBottomUpInitialEnd() {}
 
-  override fun requireBottomUpStart(task: UTask) {
-    logger.trace("$indent^ ${task.toShortString(descLimit)}")
-    indentation.incrementAndGet()
-  }
 
-  override fun requireBottomUpEnd(task: UTask, output: Out) {
-    indentation.decrementAndGet()
-    logger.trace("$indent✔ ${task.toShortString(descLimit)} -> ${output.toString().toShortString(descLimit)}")
-  }
+  override fun checkVisitedStart(key: TaskKey) {}
+  override fun checkVisitedEnd(key: TaskKey, output: Out) {}
 
+  override fun checkStoredStart(key: TaskKey) {}
+  override fun checkStoredEnd(key: TaskKey, output: Out) {}
 
-  override fun checkVisitedStart(task: UTask) {}
-  override fun checkVisitedEnd(task: UTask, output: Out) {}
-
-
-  override fun checkCachedStart(task: UTask) {}
-  override fun checkCachedEnd(task: UTask, output: Out) {}
-
-
-  override fun checkStoredStart(task: UTask) {}
-  override fun checkStoredEnd(task: UTask, output: Out) {}
-
-
-  override fun checkFileGenStart(task: UTask, fileGen: FileGen) {}
-
-  override fun checkFileGenEnd(task: UTask, fileGen: FileGen, reason: ExecReason?) {
+  override fun checkFileGenStart(key: TaskKey, task: Task<*, *>, fileGen: FileGen) {}
+  override fun checkFileGenEnd(key: TaskKey, task: Task<*, *>, fileGen: FileGen, reason: ExecReason?) {
     if(reason != null) {
       if(reason is InconsistentFileGen) {
         logger.trace("$indent␦ ${fileGen.file} (inconsistent: ${fileGen.stamp} vs ${reason.newStamp})")
@@ -66,10 +49,8 @@ class LoggerExecutorLogger @JvmOverloads constructor(
     }
   }
 
-
-  override fun checkFileReqStart(task: UTask, fileReq: FileReq) {}
-
-  override fun checkFileReqEnd(task: UTask, fileReq: FileReq, reason: ExecReason?) {
+  override fun checkFileReqStart(key: TaskKey, task: Task<*, *>, fileReq: FileReq) {}
+  override fun checkFileReqEnd(key: TaskKey, task: Task<*, *>, fileReq: FileReq, reason: ExecReason?) {
     if(reason != null) {
       if(reason is InconsistentFileGen) {
         logger.trace("$indent␦ ${fileReq.file} (inconsistent: ${fileReq.stamp} vs ${reason.newStamp})")
@@ -81,10 +62,8 @@ class LoggerExecutorLogger @JvmOverloads constructor(
     }
   }
 
-
-  override fun checkTaskReqStart(task: UTask, taskReq: TaskReq) {}
-
-  override fun checkTaskReqEnd(task: UTask, taskReq: TaskReq, reason: ExecReason?) {
+  override fun checkTaskReqStart(key: TaskKey, task: Task<*, *>, taskReq: TaskReq) {}
+  override fun checkTaskReqEnd(key: TaskKey, task: Task<*, *>, taskReq: TaskReq, reason: ExecReason?) {
     when(reason) {
       is InconsistentTaskReq ->
         logger.trace("$indent␦ ${taskReq.callee.toShortString(descLimit)} (inconsistent: ${taskReq.stamp} vs ${reason.newStamp})")
@@ -94,18 +73,18 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   }
 
 
-  override fun executeStart(task: UTask, reason: ExecReason) {
-    logger.info("$indent> ${task.toShortString(descLimit)} (reason: $reason)")
+  override fun executeStart(key: TaskKey, task: Task<*, *>, reason: ExecReason) {
+    logger.info("$indent> ${task.desc(descLimit)} (reason: $reason)")
   }
 
-  override fun executeEnd(task: UTask, reason: ExecReason, data: UTaskData) {
+  override fun executeEnd(key: TaskKey, task: Task<*, *>, reason: ExecReason, data: TaskData<*, *>) {
     logger.info("$indent< ${data.output.toString().toShortString(descLimit)}")
   }
 
 
-  override fun invokeObserverStart(observer: Function<Unit>, task: UTask, output: Out) {
-    logger.trace("$indent@ ${observer.toString().toShortString(50)}(${output.toString().toShortString(200)})")
+  override fun invokeObserverStart(observer: Function<Unit>, key: TaskKey, output: Out) {
+    logger.trace("$indent@ ${observer.toString().toShortString(descLimit)}(${output.toString().toShortString(descLimit)})")
   }
 
-  override fun invokeObserverEnd(observer: Function<Unit>, task: UTask, output: Out) {}
+  override fun invokeObserverEnd(observer: Function<Unit>, key: TaskKey, output: Out) {}
 }

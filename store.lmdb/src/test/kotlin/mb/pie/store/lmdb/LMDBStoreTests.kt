@@ -1,6 +1,7 @@
 package mb.pie.store.lmdb
 
 import com.nhaarman.mockito_kotlin.*
+import mb.pie.api.test.anyC
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.test.RuntimeTestGenerator
@@ -11,13 +12,14 @@ internal class LMDBStoreTests {
   @TestFactory
   fun testReuse() = RuntimeTestGenerator.generate("testReuse", storeGens = arrayOf({ logger -> LMDBStore(logger, File("target/test/lmdbstore")) })) {
     addTaskDef(toLowerCase)
-    val app = app(toLowerCase, "HELLO WORLD!")
+    val task = task(toLowerCase, "HELLO WORLD!")
+    val key = task.key()
 
-    val exec1 = topDownExec()
-    exec1.requireInitial(app)
+    val session1 = topDownSession()
+    session1.requireInitial(task)
 
-    val exec2 = spy(topDownExec())
-    exec2.requireInitial(app)
-    verify(exec2, never()).exec(eq(app), eq(NoData()), any(), any())
+    val session2 = spy(topDownSession())
+    session2.requireInitial(task)
+    verify(session2, never()).exec(eq(key), eq(task), eq(NoData()), anyC())
   }
 }
