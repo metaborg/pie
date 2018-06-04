@@ -1,5 +1,6 @@
 package mb.pie.api
 
+import mb.pie.api.stamp.OutputStamper
 import java.io.Serializable
 
 /**
@@ -49,6 +50,15 @@ interface TaskDef<in I : In, out O : Out> {
    */
   @Throws(ExecException::class, InterruptedException::class)
   fun ExecContext.exec(input: I): O
+
+  /**
+   * Requires the task with given input, and returns its output.
+   *
+   * @throws ExecException when execution of the task fails unexpectedly.
+   * @throws InterruptedException when execution of the task is cancelled.
+   */
+  @Throws(ExecException::class, InterruptedException::class)
+  fun ExecContext.require(input: I, stamper: OutputStamper? = null): O = this.require(this@TaskDef, input, stamper)
 
   /**
    * Returns the description of task for given input.
