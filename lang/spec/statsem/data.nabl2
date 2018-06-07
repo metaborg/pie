@@ -1,5 +1,9 @@
 module statsem/data
 
+imports
+
+  signatures/-
+
 rules // Data definition
 
   [[ DataDef(DataDefMods(mods), id_type, super, impl) ^ (s) ]] :=

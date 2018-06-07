@@ -1,5 +1,9 @@
 module statsem/func
 
+imports
+
+  signatures/-
+
 rules // Function definition
 
   [[ FuncDef(FuncHead(id_func, params, ty_out), impl) ^ (s) ]] :=

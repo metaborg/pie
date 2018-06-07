@@ -25,6 +25,6 @@ val ApiTestCtx.writePath
 
 inline fun <reified I : In, reified O : Out> ApiTestCtx.requireOutputFunc(): TaskDef<STask<I>, O> {
   return taskDef<STask<I>, O>("require(${I::class}):${O::class}", { input, _ -> "require($input)" }) { task ->
-    require<I, O>(task)
+    require(task) as O
   }
 }

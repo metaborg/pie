@@ -35,20 +35,22 @@ internal class ExecContextImpl(
     return require(Task(taskDef, input), stamper)
   }
 
-  override fun <I : In, O : Out> require(task: STask<I>, stamper: OutputStamper?): O {
-    return require(task.toTask<O>(taskDefs), stamper)
+  override fun <I : In> require(task: STask<I>, stamper: OutputStamper?): Out {
+    // OPTO: toTask will incur a cast of the task definition, can that be avoided?
+    return require(task.toTask(taskDefs), stamper)
   }
 
-  override fun <I : In, O : Out> require(taskDefId: String, input: I, stamper: OutputStamper?): O {
-    val taskDef = taskDefs.getTaskDef<I, O>(taskDefId)
+  override fun <I : In> require(taskDefId: String, input: I, stamper: OutputStamper?): Out {
+    // OPTO: getTaskDef will incur a cast, can that be avoided?
+    val taskDef = taskDefs.getTaskDef<I, Out>(taskDefId)
       ?: throw RuntimeException("Cannot execute task with identifier $taskDefId, it cannot be found")
     return require(Task(taskDef, input), stamper)
   }
 
-  override fun <O : Out> require(key: TaskKey, stamper: OutputStamper?): O {
+  override fun require(key: TaskKey, stamper: OutputStamper?): Out {
+    // OPTO: toTask will incur a cast of the task definition, can that be avoided?
     val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
-    @Suppress("UNCHECKED_CAST")
-    return require(task, stamper) as O
+    return require(task, stamper)
   }
 
 

@@ -190,9 +190,11 @@ rules // PIE function calls
 
 
   p2k-exp-pie-call(|javaClassId):
-   Call(funcId, exps) -> $[requireOutput([javaClassId]::class.java, [javaClassId].id, [expStr])]
+   Call(funcId, exps) -> $[require(_[safeJavaClassId], [expStr])]
     with
-      expStr := <p2k-exp-pie-call-inputexp(|javaClassId)> exps
+      expStr              := <p2k-exp-pie-call-inputexp(|javaClassId)> exps
+    ; safeJavaClassId     := <string-replace(|".", "_")> javaClassId
+    ; rules(InjectValues :+= $[private val _[safeJavaClassId]: [javaClassId]])
 
 
   p2k-exp-pie-call-inputexp(|javaClassId):
@@ -248,16 +250,18 @@ rules // Path operations
       filterStr := <p2k-filter-match> filter
 
   p2k-exp:
-    ListPath(exp, filterOpt) -> $[requireOutput(ListContents::class.java, ListContents.id, ListContents.Input([expStr], [filterStr]))]
+    ListPath(exp, filterOpt) -> $[require(listContents, ListContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
     ; filterStr := <p2k-filter-match> filterOpt
+    ; rules(InjectValues :+= $[private val listContents: ListContents])
     
   p2k-exp:
-    WalkPath(exp, filterOpt) -> $[requireOutput(WalkContents::class.java, WalkContents.id, WalkContents.Input([expStr], [filterStr]))]
+    WalkPath(exp, filterOpt) -> $[require(walkContents, WalkContents.Input([expStr], [filterStr]))]
     with
       expStr    := <p2k-exp> exp
     ; filterStr := <p2k-filter-walk> filterOpt
+    ; rules(InjectValues :+= $[private val walkContents: WalkContents])
       
   p2k-filter-match:
     None() -> $[null]
@@ -295,14 +299,16 @@ rules // Path operations
 
 
   p2k-exp:
-    ReadPath(exp) -> $[requireOutput(Read::class.java, Read.id, [expStr])]
+    ReadPath(exp) -> $[require(read, [expStr])]
     with
       expStr := <p2k-exp> exp
+    ; rules(InjectValues :+= $[private val read: Read])
       
   p2k-exp:
-    ExistsPath(exp) -> $[requireOutput(Exists::class.java, Exists.id, [expStr])]
+    ExistsPath(exp) -> $[require(exists, [expStr])]
     with
       expStr := <p2k-exp> exp
+    ; rules(InjectValues :+= $[private val exists: Exists])
 
 rules // Early return and failure
 

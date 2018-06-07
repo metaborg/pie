@@ -1,0 +1,53 @@
+module gen/kotlin/main
+
+imports
+
+  nabl2/api
+
+  gen/util
+  gen/kotlin/func
+  gen/kotlin/func_body
+
+rules
+
+  generate-kotlin-file:
+    (ast, _, _, file, _) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"kt")> file
+    ; mod      := <base-filename;remove-extension> file
+    ; result   := <p2k(|mod)> ast
+
+rules
+
+  p2k(|mod):
+    Program(defs) -> str
+    with
+    {| AstAnalysis, ModuleBindings:
+      <pie-set-ast-analysis> defs
+      
+    ; classes  := <filter(p2k-def)> defs
+    ; bindings := <bagof-ModuleBindings; pie-concat-nl>
+    |}
+    with
+      str := 
+$[@file:Suppress("warnings")
+
+package mb.spoofax.pie.generated
+
+import java.io.Serializable
+import java.nio.file.Paths
+import com.google.inject.*
+import mb.pie.api.*
+import mb.pie.vfs.path.*
+import mb.pie.lang.runtime.path.*
+import mb.pie.lang.runtime.util.*
+import mb.pie.taskdefs.guice.*
+
+[classes]
+
+class TaskDefsModule_[mod] : TaskDefsModule() {
+  override fun Binder.bindTaskDefs(taskDefsBinder: MapBinder<String, TaskDef<*, *>>) {
+    [bindings]
+  }
+}
+]

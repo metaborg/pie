@@ -20,17 +20,20 @@ rules // PIE function definitions
     with
       className   := <pie-sanitize-class-id> funcId
     with
-    {| InputKind:
+    {| InputKind, InjectValues:
       (inputName , inputDataClass)  := <p2k-funcdef-inputsig(|className)> params
     ; (outputName, outputDataClass) := <p2k-funcdef-outputsig(|className)> type
-    ; buildImpl   := <p2k-funcdef-body> body
-    ; emptyReturn := <?UnitTy(); !"return Unit.instance" <+ !""> type
+    ; buildImpl    := <p2k-funcdef-body> body
+    ; injectValues := <bagof-InjectValues; make-set; pie-concat-commanl>
+    ; emptyReturn  := <?UnitTy(); !"return Unit.instance" <+ !""> type
    |}
     with
-      rules(ModuleBindings :+= $[binder.bindTaskDef<[className]>(taskDefsBinder, "[className]")])
+      rules(ModuleBindings :+= $[bindTaskDef<[className]>(taskDefsBinder, "[className]")])
     with
       str := 
-$[class [className] : TaskDef<[inputName], [outputName]> {
+$[class [className] @Inject constructor(
+  [injectValues]
+) : TaskDef<[inputName], [outputName]> {
   companion object {
     const val id = "[className]"
   }

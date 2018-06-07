@@ -24,19 +24,19 @@ interface ExecContext {
    * Requires task given by its serializable task form, and returns its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> require(task: STask<I>, stamper: OutputStamper? = null): O
+  fun <I : In> require(task: STask<I>, stamper: OutputStamper? = null): Out
 
   /**
    * Requires task given by the identifier of its task definition and input, and returns its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <I : In, O : Out> require(taskDefId: String, input: I, stamper: OutputStamper? = null): O
+  fun <I : In> require(taskDefId: String, input: I, stamper: OutputStamper? = null): Out
 
   /**
    * Requires task given by its key, and return its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun <O : Out> require(key: TaskKey, stamper: OutputStamper? = null): O
+  fun require(key: TaskKey, stamper: OutputStamper? = null): Out
 
 
   /**
