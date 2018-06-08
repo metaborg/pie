@@ -33,5 +33,10 @@ interface BottomUpExecutor {
    * Removes the observer with given key.
    */
   fun removeObserver(key: TaskKey)
+
+  /**
+   * Removes all (drops) observers.
+   */
+  fun dropObservers()
 }
 

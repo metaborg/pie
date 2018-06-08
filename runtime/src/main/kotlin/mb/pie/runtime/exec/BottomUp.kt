@@ -58,6 +58,10 @@ class BottomUpExecutorImpl constructor(
     observers.remove(key)
   }
 
+  override fun dropObservers() {
+    observers.clear()
+  }
+
 
   @Suppress("MemberVisibilityCanBePrivate")
   fun newSession(): BottomUpSession {

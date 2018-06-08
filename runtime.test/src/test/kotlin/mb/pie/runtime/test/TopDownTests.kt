@@ -334,7 +334,7 @@ internal class TopDownTests {
 
   @TestFactory
   fun testCyclicDependency() = RuntimeTestGenerator.generate("testCyclicDependency") {
-    val cyclicTaskDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(stask("b1", None.instance)) }
+    val cyclicTaskDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(stask("b1", None.instance)) as None }
     addTaskDef(cyclicTaskDef)
 
     val executor = topDownExecutor

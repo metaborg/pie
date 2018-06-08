@@ -1,6 +1,5 @@
 package mb.pie.runtime
 
-import com.sun.corba.se.impl.util.RepositoryId.cache
 import mb.pie.api.*
 import mb.pie.api.exec.BottomUpExecutor
 import mb.pie.api.exec.TopDownExecutor
@@ -107,5 +106,5 @@ class PieImpl(
   }
 
   override fun toString() =
-    "PieImpl($store, $cache, $share, $defaultOutputStamper, $defaultFileReqStamper, $defaultFileGenStamper, ${layerFactory(logger)})"
+    "PieImpl($store, $share, $defaultOutputStamper, $defaultFileReqStamper, $defaultFileGenStamper, ${layerFactory(logger)})"
 }

@@ -28,19 +28,19 @@ class NoExecContext : ExecContext {
     return null as O
   }
 
-  override fun <I : In, O : Out> require(task: STask<I>, stamper: OutputStamper?): O {
+  override fun <I : In> require(task: STask<I>, stamper: OutputStamper?): Out {
     @Suppress("UNCHECKED_CAST")
-    return null as O
+    return null
   }
 
-  override fun <I : In, O : Out> require(taskDefId: String, input: I, stamper: OutputStamper?): O {
+  override fun <I : In> require(taskDefId: String, input: I, stamper: OutputStamper?): Out {
     @Suppress("UNCHECKED_CAST")
-    return null as O
+    return null
   }
 
-  override fun <O : Out> require(key: TaskKey, stamper: OutputStamper?): O {
+  override fun require(key: TaskKey, stamper: OutputStamper?): Out {
     @Suppress("UNCHECKED_CAST")
-    return null as O
+    return null
   }
 
   override fun require(file: PPath, stamper: FileStamper?) {}
