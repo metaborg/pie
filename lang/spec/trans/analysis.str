@@ -4,6 +4,7 @@ imports
   
   nabl2/api
   nabl2/runtime
+  nabl2/shared
   
   statsem/-
   desugar
