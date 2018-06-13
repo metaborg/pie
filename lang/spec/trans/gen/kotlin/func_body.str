@@ -11,7 +11,7 @@ imports
   
   statsem/pie
   
-  gen/kotlin/func
+  gen/kotlin/func_def
   gen/kotlin/binder
   gen/kotlin/type
   gen/idtype-tuples
@@ -315,7 +315,7 @@ rules // Early return and failure
   p2k-exp:
     Return(exp) -> $[return [expStr]]
     with
-      expStr := <p2k-funcdef-returnvalue> exp
+      expStr := <p2k-pie-func-impl-returnvalue> exp
 
   p2k-exp:
     Fail(exp) -> $[throw ExecException([expStr].toString())]

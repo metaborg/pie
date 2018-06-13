@@ -3,7 +3,7 @@ module data
 imports
   
   lex/literal
-  func
+  func_def
   
 context-free syntax // Data definition
 

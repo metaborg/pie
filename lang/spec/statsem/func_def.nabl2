@@ -1,4 +1,4 @@
-module statsem/func
+module statsem/func_def
 
 imports
 
@@ -44,8 +44,13 @@ rules // Function implementations
     occ_func_outer.kind        := PieForeignFuncKind() !,
     occ_func_outer.javaClassId := id_class_java !.
 
-  [[ PieFuncImpl(body) ^ (s, ty_func_def, occ_func_outer) ]] :=
+  [[ PieFuncImpl(body, key) ^ (s, ty_func_def, occ_func_outer) ]] :=
     occ_func_outer.kind := PieFuncKind() !,
     [[ body ^ (s, ty_func_def) : ty_body ]],
     ty_func_def == FuncTy(_, ty_ret_expected),
-    ty_body <? ty_ret_expected | error $[Type mismatch: expected [ty_ret_expected], got [ty_body]] @ body.
+    ty_body <? ty_ret_expected | error $[Type mismatch: expected [ty_ret_expected], got [ty_body]] @ body,
+    PieKeyFunc [[ key ^ (s, ty_func_def) ]].
+
+  PieKeyFunc [[ None()           ^ (s, ty_func_def) ]] := true.
+  PieKeyFunc [[ PieKeyFunc(body) ^ (s, ty_func_def) ]] := [[ body ^ (s, ty_func_def) : _ ]].
+  

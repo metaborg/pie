@@ -3,7 +3,6 @@ module type
 imports
 
   lex/literal
-  func
 
 context-free syntax
 

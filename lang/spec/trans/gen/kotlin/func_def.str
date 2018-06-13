@@ -1,4 +1,4 @@
-module gen/kotlin/func
+module gen/kotlin/func_def
 
 imports
 
@@ -16,14 +16,15 @@ imports
 rules // PIE function definitions
 
   p2k-def:
-    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body)) -> str
+    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body, optKeyBody)) -> str
     with
       className   := <pie-sanitize-class-id> funcId
     with
     {| InputKind, InjectValues:
-      (inputName , inputDataClass)  := <p2k-funcdef-inputsig(|className)> params
-    ; (outputName, outputDataClass) := <p2k-funcdef-outputsig(|className)> type
-    ; buildImpl    := <p2k-funcdef-body> body
+      (inputName , inputDataClass)  := <p2k-pie-func-impl-inputsig(|className)> params
+    ; (outputName, outputDataClass) := <p2k-pie-func-impl-outputsig(|className)> type
+    ; execImpl     := <p2k-pie-func-impl-body> body
+    ; keyImpl      := <p2k-pie-func-key-body> optKeyBody
     ; injectValues := <bagof-InjectValues; make-set; pie-concat-commanl>
     ; emptyReturn  := <?UnitTy(); !"return Unit.instance" <+ !""> type
    |}
@@ -38,11 +39,12 @@ $[class [className] @Inject constructor(
     const val id = "[className]"
   }
   [inputDataClass][outputDataClass]override val id = Companion.id
-  override fun ExecContext.exec(input: [inputName]): [outputName] = [buildImpl]
+  override fun key(input: [inputName]): Key = [keyImpl]
+  override fun ExecContext.exec(input: [inputName]): [outputName] = [execImpl]
 }
 ]
 
-  p2k-funcdef-body:
+  p2k-pie-func-impl-body:
     Block(exps) -> 
 $[run {
   [restExpsStr]
@@ -53,25 +55,25 @@ $[run {
     ; restExps    := <take(|<dec> numExps)> exps 
     ; restExpsStr := <map(try-p2k-exp); pie-sep-concat(|";\n")> restExps
     ; lastExp     := <last> exps
-    ; lastExpStr  := <p2k-funcdef-returnvalue> lastExp
+    ; lastExpStr  := <p2k-pie-func-impl-returnvalue> lastExp
 
-  p2k-funcdef-body:
+  p2k-pie-func-impl-body:
     EmptyBlock() -> "run { Unit.instance }"
 
-  p2k-funcdef-body:
+  p2k-pie-func-impl-body:
     exp -> <try-p2k-exp> exp
     where
       <not(?Block(_) <+ ?EmptyBlock())> exp
 
   
-  p2k-funcdef-returnvalue:
+  p2k-pie-func-impl-returnvalue:
     exp -> $[output([expStr])]
     where
       <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
     with
       expStr := <try-p2k-exp> exp
       
-  p2k-funcdef-returnvalue:
+  p2k-pie-func-impl-returnvalue:
     exp -> expStr
     where
       <pie-ast-type; not(?TupleTy(_))> exp
@@ -79,14 +81,14 @@ $[run {
       expStr := <try-p2k-exp> exp
 
 
-  p2k-funcdef-inputsig(|className):
+  p2k-pie-func-impl-inputsig(|className):
     Params(params) -> ("None", "")
     where
       0 := <length> params
     with 
       rules(InputKind := 0)
       
-  p2k-funcdef-inputsig(|className):
+  p2k-pie-func-impl-inputsig(|className):
     p@Params(params) -> (tySig, "")
     where
       1 := <length> params
@@ -96,7 +98,7 @@ $[run {
     with 
       rules(InputKind := 1)
     
-  p2k-funcdef-inputsig(|className):
+  p2k-pie-func-impl-inputsig(|className):
     p@Params(params) -> ($[[className].Input], $[[dataClassStr]["\n"]])
     where
       length := <length> params
@@ -108,12 +110,12 @@ $[run {
       rules(InputKind := 2)
 
     
-  p2k-funcdef-outputsig(|className):
+  p2k-pie-func-impl-outputsig(|className):
     ty -> (<p2k-type-sig> ty, "")
     where
       <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
       
-  p2k-funcdef-outputsig(|className):
+  p2k-pie-func-impl-outputsig(|className):
     ty -> ($[[className].Output], $[[dataClassStr]["\n"][outputFun]["\n\n"]])
     where
       <?TupleTy(_)> ty
@@ -122,7 +124,7 @@ $[run {
     ; dataClassStr := <p2k-type-generate-dataclass(|"Output")> idTypeTuples
     ; outputFun    := $[private fun output(tuple: [<p2k-type-sig> ty]) = Output(tuple)]
 
-  p2k-funcdef-outputsig(|className):
+  p2k-pie-func-impl-outputsig(|className):
     ty -> ($[[className].Output?], $[[dataClassStr]["\n"][outputFun]["\n\n"]])
     where
       <?NullableTy(tty@TupleTy(_))> ty
@@ -130,3 +132,10 @@ $[run {
       idTypeTuples := <pie-idtype-tuples> tty
     ; dataClassStr := <p2k-type-generate-dataclass(|"Output")> idTypeTuples
     ; outputFun    := $[private fun output(tuple: [<p2k-type-sig> ty]) = if(tuple == null) null else Output(tuple)]
+
+    
+  p2k-pie-func-key-body:
+    None() -> "input"
+    
+  p2k-pie-func-key-body:
+    PieKeyFunc(exp) -> <try-p2k-exp> exp
