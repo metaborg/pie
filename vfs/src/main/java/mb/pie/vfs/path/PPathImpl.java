@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -237,6 +238,23 @@ public class PPathImpl implements PPath {
 
     @Override public boolean deleteFile() throws IOException {
         return Files.deleteIfExists(getJavaPath());
+    }
+
+    @Override public boolean deleteAll() throws IOException {
+        try {
+            return Files.walk(getJavaPath())
+                .sorted(Comparator.reverseOrder())
+                .map(path -> {
+                    try {
+                        return Files.deleteIfExists(path);
+                    } catch(IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .allMatch(b -> b);
+        }catch(UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
 

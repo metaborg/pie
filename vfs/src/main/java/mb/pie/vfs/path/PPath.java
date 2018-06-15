@@ -96,6 +96,8 @@ public interface PPath extends Serializable {
 
     boolean deleteFile() throws IOException;
 
+    boolean deleteAll() throws IOException;
+
 
     String toString();
 }
