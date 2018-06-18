@@ -242,7 +242,11 @@ public class PPathImpl implements PPath {
 
     @Override public boolean deleteAll() throws IOException {
         try {
-            return Files.walk(getJavaPath())
+            final Path javaPath = getJavaPath();
+            if(!Files.exists(javaPath)) {
+                return false;
+            }
+            return Files.walk(javaPath)
                 .sorted(Comparator.reverseOrder())
                 .map(path -> {
                     try {
@@ -252,7 +256,7 @@ public class PPathImpl implements PPath {
                     }
                 })
                 .allMatch(b -> b);
-        }catch(UncheckedIOException e) {
+        } catch(UncheckedIOException e) {
             throw e.getCause();
         }
     }
