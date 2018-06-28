@@ -1,6 +1,7 @@
 package mb.pie.runtime.exec
 
-import mb.pie.api.*
+import mb.pie.api.Store
+import mb.pie.api.TaskKey
 import java.util.*
 
 class DistinctTaskKeyPriorityQueue(comparator: Comparator<TaskKey>) {
@@ -8,13 +9,7 @@ class DistinctTaskKeyPriorityQueue(comparator: Comparator<TaskKey>) {
   private val set = hashSetOf<TaskKey>()
 
   companion object {
-    fun withTransitiveDependencyComparator(store: Store) = DistinctTaskKeyPriorityQueue(Comparator { key1, key2 ->
-      when {
-        key1 == key2 -> 0
-        store.readTxn().use { txn -> txn.hasTransitiveTaskReq(key1, key2) } -> 1
-        else -> -1
-      }
-    })
+    fun withTransitiveDependencyComparator(store: Store) = DistinctTaskKeyPriorityQueue(DependencyComparator(store))
   }
 
   fun isNotEmpty(): Boolean {
@@ -31,11 +26,11 @@ class DistinctTaskKeyPriorityQueue(comparator: Comparator<TaskKey>) {
     return key
   }
 
-  fun pollLeastTaskWithDepTo(key: TaskKey, txn: StoreReadTxn): TaskKey? {
+  fun pollLeastTaskWithDepTo(key: TaskKey, store: Store): TaskKey? {
     val queueCopy = PriorityQueue(queue)
     while(queueCopy.isNotEmpty()) {
       val queuedKey = queueCopy.poll()
-      if(queuedKey == key || txn.hasTransitiveTaskReq(key, queuedKey)) {
+      if(queuedKey == key || store.readTxn().use { txn -> txn.hasTransitiveTaskReq(key, queuedKey) }) {
         queue.remove(queuedKey)
         set.remove(queuedKey)
         return queuedKey
@@ -51,4 +46,14 @@ class DistinctTaskKeyPriorityQueue(comparator: Comparator<TaskKey>) {
   }
 
   override fun toString() = queue.toString()
+}
+
+class DependencyComparator(private val store: Store) : Comparator<TaskKey> {
+  override fun compare(key1: TaskKey, key2: TaskKey): Int {
+    return when {
+      key1 == key2 -> 0
+      store.readTxn().use { txn -> txn.hasTransitiveTaskReq(key1, key2) } -> 1
+      else -> -1
+    }
+  }
 }

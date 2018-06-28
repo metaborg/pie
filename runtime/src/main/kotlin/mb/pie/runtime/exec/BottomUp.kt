@@ -258,14 +258,8 @@ open class BottomUpSession(
     logger.trace("Executing scheduled (and its dependencies) task NOW: $key")
     while(queue.isNotEmpty()) {
       cancel.throwIfCancelled()
-      val txn = store.readTxn()
-      val minTaskKey = queue.pollLeastTaskWithDepTo(key, txn)
-      if(minTaskKey == null) {
-        txn.close()
-        break
-      }
-      val minTask = minTaskKey.toTask(taskDefs, txn)
-      txn.close()
+      val minTaskKey = queue.pollLeastTaskWithDepTo(key, store) ?: break
+      val minTask = store.readTxn().use { txn -> minTaskKey.toTask(taskDefs, txn) }
       logger.trace("- least element less than task: ${minTask.desc()}")
       val data = execAndSchedule(minTaskKey, minTask, cancel)
       if(minTaskKey == key) {

@@ -7,11 +7,11 @@ import java.util.concurrent.ConcurrentHashMap
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   private val inputs = ConcurrentHashMap<TaskKey, In>()
   private val outputs = ConcurrentHashMap<TaskKey, Output<*>>()
-  private val callReqs = ConcurrentHashMap<TaskKey, ArrayList<TaskReq>>()
+  private val taskReqs = ConcurrentHashMap<TaskKey, ArrayList<TaskReq>>()
   private val callersOf = ConcurrentHashMap<TaskKey, MutableSet<TaskKey>>()
-  private val pathReqs = ConcurrentHashMap<TaskKey, ArrayList<FileReq>>()
+  private val fileReqs = ConcurrentHashMap<TaskKey, ArrayList<FileReq>>()
   private val requireesOf = ConcurrentHashMap<PPath, MutableSet<TaskKey>>()
-  private val pathGens = ConcurrentHashMap<TaskKey, ArrayList<FileGen>>()
+  private val fileGens = ConcurrentHashMap<TaskKey, ArrayList<FileGen>>()
   private val generatorOf = ConcurrentHashMap<PPath, TaskKey?>()
 
 
@@ -38,57 +38,57 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     outputs[key] = Output(output)
   }
 
-  override fun taskReqs(key: TaskKey) = callReqs.getOrEmptyList(key)
+  override fun taskReqs(key: TaskKey) = taskReqs.getOrEmptyList(key)
   override fun callersOf(key: TaskKey): Set<TaskKey> = callersOf.getOrPutSet(key)
   override fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>) {
     // Remove old call requirements
-    val oldCallReqs = this.callReqs.remove(key)
-    if(oldCallReqs != null) {
-      for(callReq in oldCallReqs) {
-        callersOf.getOrPutSet(callReq.callee).remove(key)
+    val oldTaskReqs = this.taskReqs.remove(key)
+    if(oldTaskReqs != null) {
+      for(taskReq in oldTaskReqs) {
+        callersOf.getOrPutSet(taskReq.callee).remove(key)
       }
     }
     // OPTO: diff taskReqs and oldCallReqs, remove/add entries based on diff.
     // Add new call requirements
-    this.callReqs[key] = taskReqs
-    for(callReq in taskReqs) {
-      callersOf.getOrPutSet(callReq.callee).add(key)
+    this.taskReqs[key] = taskReqs
+    for(taskReq in taskReqs) {
+      callersOf.getOrPutSet(taskReq.callee).add(key)
     }
   }
 
-  override fun fileReqs(key: TaskKey) = pathReqs.getOrEmptyList(key)
+  override fun fileReqs(key: TaskKey) = fileReqs.getOrEmptyList(key)
   override fun requireesOf(file: PPath): Set<TaskKey> = requireesOf.getOrPutSet(file)
   override fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>) {
     // Remove old file requirements
-    val oldPathReqs = this.pathReqs.remove(key)
-    if(oldPathReqs != null) {
-      for(pathReq in oldPathReqs) {
-        requireesOf.getOrPutSet(pathReq.file).remove(key)
+    val oldFileReqs = this.fileReqs.remove(key)
+    if(oldFileReqs != null) {
+      for(fileReq in oldFileReqs) {
+        requireesOf.getOrPutSet(fileReq.file).remove(key)
       }
     }
     // OPTO: diff fileReqs and oldPathReqs, remove/add entries based on diff.
     // Add new call requirements
-    this.pathReqs[key] = fileReqs
-    for(pathReq in fileReqs) {
-      requireesOf.getOrPutSet(pathReq.file).add(key)
+    this.fileReqs[key] = fileReqs
+    for(fileReq in fileReqs) {
+      requireesOf.getOrPutSet(fileReq.file).add(key)
     }
   }
 
-  override fun fileGens(key: TaskKey) = pathGens.getOrEmptyList(key)
+  override fun fileGens(key: TaskKey) = fileGens.getOrEmptyList(key)
   override fun generatorOf(file: PPath): TaskKey? = generatorOf[file]
   override fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>) {
     // Remove old file generators
-    val oldPathGens = this.pathGens.remove(key)
-    if(oldPathGens != null) {
-      for(pathGen in oldPathGens) {
-        generatorOf.remove(pathGen.file)
+    val oldFileGens = this.fileGens.remove(key)
+    if(oldFileGens != null) {
+      for(fileGen in oldFileGens) {
+        generatorOf.remove(fileGen.file)
       }
     }
     // OPTO: diff fileGens and oldPathGens, remove/add entries based on diff.
     // Add new file generators
-    this.pathGens[key] = fileGens
-    for(pathGen in fileGens) {
-      generatorOf[pathGen.file] = key
+    this.fileGens[key] = fileGens
+    for(fileGen in fileGens) {
+      generatorOf[fileGen.file] = key
     }
   }
 
@@ -112,9 +112,8 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
 
 
   override fun numSourceFiles(): Int {
-    val requiredFiles = pathReqs.values.flatMap { it.map { it.file } }.toHashSet()
     var numSourceFiles = 0
-    for(file in requiredFiles) {
+    for(file in requireesOf.keys) {
       if(!generatorOf.containsKey(file)) {
         ++numSourceFiles
       }
@@ -125,11 +124,11 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
 
   override fun drop() {
     outputs.clear()
-    callReqs.clear()
+    taskReqs.clear()
     callersOf.clear()
-    pathReqs.clear()
+    fileReqs.clear()
     requireesOf.clear()
-    pathGens.clear()
+    fileGens.clear()
     generatorOf.clear()
   }
 
@@ -139,5 +138,8 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   }
 }
 
-private fun <K, V> ConcurrentHashMap<K, MutableSet<V>>.getOrPutSet(key: K) = this.getOrPut(key, { ConcurrentHashMap.newKeySet<V>() })!!
-private fun <K, V> ConcurrentHashMap<K, ArrayList<V>>.getOrEmptyList(key: K) = this.getOrElse(key) { arrayListOf() }
+@Suppress("NOTHING_TO_INLINE")
+private inline fun <K, V> ConcurrentHashMap<K, MutableSet<V>>.getOrPutSet(key: K) = this.getOrPut(key) { ConcurrentHashMap.newKeySet<V>() }!!
+
+@Suppress("NOTHING_TO_INLINE")
+private inline fun <K, V> ConcurrentHashMap<K, ArrayList<V>>.getOrEmptyList(key: K) = this.getOrElse(key) { arrayListOf() }
