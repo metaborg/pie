@@ -3,12 +3,14 @@ package mb.pie.api
 import java.io.Serializable
 
 /**
- * Type for task outputs. Must be [Serializable], may be `null`.
+ * Type for task outputs. It must adhere to the following properties:
+ *
+ * * Implements [Serializable].
+ * * Implements [equals][Object.equals] and [hashCode][Object.hashCode].
+ *
+ * Failure to adhere to these properties will cause unsound incrementality.
  */
 typealias Out = Serializable?
-
-@Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <O : Out> Out.cast() = this as O
 
 
 /**

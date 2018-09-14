@@ -39,48 +39,53 @@ interface StoreTxn : AutoCloseable {
  */
 interface StoreReadTxn : StoreTxn {
   /**
-   * @return wrapper around output for [task], or `null` if no output is stored.
+   * @return input for task with [key], or `null` if no input is stored.
    */
-  fun output(task: UTask): UOutput?
+  fun input(key: TaskKey): In?
+
+  /**
+   * @return wrapper around output for [key], or `null` if no output is stored.
+   */
+  fun output(key: TaskKey): Output<*>?
 
 
   /**
-   * @return task requirements (calls) of [task].
+   * @return task requirements (calls) of [key].
    */
-  fun taskReqs(task: UTask): List<TaskReq>
+  fun taskReqs(key: TaskKey): List<TaskReq>
 
   /**
-   * @return callers of [task].
+   * @return callers of [key].
    */
-  fun callersOf(task: UTask): Set<UTask>
+  fun callersOf(key: TaskKey): Set<TaskKey>
 
 
   /**
-   * @return file requirements of [task].
+   * @return file requirements of [key].
    */
-  fun fileReqs(task: UTask): List<FileReq>
+  fun fileReqs(key: TaskKey): List<FileReq>
 
   /**
    * @return tasks that require [file].
    */
-  fun requireesOf(file: PPath): Set<UTask>
+  fun requireesOf(file: PPath): Set<TaskKey>
 
 
   /**
-   * @return file generates of [task].
+   * @return file generates of [key].
    */
-  fun fileGens(task: UTask): List<FileGen>
+  fun fileGens(key: TaskKey): List<FileGen>
 
   /**
    * @return file that generates [file], or `null` if it does not exist.
    */
-  fun generatorOf(file: PPath): UTask?
+  fun generatorOf(file: PPath): TaskKey?
 
 
   /**
-   * @return output, task requirements, file requirements, and file generates for [task], or `null` when no output was stored.
+   * @return output, task requirements, file requirements, and file generates for [key], or `null` when no output was stored.
    */
-  fun data(task: UTask): UTaskData?
+  fun data(key: TaskKey): TaskData<*, *>?
 
 
   /**
@@ -94,29 +99,34 @@ interface StoreReadTxn : StoreTxn {
  */
 interface StoreWriteTxn : StoreReadTxn {
   /**
-   * Sets the output of [task] to [output].
+   * Sets the input of [key] to [input].
    */
-  fun setOutput(task: UTask, output: Out)
+  fun setInput(key: TaskKey, input: In)
 
   /**
-   * Sets the task requirements of [task] to [taskReqs].
+   * Sets the output of [key] to [output].
    */
-  fun setTaskReqs(task: UTask, taskReqs: ArrayList<TaskReq>)
+  fun setOutput(key: TaskKey, output: Out)
 
   /**
-   * Sets the file requirements of [task] to [fileReqs].
+   * Sets the task requirements of [key] to [taskReqs].
    */
-  fun setFileReqs(task: UTask, fileReqs: ArrayList<FileReq>)
+  fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>)
 
   /**
-   * Sets the generated fileGens of [task] to [fileGens].
+   * Sets the file requirements of [key] to [fileReqs].
    */
-  fun setFileGens(task: UTask, fileGens: ArrayList<FileGen>)
+  fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>)
 
   /**
-   * Sets the output, call requirements, file reqs, and file generates for [task] to [data].
+   * Sets the generated fileGens of [key] to [fileGens].
    */
-  fun setData(task: UTask, data: UTaskData)
+  fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>)
+
+  /**
+   * Sets the output, call requirements, file reqs, and file generates for [key] to [data].
+   */
+  fun setData(key: TaskKey, data: TaskData<*, *>)
 
   /**
    * Removes all data from (drops) the store.
@@ -131,29 +141,19 @@ interface StoreWriteTxn : StoreReadTxn {
 data class Output<out O : Out>(val output: O)
 
 /**
- * Untyped wrapper for a task output, to distinguish a null output object from a non-existent output.
- */
-typealias UOutput = Output<*>
-
-/**
  * Attempts to cast untyped output to typed output.
  */
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <O : Out> UOutput.cast() = Output(this.output as O)
+inline fun <O : Out> Output<*>.cast() = Output(this.output as O)
 
 
 /**
  * Wrapper for task data: outputs and dependencies.
  */
-data class TaskData<out O : Out>(val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
-
-/**
- * Untyped wrapper for task data: outputs and dependencies.
- */
-typealias UTaskData = TaskData<*>
+data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
 
 /**
  * Attempts to cast untyped task data to typed task data.
  */
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
-inline fun <O : Out> UTaskData.cast() = this as TaskData<O>
+inline fun <I : In, O : Out> TaskData<*, *>.cast() = this as TaskData<I, O>

@@ -1,12 +1,10 @@
 package mb.pie.lang.runtime.path
 
-import com.google.inject.Inject
 import mb.pie.api.*
 import mb.pie.api.stamp.FileStampers
 import mb.pie.vfs.list.PathMatcher
 import mb.pie.vfs.list.PathWalker
 import mb.pie.vfs.path.PPath
-import mb.pie.vfs.path.PathSrv
 import java.io.IOException
 import java.io.Serializable
 import java.nio.file.Files
@@ -34,12 +32,7 @@ class Exists : TaskDef<PPath, Boolean> {
   }
 }
 
-fun ExecContext.exists(input: PPath) = requireOutput(Exists::class.java, Exists.id, input)
-
-
-class ListContents @Inject constructor(
-  val pathSrv: PathSrv
-) : TaskDef<ListContents.Input, ArrayList<PPath>> {
+class ListContents : TaskDef<ListContents.Input, ArrayList<PPath>> {
   companion object {
     const val id = "path.ListContents"
   }
@@ -62,14 +55,12 @@ class ListContents @Inject constructor(
       throw ExecException("Cannot list contents of '$input'", e)
     }
   }
+
+  @Suppress("NOTHING_TO_INLINE")
+  inline fun ListContents.createTask(path: PPath, matcher: PathMatcher?) = Task(this, Input(path, matcher))
 }
 
-fun ExecContext.listContents(input: ListContents.Input) = requireOutput(ListContents::class.java, ListContents.id, input)
-
-
-class WalkContents @Inject constructor(
-  val pathSrv: PathSrv
-) : TaskDef<WalkContents.Input, ArrayList<PPath>> {
+class WalkContents : TaskDef<WalkContents.Input, ArrayList<PPath>> {
   companion object {
     const val id = "path.WalkContents"
   }
@@ -92,10 +83,10 @@ class WalkContents @Inject constructor(
       throw ExecException("Cannot walk contents of '$input'", e)
     }
   }
+
+  @Suppress("NOTHING_TO_INLINE")
+  inline fun WalkContents.createTask(path: PPath, walker: PathWalker?) = Task(this, Input(path, walker))
 }
-
-fun ExecContext.walkContents(input: WalkContents.Input) = requireOutput(WalkContents::class.java, WalkContents.id, input)
-
 
 class Read : TaskDef<PPath, String?> {
   companion object {
@@ -117,9 +108,6 @@ class Read : TaskDef<PPath, String?> {
   }
 }
 
-fun ExecContext.read(input: PPath) = requireOutput(Read::class.java, Read.id, input)
-
-
 class Copy : TaskDef<Copy.Input, None> {
   companion object {
     const val id = "path.Copy"
@@ -139,6 +127,7 @@ class Copy : TaskDef<Copy.Input, None> {
     generate(to)
     return None.instance
   }
-}
 
-fun ExecContext.copy(input: Copy.Input) = requireOutput(Copy::class.java, Copy.id, input)
+  @Suppress("NOTHING_TO_INLINE")
+  inline fun Copy.createTask(from: PPath, to: PPath) = Task(this, Input(from, to))
+}

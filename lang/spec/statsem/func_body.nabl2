@@ -1,5 +1,9 @@
 module statsem/func_body
 
+imports
+
+  signatures/-
+
 rules // Expression composition
 
   [[ Block(exps) ^ (s, ty_func_def) : last_exp_ty ]] :=

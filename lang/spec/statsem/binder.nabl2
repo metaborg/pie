@@ -1,5 +1,9 @@
 module statsem/binder
 
+imports
+
+  signatures/-
+
 rules // Binders
 
   Binder [[ SingleBinder(bind) ^ (s, ty_exp) ]] :=

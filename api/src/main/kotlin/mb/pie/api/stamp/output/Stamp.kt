@@ -59,6 +59,13 @@ data class ValueOutputStamp<out V : Out>(private val value: V, override val stam
   }
 }
 
+class FuncEqualsOutputStamper(private val func: (Out) -> Out) : OutputStamper {
+  override fun <O : Out> stamp(output: O): OutputStamp {
+    val value = func(output)
+    return ValueOutputStamp(value, this)
+  }
+}
+
 class InconsequentialOutputStamper : OutputStamper {
   companion object {
     val instance = InconsequentialOutputStamper()

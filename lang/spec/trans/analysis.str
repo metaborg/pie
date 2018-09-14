@@ -2,10 +2,11 @@ module analysis
 
 imports
   
-  nabl2shared
-  nabl2runtime
+  nabl2/api
+  nabl2/runtime
+  nabl2/shared
   
-  statsem/pie
+  statsem/-
   desugar
   pp
 

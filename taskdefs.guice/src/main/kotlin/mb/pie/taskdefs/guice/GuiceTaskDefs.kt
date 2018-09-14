@@ -26,7 +26,7 @@ fun PieBuilder.withGuiceTaskDefs(taskDefs: GuiceTaskDefs): PieBuilder {
 /**
  * [TaskDefs] implementation that injects the map binding created from [TaskDefsModule].
  */
-class GuiceTaskDefs @Inject constructor(map: MutableMap<String, UTaskDef>) : MapTaskDefs(map)
+class GuiceTaskDefs @Inject constructor(map: MutableMap<String, TaskDef<*, *>>) : MapTaskDefs(map)
 
 /**
  * A module that binds [GuiceTaskDefs] as a singleton, which can be passed to a [PieBuilder] with [withGuiceTaskDefs].
@@ -44,13 +44,13 @@ class GuiceTaskDefsModule : Module {
  */
 abstract class TaskDefsModule : Module {
   override fun configure(binder: Binder) {
-    val taskDefsBinder = MapBinder.newMapBinder<String, UTaskDef>(binder, object : TypeLiteral<String>() {}, object : TypeLiteral<UTaskDef>() {})
+    val taskDefsBinder = MapBinder.newMapBinder<String, TaskDef<*, *>>(binder, object : TypeLiteral<String>() {}, object : TypeLiteral<TaskDef<*, *>>() {})
     binder.bindTaskDefs(taskDefsBinder)
   }
 
-  abstract fun Binder.bindTaskDefs(taskDefsBinder: MapBinder<String, UTaskDef>)
+  abstract fun Binder.bindTaskDefs(taskDefsBinder: MapBinder<String, TaskDef<*, *>>)
 
-  protected inline fun <reified B : UTaskDef> Binder.bindTaskDef(builderBinder: MapBinder<String, UTaskDef>, id: String) {
+  protected inline fun <reified B : TaskDef<*, *>> Binder.bindTaskDef(builderBinder: MapBinder<String, TaskDef<*, *>>, id: String) {
     bind(B::class.java).`in`(Singleton::class.java)
     builderBinder.addBinding(id).to(B::class.java)
   }

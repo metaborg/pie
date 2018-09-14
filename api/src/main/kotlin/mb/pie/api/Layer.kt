@@ -4,8 +4,8 @@ package mb.pie.api
  * Internal layer for intercepting parts of task execution, used for validation.
  */
 interface Layer {
-  fun <I : In, O : Out> requireTopDownStart(task: Task<I, O>)
-  fun <I : In, O : Out> requireTopDownEnd(task: Task<I, O>)
-  fun <I : In, O : Out> validatePreWrite(task: Task<I, O>, data: TaskData<O>, txn: StoreReadTxn)
-  fun <I : In, O : Out> validatePostWrite(task: Task<I, O>, data: TaskData<O>, txn: StoreReadTxn)
+  fun requireTopDownStart(key: TaskKey, input: In)
+  fun requireTopDownEnd(key: TaskKey)
+  fun <I : In, O : Out> validatePreWrite(key: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn)
+  fun <I : In, O : Out> validatePostWrite(key: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn)
 }

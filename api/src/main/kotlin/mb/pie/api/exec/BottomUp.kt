@@ -22,16 +22,21 @@ interface BottomUpExecutor {
   /**
    * Checks whether given task has been required at least once.
    */
-  fun <I : In, O : Out> hasBeenRequired(task: Task<I, O>): Boolean
+  fun hasBeenRequired(key: TaskKey): Boolean
 
   /**
-   * Sets [observer] as the observer for outputs of [task], using given [key] which can be used to remove (unsubscribe from) the observer.
+   * Sets [observer] as the observer for outputs of [key], using given [key] which can be used to remove (unsubscribe from) the observer.
    */
-  fun setObserver(key: Any, task: UTask, observer: (Out) -> Unit)
+  fun setObserver(key: TaskKey, observer: (Out) -> Unit)
 
   /**
    * Removes the observer with given key.
    */
-  fun removeObserver(key: Any)
+  fun removeObserver(key: TaskKey)
+
+  /**
+   * Removes all (drops) observers.
+   */
+  fun dropObservers()
 }
 

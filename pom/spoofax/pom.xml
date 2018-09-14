@@ -15,7 +15,7 @@
   </parent>
 
   <properties>
-    <spoofax.version>2.4.1</spoofax.version>
+    <spoofax.version>2.6.0-SNAPSHOT</spoofax.version>
   </properties>
 
   <dependencyManagement>

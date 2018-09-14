@@ -1,5 +1,9 @@
 module statsem/type
 
+imports
+
+  signatures/-
+
 rules // Simple types
 
   [[ UnitTy() ^ (s) : UnitTy() ]] := true.

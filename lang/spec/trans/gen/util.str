@@ -1,7 +1,8 @@
 module gen/util
 
 imports
-
+  
+  libspoofax/stratego/debug
   nabl2/api
 
 rules // Generic strategies for getting properties and types of anything
@@ -68,6 +69,7 @@ rules
   pie-concat-nl = pie-sep-concat(|"\n")
   pie-concat-comma = pie-sep-concat(|", ")
   pie-concat-space = pie-sep-concat(|" ")
+  pie-concat-commanl = pie-sep-concat(|",\n")
   
   pie-prepend-comma-nonempty: 
     [] -> []
