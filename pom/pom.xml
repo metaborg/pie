@@ -147,6 +147,27 @@
           <artifactId>versions-maven-plugin</artifactId>
           <version>2.5</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.1.1</version>
+          <configuration>
+            <createDependencyReducedPom>true</createDependencyReducedPom>
+            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+            <shadedArtifactAttached>false</shadedArtifactAttached>
+            <!-- Exclude manifest signature files -->
+            <filters>
+              <filter>
+                <artifact>*:*</artifact>
+                <excludes>
+                  <exclude>META-INF/*.SF</exclude>
+                  <exclude>META-INF/*.DSA</exclude>
+                  <exclude>META-INF/*.RSA</exclude>
+                </excludes>
+              </filter>
+            </filters>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
 
