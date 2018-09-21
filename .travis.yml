@@ -11,7 +11,7 @@ deploy:
 sudo: false
 cache:
   directories:
-  - $HOME/.m2
+  - "$HOME/.m2"
 env:
   global:
   - secure: DT3OOY8oeZi89+0FeeuvpZfLVaBNHhpG8jWQNHhfRQv72ddzgYTDkSOKznMbrF05+DzgumuqFn2A07BReBK3HpAdG/tU4TQL1SnyT51I0/lKqv8swbKGLrzqc5Kn8dBWCa4rgsHfXLfpJ8+CyZBfDL9Ui/f+VxhRI/NYVWV+zLi4Mzh5+QUuxp5l4BPQycc+OZ8B/8wmoCucPW5Bt8QUAF71uhhpfJIvvsJIBcw83/Mot38qvtQC90/4L+urTdR0XS30WT91ajxyADFwefAgFGfxYKcpZ22/WlDtQh/YHoEpy94rYoJj1Xext6AiCRNzc5V8iRhcOHzf1YATNDabGfB7I6SBljs+7dwN0MN4nTWsYFwzxnhxdypzRtw5mHIfnd9SbuUrGVWKDDT+0cYN7uTgOt/8tTqAYZQiTM6SfjaNW1agkwLQ11i6k/rTyW9FZ0bGKmWcvYwvr5aKb5vMvHT33aiKVVT8cpezC+NXYgX61DgSc7pcOjpNQjH7y53rkKTwsKstg2HzbWDaEtHfPNLPOKOPzYpAU/bdRGmvI8Q/UiisRtJJf6ll1ckrDtQ1gp860RN/BD0a+zHVRKKjKyFP/cKXstpNx2CaSfXIRzovKq1cvaQf1kMgi3QSJX45mtn0zVYCaJHwKN12sAnvyUIBLlOk98MRKjVcesI9gdQ=
