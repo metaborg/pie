@@ -40,16 +40,22 @@ or add the following to your `build.gradle` file:
 compile 'org.metaborg:pie.runtime:0.2.0'
 ```
 
-### Examples
+### Components
 
-See the example projects in the [examples](examples) directory.
+PIE consists of several components:
+
+* [API](api): The PIE API for developing reusable interactive pipelines or incremental build scripts (artifact ID: `pie.api`)
+* [Runtime](runtime): The PIE runtime for incrementally executing pipelines developed with the API (artifact ID: `pie.runtime`)
+  * [LMDB storage support](store.lmdb): Storage/persistence support for the runtime using the LMDB embedded database (artifact ID: `store.lmdb`)
+* [Guice support for task definitions](taskdefs.guice): Guice dependency injection support for task definitions (artifact ID: `taskdefs.guice`)
+* [DSL](lang/spec): The PIE DSL for concisely writing pipelines (`org.metaborg:pie.lang`)
 
 
 ## Developer's guide
 
 ### Building
 
-As requisites for building PIE, you need a [Java Development Kit (JDK)](http://www.oracle.com/technetwork/java/javase/downloads/index.html) of version 8 or higher, and [Maven](https://maven.apache.org/download.cgi) 3.5.4 or higher.
+As prerequisites for building PIE, you need a [Java Development Kit (JDK)](http://www.oracle.com/technetwork/java/javase/downloads/index.html) of version 8 or higher, and [Maven](https://maven.apache.org/download.cgi) 3.5.4 or higher.
 To build PIE, run Maven as follows in the root directory of this repository:
 
 ```bash
