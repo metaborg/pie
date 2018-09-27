@@ -24,12 +24,6 @@ inline fun ByteArray.hash(): ByteArray {
   return digest.digest(this)
 }
 
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T : Serializable?> T.serializeThenHash(): ByteArray {
-  return this.serialize().hash()
-}
-
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T : Serializable?> T.serializeAndHash(): SerializedAndHashed {
   val serialized = this.serialize()

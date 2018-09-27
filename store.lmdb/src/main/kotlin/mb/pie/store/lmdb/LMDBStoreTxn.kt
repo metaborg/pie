@@ -23,42 +23,42 @@ internal open class LMDBStoreTxn(
 
 
   override fun input(key: TaskKey): In? {
-    return shared.getOne<TaskKey, In>(key, inputDb).orElse(null)
+    return shared.getOne<In>(key.serialize().hash().toBuffer(), inputDb).orElse(null)
   }
 
   override fun output(key: TaskKey): Output<*>? {
-    return shared.getOne<TaskKey, Out>(key, outputDb).mapOrElse(null) { value ->
+    return shared.getOne<Out>(key.serialize().hash().toBuffer(), outputDb).mapOrElse(null) { value ->
       Output(value)
     }
   }
 
   override fun taskReqs(key: TaskKey): ArrayList<TaskReq> {
-    return shared.getOne<TaskKey, ArrayList<TaskReq>>(key, taskReqsDb).orElse(arrayListOf())
+    return shared.getOne<ArrayList<TaskReq>>(key.serialize().hash().toBuffer(), taskReqsDb).orElse(arrayListOf())
   }
 
   override fun callersOf(key: TaskKey): Set<TaskKey> {
-    return shared.getMultiple(key, callersOfDb, callersOfValuesDb)
+    return shared.getMultiple(key.serialize().hash().toBuffer(), callersOfDb, callersOfValuesDb)
   }
 
   override fun fileReqs(key: TaskKey): ArrayList<FileReq> {
-    return shared.getOne<TaskKey, ArrayList<FileReq>>(key, fileReqsDb).orElse(arrayListOf())
+    return shared.getOne<ArrayList<FileReq>>(key.serialize().hash().toBuffer(), fileReqsDb).orElse(arrayListOf())
   }
 
   override fun requireesOf(file: PPath): Set<TaskKey> {
-    return shared.getMultiple(file, requireesOfDb, requireesOfValuesDb)
+    return shared.getMultiple(file.serialize().hash().toBuffer(), requireesOfDb, requireesOfValuesDb)
   }
 
   override fun fileGens(key: TaskKey): ArrayList<FileGen> {
-    return shared.getOne<TaskKey, ArrayList<FileGen>>(key, fileGensDb).orElse(arrayListOf())
+    return shared.getOne<ArrayList<FileGen>>(key.serialize().hash().toBuffer(), fileGensDb).orElse(arrayListOf())
   }
 
   override fun generatorOf(file: PPath): TaskKey? {
-    return shared.getOne<PPath, TaskKey?>(file, generatorOfDb).orElse(null)
+    return shared.getOne<TaskKey?>(file.serialize().hash().toBuffer(), generatorOfDb).orElse(null)
   }
 
   override fun data(key: TaskKey): TaskData<*, *>? {
     // OPTO: reuse buffers? is that safe?
-    val keyHashedBytes = key.serializeThenHash()
+    val keyHashedBytes = key.serialize().hash()
     val inputDeserialized = shared.getOne<In>(keyHashedBytes.toBuffer(), inputDb)
     if(inputDeserialized == null || inputDeserialized.failed) {
       return null
@@ -69,18 +69,18 @@ internal open class LMDBStoreTxn(
     }
     val input = inputDeserialized.deserialized
     val output = outputDeserialized.deserialized
-    val callReqs = shared.getOne<ArrayList<TaskReq>>(keyHashedBytes.toBuffer(), taskReqsDb).orElse(arrayListOf())
-    val pathReqs = shared.getOne<ArrayList<FileReq>>(keyHashedBytes.toBuffer(), fileReqsDb).orElse(arrayListOf())
-    val pathGens = shared.getOne<ArrayList<FileGen>>(keyHashedBytes.toBuffer(), fileGensDb).orElse(arrayListOf())
-    return TaskData(input, output, callReqs, pathReqs, pathGens)
+    val taskReqs = shared.getOne<ArrayList<TaskReq>>(keyHashedBytes.toBuffer(), taskReqsDb).orElse(arrayListOf())
+    val fileReqs = shared.getOne<ArrayList<FileReq>>(keyHashedBytes.toBuffer(), fileReqsDb).orElse(arrayListOf())
+    val fileGens = shared.getOne<ArrayList<FileGen>>(keyHashedBytes.toBuffer(), fileGensDb).orElse(arrayListOf())
+    return TaskData(input, output, taskReqs, fileReqs, fileGens)
   }
 
   override fun numSourceFiles(): Int {
     // Cannot use files in requireesOfValuesDb, as these are never cleaned up at the moment. Instead use values of fileReqsDb.
     val requiredFiles = run {
       val set = hashSetOf<PPath>()
-      fileReqsDb.iterate(txn).use {
-        it.iterable().flatMapTo(set) { keyVal ->
+      fileReqsDb.iterate(txn).use { cursor ->
+        cursor.iterable().flatMapTo(set) { keyVal ->
           keyVal.`val`().deserialize<ArrayList<FileReq>>(logger).orElse(arrayListOf()).map { it.file }
         }
       }
@@ -88,7 +88,7 @@ internal open class LMDBStoreTxn(
     }
     var numSourceFiles = 0
     for(file in requiredFiles) {
-      if(!shared.exists(file, generatorOfDb)) {
+      if(!shared.getBool(file.serialize().hash().toBuffer(), generatorOfDb)) {
         ++numSourceFiles
       }
     }
@@ -97,11 +97,11 @@ internal open class LMDBStoreTxn(
 
 
   override fun setInput(key: TaskKey, input: In) {
-    shared.setOne(key, input, inputDb)
+    shared.setOne(key.serialize().hash().toBuffer(), input.serialize().toBuffer(), inputDb)
   }
 
   override fun setOutput(key: TaskKey, output: Out) {
-    shared.setOne(key, output, outputDb)
+    shared.setOne(key.serialize().hash().toBuffer(), output.serialize().toBuffer(), outputDb)
   }
 
   override fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>) {
@@ -111,13 +111,13 @@ internal open class LMDBStoreTxn(
     // Remove old inverse task requirements.
     val oldTaskReqs = shared.getOne<ArrayList<TaskReq>>(keyHashedBytes.toBuffer(), taskReqsDb).orElse(arrayListOf())
     for(taskReq in oldTaskReqs) {
-      shared.deleteDup(taskReq.callee.serializeThenHash().toBuffer(), keyHashedBytes.toBuffer(), callersOfDb, callersOfValuesDb)
+      shared.deleteDup(taskReq.callee.serialize().hash().toBuffer(), keyHashedBytes.toBuffer(), callersOfDb, callersOfValuesDb)
     }
 
     // Add new task requirements.
     shared.setOne(keyHashedBytes.toBuffer(), taskReqs.serialize().toBuffer(), taskReqsDb)
     for(taskReq in taskReqs) {
-      shared.setDup(taskReq.callee.serializeThenHash().toBuffer(), keyBytes.toBuffer(), keyHashedBytes.toBuffer(), callersOfDb, callersOfValuesDb)
+      shared.setDup(taskReq.callee.serialize().hash().toBuffer(), keyBytes.toBuffer(), keyHashedBytes.toBuffer(), callersOfDb, callersOfValuesDb)
     }
   }
 
@@ -128,13 +128,13 @@ internal open class LMDBStoreTxn(
     // Remove old inverse file requirements.
     val oldFileReqs = shared.getOne<ArrayList<FileReq>>(keyHashedBytes.toBuffer(), fileReqsDb).orElse(arrayListOf())
     for(fileReq in oldFileReqs) {
-      shared.deleteDup(fileReq.file.serializeThenHash().toBuffer(), keyHashedBytes.toBuffer(), requireesOfDb, requireesOfValuesDb)
+      shared.deleteDup(fileReq.file.serialize().hash().toBuffer(), keyHashedBytes.toBuffer(), requireesOfDb, requireesOfValuesDb)
     }
 
     // Add new file requirements.
     shared.setOne(keyHashedBytes.toBuffer(), fileReqs.serialize().toBuffer(), fileReqsDb)
     for(fileReq in fileReqs) {
-      shared.setDup(fileReq.file.serializeThenHash().toBuffer(), keyBytes.toBuffer(), keyHashedBytes.toBuffer(), requireesOfDb, requireesOfValuesDb)
+      shared.setDup(fileReq.file.serialize().hash().toBuffer(), keyBytes.toBuffer(), keyHashedBytes.toBuffer(), requireesOfDb, requireesOfValuesDb)
     }
   }
 
@@ -145,13 +145,13 @@ internal open class LMDBStoreTxn(
     // Remove old inverse file generates.
     val oldFileGens = shared.getOne<ArrayList<FileGen>>(keyHashedBytes.toBuffer(), fileGensDb).orElse(arrayListOf())
     for(fileGen in oldFileGens) {
-      shared.deleteOne(fileGen.file, generatorOfDb)
+      shared.deleteOne(fileGen.file.serialize().hash().toBuffer(), generatorOfDb)
     }
 
     // Add new file generates.
-    shared.setOne(keyHashedBytes, fileGens, fileGensDb)
+    shared.setOne(keyHashedBytes.toBuffer(), fileGens.serialize().toBuffer(), fileGensDb)
     for(fileGen in fileGens) {
-      shared.setOne(fileGen.file.serializeThenHash().toBuffer(), keyBytes.toBuffer(), generatorOfDb)
+      shared.setOne(fileGen.file.serialize().hash().toBuffer(), keyBytes.toBuffer(), generatorOfDb)
     }
   }
 
@@ -180,5 +180,6 @@ internal open class LMDBStoreTxn(
 
   override fun close() {
     txn.commit()
+    txn.close()
   }
 }
