@@ -13,7 +13,7 @@ inline fun ByteArray.toBuffer(): Buf {
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun Buf.copyBuffer(): ByteBuffer {
+inline fun Buf.copyBuffer(): Buf {
   val readOnlyBuffer = asReadOnlyBuffer()
   val newBuffer = Buf.allocateDirect(readOnlyBuffer.capacity())
   readOnlyBuffer.rewind()
