@@ -6,13 +6,13 @@ deploy:
     script: mvn -B -V -nsu --settings .travis.settings.xml -DskipTests -Dmaven.test.skip=true -P release deploy
     skip_cleanup: true
     on:
-      repo: metaborg/log
+      repo: metaborg/pie
       tags: true
   - provider: script
     script: mvn -B -V -nsu --settings .travis.settings.xml -DskipTests -Dmaven.test.skip=true deploy
     skip_cleanup: true
     on:
-      repo: metaborg/log
+      repo: metaborg/pie
       branch: develop
 sudo: false
 cache:
