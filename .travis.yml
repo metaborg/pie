@@ -1,18 +1,20 @@
 language: java
 install: true
-script: mvn clean verify --settings .travis.settings.xml -B -U -V
+script: mvn -B -V -U --settings .travis.settings.xml clean verify
 deploy:
-  provider: script
-  script: mvn deploy --settings .travis.settings.xml -DskipTests=true -B -V
-  skip_cleanup: true
-  on:
-    repo: metaborg/pie
-    tags: true
+  - provider: script
+    script: mvn -B -V -nsu --settings .travis.settings.xml -DskipTests -Dmaven.test.skip=true -P release deploy
+    skip_cleanup: true
+    on:
+      repo: metaborg/pie
+      tags: true
+  - provider: script
+    script: mvn -B -V -nsu --settings .travis.settings.xml -DskipTests -Dmaven.test.skip=true deploy
+    skip_cleanup: true
+    on:
+      repo: metaborg/pie
+      branch: develop
 sudo: false
 cache:
   directories:
   - "$HOME/.m2"
-env:
-  global:
-  - secure: DT3OOY8oeZi89+0FeeuvpZfLVaBNHhpG8jWQNHhfRQv72ddzgYTDkSOKznMbrF05+DzgumuqFn2A07BReBK3HpAdG/tU4TQL1SnyT51I0/lKqv8swbKGLrzqc5Kn8dBWCa4rgsHfXLfpJ8+CyZBfDL9Ui/f+VxhRI/NYVWV+zLi4Mzh5+QUuxp5l4BPQycc+OZ8B/8wmoCucPW5Bt8QUAF71uhhpfJIvvsJIBcw83/Mot38qvtQC90/4L+urTdR0XS30WT91ajxyADFwefAgFGfxYKcpZ22/WlDtQh/YHoEpy94rYoJj1Xext6AiCRNzc5V8iRhcOHzf1YATNDabGfB7I6SBljs+7dwN0MN4nTWsYFwzxnhxdypzRtw5mHIfnd9SbuUrGVWKDDT+0cYN7uTgOt/8tTqAYZQiTM6SfjaNW1agkwLQ11i6k/rTyW9FZ0bGKmWcvYwvr5aKb5vMvHT33aiKVVT8cpezC+NXYgX61DgSc7pcOjpNQjH7y53rkKTwsKstg2HzbWDaEtHfPNLPOKOPzYpAU/bdRGmvI8Q/UiisRtJJf6ll1ckrDtQ1gp860RN/BD0a+zHVRKKjKyFP/cKXstpNx2CaSfXIRzovKq1cvaQf1kMgi3QSJX45mtn0zVYCaJHwKN12sAnvyUIBLlOk98MRKjVcesI9gdQ=
-  - secure: ACXUZhgnZ1q7jnk2Y+ju7+Sul+AYB4ja9+ShALZn4IjgmTxGJ6+oDr8PSgptrPZv6Xem+NaUe7bqlwsr/UXZsrIfUD8q8ffJ1a5ap3uEusa3IjlkITHOeIgtakKYsfZMSQHCdDI/jpyFr6VIsNr3zvHJMxz63zi2mV06rKuc+SVsMfKPBokTCftUhRDWZr/raeg/vdwyKK1oapTjfuSTaYXGew5qUiczn4fkbhWU3aOAbKjwBPBfLNYaBcQmpd8Y93ZAaf/zLY1em5EJBOxAx50AStvvu97zY6Dll37K190MfCRUDxP0l3NB5tLRj+KO/wiY6sJrotUl+s4IyVlBBP3+nJx5pvKeN0OgmMyQM+w0JTk1pWu4JlLCRXAlvFS/kBmnW8LBdxSaApq/ZOlJFN6aCuRI/7KEZLzCnby0qvsmS26EW4M7fiQ8GcC2NSlj9jtfYARwgyPkloBVjvakUfxxp7M3lnATbY1QIWl68vNzAkbPsU/pznGhAyIYVMvHwzd/qgMoycG4LLy7bcdFNyZw9b7LdBF0bJ8DQJ/RI7utiT26VaO6UtYHNBYevAI3CRHCMCR3Px77/0dZYaEdLdkH8s1rLUyS30tPNsxma5BMFNNSWPZl5b3uIkOw1y0bw20LAwp11RAVWRODpcEnnkCLuW1owSrNe3sYsLLX5Ao=

@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.metaborg</groupId>
   <artifactId>pie.parent</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.2.1</version>
   <packaging>pom</packaging>
 
   <properties>
@@ -96,7 +96,8 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>wagon-maven-plugin</artifactId>
-          <version>2.0.0</version>
+          <!-- Stick to 1.0. Newer versions give problems (401 return code) when deploying to our artifact server. -->
+          <version>1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -168,6 +169,16 @@
             </filters>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.5</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.4.1</version>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -175,13 +186,88 @@
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
         <artifactId>wagon-http</artifactId>
+        <!-- Stick to 3.0.0. Newer versions give problems (401 return code) when deploying to our artifact server. -->
         <version>3.0.0</version>
       </extension>
     </extensions>
   </build>
 
-  <name>${project.artifactId}</name>
-  <url>${project.scm.url}</url>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-no-snapshots</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireReleaseDeps>
+                      <message>No snapshot dependencies are allowed in release builds</message>
+                    </requireReleaseDeps>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <repositories>
+    <!-- Metaborg artifacts -->
+    <repository>
+      <id>metaborg-release-repo</id>
+      <url>http://artifacts.metaborg.org/content/repositories/releases/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>metaborg-snapshot-repo</id>
+      <url>http://artifacts.metaborg.org/content/repositories/snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <!-- Metaborg Maven plugin artifacts -->
+    <pluginRepository>
+      <id>metaborg-release-repo</id>
+      <url>http://artifacts.metaborg.org/content/repositories/releases/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>metaborg-snapshot-repo</id>
+      <url>http://artifacts.metaborg.org/content/repositories/snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
   <licenses>
     <license>
@@ -207,10 +293,17 @@
 
   <distributionManagement>
     <repository>
-      <id>bintray-maven-metaborg-pie</id>
+      <id>pie-deploy-release-server</id>
       <url>https://api.bintray.com/maven/metaborg/maven/pie/</url>
     </repository>
+    <snapshotRepository>
+      <id>pie-deploy-snapshot-server</id>
+      <url>https://artifacts.metaborg.org/content/repositories/snapshots/</url>
+    </snapshotRepository>
   </distributionManagement>
 
   <description>PIE parent POM</description>
+
+  <name>${project.artifactId}</name>
+  <url>${project.scm.url}</url>
 </project>
