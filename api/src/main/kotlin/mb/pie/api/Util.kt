@@ -7,6 +7,7 @@ import java.io.Serializable
  */
 class None : Serializable {
   companion object {
+    @JvmStatic
     val instance = None()
   }
 

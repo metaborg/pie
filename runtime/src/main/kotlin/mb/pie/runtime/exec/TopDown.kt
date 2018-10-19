@@ -37,6 +37,10 @@ open class TopDownSessionImpl(
   private val requireShared = RequireShared(taskDefs, visited, store, executorLogger)
 
 
+  override fun <I : In, O : Out> requireInitial(task: Task<I, O>): O {
+    return requireInitial(task, NullCancelled())
+  }
+
   override fun <I : In, O : Out> requireInitial(task: Task<I, O>, cancel: Cancelled): O {
     try {
       val key = task.key()

@@ -21,47 +21,66 @@ internal class ExecContextImpl(
   private val fileGens = arrayListOf<FileGen>()
 
 
-  override fun <I : In, O : Out> require(task: Task<I, O>, stamper: OutputStamper?): O {
+  override fun <I : In, O : Out> require(task: Task<I, O>): O {
+    return require(task, defaultOutputStamper)
+  }
+
+  override fun <I : In, O : Out> require(task: Task<I, O>, stamper: OutputStamper): O {
     cancel.throwIfCancelled()
     val key = task.key()
     val output = requireTask.require(key, task, cancel)
-    val stamp = (stamper ?: defaultOutputStamper).stamp(output)
+    val stamp = stamper.stamp(output)
     taskReqs.add(TaskReq(key, stamp))
     Stats.addCallReq()
     return output
   }
 
-  override fun <I : In, O : Out> require(taskDef: TaskDef<I, O>, input: I, stamper: OutputStamper?): O {
+  override fun <I : In, O : Out> require(taskDef: TaskDef<I, O>, input: I): O {
+    return require(Task(taskDef, input), defaultOutputStamper)
+  }
+
+  override fun <I : In, O : Out> require(taskDef: TaskDef<I, O>, input: I, stamper: OutputStamper): O {
     return require(Task(taskDef, input), stamper)
   }
 
-  override fun <I : In> require(task: STask<I>, stamper: OutputStamper?): Out {
-    // OPTO: toTask will incur a cast of the task definition, can that be avoided?
+  override fun <I : In> require(task: STask<I>): Out {
+    return require(task.toTask(taskDefs), defaultOutputStamper)
+  }
+
+  override fun <I : In> require(task: STask<I>, stamper: OutputStamper): Out {
     return require(task.toTask(taskDefs), stamper)
   }
 
-  override fun <I : In> require(taskDefId: String, input: I, stamper: OutputStamper?): Out {
-    // OPTO: getTaskDef will incur a cast, can that be avoided?
-    val taskDef = taskDefs.getTaskDef<I, Out>(taskDefId)
-      ?: throw RuntimeException("Cannot execute task with identifier $taskDefId, it cannot be found")
+  override fun <I : In> require(taskDefId: String, input: I): Out {
+    val taskDef = getTaskDef<I>(taskDefId)
+    return require(Task(taskDef, input), defaultOutputStamper)
+  }
+
+  override fun <I : In> require(taskDefId: String, input: I, stamper: OutputStamper): Out {
+    val taskDef = getTaskDef<I>(taskDefId)
     return require(Task(taskDef, input), stamper)
   }
 
-  override fun require(key: TaskKey, stamper: OutputStamper?): Out {
-    // OPTO: toTask will incur a cast of the task definition, can that be avoided?
-    val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
-    return require(task, stamper)
+  private fun <I : In> getTaskDef(id: String) = taskDefs.getTaskDef<I, Out>(id)
+    ?: throw RuntimeException("Cannot retrieve task with identifier $id, it cannot be found")
+
+
+  override fun require(file: PPath) {
+    return require(file, defaultFileReqStamper)
   }
 
-
-  override fun require(file: PPath, stamper: FileStamper?) {
-    val stamp = (stamper ?: defaultFileReqStamper).stamp(file)
+  override fun require(file: PPath, stamper: FileStamper) {
+    val stamp = stamper.stamp(file)
     fileReqs.add(FileReq(file, stamp))
     Stats.addFileReq()
   }
 
-  override fun generate(file: PPath, stamper: FileStamper?) {
-    val stamp = (stamper ?: defaultFileGenStamper).stamp(file)
+  override fun generate(file: PPath) {
+    return generate(file, defaultFileGenStamper)
+  }
+
+  override fun generate(file: PPath, stamper: FileStamper) {
+    val stamp = stamper.stamp(file)
     fileGens.add(FileGen(file, stamp))
     Stats.addFileGen()
   }
@@ -71,4 +90,3 @@ internal class ExecContextImpl(
 
   fun reqs() = Reqs(taskReqs, fileReqs, fileGens)
 }
-

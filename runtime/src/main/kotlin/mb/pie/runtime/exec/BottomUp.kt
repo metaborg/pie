@@ -23,10 +23,20 @@ class BottomUpExecutorImpl constructor(
   private val observers = ConcurrentHashMap<TaskKey, TaskObserver>()
 
 
+  @Throws(ExecException::class)
+  override fun <I : In, O : Out> requireTopDown(task: Task<I, O>): O {
+    return requireTopDown(task, NullCancelled())
+  }
+
   @Throws(ExecException::class, InterruptedException::class)
   override fun <I : In, O : Out> requireTopDown(task: Task<I, O>, cancel: Cancelled): O {
     val session = newSession()
     return session.requireTopDownInitial(task, cancel)
+  }
+
+  @Throws(ExecException::class)
+  override fun requireBottomUp(changedFiles: Set<PPath>) {
+    return requireBottomUp(changedFiles, NullCancelled())
   }
 
   @Throws(ExecException::class, InterruptedException::class)

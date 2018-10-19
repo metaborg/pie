@@ -15,8 +15,13 @@ open class StreamLogger(
   private val indent get() = " ".repeat(indentation.get())
 
   companion object {
+    @JvmStatic
     fun only_errors(): StreamLogger = StreamLogger(warnWriter = null, infoWriter = null, debugWriter = null, traceWriter = null)
+
+    @JvmStatic
     fun non_verbose(): StreamLogger = StreamLogger(debugWriter = null, traceWriter = null)
+
+    @JvmStatic
     fun verbose(): StreamLogger = StreamLogger()
   }
 
