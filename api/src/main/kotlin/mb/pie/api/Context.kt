@@ -97,3 +97,43 @@ class ExecException : Exception {
   constructor(message: String, cause: Throwable) : super(message, cause)
   constructor(cause: Throwable) : super(cause)
 }
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun <I : In, O : Out> ExecContext.require(task: Task<I, O>, stamper: OutputStamper?) =
+  if(stamper != null) require(task, stamper) else require(task)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun <I : In, O : Out> ExecContext.require(taskDef: TaskDef<I, O>, input: I, stamper: OutputStamper?) =
+  if(stamper != null) require(taskDef, input, stamper) else require(taskDef, input)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun <I : In, O : Out> ExecContext.require(task: STask<I>, stamper: OutputStamper?) =
+  if(stamper != null) require(task, stamper) else require(task)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun <I : In, O : Out> ExecContext.require(taskDefId: String, input: I, stamper: OutputStamper?) =
+  if(stamper != null) require(taskDefId, input, stamper) else require(taskDefId, input)
+
+/**
+ * @see ExecContext.require
+ */
+fun ExecContext.require(file: PPath, stamper: FileStamper? = null) =
+  if(stamper != null) require(file, stamper) else require(file)
+
+/**
+ * @see ExecContext.generate
+ */
+fun ExecContext.generate(file: PPath, stamper: FileStamper? = null) =
+  if(stamper != null) generate(file, stamper) else generate(file)
