@@ -4,13 +4,13 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>pie.example.copyfile</artifactId>
+  <artifactId>pie.example.helloworld.java</artifactId>
 
   <parent>
     <groupId>org.metaborg</groupId>
-    <artifactId>pie.parent.kotlin</artifactId>
+    <artifactId>pie.parent</artifactId>
     <version>0.2.2</version>
-    <relativePath>../../pom/kotlin</relativePath>
+    <relativePath>../../pom</relativePath>
   </parent>
 
   <dependencies>
@@ -34,19 +34,10 @@
       <artifactId>pie.store.lmdb</artifactId>
       <version>${pie.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib-jdk8</artifactId>
-      <version>${kotlin.runtime.version}</version>
-    </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <groupId>org.jetbrains.kotlin</groupId>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -94,5 +85,5 @@
     </plugins>
   </build>
 
-  <description>PIE file copier example</description>
+  <description>PIE hello world example in Java</description>
 </project>

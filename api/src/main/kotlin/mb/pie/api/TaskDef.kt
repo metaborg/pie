@@ -30,7 +30,7 @@ typealias Key = Serializable
 /**
  * Definition of an executable task.
  */
-interface TaskDef<in I : In, out O : Out> {
+interface TaskDef<I : In, O : Out> {
   /**
    * Unique identifier of the task definition.
    */
@@ -39,6 +39,7 @@ interface TaskDef<in I : In, out O : Out> {
   /**
    * Returns a key that uniquely identifies the task for given input.
    */
+  @JvmDefault
   fun key(input: I): Key = input
 
   /**
@@ -51,18 +52,28 @@ interface TaskDef<in I : In, out O : Out> {
   fun ExecContext.exec(input: I): O
 
   /**
-   * Returns the description of task for given input.
+   * Returns the description of task for given [input].
    */
-  fun desc(input: I, maxLength: Int = 100): String = "$id(${input.toString().toShortString(maxLength)})"
-}
+  @JvmDefault
+  fun desc(input: I): String = "$id($input)"
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun <I : In, O : Out> TaskDef<I, O>.createTask(input: I): Task<I, O> = Task(this, input)
+  /**
+   * Returns the description of task for given [input], with given [maximum length][maxLength].
+   */
+  @JvmDefault
+  fun desc(input: I, maxLength: Int = 100): String = "$id(${input.toString().toShortString(maxLength)})"
+
+  /**
+   * Creates a task instance with given [input] for this task definition.
+   */
+  @JvmDefault
+  fun createTask(input: I): Task<I, O> = Task(this, input)
+}
 
 /**
  * [TaskDef] implementation using anonymous functions.
  */
-open class LambdaTaskDef<in I : In, out O : Out>(
+open class LambdaTaskDef<I : In, O : Out>(
   override val id: String,
   private val execFunc: ExecContext.(I) -> O,
   private val keyFunc: ((I) -> Key)? = null,

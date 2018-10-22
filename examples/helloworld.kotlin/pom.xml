@@ -4,7 +4,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>pie.example.copyfile</artifactId>
+  <artifactId>pie.example.helloworld.kotlin</artifactId>
 
   <parent>
     <groupId>org.metaborg</groupId>
@@ -94,5 +94,5 @@
     </plugins>
   </build>
 
-  <description>PIE file copier example</description>
+  <description>PIE hello world example in Kotlin</description>
 </project>

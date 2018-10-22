@@ -15,7 +15,13 @@ interface TopDownExecutor {
 
 interface TopDownSession {
   /**
-   * Requires given task, returning its output.
+   * Requires given [task], returning its output.
+   */
+  @Throws(ExecException::class)
+  fun <I : In, O : Out> requireInitial(task: Task<I, O>): O
+
+  /**
+   * Requires given [task], with given [cancel] requester, returning its output.
    */
   @Throws(ExecException::class, InterruptedException::class)
   fun <I : In, O : Out> requireInitial(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O

@@ -8,13 +8,26 @@ import mb.pie.vfs.path.PPath
  */
 interface BottomUpExecutor {
   /**
-   * Make up-to-date all tasks affected by changes to given files. Changed outputs of tasks are observed by observers.
+   * Make up-to-date all tasks affected by [changes to given files][changedFiles]. Changed outputs of tasks are observed by observers.
+   */
+  @Throws(ExecException::class)
+  fun requireBottomUp(changedFiles: Set<PPath>)
+
+  /**
+   * Make up-to-date all tasks affected by [changes to given files][changedFiles]. Changed outputs of tasks are observed by observers. Uses
+   * given [cancel] requester to check for cancellation.
    */
   @Throws(ExecException::class, InterruptedException::class)
   fun requireBottomUp(changedFiles: Set<PPath>, cancel: Cancelled = NullCancelled())
 
   /**
-   * Requires given task in a top-down fashion, returning its result.
+   * Requires given [task] in a top-down fashion, returning its result.
+   */
+  @Throws(ExecException::class, InterruptedException::class)
+  fun <I : In, O : Out> requireTopDown(task: Task<I, O>): O
+
+  /**
+   * Requires given [task] in a top-down fashion, with given [cancel] requester, returning its result.
    */
   @Throws(ExecException::class, InterruptedException::class)
   fun <I : In, O : Out> requireTopDown(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O
@@ -39,4 +52,3 @@ interface BottomUpExecutor {
    */
   fun dropObservers()
 }
-
