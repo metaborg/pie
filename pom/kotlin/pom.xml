@@ -52,7 +52,7 @@
             <jvmTarget>${java.lang.version}</jvmTarget>
             <experimentalCoroutines>enable</experimentalCoroutines>
             <args>
-              <arg>-Xjvm-default=enable</arg>
+              <arg>-Xjvm-default=compatibility</arg>
             </args>
           </configuration>
           <executions>
