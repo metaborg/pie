@@ -26,11 +26,13 @@
     <module>share.coroutine</module>
     <module>taskdefs.guice</module>
     <module>store.lmdb</module>
-    <module>examples/copyfile</module>
     <module>lang/spec</module>
     <module>lang/example</module>
     <module>lang/test</module>
     <module>lang/runtime</module>
+    <module>examples/copyfile</module>
+    <module>examples/helloworld.kotlin</module>
+    <module>examples/helloworld.java</module>
   </modules>
 
   <build>
