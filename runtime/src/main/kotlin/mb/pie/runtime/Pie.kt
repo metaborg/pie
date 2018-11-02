@@ -7,9 +7,9 @@ import mb.pie.api.exec.BottomUpExecutor
 import mb.pie.api.exec.TopDownExecutor
 import mb.pie.api.fs.GeneralFileSystemResourceSystem
 import mb.pie.api.fs.JavaFileSystemResourceSystem
+import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.fs.stamp.FileSystemStampers
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.OutputStampers
 import mb.pie.runtime.exec.BottomUpExecutorImpl
 import mb.pie.runtime.exec.TopDownExecutorImpl
@@ -27,8 +27,8 @@ class PieBuilderImpl : PieBuilder {
   private var store: (Logger) -> Store = { InMemoryStore() }
   private var share: (Logger) -> Share = { NonSharingShare() }
   private var defaultOutputStamper: OutputStamper = OutputStampers.equals
-  private var defaultResourceRequireStamper: ResourceStamper = FileSystemStampers.modified
-  private var defaultResourceProvideStamper: ResourceStamper = FileSystemStampers.modified
+  private var defaultRequireFileSystemStamper: FileSystemStamper = FileSystemStampers.modified
+  private var defaultProvideFileSystemStamper: FileSystemStamper = FileSystemStampers.modified
   private var layerFactory: ((Logger) -> Layer) = { logger -> ValidationLayer(logger) }
   private var logger: Logger = NoopLogger()
   private var executorLoggerFactory: (Logger) -> ExecutorLogger = { logger -> LoggerExecutorLogger(logger) }
@@ -63,13 +63,13 @@ class PieBuilderImpl : PieBuilder {
     return this
   }
 
-  override fun withDefaultResourceRequireStamper(stamper: ResourceStamper): PieBuilderImpl {
-    this.defaultResourceRequireStamper = stamper
+  override fun withDefaultRequireFileSystemStamper(stamper: FileSystemStamper): PieBuilderImpl {
+    this.defaultRequireFileSystemStamper = stamper
     return this
   }
 
-  override fun withDefaultResourceProvideStamper(stamper: ResourceStamper): PieBuilderImpl {
-    this.defaultResourceProvideStamper = stamper
+  override fun withDefaultProvideFileSystemStamper(stamper: FileSystemStamper): PieBuilderImpl {
+    this.defaultProvideFileSystemStamper = stamper
     return this
   }
 
@@ -114,9 +114,9 @@ class PieBuilderImpl : PieBuilder {
     }
     val store = this.store(logger)
     val share = this.share(logger)
-    val topDownExecutor = TopDownExecutorImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultResourceRequireStamper, defaultResourceProvideStamper, layerFactory, logger, executorLoggerFactory)
-    val bottomUpExecutor = BottomUpExecutorImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultResourceRequireStamper, defaultResourceProvideStamper, layerFactory, logger, executorLoggerFactory)
-    return PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultResourceRequireStamper, defaultResourceProvideStamper, layerFactory, logger, executorLoggerFactory)
+    val topDownExecutor = TopDownExecutorImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory, logger, executorLoggerFactory)
+    val bottomUpExecutor = BottomUpExecutorImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory, logger, executorLoggerFactory)
+    return PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory, logger, executorLoggerFactory)
   }
 }
 
@@ -134,8 +134,8 @@ class PieImpl(
   val store: Store,
   val share: Share,
   val defaultOutputStamper: OutputStamper,
-  val defaultResourceRequireStamper: ResourceStamper,
-  val defaultResourceProvideStamper: ResourceStamper,
+  val defaultRequireFileSystemStamper: FileSystemStamper,
+  val defaultProvideFileSystemStamper: FileSystemStamper,
   val layerFactory: (Logger) -> Layer,
   val logger: Logger,
   val executorLoggerFactory: (Logger) -> ExecutorLogger
@@ -149,5 +149,5 @@ class PieImpl(
   }
 
   override fun toString() =
-    "PieImpl($store, $share, $defaultOutputStamper, $defaultResourceRequireStamper, $defaultResourceProvideStamper, ${layerFactory(logger)})"
+    "PieImpl($store, $share, $defaultOutputStamper, $defaultRequireFileSystemStamper, $defaultProvideFileSystemStamper, ${layerFactory(logger)})"
 }

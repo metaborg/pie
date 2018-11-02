@@ -1,12 +1,9 @@
 package mb.pie.api.fs.stamp
 
 import mb.fs.api.node.*
-import mb.pie.api.Resource
 import mb.pie.api.fs.FileSystemResource
-import mb.pie.api.stamp.ResourceStamp
-import mb.pie.api.stamp.ResourceStamper
 
-interface ModifiedResourceStamperTrait : ResourceStamper {
+interface ModifiedResourceStamperTrait : FileSystemStamper {
   val unknown get() = Long.MIN_VALUE
 
   fun modified(node: FSNode, matcher: FSNodeMatcher?): Long {
@@ -52,8 +49,8 @@ interface ModifiedResourceStamperTrait : ResourceStamper {
 data class ModifiedResourceStamper @JvmOverloads constructor(
   private val matcher: FSNodeMatcher? = null
 ) : ModifiedResourceStamperTrait {
-  override fun stamp(resource: Resource): ResourceStamp {
-    val node = (resource as FileSystemResource).node
+  override fun stamp(resource: FileSystemResource): FileSystemStamp {
+    val node = resource.node
     if(!node.exists()) {
       return ValueResourceStamp(null, this)
     }
@@ -70,8 +67,8 @@ data class RecModifiedResourceStamper @JvmOverloads constructor(
   private val walker: FSNodeWalker? = null,
   private val matcher: FSNodeMatcher? = null
 ) : ModifiedResourceStamperTrait {
-  override fun stamp(resource: Resource): ResourceStamp {
-    val node = (resource as FileSystemResource).node
+  override fun stamp(resource: FileSystemResource): FileSystemStamp {
+    val node = resource.node
     if(!node.exists()) {
       return ValueResourceStamp(null, this)
     }

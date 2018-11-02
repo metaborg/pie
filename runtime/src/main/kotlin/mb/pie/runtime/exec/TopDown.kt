@@ -3,8 +3,8 @@ package mb.pie.runtime.exec
 import mb.fs.api.GeneralFileSystem
 import mb.pie.api.*
 import mb.pie.api.exec.*
+import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.api.stamp.ResourceStamper
 
 class TopDownExecutorImpl constructor(
   private val taskDefs: TaskDefs,
@@ -13,14 +13,14 @@ class TopDownExecutorImpl constructor(
   private val store: Store,
   private val share: Share,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultResourceReqStamper: ResourceStamper,
-  private val defaultResourceGenStamper: ResourceStamper,
+  private val defaultRequireFileSystemStamper: FileSystemStamper,
+  private val defaultProvideFileSystemStamper: FileSystemStamper,
   private val layerFactory: (Logger) -> Layer,
   private val logger: Logger,
   private val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : TopDownExecutor {
   override fun newSession(): TopDownSession {
-    return TopDownSessionImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultResourceReqStamper, defaultResourceGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return TopDownSessionImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
   }
 }
 
@@ -31,14 +31,14 @@ open class TopDownSessionImpl(
   private val store: Store,
   share: Share,
   defaultOutputStamper: OutputStamper,
-  defaultResourceReqStamper: ResourceStamper,
-  defaultResourceGenStamper: ResourceStamper,
+  defaultRequireFileSystemStamper: FileSystemStamper,
+  defaultProvideFileSystemStamper: FileSystemStamper,
   private val layer: Layer,
   logger: Logger,
   private val executorLogger: ExecutorLogger
 ) : TopDownSession, RequireTask {
   private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
-  private val executor = TaskExecutor(taskDefs, generalFileSystem, visited, store, share, defaultOutputStamper, defaultResourceReqStamper, defaultResourceGenStamper, layer, logger, executorLogger, null)
+  private val executor = TaskExecutor(taskDefs, generalFileSystem, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null)
   private val requireShared = RequireShared(taskDefs, resourceSystems, visited, store, executorLogger)
 
 

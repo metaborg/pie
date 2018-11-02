@@ -4,8 +4,8 @@ import mb.fs.api.GeneralFileSystem
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
 import mb.pie.api.exec.ExecReason
+import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.api.stamp.ResourceStamper
 
 class TaskExecutor(
   private val taskDefs: TaskDefs,
@@ -14,8 +14,8 @@ class TaskExecutor(
   private val store: Store,
   private val share: Share,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultResourceReqStamper: ResourceStamper,
-  private val defaultResourceGenStamper: ResourceStamper,
+  private val defaultRequireFileSystemStamper: FileSystemStamper,
+  private val defaultProvideFileSystemStamper: FileSystemStamper,
   private val layer: Layer,
   private val logger: Logger,
   private val executorLogger: ExecutorLogger,
@@ -33,7 +33,7 @@ class TaskExecutor(
   private fun <I : In, O : Out> execInternal(key: TaskKey, task: Task<I, O>, requireTask: RequireTask, cancel: Cancelled): TaskData<I, O> {
     cancel.throwIfCancelled()
     // Execute
-    val context = ExecContextImpl(requireTask, cancel, taskDefs, generalFileSystem, store, defaultOutputStamper, defaultResourceReqStamper, defaultResourceGenStamper, logger)
+    val context = ExecContextImpl(requireTask, cancel, taskDefs, generalFileSystem, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger)
     val output = task.exec(context)
     Stats.addExecution()
     val (callReqs, pathReqs, pathGens) = context.reqs()

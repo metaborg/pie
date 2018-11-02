@@ -3,10 +3,8 @@ package mb.pie.api.test
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import mb.pie.api.*
-import mb.pie.api.fs.stamp.HashResourceStamper
-import mb.pie.api.fs.stamp.ModifiedResourceStamper
+import mb.pie.api.fs.stamp.*
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
 import org.junit.jupiter.api.*
 import java.nio.file.FileSystem
@@ -21,8 +19,8 @@ object ApiTestGenerator {
     shareGens: Array<(Logger) -> Share>,
     layerGens: Array<(Logger) -> Layer>,
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
-    defaultResourceReqStampers: Array<ResourceStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
-    defaultResourceGenStampers: Array<ResourceStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
+    defaultRequireFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
+    defaultProvideFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger,
     logger: Logger,
     testCtxGen: (Pie, TaskDefs, FileSystem) -> Ctx,
@@ -34,8 +32,8 @@ object ApiTestGenerator {
         shareGens.flatMap { shareGen ->
           layerGens.flatMap { layerGen ->
             defaultOutputStampers.flatMap { defaultOutputStamper ->
-              defaultResourceReqStampers.flatMap { defaultFileReqStamper ->
-                defaultResourceGenStampers.map { defaultFileGenStamper ->
+              defaultRequireFileSystemStampers.flatMap { defaultFileReqStamper ->
+                defaultProvideFileSystemStampers.map { defaultFileGenStamper ->
                   val javaFs = javaFSGen()
                   val taskDefs = taskDefsGen()
                   val pieBuilder = pieBuilderGen()
@@ -43,8 +41,8 @@ object ApiTestGenerator {
                     .withStore(storeGen)
                     .withShare(shareGen)
                     .withDefaultOutputStamper(defaultOutputStamper)
-                    .withDefaultResourceRequireStamper(defaultFileReqStamper)
-                    .withDefaultResourceProvideStamper(defaultFileGenStamper)
+                    .withDefaultRequireFileSystemStamper(defaultFileReqStamper)
+                    .withDefaultProvideFileSystemStamper(defaultFileGenStamper)
                     .withLayer(layerGen)
                     .withLogger(logger)
                     .withExecutorLogger(executorLoggerGen)

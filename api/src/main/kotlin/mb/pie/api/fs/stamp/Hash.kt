@@ -1,13 +1,10 @@
 package mb.pie.api.fs.stamp
 
 import mb.fs.api.node.*
-import mb.pie.api.Resource
 import mb.pie.api.fs.FileSystemResource
-import mb.pie.api.stamp.ResourceStamp
-import mb.pie.api.stamp.ResourceStamper
 import java.security.MessageDigest
 
-interface HashResourceStamperTrait : ResourceStamper {
+interface HashResourceStamperTrait : FileSystemStamper {
   fun createDigester() = MessageDigest.getInstance("SHA-1")!!
 
   fun MessageDigest.update(node: FSNode, matcher: FSNodeMatcher?) {
@@ -52,8 +49,8 @@ interface HashResourceStamperTrait : ResourceStamper {
 data class HashResourceStamper @JvmOverloads constructor(
   private val matcher: FSNodeMatcher? = null
 ) : HashResourceStamperTrait {
-  override fun stamp(resource: Resource): ResourceStamp {
-    val node = (resource as FileSystemResource).node
+  override fun stamp(resource: FileSystemResource): FileSystemStamp {
+    val node = resource.node
     if(!node.exists()) {
       return ByteArrayResourceStamp(null, this)
     }
@@ -72,8 +69,8 @@ data class RecHashResourceStamper @JvmOverloads constructor(
   private val walker: FSNodeWalker? = null,
   private val matcher: FSNodeMatcher? = null
 ) : HashResourceStamperTrait {
-  override fun stamp(resource: Resource): ResourceStamp {
-    val node = (resource as FileSystemResource).node
+  override fun stamp(resource: FileSystemResource): FileSystemStamp {
+    val node = resource.node
     if(!node.exists()) {
       return ByteArrayResourceStamp(null, this)
     }

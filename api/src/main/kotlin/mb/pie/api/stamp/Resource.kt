@@ -6,13 +6,13 @@ import java.io.Serializable
 /**
  * Stamper for customizable change detection on resources. Stampers must be [Serializable].
  */
-interface ResourceStamper : Serializable {
-  fun stamp(resource: Resource): ResourceStamp
+interface ResourceStamper<R: Resource> : Serializable {
+  fun stamp(resource: R): ResourceStamp<R>
 }
 
 /**
  * Stamp produced by a [ResourceStamper]. Stamps must be [Serializable].
  */
-interface ResourceStamp : Serializable {
-  val stamper: ResourceStamper
+interface ResourceStamp<R: Resource> : Serializable {
+  val stamper: ResourceStamper<R>
 }

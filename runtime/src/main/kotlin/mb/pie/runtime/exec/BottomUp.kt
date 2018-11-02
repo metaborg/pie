@@ -3,8 +3,8 @@ package mb.pie.runtime.exec
 import mb.fs.api.GeneralFileSystem
 import mb.pie.api.*
 import mb.pie.api.exec.*
+import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.api.stamp.ResourceStamper
 import java.util.concurrent.ConcurrentHashMap
 
 typealias TaskObserver = (Out) -> Unit
@@ -16,8 +16,8 @@ class BottomUpExecutorImpl constructor(
   private val store: Store,
   private val share: Share,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultResourceReqStamper: ResourceStamper,
-  private val defaultResourceGenStamper: ResourceStamper,
+  private val defaultRequireFileSystemStamper: FileSystemStamper,
+  private val defaultProvideFileSystemStamper: FileSystemStamper,
   private val layerFactory: (Logger) -> Layer,
   private val logger: Logger,
   private val executorLoggerFactory: (Logger) -> ExecutorLogger
@@ -46,7 +46,7 @@ class BottomUpExecutorImpl constructor(
     if(changedFiles.isEmpty()) return
     val changedRate = changedFiles.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
     if(changedRate > 0.5) {
-      val topdownSession = TopDownSessionImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultResourceReqStamper, defaultResourceGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+      val topdownSession = TopDownSessionImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
       for(key in observers.keys) {
         val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
         topdownSession.requireInitial(task, cancel)
@@ -77,7 +77,7 @@ class BottomUpExecutorImpl constructor(
 
   @Suppress("MemberVisibilityCanBePrivate")
   fun newSession(): BottomUpSession {
-    return BottomUpSession(taskDefs, generalFileSystem, resourceSystems, observers, store, share, defaultOutputStamper, defaultResourceReqStamper, defaultResourceGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return BottomUpSession(taskDefs, generalFileSystem, resourceSystems, observers, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
   }
 }
 
@@ -89,15 +89,15 @@ open class BottomUpSession(
   private val store: Store,
   share: Share,
   defaultOutputStamper: OutputStamper,
-  defaultResourceReqStamper: ResourceStamper,
-  defaultResourceGenStamper: ResourceStamper,
+  defaultRequireFileSystemStamper: FileSystemStamper,
+  defaultProvideFileSystemStamper: FileSystemStamper,
   private val layer: Layer,
   private val logger: Logger,
   private val executorLogger: ExecutorLogger
 ) : RequireTask {
   private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
   private val queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store)
-  private val executor = TaskExecutor(taskDefs, generalFileSystem, visited, store, share, defaultOutputStamper, defaultResourceReqStamper, defaultResourceGenStamper, layer, logger, executorLogger) { key, data ->
+  private val executor = TaskExecutor(taskDefs, generalFileSystem, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger) { key, data ->
     // Notify observer, if any.
     val observer = observers[key]
     if(observer != null) {

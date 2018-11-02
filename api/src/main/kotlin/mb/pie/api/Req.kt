@@ -25,7 +25,7 @@ interface ResourceDep {
  */
 data class ResourceRequire(
   val key: ResourceKey,
-  val stamp: ResourceStamp
+  val stamp: ResourceStamp<Resource>
 ) : ResourceDep, Serializable {
   override fun checkConsistency(systems: ResourceSystems): InconsistentResourceRequire? {
     val system = systems.getResourceSystem(key.id)
@@ -54,7 +54,7 @@ data class ResourceRequire(
 /**
  * Execution reason for inconsistent resource requires dependency.
  */
-data class InconsistentResourceRequire(val require: ResourceRequire, val newStamp: ResourceStamp) : ExecReason {
+data class InconsistentResourceRequire(val require: ResourceRequire, val newStamp: ResourceStamp<*>) : ExecReason {
   override fun toString() = "inconsistent required resource ${require.key}"
 }
 
@@ -63,7 +63,7 @@ data class InconsistentResourceRequire(val require: ResourceRequire, val newStam
  */
 data class ResourceProvide(
   val key: ResourceKey,
-  val stamp: ResourceStamp
+  val stamp: ResourceStamp<Resource>
 ) : ResourceDep, Serializable {
   override fun checkConsistency(systems: ResourceSystems): InconsistentResourceProvide? {
     val system = systems.getResourceSystem(key.id)
@@ -88,7 +88,7 @@ data class ResourceProvide(
 /**
  * Execution reason for inconsistent resource provides dependency.
  */
-data class InconsistentResourceProvide(val provide: ResourceProvide, val newStamp: ResourceStamp) : ExecReason {
+data class InconsistentResourceProvide(val provide: ResourceProvide, val newStamp: ResourceStamp<*>) : ExecReason {
   override fun toString() = "inconsistent provided resource ${provide.key}"
 }
 

@@ -1,14 +1,10 @@
 package mb.pie.api.fs.stamp
 
-import mb.pie.api.Resource
 import mb.pie.api.fs.FileSystemResource
-import mb.pie.api.stamp.ResourceStamp
-import mb.pie.api.stamp.ResourceStamper
 
-class ExistsResourceStamper : ResourceStamper {
-  override fun stamp(resource: Resource): ResourceStamp {
-    val node = (resource as FileSystemResource).node
-    return ValueResourceStamp(node.exists(), this)
+class ExistsResourceStamper : FileSystemStamper {
+  override fun stamp(resource: FileSystemResource): FileSystemStamp {
+    return ValueResourceStamp(resource.node.exists(), this)
   }
 
 
