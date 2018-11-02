@@ -1,24 +1,27 @@
 package mb.pie.runtime.exec
 
+import mb.fs.api.GeneralFileSystem
+import mb.fs.api.node.FSNode
+import mb.fs.api.path.FSPath
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
-import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.vfs.path.PPath
+import mb.pie.api.stamp.ResourceStamper
 
 internal class ExecContextImpl(
   private val requireTask: RequireTask,
   private val cancel: Cancelled,
   private val taskDefs: TaskDefs,
+  private val generalFileSystem: GeneralFileSystem,
   private val store: Store,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultFileReqStamper: FileStamper,
-  private val defaultFileGenStamper: FileStamper,
+  private val defaultResourceRequireStamper: ResourceStamper,
+  private val defaultResourceProvideStamper: ResourceStamper,
   override val logger: Logger
 ) : ExecContext {
   private val taskReqs = arrayListOf<TaskReq>()
-  private val fileReqs = arrayListOf<FileReq>()
-  private val fileGens = arrayListOf<FileGen>()
+  private val fileReqs = arrayListOf<ResourceRequire>()
+  private val fileGens = arrayListOf<ResourceProvide>()
 
 
   override fun <I : In, O : Out> require(task: Task<I, O>): O {
@@ -65,28 +68,53 @@ internal class ExecContextImpl(
     ?: throw RuntimeException("Cannot retrieve task with identifier $id, it cannot be found")
 
 
-  override fun require(file: PPath) {
-    return require(file, defaultFileReqStamper)
+  override fun require(resource: Resource) {
+    require(resource, defaultResourceRequireStamper)
   }
 
-  override fun require(file: PPath, stamper: FileStamper) {
-    val stamp = stamper.stamp(file)
-    fileReqs.add(FileReq(file, stamp))
+  override fun require(resource: Resource, stamper: ResourceStamper) {
+    val stamp = stamper.stamp(resource)
+    fileReqs.add(ResourceRequire(resource.key(), stamp))
     Stats.addFileReq()
   }
 
-  override fun generate(file: PPath) {
-    return generate(file, defaultFileGenStamper)
+  override fun require(path: FSPath): FSNode {
+    return require(path, defaultResourceProvideStamper)
   }
 
-  override fun generate(file: PPath, stamper: FileStamper) {
-    val stamp = stamper.stamp(file)
-    fileGens.add(FileGen(file, stamp))
+  override fun require(path: FSPath, stamper: ResourceStamper): FSNode {
+    val node = generalFileSystem.getNode(path)
+    require(node, stamper)
+    return node
+  }
+
+
+  override fun provide(resource: Resource) {
+    return provide(resource, defaultResourceProvideStamper)
+  }
+
+  override fun provide(resource: Resource, stamper: ResourceStamper) {
+    val stamp = stamper.stamp(resource)
+    fileGens.add(ResourceProvide(resource.key(), stamp))
     Stats.addFileGen()
   }
 
+  override fun provide(path: FSPath) {
+    return provide(path, defaultResourceProvideStamper)
+  }
 
-  data class Reqs(val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
+  override fun provide(path: FSPath, stamper: ResourceStamper) {
+    val node = generalFileSystem.getNode(path)
+    provide(node, stamper)
+  }
+
+
+  override fun toNode(path: FSPath): FSNode {
+    return generalFileSystem.getNode(path)
+  }
+
+
+  data class Reqs(val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<ResourceRequire>, val fileGens: ArrayList<ResourceProvide>)
 
   fun reqs() = Reqs(taskReqs, fileReqs, fileGens)
 }

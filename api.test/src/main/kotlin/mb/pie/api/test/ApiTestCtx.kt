@@ -1,14 +1,14 @@
 package mb.pie.api.test
 
+import mb.fs.api.node.FSNode
+import mb.fs.java.JavaFSNode
 import mb.pie.api.*
 import mb.pie.api.exec.*
-import mb.pie.vfs.path.PPath
-import mb.pie.vfs.path.PPathImpl
-import java.nio.file.*
+import java.nio.file.FileSystem
 
 open class ApiTestCtx(
   private val pieImpl: Pie,
-  private val fs: FileSystem
+  private val javaFs: FileSystem
 ) : AutoCloseable {
   init {
     pieImpl.dropStore()
@@ -25,8 +25,8 @@ open class ApiTestCtx(
   open fun topDownSession(): TopDownSession = pie.topDownExecutor.newSession()
 
 
-  fun file(path: String): PPath {
-    return PPathImpl(fs.getPath(path))
+  fun fsNode(path: String): JavaFSNode {
+    return JavaFSNode(javaFs.getPath(path))
   }
 
   fun <I : In, O : Out> taskDef(id: String, descFunc: (I, Int) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
@@ -46,15 +46,14 @@ open class ApiTestCtx(
   }
 
 
-  fun read(path: PPath): String {
-    Files.newInputStream(path.javaPath, StandardOpenOption.READ).use {
+  fun read(node: FSNode): String {
+    node.newInputStream().use {
       return String(it.readBytes())
     }
   }
 
-  fun write(text: String, path: PPath) {
-    Files.newOutputStream(path.javaPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
-      StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC).use {
+  fun write(text: String, node: FSNode) {
+    node.newOutputStream().use {
       it.write(text.toByteArray())
     }
     // HACK: for some reason, sleeping is required for writes to the file to be picked up by reads...

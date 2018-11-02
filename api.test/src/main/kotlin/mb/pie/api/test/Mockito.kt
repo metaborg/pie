@@ -1,10 +1,11 @@
 package mb.pie.api.test
 
+import mb.fs.api.node.FSNode
+import mb.fs.api.path.FSPath
 import mb.pie.api.*
 import mb.pie.api.exec.*
-import mb.pie.api.stamp.FileStamper
 import mb.pie.api.stamp.OutputStamper
-import mb.pie.vfs.path.PPath
+import mb.pie.api.stamp.ResourceStamper
 import org.mockito.Mockito
 
 inline fun <reified T : Any> safeAny(default: T) = Mockito.any(T::class.java) ?: default
@@ -58,10 +59,28 @@ class NoExecContext : ExecContext {
     return null
   }
 
-  override fun require(file: PPath) {}
-  override fun require(file: PPath, stamper: FileStamper) {}
-  override fun generate(file: PPath) {}
-  override fun generate(file: PPath, stamper: FileStamper) {}
+  override fun require(resource: Resource) {}
+  override fun require(resource: Resource, stamper: ResourceStamper) {}
+  override fun require(path: FSPath): FSNode {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as FSNode
+  }
+
+  override fun require(path: FSPath, stamper: ResourceStamper): FSNode {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as FSNode
+  }
+
+  override fun provide(resource: Resource) {}
+  override fun provide(resource: Resource, stamper: ResourceStamper) {}
+  override fun provide(path: FSPath) {}
+  override fun provide(path: FSPath, stamper: ResourceStamper) {}
+
+  override fun toNode(path: FSPath): FSNode {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as FSNode
+  }
+
 
   override val logger: Logger = null!!
 }

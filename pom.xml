@@ -18,7 +18,8 @@
     <module>pom</module>
     <module>pom/kotlin</module>
     <module>pom/spoofax</module>
-    <module>vfs</module>
+    <module>fs.api</module>
+    <module>fs.java</module>
     <module>api</module>
     <module>api.test</module>
     <module>runtime</module>

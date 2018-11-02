@@ -1,7 +1,6 @@
 package mb.pie.api.exec
 
 import mb.pie.api.*
-import mb.pie.vfs.path.PPath
 
 /**
  * Executor using a bottom-up build algorithm and observers for pushing new observed outputs.
@@ -11,14 +10,14 @@ interface BottomUpExecutor {
    * Make up-to-date all tasks affected by [changes to given files][changedFiles]. Changed outputs of tasks are observed by observers.
    */
   @Throws(ExecException::class)
-  fun requireBottomUp(changedFiles: Set<PPath>)
+  fun requireBottomUp(changedFiles: Set<ResourceKey>)
 
   /**
    * Make up-to-date all tasks affected by [changes to given files][changedFiles]. Changed outputs of tasks are observed by observers. Uses
    * given [cancel] requester to check for cancellation.
    */
   @Throws(ExecException::class, InterruptedException::class)
-  fun requireBottomUp(changedFiles: Set<PPath>, cancel: Cancelled = NullCancelled())
+  fun requireBottomUp(changedFiles: Set<ResourceKey>, cancel: Cancelled = NullCancelled())
 
   /**
    * Requires given [task] in a top-down fashion, returning its result.

@@ -1,106 +1,116 @@
 package mb.pie.lang.runtime.path
 
+import mb.fs.api.node.FSNodeMatcher
+import mb.fs.api.node.FSNodeWalker
+import mb.fs.api.path.FSPath
+import mb.fs.api.path.RelativeFSPath
 import mb.pie.api.*
-import mb.pie.api.stamp.FileStampers
-import mb.pie.vfs.list.PathMatcher
-import mb.pie.vfs.list.PathWalker
-import mb.pie.vfs.path.PPath
+import mb.pie.api.fs.stamp.FileSystemStampers
 import java.io.IOException
 import java.io.Serializable
-import java.nio.file.Files
 import java.util.stream.Collectors
 
-
-operator fun PPath.plus(other: PPath): PPath {
-  return this.resolve(other)
+operator fun RelativeFSPath.plus(other: RelativeFSPath): RelativeFSPath {
+  return this.appendRelativePath(other)
 }
 
-operator fun PPath.plus(other: String): PPath {
-  return this.resolve(other)
+operator fun RelativeFSPath.plus(other: String): RelativeFSPath {
+  return this.appendSegment(other)
+}
+
+operator fun FSPath.plus(other: FSPath): FSPath {
+  // HACK: appending two absolute paths
+  return this.appendSegments(other.segments)
+}
+
+operator fun FSPath.plus(other: RelativeFSPath): FSPath {
+  return this.appendRelativePath(other)
+}
+
+operator fun FSPath.plus(other: String): FSPath {
+  return this.appendSegment(other)
 }
 
 
-class Exists : TaskDef<PPath, Boolean> {
+class Exists : TaskDef<FSPath, Boolean> {
   companion object {
     const val id = "path.Exists"
   }
 
   override val id = Companion.id
-  override fun ExecContext.exec(input: PPath): Boolean {
-    require(input, FileStampers.exists)
-    return input.exists()
+  override fun ExecContext.exec(input: FSPath): Boolean {
+    val node = require(input, FileSystemStampers.exists)
+    return node.exists()
   }
 }
 
-class ListContents : TaskDef<ListContents.Input, ArrayList<PPath>> {
+class ListContents : TaskDef<ListContents.Input, ArrayList<FSPath>> {
   companion object {
     const val id = "path.ListContents"
   }
 
-  data class Input(val path: PPath, val matcher: PathMatcher?) : Serializable
+  data class Input(val path: FSPath, val matcher: FSNodeMatcher?) : Serializable
 
   override val id = Companion.id
-  override fun ExecContext.exec(input: Input): ArrayList<PPath> {
+  override fun ExecContext.exec(input: Input): ArrayList<FSPath> {
     val (path, matcher) = input
-    require(path, FileStampers.modified(matcher))
-    if(!path.isDir) {
+    val node = require(path, FileSystemStampers.modified(matcher))
+    if(!node.isDirectory) {
       throw ExecException("Cannot list contents of '$input', it is not a directory")
     }
     try {
-      val stream = if(matcher != null) path.list(matcher) else path.list()
+      val stream = if(matcher != null) node.list(matcher) else node.list()
       stream.use {
-        return it.collect(Collectors.toCollection { ArrayList<PPath>() })
+        return it.map { it.path }.collect(Collectors.toCollection { ArrayList<FSPath>() })
       }
     } catch(e: IOException) {
       throw ExecException("Cannot list contents of '$input'", e)
     }
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun ListContents.createTask(path: PPath, matcher: PathMatcher?) = Task(this, Input(path, matcher))
+  fun createTask(path: FSPath, matcher: FSNodeMatcher?) = Task(this, Input(path, matcher))
 }
 
-class WalkContents : TaskDef<WalkContents.Input, ArrayList<PPath>> {
+class WalkContents : TaskDef<WalkContents.Input, ArrayList<FSPath>> {
   companion object {
     const val id = "path.WalkContents"
   }
 
-  data class Input(val path: PPath, val walker: PathWalker?) : Serializable
+  data class Input(val path: FSPath, val walker: FSNodeWalker?, val matcher: FSNodeMatcher?) : Serializable
 
   override val id = Companion.id
-  override fun ExecContext.exec(input: Input): ArrayList<PPath> {
-    val (path, walker) = input
-    require(path, FileStampers.modified(walker))
-    if(!path.isDir) {
+  override fun ExecContext.exec(input: Input): ArrayList<FSPath> {
+    val (path, walker, matcher) = input
+    val node = require(path, FileSystemStampers.modified(walker, matcher))
+    if(!node.isDirectory) {
       throw ExecException("Cannot walk contents of '$input', it is not a directory")
     }
     try {
-      val stream = if(walker != null) path.walk(walker) else path.walk()
+      val stream = if(walker != null && matcher != null) node.walk(walker, matcher) else node.walk()
       stream.use {
-        return it.collect(Collectors.toCollection { ArrayList<PPath>() })
+        return it.map { it.path }.collect(Collectors.toCollection { ArrayList<FSPath>() })
       }
     } catch(e: IOException) {
       throw ExecException("Cannot walk contents of '$input'", e)
     }
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun WalkContents.createTask(path: PPath, walker: PathWalker?) = Task(this, Input(path, walker))
+  fun createTask(path: FSPath, walker: FSNodeWalker?, matcher: FSNodeMatcher?) = Task(this, Input(path, walker, matcher))
 }
 
-class Read : TaskDef<PPath, String?> {
+class Read : TaskDef<FSPath, String?> {
   companion object {
     const val id = "path.Read"
   }
 
   override val id = Companion.id
-  override fun ExecContext.exec(input: PPath): String? {
-    require(input, FileStampers.hash)
+  override fun ExecContext.exec(input: FSPath): String? {
+    val node = require(input, FileSystemStampers.hash)
     try {
-      if(!input.exists()) {
+      if(!node.exists()) {
         return null
       }
-      val bytes = input.readAllBytes()
+      val bytes = node.readAllBytes()
       return String(bytes)
     } catch(e: IOException) {
       throw ExecException("Reading '$input' failed", e)
@@ -113,21 +123,21 @@ class Copy : TaskDef<Copy.Input, None> {
     const val id = "path.Copy"
   }
 
-  data class Input(val from: PPath, val to: PPath) : In
+  data class Input(val from: FSPath, val to: FSPath) : In
 
   override val id = Companion.id
   override fun ExecContext.exec(input: Input): None {
     val (from, to) = input
-    require(from)
+    val fromNode = require(from)
+    val toNode = toNode(to)
     try {
-      Files.copy(from.javaPath, to.javaPath)
+      fromNode.copyTo(toNode)
     } catch(e: IOException) {
-      throw ExecException("Copying '${input.from}' to '${input.to}' failed", e)
+      throw ExecException("Copying '$from' to '$to' failed", e)
     }
-    generate(to)
+    provide(to)
     return None.instance
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun Copy.createTask(from: PPath, to: PPath) = Task(this, Input(from, to))
+  fun createTask(from: FSPath, to: FSPath) = Task(this, Input(from, to))
 }

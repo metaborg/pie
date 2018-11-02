@@ -10,6 +10,7 @@ interface RequireTask {
 
 internal class RequireShared(
   private val taskDefs: TaskDefs,
+  private val resourceSystems: ResourceSystems,
   private val visited: MutableMap<TaskKey, TaskData<*, *>>,
   private val store: Store,
   private val executorLogger: ExecutorLogger
@@ -55,9 +56,9 @@ internal class RequireShared(
   /**
    * Check if a file requires dependency is internally consistent.
    */
-  fun checkFileReq(key: TaskKey, task: Task<*, *>, fileReq: FileReq): InconsistentFileReq? {
+  fun checkFileReq(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire): InconsistentResourceRequire? {
     executorLogger.checkFileReqStart(key, task, fileReq)
-    val reason = fileReq.checkConsistency()
+    val reason = fileReq.checkConsistency(resourceSystems)
     executorLogger.checkFileReqEnd(key, task, fileReq, reason)
     return reason
   }
@@ -65,9 +66,9 @@ internal class RequireShared(
   /**
    * Check if a file generates dependency is internally consistent.
    */
-  fun checkFileGen(key: TaskKey, task: Task<*, *>, fileGen: FileGen): InconsistentFileGen? {
+  fun checkFileGen(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide): InconsistentResourceProvide? {
     executorLogger.checkFileGenStart(key, task, fileGen)
-    val reason = fileGen.checkConsistency()
+    val reason = fileGen.checkConsistency(resourceSystems)
     executorLogger.checkFileGenEnd(key, task, fileGen, reason)
     return reason
   }

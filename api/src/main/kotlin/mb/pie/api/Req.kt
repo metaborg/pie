@@ -1,74 +1,100 @@
 package mb.pie.api
 
 import mb.pie.api.exec.ExecReason
-import mb.pie.api.stamp.FileStamp
+import mb.pie.api.stamp.ResourceStamp
 import mb.pie.api.stamp.OutputStamp
-import mb.pie.vfs.path.PPath
 import java.io.Serializable
 
-interface FileDep {
+/**
+ * Resource dependency that can be checked for consistency, given the collection of resource systems to resolve resource keys into resources.
+ */
+interface ResourceDep {
   /**
-   * @return an execution reason when this file requirement is inconsistent, `null` otherwise.
+   * @return an execution reason when this resource dependency is inconsistent, `null` otherwise.
    */
-  fun checkConsistency(): ExecReason?
+  fun checkConsistency(systems: ResourceSystems): ExecReason?
 
   /**
-   * @return `true` when this file requirement is consistent, `false` otherwise.
+   * @return `true` when this resource dependency is consistent, `false` otherwise.
    */
-  fun isConsistent(): Boolean
+  fun isConsistent(systems: ResourceSystems): Boolean
 }
 
-
-data class FileReq(
-  val file: PPath,
-  val stamp: FileStamp
-) : FileDep, Serializable {
-  override fun checkConsistency(): InconsistentFileReq? {
-    val newStamp = stamp.stamper.stamp(file)
+/**
+ * Resource 'requires' (reads) dependency.
+ */
+data class ResourceRequire(
+  val key: ResourceKey,
+  val stamp: ResourceStamp
+) : ResourceDep, Serializable {
+  override fun checkConsistency(systems: ResourceSystems): InconsistentResourceRequire? {
+    val system = systems.getResourceSystem(key.id)
+      ?: throw RuntimeException("Cannot get resource system for resource key $key; resource system with id ${key.id} does not exist")
+    val resource = system.getResource(key)
+    val newStamp = stamp.stamper.stamp(resource)
     if(stamp != newStamp) {
-      return InconsistentFileReq(this, newStamp)
+      return InconsistentResourceRequire(this, newStamp)
     }
     return null
   }
 
-  override fun isConsistent(): Boolean {
-    val newStamp = stamp.stamper.stamp(file)
+  override fun isConsistent(systems: ResourceSystems): Boolean {
+    val system = systems.getResourceSystem(key.id)
+      ?: throw RuntimeException("Cannot get resource system for resource key $key; resource system with id ${key.id} does not exist")
+    val resource = system.getResource(key)
+    val newStamp = stamp.stamper.stamp(resource)
     return stamp == newStamp
   }
 
   override fun toString(): String {
-    return "FileReq($file, $stamp)";
+    return "FileReq($key, $stamp)";
   }
 }
 
-data class InconsistentFileReq(val req: FileReq, val newStamp: FileStamp) : ExecReason {
-  override fun toString() = "inconsistent required file ${req.file}"
+/**
+ * Execution reason for inconsistent resource requires dependency.
+ */
+data class InconsistentResourceRequire(val require: ResourceRequire, val newStamp: ResourceStamp) : ExecReason {
+  override fun toString() = "inconsistent required resource ${require.key}"
 }
 
-
-data class FileGen(
-  val file: PPath,
-  val stamp: FileStamp
-) : FileDep, Serializable {
-  override fun checkConsistency(): InconsistentFileGen? {
-    val newStamp = stamp.stamper.stamp(file)
+/**
+ * Resource 'provides' (writes) dependency.
+ */
+data class ResourceProvide(
+  val key: ResourceKey,
+  val stamp: ResourceStamp
+) : ResourceDep, Serializable {
+  override fun checkConsistency(systems: ResourceSystems): InconsistentResourceProvide? {
+    val system = systems.getResourceSystem(key.id)
+      ?: throw RuntimeException("Cannot get resource system for resource key $key; resource system with id ${key.id} does not exist")
+    val resource = system.getResource(key)
+    val newStamp = stamp.stamper.stamp(resource)
     if(stamp != newStamp) {
-      return InconsistentFileGen(this, newStamp)
+      return InconsistentResourceProvide(this, newStamp)
     }
     return null
   }
 
-  override fun isConsistent(): Boolean {
-    val newStamp = stamp.stamper.stamp(file)
+  override fun isConsistent(systems: ResourceSystems): Boolean {
+    val system = systems.getResourceSystem(key.id)
+      ?: throw RuntimeException("Cannot get resource system for resource key $key; resource system with id ${key.id} does not exist")
+    val resource = system.getResource(key)
+    val newStamp = stamp.stamper.stamp(resource)
     return stamp == newStamp
   }
 }
 
-data class InconsistentFileGen(val fileGen: FileGen, val newStamp: FileStamp) : ExecReason {
-  override fun toString() = "inconsistent generated file ${fileGen.file}"
+/**
+ * Execution reason for inconsistent resource provides dependency.
+ */
+data class InconsistentResourceProvide(val provide: ResourceProvide, val newStamp: ResourceStamp) : ExecReason {
+  override fun toString() = "inconsistent provided resource ${provide.key}"
 }
 
-
+/**
+ * Task 'require' (calls) dependency.
+ */
 data class TaskReq(
   val callee: TaskKey,
   val stamp: OutputStamp
@@ -104,6 +130,9 @@ data class TaskReq(
   }
 }
 
+/**
+ * Execution reason for inconsistent task requires dependency.
+ */
 data class InconsistentTaskReq(val req: TaskReq, val newStamp: OutputStamp) : ExecReason {
   override fun toString() = "inconsistent required task ${req.callee.toShortString(100)}"
 }

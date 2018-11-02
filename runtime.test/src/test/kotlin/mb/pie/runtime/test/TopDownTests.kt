@@ -1,15 +1,14 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockito_kotlin.*
+import mb.fs.java.JavaFSNode
 import mb.pie.api.*
+import mb.pie.api.fs.toResourceKey
 import mb.pie.api.test.*
 import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.layer.ValidationException
-import mb.pie.vfs.path.PPath
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
-import java.nio.file.Files
-import java.nio.file.attribute.FileTime
 
 internal class TopDownTests {
   @TestFactory
@@ -89,34 +88,34 @@ internal class TopDownTests {
     val readPath = spy(readPath)
     addTaskDef(readPath)
 
-    val filePath = file("/file")
-    val task = task(readPath, filePath)
+    val fileNode = fsNode("/file")
+    val task = task(readPath, fileNode)
     val key = task.key()
-    write("HELLO WORLD!", filePath)
+    write("HELLO WORLD!", fileNode)
 
     // Build 'readPath', observe rebuild
     val session1 = spy(topDownSession())
-    val output1 = session1.requireInitial(task(readPath, filePath))
+    val output1 = session1.requireInitial(task(readPath, fileNode))
     assertEquals("HELLO WORLD!", output1)
     verify(session1, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
 
     // No changes - exec 'readPath', observe no rebuild
     val session2 = spy(topDownSession())
-    val output2 = session2.requireInitial(task(readPath, filePath))
+    val output2 = session2.requireInitial(task(readPath, fileNode))
     assertEquals("HELLO WORLD!", output2)
     verify(session2, never()).exec(eq(key), eq(task), anyER(), anyC())
 
     // Change required file in such a way that the output of 'readPath' changes (change file content)
-    write("!DLROW OLLEH", filePath)
+    write("!DLROW OLLEH", fileNode)
 
     // Run again - expect rebuild
     val session3 = spy(topDownSession())
-    val output3 = session3.requireInitial(task(readPath, filePath))
+    val output3 = session3.requireInitial(task(readPath, fileNode))
     assertEquals("!DLROW OLLEH", output3)
     verify(session3, times(1)).exec(eq(key), eq(task), check {
-      val reason = it as? InconsistentFileReq
+      val reason = it as? InconsistentResourceRequire
       assertNotNull(reason)
-      assertEquals(filePath, reason!!.req.file)
+      assertEquals(fileNode.toResourceKey(), reason!!.require.key)
     }, anyC())
   }
 
@@ -125,10 +124,10 @@ internal class TopDownTests {
     val writePath = spy(writePath)
     addTaskDef(writePath)
 
-    val filePath = file("/file")
-    assertTrue(Files.notExists(filePath.javaPath))
+    val fileNode = fsNode("/file")
+    assertTrue(!fileNode.exists())
 
-    val task = task(writePath, Pair("HELLO WORLD!", filePath))
+    val task = task(writePath, Pair("HELLO WORLD!", fileNode))
     val key = task.key()
 
     // Build 'writePath', observe rebuild and existence of file
@@ -136,8 +135,8 @@ internal class TopDownTests {
     session1.requireInitial(task)
     verify(session1, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
 
-    assertTrue(Files.exists(filePath.javaPath))
-    assertEquals("HELLO WORLD!", read(filePath))
+    assertTrue(fileNode.exists())
+    assertEquals("HELLO WORLD!", read(fileNode))
 
     // No changes - exec 'writePath', observe no rebuild, no change to file
     val session2 = spy(topDownSession())
@@ -145,18 +144,18 @@ internal class TopDownTests {
     verify(session2, never()).exec(eq(key), eq(task), anyER(), anyC())
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
-    write("!DLROW OLLEH", filePath)
+    write("!DLROW OLLEH", fileNode)
 
     // Build 'writePath', observe rebuild and change of file
     val session3 = spy(topDownSession())
     session3.requireInitial(task)
     verify(session3, times(1)).exec(eq(key), eq(task), check {
-      val reason = it as? InconsistentFileGen
+      val reason = it as? InconsistentResourceProvide
       assertNotNull(reason)
-      assertEquals(filePath, reason!!.fileGen.file)
+      assertEquals(fileNode.toResourceKey(), reason!!.provide.key)
     }, anyC())
 
-    assertEquals("HELLO WORLD!", read(filePath))
+    assertEquals("HELLO WORLD!", read(fileNode))
   }
 
   @TestFactory
@@ -166,23 +165,23 @@ internal class TopDownTests {
     val readDef = spy(readPath)
     addTaskDef(readDef)
 
-    val filePath = file("/file")
+    val fileNode = fsNode("/file")
 
-    val readTask = task(readDef, filePath)
+    val readTask = task(readDef, fileNode)
     val readKey = readTask.key()
 
-    val combDef = spy(taskDef<PPath, String>("combine", { it, _ -> "combine($it)" }) {
+    val combDef = spy(taskDef<JavaFSNode, String>("combine", { it, _ -> "combine($it)" }) {
       val text = require(readTask)
       require(lowerDef, text)
     })
     addTaskDef(combDef)
 
     val str = "HELLO WORLD!"
-    write(str, filePath)
+    write(str, fileNode)
 
     val lowerTask = task(lowerDef, str)
     val lowerKey = lowerTask.key()
-    val combTask = task(combDef, filePath)
+    val combTask = task(combDef, fileNode)
     val combKey = combTask.key()
 
     // Build 'combine', observe rebuild of all.
@@ -205,7 +204,7 @@ internal class TopDownTests {
 
     // Change required file in such a way that the output of 'readPath' changes (change file content).
     val newStr = "!DLROW OLLEH"
-    write(newStr, filePath)
+    write(newStr, fileNode)
 
     val lowerRevTask = task(lowerDef, newStr)
     val lowerRevKey = lowerRevTask.key()
@@ -217,9 +216,9 @@ internal class TopDownTests {
     inOrder(session3) {
       verify(session3, times(1)).requireInitial(eq(combTask), anyC())
       verify(session3, times(1)).exec(eq(readKey), eq(readTask), check {
-        val reason = it as? InconsistentFileReq
+        val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(filePath, reason!!.req.file)
+        assertEquals(fileNode.toResourceKey(), reason!!.require.key)
       }, anyC())
       verify(session3, times(1)).exec(eq(combKey), eq(combTask), check {
         val reason = it as? InconsistentTaskReq
@@ -230,9 +229,8 @@ internal class TopDownTests {
     }
 
     // Change required file in such a way that the output of 'readPath' does not change (change modification date).
-    val lastModified = Files.getLastModifiedTime(filePath.javaPath)
-    val newLastModified = FileTime.fromMillis(lastModified.toMillis() + 1)
-    Files.setLastModifiedTime(filePath.javaPath, newLastModified)
+    // NOTE: must add at least one millisecond, as filesystems may ignore nanosecond changes.
+    fileNode.lastModifiedTime = fileNode.lastModifiedTime.plusMillis(1)
 
     // Build 'combine', observe rebuild of 'readPath' only
     val session4 = spy(topDownSession())
@@ -241,9 +239,9 @@ internal class TopDownTests {
     inOrder(session4) {
       verify(session4, times(1)).requireInitial(eq(combTask), anyC())
       verify(session4, times(1)).exec(eq(readKey), eq(readTask), check {
-        val reason = it as? InconsistentFileReq
+        val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(filePath, reason!!.req.file)
+        assertEquals(fileNode.toResourceKey(), reason!!.require.key)
       }, anyC())
     }
     verify(session4, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -256,7 +254,7 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val filePath = file("/file")
+    val filePath = fsNode("/file")
     assertThrows(ValidationException::class.java) {
       val session = executor.newSession()
       session.requireInitial(task(writePath, Pair("HELLO WORLD 1!", filePath)))
@@ -277,7 +275,7 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val filePath = file("/file")
+    val filePath = fsNode("/file")
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
@@ -297,26 +295,26 @@ internal class TopDownTests {
   fun testRequireGeneratedHiddenDep() = RuntimeTestGenerator.generate("testRequireGeneratedHiddenDep") {
     addTaskDef(writePath)
     addTaskDef(readPath)
-    val indirection = requireOutputFunc<Pair<String, PPath>, None>()
+    val indirection = requireOutputFunc<Pair<String, JavaFSNode>, None>()
     addTaskDef(indirection)
 
     val executor = topDownExecutor
 
-    val combineIncorrect = spy(taskDef<Pair<String, PPath>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+    val combineIncorrect = spy(taskDef<Pair<String, JavaFSNode>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
       require(task(indirection, stask(writePath, Pair(text, path))))
       require(task(readPath, path))
     })
     addTaskDef(combineIncorrect)
 
     run {
-      val filePath1 = file("/file1")
+      val fileNode = fsNode("/file1")
       assertThrows(ValidationException::class.java) {
         val session = executor.newSession()
-        session.requireInitial(task(combineIncorrect, Pair("HELLO WORLD!", filePath1)))
+        session.requireInitial(task(combineIncorrect, Pair("HELLO WORLD!", fileNode)))
       }
     }
 
-    val combineStillIncorrect = spy(taskDef<Pair<String, PPath>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+    val combineStillIncorrect = spy(taskDef<Pair<String, JavaFSNode>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
       require(task(indirection, stask(writePath, Pair(text, path))))
       require(task(writePath, Pair(text, path)))
       require(task(readPath, path))
@@ -324,7 +322,7 @@ internal class TopDownTests {
     addTaskDef(combineStillIncorrect)
 
     run {
-      val filePath2 = file("/file2")
+      val filePath2 = fsNode("/file2")
       assertThrows(ValidationException::class.java) {
         val exec = executor.newSession()
         exec.requireInitial(task(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))

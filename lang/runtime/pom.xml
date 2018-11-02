@@ -26,11 +26,6 @@
     </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
-      <artifactId>pie.vfs</artifactId>
-      <version>${pie.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
       <artifactId>pie.taskdefs.guice</artifactId>
       <version>${pie.version}</version>
     </dependency>

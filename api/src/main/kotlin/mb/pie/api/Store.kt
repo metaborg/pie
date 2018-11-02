@@ -1,7 +1,5 @@
 package mb.pie.api
 
-import mb.pie.vfs.path.PPath
-
 /**
  * Internal storage for tasks, outputs, and dependency information.
  */
@@ -63,23 +61,23 @@ interface StoreReadTxn : StoreTxn {
   /**
    * @return file requirements of [key].
    */
-  fun fileReqs(key: TaskKey): List<FileReq>
+  fun fileReqs(key: TaskKey): List<ResourceRequire>
 
   /**
    * @return tasks that require [file].
    */
-  fun requireesOf(file: PPath): Set<TaskKey>
+  fun requireesOf(file: ResourceKey): Set<TaskKey>
 
 
   /**
    * @return file generates of [key].
    */
-  fun fileGens(key: TaskKey): List<FileGen>
+  fun fileGens(key: TaskKey): List<ResourceProvide>
 
   /**
    * @return file that generates [file], or `null` if it does not exist.
    */
-  fun generatorOf(file: PPath): TaskKey?
+  fun generatorOf(file: ResourceKey): TaskKey?
 
 
   /**
@@ -116,12 +114,12 @@ interface StoreWriteTxn : StoreReadTxn {
   /**
    * Sets the file requirements of [key] to [fileReqs].
    */
-  fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>)
+  fun setFileReqs(key: TaskKey, fileReqs: ArrayList<ResourceRequire>)
 
   /**
    * Sets the generated fileGens of [key] to [fileGens].
    */
-  fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>)
+  fun setFileGens(key: TaskKey, fileGens: ArrayList<ResourceProvide>)
 
   /**
    * Sets the output, call requirements, file reqs, and file generates for [key] to [data].
@@ -150,7 +148,7 @@ inline fun <O : Out> Output<*>.cast() = Output(this.output as O)
 /**
  * Wrapper for task data: outputs and dependencies.
  */
-data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
+data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<ResourceRequire>, val fileGens: ArrayList<ResourceProvide>)
 
 /**
  * Attempts to cast untyped task data to typed task data.

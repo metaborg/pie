@@ -2,7 +2,6 @@ package mb.pie.runtime.logger.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.ExecReason
-import mb.pie.vfs.path.PPath
 import java.util.concurrent.atomic.AtomicInteger
 
 class LoggerExecutorLogger @JvmOverloads constructor(
@@ -26,7 +25,7 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   }
 
 
-  override fun requireBottomUpInitialStart(changedFiles: Set<PPath>) {}
+  override fun requireBottomUpInitialStart(changedFiles: Set<ResourceKey>) {}
   override fun requireBottomUpInitialEnd() {}
 
 
@@ -36,29 +35,29 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   override fun checkStoredStart(key: TaskKey) {}
   override fun checkStoredEnd(key: TaskKey, output: Out) {}
 
-  override fun checkFileGenStart(key: TaskKey, task: Task<*, *>, fileGen: FileGen) {}
-  override fun checkFileGenEnd(key: TaskKey, task: Task<*, *>, fileGen: FileGen, reason: ExecReason?) {
+  override fun checkFileGenStart(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide) {}
+  override fun checkFileGenEnd(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide, reason: ExecReason?) {
     if(reason != null) {
-      if(reason is InconsistentFileGen) {
-        logger.trace("$indent␦ ${fileGen.file} (inconsistent: ${fileGen.stamp} vs ${reason.newStamp})")
+      if(reason is InconsistentResourceProvide) {
+        logger.trace("$indent␦ ${fileGen.key} (inconsistent: ${fileGen.stamp} vs ${reason.newStamp})")
       } else {
-        logger.trace("$indent␦ ${fileGen.file} (inconsistent)")
+        logger.trace("$indent␦ ${fileGen.key} (inconsistent)")
       }
     } else {
-      logger.trace("$indent␦ ${fileGen.file} (consistent: ${fileGen.stamp})")
+      logger.trace("$indent␦ ${fileGen.key} (consistent: ${fileGen.stamp})")
     }
   }
 
-  override fun checkFileReqStart(key: TaskKey, task: Task<*, *>, fileReq: FileReq) {}
-  override fun checkFileReqEnd(key: TaskKey, task: Task<*, *>, fileReq: FileReq, reason: ExecReason?) {
+  override fun checkFileReqStart(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire) {}
+  override fun checkFileReqEnd(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire, reason: ExecReason?) {
     if(reason != null) {
-      if(reason is InconsistentFileGen) {
-        logger.trace("$indent␦ ${fileReq.file} (inconsistent: ${fileReq.stamp} vs ${reason.newStamp})")
+      if(reason is InconsistentResourceProvide) {
+        logger.trace("$indent␦ ${fileReq.key} (inconsistent: ${fileReq.stamp} vs ${reason.newStamp})")
       } else {
-        logger.trace("$indent␦ ${fileReq.file} (inconsistent)")
+        logger.trace("$indent␦ ${fileReq.key} (inconsistent)")
       }
     } else {
-      logger.trace("$indent␦ ${fileReq.file} (consistent: ${fileReq.stamp})")
+      logger.trace("$indent␦ ${fileReq.key} (consistent: ${fileReq.stamp})")
     }
   }
 
