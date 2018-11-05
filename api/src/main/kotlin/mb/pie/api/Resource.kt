@@ -3,8 +3,7 @@ package mb.pie.api
 import java.io.Serializable
 
 /**
- * Mutable resource with a [key] that uniquely identifies the resource. Currently, [Resource] has no API for interacting with the resource,
- * so it has to be downcasted to a concrete resource type to do anything useful with it.
+ * Mutable resource with a [key] that uniquely identifies the resource.
  */
 interface Resource {
   fun key(): ResourceKey

@@ -27,14 +27,14 @@ class LMDBStore(
   private val env: EnvB
   private val input: DbiB
   private val output: DbiB
-  private val taskReqs: DbiB
+  private val taskRequires: DbiB
   private val callersOf: DbiB
   private val callersOfValues: DbiB
-  private val fileReqs: DbiB
+  private val resourceRequires: DbiB
   private val requireesOf: DbiB
   private val requireesOfValues: DbiB
-  private val fileGens: DbiB
-  private val generatorOf: DbiB
+  private val resourceProvides: DbiB
+  private val providerOf: DbiB
 
 
   init {
@@ -46,14 +46,14 @@ class LMDBStore(
       .open(envDir)
     input = env.openDbi("input", DbiFlags.MDB_CREATE)
     output = env.openDbi("output", DbiFlags.MDB_CREATE)
-    taskReqs = env.openDbi("taskReqs", DbiFlags.MDB_CREATE)
+    taskRequires = env.openDbi("taskRequires", DbiFlags.MDB_CREATE)
     callersOf = env.openDbi("callersOf", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
     callersOfValues = env.openDbi("callersOfValues", DbiFlags.MDB_CREATE)
-    fileReqs = env.openDbi("fileReqs", DbiFlags.MDB_CREATE)
+    resourceRequires = env.openDbi("resourceRequires", DbiFlags.MDB_CREATE)
     requireesOf = env.openDbi("requireesOf", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT)
     requireesOfValues = env.openDbi("requireesOfValues", DbiFlags.MDB_CREATE)
-    fileGens = env.openDbi("fileGens", DbiFlags.MDB_CREATE)
-    generatorOf = env.openDbi("generatorOf", DbiFlags.MDB_CREATE)
+    resourceProvides = env.openDbi("resourceProvides", DbiFlags.MDB_CREATE)
+    providerOf = env.openDbi("providerOf", DbiFlags.MDB_CREATE)
   }
 
   override fun close() {
@@ -66,14 +66,14 @@ class LMDBStore(
     return LMDBStoreTxn(env, txn, false, logger,
       inputDb = input,
       outputDb = output,
-      taskReqsDb = taskReqs,
+      taskRequiresDb = taskRequires,
       callersOfDb = callersOf,
       callersOfValuesDb = callersOfValues,
-      fileReqsDb = fileReqs,
+      resourceRequiresDb = resourceRequires,
       requireesOfDb = requireesOf,
       requireesOfValuesDb = requireesOfValues,
-      fileGensDb = fileGens,
-      generatorOfDb = generatorOf
+      resourceProvidesDb = resourceProvides,
+      providerOfDb = providerOf
     )
   }
 
@@ -82,14 +82,14 @@ class LMDBStore(
     return LMDBStoreTxn(env, txn, true, logger,
       inputDb = input,
       outputDb = output,
-      taskReqsDb = taskReqs,
+      taskRequiresDb = taskRequires,
       callersOfDb = callersOf,
       callersOfValuesDb = callersOfValues,
-      fileReqsDb = fileReqs,
+      resourceRequiresDb = resourceRequires,
       requireesOfDb = requireesOf,
       requireesOfValuesDb = requireesOfValues,
-      fileGensDb = fileGens,
-      generatorOfDb = generatorOf
+      resourceProvidesDb = resourceProvides,
+      providerOfDb = providerOf
     )
   }
 

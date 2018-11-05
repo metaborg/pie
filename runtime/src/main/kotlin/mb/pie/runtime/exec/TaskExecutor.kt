@@ -36,8 +36,8 @@ class TaskExecutor(
     val context = ExecContextImpl(requireTask, cancel, taskDefs, generalFileSystem, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger)
     val output = task.exec(context)
     Stats.addExecution()
-    val (callReqs, pathReqs, pathGens) = context.reqs()
-    val data = TaskData(task.input, output, callReqs, pathReqs, pathGens)
+    val (taskRequires, resourceRequires, resourceProvides) = context.deps()
+    val data = TaskData(task.input, output, taskRequires, resourceRequires, resourceProvides)
     // Validate well-formedness of the dependency graph, before writing.
     store.readTxn().use {
       layer.validatePreWrite(key, data, it)

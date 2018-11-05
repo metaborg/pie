@@ -37,14 +37,14 @@ class BottomUpExecutorImpl constructor(
   }
 
   @Throws(ExecException::class)
-  override fun requireBottomUp(changedFiles: Set<ResourceKey>) {
-    return requireBottomUp(changedFiles, NullCancelled())
+  override fun requireBottomUp(changedResources: Set<ResourceKey>) {
+    return requireBottomUp(changedResources, NullCancelled())
   }
 
   @Throws(ExecException::class, InterruptedException::class)
-  override fun requireBottomUp(changedFiles: Set<ResourceKey>, cancel: Cancelled) {
-    if(changedFiles.isEmpty()) return
-    val changedRate = changedFiles.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
+  override fun requireBottomUp(changedResources: Set<ResourceKey>, cancel: Cancelled) {
+    if(changedResources.isEmpty()) return
+    val changedRate = changedResources.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
     if(changedRate > 0.5) {
       val topdownSession = TopDownSessionImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
       for(key in observers.keys) {
@@ -54,7 +54,7 @@ class BottomUpExecutorImpl constructor(
       }
     } else {
       val session = newSession()
-      session.requireBottomUpInitial(changedFiles, cancel)
+      session.requireBottomUpInitial(changedResources, cancel)
     }
   }
 
@@ -128,10 +128,10 @@ open class BottomUpSession(
   /**
    * Entry point for bottom-up builds.
    */
-  open fun requireBottomUpInitial(changedFiles: Set<ResourceKey>, cancel: Cancelled = NullCancelled()) {
+  open fun requireBottomUpInitial(changedResources: Set<ResourceKey>, cancel: Cancelled = NullCancelled()) {
     try {
-      executorLogger.requireBottomUpInitialStart(changedFiles)
-      scheduleAffectedByFiles(changedFiles)
+      executorLogger.requireBottomUpInitialStart(changedResources)
+      scheduleAffectedByResources(changedResources)
       execScheduled(cancel)
       executorLogger.requireBottomUpInitialEnd()
     } finally {
@@ -166,9 +166,9 @@ open class BottomUpSession(
   /**
    * Schedules tasks affected by (changes to) files.
    */
-  private fun scheduleAffectedByFiles(files: Set<ResourceKey>) {
-    logger.trace("Scheduling tasks affected by files: $files")
-    val affected = store.readTxn().use { txn -> txn.directlyAffectedTaskKeys(files, resourceSystems, logger) }
+  private fun scheduleAffectedByResources(resources: Set<ResourceKey>) {
+    logger.trace("Scheduling tasks affected by resources: $resources")
+    val affected = store.readTxn().use { txn -> txn.directlyAffectedTaskKeys(resources, resourceSystems, logger) }
     for(key in affected) {
       logger.trace("- scheduling: $key")
       queue.add(key)
@@ -182,7 +182,7 @@ open class BottomUpSession(
     logger.trace("Scheduling tasks affected by output of: ${callee.toShortString(200)}")
     val inconsistentCallers = store.readTxn().use { txn ->
       txn.callersOf(callee).filter { caller ->
-        txn.taskReqs(caller).filter { it.calleeEqual(callee) }.any { !it.isConsistent(output) }
+        txn.taskRequires(caller).filter { it.calleeEqual(callee) }.any { !it.isConsistent(output) }
       }
     }
     for(key in inconsistentCallers) {

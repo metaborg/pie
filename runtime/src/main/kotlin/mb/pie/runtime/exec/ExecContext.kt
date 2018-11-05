@@ -19,9 +19,9 @@ internal class ExecContextImpl(
   override val defaultProvideFileSystemStamper: FileSystemStamper,
   override val logger: Logger
 ) : ExecContext {
-  private val taskReqs = arrayListOf<TaskReq>()
-  private val fileReqs = arrayListOf<ResourceRequire>()
-  private val fileGens = arrayListOf<ResourceProvide>()
+  private val taskRequires = arrayListOf<TaskRequireDep>()
+  private val resourceRequires = arrayListOf<ResourceRequireDep>()
+  private val resourceProvides = arrayListOf<ResourceProvideDep>()
 
 
   override fun <I : In, O : Out> require(task: Task<I, O>): O {
@@ -33,7 +33,7 @@ internal class ExecContextImpl(
     val key = task.key()
     val output = requireTask.require(key, task, cancel)
     val stamp = stamper.stamp(output)
-    taskReqs.add(TaskReq(key, stamp))
+    taskRequires.add(TaskRequireDep(key, stamp))
     Stats.addCallReq()
     return output
   }
@@ -70,13 +70,13 @@ internal class ExecContextImpl(
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {
     @Suppress("UNCHECKED_CAST") val stamp = stamper.stamp(resource) as ResourceStamp<Resource>
-    fileReqs.add(ResourceRequire(resource.key(), stamp))
+    resourceRequires.add(ResourceRequireDep(resource.key(), stamp))
     Stats.addFileReq()
   }
 
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {
     @Suppress("UNCHECKED_CAST") val stamp = stamper.stamp(resource) as ResourceStamp<Resource>
-    fileGens.add(ResourceProvide(resource.key(), stamp))
+    resourceProvides.add(ResourceProvideDep(resource.key(), stamp))
     Stats.addFileGen()
   }
 
@@ -106,7 +106,7 @@ internal class ExecContextImpl(
   }
 
 
-  data class Reqs(val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<ResourceRequire>, val fileGens: ArrayList<ResourceProvide>)
+  data class Deps(val taskRequires: ArrayList<TaskRequireDep>, val resourceRequires: ArrayList<ResourceRequireDep>, val resourceProvides: ArrayList<ResourceProvideDep>)
 
-  fun reqs() = Reqs(taskReqs, fileReqs, fileGens)
+  fun deps() = Deps(taskRequires, resourceRequires, resourceProvides)
 }

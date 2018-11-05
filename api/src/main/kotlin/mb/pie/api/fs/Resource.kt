@@ -24,7 +24,7 @@ class FileSystemNodeResource(val id: String, override val node: FSNode) : FileSy
 }
 
 /**
- * Resource system for GFS filesystems.
+ * Resource system for the general file system.
  */
 class GeneralFileSystemResourceSystem(private val fileSystem: GeneralFileSystem) : ResourceSystem {
   companion object {
@@ -51,14 +51,14 @@ fun FSNode.toResource() = FileSystemNodeResource(GeneralFileSystemResourceSystem
 
 
 /**
- * Resource for local filesystem nodes.
+ * Resource for Java file system (java.nio.file) nodes.
  */
 class JavaFileSystemNodeResource(override val node: JavaFSNode) : FileSystemResource {
   override fun key() = ResourceKey(JavaFileSystem.rootSelector, node.javaPath)
 }
 
 /**
- * Resource system for the local filesystem
+ * Resource system for the Java file system (java.nio.file).
  */
 class JavaFileSystemResourceSystem : ResourceSystem {
   companion object {

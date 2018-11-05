@@ -25,7 +25,7 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   }
 
 
-  override fun requireBottomUpInitialStart(changedFiles: Set<ResourceKey>) {}
+  override fun requireBottomUpInitialStart(changedResources: Set<ResourceKey>) {}
   override fun requireBottomUpInitialEnd() {}
 
 
@@ -35,39 +35,39 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   override fun checkStoredStart(key: TaskKey) {}
   override fun checkStoredEnd(key: TaskKey, output: Out) {}
 
-  override fun checkFileGenStart(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide) {}
-  override fun checkFileGenEnd(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide, reason: ExecReason?) {
+  override fun checkResourceProvideStart(key: TaskKey, task: Task<*, *>, dep: ResourceProvideDep) {}
+  override fun checkResourceProvideEnd(key: TaskKey, task: Task<*, *>, dep: ResourceProvideDep, reason: ExecReason?) {
     if(reason != null) {
       if(reason is InconsistentResourceProvide) {
-        logger.trace("$indent␦ ${fileGen.key} (inconsistent: ${fileGen.stamp} vs ${reason.newStamp})")
+        logger.trace("$indent␦ ${dep.key} (inconsistent: ${dep.stamp} vs ${reason.newStamp})")
       } else {
-        logger.trace("$indent␦ ${fileGen.key} (inconsistent)")
+        logger.trace("$indent␦ ${dep.key} (inconsistent)")
       }
     } else {
-      logger.trace("$indent␦ ${fileGen.key} (consistent: ${fileGen.stamp})")
+      logger.trace("$indent␦ ${dep.key} (consistent: ${dep.stamp})")
     }
   }
 
-  override fun checkFileReqStart(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire) {}
-  override fun checkFileReqEnd(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire, reason: ExecReason?) {
+  override fun checkResourceRequireStart(key: TaskKey, task: Task<*, *>, dep: ResourceRequireDep) {}
+  override fun checkResourceRequireEnd(key: TaskKey, task: Task<*, *>, dep: ResourceRequireDep, reason: ExecReason?) {
     if(reason != null) {
       if(reason is InconsistentResourceProvide) {
-        logger.trace("$indent␦ ${fileReq.key} (inconsistent: ${fileReq.stamp} vs ${reason.newStamp})")
+        logger.trace("$indent␦ ${dep.key} (inconsistent: ${dep.stamp} vs ${reason.newStamp})")
       } else {
-        logger.trace("$indent␦ ${fileReq.key} (inconsistent)")
+        logger.trace("$indent␦ ${dep.key} (inconsistent)")
       }
     } else {
-      logger.trace("$indent␦ ${fileReq.key} (consistent: ${fileReq.stamp})")
+      logger.trace("$indent␦ ${dep.key} (consistent: ${dep.stamp})")
     }
   }
 
-  override fun checkTaskReqStart(key: TaskKey, task: Task<*, *>, taskReq: TaskReq) {}
-  override fun checkTaskReqEnd(key: TaskKey, task: Task<*, *>, taskReq: TaskReq, reason: ExecReason?) {
+  override fun checkTaskRequireStart(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep) {}
+  override fun checkTaskRequireEnd(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep, reason: ExecReason?) {
     when(reason) {
       is InconsistentTaskReq ->
-        logger.trace("$indent␦ ${taskReq.callee.toShortString(descLimit)} (inconsistent: ${taskReq.stamp} vs ${reason.newStamp})")
+        logger.trace("$indent␦ ${dep.callee.toShortString(descLimit)} (inconsistent: ${dep.stamp} vs ${reason.newStamp})")
       null ->
-        logger.trace("$indent␦ ${taskReq.callee.toShortString(descLimit)} (consistent: ${taskReq.stamp})")
+        logger.trace("$indent␦ ${dep.callee.toShortString(descLimit)} (consistent: ${dep.stamp})")
     }
   }
 

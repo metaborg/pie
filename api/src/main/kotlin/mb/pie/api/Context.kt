@@ -10,6 +10,7 @@ import mb.pie.api.fs.toResource
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import java.io.File
+import java.nio.file.Path
 
 /**
  * Execution context used in execution of [tasks][Task], to require other tasks, and to record dependencies to resources.
@@ -128,64 +129,64 @@ interface ExecContext {
   fun require(node: FSNode, stamper: FileSystemStamper) = require(node.toResource(), stamper)
 
   /**
-   * Marks given [Java filesystem path][javaPath] as required (read), using the
+   * Marks given [Java file system path][path] as required (read), using the
    * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
    *
    * @return resolved Java file system node.
    */
   @JvmDefault
-  fun require(javaPath: JavaFSPath): JavaFSNode = javaPath.toNode().also { require(it, defaultRequireFileSystemStamper) }
+  fun require(path: JavaFSPath): JavaFSNode = path.toNode().also { require(it, defaultRequireFileSystemStamper) }
 
   /**
-   * Marks given [Java filesystem path][javaPath] as required (read), using given [file system stamper][stamper], creating a required
+   * Marks given [Java file system path][path] as required (read), using given [file system stamper][stamper], creating a required
    * resource dependency.
    *
    * @return resolved Java file system node.
    */
   @JvmDefault
-  fun require(javaPath: JavaFSPath, stamper: FileSystemStamper): JavaFSNode = javaPath.toNode().also { require(it, stamper) }
+  fun require(path: JavaFSPath, stamper: FileSystemStamper): JavaFSNode = path.toNode().also { require(it, stamper) }
 
   /**
-   * Marks given [Java filesystem node][javaNode] as required (read), using the
+   * Marks given [Java file system node][node] as required (read), using the
    * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
    */
   @JvmDefault
-  fun require(javaNode: JavaFSNode) = require(javaNode.toResource(), defaultRequireFileSystemStamper)
+  fun require(node: JavaFSNode) = require(node.toResource(), defaultRequireFileSystemStamper)
 
   /**
-   * Marks given [Java filesystem node][javaNode] as required (read), using given [file system stamper][stamper], creating a required
+   * Marks given [Java file system node][node] as required (read), using given [file system stamper][stamper], creating a required
    * resource dependency.
    */
   @JvmDefault
-  fun require(javaNode: JavaFSNode, stamper: FileSystemStamper) = require(javaNode.toResource(), stamper)
+  fun require(node: JavaFSNode, stamper: FileSystemStamper) = require(node.toResource(), stamper)
 
   /**
-   * Marks given [Java filesystem (java.nio.file) path][javaPath] as required (read), using the
+   * Marks given [Java file system (java.nio.file) path][path] as required (read), using the
    * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
    */
   @JvmDefault
-  fun require(javaPath: java.nio.file.Path) = require(javaPath.toResource(), defaultRequireFileSystemStamper)
+  fun require(path: Path) = require(path.toResource(), defaultRequireFileSystemStamper)
 
   /**
-   * Marks given [Java filesystem (java.nio.file) path][javaPath] as required (read), using given [file system stamper][stamper], creating a
+   * Marks given [Java file system (java.nio.file) path][path] as required (read), using given [file system stamper][stamper], creating a
    * required resource dependency.
    */
   @JvmDefault
-  fun require(javaPath: java.nio.file.Path, stamper: FileSystemStamper) = require(javaPath.toResource(), stamper)
+  fun require(path: Path, stamper: FileSystemStamper) = require(path.toResource(), stamper)
 
   /**
-   * Marks given [Java local file (java.io) path][path] as required (read), using the
+   * Marks given [Java local file (java.io) path][file] as required (read), using the
    * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
    */
   @JvmDefault
-  fun require(path: File) = require(path.toResource(), defaultRequireFileSystemStamper)
+  fun require(file: File) = require(file.toResource(), defaultRequireFileSystemStamper)
 
   /**
-   * Marks given [Java local file (java.io) path][path] as required (read), using given [file system stamper][stamper], creating a required
+   * Marks given [Java local file (java.io) path][file] as required (read), using given [file system stamper][stamper], creating a required
    * resource dependency.
    */
   @JvmDefault
-  fun require(path: File, stamper: FileSystemStamper) = require(path.toResource(), stamper)
+  fun require(file: File, stamper: FileSystemStamper) = require(file.toResource(), stamper)
 
   /**
    * Default 'require' file system stamper.
@@ -229,68 +230,68 @@ interface ExecContext {
   fun provide(node: FSNode, stamper: FileSystemStamper) = provide(node.toResource(), stamper)
 
   /**
-   * Marks given [Java filesystem path][javaPath] as provided (written to/created), using the
+   * Marks given [Java file system path][path] as provided (written to/created), using the
    * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
    * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(javaPath: JavaFSPath) = provide(javaPath.toResource(), defaultProvideFileSystemStamper)
+  fun provide(path: JavaFSPath) = provide(path.toResource(), defaultProvideFileSystemStamper)
 
   /**
-   * Marks given [Java filesystem path][javaPath] as provided (written to/created), using given [file system stamper][stamper], creating a
+   * Marks given [Java file system path][path] as provided (written to/created), using given [file system stamper][stamper], creating a
    * provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call
    * [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(javaPath: JavaFSPath, stamper: FileSystemStamper) = provide(javaPath.toResource(), stamper)
+  fun provide(path: JavaFSPath, stamper: FileSystemStamper) = provide(path.toResource(), stamper)
 
   /**
-   * Marks given [Java filesystem node][javaNode] as provided (written to/created), using the
+   * Marks given [Java file system node][node] as provided (written to/created), using the
    * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
    * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(javaNode: JavaFSNode) = provide(javaNode.toResource(), defaultProvideFileSystemStamper)
+  fun provide(node: JavaFSNode) = provide(node.toResource(), defaultProvideFileSystemStamper)
 
   /**
-   * Marks given [Java filesystem node][javaNode] as provided (written to/created), using given [file system stamper][stamper], creating a
+   * Marks given [Java files ystem node][node] as provided (written to/created), using given [file system stamper][stamper], creating a
    * provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call
    * [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(javaNode: JavaFSNode, stamper: FileSystemStamper) = provide(javaNode.toResource(), stamper)
+  fun provide(node: JavaFSNode, stamper: FileSystemStamper) = provide(node.toResource(), stamper)
 
   /**
-   * Marks given [Java filesystem (java.nio.file) path][javaPath] as provided (written to/created), using the
+   * Marks given [Java file system (java.nio.file) path][path] as provided (written to/created), using the
    * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
    * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(javaPath: java.nio.file.Path) = provide(javaPath.toResource(), defaultProvideFileSystemStamper)
+  fun provide(path: Path) = provide(path.toResource(), defaultProvideFileSystemStamper)
 
   /**
-   * Marks given [Java filesystem (java.nio.file) path][javaPath] as provided (written to/created), using given
+   * Marks given [Java file system (java.nio.file) path][path] as provided (written to/created), using given
    * [file system stamper][stamper], creating a provided resource dependency. The current contents of the file or directory may be used for
    * change detection, so be sure to call [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(javaPath: java.nio.file.Path, stamper: FileSystemStamper) = provide(javaPath.toResource(), stamper)
+  fun provide(path: Path, stamper: FileSystemStamper) = provide(path.toResource(), stamper)
 
   /**
-   * Marks given [Java local file (java.io) path][path] as provided (written to/created), using the
+   * Marks given [Java local file (java.io) path][file] as provided (written to/created), using the
    * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
    * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(path: File) = provide(path.toResource(), defaultProvideFileSystemStamper)
+  fun provide(file: File) = provide(file.toResource(), defaultProvideFileSystemStamper)
 
   /**
-   * Marks given [Java local file (java.io) path][path] as provided (written to/created), using given [file system stamper][stamper],
+   * Marks given [Java local file (java.io) path][file] as provided (written to/created), using given [file system stamper][stamper],
    * creating a provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to
    * call [provide] AFTER writing to the file or directory.
    */
   @JvmDefault
-  fun provide(path: File, stamper: FileSystemStamper) = provide(path.toResource(), stamper)
+  fun provide(file: File, stamper: FileSystemStamper) = provide(file.toResource(), stamper)
 
   /**
    * Default 'provide' file system stamper.
@@ -360,12 +361,12 @@ fun <I : In, O : Out> ExecContext.require(taskDef: TaskDef<I, O>, input: I, stam
  * @see ExecContext.require
  */
 @Throws(ExecException::class, InterruptedException::class)
-fun <I : In, O : Out> ExecContext.require(task: STask<I>, stamper: OutputStamper?) =
+fun <I : In> ExecContext.require(task: STask<I>, stamper: OutputStamper?) =
   if(stamper != null) require(task, stamper) else require(task)
 
 /**
  * @see ExecContext.require
  */
 @Throws(ExecException::class, InterruptedException::class)
-fun <I : In, O : Out> ExecContext.require(taskDefId: String, input: I, stamper: OutputStamper?) =
+fun <I : In> ExecContext.require(taskDefId: String, input: I, stamper: OutputStamper?) =
   if(stamper != null) require(taskDefId, input, stamper) else require(taskDefId, input)

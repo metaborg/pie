@@ -101,7 +101,7 @@ open class TopDownSessionImpl(
 
     // Check consistency of task.
     val existingData = storedData.cast<I, O>()
-    val (input, output, taskReqs, fileReqs, fileGens) = existingData
+    val (input, output, taskRequires, resourceRequires, resourceProvides) = existingData
 
     // Internal consistency: input changes.
     with(requireShared.checkInput(input, task)) {
@@ -117,18 +117,18 @@ open class TopDownSessionImpl(
       }
     }
 
-    // Internal consistency: file requirements.
-    for(fileReq in fileReqs) {
-      with(requireShared.checkFileReq(key, task, fileReq)) {
+    // Internal consistency: resoruce requires.
+    for(fileReq in resourceRequires) {
+      with(requireShared.checkResourceRequire(key, task, fileReq)) {
         if(this != null) {
           return DataW(exec(key, task, this, cancel))
         }
       }
     }
 
-    // Internal consistency: file generates.
-    for(fileGen in fileGens) {
-      with(requireShared.checkFileGen(key, task, fileGen)) {
+    // Internal consistency: resource provides.
+    for(fileGen in resourceProvides) {
+      with(requireShared.checkResourceProvide(key, task, fileGen)) {
         if(this != null) {
           return DataW(exec(key, task, this, cancel))
         }
@@ -136,8 +136,8 @@ open class TopDownSessionImpl(
     }
 
     // Total consistency: call requirements.
-    for(taskReq in taskReqs) {
-      with(requireShared.checkTaskReq(key, task, taskReq, this, cancel)) {
+    for(taskReq in taskRequires) {
+      with(requireShared.checkTaskRequire(key, task, taskReq, this, cancel)) {
         if(this != null) {
           return DataW(exec(key, task, this, cancel))
         }

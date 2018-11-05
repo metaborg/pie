@@ -8,18 +8,18 @@ class NoopExecutorLogger : ExecutorLogger {
   override fun requireTopDownInitialEnd(key: TaskKey, task: Task<*, *>, output: Out) {}
   override fun requireTopDownStart(key: TaskKey, task: Task<*, *>) {}
   override fun requireTopDownEnd(key: TaskKey, task: Task<*, *>, output: Out) {}
-  override fun requireBottomUpInitialStart(changedFiles: Set<ResourceKey>) {}
+  override fun requireBottomUpInitialStart(changedResources: Set<ResourceKey>) {}
   override fun requireBottomUpInitialEnd() {}
   override fun checkVisitedStart(key: TaskKey) {}
   override fun checkVisitedEnd(key: TaskKey, output: Out) {}
   override fun checkStoredStart(key: TaskKey) {}
   override fun checkStoredEnd(key: TaskKey, output: Out) {}
-  override fun checkFileGenStart(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide) {}
-  override fun checkFileGenEnd(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide, reason: ExecReason?) {}
-  override fun checkFileReqStart(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire) {}
-  override fun checkFileReqEnd(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire, reason: ExecReason?) {}
-  override fun checkTaskReqStart(key: TaskKey, task: Task<*, *>, taskReq: TaskReq) {}
-  override fun checkTaskReqEnd(key: TaskKey, task: Task<*, *>, taskReq: TaskReq, reason: ExecReason?) {}
+  override fun checkResourceProvideStart(key: TaskKey, task: Task<*, *>, dep: ResourceProvideDep) {}
+  override fun checkResourceProvideEnd(key: TaskKey, task: Task<*, *>, dep: ResourceProvideDep, reason: ExecReason?) {}
+  override fun checkResourceRequireStart(key: TaskKey, task: Task<*, *>, dep: ResourceRequireDep) {}
+  override fun checkResourceRequireEnd(key: TaskKey, task: Task<*, *>, dep: ResourceRequireDep, reason: ExecReason?) {}
+  override fun checkTaskRequireStart(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep) {}
+  override fun checkTaskRequireEnd(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep, reason: ExecReason?) {}
   override fun executeStart(key: TaskKey, task: Task<*, *>, reason: ExecReason) {}
   override fun executeEnd(key: TaskKey, task: Task<*, *>, reason: ExecReason, data: TaskData<*, *>) {}
   override fun invokeObserverStart(observer: Function<Unit>, key: TaskKey, output: Out) {}

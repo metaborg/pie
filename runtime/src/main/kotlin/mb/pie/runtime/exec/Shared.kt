@@ -3,7 +3,6 @@ package mb.pie.runtime.exec
 import mb.pie.api.*
 import mb.pie.api.exec.ExecReason
 
-
 /**
  * [Execution reason][ExecReason] for when there is no data of a task.
  */

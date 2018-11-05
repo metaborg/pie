@@ -23,7 +23,7 @@ interface ResourceDep {
 /**
  * Resource 'requires' (reads) dependency.
  */
-data class ResourceRequire(
+data class ResourceRequireDep(
   val key: ResourceKey,
   val stamp: ResourceStamp<Resource>
 ) : ResourceDep, Serializable {
@@ -54,14 +54,14 @@ data class ResourceRequire(
 /**
  * Execution reason for inconsistent resource requires dependency.
  */
-data class InconsistentResourceRequire(val require: ResourceRequire, val newStamp: ResourceStamp<*>) : ExecReason {
-  override fun toString() = "inconsistent required resource ${require.key}"
+data class InconsistentResourceRequire(val dep: ResourceRequireDep, val newStamp: ResourceStamp<*>) : ExecReason {
+  override fun toString() = "inconsistent required resource ${dep.key}"
 }
 
 /**
  * Resource 'provides' (writes) dependency.
  */
-data class ResourceProvide(
+data class ResourceProvideDep(
   val key: ResourceKey,
   val stamp: ResourceStamp<Resource>
 ) : ResourceDep, Serializable {
@@ -88,14 +88,14 @@ data class ResourceProvide(
 /**
  * Execution reason for inconsistent resource provides dependency.
  */
-data class InconsistentResourceProvide(val provide: ResourceProvide, val newStamp: ResourceStamp<*>) : ExecReason {
-  override fun toString() = "inconsistent provided resource ${provide.key}"
+data class InconsistentResourceProvide(val dep: ResourceProvideDep, val newStamp: ResourceStamp<*>) : ExecReason {
+  override fun toString() = "inconsistent provided resource ${dep.key}"
 }
 
 /**
  * Task 'require' (calls) dependency.
  */
-data class TaskReq(
+data class TaskRequireDep(
   val callee: TaskKey,
   val stamp: OutputStamp
 ) : Serializable {
@@ -133,6 +133,6 @@ data class TaskReq(
 /**
  * Execution reason for inconsistent task requires dependency.
  */
-data class InconsistentTaskReq(val req: TaskReq, val newStamp: OutputStamp) : ExecReason {
-  override fun toString() = "inconsistent required task ${req.callee.toShortString(100)}"
+data class InconsistentTaskReq(val dep: TaskRequireDep, val newStamp: OutputStamp) : ExecReason {
+  override fun toString() = "inconsistent required task ${dep.callee.toShortString(100)}"
 }

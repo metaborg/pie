@@ -56,33 +56,33 @@ internal class RequireShared(
   /**
    * Check if a file requires dependency is internally consistent.
    */
-  fun checkFileReq(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequire): InconsistentResourceRequire? {
-    executorLogger.checkFileReqStart(key, task, fileReq)
+  fun checkResourceRequire(key: TaskKey, task: Task<*, *>, fileReq: ResourceRequireDep): InconsistentResourceRequire? {
+    executorLogger.checkResourceRequireStart(key, task, fileReq)
     val reason = fileReq.checkConsistency(resourceSystems)
-    executorLogger.checkFileReqEnd(key, task, fileReq, reason)
+    executorLogger.checkResourceRequireEnd(key, task, fileReq, reason)
     return reason
   }
 
   /**
    * Check if a file generates dependency is internally consistent.
    */
-  fun checkFileGen(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvide): InconsistentResourceProvide? {
-    executorLogger.checkFileGenStart(key, task, fileGen)
+  fun checkResourceProvide(key: TaskKey, task: Task<*, *>, fileGen: ResourceProvideDep): InconsistentResourceProvide? {
+    executorLogger.checkResourceProvideStart(key, task, fileGen)
     val reason = fileGen.checkConsistency(resourceSystems)
-    executorLogger.checkFileGenEnd(key, task, fileGen, reason)
+    executorLogger.checkResourceProvideEnd(key, task, fileGen, reason)
     return reason
   }
 
   /**
    * Check if a task requires dependency is totally consistent.
    */
-  fun checkTaskReq(key: TaskKey, task: Task<*, *>, taskReq: TaskReq, requireTask: RequireTask, cancel: Cancelled): InconsistentTaskReq? {
-    val calleeKey = taskReq.callee
+  fun checkTaskRequire(key: TaskKey, task: Task<*, *>, taskRequire: TaskRequireDep, requireTask: RequireTask, cancel: Cancelled): InconsistentTaskReq? {
+    val calleeKey = taskRequire.callee
     val calleeTask = store.readTxn().use { txn -> calleeKey.toTask(taskDefs, txn) }
     val calleeOutput = requireTask.require(calleeKey, calleeTask, cancel)
-    executorLogger.checkTaskReqStart(key, task, taskReq)
-    val reason = taskReq.checkConsistency(calleeOutput)
-    executorLogger.checkTaskReqEnd(key, task, taskReq, reason)
+    executorLogger.checkTaskRequireStart(key, task, taskRequire)
+    val reason = taskRequire.checkConsistency(calleeOutput)
+    executorLogger.checkTaskRequireEnd(key, task, taskRequire, reason)
     return reason
   }
 }
