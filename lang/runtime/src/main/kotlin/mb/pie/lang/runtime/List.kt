@@ -1,4 +1,4 @@
-package mb.pie.lang.runtime.util
+package mb.pie.lang.runtime
 
 import mb.pie.api.Out
 import java.util.*

@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec
 
-import mb.fs.api.GeneralFileSystem
 import mb.pie.api.*
 import mb.pie.api.exec.*
 import mb.pie.api.fs.stamp.FileSystemStamper
@@ -8,7 +7,6 @@ import mb.pie.api.stamp.OutputStamper
 
 class TopDownExecutorImpl constructor(
   private val taskDefs: TaskDefs,
-  private val generalFileSystem: GeneralFileSystem,
   private val resourceSystems: ResourceSystems,
   private val store: Store,
   private val share: Share,
@@ -20,13 +18,12 @@ class TopDownExecutorImpl constructor(
   private val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : TopDownExecutor {
   override fun newSession(): TopDownSession {
-    return TopDownSessionImpl(taskDefs, generalFileSystem, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
   }
 }
 
 open class TopDownSessionImpl(
   taskDefs: TaskDefs,
-  generalFileSystem: GeneralFileSystem,
   resourceSystems: ResourceSystems,
   private val store: Store,
   share: Share,
@@ -38,7 +35,7 @@ open class TopDownSessionImpl(
   private val executorLogger: ExecutorLogger
 ) : TopDownSession, RequireTask {
   private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
-  private val executor = TaskExecutor(taskDefs, generalFileSystem, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null)
+  private val executor = TaskExecutor(taskDefs, resourceSystems, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null)
   private val requireShared = RequireShared(taskDefs, resourceSystems, visited, store, executorLogger)
 
 

@@ -2,19 +2,30 @@ package mb.fs.java;
 
 import mb.fs.api.FileSystem;
 import mb.fs.api.path.FSPath;
+import mb.fs.api.path.InvalidFSPathRuntimeException;
 
-public class JavaFileSystem implements FileSystem {
-    public static final String rootSelector = "java";
+import java.io.Serializable;
 
-    @Override public String getRootSelector() {
-        return rootSelector;
-    }
+public class JavaFileSystem implements FileSystem, Serializable {
+    private static final long serialVersionUID = 1L;
+    public static final String id = "java";
+    public static JavaFileSystem instance = new JavaFileSystem();
 
-    @Override public boolean isValidPath(FSPath path) {
-        return path.getSelectorRoot().equals(rootSelector);
+    private JavaFileSystem() {}
+
+    @Override public String getId() {
+        return id;
     }
 
     @Override public JavaFSNode getNode(FSPath path) {
+        if(!(path instanceof JavaFSPath)) {
+            throw new InvalidFSPathRuntimeException("Cannot get file system node for path " + path + ", it is not a Java file system path");
+        }
+        final JavaFSPath javaFsPath = (JavaFSPath) path;
+        return new JavaFSNode(javaFsPath);
+    }
+
+    public JavaFSNode getNode(JavaFSPath path) {
         return new JavaFSNode(path);
     }
 

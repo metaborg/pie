@@ -19,7 +19,7 @@ rules
   p2k-type-sig: BoolTy() -> "Boolean"
   p2k-type-sig: IntTy()  -> "Int"
   p2k-type-sig: StrTy()  -> "String"
-  p2k-type-sig: PathTy() -> "PPath"
+  p2k-type-sig: PathTy() -> "JavaFSPath"
   p2k-type-sig: TopTy()  -> "Any"
 
   p2k-type-sig:

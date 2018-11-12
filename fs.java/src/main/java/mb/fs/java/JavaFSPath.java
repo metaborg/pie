@@ -1,16 +1,16 @@
 package mb.fs.java;
 
-import mb.fs.api.path.*;
+import mb.fs.api.path.FSPath;
+import mb.fs.api.path.InvalidFSPathRuntimeException;
 
 import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 import java.util.function.Function;
 
-public class JavaFSPath implements Serializable {
+public class JavaFSPath implements FSPath {
     private static final long serialVersionUID = 1L;
 
     private final URI uri; // URI version of the path which can be serialized and deserialized.
@@ -25,10 +25,6 @@ public class JavaFSPath implements Serializable {
     public JavaFSPath(URI uri) {
         this.uri = uri;
         this.javaPath = createJavaPath(uri);
-    }
-
-    public JavaFSPath(FSPath path) {
-        this(createJavaPath(path));
     }
 
     public JavaFSPath(File javaFile) {
@@ -49,12 +45,26 @@ public class JavaFSPath implements Serializable {
     }
 
 
-    public FSPath getGeneralPath() {
-        return createGeneralPath(javaPath);
+    @Override public String getFileSystemId() {
+        return JavaFileSystem.id;
     }
 
 
-    public @Nullable JavaFSPath getParent() {
+    @Override public boolean isAbsolute() {
+        return javaPath.isAbsolute();
+    }
+
+
+    @Override public int getSegmentCount() {
+        return javaPath.getNameCount();
+    }
+
+    @Override public Iterable<String> getSegments() {
+        return () -> new PathIterator(javaPath.iterator());
+    }
+
+
+    @Override public @Nullable JavaFSPath getParent() {
         final @Nullable Path parentJavaPath = this.javaPath.getParent();
         if(parentJavaPath == null) {
             return null;
@@ -62,12 +72,7 @@ public class JavaFSPath implements Serializable {
         return new JavaFSPath(parentJavaPath);
     }
 
-    public JavaFSPath getNormalized() {
-        final Path normalizedJavaPath = this.javaPath.normalize();
-        return new JavaFSPath(normalizedJavaPath);
-    }
-
-    public @Nullable JavaFSPath getRoot() {
+    @Override public @Nullable JavaFSPath getRoot() {
         final @Nullable Path rootJavaPath = this.javaPath.getRoot();
         if(rootJavaPath == null) {
             return null;
@@ -75,33 +80,75 @@ public class JavaFSPath implements Serializable {
         return new JavaFSPath(rootJavaPath);
     }
 
+    @Override public String getLeaf() {
+        final @Nullable Path fileName = this.javaPath.getFileName();
+        if(fileName == null) {
+            return null;
+        }
+        return fileName.toString();
+    }
 
-    public JavaFSPath appendSegment(String segment) {
+    @Override public JavaFSPath getNormalized() {
+        final Path normalizedJavaPath = this.javaPath.normalize();
+        return new JavaFSPath(normalizedJavaPath);
+    }
+
+    @Override public JavaFSPath getRelativeTo(FSPath absolutePath) {
+        if(!(absolutePath instanceof JavaFSPath)) {
+            throw new InvalidFSPathRuntimeException("Cannot get path relative to " + absolutePath + ", it is not a Java file system path");
+        }
+        final JavaFSPath javaAbsolutePath = (JavaFSPath) absolutePath;
+        if(!absolutePath.isAbsolute()) {
+            throw new InvalidFSPathRuntimeException("Cannot get path relative to " + absolutePath + ", it is not an absolute path");
+        }
+        final Path javaRelativePath = javaPath.relativize(javaAbsolutePath.javaPath);
+        return new JavaFSPath(javaRelativePath);
+    }
+
+
+    @Override public JavaFSPath appendSegment(String segment) {
         final Path javaPath = this.javaPath.resolve(segment);
         return new JavaFSPath(javaPath);
     }
 
-    public JavaFSPath appendSegments(Collection<String> segments) {
-        final Path relJavaPath = createJavaPath(segments);
-        final Path javaPath = this.javaPath.resolve(relJavaPath);
-        return new JavaFSPath(javaPath);
-    }
-
-    public JavaFSPath appendSegments(Iterable<String> segments) {
+    @Override public JavaFSPath appendSegments(Iterable<String> segments) {
         final ArrayList<String> segmentsList = new ArrayList<>();
         segments.forEach(segmentsList::add);
         return appendSegments(segmentsList);
     }
 
-    public JavaFSPath appendSegments(String... segments) {
+    @Override public JavaFSPath appendSegments(Collection<String> segments) {
         final Path relJavaPath = createJavaPath(segments);
         final Path javaPath = this.javaPath.resolve(relJavaPath);
         return new JavaFSPath(javaPath);
     }
 
-    public JavaFSPath appendRelativePath(RelativeFSPath relativePath) {
-        final Path relJavaPath = createJavaPath(relativePath.getSegments());
+    @Override public JavaFSPath appendSegments(List<String> segments) {
+        final Path relJavaPath = createJavaPath(segments);
         final Path javaPath = this.javaPath.resolve(relJavaPath);
+        return new JavaFSPath(javaPath);
+    }
+
+    @Override public JavaFSPath appendSegments(String... segments) {
+        final Path relJavaPath = createJavaPath(segments);
+        final Path javaPath = this.javaPath.resolve(relJavaPath);
+        return new JavaFSPath(javaPath);
+    }
+
+    @Override public JavaFSPath appendRelativePath(FSPath relativePath) {
+        if(!(relativePath instanceof JavaFSPath)) {
+            throw new InvalidFSPathRuntimeException("Cannot append relative path " + relativePath + ", it is not a Java file system path");
+        }
+        final JavaFSPath javaRelativePath = (JavaFSPath) relativePath;
+        if(relativePath.isAbsolute()) {
+            throw new InvalidFSPathRuntimeException("Cannot append relative path " + relativePath + ", it is not a relative path");
+        }
+        final Path javaPath = this.javaPath.resolve(javaRelativePath.javaPath);
+        return new JavaFSPath(javaPath);
+    }
+
+    public JavaFSPath appendJavaPath(Path segments) {
+        final Path javaPath = this.javaPath.resolve(segments);
         return new JavaFSPath(javaPath);
     }
 
@@ -124,14 +171,6 @@ public class JavaFSPath implements Serializable {
         return new JavaFSPath(javaPath);
     }
 
-
-    private static Path createJavaPath(FSPath path) {
-        if(!path.getSelectorRoot().equals(JavaFileSystem.rootSelector)) {
-            throw new InvalidFSPathRuntimeException(
-                "Failed to create local filesystem path; general path '" + path + "' does not have '" + JavaFileSystem.rootSelector + "' as root selector");
-        }
-        return createJavaPath(path.getSegments());
-    }
 
     private static Path createJavaPath(Collection<String> segments) {
         final int segmentsSize = segments.size();
@@ -189,17 +228,6 @@ public class JavaFSPath implements Serializable {
     }
 
 
-    private static FSPath createGeneralPath(Path javaPath) {
-        // TODO: handle Windows device in javaPath segments.
-        final ArrayList<String> segments = new ArrayList<>(javaPath.getNameCount());
-        for(Path pathSegment : javaPath) {
-            final String segment = pathSegment.toString();
-            segments.add(segment);
-        }
-        return FSPath.from(JavaFileSystem.rootSelector, segments);
-    }
-
-
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
@@ -213,6 +241,15 @@ public class JavaFSPath implements Serializable {
 
     @Override public String toString() {
         return javaPath.toString();
+    }
+
+
+    @Override public int compareTo(FSPath other) {
+        if(!(other instanceof JavaFSPath)) {
+            throw new InvalidFSPathRuntimeException("Cannot compare to path " + other + ", it is not a Java file system path");
+        }
+        final JavaFSPath javaFsPath = (JavaFSPath) other;
+        return this.javaPath.compareTo(javaFsPath.javaPath);
     }
 
 

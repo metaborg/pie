@@ -2,7 +2,6 @@ package mb.fs.java;
 
 import mb.fs.api.node.*;
 import mb.fs.api.path.FSPath;
-import mb.fs.api.path.RelativeFSPath;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -24,10 +23,6 @@ public class JavaFSNode implements FSNode, Serializable {
         this.path = path;
     }
 
-    public JavaFSNode(FSPath path) {
-        this.path = new JavaFSPath(path);
-    }
-
     public JavaFSNode(Path javaPath) {
         this.path = new JavaFSPath(javaPath);
     }
@@ -45,12 +40,16 @@ public class JavaFSNode implements FSNode, Serializable {
     }
 
 
-    public JavaFSPath getJavaPath() {
+    @Override public JavaFSPath getPath() {
         return path;
     }
 
-    @Override public FSPath getPath() {
-        return path.getGeneralPath();
+    @Override public JavaFileSystem getFileSystem() {
+        return JavaFileSystem.instance;
+    }
+
+    @Override public String getFileSystemId() {
+        return JavaFileSystem.id;
     }
 
 
@@ -62,33 +61,51 @@ public class JavaFSNode implements FSNode, Serializable {
         return new JavaFSNode(newPath);
     }
 
-    @Override public FSNode appendSegment(String segment) {
+    @Override public @Nullable JavaFSNode getRoot() {
+        final @Nullable JavaFSPath newPath = path.getRoot();
+        if(newPath == null) {
+            return null;
+        }
+        return new JavaFSNode(newPath);
+    }
+
+    @Override public @Nullable String getLeaf() {
+        return path.getLeaf();
+    }
+
+    @Override public JavaFSNode appendSegment(String segment) {
         final JavaFSPath newPath = path.appendSegment(segment);
         return new JavaFSNode(newPath);
     }
 
-    @Override public FSNode appendSegments(List<String> segments) {
+    @Override public JavaFSNode appendSegments(Iterable<String> segments) {
         final JavaFSPath newPath = path.appendSegments(segments);
         return new JavaFSNode(newPath);
     }
 
-    @Override public FSNode appendSegments(Collection<String> segments) {
+    @Override public JavaFSNode appendSegments(Collection<String> segments) {
         final JavaFSPath newPath = path.appendSegments(segments);
         return new JavaFSNode(newPath);
     }
 
-    @Override public FSNode appendSegments(Iterable<String> segments) {
+    @Override public JavaFSNode appendSegments(List<String> segments) {
         final JavaFSPath newPath = path.appendSegments(segments);
         return new JavaFSNode(newPath);
     }
 
-    @Override public FSNode appendSegments(String... segments) {
+    @Override public JavaFSNode appendSegments(String... segments) {
         final JavaFSPath newPath = path.appendSegments(segments);
         return new JavaFSNode(newPath);
     }
 
-    @Override public FSNode appendRelativePath(RelativeFSPath relativePath) {
+    @Override public JavaFSNode appendRelativePath(FSPath relativePath) {
         final JavaFSPath newPath = path.appendRelativePath(relativePath);
+        return new JavaFSNode(newPath);
+    }
+
+
+    @Override public JavaFSNode replaceLeafSegment(String str) {
+        final JavaFSPath newPath = path.replaceLeafSegment(str);
         return new JavaFSNode(newPath);
     }
 
@@ -97,12 +114,7 @@ public class JavaFSNode implements FSNode, Serializable {
         return new JavaFSNode(newPath);
     }
 
-    @Override public JavaFSNode replaceLeafSegment(String str) {
-        final JavaFSPath newPath = path.replaceLeafSegment(str);
-        return new JavaFSNode(newPath);
-    }
-
-    @Override public FSNode applyToLeafSegment(Function<String, String> func) {
+    @Override public JavaFSNode applyToLeafSegment(Function<String, String> func) {
         final JavaFSPath newPath = path.applyToLeafSegment(func);
         return new JavaFSNode(newPath);
     }
@@ -151,20 +163,20 @@ public class JavaFSNode implements FSNode, Serializable {
     }
 
 
-    @Override public Stream<? extends FSNode> list() throws IOException {
+    @Override public Stream<JavaFSNode> list() throws IOException {
         return Files.list(path.javaPath).map(JavaFSNode::new);
     }
 
-    @Override public Stream<? extends FSNode> list(FSNodeMatcher matcher) throws IOException {
+    @Override public Stream<JavaFSNode> list(FSNodeMatcher matcher) throws IOException {
         return Files.list(path.javaPath).map(JavaFSNode::new).filter((n) -> matcher.matches(n, this));
     }
 
-    @Override public Stream<? extends FSNode> walk() throws IOException {
+    @Override public Stream<JavaFSNode> walk() throws IOException {
         return Files.walk(path.javaPath).map(JavaFSNode::new);
     }
 
     @Override
-    public Stream<? extends FSNode> walk(FSNodeWalker walker, FSNodeMatcher matcher, @Nullable FSNodeAccess access) throws IOException {
+    public Stream<JavaFSNode> walk(FSNodeWalker walker, FSNodeMatcher matcher, @Nullable FSNodeAccess access) throws IOException {
         final Stream.Builder<JavaFSNode> streamBuilder = Stream.builder();
         final NodeWalkerFileVisitor visitor = new NodeWalkerFileVisitor(walker, matcher, this, streamBuilder, access);
         Files.walkFileTree(path.javaPath, visitor);

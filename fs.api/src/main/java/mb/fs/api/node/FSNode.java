@@ -1,39 +1,61 @@
 package mb.fs.api.node;
 
+import mb.fs.api.FileSystem;
 import mb.fs.api.path.FSPath;
-import mb.fs.api.path.RelativeFSPath;
+import mb.fs.api.path.InvalidFSPathRuntimeException;
 
 import javax.annotation.Nullable;
 import java.io.*;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 public interface FSNode {
     FSPath getPath();
 
+    FileSystem getFileSystem();
+
+    String getFileSystemId();
+
 
     @Nullable FSNode getParent();
 
+    @Nullable FSNode getRoot();
+
+    @Nullable String getLeaf();
+
+
     FSNode appendSegment(String segment);
-
-    FSNode appendSegments(List<String> segments);
-
-    FSNode appendSegments(Collection<String> segments);
 
     FSNode appendSegments(Iterable<String> segments);
 
-    FSNode appendSegments(String... segments);
+    FSNode appendSegments(Collection<String> segments);
 
-    FSNode appendRelativePath(RelativeFSPath relativePath);
+    default FSNode appendSegments(List<String> segments) {
+        return appendSegments((Collection<String>) segments);
+    }
 
-    FSNode appendToLeafSegment(String str);
+    default FSNode appendSegments(String... segments) {
+        return appendSegments((Collection<String>) Arrays.asList(segments));
+    }
 
-    FSNode replaceLeafSegment(String str);
+    /**
+     * @throws InvalidFSPathRuntimeException when relativePath is not of the same runtime (super)type as the path from {@link #getPath}.
+     * @throws InvalidFSPathRuntimeException when relativePath is not a relative path (but instead an absolute one).
+     */
+    FSNode appendRelativePath(FSPath relativePath);
 
-    FSNode applyToLeafSegment(Function<String, String> func);
+
+    FSNode replaceLeafSegment(String segment);
+
+    default FSNode appendToLeafSegment(String str) {
+        return replaceLeafSegment(getLeaf() + str);
+    }
+
+    default FSNode applyToLeafSegment(Function<String, String> func) {
+        return replaceLeafSegment(func.apply(getLeaf()));
+    }
 
 
     FSNodeType getType() throws IOException;
@@ -102,4 +124,11 @@ public interface FSNode {
     default void delete() throws IOException {
         delete(false);
     }
+
+
+    @Override boolean equals(Object other);
+
+    @Override int hashCode();
+
+    @Override String toString();
 }

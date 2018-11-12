@@ -1,6 +1,5 @@
 package mb.pie.api
 
-import mb.fs.api.GeneralFileSystem
 import mb.pie.api.exec.BottomUpExecutor
 import mb.pie.api.exec.TopDownExecutor
 import mb.pie.api.fs.stamp.FileSystemStamper
@@ -21,7 +20,6 @@ interface Pie : AutoCloseable {
  */
 interface PieBuilder {
   fun withTaskDefs(taskDefs: TaskDefs): PieBuilder
-  fun withGeneralFileSystem(generalFileSystem: GeneralFileSystem): PieBuilder
   fun withResourceSystems(resourceSystems: ResourceSystems): PieBuilder
   fun withStore(store: (Logger) -> Store): PieBuilder
   fun withShare(share: (Logger) -> Share): PieBuilder

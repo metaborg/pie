@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec
 
-import mb.fs.api.GeneralFileSystem
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
 import mb.pie.api.exec.ExecReason
@@ -9,7 +8,7 @@ import mb.pie.api.stamp.OutputStamper
 
 class TaskExecutor(
   private val taskDefs: TaskDefs,
-  private val generalFileSystem: GeneralFileSystem,
+  private val resourceSystems: ResourceSystems,
   private val visited: MutableMap<TaskKey, TaskData<*, *>>,
   private val store: Store,
   private val share: Share,
@@ -33,7 +32,7 @@ class TaskExecutor(
   private fun <I : In, O : Out> execInternal(key: TaskKey, task: Task<I, O>, requireTask: RequireTask, cancel: Cancelled): TaskData<I, O> {
     cancel.throwIfCancelled()
     // Execute
-    val context = ExecContextImpl(requireTask, cancel, taskDefs, generalFileSystem, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger)
+    val context = ExecContextImpl(requireTask, cancel, taskDefs, resourceSystems, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger)
     val output = task.exec(context)
     Stats.addExecution()
     val (taskRequires, resourceRequires, resourceProvides) = context.deps()

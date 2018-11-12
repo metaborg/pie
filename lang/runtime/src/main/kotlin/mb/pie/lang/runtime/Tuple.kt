@@ -1,4 +1,4 @@
-package mb.pie.lang.runtime.util
+package mb.pie.lang.runtime
 
 import java.io.Serializable
 

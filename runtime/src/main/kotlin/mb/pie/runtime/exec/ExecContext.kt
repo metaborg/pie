@@ -1,18 +1,18 @@
 package mb.pie.runtime.exec
 
-import mb.fs.api.GeneralFileSystem
 import mb.fs.api.node.FSNode
 import mb.fs.api.path.FSPath
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
 import mb.pie.api.fs.stamp.FileSystemStamper
+import mb.pie.api.fs.toNode
 import mb.pie.api.stamp.*
 
 internal class ExecContextImpl(
   private val requireTask: RequireTask,
   private val cancel: Cancelled,
   private val taskDefs: TaskDefs,
-  private val generalFileSystem: GeneralFileSystem,
+  private val resourceSystems: ResourceSystems,
   private val store: Store,
   private val defaultOutputStamper: OutputStamper,
   override val defaultRequireFileSystemStamper: FileSystemStamper,
@@ -86,7 +86,9 @@ internal class ExecContextImpl(
   }
 
   override fun require(path: FSPath, stamper: FileSystemStamper): FSNode {
-    val node = generalFileSystem.getNode(path)
+    val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
+      ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
+    val node = path.toNode(resourceSystem)
     require(node, stamper)
     return node
   }
@@ -96,13 +98,18 @@ internal class ExecContextImpl(
   }
 
   override fun provide(path: FSPath, stamper: FileSystemStamper) {
-    val node = generalFileSystem.getNode(path)
+    val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
+      ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
+    val node = path.toNode(resourceSystem)
     provide(node, stamper)
   }
 
 
   override fun toNode(path: FSPath): FSNode {
-    return generalFileSystem.getNode(path)
+    val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
+      ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
+    val node = path.toNode(resourceSystem)
+    return node
   }
 
 
