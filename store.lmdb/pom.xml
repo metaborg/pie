@@ -25,11 +25,6 @@
       <version>${pie.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>pie.vfs</artifactId>
-      <version>${pie.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.lmdbjava</groupId>
       <artifactId>lmdbjava</artifactId>
       <version>0.6.1</version>

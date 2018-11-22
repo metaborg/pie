@@ -254,7 +254,7 @@ interface ExecContext {
   fun provide(node: JavaFSNode) = provide(node.toResource(), defaultProvideFileSystemStamper)
 
   /**
-   * Marks given [Java files ystem node][node] as provided (written to/created), using given [file system stamper][stamper], creating a
+   * Marks given [Java file system node][node] as provided (written to/created), using given [file system stamper][stamper], creating a
    * provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call
    * [provide] AFTER writing to the file or directory.
    */
@@ -370,3 +370,89 @@ fun <I : In> ExecContext.require(task: STask<I>, stamper: OutputStamper?) =
 @Throws(ExecException::class, InterruptedException::class)
 fun <I : In> ExecContext.require(taskDefId: String, input: I, stamper: OutputStamper?) =
   if(stamper != null) require(taskDefId, input, stamper) else require(taskDefId, input)
+
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.require(path: FSPath, stamper: FileSystemStamper?) =
+  if(stamper != null) require(path, stamper) else require(path)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.require(node: FSNode, stamper: FileSystemStamper?) =
+  if(stamper != null) require(node, stamper) else require(node)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.require(path: JavaFSPath, stamper: FileSystemStamper?) =
+  if(stamper != null) require(path, stamper) else require(path)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.require(node: JavaFSNode, stamper: FileSystemStamper?) =
+  if(stamper != null) require(node, stamper) else require(node)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.require(path: Path, stamper: FileSystemStamper?) =
+  if(stamper != null) require(path, stamper) else require(path)
+
+/**
+ * @see ExecContext.require
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.require(path: File, stamper: FileSystemStamper?) =
+  if(stamper != null) require(path, stamper) else require(path)
+
+
+/**
+ * @see ExecContext.provide
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.provide(path: FSPath, stamper: FileSystemStamper?) =
+  if(stamper != null) provide(path, stamper) else provide(path)
+
+/**
+ * @see ExecContext.provide
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.provide(node: FSNode, stamper: FileSystemStamper?) =
+  if(stamper != null) provide(node, stamper) else provide(node)
+
+/**
+ * @see ExecContext.provide
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.provide(path: JavaFSPath, stamper: FileSystemStamper?) =
+  if(stamper != null) provide(path, stamper) else provide(path)
+
+/**
+ * @see ExecContext.provide
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.provide(node: JavaFSNode, stamper: FileSystemStamper?) =
+  if(stamper != null) provide(node, stamper) else provide(node)
+
+/**
+ * @see ExecContext.provide
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.provide(path: Path, stamper: FileSystemStamper?) =
+  if(stamper != null) provide(path, stamper) else provide(path)
+
+/**
+ * @see ExecContext.provide
+ */
+@Throws(ExecException::class, InterruptedException::class)
+fun ExecContext.provide(path: File, stamper: FileSystemStamper?) =
+  if(stamper != null) provide(path, stamper) else provide(path)

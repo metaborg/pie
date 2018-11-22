@@ -1,11 +1,13 @@
 package mb.fs.api.node;
 
 import mb.fs.api.FileSystem;
-import mb.fs.api.path.FSPath;
-import mb.fs.api.path.InvalidFSPathRuntimeException;
+import mb.fs.api.node.match.FSNodeMatcher;
+import mb.fs.api.node.walk.FSNodeWalker;
+import mb.fs.api.path.*;
 
 import javax.annotation.Nullable;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -24,6 +26,14 @@ public interface FSNode {
     @Nullable FSNode getRoot();
 
     @Nullable String getLeaf();
+
+    default @Nullable String getLeafExtension() {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return null;
+        }
+        return FilenameExtensionUtil.extension(leaf);
+    }
 
 
     FSNode appendSegment(String segment);
@@ -47,14 +57,38 @@ public interface FSNode {
     FSNode appendRelativePath(FSPath relativePath);
 
 
-    FSNode replaceLeafSegment(String segment);
+    FSNode replaceLeaf(String segment);
 
-    default FSNode appendToLeafSegment(String str) {
-        return replaceLeafSegment(getLeaf() + str);
+    default FSNode appendToLeaf(String str) {
+        return replaceLeaf(getLeaf() + str);
     }
 
-    default FSNode applyToLeafSegment(Function<String, String> func) {
-        return replaceLeafSegment(func.apply(getLeaf()));
+    default FSNode applyToLeaf(Function<String, String> func) {
+        return replaceLeaf(func.apply(getLeaf()));
+    }
+
+    default FSNode replaceLeafExtension(String extension) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.replaceExtension(leaf, extension));
+    }
+
+    default FSNode appendExtensionToLeaf(String extension) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.appendExtension(leaf, extension));
+    }
+
+    default FSNode applyToLeafExtension(Function<String, String> func) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.applyToExtension(leaf, func));
     }
 
 
@@ -94,6 +128,8 @@ public interface FSNode {
     InputStream newInputStream() throws IOException;
 
     byte[] readAllBytes() throws IOException;
+
+    List<String> readAllLines(Charset charset) throws IOException;
 
 
     OutputStream newOutputStream() throws IOException;

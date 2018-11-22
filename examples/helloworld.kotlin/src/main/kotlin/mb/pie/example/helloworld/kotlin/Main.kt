@@ -5,7 +5,6 @@ import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.taskdefs.MutableMapTaskDefs
 import mb.pie.store.lmdb.withLMDBStore
-import mb.pie.vfs.path.PPath
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -17,7 +16,7 @@ import kotlin.system.exitProcess
  */
 
 /**
- * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][PPath] to a file, and then writes "Hello, world!" to it. This
+ * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][File] to a file, and then writes "Hello, world!" to it. This
  * task does not return a value, so we use [None] as output type.
  */
 class WriteHelloWorld : TaskDef<File, None> {

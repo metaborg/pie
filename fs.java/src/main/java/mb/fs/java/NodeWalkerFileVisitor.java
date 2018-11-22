@@ -1,6 +1,8 @@
 package mb.fs.java;
 
 import mb.fs.api.node.*;
+import mb.fs.api.node.match.FSNodeMatcher;
+import mb.fs.api.node.walk.FSNodeWalker;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,6 +19,7 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
     private final Stream.Builder<JavaFSNode> streamBuilder;
     private final @Nullable FSNodeAccess access;
 
+
     public NodeWalkerFileVisitor(FSNodeWalker walker, FSNodeMatcher matcher, JavaFSNode root, Builder<JavaFSNode> streamBuilder,
         @Nullable FSNodeAccess access) {
         this.matcher = matcher;
@@ -26,7 +29,8 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
         this.access = access;
     }
 
-    @Override public FileVisitResult preVisitDirectory(@Nonnull Path dir, @Nonnull BasicFileAttributes attrs) {
+
+    @Override public FileVisitResult preVisitDirectory(@Nonnull Path dir, @Nonnull BasicFileAttributes attrs) throws IOException {
         final JavaFSNode node = new JavaFSNode(dir);
         if(access != null) {
             access.read(node);
@@ -40,7 +44,7 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
         return FileVisitResult.SKIP_SUBTREE;
     }
 
-    @Override public FileVisitResult visitFile(@Nonnull Path file, @Nonnull BasicFileAttributes attrs) {
+    @Override public FileVisitResult visitFile(@Nonnull Path file, @Nonnull BasicFileAttributes attrs) throws IOException {
         final JavaFSNode node = new JavaFSNode(file);
         if(access != null) {
             access.read(node);

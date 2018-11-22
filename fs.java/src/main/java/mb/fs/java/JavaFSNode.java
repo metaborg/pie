@@ -1,11 +1,14 @@
 package mb.fs.java;
 
 import mb.fs.api.node.*;
+import mb.fs.api.node.match.FSNodeMatcher;
+import mb.fs.api.node.walk.FSNodeWalker;
 import mb.fs.api.path.FSPath;
 
 import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
@@ -16,7 +19,7 @@ import java.util.stream.Stream;
 public class JavaFSNode implements FSNode, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final JavaFSPath path;
+    final JavaFSPath path;
 
 
     public JavaFSNode(JavaFSPath path) {
@@ -37,6 +40,19 @@ public class JavaFSNode implements FSNode, Serializable {
 
     public JavaFSNode(String localPathStr) {
         this.path = new JavaFSPath(localPathStr);
+    }
+
+
+    public Path getJavaPath() {
+        return path.javaPath;
+    }
+
+    public URI getURI() {
+        return path.uri;
+    }
+
+    public boolean isLocalPath() {
+        return path.javaPath.getFileSystem().equals(FileSystems.getDefault());
     }
 
 
@@ -104,18 +120,33 @@ public class JavaFSNode implements FSNode, Serializable {
     }
 
 
-    @Override public JavaFSNode replaceLeafSegment(String str) {
-        final JavaFSPath newPath = path.replaceLeafSegment(str);
+    @Override public JavaFSNode replaceLeaf(String str) {
+        final JavaFSPath newPath = path.replaceLeaf(str);
         return new JavaFSNode(newPath);
     }
 
-    @Override public JavaFSNode appendToLeafSegment(String str) {
-        final JavaFSPath newPath = path.appendToLeafSegment(str);
+    @Override public JavaFSNode appendToLeaf(String str) {
+        final JavaFSPath newPath = path.appendToLeaf(str);
         return new JavaFSNode(newPath);
     }
 
-    @Override public JavaFSNode applyToLeafSegment(Function<String, String> func) {
-        final JavaFSPath newPath = path.applyToLeafSegment(func);
+    @Override public JavaFSNode applyToLeaf(Function<String, String> func) {
+        final JavaFSPath newPath = path.applyToLeaf(func);
+        return new JavaFSNode(newPath);
+    }
+
+    @Override public JavaFSNode replaceLeafExtension(String extension) {
+        final JavaFSPath newPath = path.replaceLeafExtension(extension);
+        return new JavaFSNode(newPath);
+    }
+
+    @Override public JavaFSNode appendExtensionToLeaf(String extension) {
+        final JavaFSPath newPath = path.appendExtensionToLeaf(extension);
+        return new JavaFSNode(newPath);
+    }
+
+    @Override public JavaFSNode applyToLeafExtension(Function<String, String> func) {
+        final JavaFSPath newPath = path.applyToLeafExtension(func);
         return new JavaFSNode(newPath);
     }
 
@@ -168,11 +199,25 @@ public class JavaFSNode implements FSNode, Serializable {
     }
 
     @Override public Stream<JavaFSNode> list(FSNodeMatcher matcher) throws IOException {
-        return Files.list(path.javaPath).map(JavaFSNode::new).filter((n) -> matcher.matches(n, this));
+        try {
+            return Files.list(path.javaPath).map(JavaFSNode::new).filter((n) -> {
+                try {
+                    return matcher.matches(n, this);
+                } catch(IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch(UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     @Override public Stream<JavaFSNode> walk() throws IOException {
         return Files.walk(path.javaPath).map(JavaFSNode::new);
+    }
+
+    @Override public Stream<JavaFSNode> walk(FSNodeWalker walker, FSNodeMatcher matcher) throws IOException {
+        return walk(walker, matcher, null);
     }
 
     @Override
@@ -190,6 +235,10 @@ public class JavaFSNode implements FSNode, Serializable {
 
     @Override public byte[] readAllBytes() throws IOException {
         return Files.readAllBytes(path.javaPath);
+    }
+
+    @Override public List<String> readAllLines(Charset charset) throws IOException {
+        return Files.readAllLines(path.javaPath, charset);
     }
 
 
@@ -223,16 +272,17 @@ public class JavaFSNode implements FSNode, Serializable {
 
     @Override public void createDirectory(boolean createParents) throws IOException {
         if(createParents) {
-            createParents();
+            Files.createDirectories(path.javaPath);
         }
-        Files.createDirectory(path.javaPath);
+        if(!exists()) {
+            Files.createDirectory(path.javaPath);
+        }
     }
 
     @Override public void createParents() throws IOException {
-        // OPTO: non-recursive implementation.
         final @Nullable JavaFSNode parent = getParent();
         if(parent != null) {
-            parent.createDirectory(true);
+            Files.createDirectories(parent.path.javaPath);
         }
     }
 

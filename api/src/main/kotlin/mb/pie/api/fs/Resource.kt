@@ -53,6 +53,5 @@ fun FSPath.toNode(resourceSystems: ResourceSystems): FSNode = this.toNode((resou
 fun FSPath.toNode(resourceSystem: ResourceSystem): FSNode = this.toNode((resourceSystem as FileSystemResourceSystem).fileSystem)
 fun FSPath.toNode(resourceSystem: FileSystemResourceSystem): FSNode = this.toNode(resourceSystem.fileSystem)
 fun FSPath.toNode(fileSystem: FileSystem): FSNode = fileSystem.getNode(this)
-fun JavaFSPath.toNode() = JavaFSNode(this)
 fun Path.toNode() = JavaFSNode(this)
 fun File.toNode() = JavaFSNode(this)

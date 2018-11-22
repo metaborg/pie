@@ -24,11 +24,6 @@
       <artifactId>pie.api</artifactId>
       <version>${pie.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>pie.vfs</artifactId>
-      <version>${pie.version}</version>
-    </dependency>
   </dependencies>
 
   <build>

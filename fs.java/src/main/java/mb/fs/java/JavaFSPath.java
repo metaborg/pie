@@ -1,7 +1,6 @@
 package mb.fs.java;
 
-import mb.fs.api.path.FSPath;
-import mb.fs.api.path.InvalidFSPathRuntimeException;
+import mb.fs.api.path.*;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -13,7 +12,7 @@ import java.util.function.Function;
 public class JavaFSPath implements FSPath {
     private static final long serialVersionUID = 1L;
 
-    private final URI uri; // URI version of the path which can be serialized and deserialized.
+    final URI uri; // URI version of the path which can be serialized and deserialized.
     transient Path javaPath; // Transient and non-final for deserialization in readObject. Invariant: always nonnull.
 
 
@@ -28,11 +27,11 @@ public class JavaFSPath implements FSPath {
     }
 
     public JavaFSPath(File javaFile) {
-        this(createJavaPath(javaFile));
+        this(createLocalPath(javaFile));
     }
 
     public JavaFSPath(String localPathStr) {
-        this(createJavaPath(localPathStr));
+        this(createLocalPath(localPathStr));
     }
 
 
@@ -42,6 +41,14 @@ public class JavaFSPath implements FSPath {
 
     public URI getURI() {
         return uri;
+    }
+
+    public boolean isLocalPath() {
+        return javaPath.getFileSystem().equals(FileSystems.getDefault());
+    }
+
+    public JavaFSNode toNode() {
+        return new JavaFSNode(this);
     }
 
 
@@ -93,15 +100,16 @@ public class JavaFSPath implements FSPath {
         return new JavaFSPath(normalizedJavaPath);
     }
 
-    @Override public JavaFSPath getRelativeTo(FSPath absolutePath) {
-        if(!(absolutePath instanceof JavaFSPath)) {
-            throw new InvalidFSPathRuntimeException("Cannot get path relative to " + absolutePath + ", it is not a Java file system path");
+    @Override public JavaFSPath relativize(FSPath other) {
+        if(!(other instanceof JavaFSPath)) {
+            throw new InvalidFSPathRuntimeException(
+                "Cannot relativize '" + this + "' relative to '" + other + "', it is not a Java file system path");
         }
-        final JavaFSPath javaAbsolutePath = (JavaFSPath) absolutePath;
-        if(!absolutePath.isAbsolute()) {
-            throw new InvalidFSPathRuntimeException("Cannot get path relative to " + absolutePath + ", it is not an absolute path");
-        }
-        final Path javaRelativePath = javaPath.relativize(javaAbsolutePath.javaPath);
+        return relativize((JavaFSPath) other);
+    }
+
+    public JavaFSPath relativize(JavaFSPath other) {
+        final Path javaRelativePath = javaPath.relativize(other.javaPath);
         return new JavaFSPath(javaRelativePath);
     }
 
@@ -118,19 +126,19 @@ public class JavaFSPath implements FSPath {
     }
 
     @Override public JavaFSPath appendSegments(Collection<String> segments) {
-        final Path relJavaPath = createJavaPath(segments);
+        final Path relJavaPath = createLocalPath(segments);
         final Path javaPath = this.javaPath.resolve(relJavaPath);
         return new JavaFSPath(javaPath);
     }
 
     @Override public JavaFSPath appendSegments(List<String> segments) {
-        final Path relJavaPath = createJavaPath(segments);
+        final Path relJavaPath = createLocalPath(segments);
         final Path javaPath = this.javaPath.resolve(relJavaPath);
         return new JavaFSPath(javaPath);
     }
 
     @Override public JavaFSPath appendSegments(String... segments) {
-        final Path relJavaPath = createJavaPath(segments);
+        final Path relJavaPath = createLocalPath(segments);
         final Path javaPath = this.javaPath.resolve(relJavaPath);
         return new JavaFSPath(javaPath);
     }
@@ -139,11 +147,14 @@ public class JavaFSPath implements FSPath {
         if(!(relativePath instanceof JavaFSPath)) {
             throw new InvalidFSPathRuntimeException("Cannot append relative path " + relativePath + ", it is not a Java file system path");
         }
-        final JavaFSPath javaRelativePath = (JavaFSPath) relativePath;
+        return appendRelativePath((JavaFSPath) relativePath);
+    }
+
+    public JavaFSPath appendRelativePath(JavaFSPath relativePath) {
         if(relativePath.isAbsolute()) {
             throw new InvalidFSPathRuntimeException("Cannot append relative path " + relativePath + ", it is not a relative path");
         }
-        final Path javaPath = this.javaPath.resolve(javaRelativePath.javaPath);
+        final Path javaPath = this.javaPath.resolve(relativePath.javaPath);
         return new JavaFSPath(javaPath);
     }
 
@@ -153,26 +164,58 @@ public class JavaFSPath implements FSPath {
     }
 
 
-    public JavaFSPath appendToLeafSegment(String str) {
+    @Override public JavaFSPath appendToLeaf(String str) {
         final String fileName = this.javaPath.getFileName().toString();
         final String newFileName = fileName + str;
         final Path javaPath = this.javaPath.resolveSibling(newFileName);
         return new JavaFSPath(javaPath);
     }
 
-    public JavaFSPath replaceLeafSegment(String segment) {
+    @Override public JavaFSPath replaceLeaf(String segment) {
         final Path javaPath = this.javaPath.resolveSibling(segment);
         return new JavaFSPath(javaPath);
     }
 
-    public JavaFSPath applyToLeafSegment(Function<String, String> func) {
+    @Override public JavaFSPath applyToLeaf(Function<String, String> func) {
         final String fileName = this.javaPath.getFileName().toString();
         final Path javaPath = this.javaPath.resolveSibling(func.apply(fileName));
         return new JavaFSPath(javaPath);
     }
 
+    @Override public JavaFSPath replaceLeafExtension(String extension) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.replaceExtension(leaf, extension));
+    }
 
-    private static Path createJavaPath(Collection<String> segments) {
+    @Override public JavaFSPath appendExtensionToLeaf(String extension) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.appendExtension(leaf, extension));
+    }
+
+    @Override public JavaFSPath applyToLeafExtension(Function<String, String> func) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.applyToExtension(leaf, func));
+    }
+
+
+    private static Path createJavaPath(URI uri) {
+        try {
+            return Paths.get(uri);
+        } catch(IllegalArgumentException | FileSystemNotFoundException e) {
+            throw new InvalidFSPathRuntimeException(e);
+        }
+    }
+
+    private static Path createLocalPath(Collection<String> segments) {
         final int segmentsSize = segments.size();
         if(segmentsSize == 0) {
             return FileSystems.getDefault().getPath("/");
@@ -191,7 +234,7 @@ public class JavaFSPath implements FSPath {
         }
     }
 
-    private static Path createJavaPath(String... segments) {
+    private static Path createLocalPath(String... segments) {
         final int segmentsSize = segments.length;
         if(segmentsSize == 0) {
             return FileSystems.getDefault().getPath("/");
@@ -203,7 +246,7 @@ public class JavaFSPath implements FSPath {
         }
     }
 
-    private static Path createJavaPath(File javaFile) {
+    private static Path createLocalPath(File javaFile) {
         try {
             return FileSystems.getDefault().getPath(javaFile.getPath());
         } catch(InvalidPathException e) {
@@ -211,15 +254,7 @@ public class JavaFSPath implements FSPath {
         }
     }
 
-    private static Path createJavaPath(URI uri) {
-        try {
-            return Paths.get(uri);
-        } catch(IllegalArgumentException | FileSystemNotFoundException e) {
-            throw new InvalidFSPathRuntimeException(e);
-        }
-    }
-
-    private static Path createJavaPath(String localPathStr) {
+    private static Path createLocalPath(String localPathStr) {
         try {
             return FileSystems.getDefault().getPath(localPathStr);
         } catch(InvalidPathException e) {
@@ -248,8 +283,11 @@ public class JavaFSPath implements FSPath {
         if(!(other instanceof JavaFSPath)) {
             throw new InvalidFSPathRuntimeException("Cannot compare to path " + other + ", it is not a Java file system path");
         }
-        final JavaFSPath javaFsPath = (JavaFSPath) other;
-        return this.javaPath.compareTo(javaFsPath.javaPath);
+        return compareTo((JavaFSPath) other);
+    }
+
+    public int compareTo(JavaFSPath other) {
+        return this.javaPath.compareTo(other.javaPath);
     }
 
 

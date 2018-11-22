@@ -264,37 +264,53 @@ rules // Path operations
   p2k-filter-match:
     None() -> $[null]
   p2k-filter-match:
-    Regex(exp) -> $[null /* TODO: regex matcher */]
+    Regex(exp) -> $[PathNodeMatcher(RegexPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
   p2k-filter-match:
-    _ -> $[null /* TODO: pattern matcher */]
-    where ?Pattern(exp) + ?Patterns(exp)
+    Pattern(exp) -> $[PathNodeMatcher(PatternPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
   p2k-filter-match:
-    _ -> $[null /* TODO: extension matcher */]
-    where ?Extension(exp) + ?Extensions(exp)
+    Patterns(exp) -> $[PathNodeMatcher(PatternsPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
-      
-  p2k-filter-walk:
-    None() -> ($[null], $[null])
-  p2k-filter-walk:
-    Regex(exp) -> ($[null /* TODO: regex walker */], $[null /* TODO: regex matcher */])
+  p2k-filter-match:
+    Extension(exp)  -> $[PathNodeMatcher(ExtensionPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
-  p2k-filter-walk:
-    _ -> ($[null /* TODO: pattern walker */], $[null /* TODO: pattern matcher */])
-    where ?Pattern(exp) + ?Patterns(exp)
-    with
-      expStr := <try-p2k-exp> exp
-  p2k-filter-walk:
-    _ -> ($[null /* TODO: unconditional walker */], $[null /* TODO: extension matcher */])
-    where ?Extension(exp) + ?Extensions(exp)
+  p2k-filter-match:
+    Extensions(exp)  -> $[PathNodeMatcher(ExtensionsPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
 
+  p2k-filter-walk:
+    None() -> ( $[null], $[null] )
+  p2k-filter-walk:
+    Regex(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    with
+      expStr  := <try-p2k-exp> exp
+    ; matcher := $[RegexPathMatcher([expStr])]
+  p2k-filter-walk:
+    Pattern(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[PatternPathMatcher([expStr])]
+  p2k-filter-walk:
+    Patterns(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[PatternsPathMatcher([expStr])]
+  p2k-filter-walk:
+    Extension(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[ExtensionPathMatcher([expStr])]
+  p2k-filter-walk:
+    Extensions(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[ExtensionsPathMatcher([expStr])]
 
   p2k-exp:
     ReadPath(exp) -> $[readToString([expStr])]

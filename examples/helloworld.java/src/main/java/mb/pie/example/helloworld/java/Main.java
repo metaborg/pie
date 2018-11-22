@@ -5,7 +5,6 @@ import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 import mb.pie.runtime.taskdefs.MutableMapTaskDefs;
 import mb.pie.store.lmdb.LMDBStoreKt;
-import mb.pie.vfs.path.PPath;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -19,7 +18,7 @@ import java.nio.file.Files;
  */
 public class Main {
     /**
-     * The {@link WriteHelloWorld} {@link TaskDef task definition} takes as input a {@link PPath path} to a file, and then writes
+     * The {@link WriteHelloWorld} {@link TaskDef task definition} takes as input a {@link File path} to a file, and then writes
      * "Hello, world!" to it. This task does not return a value, so we use {@link None} as output type.
      */
     public static class WriteHelloWorld implements TaskDef<File, None> {

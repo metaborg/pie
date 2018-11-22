@@ -23,13 +23,20 @@ public interface FSPath extends Comparable<FSPath>, Serializable {
 
     @Nullable String getLeaf();
 
+    default @Nullable String getLeafExtension() {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return null;
+        }
+        return FilenameExtensionUtil.extension(leaf);
+    }
+
     FSPath getNormalized() throws FSPathNormalizationException;
 
     /**
-     * @throws InvalidFSPathRuntimeException when absolutePath is not of the same runtime (super)type as this path.
-     * @throws InvalidFSPathRuntimeException when absolutePath is not an absolute path (but instead a relative one).
+     * @throws InvalidFSPathRuntimeException when `other` is not of the same runtime (super)type as this path.
      */
-    FSPath getRelativeTo(FSPath absolutePath);
+    FSPath relativize(FSPath other);
 
 
     FSPath appendSegment(String segment);
@@ -47,20 +54,44 @@ public interface FSPath extends Comparable<FSPath>, Serializable {
     }
 
     /**
-     * @throws InvalidFSPathRuntimeException when relativePath is not of the same runtime (super)type as this path.
-     * @throws InvalidFSPathRuntimeException when relativePath is not a relative path (but instead an absolute one).
+     * @throws InvalidFSPathRuntimeException when `relativePath` is not of the same runtime (super)type as this path.
+     * @throws InvalidFSPathRuntimeException when `relativePath` is not a relative path (but instead an absolute one).
      */
     FSPath appendRelativePath(FSPath relativePath);
 
 
-    FSPath replaceLeafSegment(String segment);
+    FSPath replaceLeaf(String segment);
 
-    default FSPath appendToLeafSegment(String str) {
-        return replaceLeafSegment(getLeaf() + str);
+    default FSPath appendToLeaf(String str) {
+        return replaceLeaf(getLeaf() + str);
     }
 
-    default FSPath applyToLeafSegment(Function<String, String> func) {
-        return replaceLeafSegment(func.apply(getLeaf()));
+    default FSPath applyToLeaf(Function<String, String> func) {
+        return replaceLeaf(func.apply(getLeaf()));
+    }
+
+    default FSPath replaceLeafExtension(String extension) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.replaceExtension(leaf, extension));
+    }
+
+    default FSPath appendExtensionToLeaf(String extension) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.appendExtension(leaf, extension));
+    }
+
+    default FSPath applyToLeafExtension(Function<String, String> func) {
+        final @Nullable String leaf = getLeaf();
+        if(leaf == null) {
+            return this;
+        }
+        return replaceLeaf(FilenameExtensionUtil.applyToExtension(leaf, func));
     }
 
 

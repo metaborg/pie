@@ -1,6 +1,8 @@
 package mb.pie.api.fs.stamp
 
 import mb.fs.api.node.*
+import mb.fs.api.node.match.FSNodeMatcher
+import mb.fs.api.node.walk.FSNodeWalker
 import mb.pie.api.fs.FileSystemResource
 
 interface ModifiedResourceStamperTrait : FileSystemStamper {
