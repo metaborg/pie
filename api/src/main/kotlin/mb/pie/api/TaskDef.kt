@@ -76,3 +76,10 @@ open class LambdaTaskDef<I : In, O : Out>(
   override fun key(input: I) = keyFunc?.invoke(input) ?: super.key(input)
   override fun desc(input: I, maxLength: Int): String = descFunc?.invoke(input, maxLength) ?: super.desc(input, maxLength)
 }
+
+/**
+ * Collection of [task definitions][TaskDef].
+ */
+interface TaskDefs {
+  fun <I : In, O : Out> getTaskDef(id: String): TaskDef<I, O>?
+}
