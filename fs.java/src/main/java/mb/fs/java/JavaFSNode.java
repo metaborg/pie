@@ -247,6 +247,14 @@ public class JavaFSNode implements FSNode, Serializable {
             StandardOpenOption.TRUNCATE_EXISTING);
     }
 
+    @Override public void writeAllBytes(byte[] bytes) throws IOException {
+        Files.write(path.javaPath, bytes);
+    }
+
+    @Override public void writeAllLines(Iterable<String> lines) throws IOException {
+        Files.write(path.javaPath, lines);
+    }
+
 
     @Override public void copyTo(FSNode other) throws IOException {
         if(!(other instanceof JavaFSNode)) {

@@ -134,6 +134,10 @@ public interface FSNode {
 
     OutputStream newOutputStream() throws IOException;
 
+    void writeAllBytes(byte[] bytes) throws IOException;
+
+    void writeAllLines(Iterable<String> lines) throws IOException;
+
 
     void copyTo(FSNode other) throws IOException;
 

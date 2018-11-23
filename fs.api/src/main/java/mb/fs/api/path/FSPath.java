@@ -5,6 +5,9 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 
+/**
+ * File system path, consisting of 0-* path segments.
+ */
 public interface FSPath extends Comparable<FSPath>, Serializable {
     String getFileSystemId();
 
@@ -39,6 +42,12 @@ public interface FSPath extends Comparable<FSPath>, Serializable {
     FSPath relativize(FSPath other);
 
 
+    /**
+     * Creates a new path where given {@code segment} is appended to this path. Handling of the segment string is implementation-dependent.
+     *
+     * @param segment segment to append.
+     * @return new path with {@code segment} appended.
+     */
     FSPath appendSegment(String segment);
 
     FSPath appendSegments(Iterable<String> segments);

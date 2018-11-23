@@ -9,6 +9,9 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.function.Function;
 
+/**
+ * {@link FSPath} implementation for {@link java.nio.file.Path}s.
+ */
 public class JavaFSPath implements FSPath {
     private static final long serialVersionUID = 1L;
 
@@ -35,18 +38,45 @@ public class JavaFSPath implements FSPath {
     }
 
 
+    /**
+     * @return absolute path of the current working directory (given by {@code System.getProperty("user.dir")}.
+     */
+    public static JavaFSPath workingDirectory() {
+        return new JavaFSPath(System.getProperty("user.dir"));
+    }
+
+    /**
+     * @return absolute path of the current user's home directory (given by {@code System.getProperty("user.home")}.
+     */
+    public static JavaFSPath homeDirectory() {
+        return new JavaFSPath(System.getProperty("user.home"));
+    }
+
+
+    /**
+     * @return {@link Path} corresponding to this path.
+     */
     public Path getJavaPath() {
         return javaPath;
     }
 
+    /**
+     * @return {@link URI} corresponding to this path.
+     */
     public URI getURI() {
         return uri;
     }
 
+    /**
+     * @return true if this path is a local file system path, false otherwise.
+     */
     public boolean isLocalPath() {
         return javaPath.getFileSystem().equals(FileSystems.getDefault());
     }
 
+    /**
+     * @return {@link JavaFSNode} for this path.
+     */
     public JavaFSNode toNode() {
         return new JavaFSNode(this);
     }
@@ -59,6 +89,28 @@ public class JavaFSPath implements FSPath {
 
     @Override public boolean isAbsolute() {
         return javaPath.isAbsolute();
+    }
+
+    /**
+     * @return this path if it {@link #isAbsolute()}, or returns an absolute path by appending this path to {@link #workingDirectory()}.
+     */
+    public JavaFSPath toAbsoluteFromWorkingDirectory() {
+        if(javaPath.isAbsolute()) {
+           return this;
+        } else {
+            return workingDirectory().appendRelativePath(this);
+        }
+    }
+
+    /**
+     * @return this path if it {@link #isAbsolute()}, or returns an absolute path by appending this path to {@link #homeDirectory()}.
+     */
+    public JavaFSPath toAbsoluteFromHomeDirectory() {
+        if(javaPath.isAbsolute()) {
+            return this;
+        } else {
+            return homeDirectory().appendRelativePath(this);
+        }
     }
 
 
