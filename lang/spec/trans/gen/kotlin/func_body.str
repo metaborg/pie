@@ -287,27 +287,27 @@ rules // Path operations
   p2k-filter-walk:
     None() -> ( $[null], $[null] )
   p2k-filter-walk:
-    Regex(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    Regex(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
     with
       expStr  := <try-p2k-exp> exp
     ; matcher := $[RegexPathMatcher([expStr])]
   p2k-filter-walk:
-    Pattern(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    Pattern(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
     with
       expStr := <try-p2k-exp> exp
     ; matcher := $[PatternPathMatcher([expStr])]
   p2k-filter-walk:
-    Patterns(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    Patterns(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
     with
       expStr := <try-p2k-exp> exp
     ; matcher := $[PatternsPathMatcher([expStr])]
   p2k-filter-walk:
-    Extension(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    Extension(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
     with
       expStr := <try-p2k-exp> exp
     ; matcher := $[ExtensionPathMatcher([expStr])]
   p2k-filter-walk:
-    Extensions(exp) -> ( $[PathNodeWalker([matcher])], $[PathNodeMatcher([matcher])] )
+    Extensions(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
     with
       expStr := <try-p2k-exp> exp
     ; matcher := $[ExtensionsPathMatcher([expStr])]
