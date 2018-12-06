@@ -1,7 +1,5 @@
 package mb.pie.api
 
-import mb.pie.vfs.path.PPath
-
 /**
  * Internal storage for tasks, outputs, and dependency information.
  */
@@ -50,40 +48,40 @@ interface StoreReadTxn : StoreTxn {
 
 
   /**
-   * @return task requirements (calls) of [key].
+   * @return task require dependencies (calls) of task [key].
    */
-  fun taskReqs(key: TaskKey): List<TaskReq>
+  fun taskRequires(key: TaskKey): List<TaskRequireDep>
 
   /**
-   * @return callers of [key].
+   * @return callers of task [key].
    */
   fun callersOf(key: TaskKey): Set<TaskKey>
 
 
   /**
-   * @return file requirements of [key].
+   * @return resource require dependencies of task [key].
    */
-  fun fileReqs(key: TaskKey): List<FileReq>
+  fun resourceRequires(key: TaskKey): List<ResourceRequireDep>
 
   /**
-   * @return tasks that require [file].
+   * @return tasks that require resource [key].
    */
-  fun requireesOf(file: PPath): Set<TaskKey>
-
-
-  /**
-   * @return file generates of [key].
-   */
-  fun fileGens(key: TaskKey): List<FileGen>
-
-  /**
-   * @return file that generates [file], or `null` if it does not exist.
-   */
-  fun generatorOf(file: PPath): TaskKey?
+  fun requireesOf(key: ResourceKey): Set<TaskKey>
 
 
   /**
-   * @return output, task requirements, file requirements, and file generates for [key], or `null` when no output was stored.
+   * @return resource provide dependencies of task [key].
+   */
+  fun resourceProvides(key: TaskKey): List<ResourceProvideDep>
+
+  /**
+   * @return task that provides resource [key], or `null` if no task provides it.
+   */
+  fun providerOf(key: ResourceKey): TaskKey?
+
+
+  /**
+   * @return output and dependencies for task [key], or `null` when no output was stored.
    */
   fun data(key: TaskKey): TaskData<*, *>?
 
@@ -99,32 +97,32 @@ interface StoreReadTxn : StoreTxn {
  */
 interface StoreWriteTxn : StoreReadTxn {
   /**
-   * Sets the input of [key] to [input].
+   * Sets the input of task [key] to [input].
    */
   fun setInput(key: TaskKey, input: In)
 
   /**
-   * Sets the output of [key] to [output].
+   * Sets the output of task [key] to [output].
    */
   fun setOutput(key: TaskKey, output: Out)
 
   /**
-   * Sets the task requirements of [key] to [taskReqs].
+   * Sets the task require dependencies of task [key] to [taskRequires].
    */
-  fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>)
+  fun setTaskRequires(key: TaskKey, taskRequires: ArrayList<TaskRequireDep>)
 
   /**
-   * Sets the file requirements of [key] to [fileReqs].
+   * Sets the resource require dependencies of task [key] to [resourceRequires].
    */
-  fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>)
+  fun setResourceRequires(key: TaskKey, resourceRequires: ArrayList<ResourceRequireDep>)
 
   /**
-   * Sets the generated fileGens of [key] to [fileGens].
+   * Sets the resource provide dependencies of task [key] to [resourceProvides].
    */
-  fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>)
+  fun setResourceProvides(key: TaskKey, resourceProvides: ArrayList<ResourceProvideDep>)
 
   /**
-   * Sets the output, call requirements, file reqs, and file generates for [key] to [data].
+   * Sets the output and dependencies for task [key] to [data].
    */
   fun setData(key: TaskKey, data: TaskData<*, *>)
 
@@ -150,7 +148,7 @@ inline fun <O : Out> Output<*>.cast() = Output(this.output as O)
 /**
  * Wrapper for task data: outputs and dependencies.
  */
-data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
+data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskRequires: ArrayList<TaskRequireDep>, val resourceRequires: ArrayList<ResourceRequireDep>, val resourceProvides: ArrayList<ResourceProvideDep>)
 
 /**
  * Attempts to cast untyped task data to typed task data.

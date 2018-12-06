@@ -3,7 +3,7 @@ package mb.pie.api
 import java.io.Serializable
 
 /**
- * Executable task, consisting of a task definition and an input.
+ * Executable task, consisting of a [task definition][TaskDef] and its [input].
  */
 data class Task<I : In, O : Out>(private val taskDef: TaskDef<I, O>, val input: I) {
   val id = taskDef.id
@@ -47,7 +47,7 @@ data class Task<I : In, O : Out>(private val taskDef: TaskDef<I, O>, val input: 
 }
 
 /**
- * Serializable task, consisting of the identifier of a task definition, and an input.
+ * Serializable task, consisting of the [identifier of a task definition][id], and its [input].
  */
 data class STask<I : In>(val id: String, val input: I) : Serializable {
   fun <O : Out> toTask(taskDefs: TaskDefs): Task<I, O> {
@@ -64,7 +64,7 @@ data class STask<I : In>(val id: String, val input: I) : Serializable {
 }
 
 /**
- * Key of a task, consisting of a task definition identifier and a key.
+ * Key of a task, consisting of a [task definition identifier][id] and a [key].
  */
 data class TaskKey(val id: String, val key: Key) : Serializable {
   fun toTask(taskDefs: TaskDefs, txn: StoreReadTxn): Task<*, *> {

@@ -1,18 +1,17 @@
 package mb.pie.runtime.store
 
 import mb.pie.api.*
-import mb.pie.vfs.path.PPath
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   private val inputs = ConcurrentHashMap<TaskKey, In>()
   private val outputs = ConcurrentHashMap<TaskKey, Output<*>>()
-  private val taskReqs = ConcurrentHashMap<TaskKey, ArrayList<TaskReq>>()
+  private val taskReqs = ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>>()
   private val callersOf = ConcurrentHashMap<TaskKey, MutableSet<TaskKey>>()
-  private val fileReqs = ConcurrentHashMap<TaskKey, ArrayList<FileReq>>()
-  private val requireesOf = ConcurrentHashMap<PPath, MutableSet<TaskKey>>()
-  private val fileGens = ConcurrentHashMap<TaskKey, ArrayList<FileGen>>()
-  private val generatorOf = ConcurrentHashMap<PPath, TaskKey?>()
+  private val fileReqs = ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>>()
+  private val requireesOf = ConcurrentHashMap<ResourceKey, MutableSet<TaskKey>>()
+  private val fileGens = ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>>()
+  private val generatorOf = ConcurrentHashMap<ResourceKey, TaskKey?>()
 
 
   override fun readTxn() = this
@@ -38,9 +37,9 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     outputs[key] = Output(output)
   }
 
-  override fun taskReqs(key: TaskKey) = taskReqs.getOrEmptyList(key)
+  override fun taskRequires(key: TaskKey) = taskReqs.getOrEmptyList(key)
   override fun callersOf(key: TaskKey): Set<TaskKey> = callersOf.getOrPutSet(key)
-  override fun setTaskReqs(key: TaskKey, taskReqs: ArrayList<TaskReq>) {
+  override fun setTaskRequires(key: TaskKey, taskRequires: ArrayList<TaskRequireDep>) {
     // Remove old call requirements
     val oldTaskReqs = this.taskReqs.remove(key)
     if(oldTaskReqs != null) {
@@ -50,54 +49,54 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     }
     // OPTO: diff taskReqs and oldCallReqs, remove/add entries based on diff.
     // Add new call requirements
-    this.taskReqs[key] = taskReqs
-    for(taskReq in taskReqs) {
+    this.taskReqs[key] = taskRequires
+    for(taskReq in taskRequires) {
       callersOf.getOrPutSet(taskReq.callee).add(key)
     }
   }
 
-  override fun fileReqs(key: TaskKey) = fileReqs.getOrEmptyList(key)
-  override fun requireesOf(file: PPath): Set<TaskKey> = requireesOf.getOrPutSet(file)
-  override fun setFileReqs(key: TaskKey, fileReqs: ArrayList<FileReq>) {
+  override fun resourceRequires(key: TaskKey) = fileReqs.getOrEmptyList(key)
+  override fun requireesOf(key: ResourceKey): Set<TaskKey> = requireesOf.getOrPutSet(key)
+  override fun setResourceRequires(key: TaskKey, resourceRequires: ArrayList<ResourceRequireDep>) {
     // Remove old file requirements
     val oldFileReqs = this.fileReqs.remove(key)
     if(oldFileReqs != null) {
       for(fileReq in oldFileReqs) {
-        requireesOf.getOrPutSet(fileReq.file).remove(key)
+        requireesOf.getOrPutSet(fileReq.key).remove(key)
       }
     }
     // OPTO: diff fileReqs and oldPathReqs, remove/add entries based on diff.
     // Add new call requirements
-    this.fileReqs[key] = fileReqs
-    for(fileReq in fileReqs) {
-      requireesOf.getOrPutSet(fileReq.file).add(key)
+    this.fileReqs[key] = resourceRequires
+    for(fileReq in resourceRequires) {
+      requireesOf.getOrPutSet(fileReq.key).add(key)
     }
   }
 
-  override fun fileGens(key: TaskKey) = fileGens.getOrEmptyList(key)
-  override fun generatorOf(file: PPath): TaskKey? = generatorOf[file]
-  override fun setFileGens(key: TaskKey, fileGens: ArrayList<FileGen>) {
+  override fun resourceProvides(key: TaskKey) = fileGens.getOrEmptyList(key)
+  override fun providerOf(key: ResourceKey): TaskKey? = generatorOf[key]
+  override fun setResourceProvides(key: TaskKey, resourceProvides: ArrayList<ResourceProvideDep>) {
     // Remove old file generators
     val oldFileGens = this.fileGens.remove(key)
     if(oldFileGens != null) {
       for(fileGen in oldFileGens) {
-        generatorOf.remove(fileGen.file)
+        generatorOf.remove(fileGen.key)
       }
     }
     // OPTO: diff fileGens and oldPathGens, remove/add entries based on diff.
     // Add new file generators
-    this.fileGens[key] = fileGens
-    for(fileGen in fileGens) {
-      generatorOf[fileGen.file] = key
+    this.fileGens[key] = resourceProvides
+    for(fileGen in resourceProvides) {
+      generatorOf[fileGen.key] = key
     }
   }
 
   override fun data(key: TaskKey): TaskData<*, *>? {
     val input = input(key) ?: return null
     val output = output(key) ?: return null
-    val callReqs = taskReqs(key)
-    val pathReqs = fileReqs(key)
-    val pathGens = fileGens(key)
+    val callReqs = taskRequires(key)
+    val pathReqs = resourceRequires(key)
+    val pathGens = resourceProvides(key)
     return TaskData(input, output.output, callReqs, pathReqs, pathGens)
   }
 
@@ -105,9 +104,9 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     val (input, output, callReqs, pathReqs, pathGens) = data
     setInput(key, input)
     setOutput(key, output)
-    setTaskReqs(key, callReqs)
-    setFileReqs(key, pathReqs)
-    setFileGens(key, pathGens)
+    setTaskRequires(key, callReqs)
+    setResourceRequires(key, pathReqs)
+    setResourceProvides(key, pathGens)
   }
 
 

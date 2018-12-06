@@ -3,17 +3,18 @@ package mb.pie.runtime.exec
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
 import mb.pie.api.exec.ExecReason
-import mb.pie.api.stamp.FileStamper
+import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
 
 class TaskExecutor(
   private val taskDefs: TaskDefs,
+  private val resourceSystems: ResourceSystems,
   private val visited: MutableMap<TaskKey, TaskData<*, *>>,
   private val store: Store,
   private val share: Share,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultFileReqStamper: FileStamper,
-  private val defaultFileGenStamper: FileStamper,
+  private val defaultRequireFileSystemStamper: FileSystemStamper,
+  private val defaultProvideFileSystemStamper: FileSystemStamper,
   private val layer: Layer,
   private val logger: Logger,
   private val executorLogger: ExecutorLogger,
@@ -31,11 +32,11 @@ class TaskExecutor(
   private fun <I : In, O : Out> execInternal(key: TaskKey, task: Task<I, O>, requireTask: RequireTask, cancel: Cancelled): TaskData<I, O> {
     cancel.throwIfCancelled()
     // Execute
-    val context = ExecContextImpl(requireTask, cancel, taskDefs, store, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, logger)
+    val context = ExecContextImpl(requireTask, cancel, taskDefs, resourceSystems, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger)
     val output = task.exec(context)
     Stats.addExecution()
-    val (callReqs, pathReqs, pathGens) = context.reqs()
-    val data = TaskData(task.input, output, callReqs, pathReqs, pathGens)
+    val (taskRequires, resourceRequires, resourceProvides) = context.deps()
+    val data = TaskData(task.input, output, taskRequires, resourceRequires, resourceProvides)
     // Validate well-formedness of the dependency graph, before writing.
     store.readTxn().use {
       layer.validatePreWrite(key, data, it)

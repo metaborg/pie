@@ -4,26 +4,6 @@ import mb.pie.api.*
 import mb.pie.api.stamp.OutputStamp
 import mb.pie.api.stamp.OutputStamper
 
-class EqualsOutputStamper : OutputStamper {
-  override fun <O : Out> stamp(output: O): OutputStamp {
-    return ValueOutputStamp(output, this)
-  }
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
-
-  override fun toString(): String {
-    return "Equals"
-  }
-}
-
 data class ValueOutputStamp<out V : Out>(private val value: V, override val stamper: OutputStamper) : OutputStamp {
   override fun equals(other: Any?): Boolean {
     if(this === other) return true
@@ -56,58 +36,5 @@ data class ValueOutputStamp<out V : Out>(private val value: V, override val stam
 
   override fun toString(): String {
     return "$stamper(${value.toString().toShortString(100)})"
-  }
-}
-
-class FuncEqualsOutputStamper(private val func: (Out) -> Out) : OutputStamper {
-  override fun <O : Out> stamp(output: O): OutputStamp {
-    val value = func(output)
-    return ValueOutputStamp(value, this)
-  }
-}
-
-class InconsequentialOutputStamper : OutputStamper {
-  companion object {
-    val instance = InconsequentialOutputStamper()
-  }
-
-  override fun <O : Out> stamp(output: O): OutputStamp {
-    return InconsequentialStamp.instance
-  }
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
-
-  override fun toString(): String {
-    return "Inconsequential";
-  }
-}
-
-class InconsequentialStamp : OutputStamp {
-  companion object {
-    val instance = InconsequentialStamp()
-  }
-
-  override val stamper: OutputStamper = InconsequentialOutputStamper.instance
-
-  override fun equals(other: Any?): Boolean {
-    if(this === other) return true
-    if(other?.javaClass != javaClass) return false
-    return true
-  }
-
-  override fun hashCode(): Int {
-    return 0
-  }
-
-  override fun toString(): String {
-    return "InconsequentialStamp"
   }
 }

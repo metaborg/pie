@@ -9,16 +9,11 @@
   <parent>
     <groupId>org.metaborg</groupId>
     <artifactId>pie.parent.kotlin</artifactId>
-    <version>0.2.2</version>
+    <version>0.3.0</version>
     <relativePath>../../pom/kotlin</relativePath>
   </parent>
 
   <dependencies>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>pie.vfs</artifactId>
-      <version>${pie.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>pie.api</artifactId>

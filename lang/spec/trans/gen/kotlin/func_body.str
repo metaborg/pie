@@ -227,88 +227,100 @@ rules // Path operations
     ; stamperStr := <p2k-stamper> (filterOpt, stamper)
 
   p2k-exp:
-    GeneratesPath(exp, stamper) -> $[generate([expStr], [stamperStr])]
+    GeneratesPath(exp, stamper) -> $[provide([expStr], [stamperStr])]
     with
       expStr     := <p2k-exp> exp
     ; stamperStr := <p2k-stamper> (None(), stamper)
   
   p2k-stamper:
-    (None(), Modified()) -> "PathStampers.modified"
+    (None(), Modified()) -> "FileSystemStampers.modified"
   p2k-stamper:
-    (None(), Hash()    ) -> "PathStampers.hash"
+    (None(), Hash()    ) -> "FileSystemStampers.hash"
   p2k-stamper:
-    (filter, Modified()) -> $[PathStampers.modified([filterStr])]
+    (filter, Modified()) -> $[FileSystemStampers.modified([filterStr])]
     where
       <not(?None())> filter
     with
       filterStr := <p2k-filter-match> filter
   p2k-stamper:
-    (filter, Hash()) -> $[PathStampers.hash([filterStr])]
+    (filter, Hash()) -> $[FileSystemStampers.hash([filterStr])]
     where
       <not(?None())> filter
     with
       filterStr := <p2k-filter-match> filter
 
   p2k-exp:
-    ListPath(exp, filterOpt) -> $[require(listContents, ListContents.Input([expStr], [filterStr]))]
+    ListPath(exp, filterOpt) -> $[list([expStr], [matcherStr])]
     with
-      expStr    := <p2k-exp> exp
-    ; filterStr := <p2k-filter-match> filterOpt
-    ; rules(InjectValues :+= $[private val listContents: ListContents])
+      expStr     := <p2k-exp> exp
+    ; matcherStr := <p2k-filter-match> filterOpt
     
   p2k-exp:
-    WalkPath(exp, filterOpt) -> $[require(walkContents, WalkContents.Input([expStr], [filterStr]))]
+    WalkPath(exp, filterOpt) -> $[walk([expStr], [walkerStr], [matcherStr])]
     with
-      expStr    := <p2k-exp> exp
-    ; filterStr := <p2k-filter-walk> filterOpt
-    ; rules(InjectValues :+= $[private val walkContents: WalkContents])
+      expStr                  := <p2k-exp> exp
+    ; (walkerStr, matcherStr) := <p2k-filter-walk> filterOpt
       
   p2k-filter-match:
     None() -> $[null]
   p2k-filter-match:
-    Regex(exp) -> $[PPaths.regexPathMatcher([expStr])]
+    Regex(exp) -> $[PathNodeMatcher(RegexPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
   p2k-filter-match:
-    _ -> $[PPaths.patternsPathMatcher([expStr])]
-    where ?Pattern(exp) + ?Patterns(exp)
+    Pattern(exp) -> $[PathNodeMatcher(PatternPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
   p2k-filter-match:
-    _ -> $[PPaths.extensionsPathMatcher([expStr])]
-    where ?Extension(exp) + ?Extensions(exp)
+    Patterns(exp) -> $[PathNodeMatcher(PatternsPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
-      
-  p2k-filter-walk:
-    None() -> $[null]
-  p2k-filter-walk:
-    Regex(exp) -> $[PPaths.regexPathWalker([expStr])]
+  p2k-filter-match:
+    Extension(exp)  -> $[PathNodeMatcher(ExtensionPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
-  p2k-filter-walk:
-    _ -> $[PPaths.patternsPathWalker([expStr])]
-    where ?Pattern(exp) + ?Patterns(exp)
-    with
-      expStr := <try-p2k-exp> exp
-  p2k-filter-walk:
-    _ -> $[PPaths.extensionsPathWalker([expStr])]
-    where ?Extension(exp) + ?Extensions(exp)
+  p2k-filter-match:
+    Extensions(exp)  -> $[PathNodeMatcher(ExtensionsPathMatcher([expStr]))]
     with
       expStr := <try-p2k-exp> exp
 
+  p2k-filter-walk:
+    None() -> ( $[null], $[null] )
+  p2k-filter-walk:
+    Regex(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    with
+      expStr  := <try-p2k-exp> exp
+    ; matcher := $[RegexPathMatcher([expStr])]
+  p2k-filter-walk:
+    Pattern(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[PatternPathMatcher([expStr])]
+  p2k-filter-walk:
+    Patterns(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[PatternsPathMatcher([expStr])]
+  p2k-filter-walk:
+    Extension(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[ExtensionPathMatcher([expStr])]
+  p2k-filter-walk:
+    Extensions(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    with
+      expStr := <try-p2k-exp> exp
+    ; matcher := $[ExtensionsPathMatcher([expStr])]
 
   p2k-exp:
-    ReadPath(exp) -> $[require(read, [expStr])]
+    ReadPath(exp) -> $[readToString([expStr])]
     with
       expStr := <p2k-exp> exp
-    ; rules(InjectValues :+= $[private val read: Read])
       
   p2k-exp:
-    ExistsPath(exp) -> $[require(exists, [expStr])]
+    ExistsPath(exp) -> $[exists([expStr])]
     with
       expStr := <p2k-exp> exp
-    ; rules(InjectValues :+= $[private val exists: Exists])
 
 rules // Early return and failure
 
@@ -364,7 +376,7 @@ rules // Interpolated string literal
 rules // Interpolated path literal
 
   p2k-exp:
-    PathLit(prefix, parts) -> $[PPathImpl(java.nio.file.FileSystems.getDefault().getPath("[prefix][partsStr]"))]
+    PathLit(prefix, parts) -> $[JavaFSPath("[prefix][partsStr]")]
     with
       partsStr := <map(p2k-strpart); concat-strings> parts
 

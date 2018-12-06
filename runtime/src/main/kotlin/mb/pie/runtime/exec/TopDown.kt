@@ -2,39 +2,41 @@ package mb.pie.runtime.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.*
-import mb.pie.api.stamp.FileStamper
+import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
 
 class TopDownExecutorImpl constructor(
   private val taskDefs: TaskDefs,
+  private val resourceSystems: ResourceSystems,
   private val store: Store,
   private val share: Share,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultFileReqStamper: FileStamper,
-  private val defaultFileGenStamper: FileStamper,
+  private val defaultRequireFileSystemStamper: FileSystemStamper,
+  private val defaultProvideFileSystemStamper: FileSystemStamper,
   private val layerFactory: (Logger) -> Layer,
   private val logger: Logger,
   private val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : TopDownExecutor {
   override fun newSession(): TopDownSession {
-    return TopDownSessionImpl(taskDefs, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
   }
 }
 
 open class TopDownSessionImpl(
   taskDefs: TaskDefs,
+  resourceSystems: ResourceSystems,
   private val store: Store,
   share: Share,
   defaultOutputStamper: OutputStamper,
-  defaultFileReqStamper: FileStamper,
-  defaultFileGenStamper: FileStamper,
+  defaultRequireFileSystemStamper: FileSystemStamper,
+  defaultProvideFileSystemStamper: FileSystemStamper,
   private val layer: Layer,
   logger: Logger,
   private val executorLogger: ExecutorLogger
 ) : TopDownSession, RequireTask {
   private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
-  private val executor = TaskExecutor(taskDefs, visited, store, share, defaultOutputStamper, defaultFileReqStamper, defaultFileGenStamper, layer, logger, executorLogger, null)
-  private val requireShared = RequireShared(taskDefs, visited, store, executorLogger)
+  private val executor = TaskExecutor(taskDefs, resourceSystems, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null)
+  private val requireShared = RequireShared(taskDefs, resourceSystems, visited, store, executorLogger)
 
 
   override fun <I : In, O : Out> requireInitial(task: Task<I, O>): O {
@@ -96,7 +98,7 @@ open class TopDownSessionImpl(
 
     // Check consistency of task.
     val existingData = storedData.cast<I, O>()
-    val (input, output, taskReqs, fileReqs, fileGens) = existingData
+    val (input, output, taskRequires, resourceRequires, resourceProvides) = existingData
 
     // Internal consistency: input changes.
     with(requireShared.checkInput(input, task)) {
@@ -112,18 +114,18 @@ open class TopDownSessionImpl(
       }
     }
 
-    // Internal consistency: file requirements.
-    for(fileReq in fileReqs) {
-      with(requireShared.checkFileReq(key, task, fileReq)) {
+    // Internal consistency: resoruce requires.
+    for(fileReq in resourceRequires) {
+      with(requireShared.checkResourceRequire(key, task, fileReq)) {
         if(this != null) {
           return DataW(exec(key, task, this, cancel))
         }
       }
     }
 
-    // Internal consistency: file generates.
-    for(fileGen in fileGens) {
-      with(requireShared.checkFileGen(key, task, fileGen)) {
+    // Internal consistency: resource provides.
+    for(fileGen in resourceProvides) {
+      with(requireShared.checkResourceProvide(key, task, fileGen)) {
         if(this != null) {
           return DataW(exec(key, task, this, cancel))
         }
@@ -131,8 +133,8 @@ open class TopDownSessionImpl(
     }
 
     // Total consistency: call requirements.
-    for(taskReq in taskReqs) {
-      with(requireShared.checkTaskReq(key, task, taskReq, this, cancel)) {
+    for(taskReq in taskRequires) {
+      with(requireShared.checkTaskRequire(key, task, taskReq, this, cancel)) {
         if(this != null) {
           return DataW(exec(key, task, this, cancel))
         }

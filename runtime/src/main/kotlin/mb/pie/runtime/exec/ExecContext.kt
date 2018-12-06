@@ -1,24 +1,27 @@
 package mb.pie.runtime.exec
 
+import mb.fs.api.node.FSNode
+import mb.fs.api.path.FSPath
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
-import mb.pie.api.stamp.FileStamper
-import mb.pie.api.stamp.OutputStamper
-import mb.pie.vfs.path.PPath
+import mb.pie.api.fs.stamp.FileSystemStamper
+import mb.pie.api.fs.toNode
+import mb.pie.api.stamp.*
 
 internal class ExecContextImpl(
   private val requireTask: RequireTask,
   private val cancel: Cancelled,
   private val taskDefs: TaskDefs,
+  private val resourceSystems: ResourceSystems,
   private val store: Store,
   private val defaultOutputStamper: OutputStamper,
-  private val defaultFileReqStamper: FileStamper,
-  private val defaultFileGenStamper: FileStamper,
+  override val defaultRequireFileSystemStamper: FileSystemStamper,
+  override val defaultProvideFileSystemStamper: FileSystemStamper,
   override val logger: Logger
 ) : ExecContext {
-  private val taskReqs = arrayListOf<TaskReq>()
-  private val fileReqs = arrayListOf<FileReq>()
-  private val fileGens = arrayListOf<FileGen>()
+  private val taskRequires = arrayListOf<TaskRequireDep>()
+  private val resourceRequires = arrayListOf<ResourceRequireDep>()
+  private val resourceProvides = arrayListOf<ResourceProvideDep>()
 
 
   override fun <I : In, O : Out> require(task: Task<I, O>): O {
@@ -30,7 +33,7 @@ internal class ExecContextImpl(
     val key = task.key()
     val output = requireTask.require(key, task, cancel)
     val stamp = stamper.stamp(output)
-    taskReqs.add(TaskReq(key, stamp))
+    taskRequires.add(TaskRequireDep(key, stamp))
     Stats.addCallReq()
     return output
   }
@@ -65,28 +68,52 @@ internal class ExecContextImpl(
     ?: throw RuntimeException("Cannot retrieve task with identifier $id, it cannot be found")
 
 
-  override fun require(file: PPath) {
-    return require(file, defaultFileReqStamper)
-  }
-
-  override fun require(file: PPath, stamper: FileStamper) {
-    val stamp = stamper.stamp(file)
-    fileReqs.add(FileReq(file, stamp))
+  override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {
+    @Suppress("UNCHECKED_CAST") val stamp = stamper.stamp(resource) as ResourceStamp<Resource>
+    resourceRequires.add(ResourceRequireDep(resource.key(), stamp))
     Stats.addFileReq()
   }
 
-  override fun generate(file: PPath) {
-    return generate(file, defaultFileGenStamper)
-  }
-
-  override fun generate(file: PPath, stamper: FileStamper) {
-    val stamp = stamper.stamp(file)
-    fileGens.add(FileGen(file, stamp))
+  override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {
+    @Suppress("UNCHECKED_CAST") val stamp = stamper.stamp(resource) as ResourceStamp<Resource>
+    resourceProvides.add(ResourceProvideDep(resource.key(), stamp))
     Stats.addFileGen()
   }
 
 
-  data class Reqs(val taskReqs: ArrayList<TaskReq>, val fileReqs: ArrayList<FileReq>, val fileGens: ArrayList<FileGen>)
+  override fun require(path: FSPath): FSNode {
+    return require(path, defaultRequireFileSystemStamper)
+  }
 
-  fun reqs() = Reqs(taskReqs, fileReqs, fileGens)
+  override fun require(path: FSPath, stamper: FileSystemStamper): FSNode {
+    val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
+      ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
+    val node = path.toNode(resourceSystem)
+    require(node, stamper)
+    return node
+  }
+
+  override fun provide(path: FSPath) {
+    return provide(path, defaultProvideFileSystemStamper)
+  }
+
+  override fun provide(path: FSPath, stamper: FileSystemStamper) {
+    val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
+      ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
+    val node = path.toNode(resourceSystem)
+    provide(node, stamper)
+  }
+
+
+  override fun toNode(path: FSPath): FSNode {
+    val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
+      ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
+    val node = path.toNode(resourceSystem)
+    return node
+  }
+
+
+  data class Deps(val taskRequires: ArrayList<TaskRequireDep>, val resourceRequires: ArrayList<ResourceRequireDep>, val resourceProvides: ArrayList<ResourceProvideDep>)
+
+  fun deps() = Deps(taskRequires, resourceRequires, resourceProvides)
 }

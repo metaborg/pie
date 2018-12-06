@@ -1,11 +1,9 @@
 package mb.pie.runtime.test
 
 import mb.pie.api.*
-import mb.pie.api.stamp.FileStamper
+import mb.pie.api.fs.stamp.*
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
-import mb.pie.api.stamp.path.HashFileStamper
-import mb.pie.api.stamp.path.ModifiedFileStamper
 import mb.pie.api.test.ApiTestGenerator
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.PieImpl
@@ -25,8 +23,8 @@ object RuntimeTestGenerator {
     shareGens: Array<(Logger) -> Share> = arrayOf({ _ -> NonSharingShare() }),
     layerGens: Array<(Logger) -> Layer> = arrayOf({ l -> ValidationLayer(l) }),
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
-    defaultFileReqStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper(), HashFileStamper()),
-    defaultFileGenStampers: Array<FileStamper> = arrayOf(ModifiedFileStamper(), HashFileStamper()),
+    defaultRequireFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
+    defaultProvideFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
     logger: Logger = StreamLogger.only_errors(),
     testFunc: RuntimeTestCtx.() -> Unit
@@ -39,8 +37,8 @@ object RuntimeTestGenerator {
       shareGens,
       layerGens,
       defaultOutputStampers,
-      defaultFileReqStampers,
-      defaultFileGenStampers,
+      defaultRequireFileSystemStampers,
+      defaultProvideFileSystemStampers,
       executorLoggerGen,
       logger,
       { pie, taskDefs, fs -> RuntimeTestCtx(pie as PieImpl, taskDefs as MutableMapTaskDefs, fs) },

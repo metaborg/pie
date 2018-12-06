@@ -5,8 +5,6 @@ import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.taskdefs.MutableMapTaskDefs
 import mb.pie.store.lmdb.withLMDBStore
-import mb.pie.vfs.path.PPath
-import mb.pie.vfs.path.PathSrvImpl
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -18,10 +16,10 @@ import kotlin.system.exitProcess
  */
 
 /**
- * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][PPath] to a file, and then writes "Hello, world!" to it. This
+ * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][File] to a file, and then writes "Hello, world!" to it. This
  * task does not return a value, so we use [None] as output type.
  */
-class WriteHelloWorld : TaskDef<PPath, None> {
+class WriteHelloWorld : TaskDef<File, None> {
   /**
    * The [id] property must be overridden to provide a unique identifier for this task definition. In this case, we use reflection to create
    * a unique identifier.
@@ -32,14 +30,14 @@ class WriteHelloWorld : TaskDef<PPath, None> {
    * The [exec] method must be overridden to implement the logic of this task definition. This function is executed with an
    * [execution context][ExecContext] object as receiver, which is used to tell PIE about dynamic task or file dependencies.
    */
-  override fun ExecContext.exec(input: PPath): None {
+  override fun ExecContext.exec(input: File): None {
     // We write "Hello, world!" to the file.
     input.outputStream().buffered().use {
       it.write("Hello, world!".toByteArray())
     }
-    // Since we have written to or created a file, we need to tell PIE about this dynamic dependency, by calling `generate`, which is
+    // Since we have written to or created a file, we need to tell PIE about this dynamic dependency, by calling `provide`, which is
     // defined in `ExecContext`.
-    generate(input)
+    provide(input)
     // Since this task does not generate a value, and we use the `None` type to indicate that, we need to return the singleton instance of `None`.
     return None.instance
   }
@@ -54,15 +52,7 @@ fun main(args: Array<String>) {
     println("Expected 1 argument, got none")
     exitProcess(1)
   }
-  val fileStr = args[0]
-
-  // To work with paths that PIE can understand (PPath type), we create a PathSrv, and do some error checking.
-  val pathSrv = PathSrvImpl()
-  val file = pathSrv.resolveLocal(fileStr)
-  if(file.exists() && file.isDir) {
-    println("File $file is a directory")
-    exitProcess(2)
-  }
+  val file = File(args[0])
 
   // Now we instantiate the task definitions.
   val writeHelloWorld = WriteHelloWorld()
@@ -91,10 +81,8 @@ fun main(args: Array<String>) {
   pie.topDownExecutor.newSession().requireInitial(writeHelloWorldTask)
 
   // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
-  println("File contents: ${String(file.readAllBytes())}")
+  println("File contents: ${file.readText()}")
 
-  // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. PathSrv must be closed to
-  // clean up temporary files.
+  // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized.
   pie.close()
-  pathSrv.close()
 }

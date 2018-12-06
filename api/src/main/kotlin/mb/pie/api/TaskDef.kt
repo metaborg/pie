@@ -15,19 +15,6 @@ import java.io.Serializable
 typealias In = Serializable
 
 /**
- * Type for task keys. It must adhere to the following properties:
- *
- * * Implements [Serializable].
- * * Implements [equals][Object.equals] and [hashCode][Object.hashCode].
- * * Must NOT be `null`.
- * * [Equals][Object.equals] and [hashCode][Object.hashCode] must return the same values after a serialization roundtrip (e.g., serialize-deserialize).
- * * The key's serialized bytes must be equal when the key's [equals][Object.equals] method returns true.
- *
- * Failure to adhere to these properties will cause unsound incrementality.
- */
-typealias Key = Serializable
-
-/**
  * Definition of an executable task.
  */
 interface TaskDef<I : In, O : Out> {
@@ -46,7 +33,7 @@ interface TaskDef<I : In, O : Out> {
    * Executes the task with given input, and returns its output.
    *
    * @throws ExecException when execution of the task fails unexpectedly.
-   * @throws InterruptedException when execution of the task is cancelled.
+   * @throws InterruptedException when execution of the task is cancelled or otherwise interrupted.
    */
   @Throws(ExecException::class, InterruptedException::class)
   fun ExecContext.exec(input: I): O
@@ -68,6 +55,12 @@ interface TaskDef<I : In, O : Out> {
    */
   @JvmDefault
   fun createTask(input: I): Task<I, O> = Task(this, input)
+
+  /**
+   * Creates a serializable task instance with given [input] for this task definition.
+   */
+  @JvmDefault
+  fun createSerializableTask(input: I): STask<I> = STask(this.id, input)
 }
 
 /**
@@ -82,4 +75,11 @@ open class LambdaTaskDef<I : In, O : Out>(
   override fun ExecContext.exec(input: I): O = execFunc(input)
   override fun key(input: I) = keyFunc?.invoke(input) ?: super.key(input)
   override fun desc(input: I, maxLength: Int): String = descFunc?.invoke(input, maxLength) ?: super.desc(input, maxLength)
+}
+
+/**
+ * Collection of [task definitions][TaskDef].
+ */
+interface TaskDefs {
+  fun <I : In, O : Out> getTaskDef(id: String): TaskDef<I, O>?
 }

@@ -34,16 +34,17 @@ $[@file:Suppress("warnings")
 
 package mb.spoofax.pie.generated
 
-import java.io.Serializable
-import java.nio.file.Paths
 import com.google.inject.Binder
 import com.google.inject.Inject
 import com.google.inject.multibindings.MapBinder
+import mb.fs.api.node.match.*
+import mb.fs.api.node.walk.*
+import mb.fs.api.path.FSPath
+import mb.fs.api.path.match.*
+import mb.fs.java.JavaFSPath
 import mb.pie.api.*
-import mb.pie.lang.runtime.path.*
-import mb.pie.lang.runtime.util.*
+import mb.pie.lang.runtime.*
 import mb.pie.taskdefs.guice.TaskDefsModule
-import mb.pie.vfs.path.*
 
 [classes]
 
