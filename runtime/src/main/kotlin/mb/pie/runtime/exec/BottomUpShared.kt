@@ -15,7 +15,9 @@ fun StoreReadTxn.directlyAffectedTaskKeys(changedResources: Collection<ResourceK
     val requirees = requireesOf(changedResource)
     for(key in requirees) {
       logger.trace("  * required by: ${key.toShortString(200)}")
-      if(!resourceRequires(key).filter { it.key == changedResource }.all { it.isConsistent(resourceSystems) }) {
+      if( observability(key).isNotObservable() ) {
+        logger.trace("  * Is Detached ")
+      } else if(!resourceRequires(key).filter { it.key == changedResource }.all { it.isConsistent(resourceSystems) }) {
         affected.add(key)
       }
     }

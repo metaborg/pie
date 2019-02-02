@@ -120,6 +120,17 @@ class PieImpl(
   val logger: Logger,
   val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : Pie {
+
+  override fun dropOutput(key: TaskKey) {
+    dropOutput(store.writeTxn(),key)
+  }
+
+  override fun addOutput(key: TaskKey) {
+    addOutput(store.writeTxn(),key)
+    bottomUpExecutor.requireTopDown(key.toTask(taskDefs,store.readTxn()))
+  }
+
+
   override fun dropStore() {
     store.writeTxn().use { it.drop() }
   }

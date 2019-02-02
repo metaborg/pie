@@ -31,6 +31,17 @@ internal open class LMDBStoreTxn(
     }
   }
 
+  override fun observability(key: TaskKey) : Observability {
+    println("LMDB Does not yet support observability");
+    return Observability.Attached
+  }
+
+  override fun setObservability(key: TaskKey, observability: Observability) {
+    println("LMDB Does not yet support observability");
+  }
+
+
+
   override fun taskRequires(key: TaskKey): ArrayList<TaskRequireDep> {
     return shared.getOne<ArrayList<TaskRequireDep>>(key.serialize().hash().toBuffer(), taskRequiresDb).orElse(arrayListOf())
   }
@@ -68,10 +79,12 @@ internal open class LMDBStoreTxn(
     }
     val input = inputDeserialized.deserialized
     val output = outputDeserialized.deserialized
+    val observability = Observability.Attached; // TODO;
+    println("LMDB Observability does not work yet");
     val taskRequires = shared.getOne<ArrayList<TaskRequireDep>>(keyHashedBytes.toBuffer(), taskRequiresDb).orElse(arrayListOf())
     val resourceRequires = shared.getOne<ArrayList<ResourceRequireDep>>(keyHashedBytes.toBuffer(), resourceRequiresDb).orElse(arrayListOf())
     val resourceProvides = shared.getOne<ArrayList<ResourceProvideDep>>(keyHashedBytes.toBuffer(), resourceProvidesDb).orElse(arrayListOf())
-    return TaskData(input, output, taskRequires, resourceRequires, resourceProvides)
+    return TaskData(input, output, taskRequires, resourceRequires, resourceProvides, observability )
   }
 
   override fun numSourceFiles(): Int {
@@ -158,6 +171,7 @@ internal open class LMDBStoreTxn(
     // OPTO: serialize and hash task only once
     setInput(key, data.input)
     setOutput(key, data.output)
+    setObservability(key, data.observability)
     setTaskRequires(key, data.taskRequires)
     setResourceRequires(key, data.resourceRequires)
     setResourceProvides(key, data.resourceProvides)

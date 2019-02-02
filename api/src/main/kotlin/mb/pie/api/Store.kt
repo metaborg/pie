@@ -46,6 +46,10 @@ interface StoreReadTxn : StoreTxn {
    */
   fun output(key: TaskKey): Output<*>?
 
+  /**
+   * @return observability of [key].
+   */
+  fun observability(key: TaskKey): Observability
 
   /**
    * @return task require dependencies (calls) of task [key].
@@ -107,6 +111,11 @@ interface StoreWriteTxn : StoreReadTxn {
   fun setOutput(key: TaskKey, output: Out)
 
   /**
+   * Sets the observability of a [key] to [observability].
+   */
+  fun setObservability(key : TaskKey,observability: Observability )
+
+  /**
    * Sets the task require dependencies of task [key] to [taskRequires].
    */
   fun setTaskRequires(key: TaskKey, taskRequires: ArrayList<TaskRequireDep>)
@@ -125,6 +134,7 @@ interface StoreWriteTxn : StoreReadTxn {
    * Sets the output and dependencies for task [key] to [data].
    */
   fun setData(key: TaskKey, data: TaskData<*, *>)
+
 
   /**
    * Removes all data from (drops) the store.
@@ -148,7 +158,7 @@ inline fun <O : Out> Output<*>.cast() = Output(this.output as O)
 /**
  * Wrapper for task data: outputs and dependencies.
  */
-data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskRequires: ArrayList<TaskRequireDep>, val resourceRequires: ArrayList<ResourceRequireDep>, val resourceProvides: ArrayList<ResourceProvideDep>)
+data class TaskData<out I : In, out O : Out>(val input: I, val output: O, val taskRequires: ArrayList<TaskRequireDep>, val resourceRequires: ArrayList<ResourceRequireDep>, val resourceProvides: ArrayList<ResourceProvideDep>,val observability: Observability)
 
 /**
  * Attempts to cast untyped task data to typed task data.

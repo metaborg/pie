@@ -144,6 +144,7 @@ open class BottomUpSession(
     logger.trace("Executing scheduled tasks: $queue")
     while(queue.isNotEmpty()) {
       cancel.throwIfCancelled()
+
       val key = queue.poll()
       val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
       logger.trace("Polling: ${task.desc(200)}")
@@ -179,6 +180,7 @@ open class BottomUpSession(
     logger.trace("Scheduling tasks affected by output of: ${callee.toShortString(200)}")
     val inconsistentCallers = store.readTxn().use { txn ->
       txn.callersOf(callee).filter { caller ->
+        txn.observability(caller).isObservable() &&
         txn.taskRequires(caller).filter { it.calleeEqual(callee) }.any { !it.isConsistent(output) }
       }
     }
@@ -233,7 +235,12 @@ open class BottomUpSession(
       // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
       // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
       val existingData = storedData.cast<I, O>()
-      val (input, output, _, _, _) = existingData
+      val (input, output, _, _, _, observable) = existingData
+
+      // We can not guarantee unobserved tasks are consistent
+      if (observable.isNotObservable()) {
+        return exec(key,task, UnobservedRequired(observable),cancel)
+      }
 
       // Internal consistency: input changes.
       with(requireShared.checkInput(input, task)) {

@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   private val inputs = ConcurrentHashMap<TaskKey, In>()
   private val outputs = ConcurrentHashMap<TaskKey, Output<*>>()
+  private val observables = ConcurrentHashMap<TaskKey,Observability>()
   private val taskReqs = ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>>()
   private val callersOf = ConcurrentHashMap<TaskKey, MutableSet<TaskKey>>()
   private val fileReqs = ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>>()
@@ -36,6 +37,10 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
     // ConcurrentHashMap does not support null values, so also wrap outputs (which can be null) in an Output object.
     outputs[key] = Output(output)
   }
+
+  override fun observability(key: TaskKey) : Observability = observables.getOrDefault(key,Observability.Detached)
+
+  override fun setObservability(key: TaskKey, observability: Observability) = observables.set(key ,observability)
 
   override fun taskRequires(key: TaskKey) = taskReqs.getOrEmptyList(key)
   override fun callersOf(key: TaskKey): Set<TaskKey> = callersOf.getOrPutSet(key)
@@ -94,19 +99,22 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun data(key: TaskKey): TaskData<*, *>? {
     val input = input(key) ?: return null
     val output = output(key) ?: return null
+    val observability = observability(key)
     val callReqs = taskRequires(key)
     val pathReqs = resourceRequires(key)
     val pathGens = resourceProvides(key)
-    return TaskData(input, output.output, callReqs, pathReqs, pathGens)
+    return TaskData(input, output.output, callReqs, pathReqs, pathGens,observability)
   }
 
   override fun setData(key: TaskKey, data: TaskData<*, *>) {
-    val (input, output, callReqs, pathReqs, pathGens) = data
+    val (input, output, callReqs, pathReqs, pathGens,observability) = data
     setInput(key, input)
     setOutput(key, output)
+    setObservability(key,observability)
     setTaskRequires(key, callReqs)
     setResourceRequires(key, pathReqs)
     setResourceProvides(key, pathGens)
+
   }
 
 
@@ -135,6 +143,19 @@ class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   override fun toString(): String {
     return "InMemoryStore"
   }
+
+  fun dump() : StoreDump {
+    return StoreDump(HashMap(inputs),
+            HashMap(outputs),
+            HashMap(taskReqs),
+            HashMap(callersOf),
+            HashMap(fileReqs),
+            HashMap(requireesOf),
+            HashMap(fileGens),
+            HashMap(generatorOf),
+            HashMap(observables)
+    )
+  }
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -142,3 +163,18 @@ private inline fun <K, V> ConcurrentHashMap<K, MutableSet<V>>.getOrPutSet(key: K
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun <K, V> ConcurrentHashMap<K, ArrayList<V>>.getOrEmptyList(key: K) = this.getOrElse(key) { arrayListOf() }
+
+
+
+
+data class StoreDump(
+        val inputs: HashMap<TaskKey,In>,
+        val outputs : HashMap<TaskKey, Output<*>>,
+        val taskReqs : HashMap<TaskKey, ArrayList<TaskRequireDep>>,
+        val callersOf : HashMap<TaskKey, MutableSet<TaskKey>>,
+        val fileReqs : HashMap<TaskKey, ArrayList<ResourceRequireDep>>,
+        val requireesOf : HashMap<ResourceKey, MutableSet<TaskKey>>,
+        val fileGens : HashMap<TaskKey, ArrayList<ResourceProvideDep>>,
+        val generatorOf : HashMap<ResourceKey, TaskKey?>,
+        val observables : HashMap<TaskKey,Observability>
+)

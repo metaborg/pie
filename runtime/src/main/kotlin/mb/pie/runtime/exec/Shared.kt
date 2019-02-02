@@ -32,6 +32,14 @@ data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) 
 }
 
 /**
+ * [Execution reason][ExecReason] for when the transient output of a task is inconsistent.
+ */
+data class UnobservedRequired(val observability: Observability) : ExecReason {
+  override fun toString() = "observed but output was required"
+}
+
+
+/**
  * @return an [execution reason][ExecReason] when this output is transient and not consistent, `null` otherwise.
  */
 fun Out.isTransientInconsistent(): InconsistentTransientOutput? {

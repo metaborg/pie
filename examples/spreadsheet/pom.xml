@@ -1,10 +1,10 @@
 <project
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>pie.example.copyfile</artifactId>
+  <artifactId>pie.example.spreadsheet</artifactId>
 
   <parent>
     <groupId>org.metaborg</groupId>
@@ -12,6 +12,7 @@
     <version>0.3.1-SNAPSHOT</version>
     <relativePath>../../pom/kotlin</relativePath>
   </parent>
+
 
   <dependencies>
     <dependency>
@@ -34,6 +35,17 @@
       <artifactId>kotlin-stdlib-jdk8</artifactId>
       <version>${kotlin.runtime.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>1.21</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>1.21</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -64,14 +76,14 @@
               <finalName>example</finalName>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>mb.pie.example.copyfile.MainKt</mainClass>
+                  <mainClass>mb.pie.example.spreadsheet.MainKt</mainClass>
                 </transformer>
               </transformers>
             </configuration>
           </execution>
         </executions>
       </plugin>
-      <!-- Skip installation and deployment. -->
+      <!-- Do not install or deploy this example -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-install-plugin</artifactId>

@@ -31,12 +31,25 @@ class TaskExecutor(
 
   private fun <I : In, O : Out> execInternal(key: TaskKey, task: Task<I, O>, requireTask: RequireTask, cancel: Cancelled): TaskData<I, O> {
     cancel.throwIfCancelled()
+    val oldRequiredSet : Set<TaskKey> = store.readTxn().use {
+      it.taskRequires(key).map { it.callee }.toSet()
+    }
+    val oldObservability = store.readTxn().use{ it.observability(key) }
     // Execute
     val context = ExecContextImpl(requireTask, cancel, taskDefs, resourceSystems, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger)
     val output = task.exec(context)
     Stats.addExecution()
     val (taskRequires, resourceRequires, resourceProvides) = context.deps()
-    val data = TaskData(task.input, output, taskRequires, resourceRequires, resourceProvides)
+
+    val newRequiredSet : Set<TaskKey> = taskRequires.map{ it.callee }.toSet()
+    val added = newRequiredSet.minus(oldRequiredSet)
+    val removed = oldRequiredSet.minus(newRequiredSet)
+
+    // Since this task was executed , it is at least considered observed.
+    val observability = if (oldObservability.isNotObservable())
+      Observability.Observed else oldObservability;
+
+    val data = TaskData(task.input, output, taskRequires, resourceRequires, resourceProvides, observability)
     // Validate well-formedness of the dependency graph, before writing.
     store.readTxn().use {
       layer.validatePreWrite(key, data, it)
@@ -51,6 +64,14 @@ class TaskExecutor(
     store.readTxn().use {
       layer.validatePostWrite(key, data, it)
     }
+
+    for (newReq in added) {
+      propegateAttachment(store.writeTxn(),newReq)
+    }
+    for (droppedReq in removed) {
+      propegateDetachment(store.writeTxn(),droppedReq)
+    }
+
     // Mark as visited.
     visited[key] = data
     return data

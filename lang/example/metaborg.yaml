@@ -1,6 +1,6 @@
 ---
 pie:
-  version: 0.3.0
+  version: 0.3.1-SNAPSHOT
 id: org.metaborg:pie.lang.example:${pie.version}
 name: pie
 dependencies:
