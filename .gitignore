@@ -1,20 +1,19 @@
-# Eclipse
-/**/.project
-/**/.classpath
-/**/.factorypath
-/**/.settings
-
-# IntelliJ
-/**/*.iml
-
-# Maven
-/**/target
-/**/.polyglot.*
-
 # Java
 *.class
 *.jar
 hs_err_pid*
 
-# Generated MANIFEST.MF
-/**/META-INF/MANIFEST.MF
+# Gradle
+**/.gradle
+**/build/
+
+# IntelliJ
+**/.idea
+**/out
+
+# Eclipse
+**/.project
+**/.settings
+**/.classpath
+**/.factorypath
+**/bin
