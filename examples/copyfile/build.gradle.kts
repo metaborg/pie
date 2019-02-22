@@ -1,12 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("org.metaborg.gradle.config.kotlin-library")
+  id("org.metaborg.gradle.config.kotlin-application")
 }
 
 dependencies {
-  api(project(":fs.api"))
-  api(project(":fs.java"))
+  api(project(":pie.runtime"))
+  api(project(":pie.store.lmdb"))
   implementation(kotlin("stdlib-jdk8"))
 }
 

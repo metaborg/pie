@@ -18,3 +18,8 @@ fun includeProject(path: String, id: String = "pie.$path") {
 
 includeProject("api")
 includeProject("api.test")
+includeProject("runtime")
+includeProject("runtime.test")
+includeProject("share.coroutine")
+includeProject("store.lmdb")
+includeProject("taskdefs.guice")

@@ -5,9 +5,8 @@ plugins {
 }
 
 dependencies {
-  api(project(":fs.api"))
-  api(project(":fs.java"))
-  implementation(kotlin("stdlib-jdk8"))
+  api(project(":pie.api"))
+  compile(kotlin("stdlib-jdk8"))
 }
 
 tasks.withType<KotlinCompile>().all {

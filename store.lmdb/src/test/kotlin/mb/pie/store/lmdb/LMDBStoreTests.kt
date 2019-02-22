@@ -10,7 +10,7 @@ import java.io.File
 
 internal class LMDBStoreTests {
   @TestFactory
-  fun testReuse() = RuntimeTestGenerator.generate("testReuse", storeGens = arrayOf({ logger -> LMDBStore(logger, File("target/test/lmdbstore")) })) {
+  fun testReuse() = RuntimeTestGenerator.generate("testReuse", storeGens = arrayOf({ logger -> LMDBStore(logger, File("build/test/lmdbstore")) })) {
     addTaskDef(toLowerCase)
     val task = task(toLowerCase, "HELLO WORLD!")
     val key = task.key()

@@ -5,9 +5,13 @@ plugins {
 }
 
 dependencies {
-  api(project(":fs.api"))
-  api(project(":fs.java"))
+  api(project(":pie.api"))
+  api(project(":pie.runtime"))
+  api("com.google.inject:guice:4.2.0")
   implementation(kotlin("stdlib-jdk8"))
+
+  testImplementation(project(":pie.runtime.test"))
+  testImplementation("com.nhaarman:mockito-kotlin:1.5.0")
 }
 
 tasks.withType<KotlinCompile>().all {

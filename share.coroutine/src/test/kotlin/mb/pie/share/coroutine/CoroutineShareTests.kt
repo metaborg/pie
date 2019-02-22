@@ -1,15 +1,9 @@
 package mb.pie.share.coroutine
 
-import com.nhaarman.mockito_kotlin.mockingDetails
-import com.nhaarman.mockito_kotlin.spy
-import kotlinx.coroutines.experimental.*
-import mb.pie.api.TaskDef
+import kotlinx.coroutines.*
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.test.RuntimeTestGenerator
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.TestFactory
-import kotlin.reflect.full.declaredMemberExtensionFunctions
-import kotlin.reflect.jvm.javaMethod
 
 internal class CoroutineShareTests {
   @TestFactory
@@ -18,7 +12,7 @@ internal class CoroutineShareTests {
 
     runBlocking {
       List(100) { index ->
-        launch(coroutineContext + CommonPool) {
+        launch(coroutineContext + Dispatchers.Default) {
           val session = topDownSession()
           val task = task(toLowerCase, "HELLO WORLD $index!")
           session.requireInitial(task)
