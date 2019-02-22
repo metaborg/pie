@@ -18,3 +18,7 @@ hs_err_pid*
 **/.classpath
 **/.factorypath
 **/bin
+
+# Spoofax
+**/src-gen
+**/target
