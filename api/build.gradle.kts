@@ -5,4 +5,5 @@ plugins {
 dependencies {
   api(project(":fs.api"))
   api(project(":fs.java"))
+  compileOnly("org.checkerframework:checker-qual:2.6.0")
 }
