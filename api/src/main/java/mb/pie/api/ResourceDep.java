@@ -15,5 +15,5 @@ public interface ResourceDep {
     /**
      * @return `true` when this resource dependency is consistent, `false` otherwise.
      */
-    Boolean isConsistent(ResourceSystems systems);
+    boolean isConsistent(ResourceSystems systems);
 }

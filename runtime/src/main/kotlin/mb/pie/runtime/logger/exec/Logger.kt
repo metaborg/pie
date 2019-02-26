@@ -2,7 +2,9 @@ package mb.pie.runtime.logger.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.ExecReason
+import java.io.Serializable
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 class LoggerExecutorLogger @JvmOverloads constructor(
   private val logger: Logger,
@@ -21,7 +23,7 @@ class LoggerExecutorLogger @JvmOverloads constructor(
 
   override fun requireTopDownEnd(key: TaskKey, task: Task<*, *>, output: Out) {
     indentation.decrementAndGet()
-    logger.trace("$indent✔ ${task.desc(descLimit)} -> ${output.toString().toShortString(descLimit)}")
+    logger.trace("$indent✔ ${task.desc(descLimit)} -> ${StringUtil.toShortString(output.toString(), descLimit)}")
   }
 
 
@@ -77,13 +79,13 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   }
 
   override fun executeEnd(key: TaskKey, task: Task<*, *>, reason: ExecReason, data: TaskData<*, *>) {
-    logger.info("$indent< ${data.output.toString().toShortString(descLimit)}")
+    logger.info("$indent< ${StringUtil.toShortString(data.output.toString(), descLimit)}")
   }
 
 
-  override fun invokeObserverStart(observer: Function<Unit>, key: TaskKey, output: Out) {
-    logger.trace("$indent@ ${observer.toString().toShortString(descLimit)}(${output.toString().toShortString(descLimit)})")
+  override fun invokeObserverStart(observer: Consumer<Serializable?>, key: TaskKey, output: Out) {
+    logger.trace("$indent@ ${StringUtil.toShortString(observer.toString(), descLimit)}(${StringUtil.toShortString(output.toString(), descLimit)})")
   }
 
-  override fun invokeObserverEnd(observer: Function<Unit>, key: TaskKey, output: Out) {}
+  override fun invokeObserverEnd(observer: Consumer<Serializable?>, key: TaskKey, output: Out) {}
 }

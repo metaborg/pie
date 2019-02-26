@@ -1,5 +1,6 @@
 package mb.pie.api;
 
+import mb.pie.api.fs.FileSystemResource;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 
@@ -19,9 +20,9 @@ public interface PieBuilder {
 
     PieBuilder withDefaultOutputStamper(OutputStamper outputStamper);
 
-    PieBuilder withDefaultRequireFileSystemStamper(ResourceStamper stamper);
+    PieBuilder withDefaultRequireFileSystemStamper(ResourceStamper<FileSystemResource> stamper);
 
-    PieBuilder withDefaultProvideFileSystemStamper(ResourceStamper stamper);
+    PieBuilder withDefaultProvideFileSystemStamper(ResourceStamper<FileSystemResource> stamper);
 
     PieBuilder withLayer(Function<Logger, Layer> layerFunc);
 

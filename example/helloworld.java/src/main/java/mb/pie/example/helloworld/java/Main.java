@@ -44,7 +44,7 @@ public class Main {
             // Since we have written to or created a file, we need to tell PIE about this dynamic dependency, by calling `provide` on the context.
             context.provide(input);
             // Since this task does not generate a value, and we use the `None` type to indicate that, we need to return the singleton instance of `None`.
-            return None.getInstance();
+            return None.instance;
         }
     }
 
@@ -73,20 +73,19 @@ public class Main {
         // For example purposes, we use verbose logging which will output to stdout.
         pieBuilder.withLogger(StreamLogger.verbose());
         // Then we build the PIE runtime.
-        final Pie pie = pieBuilder.build();
+        try(final Pie pie = pieBuilder.build()) {
+            // Now we create concrete task instances from the task definitions.
+            final Task<File, None> writeHelloWorldTask = writeHelloWorld.createTask(file);
 
-        // Now we create concrete task instances from the task definitions.
-        final Task<File, None> writeHelloWorldTask = writeHelloWorld.createTask(file);
+            // We incrementally execute the hello world task using the top-down executor.
+            // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
+            // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
+            pie.getTopDownExecutor().newSession().requireInitial(writeHelloWorldTask);
 
-        // We incrementally execute the hello world task using the top-down executor.
-        // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
-        // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
-        pie.getTopDownExecutor().newSession().requireInitial(writeHelloWorldTask);
-
-        // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
-        System.out.println("File contents: " + new String(Files.readAllBytes(file.toPath())));
-
+            // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
+            System.out.println("File contents: " + new String(Files.readAllBytes(file.toPath())));
+        }
         // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized.
-        pie.close();
+        // Using a try-with-resources block is the best way to ensure that.
     }
 }

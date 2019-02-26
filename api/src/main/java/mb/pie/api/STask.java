@@ -24,7 +24,7 @@ public class STask<I extends Serializable> implements Serializable {
             throw new RuntimeException(
                 "Cannot get task definition for id " + id + "; task definition with that id does not exist");
         }
-        return new Task(taskDef, input);
+        return new Task<>(taskDef, input);
     }
 
 

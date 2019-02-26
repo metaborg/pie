@@ -18,8 +18,8 @@ public class TaskKey implements Serializable {
     }
 
 
-    public Task<?, ?> toTask(TaskDefs taskDefs, StoreReadTxn txn) {
-        final @Nullable TaskDef<?, ?> taskDef = taskDefs.getTaskDef(id);
+    public Task<Serializable, @Nullable Serializable> toTask(TaskDefs taskDefs, StoreReadTxn txn) {
+        final @Nullable TaskDef<Serializable, @Nullable Serializable> taskDef = taskDefs.getTaskDef(id);
         if(taskDef == null) {
             throw new RuntimeException(
                 "Cannot get task definition for task key " + this + "; task definition with id " + id + " does not exist");
@@ -28,7 +28,7 @@ public class TaskKey implements Serializable {
         if(input == null) {
             throw new RuntimeException("Cannot get task for task key $this; input object does not exist");
         }
-        return new Task(taskDef, input);
+        return new Task<>(taskDef, input);
     }
 
 

@@ -23,20 +23,20 @@ class WriteHelloWorld : TaskDef<File, None> {
    * The [id] property must be overridden to provide a unique identifier for this task definition. In this case, we use reflection to create
    * a unique identifier.
    */
-  override val id: String = javaClass.simpleName
+  override fun getId(): String = javaClass.simpleName
 
   /**
    * The [exec] method must be overridden to implement the logic of this task definition. This function is executed with an
    * [execution context][ExecContext] object as receiver, which is used to tell PIE about dynamic task or file dependencies.
    */
-  override fun ExecContext.exec(input: File): None {
+  override fun exec(context: ExecContext, input: File): None {
     // We write "Hello, world!" to the file.
     input.outputStream().buffered().use {
       it.write("Hello, world!".toByteArray())
     }
     // Since we have written to or created a file, we need to tell PIE about this dynamic dependency, by calling `provide`, which is
     // defined in `ExecContext`.
-    provide(input)
+    context.provide(input)
     // Since this task does not generate a value, and we use the `None` type to indicate that, we need to return the singleton instance of `None`.
     return None.instance
   }
@@ -65,19 +65,18 @@ fun main(args: Array<String>) {
   // For example purposes, we use verbose logging which will output to stdout.
   pieBuilder.withLogger(StreamLogger.verbose())
   // Then we build the PIE runtime.
-  val pie = pieBuilder.build()
+  pieBuilder.build().use { pie ->
+    // Now we create concrete task instances from the task definitions.
+    val writeHelloWorldTask = writeHelloWorld.createTask(file)
 
-  // Now we create concrete task instances from the task definitions.
-  val writeHelloWorldTask = writeHelloWorld.createTask(file)
+    // We incrementally execute the hello world task using the top-down executor.
+    // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
+    // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
+    pie.topDownExecutor.newSession().requireInitial(writeHelloWorldTask)
 
-  // We incrementally execute the hello world task using the top-down executor.
-  // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
-  // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
-  pie.topDownExecutor.newSession().requireInitial(writeHelloWorldTask)
-
-  // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
-  println("File contents: ${file.readText()}")
-
-  // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized.
-  pie.close()
+    // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
+    println("File contents: ${file.readText()}")
+  }
+  // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a
+  // 'use' block is the best way to ensure that.
 }

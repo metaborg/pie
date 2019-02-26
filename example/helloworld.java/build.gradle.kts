@@ -9,5 +9,5 @@ application {
 dependencies {
   compile(project(":pie.runtime"))
   compile(project(":pie.store.lmdb"))
-  compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+  compileOnly("org.checkerframework:checker-qual:2.6.0")
 }

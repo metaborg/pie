@@ -3,7 +3,6 @@ package mb.pie.runtime.exec
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
 import mb.pie.api.exec.ExecReason
-import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
 
 class TaskExecutor(

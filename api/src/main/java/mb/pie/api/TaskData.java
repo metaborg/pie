@@ -22,7 +22,9 @@ public final class TaskData<I extends Serializable, O extends @Nullable Serializ
 
 
     public <IC extends Serializable, OC extends @Nullable Serializable> TaskData<IC, OC> cast() {
-        return (TaskData<IC, OC>) this;
+        @SuppressWarnings("unchecked")
+        TaskData<IC, OC> casted = (TaskData<IC, OC>) this;
+        return casted;
     }
 
 

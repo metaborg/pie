@@ -2,8 +2,8 @@ package mb.pie.runtime.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.*
-import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
+import java.util.function.Function
 
 class TopDownExecutorImpl constructor(
   private val taskDefs: TaskDefs,
@@ -13,12 +13,12 @@ class TopDownExecutorImpl constructor(
   private val defaultOutputStamper: OutputStamper,
   private val defaultRequireFileSystemStamper: FileSystemStamper,
   private val defaultProvideFileSystemStamper: FileSystemStamper,
-  private val layerFactory: (Logger) -> Layer,
+  private val layerFactory: Function<Logger, Layer>,
   private val logger: Logger,
-  private val executorLoggerFactory: (Logger) -> ExecutorLogger
+  private val executorLoggerFactory: Function<Logger, ExecutorLogger>
 ) : TopDownExecutor {
   override fun newSession(): TopDownSession {
-    return TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger))
   }
 }
 

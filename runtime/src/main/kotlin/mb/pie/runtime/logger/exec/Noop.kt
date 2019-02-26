@@ -2,6 +2,8 @@ package mb.pie.runtime.logger.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.ExecReason
+import java.io.Serializable
+import java.util.function.Consumer
 
 class NoopExecutorLogger : ExecutorLogger {
   override fun requireTopDownInitialStart(key: TaskKey, task: Task<*, *>) {}
@@ -22,6 +24,6 @@ class NoopExecutorLogger : ExecutorLogger {
   override fun checkTaskRequireEnd(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep, reason: ExecReason?) {}
   override fun executeStart(key: TaskKey, task: Task<*, *>, reason: ExecReason) {}
   override fun executeEnd(key: TaskKey, task: Task<*, *>, reason: ExecReason, data: TaskData<*, *>) {}
-  override fun invokeObserverStart(observer: Function<Unit>, key: TaskKey, output: Out) {}
-  override fun invokeObserverEnd(observer: Function<Unit>, key: TaskKey, output: Out) {}
+  override fun invokeObserverStart(observer: Consumer<Serializable?>, key: TaskKey, output: Out) {}
+  override fun invokeObserverEnd(observer: Consumer<Serializable?>, key: TaskKey, output: Out) {}
 }

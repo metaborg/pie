@@ -4,7 +4,6 @@ import mb.fs.api.node.FSNode
 import mb.fs.api.path.FSPath
 import mb.pie.api.*
 import mb.pie.api.exec.*
-import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import org.mockito.Mockito
@@ -65,10 +64,10 @@ class NoExecContext : ExecContext {
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
   override fun require(path: FSPath) = null!!
   override fun require(path: FSPath, stamper: FileSystemStamper) = null!!
-  override val defaultRequireFileSystemStamper: FileSystemStamper get() = null!!
+  override fun defaultRequireFileSystemStamper(): FileSystemStamper = null!!
   override fun provide(path: FSPath) {}
   override fun provide(path: FSPath, stamper: FileSystemStamper) {}
-  override val defaultProvideFileSystemStamper: FileSystemStamper get() = null!!
+  override fun defaultProvideFileSystemStamper(): FileSystemStamper = null!!
 
 
   override fun toNode(path: FSPath): FSNode {
@@ -77,7 +76,7 @@ class NoExecContext : ExecContext {
   }
 
 
-  override val logger: Logger = null!!
+  override fun logger(): Logger = null!!
 }
 
 fun anyEC() = safeAny<ExecContext>(NoExecContext())

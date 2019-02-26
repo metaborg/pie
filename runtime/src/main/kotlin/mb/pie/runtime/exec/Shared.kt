@@ -37,7 +37,7 @@ data class InconsistentTransientOutput(val inconsistentOutput: OutTransient<*>) 
 fun Out.isTransientInconsistent(): InconsistentTransientOutput? {
   return when(this) {
     is OutTransient<*> -> when {
-      this.consistent -> null
+      this.isConsistent -> null
       else -> InconsistentTransientOutput(this)
     }
     else -> null

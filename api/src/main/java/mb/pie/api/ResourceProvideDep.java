@@ -3,7 +3,7 @@ package mb.pie.api;
 import mb.pie.api.stamp.ResourceStamp;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Serializable;
+import java.io.*;
 
 /**
  * Resource 'provides' (writes) dependency.
@@ -20,27 +20,37 @@ public class ResourceProvideDep implements ResourceDep, Serializable {
 
 
     @Override public @Nullable InconsistentResourceProvide checkConsistency(ResourceSystems systems) {
-        final @Nullable ResourceSystem system = systems.getResourceSystem(key.getId());
+        final @Nullable ResourceSystem system = systems.getResourceSystem(key.id);
         if(system == null) {
             throw new RuntimeException(
-                "Cannot get resource system for resource key '" + key + "'; resource system with id '" + key.getId() + "' does not exist");
+                "Cannot get resource system for resource key '" + key + "'; resource system with id '" + key.id + "' does not exist");
         }
         final Resource resource = system.getResource(key);
-        final ResourceStamp<Resource> newStamp = stamp.getStamper().stamp(resource);
+        final ResourceStamp<Resource> newStamp;
+        try {
+            newStamp = stamp.getStamper().stamp(resource);
+        } catch(IOException e) {
+            throw new UncheckedIOException(e);
+        }
         if(stamp != newStamp) {
             return new InconsistentResourceProvide(this, newStamp);
         }
         return null;
     }
 
-    @Override public Boolean isConsistent(ResourceSystems systems) {
-        final @Nullable ResourceSystem system = systems.getResourceSystem(key.getId());
+    @Override public boolean isConsistent(ResourceSystems systems) {
+        final @Nullable ResourceSystem system = systems.getResourceSystem(key.id);
         if(system == null) {
             throw new RuntimeException(
-                "Cannot get resource system for resource key '" + key + "'; resource system with id '" + key.getId() + "' does not exist");
+                "Cannot get resource system for resource key '" + key + "'; resource system with id '" + key.id + "' does not exist");
         }
         final Resource resource = system.getResource(key);
-        final ResourceStamp<Resource> newStamp = stamp.getStamper().stamp(resource);
+        final ResourceStamp<Resource> newStamp;
+        try {
+            newStamp = stamp.getStamper().stamp(resource);
+        } catch(IOException e) {
+            throw new UncheckedIOException(e);
+        }
         return stamp == newStamp;
     }
 

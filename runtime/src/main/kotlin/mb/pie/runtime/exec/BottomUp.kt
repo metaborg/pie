@@ -6,6 +6,7 @@ import mb.pie.api.stamp.OutputStamper
 import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
+import java.util.function.Function
 
 class BottomUpExecutorImpl constructor(
   private val taskDefs: TaskDefs,
@@ -15,9 +16,9 @@ class BottomUpExecutorImpl constructor(
   private val defaultOutputStamper: OutputStamper,
   private val defaultRequireFileSystemStamper: FileSystemStamper,
   private val defaultProvideFileSystemStamper: FileSystemStamper,
-  private val layerFactory: (Logger) -> Layer,
+  private val layerFactory: Function<Logger, Layer>,
   private val logger: Logger,
-  private val executorLoggerFactory: (Logger) -> ExecutorLogger
+  private val executorLoggerFactory: Function<Logger, ExecutorLogger>
 ) : BottomUpExecutor {
   private val observers = ConcurrentHashMap<TaskKey, Consumer<Out>>()
 
@@ -43,7 +44,7 @@ class BottomUpExecutorImpl constructor(
     if(changedResources.isEmpty()) return
     val changedRate = changedResources.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
     if(changedRate > 0.5) {
-      val topdownSession = TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+      val topdownSession = TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger))
       for(key in observers.keys) {
         val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
         topdownSession.requireInitial(task, cancel)
@@ -74,7 +75,7 @@ class BottomUpExecutorImpl constructor(
 
   @Suppress("MemberVisibilityCanBePrivate")
   fun newSession(): BottomUpSession {
-    return BottomUpSession(taskDefs, resourceSystems, observers, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory(logger), logger, executorLoggerFactory(logger))
+    return BottomUpSession(taskDefs, resourceSystems, observers, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger))
   }
 }
 

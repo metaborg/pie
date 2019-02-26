@@ -1,11 +1,22 @@
 package mb.pie.runtime.share
 
 import mb.pie.api.*
+import java.util.function.Supplier
 
-class NonSharingShare : Share {
-  @Suppress("OVERRIDE_BY_INLINE")
-  override inline fun share(key: TaskKey, crossinline execFunc: () -> TaskData<*, *>, crossinline visitedFunc: () -> TaskData<*, *>?): TaskData<*, *> {
-    return visitedFunc() ?: execFunc()
+public class NonSharingShare : Share {
+  override fun share(key: TaskKey, execFunc: Supplier<TaskData<*, *>>, visitedFunc: Supplier<TaskData<*, *>>?): TaskData<*, *> {
+    val taskData: TaskData<*, *>?;
+    if(visitedFunc != null) {
+      taskData = visitedFunc.get();
+    } else {
+      taskData = null;
+    }
+
+    if(taskData != null) {
+      return taskData;
+    } else {
+      return execFunc.get();
+    }
   }
 
   override fun toString() = "NonSharingShare"
