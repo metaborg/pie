@@ -7,8 +7,8 @@ import java.io.Serializable;
  * resource system.
  */
 public class ResourceKey implements Serializable {
-    private final String id;
-    private final Serializable key;
+    public final String id;
+    public final Serializable key;
 
 
     public ResourceKey(String id, Serializable key) {

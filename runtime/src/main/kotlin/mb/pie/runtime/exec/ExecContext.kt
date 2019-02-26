@@ -4,8 +4,7 @@ import mb.fs.api.node.FSNode
 import mb.fs.api.path.FSPath
 import mb.pie.api.*
 import mb.pie.api.exec.Cancelled
-import mb.pie.api.fs.stamp.FileSystemStamper
-import mb.pie.api.fs.toNode
+import mb.pie.api.fs.*
 import mb.pie.api.stamp.*
 
 internal class ExecContextImpl(
@@ -15,9 +14,9 @@ internal class ExecContextImpl(
   private val resourceSystems: ResourceSystems,
   private val store: Store,
   private val defaultOutputStamper: OutputStamper,
-  override val defaultRequireFileSystemStamper: FileSystemStamper,
-  override val defaultProvideFileSystemStamper: FileSystemStamper,
-  override val logger: Logger
+  private val defaultRequireFileSystemStamper: FileSystemStamper,
+  private val defaultProvideFileSystemStamper: FileSystemStamper,
+  private val logger: Logger
 ) : ExecContext {
   private val taskRequires = arrayListOf<TaskRequireDep>()
   private val resourceRequires = arrayListOf<ResourceRequireDep>()
@@ -70,13 +69,13 @@ internal class ExecContextImpl(
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {
     @Suppress("UNCHECKED_CAST") val stamp = stamper.stamp(resource) as ResourceStamp<Resource>
-    resourceRequires.add(ResourceRequireDep(resource.key(), stamp))
+    resourceRequires.add(ResourceRequireDep(resource.getKey(), stamp))
     Stats.addFileReq()
   }
 
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {
     @Suppress("UNCHECKED_CAST") val stamp = stamper.stamp(resource) as ResourceStamp<Resource>
-    resourceProvides.add(ResourceProvideDep(resource.key(), stamp))
+    resourceProvides.add(ResourceProvideDep(resource.getKey(), stamp))
     Stats.addFileGen()
   }
 
@@ -88,7 +87,7 @@ internal class ExecContextImpl(
   override fun require(path: FSPath, stamper: FileSystemStamper): FSNode {
     val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
       ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
-    val node = path.toNode(resourceSystem)
+    val node = ResourceUtils.toNode(path, resourceSystem)
     require(node, stamper)
     return node
   }
@@ -100,7 +99,7 @@ internal class ExecContextImpl(
   override fun provide(path: FSPath, stamper: FileSystemStamper) {
     val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
       ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
-    val node = path.toNode(resourceSystem)
+    val node = ResourceUtils.toNode(path, resourceSystem)
     provide(node, stamper)
   }
 
@@ -108,8 +107,21 @@ internal class ExecContextImpl(
   override fun toNode(path: FSPath): FSNode {
     val resourceSystem = resourceSystems.getResourceSystem(path.fileSystemId)
       ?: throw RuntimeException("Cannot get resource system for path $path; resource system with id ${path.fileSystemId} does not exist")
-    val node = path.toNode(resourceSystem)
+    val node = ResourceUtils.toNode(path, resourceSystem)
     return node
+  }
+
+
+  override fun defaultRequireFileSystemStamper(): ResourceStamper<FileSystemResource> {
+    return defaultRequireFileSystemStamper
+  }
+
+  override fun defaultProvideFileSystemStamper(): ResourceStamper<FileSystemResource> {
+    return defaultProvideFileSystemStamper
+  }
+
+  override fun logger(): Logger {
+    return logger
   }
 
 

@@ -6,7 +6,7 @@ public class OutTransientImpl<T extends @Nullable Object> implements OutTransien
     private final @Nullable T value;
     private final boolean consistent;
 
-    public OutTransientImpl(T value, boolean consistent) {
+    public OutTransientImpl(@Nullable T value, boolean consistent) {
         this.value = value;
         this.consistent = consistent;
     }

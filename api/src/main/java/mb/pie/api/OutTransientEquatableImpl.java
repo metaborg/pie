@@ -9,7 +9,7 @@ public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Ser
     private final @Nullable E equatable;
     private final boolean consistent;
 
-    public OutTransientEquatableImpl(T value, E equatable, boolean consistent) {
+    public OutTransientEquatableImpl(@Nullable T value, @Nullable E equatable, boolean consistent) {
         this.value = value;
         this.equatable = equatable;
         this.consistent = consistent;

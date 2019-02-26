@@ -21,6 +21,11 @@ public final class TaskData<I extends Serializable, O extends @Nullable Serializ
     }
 
 
+    public <IC extends Serializable, OC extends @Nullable Serializable> TaskData<IC, OC> cast() {
+        return (TaskData<IC, OC>) this;
+    }
+
+
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
@@ -42,12 +47,12 @@ public final class TaskData<I extends Serializable, O extends @Nullable Serializ
     }
 
     @Override public String toString() {
-        return "TaskData{" +
+        return "TaskData(" +
             "input=" + input +
             ", output=" + output +
             ", taskRequires=" + taskRequires +
             ", resourceRequires=" + resourceRequires +
             ", resourceProvides=" + resourceProvides +
-            '}';
+            ')';
     }
 }

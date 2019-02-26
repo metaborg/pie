@@ -2,11 +2,10 @@ package mb.pie.runtime.exec
 
 import mb.pie.api.*
 import mb.pie.api.exec.*
-import mb.pie.api.fs.stamp.FileSystemStamper
 import mb.pie.api.stamp.OutputStamper
+import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
-
-typealias TaskObserver = (Out) -> Unit
+import java.util.function.Consumer
 
 class BottomUpExecutorImpl constructor(
   private val taskDefs: TaskDefs,
@@ -20,7 +19,7 @@ class BottomUpExecutorImpl constructor(
   private val logger: Logger,
   private val executorLoggerFactory: (Logger) -> ExecutorLogger
 ) : BottomUpExecutor {
-  private val observers = ConcurrentHashMap<TaskKey, TaskObserver>()
+  private val observers = ConcurrentHashMap<TaskKey, Consumer<Out>>()
 
 
   @Throws(ExecException::class)
@@ -60,7 +59,7 @@ class BottomUpExecutorImpl constructor(
     return store.readTxn().use { it.output(key) } != null
   }
 
-  override fun setObserver(key: TaskKey, observer: (Out) -> Unit) {
+  override fun setObserver(key: TaskKey, observer: Consumer<Out>) {
     observers[key] = observer
   }
 
@@ -82,7 +81,7 @@ class BottomUpExecutorImpl constructor(
 open class BottomUpSession(
   private val taskDefs: TaskDefs,
   private val resourceSystems: ResourceSystems,
-  private val observers: Map<TaskKey, TaskObserver>,
+  private val observers: Map<TaskKey, Consumer<Out>>,
   private val store: Store,
   share: Share,
   defaultOutputStamper: OutputStamper,
@@ -100,7 +99,7 @@ open class BottomUpSession(
     if(observer != null) {
       val output = data.output
       executorLogger.invokeObserverStart(observer, key, output)
-      observer.invoke(output)
+      observer.accept(output)
       executorLogger.invokeObserverEnd(observer, key, output)
     }
   }
@@ -253,7 +252,7 @@ open class BottomUpSession(
       val observer = observers[key]
       if(observer != null) {
         executorLogger.invokeObserverStart(observer, key, output)
-        observer.invoke(output)
+        observer.accept(output)
         executorLogger.invokeObserverEnd(observer, key, output)
       }
 
@@ -271,7 +270,7 @@ open class BottomUpSession(
       cancel.throwIfCancelled()
       val minTaskKey = queue.pollLeastTaskWithDepTo(key, store) ?: break
       val minTask = store.readTxn().use { txn -> minTaskKey.toTask(taskDefs, txn) }
-      logger.trace("- least element less than task: ${minTask.desc()}")
+      logger.trace("- least element less than task: ${minTask.desc(100)}")
       val data = execAndSchedule(minTaskKey, minTask, cancel)
       if(minTaskKey == key) {
         return data // Task was affected, and has been executed: return result

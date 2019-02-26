@@ -115,7 +115,7 @@ internal class TopDownTests {
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceRequire
       assertNotNull(reason)
-      assertEquals(fileNode.toResourceKey(), reason!!.dep.key)
+      assertEquals(toResourceKey(fileNode), reason!!.dep.key)
     }, anyC())
   }
 
@@ -152,7 +152,7 @@ internal class TopDownTests {
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceProvide
       assertNotNull(reason)
-      assertEquals(fileNode.toResourceKey(), reason!!.dep.key)
+      assertEquals(toResourceKey(fileNode), reason!!.dep.key)
     }, anyC())
 
     assertEquals("HELLO WORLD!", read(fileNode))
@@ -218,7 +218,7 @@ internal class TopDownTests {
       verify(session3, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(fileNode.toResourceKey(), reason!!.dep.key)
+        assertEquals(toResourceKey(fileNode), reason!!.dep.key)
       }, anyC())
       verify(session3, times(1)).exec(eq(combKey), eq(combTask), check {
         val reason = it as? InconsistentTaskReq
@@ -241,7 +241,7 @@ internal class TopDownTests {
       verify(session4, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(fileNode.toResourceKey(), reason!!.dep.key)
+        assertEquals(toResourceKey(fileNode), reason!!.dep.key)
       }, anyC())
     }
     verify(session4, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())

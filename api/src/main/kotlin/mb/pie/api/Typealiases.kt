@@ -1,5 +1,7 @@
 package mb.pie.api
 
+import mb.pie.api.fs.FileSystemResource
+import mb.pie.api.stamp.ResourceStamper
 import java.io.Serializable
 
 /**
@@ -36,3 +38,5 @@ typealias Key = Serializable
  * Failure to adhere to these properties will cause unsound incrementality.
  */
 typealias Out = Serializable?
+
+typealias FileSystemStamper = ResourceStamper<FileSystemResource>

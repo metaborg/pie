@@ -123,7 +123,7 @@ internal class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
     val session2 = spy(bottomUpSession())
-    session2.requireBottomUpInitial(setOf(fileNode.toResourceKey()))
+    session2.requireBottomUpInitial(setOf(toResourceKey(fileNode)))
     inOrder(session2) {
       verify(session2).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(session2).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -133,7 +133,7 @@ internal class BottomUpTests {
 
     // Notify of file change, but file hasn't actually changed, observe no execution.
     val session3 = spy(bottomUpSession())
-    session3.requireBottomUpInitial(setOf(fileNode.toResourceKey()))
+    session3.requireBottomUpInitial(setOf(toResourceKey(fileNode)))
     verify(session3, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
     verify(session3, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
     verify(session3, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
@@ -143,7 +143,7 @@ internal class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent.
     val exec4 = spy(bottomUpSession())
-    exec4.requireBottomUpInitial(setOf(fileNode.toResourceKey()))
+    exec4.requireBottomUpInitial(setOf(toResourceKey(fileNode)))
     inOrder(exec4) {
       verify(exec4).exec(eq(readKey), eq(readTask), anyER(), anyC())
     }

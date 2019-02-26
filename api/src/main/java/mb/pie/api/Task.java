@@ -45,7 +45,6 @@ public class Task<I extends Serializable, O extends @Nullable Serializable> {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final Task<?, ?> task = (Task<?, ?>) o;
-
         if(!taskDef.getId().equals(task.taskDef.getId())) return false; // Note: comparing TaskDef IDs.
         return input.equals(task.input);
     }

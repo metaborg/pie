@@ -23,9 +23,9 @@ class PieBuilderImpl : PieBuilder {
   private var resourceSystems: ResourceSystems? = null
   private var store: (Logger) -> Store = { InMemoryStore() }
   private var share: (Logger) -> Share = { NonSharingShare() }
-  private var defaultOutputStamper: OutputStamper = OutputStampers.equals
-  private var defaultRequireFileSystemStamper: FileSystemStamper = FileSystemStampers.modified
-  private var defaultProvideFileSystemStamper: FileSystemStamper = FileSystemStampers.modified
+  private var defaultOutputStamper: OutputStamper = OutputStampers.getEquals()
+  private var defaultRequireFileSystemStamper: FileSystemStamper = FileSystemStampers.getModified()
+  private var defaultProvideFileSystemStamper: FileSystemStamper = FileSystemStampers.getModified()
   private var layerFactory: ((Logger) -> Layer) = { logger -> ValidationLayer(logger) }
   private var logger: Logger = NoopLogger()
   private var executorLoggerFactory: (Logger) -> ExecutorLogger = { logger -> LoggerExecutorLogger(logger) }

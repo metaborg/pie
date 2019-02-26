@@ -5,6 +5,7 @@ import mb.fs.api.path.FSPath;
 import mb.fs.java.JavaFSNode;
 import mb.fs.java.JavaFSPath;
 import mb.pie.api.fs.FileSystemResource;
+import mb.pie.api.fs.ResourceUtils;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -117,7 +118,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(FSNode node) {
-        return require(node.toResource(), defaultRequireFileSystemStamper());
+        require(ResourceUtils.toResource(node), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -125,7 +126,7 @@ public interface ExecContext {
      * dependency.
      */
     default void require(FSNode node, ResourceStamper<FileSystemResource> stamper) {
-        return require(node.toResource(), stamper);
+        require(ResourceUtils.toResource(node), stamper);
     }
 
     /**
@@ -155,7 +156,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(JavaFSNode node) {
-        return require(node.toResource(), defaultRequireFileSystemStamper());
+        require(ResourceUtils.toResource(node), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -163,7 +164,7 @@ public interface ExecContext {
      * resource dependency.
      */
     default void require(JavaFSNode node, ResourceStamper<FileSystemResource> stamper) {
-        return require(node.toResource(), stamper);
+        require(ResourceUtils.toResource(node), stamper);
     }
 
     /**
@@ -171,7 +172,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(Path path) {
-        return require(path.toResource(), defaultRequireFileSystemStamper());
+        require(ResourceUtils.toResource(path), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -179,7 +180,7 @@ public interface ExecContext {
      * required resource dependency.
      */
     default void require(Path path, ResourceStamper<FileSystemResource> stamper) {
-        return require(path.toResource(), stamper);
+        require(ResourceUtils.toResource(path), stamper);
     }
 
     /**
@@ -187,7 +188,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(File file) {
-        return require(file.toResource(), defaultRequireFileSystemStamper());
+        require(ResourceUtils.toResource(file), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -195,7 +196,7 @@ public interface ExecContext {
      * resource dependency.
      */
     default void require(File file, ResourceStamper<FileSystemResource> stamper) {
-        return require(file.toResource(), stamper);
+        require(ResourceUtils.toResource(file), stamper);
     }
 
     /**
@@ -229,7 +230,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(FSNode node) {
-        return provide(node.toResource(), defaultProvideFileSystemStamper());
+        provide(ResourceUtils.toResource(node), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -238,7 +239,7 @@ public interface ExecContext {
      * writing to the file or directory.
      */
     default void provide(FSNode node, ResourceStamper<FileSystemResource> stamper) {
-        return provide(node.toResource(), stamper);
+        provide(ResourceUtils.toResource(node), stamper);
     }
 
     /**
@@ -247,7 +248,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSPath path) {
-        return provide(path.toResource(), defaultProvideFileSystemStamper());
+        provide(ResourceUtils.toResource(path), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -256,7 +257,7 @@ public interface ExecContext {
      * [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSPath path, ResourceStamper<FileSystemResource> stamper) {
-        return provide(path.toResource(), stamper);
+        provide(ResourceUtils.toResource(path), stamper);
     }
 
     /**
@@ -265,7 +266,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSNode node) {
-        return provide(node.toResource(), defaultProvideFileSystemStamper());
+        provide(ResourceUtils.toResource(node), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -274,7 +275,7 @@ public interface ExecContext {
      * [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSNode node, ResourceStamper<FileSystemResource> stamper) {
-        return provide(node.toResource(), stamper);
+        provide(ResourceUtils.toResource(node), stamper);
     }
 
     /**
@@ -283,7 +284,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(Path path) {
-        return provide(path.toResource(), defaultProvideFileSystemStamper());
+        provide(ResourceUtils.toResource(path), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -292,7 +293,7 @@ public interface ExecContext {
      * change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(Path path, ResourceStamper<FileSystemResource> stamper) {
-        return provide(path.toResource(), stamper);
+        provide(ResourceUtils.toResource(path), stamper);
     }
 
     /**
@@ -301,7 +302,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(File file) {
-        return provide(file.toResource(), defaultProvideFileSystemStamper());
+        provide(ResourceUtils.toResource(file), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -310,7 +311,7 @@ public interface ExecContext {
      * call [provide] AFTER writing to the file or directory.
      */
     default void provide(File file, ResourceStamper<FileSystemResource> stamper) {
-        return provide(file.toResource(), stamper);
+        provide(ResourceUtils.toResource(file), stamper);
     }
 
     /**

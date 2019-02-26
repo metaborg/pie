@@ -5,6 +5,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Logger interface for task executors.
@@ -46,7 +47,7 @@ public interface ExecutorLogger {
 
     void executeEnd(TaskKey key, Task<?, ?> task, ExecReason reason, TaskData<?, ?> data);
 
-    void invokeObserverStart(Runnable observer, TaskKey key, @Nullable Serializable output);
+    void invokeObserverStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 
-    void invokeObserverEnd(Runnable observer, TaskKey key, @Nullable Serializable output);
+    void invokeObserverEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 }
