@@ -60,8 +60,10 @@ internal class DbiShared(
       if(isWriteTxn) {
         db.delete(txn, keyHashedBuf)
       } else {
-        env.txnWrite().use {
-          db.delete(it, keyHashedBuf)
+        env.txnWrite().use { txn ->
+          // TODO: just deleting data that cannot be deserialized is unsound; it could silently delete dependencies which are then never recreated!
+          db.delete(txn, keyHashedBuf)
+          txn.commit()
         }
       }
     }

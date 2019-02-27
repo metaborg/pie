@@ -19,7 +19,8 @@ public class JavaFileSystem implements FileSystem, Serializable {
 
     @Override public JavaFSNode getNode(FSPath path) {
         if(!(path instanceof JavaFSPath)) {
-            throw new InvalidFSPathRuntimeException("Cannot get file system node for path " + path + ", it is not a Java file system path");
+            throw new InvalidFSPathRuntimeException(
+                "Cannot get file system node for path " + path + ", it is not a Java file system path");
         }
         final JavaFSPath javaFsPath = (JavaFSPath) path;
         return new JavaFSNode(javaFsPath);

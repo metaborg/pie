@@ -1,12 +1,11 @@
 package mb.fs.api.node.match;
 
 import mb.fs.api.node.FSNode;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 
 public class DirectoryNodeMatcher implements FSNodeMatcher {
-    private static final long serialVersionUID = 1L;
-
     public static final DirectoryNodeMatcher instance = new DirectoryNodeMatcher();
 
 
@@ -15,7 +14,7 @@ public class DirectoryNodeMatcher implements FSNodeMatcher {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         return this == o || (o != null && getClass() == o.getClass());
     }
 
@@ -24,6 +23,6 @@ public class DirectoryNodeMatcher implements FSNodeMatcher {
     }
 
     @Override public String toString() {
-        return "DirectoryNodeMatcher";
+        return "DirectoryNodeMatcher()";
     }
 }

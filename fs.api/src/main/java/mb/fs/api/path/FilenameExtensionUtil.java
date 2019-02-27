@@ -1,6 +1,7 @@
 package mb.fs.api.path;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.function.Function;
 
 public class FilenameExtensionUtil {

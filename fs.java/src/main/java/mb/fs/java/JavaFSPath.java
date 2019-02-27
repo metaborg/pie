@@ -1,8 +1,8 @@
 package mb.fs.java;
 
 import mb.fs.api.path.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
@@ -13,8 +13,6 @@ import java.util.function.Function;
  * {@link FSPath} implementation for {@link java.nio.file.Path}s.
  */
 public class JavaFSPath implements FSPath {
-    private static final long serialVersionUID = 1L;
-
     final URI uri; // URI version of the path which can be serialized and deserialized.
     transient Path javaPath; // Transient and non-final for deserialization in readObject. Invariant: always nonnull.
 
@@ -96,7 +94,7 @@ public class JavaFSPath implements FSPath {
      */
     public JavaFSPath toAbsoluteFromWorkingDirectory() {
         if(javaPath.isAbsolute()) {
-           return this;
+            return this;
         } else {
             return workingDirectory().appendRelativePath(this);
         }
@@ -197,14 +195,16 @@ public class JavaFSPath implements FSPath {
 
     @Override public JavaFSPath appendRelativePath(FSPath relativePath) {
         if(!(relativePath instanceof JavaFSPath)) {
-            throw new InvalidFSPathRuntimeException("Cannot append relative path " + relativePath + ", it is not a Java file system path");
+            throw new InvalidFSPathRuntimeException(
+                "Cannot append relative path " + relativePath + ", it is not a Java file system path");
         }
         return appendRelativePath((JavaFSPath) relativePath);
     }
 
     public JavaFSPath appendRelativePath(JavaFSPath relativePath) {
         if(relativePath.isAbsolute()) {
-            throw new InvalidFSPathRuntimeException("Cannot append relative path " + relativePath + ", it is not a relative path");
+            throw new InvalidFSPathRuntimeException(
+                "Cannot append relative path " + relativePath + ", it is not a relative path");
         }
         final Path javaPath = this.javaPath.resolve(relativePath.javaPath);
         return new JavaFSPath(javaPath);
@@ -333,7 +333,8 @@ public class JavaFSPath implements FSPath {
 
     @Override public int compareTo(FSPath other) {
         if(!(other instanceof JavaFSPath)) {
-            throw new InvalidFSPathRuntimeException("Cannot compare to path " + other + ", it is not a Java file system path");
+            throw new InvalidFSPathRuntimeException(
+                "Cannot compare to path " + other + ", it is not a Java file system path");
         }
         return compareTo((JavaFSPath) other);
     }

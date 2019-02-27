@@ -1,5 +1,7 @@
 package mb.fs.api.path.match;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -32,9 +34,7 @@ public final class AntPattern implements Serializable {
         return matchPath(tokenizedPattern, tokenizePathAsArray(path), this.isCaseSensitive);
     }
 
-    /***********************************************************
-     * Code below adapted from Apache Ant's SelectorUtils.java *
-     ***********************************************************/
+    /* Code below adapted from Apache Ant's SelectorUtils.java. */
 
     /**
      * The pattern that matches an arbitrary number of directories.
@@ -305,7 +305,7 @@ public final class AntPattern implements Serializable {
      * @return an array of path elements from the tokenized path
      */
     private static String[] tokenizePathAsArray(String path) {
-        String root = null;
+        @Nullable String root = null;
         if(isAbsolutePath(path)) {
             String[] s = dissect(path);
             root = s[0];
@@ -351,9 +351,7 @@ public final class AntPattern implements Serializable {
         return l;
     }
 
-    /*******************************************************
-     * Code below adapted from Apache Ant's FileUtils.java *
-     *******************************************************/
+    /* Code below adapted from Apache Ant's FileUtils.java */
 
     /**
      * Verifies that the specified filename represents an absolute path. Differs from new
@@ -365,14 +363,13 @@ public final class AntPattern implements Serializable {
      * @throws java.lang.NullPointerException if filename is null.
      * @since Ant 1.6.3
      */
-    public static boolean isAbsolutePath(String filename) {
+    private static boolean isAbsolutePath(String filename) {
         int len = filename.length();
         if(len == 0) {
             return false;
         }
-        char sep = SEPARATOR_CHAR;
         char c = filename.charAt(0);
-        return (c == sep);
+        return (c == SEPARATOR_CHAR);
     }
 
     /**
@@ -383,12 +380,12 @@ public final class AntPattern implements Serializable {
      * @throws java.lang.NullPointerException if path is null.
      * @since Ant 1.7
      */
-    public static String[] dissect(String path) {
+    private static String[] dissect(String path) {
         // make sure we are dealing with an absolute path
         if(!isAbsolutePath(path)) {
             throw new RuntimeException(path + " is not an absolute path");
         }
-        String root = null;
+        @Nullable String root = null;
         root = SEPARATOR;
         path = path.substring(1);
         return new String[]{root, path};
@@ -413,8 +410,6 @@ public final class AntPattern implements Serializable {
         final AntPattern other = (AntPattern) obj;
         if(isCaseSensitive != other.isCaseSensitive)
             return false;
-        if(!Arrays.equals(tokenizedPattern, other.tokenizedPattern))
-            return false;
-        return true;
+        return Arrays.equals(tokenizedPattern, other.tokenizedPattern);
     }
 }

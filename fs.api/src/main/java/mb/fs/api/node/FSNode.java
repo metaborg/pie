@@ -4,8 +4,8 @@ import mb.fs.api.FileSystem;
 import mb.fs.api.node.match.FSNodeMatcher;
 import mb.fs.api.node.walk.FSNodeWalker;
 import mb.fs.api.path.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.time.Instant;
@@ -166,7 +166,7 @@ public interface FSNode {
     }
 
 
-    @Override boolean equals(Object other);
+    @Override boolean equals(@Nullable Object other);
 
     @Override int hashCode();
 

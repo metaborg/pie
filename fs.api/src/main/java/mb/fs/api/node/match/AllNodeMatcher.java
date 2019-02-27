@@ -1,10 +1,9 @@
 package mb.fs.api.node.match;
 
 import mb.fs.api.node.FSNode;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class AllNodeMatcher implements FSNodeMatcher {
-    private static final long serialVersionUID = 1L;
-
     public static final AllNodeMatcher instance = new AllNodeMatcher();
 
 
@@ -13,7 +12,7 @@ public class AllNodeMatcher implements FSNodeMatcher {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         return this == o || (o != null && getClass() == o.getClass());
     }
 
@@ -22,6 +21,6 @@ public class AllNodeMatcher implements FSNodeMatcher {
     }
 
     @Override public String toString() {
-        return "AllNodeMatcher";
+        return "AllNodeMatcher()";
     }
 }

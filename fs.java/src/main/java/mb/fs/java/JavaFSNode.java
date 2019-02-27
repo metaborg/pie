@@ -4,8 +4,8 @@ import mb.fs.api.node.*;
 import mb.fs.api.node.match.FSNodeMatcher;
 import mb.fs.api.node.walk.FSNodeWalker;
 import mb.fs.api.path.FSPath;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -17,8 +17,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class JavaFSNode implements FSNode, Serializable {
-    private static final long serialVersionUID = 1L;
-
     final JavaFSPath path;
 
 
@@ -258,14 +256,16 @@ public class JavaFSNode implements FSNode, Serializable {
 
     @Override public void copyTo(FSNode other) throws IOException {
         if(!(other instanceof JavaFSNode)) {
-            throw new RuntimeException("Cannot copy from " + this + " to target " + other + ", target is not a Java file system node");
+            throw new RuntimeException(
+                "Cannot copy from " + this + " to target " + other + ", target is not a Java file system node");
         }
         Files.copy(path.javaPath, ((JavaFSNode) other).path.javaPath);
     }
 
     @Override public void moveTo(FSNode other) throws IOException {
         if(!(other instanceof JavaFSNode)) {
-            throw new RuntimeException("Cannot move from " + this + " to target " + other + ", target is not a Java file system node");
+            throw new RuntimeException(
+                "Cannot move from " + this + " to target " + other + ", target is not a Java file system node");
         }
         Files.move(path.javaPath, ((JavaFSNode) other).path.javaPath);
     }

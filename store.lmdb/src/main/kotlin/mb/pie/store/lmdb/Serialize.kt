@@ -9,12 +9,14 @@ import java.util.*
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T : Serializable?> T.serialize(): ByteArray {
-  ByteArrayOutputStream().use {
-    ObjectOutputStream(it).use {
-      it.writeObject(this)
+  ByteArrayOutputStream().use { outputStream ->
+    ObjectOutputStream(outputStream).use { objectOutputStream ->
+      objectOutputStream.writeObject(this)
+      objectOutputStream.flush()
     }
+    outputStream.flush()
     // OPTO: copies bytes, not efficient
-    return it.toByteArray()
+    return outputStream.toByteArray()
   }
 }
 
@@ -53,11 +55,11 @@ data class SerializedAndHashed(val serialized: ByteArray, val hashed: ByteArray)
 
 
 fun <T : Serializable?> Buf.deserialize(logger: Logger): Deserialized<T> {
-  ByteBufferBackedInputStream(this).use {
-    ObjectInputStream(it).use {
+  ByteBufferBackedInputStream(this).use { bufferInputStream ->
+    ObjectInputStream(bufferInputStream).use { objectInputStream ->
       return try {
         @Suppress("UNCHECKED_CAST")
-        val deserialized = it.readObject() as T
+        val deserialized = objectInputStream.readObject() as T
         Deserialized(deserialized)
       } catch(e: ClassNotFoundException) {
         logger.error("Deserialization failed", e)
