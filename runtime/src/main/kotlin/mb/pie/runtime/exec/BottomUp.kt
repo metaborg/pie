@@ -201,7 +201,8 @@ open class BottomUpSession(
       val data = getData(key, task, cancel)
       val output = data.output
       executorLogger.requireTopDownEnd(key, task, output)
-      return output
+      @Suppress("UNCHECKED_CAST")
+      return output as O
     } finally {
       layer.requireTopDownEnd(key)
     }
@@ -232,8 +233,9 @@ open class BottomUpSession(
     } else {
       // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
       // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
-      val existingData = storedData.cast<I, O>()
-      val (input, output, _, _, _) = existingData
+      val existingData = storedData.cast<I, O>();
+      val input = existingData.input;
+      val output = existingData.output;
 
       // Internal consistency: input changes.
       with(requireShared.checkInput(input, task)) {

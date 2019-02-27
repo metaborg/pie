@@ -26,22 +26,22 @@ class ValidationLayer constructor(
   private val stack = mutableSetOf<TaskKey>()
 
 
-  override fun requireTopDownStart(key: TaskKey, input: In) {
-    if(stack.contains(key)) {
+  override fun requireTopDownStart(currentTask: TaskKey, input: In) {
+    if(stack.contains(currentTask)) {
       error("""Cyclic dependency. Cause:
         |requirement of task
-        |  $key
+        |  $currentTask
         |from requirements
         |  ${stack.joinToString(" -> ")}
         |""".trimMargin())
     }
-    stack.add(key)
+    stack.add(currentTask)
 
     if(options.keyObject) {
-      validateKey(key)
+      validateKey(currentTask)
     }
     if(options.inputObject) {
-      validateInput(input, key)
+      validateInput(input, currentTask)
     }
   }
 
@@ -49,17 +49,17 @@ class ValidationLayer constructor(
     stack.remove(key)
   }
 
-  override fun <I : In, O : Out> validatePreWrite(key: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn) {
+  override fun <I : In, O : Out> validatePreWrite(currentTask: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn) {
     for(provideDep in data.resourceProvides) {
-      val path = provideDep.key
-      val provider = txn.providerOf(path)
-      if(provider != null && provider != key) {
-        // Overlapping provider tasks for resource `path`.
+      val resource = provideDep.key
+      val provider = txn.providerOf(resource)
+      if(provider != null && provider != currentTask) {
+        // Overlapping provider tasks for resource.
         error("""Overlapping provider tasks for resource. Cause:
           |resource
-          |  $path
+          |  $resource
           |was provided by task
-          |  $key
+          |  $currentTask
           |and task
           |  $provider
           |""".trimMargin())
@@ -67,24 +67,24 @@ class ValidationLayer constructor(
     }
   }
 
-  override fun <I : In, O : Out> validatePostWrite(key: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn) {
+  override fun <I : In, O : Out> validatePostWrite(currentTask: TaskKey, data: TaskData<I, O>, txn: StoreReadTxn) {
     for(requireDep in data.resourceRequires) {
-      val path = requireDep.key
-      val provider = txn.providerOf(path)
+      val resource = requireDep.key
+      val provider = txn.providerOf(resource)
       when {
         provider == null -> {
-          // No generator for `file`.
+          // No provider for resource.
         }
-        key == provider -> {
-          // Required `file` provided by itself (`key`).
+        currentTask == provider -> {
+          // Required resource provided by current task.
         }
-        !txn.hasTransitiveTaskReq(key, provider) -> {
-          // Resource `path` is required by task `key`, and resource `path` is provided by task `provider`, thus task `key` must (transitively) require task `provider`.
+        !txn.hasTransitiveTaskReq(currentTask, provider) -> {
+          // Resource is required by current task, and resource is provided by task `provider`, thus the current task must (transitively) require task `provider`.
           error("""Hidden dependency. Cause:
             |task
-            |  $key
+            |  $currentTask
             |requires resource
-            |  $path
+            |  $resource
             |provided by task
             |  $provider
             |without a (transitive) task requirement on it
@@ -94,22 +94,22 @@ class ValidationLayer constructor(
     }
 
     for(provideDep in data.resourceProvides) {
-      val path = provideDep.key
-      val requiredByApps = txn.requireesOf(path)
-      for(requiredBy in requiredByApps) {
-        // Resource 'path' is provided by task 'key', and resource is required by task 'requiredBy', thus task 'requiredBy' must (transitively) require task 'key'.
+      val resource = provideDep.key
+      val requirees = txn.requireesOf(resource)
+      for(requiree in requirees) {
+        // Resource is provided by current task, and resource is required by task 'requiree', thus task 'requiree' must (transitively) require the current task.
         when {
-          key == requiredBy -> {
-            // Required `file` provided by itself (`task`).
+          currentTask == requiree -> {
+            // Required resource provided by itself current task.
           }
-          !txn.hasTransitiveTaskReq(requiredBy, key) -> {
+          !txn.hasTransitiveTaskReq(requiree, currentTask) -> {
             error("""Hidden dependency. Cause:
               |resource
-              |  $path
+              |  $resource
               |was provided by task
-              |  $key
+              |  $currentTask
               |after being previously required by task
-              |  $requiredBy
+              |  $requiree
               |""".trimMargin())
           }
         }
@@ -117,7 +117,7 @@ class ValidationLayer constructor(
     }
 
     if(options.outputObject) {
-      validateOutput(data.output, key)
+      validateOutput(data.output, currentTask)
     }
   }
 

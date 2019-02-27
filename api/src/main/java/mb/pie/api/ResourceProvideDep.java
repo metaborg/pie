@@ -32,7 +32,7 @@ public class ResourceProvideDep implements ResourceDep, Serializable {
         } catch(IOException e) {
             throw new UncheckedIOException(e);
         }
-        if(stamp != newStamp) {
+        if(!stamp.equals(newStamp)) {
             return new InconsistentResourceProvide(this, newStamp);
         }
         return null;
@@ -51,7 +51,7 @@ public class ResourceProvideDep implements ResourceDep, Serializable {
         } catch(IOException e) {
             throw new UncheckedIOException(e);
         }
-        return stamp == newStamp;
+        return stamp.equals(newStamp);
     }
 
 

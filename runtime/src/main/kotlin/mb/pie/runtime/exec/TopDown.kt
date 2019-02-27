@@ -70,7 +70,8 @@ open class TopDownSessionImpl(
         visited[key] = data
       }
       executorLogger.requireTopDownEnd(key, task, output)
-      return output
+      @Suppress("UNCHECKED_CAST")
+      return output as O
     } finally {
       layer.requireTopDownEnd(key)
     }
@@ -97,8 +98,12 @@ open class TopDownSessionImpl(
     }
 
     // Check consistency of task.
-    val existingData = storedData.cast<I, O>()
-    val (input, output, taskRequires, resourceRequires, resourceProvides) = existingData
+    val existingData = storedData.cast<I, O>();
+    val input = existingData.input;
+    val output = existingData.output;
+    val taskRequires = existingData.taskRequires;
+    val resourceRequires = existingData.resourceRequires;
+    val resourceProvides = existingData.resourceProvides;
 
     // Internal consistency: input changes.
     with(requireShared.checkInput(input, task)) {

@@ -9,7 +9,7 @@ import java.io.IOException;
 
 public class ExistsResourceStamper implements ResourceStamper<FileSystemResource> {
     @Override public ResourceStamp<FileSystemResource> stamp(FileSystemResource resource) throws IOException {
-        return new ValueResourceStamp(resource.node.exists(), this);
+        return new ValueResourceStamp<>(resource.node.exists(), this);
     }
 
 

@@ -3,6 +3,7 @@ package mb.pie.api.fs.stamp;
 import mb.pie.api.fs.FileSystemResource;
 import mb.pie.api.stamp.ResourceStamp;
 import mb.pie.api.stamp.ResourceStamper;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 
@@ -22,7 +23,7 @@ public class ByteArrayResourceStamp implements ResourceStamp<FileSystemResource>
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final ByteArrayResourceStamp that = (ByteArrayResourceStamp) o;

@@ -31,7 +31,7 @@ public class ModifiedResourceStamper implements ModifiedResourceStamperTrait {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final ModifiedResourceStamper that = (ModifiedResourceStamper) o;
@@ -43,6 +43,6 @@ public class ModifiedResourceStamper implements ModifiedResourceStamperTrait {
     }
 
     @Override public String toString() {
-        return "ModifiedStamper(" + matcher + ")";
+        return "ModifiedResourceStamper(" + matcher + ")";
     }
 }

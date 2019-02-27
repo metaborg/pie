@@ -1,6 +1,7 @@
 package mb.pie.example.helloworld.java;
 
 import mb.pie.api.*;
+import mb.pie.api.fs.stamp.FileSystemStampers;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 import mb.pie.runtime.taskdefs.MutableMapTaskDefs;

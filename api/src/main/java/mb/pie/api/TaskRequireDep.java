@@ -24,7 +24,7 @@ public class TaskRequireDep implements Serializable {
      */
     public @Nullable InconsistentTaskReq checkConsistency(Serializable output) {
         final OutputStamp newStamp = stamp.getStamper().stamp(output);
-        if(stamp != newStamp) {
+        if(!stamp.equals(newStamp)) {
             return new InconsistentTaskReq(this, newStamp);
         }
         return null;
@@ -35,14 +35,14 @@ public class TaskRequireDep implements Serializable {
      */
     public Boolean isConsistent(Serializable output) {
         final OutputStamp newStamp = stamp.getStamper().stamp(output);
-        return newStamp == stamp;
+        return stamp.equals(newStamp);
     }
 
     /**
      * @return `true` when this call requirement's callee is equal to [other], `false` otherwise.
      */
     public Boolean calleeEqual(TaskKey other) {
-        return other == callee;
+        return other.equals(callee);
     }
 
 

@@ -1,6 +1,7 @@
 package mb.pie.api;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.Serializable;
 
 public class None implements Serializable {
@@ -9,7 +10,7 @@ public class None implements Serializable {
     private None() {}
 
     public boolean equals(@Nullable Object other) {
-        return this == other;
+        return this == other || other != null && this.getClass() == other.getClass();
     }
 
     public int hashCode() {
