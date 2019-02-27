@@ -6,24 +6,32 @@ import java.io.Serializable
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
-class LoggerExecutorLogger @JvmOverloads constructor(
-  private val logger: Logger,
-  private val descLimit: Int = 200
-) : ExecutorLogger {
-  private var indentation = AtomicInteger(0)
-  private val indent get() = " ".repeat(indentation.get())
+public class LoggerExecutorLogger : ExecutorLogger {
+  private val logger: Logger;
+  private val descLimit: Int;
+  private var indentation: AtomicInteger = AtomicInteger(0);
+
+  constructor(logger: Logger, descLimit: Int = 200) {
+    this.logger = logger;
+    this.descLimit = descLimit;
+  }
+
+
+  private fun getIndent(): String {
+    return " ".repeat(indentation.get());
+  }
 
   override fun requireTopDownInitialStart(key: TaskKey, task: Task<*, *>) {}
   override fun requireTopDownInitialEnd(key: TaskKey, task: Task<*, *>, output: Out) {}
 
   override fun requireTopDownStart(key: TaskKey, task: Task<*, *>) {
-    logger.trace("${indent}v ${task.desc(descLimit)}")
-    indentation.incrementAndGet()
+    logger.trace(getIndent() + "v " + task.desc(descLimit));
+    indentation.incrementAndGet();
   }
 
   override fun requireTopDownEnd(key: TaskKey, task: Task<*, *>, output: Out) {
-    indentation.decrementAndGet()
-    logger.trace("$indent✔ ${task.desc(descLimit)} -> ${StringUtil.toShortString(output.toString(), descLimit)}")
+    indentation.decrementAndGet();
+    logger.trace(getIndent() + "✔ " + task.desc(descLimit) + " -> " + StringUtil.toShortString(output.toString(), descLimit));
   }
 
 
@@ -41,12 +49,12 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   override fun checkResourceProvideEnd(key: TaskKey, task: Task<*, *>, dep: ResourceProvideDep, reason: ExecReason?) {
     if(reason != null) {
       if(reason is InconsistentResourceProvide) {
-        logger.trace("$indent␦ ${dep.key} (inconsistent: ${dep.stamp} vs ${reason.newStamp})")
+        logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent: " + dep.stamp + " vs " + reason.newStamp + ")");
       } else {
-        logger.trace("$indent␦ ${dep.key} (inconsistent)")
+        logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent)");
       }
     } else {
-      logger.trace("$indent␦ ${dep.key} (consistent: ${dep.stamp})")
+      logger.trace(getIndent() + "␦ " + dep.key + " (consistent: " + dep.stamp + ")");
     }
   }
 
@@ -54,37 +62,36 @@ class LoggerExecutorLogger @JvmOverloads constructor(
   override fun checkResourceRequireEnd(key: TaskKey, task: Task<*, *>, dep: ResourceRequireDep, reason: ExecReason?) {
     if(reason != null) {
       if(reason is InconsistentResourceProvide) {
-        logger.trace("$indent␦ ${dep.key} (inconsistent: ${dep.stamp} vs ${reason.newStamp})")
+        logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent: " + dep.stamp + " vs " + reason.newStamp + ")");
       } else {
-        logger.trace("$indent␦ ${dep.key} (inconsistent)")
+        logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent)");
       }
     } else {
-      logger.trace("$indent␦ ${dep.key} (consistent: ${dep.stamp})")
+      logger.trace(getIndent() + "␦ " + dep.key + " (consistent: " + dep.stamp + ")");
     }
   }
 
   override fun checkTaskRequireStart(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep) {}
   override fun checkTaskRequireEnd(key: TaskKey, task: Task<*, *>, dep: TaskRequireDep, reason: ExecReason?) {
-    when(reason) {
-      is InconsistentTaskReq ->
-        logger.trace("$indent␦ ${dep.callee.toShortString(descLimit)} (inconsistent: ${dep.stamp} vs ${reason.newStamp})")
-      null ->
-        logger.trace("$indent␦ ${dep.callee.toShortString(descLimit)} (consistent: ${dep.stamp})")
+    if(reason is InconsistentTaskReq) {
+      logger.trace(getIndent() + "␦ " + dep.callee.toShortString(descLimit) + " (inconsistent: " + dep.stamp + " vs " + reason.newStamp + ")");
+    } else if(reason == null) {
+      logger.trace(getIndent() + "␦ " + dep.callee.toShortString(descLimit) + " (consistent: " + dep.stamp + ")");
     }
   }
 
 
   override fun executeStart(key: TaskKey, task: Task<*, *>, reason: ExecReason) {
-    logger.info("$indent> ${task.desc(descLimit)} (reason: $reason)")
+    logger.info(getIndent() + "> " + task.desc(descLimit) + " (reason: " + reason + ")");
   }
 
   override fun executeEnd(key: TaskKey, task: Task<*, *>, reason: ExecReason, data: TaskData<*, *>) {
-    logger.info("$indent< ${StringUtil.toShortString(data.output.toString(), descLimit)}")
+    logger.info(getIndent() + "< " + StringUtil.toShortString(data.output.toString(), descLimit));
   }
 
 
   override fun invokeObserverStart(observer: Consumer<Serializable?>, key: TaskKey, output: Out) {
-    logger.trace("$indent@ ${StringUtil.toShortString(observer.toString(), descLimit)}(${StringUtil.toShortString(output.toString(), descLimit)})")
+    logger.trace(getIndent() + "@ " + StringUtil.toShortString(observer.toString(), descLimit) + "(" + StringUtil.toShortString(output.toString(), descLimit) + ")");
   }
 
   override fun invokeObserverEnd(observer: Consumer<Serializable?>, key: TaskKey, output: Out) {}

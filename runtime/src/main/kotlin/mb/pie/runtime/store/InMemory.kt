@@ -118,7 +118,7 @@ public class InMemoryStore : Store, StoreReadTxn, StoreWriteTxn {
   }
 
   override fun providerOf(key: ResourceKey): TaskKey? {
-    return generatorOf[key];
+    return generatorOf.get(key);
   }
 
   override fun setResourceProvides(key: TaskKey, resourceProvides: ArrayList<ResourceProvideDep>) {

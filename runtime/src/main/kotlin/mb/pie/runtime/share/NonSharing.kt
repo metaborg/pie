@@ -19,5 +19,7 @@ public class NonSharingShare : Share {
     }
   }
 
-  override fun toString() = "NonSharingShare"
+  override fun toString(): String {
+    return "NonSharingShare()";
+  }
 }

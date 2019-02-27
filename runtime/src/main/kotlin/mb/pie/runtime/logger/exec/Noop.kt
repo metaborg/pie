@@ -5,7 +5,7 @@ import mb.pie.api.exec.ExecReason
 import java.io.Serializable
 import java.util.function.Consumer
 
-class NoopExecutorLogger : ExecutorLogger {
+public class NoopExecutorLogger : ExecutorLogger {
   override fun requireTopDownInitialStart(key: TaskKey, task: Task<*, *>) {}
   override fun requireTopDownInitialEnd(key: TaskKey, task: Task<*, *>, output: Out) {}
   override fun requireTopDownStart(key: TaskKey, task: Task<*, *>) {}

@@ -6,8 +6,14 @@ import mb.pie.api.ResourceSystems
 /**
  * Resource systems from an immutable map.
  */
-open class MapResourceSystems(private val resourceSystems: Map<String, ResourceSystem>) : ResourceSystems {
+public open class MapResourceSystems : ResourceSystems {
+  private val resourceSystems: Map<String, ResourceSystem>;
+
+  constructor(resourceSystems: Map<String, ResourceSystem>) {
+    this.resourceSystems = resourceSystems;
+  }
+
   override fun getResourceSystem(id: String): ResourceSystem? {
-    return resourceSystems[id]
+    return resourceSystems.get(id);
   }
 }

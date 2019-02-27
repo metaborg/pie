@@ -2,7 +2,7 @@ package mb.pie.runtime.logger
 
 import mb.pie.api.Logger
 
-class NoopLogger : Logger {
+public class NoopLogger : Logger {
   override fun error(message: String, throwable: Throwable?) {}
   override fun warn(message: String, throwable: Throwable?) {}
   override fun info(message: String) {}

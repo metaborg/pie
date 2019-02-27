@@ -5,7 +5,7 @@ import mb.pie.runtime.exec.hasTransitiveTaskReq
 import java.io.*
 import java.util.*
 
-class ValidationLayer constructor(
+public class ValidationLayer constructor(
   private val logger: Logger
 ) : Layer {
   data class Options(
