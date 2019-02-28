@@ -4,135 +4,182 @@ import mb.pie.api.*
 import mb.pie.api.exec.*
 import mb.pie.api.stamp.OutputStamper
 import java.io.Serializable
+import java.util.HashSet
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.Consumer
+import java.util.function.*
 import java.util.function.Function
+import kotlin.collections.HashMap
 
-class BottomUpExecutorImpl constructor(
-  private val taskDefs: TaskDefs,
-  private val resourceSystems: ResourceSystems,
-  private val store: Store,
-  private val share: Share,
-  private val defaultOutputStamper: OutputStamper,
-  private val defaultRequireFileSystemStamper: FileSystemStamper,
-  private val defaultProvideFileSystemStamper: FileSystemStamper,
-  private val layerFactory: Function<Logger, Layer>,
-  private val logger: Logger,
-  private val executorLoggerFactory: Function<Logger, ExecutorLogger>
-) : BottomUpExecutor {
-  private val observers = ConcurrentHashMap<TaskKey, Consumer<Out>>()
+public class BottomUpExecutorImpl : BottomUpExecutor {
+  private val taskDefs: TaskDefs;
+  private val resourceSystems: ResourceSystems;
+  private val store: Store;
+  private val share: Share;
+  private val defaultOutputStamper: OutputStamper;
+  private val defaultRequireFileSystemStamper: FileSystemStamper;
+  private val defaultProvideFileSystemStamper: FileSystemStamper;
+  private val layerFactory: Function<Logger, Layer>;
+  private val logger: Logger;
+  private val executorLoggerFactory: Function<Logger, ExecutorLogger>;
+  private val observers: ConcurrentHashMap<TaskKey, Consumer<Out>> = ConcurrentHashMap<TaskKey, Consumer<Out>>();
+
+  public constructor(
+    taskDefs: TaskDefs,
+    resourceSystems: ResourceSystems,
+    store: Store,
+    share: Share,
+    defaultOutputStamper: OutputStamper,
+    defaultRequireFileSystemStamper: FileSystemStamper,
+    defaultProvideFileSystemStamper: FileSystemStamper,
+    layerFactory: Function<Logger, Layer>,
+    logger: Logger,
+    executorLoggerFactory: Function<Logger, ExecutorLogger>
+  ) {
+    this.taskDefs = taskDefs;
+    this.resourceSystems = resourceSystems;
+    this.store = store;
+    this.share = share;
+    this.defaultOutputStamper = defaultOutputStamper;
+    this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
+    this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+    this.layerFactory = layerFactory;
+    this.logger = logger;
+    this.executorLoggerFactory = executorLoggerFactory;
+  }
 
 
   @Throws(ExecException::class)
   override fun <I : In, O : Out> requireTopDown(task: Task<I, O>): O {
-    return requireTopDown(task, NullCancelled())
+    return requireTopDown(task, NullCancelled());
   }
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun <I : In, O : Out> requireTopDown(task: Task<I, O>, cancel: Cancelled): O {
-    val session = newSession()
-    return session.requireTopDownInitial(task, cancel)
+    val session: BottomUpSession = newSession();
+    return session.requireTopDownInitial(task, cancel);
   }
 
   @Throws(ExecException::class)
   override fun requireBottomUp(changedResources: Set<ResourceKey>) {
-    return requireBottomUp(changedResources, NullCancelled())
+    return requireBottomUp(changedResources, NullCancelled());
   }
 
   @Throws(ExecException::class, InterruptedException::class)
   override fun requireBottomUp(changedResources: Set<ResourceKey>, cancel: Cancelled) {
-    if(changedResources.isEmpty()) return
-    val changedRate = changedResources.size.toFloat() / store.readTxn().use { it.numSourceFiles() }.toFloat()
+    if(changedResources.isEmpty()) return;
+    val numSourceFiles: Float = store.readTxn().use { txn: StoreReadTxn -> txn.numSourceFiles() }.toFloat();
+    val changedRate: Float = changedResources.size.toFloat() / numSourceFiles;
     if(changedRate > 0.5) {
-      val topdownSession = TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger))
-      for(key in observers.keys) {
-        val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
-        topdownSession.requireInitial(task, cancel)
+      val topdownSession = TopDownSessionImpl(taskDefs, resourceSystems, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger));
+      for(key: TaskKey in observers.keys) {
+        val task: Task<Serializable, Serializable?> = store.readTxn().use { txn: StoreReadTxn -> key.toTask(taskDefs, txn) };
+        topdownSession.requireInitial(task, cancel);
         // TODO: observers are not called when using a topdown session.
       }
     } else {
-      val session = newSession()
-      session.requireBottomUpInitial(changedResources, cancel)
+      val session: BottomUpSession = newSession();
+      session.requireBottomUpInitial(changedResources, cancel);
     }
   }
 
   override fun hasBeenRequired(key: TaskKey): Boolean {
-    return store.readTxn().use { it.output(key) } != null
+    return store.readTxn().use { txn: StoreReadTxn -> txn.output(key) } != null;
   }
 
   override fun setObserver(key: TaskKey, observer: Consumer<Out>) {
-    observers[key] = observer
+    observers.set(key, observer);
   }
 
   override fun removeObserver(key: TaskKey) {
-    observers.remove(key)
+    observers.remove(key);
   }
 
   override fun dropObservers() {
-    observers.clear()
+    observers.clear();
   }
 
 
-  @Suppress("MemberVisibilityCanBePrivate")
   fun newSession(): BottomUpSession {
-    return BottomUpSession(taskDefs, resourceSystems, observers, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger))
+    return BottomUpSession(taskDefs, resourceSystems, observers, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger));
   }
 }
 
-open class BottomUpSession(
-  private val taskDefs: TaskDefs,
-  private val resourceSystems: ResourceSystems,
-  private val observers: Map<TaskKey, Consumer<Out>>,
-  private val store: Store,
-  share: Share,
-  defaultOutputStamper: OutputStamper,
-  defaultRequireFileSystemStamper: FileSystemStamper,
-  defaultProvideFileSystemStamper: FileSystemStamper,
-  private val layer: Layer,
-  private val logger: Logger,
-  private val executorLogger: ExecutorLogger
-) : RequireTask {
-  private val visited = mutableMapOf<TaskKey, TaskData<*, *>>()
-  private val queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store)
-  private val executor = TaskExecutor(taskDefs, resourceSystems, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger) { key, data ->
-    // Notify observer, if any.
-    val observer = observers[key]
-    if(observer != null) {
-      val output = data.output
-      executorLogger.invokeObserverStart(observer, key, output)
-      observer.accept(output)
-      executorLogger.invokeObserverEnd(observer, key, output)
-    }
+public open class BottomUpSession : RequireTask {
+  private val taskDefs: TaskDefs;
+  private val resourceSystems: ResourceSystems;
+  private val observers: Map<TaskKey, Consumer<Out>>;
+  private val store: Store;
+  private val layer: Layer;
+  private val logger: Logger;
+  private val executorLogger: ExecutorLogger;
+
+  private val visited: HashMap<TaskKey, TaskData<*, *>> = HashMap<TaskKey, TaskData<*, *>>();
+  private val queue: DistinctTaskKeyPriorityQueue;
+  private val executor: TaskExecutor;
+  private val requireShared: RequireShared;
+
+  public constructor(
+    taskDefs: TaskDefs,
+    resourceSystems: ResourceSystems,
+    observers: Map<TaskKey, Consumer<Out>>,
+    store: Store,
+    share: Share,
+    defaultOutputStamper: OutputStamper,
+    defaultRequireFileSystemStamper: FileSystemStamper,
+    defaultProvideFileSystemStamper: FileSystemStamper,
+    layer: Layer,
+    logger: Logger,
+    executorLogger: ExecutorLogger
+  ) {
+    this.taskDefs = taskDefs;
+    this.resourceSystems = resourceSystems;
+    this.observers = observers;
+    this.store = store;
+    this.layer = layer;
+    this.logger = logger;
+    this.executorLogger = executorLogger;
+
+    this.queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store);
+    this.executor = TaskExecutor(taskDefs, resourceSystems, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, BiConsumer<TaskKey, TaskData<*, *>> { key: TaskKey, data: TaskData<*, *> ->
+      // Notify observer, if any.
+      val observer: Consumer<Out>? = observers.get(key);
+      if(observer != null) {
+        val output: Serializable? = data.output;
+        executorLogger.invokeObserverStart(observer, key, output);
+        observer.accept(output);
+        executorLogger.invokeObserverEnd(observer, key, output);
+      }
+    });
+    this.requireShared = RequireShared(taskDefs, resourceSystems, visited, store, executorLogger);
   }
-  private val requireShared = RequireShared(taskDefs, resourceSystems, visited, store, executorLogger)
 
 
   /**
    * Entry point for top-down builds.
    */
-  open fun <I : In, O : Out> requireTopDownInitial(task: Task<I, O>, cancel: Cancelled = NullCancelled()): O {
+  open fun <I : In, O : Out> requireTopDownInitial(task: Task<I, O>, cancel: Cancelled): O {
     try {
-      val key = task.key()
-      executorLogger.requireTopDownInitialStart(key, task)
-      val output = require(key, task, cancel)
-      executorLogger.requireTopDownInitialEnd(key, task, output)
-      return output
+      val key: TaskKey = task.key();
+      executorLogger.requireTopDownInitialStart(key, task);
+      val output: O = require(key, task, cancel);
+      executorLogger.requireTopDownInitialEnd(key, task, output);
+      return output;
     } finally {
-      store.sync()
+      store.sync();
     }
   }
 
   /**
    * Entry point for bottom-up builds.
    */
-  open fun requireBottomUpInitial(changedResources: Set<ResourceKey>, cancel: Cancelled = NullCancelled()) {
+  open fun requireBottomUpInitial(changedResources: Set<ResourceKey>, cancel: Cancelled) {
     try {
-      executorLogger.requireBottomUpInitialStart(changedResources)
-      scheduleAffectedByResources(changedResources)
-      execScheduled(cancel)
-      executorLogger.requireBottomUpInitialEnd()
+      executorLogger.requireBottomUpInitialStart(changedResources);
+      scheduleAffectedByResources(changedResources);
+      execScheduled(cancel);
+      executorLogger.requireBottomUpInitialEnd();
     } finally {
-      store.sync()
+      store.sync();
     }
   }
 
@@ -141,13 +188,13 @@ open class BottomUpSession(
    * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
    */
   private fun execScheduled(cancel: Cancelled) {
-    logger.trace("Executing scheduled tasks: $queue")
+    logger.trace("Executing scheduled tasks: " + queue);
     while(queue.isNotEmpty()) {
-      cancel.throwIfCancelled()
-      val key = queue.poll()
-      val task = store.readTxn().use { txn -> key.toTask(taskDefs, txn) }
-      logger.trace("Polling: ${task.desc(200)}")
-      execAndSchedule(key, task, cancel)
+      cancel.throwIfCancelled();
+      val key: TaskKey = queue.poll();
+      val task: Task<Serializable, Serializable?> = store.readTxn().use { txn: StoreReadTxn -> key.toTask(taskDefs, txn) };
+      logger.trace("Polling: " + task.desc(200));
+      execAndSchedule(key, task, cancel);
     }
   }
 
@@ -155,20 +202,20 @@ open class BottomUpSession(
    * Executes given task, and schedules new tasks based on given task's output.
    */
   private fun <I : In, O : Out> execAndSchedule(key: TaskKey, task: Task<I, O>, cancel: Cancelled): TaskData<I, O> {
-    val data = exec(key, task, AffectedExecReason(), cancel)
-    scheduleAffectedCallersOf(key, data.output)
-    return data
+    val data: TaskData<I, O> = exec(key, task, AffectedExecReason(), cancel);
+    scheduleAffectedCallersOf(key, data.output);
+    return data;
   }
 
   /**
    * Schedules tasks affected by (changes to) files.
    */
   private fun scheduleAffectedByResources(resources: Set<ResourceKey>) {
-    logger.trace("Scheduling tasks affected by resources: $resources")
-    val affected = store.readTxn().use { txn -> txn.directlyAffectedTaskKeys(resources, resourceSystems, logger) }
+    logger.trace("Scheduling tasks affected by resources: " + resources);
+    val affected: HashSet<TaskKey> = store.readTxn().use { txn: StoreReadTxn -> directlyAffectedTaskKeys(txn, resources, resourceSystems, logger) };
     for(key in affected) {
-      logger.trace("- scheduling: $key")
-      queue.add(key)
+      logger.trace("- scheduling: " + key);
+      queue.add(key);
     }
   }
 
@@ -176,15 +223,15 @@ open class BottomUpSession(
    * Schedules tasks affected by (changes to the) output of a task.
    */
   private fun scheduleAffectedCallersOf(callee: TaskKey, output: Out) {
-    logger.trace("Scheduling tasks affected by output of: ${callee.toShortString(200)}")
-    val inconsistentCallers = store.readTxn().use { txn ->
-      txn.callersOf(callee).filter { caller ->
-        txn.taskRequires(caller).filter { it.calleeEqual(callee) }.any { !it.isConsistent(output) }
+    logger.trace("Scheduling tasks affected by output of: " + callee.toShortString(200));
+    val inconsistentCallers: List<TaskKey> = store.readTxn().use { txn: StoreReadTxn ->
+      txn.callersOf(callee).filter { caller: TaskKey ->
+        txn.taskRequires(caller).filter { dep: TaskRequireDep -> dep.calleeEqual(callee) }.any { dep: TaskRequireDep -> !dep.isConsistent(output) }
       }
     }
     for(key in inconsistentCallers) {
-      logger.trace("- scheduling: $key")
-      queue.add(key)
+      logger.trace("- scheduling: " + key);
+      queue.add(key);
     }
   }
 
@@ -193,18 +240,17 @@ open class BottomUpSession(
    * Require the result of a task.
    */
   override fun <I : In, O : Out> require(key: TaskKey, task: Task<I, O>, cancel: Cancelled): O {
-    Stats.addRequires()
-    cancel.throwIfCancelled()
-    layer.requireTopDownStart(key, task.input)
-    executorLogger.requireTopDownStart(key, task)
+    Stats.addRequires();
+    cancel.throwIfCancelled();
+    layer.requireTopDownStart(key, task.input);
+    executorLogger.requireTopDownStart(key, task);
     try {
-      val data = getData(key, task, cancel)
-      val output = data.output
-      executorLogger.requireTopDownEnd(key, task, output)
-      @Suppress("UNCHECKED_CAST")
-      return output as O
+      val data: TaskData<I, O> = getData(key, task, cancel);
+      val output: O? = data.output;
+      executorLogger.requireTopDownEnd(key, task, output);
+      return output as O; // TODO: can return null.
     } finally {
-      layer.requireTopDownEnd(key)
+      layer.requireTopDownEnd(key);
     }
   }
 
@@ -213,54 +259,56 @@ open class BottomUpSession(
    */
   private fun <I : In, O : Out> getData(key: TaskKey, task: Task<I, O>, cancel: Cancelled): TaskData<I, O> {
     // Check if task was already visited this execution. Return immediately if so.
-    val visitedData = requireShared.dataFromVisited(key)
+    val visitedData: TaskData<*, *>? = requireShared.dataFromVisited(key);
     if(visitedData != null) {
-      return visitedData.cast<I, O>()
+      return visitedData.cast<I, O>();
     }
 
     // Check if data is stored for task. Execute if not.
-    val storedData = requireShared.dataFromStore(key)
+    val storedData: TaskData<*, *>? = requireShared.dataFromStore(key);
     if(storedData == null) {
       // This tasks's output cannot affect other tasks since it is new. Therefore, we do not have to schedule new tasks.
-      return exec(key, task, NoData(), cancel)
+      return exec(key, task, NoData(), cancel);
     }
 
     // Task is in dependency graph. It may be scheduled to be run, but we need its output *now*.
-    val requireNowData = requireScheduledNow(key, cancel)
+    val requireNowData: TaskData<*, *>? = requireScheduledNow(key, cancel);
     if(requireNowData != null) {
       // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been executed.
-      return requireNowData.cast<I, O>()
+      return requireNowData.cast<I, O>();
     } else {
       // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
       // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
-      val existingData = storedData.cast<I, O>();
-      val input = existingData.input;
-      val output = existingData.output;
+      val existingData: TaskData<I, O> = storedData.cast<I, O>();
+      val input: I = existingData.input;
+      val output: O? = existingData.output;
 
       // Internal consistency: input changes.
-      with(requireShared.checkInput(input, task)) {
-        if(this != null) {
-          return exec(key, task, this, cancel)
+      run {
+        val reason: InconsistentInput? = requireShared.checkInput(input, task);
+        if(reason != null) {
+          return exec(key, task, reason, cancel);
         }
       }
 
       // Internal consistency: transient output consistency.
-      with(requireShared.checkOutputConsistency(output)) {
-        if(this != null) {
-          return exec(key, task, this, cancel)
+      run {
+        val reason: InconsistentTransientOutput? = requireShared.checkOutputConsistency(output);
+        if(reason != null) {
+          return exec(key, task, reason, cancel);
         }
       }
 
       // Notify observer.
-      val observer = observers[key]
+      val observer: Consumer<Out>? = observers.get(key)
       if(observer != null) {
-        executorLogger.invokeObserverStart(observer, key, output)
-        observer.accept(output)
-        executorLogger.invokeObserverEnd(observer, key, output)
+        executorLogger.invokeObserverStart(observer, key, output);
+        observer.accept(output);
+        executorLogger.invokeObserverEnd(observer, key, output);
       }
 
       // Task is consistent.
-      return existingData
+      return existingData;
     }
   }
 
@@ -268,22 +316,25 @@ open class BottomUpSession(
    * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
    */
   private fun requireScheduledNow(key: TaskKey, cancel: Cancelled): TaskData<*, *>? {
-    logger.trace("Executing scheduled (and its dependencies) task NOW: $key")
+    logger.trace("Executing scheduled (and its dependencies) task NOW: " + key);
     while(queue.isNotEmpty()) {
-      cancel.throwIfCancelled()
-      val minTaskKey = queue.pollLeastTaskWithDepTo(key, store) ?: break
-      val minTask = store.readTxn().use { txn -> minTaskKey.toTask(taskDefs, txn) }
-      logger.trace("- least element less than task: ${minTask.desc(100)}")
-      val data = execAndSchedule(minTaskKey, minTask, cancel)
-      if(minTaskKey == key) {
-        return data // Task was affected, and has been executed: return result
+      cancel.throwIfCancelled();
+      val minTaskKey: TaskKey? = queue.pollLeastTaskWithDepTo(key, store);
+      if(minTaskKey == null) {
+        break;
+      }
+      val minTask: Task<Serializable, Serializable?> = store.readTxn().use { txn: StoreReadTxn -> minTaskKey.toTask(taskDefs, txn) };
+      logger.trace("- least element less than task: " + minTask.desc(100));
+      val data: TaskData<Serializable, Serializable?> = execAndSchedule(minTaskKey, minTask, cancel);
+      if(minTaskKey.equals(key)) {
+        return data; // Task was affected, and has been executed: return result
       }
     }
-    return null // Task was not affected: return null
+    return null; // Task was not affected: return null
   }
 
 
   open fun <I : In, O : Out> exec(key: TaskKey, task: Task<I, O>, reason: ExecReason, cancel: Cancelled): TaskData<I, O> {
-    return executor.exec(key, task, reason, this, cancel)
+    return executor.exec(key, task, reason, this, cancel);
   }
 }

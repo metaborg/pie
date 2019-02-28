@@ -4,37 +4,37 @@ package mb.pie.runtime.exec
  * HACK: global object for collecting build statistics.
  */
 object Stats {
-  var requires = 0
-  var executions = 0
-  var fileReqs = 0
-  var fileGens = 0
-  var callReqs = 0
+  public var requires: Int = 0;
+  public var executions: Int = 0;
+  public var fileReqs: Int = 0;
+  public var fileGens: Int = 0;
+  public var callReqs: Int = 0;
 
-  fun reset() {
-    requires = 0
-    executions = 0
-    fileReqs = 0
-    fileGens = 0
-    callReqs = 0
+  public fun reset() {
+    requires = 0;
+    executions = 0;
+    fileReqs = 0;
+    fileGens = 0;
+    callReqs = 0;
   }
 
-  fun addRequires() {
-    ++requires
+  public fun addRequires() {
+    ++requires;
   }
 
-  fun addExecution() {
-    ++executions
+  public fun addExecution() {
+    ++executions;
   }
 
-  fun addFileReq() {
-    ++fileReqs
+  public fun addFileReq() {
+    ++fileReqs;
   }
 
-  fun addFileGen() {
-    ++fileGens
+  public fun addFileGen() {
+    ++fileGens;
   }
 
-  fun addCallReq() {
-    ++callReqs
+  public fun addCallReq() {
+    ++callReqs;
   }
 }
