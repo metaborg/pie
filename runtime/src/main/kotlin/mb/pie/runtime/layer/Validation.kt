@@ -1,7 +1,7 @@
 package mb.pie.runtime.layer
 
 import mb.pie.api.*
-import mb.pie.runtime.exec.hasTransitiveTaskReq
+import mb.pie.runtime.exec.BottomUpShared.hasTransitiveTaskReq
 import java.io.*
 import java.util.*
 

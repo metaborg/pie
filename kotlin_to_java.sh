@@ -14,13 +14,14 @@ perl -i -p -e 's/fun\s*([\w<>:, ]+)\(([\w:<>*?,= ]*)\)\s*{/void $1($2) {/g' $1
 perl -i -p -e 's/fun\s*([\w<>:, ]+)\(([\w:<>*?,= ]*)\):\s*([\w:<>*?, ]+)/$3 $1($2);/g' $1
 perl -i -p -e 's/fun\s*([\w<>:, ]+)\(([\w:<>*?,= ]*)\)/void $1($2);/g' $1
 
-perl -i -p -e 's/([a-z][\w]*)\s*:\s*([\w:<>*? ]+)/$2 $1/g' $1
+perl -i -p -e 's/([a-z][\w]*)\s*:\s*([\w]+[<][\w<>:*?,]+[>]|[\w?]+)/$2 $1/g' $1
 
-perl -i -p -e 's/([\w]+)\?/\@Nullable $1/g' $1
+perl -i -p -e 's/([\w<>:*?,]+)\?/\@Nullable $1/g' $1
 
 perl -i -p -e 's/(\b)In(\b)/$1Serializable$2/g' $1
 perl -i -p -e 's/(\b)Key(\b)/$1Serializable$2/g' $1
 perl -i -p -e 's/(\b)Out(\b)/$1\@Nullable Serializable$2/g' $1
+perl -i -p -e 's/(\b)FileSystemStamper(\b)/$1ResourceStamper\<FileSystemResource\>$2/g' $1
 
 perl -i -p -e 's/(\b)Any(\b)/$1Object$2/g' $1
 perl -i -p -e 's/(\b)Boolean(\b)/$1boolean$2/g' $1
@@ -42,9 +43,8 @@ perl -i -p -e 's/(\b)in(\b)/$1:$2/g' $1
 perl -i -p -e 's/(\b)out(\b)/$1$2/g' $1
 perl -i -p -e 's/(\b)open(\b)/$1$2/g' $1
 perl -i -p -e 's/(\b)javaClass(\b)/$1getClass()$2/g' $1
-perl -i -p -e 's/(\b)run \{/$1{/g' $1
+perl -i -p -e 's/(\b)run \{/$1\{/g' $1
 
-perl -i -p -e 's/\*/?/g' $1
 perl -i -p -e 's/===/==/g' $1
 
 perl -i -p -e 's/\@Volatile/volatile/g' $1
