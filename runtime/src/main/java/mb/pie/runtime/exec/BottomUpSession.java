@@ -66,7 +66,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Entry point for top-down builds.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O requireTopDownInitial(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> O requireTopDownInitial(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
         try {
             final TaskKey key = task.key();
             executorLogger.requireTopDownInitialStart(key, task);
@@ -81,7 +81,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Entry point for bottom-up builds.
      */
-    void requireBottomUpInitial(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
+    public void requireBottomUpInitial(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
         try {
             executorLogger.requireBottomUpInitialStart(changedResources);
             scheduleAffectedByResources(changedResources);
@@ -256,7 +256,7 @@ public class BottomUpSession implements RequireTask {
     }
 
 
-    <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
         return executor.exec(key, task, reason, this, cancel);
     }
 }

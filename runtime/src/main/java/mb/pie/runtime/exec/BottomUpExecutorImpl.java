@@ -126,7 +126,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
   }
 
 
-  BottomUpSession newSession() {
+  public BottomUpSession newSession() {
     return new BottomUpSession(taskDefs, resourceSystems, observers, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger));
   }
 }

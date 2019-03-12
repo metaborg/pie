@@ -12,7 +12,7 @@ import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
-import mb.pie.runtime.taskdefs.MutableMapTaskDefs
+import mb.pie.runtime.taskdefs.MapTaskDefs
 import org.junit.jupiter.api.DynamicNode
 import java.util.stream.Stream
 
@@ -26,13 +26,13 @@ object RuntimeTestGenerator {
     defaultRequireFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
     defaultProvideFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
-    logger: Logger = StreamLogger.only_errors(),
+    logger: Logger = StreamLogger.onlyErrors(),
     testFunc: RuntimeTestCtx.() -> Unit
   ): Stream<out DynamicNode> {
     return ApiTestGenerator.generate(
       name,
       { PieBuilderImpl() },
-      { MutableMapTaskDefs() },
+      { MapTaskDefs() },
       storeGens,
       shareGens,
       layerGens,
@@ -41,7 +41,7 @@ object RuntimeTestGenerator {
       defaultProvideFileSystemStampers,
       executorLoggerGen,
       logger,
-      { pie, taskDefs, fs -> RuntimeTestCtx(pie as PieImpl, taskDefs as MutableMapTaskDefs, fs) },
+      { pie, taskDefs, fs -> RuntimeTestCtx(pie as PieImpl, taskDefs as MapTaskDefs, fs) },
       testFunc
     )
   }

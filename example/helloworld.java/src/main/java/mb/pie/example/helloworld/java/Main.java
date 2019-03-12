@@ -1,10 +1,9 @@
 package mb.pie.example.helloworld.java;
 
 import mb.pie.api.*;
-import mb.pie.api.fs.stamp.FileSystemStampers;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
-import mb.pie.runtime.taskdefs.MutableMapTaskDefs;
+import mb.pie.runtime.taskdefs.MapTaskDefs;
 import mb.pie.store.lmdb.LMDBStoreKt;
 
 import java.io.*;
@@ -34,13 +33,11 @@ public class Main {
          * The {@link #exec} method must be overridden to implement the logic of this task definition. This function is executed with an
          * {@link ExecContext execution context} object, which is used to tell PIE about dynamic task or file dependencies.
          */
-        @Override public None exec(ExecContext context, File input) throws ExecException {
+        @Override public None exec(ExecContext context, File input) throws Exception {
             // We write "Hello, world!" to the file.
             try(final OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(input))) {
                 outputStream.write("Hello, world!".getBytes());
                 outputStream.flush();
-            } catch(IOException e) {
-                throw new ExecException("Could not write to file " + input, e);
             }
             // Since we have written to or created a file, we need to tell PIE about this dynamic dependency, by calling `provide` on the context.
             context.provide(input);
@@ -62,7 +59,7 @@ public class Main {
         final WriteHelloWorld writeHelloWorld = new WriteHelloWorld();
 
         // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
-        final MutableMapTaskDefs taskDefs = new MutableMapTaskDefs();
+        final MapTaskDefs taskDefs = new MapTaskDefs();
         taskDefs.add(writeHelloWorld.getId(), writeHelloWorld);
 
         // We need to create the PIE runtime, using a PieBuilderImpl.

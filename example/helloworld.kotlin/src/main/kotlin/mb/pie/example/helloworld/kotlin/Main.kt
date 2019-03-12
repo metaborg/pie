@@ -3,7 +3,7 @@ package mb.pie.example.helloworld.kotlin
 import mb.pie.api.*
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.taskdefs.MutableMapTaskDefs
+import mb.pie.runtime.taskdefs.MapTaskDefs
 import mb.pie.store.lmdb.withLMDBStore
 import java.io.File
 
@@ -53,7 +53,7 @@ fun main(args: Array<String>) {
   val writeHelloWorld = WriteHelloWorld()
 
   // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
-  val taskDefs = MutableMapTaskDefs()
+  val taskDefs = MapTaskDefs()
   taskDefs.add(writeHelloWorld.id, writeHelloWorld)
 
   // We need to create the PIE runtime, using a PieBuilderImpl.

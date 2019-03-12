@@ -1,6 +1,6 @@
 package mb.pie.runtime.test
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockitokotlin2.*
 import mb.fs.java.JavaFSNode
 import mb.pie.api.*
 import mb.pie.api.fs.ResourceUtils

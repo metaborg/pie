@@ -26,7 +26,7 @@ fun PieBuilder.withGuiceTaskDefs(taskDefs: GuiceTaskDefs): PieBuilder {
 /**
  * [TaskDefs] implementation that injects the map binding created from [TaskDefsModule].
  */
-class GuiceTaskDefs @Inject constructor(map: MutableMap<String, TaskDef<*, *>>) : MapTaskDefs(map)
+class GuiceTaskDefs @Inject constructor(map: HashMap<String, TaskDef<*, *>>) : MapTaskDefs(map)
 
 /**
  * A module that binds [GuiceTaskDefs] as a singleton, which can be passed to a [PieBuilder] with [withGuiceTaskDefs].

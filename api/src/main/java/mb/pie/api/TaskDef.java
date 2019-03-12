@@ -42,10 +42,10 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
     /**
      * Executes the task with given input, and returns its output.
      *
-     * @throws ExecException        when execution of the task fails unexpectedly.
+     * @throws Exception            when execution of the task fails unexpectedly.
      * @throws InterruptedException when execution of the task is cancelled or otherwise interrupted.
      */
-    @Nullable O exec(ExecContext context, I input) throws ExecException, InterruptedException;
+    @Nullable O exec(ExecContext context, I input) throws Exception;
 
 
     /**

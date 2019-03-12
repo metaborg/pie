@@ -4,13 +4,13 @@ import mb.pie.api.*
 import mb.pie.api.test.ApiTestCtx
 import mb.pie.runtime.PieImpl
 import mb.pie.runtime.exec.*
-import mb.pie.runtime.taskdefs.MutableMapTaskDefs
+import mb.pie.runtime.taskdefs.MapTaskDefs
 import java.nio.file.FileSystem
 import java.util.function.Consumer
 
 open class RuntimeTestCtx(
   private val pieImpl: PieImpl,
-  private val taskDefs: MutableMapTaskDefs,
+  private val taskDefs: MapTaskDefs,
   fs: FileSystem
 ) : ApiTestCtx(pieImpl, fs) {
   override val pie: PieImpl get() = pieImpl

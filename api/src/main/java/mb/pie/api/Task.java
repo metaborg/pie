@@ -27,7 +27,7 @@ public class Task<I extends Serializable, O extends @Nullable Serializable> {
         return new TaskKey(taskDef.getId(), key);
     }
 
-    public @Nullable O exec(ExecContext ctx) throws ExecException, InterruptedException {
+    public @Nullable O exec(ExecContext ctx) throws Exception {
         return taskDef.exec(ctx, input);
     }
 

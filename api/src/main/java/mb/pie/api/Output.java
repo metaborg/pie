@@ -4,6 +4,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 
+// TODO: replace with Option<O>
 public final class Output<@Nullable O extends Serializable> {
     public final @Nullable O output;
 

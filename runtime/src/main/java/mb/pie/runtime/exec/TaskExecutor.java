@@ -90,7 +90,18 @@ public class TaskExecutor {
         cancel.throwIfCancelled();
         // Execute
         final ExecContextImpl context = new ExecContextImpl(requireTask, cancel, taskDefs, resourceSystems, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger);
-        final @Nullable O output = task.exec(context);
+        final @Nullable O output;
+        try {
+            output = task.exec(context);
+        } catch(InterruptedException | RuntimeException | ExecException e) {
+            // Propagate interrupted exceptions, these must be handled by the caller.
+            // Propagate runtime exceptions, because we cannot recover from runtime exceptions here, but the caller may.
+            // Propagate exec exceptions, no need to wrap them.
+            throw e;
+        } catch(Exception e) {
+            // Wrap regular exceptions into an ExecException which is propagated up, and must be handled by the user.
+            throw new ExecException("Executing task " + task.desc(100) + " failed unexpectedly", e);
+        }
         Stats.addExecution();
         final ExecContextImpl.Deps deps = context.deps();
         final TaskData<I, O> data = new TaskData<>(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);

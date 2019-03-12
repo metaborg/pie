@@ -141,7 +141,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
             }
         }
 
-        // Internal resoruce consistency requires.
+        // Internal resource consistency requires.
         for(ResourceRequireDep fileReq : resourceRequires) {
             final @Nullable InconsistentResourceRequire reason = requireShared.checkResourceRequire(key, task, fileReq);
             if(reason != null) {
@@ -169,7 +169,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         return new DataAndExecutionStatus<>(existingData, false);
     }
 
-    <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
         return executor.exec(key, task, reason, this, cancel);
     }
 }
