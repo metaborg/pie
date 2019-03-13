@@ -1,107 +1,114 @@
 package mb.pie.store.lmdb
 
 import mb.pie.api.Logger
-import org.lmdbjava.*
+import org.lmdbjava.GetOp
+import org.lmdbjava.PutFlags
+import org.lmdbjava.SeekOp
 import java.io.Serializable
+import java.nio.ByteBuffer
 import java.util.*
 
-internal class DbiShared(
-  private val env: EnvB,
-  private val txn: TxnB,
-  private val isWriteTxn: Boolean,
-  private val logger: Logger
-) {
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun getBool(keyHashedBuf: Buf, db: DbiB): Boolean {
-    return db.get(txn, keyHashedBuf) != null
+public class DbiShared {
+  private val env: EnvB;
+  private val txn: TxnB;
+  private val isWriteTxn: Boolean;
+  private val logger: Logger;
+
+  public constructor(env: EnvB,txn: TxnB,isWriteTxn: Boolean,logger: Logger) {
+    this.env = env;
+    this.txn = txn;
+    this.isWriteTxn = isWriteTxn
+    this.logger = logger;
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun <R : Serializable?> getOne(keyHashedBuf: Buf, db: DbiB): Deserialized<R>? {
-    val valueBuf = db.get(txn, keyHashedBuf.copyBuffer() /* OPTO: prevent copy? */) ?: return null
-    return deserializeOrDelete<R>(keyHashedBuf, valueBuf, db)
+
+  public fun getBool(keyHashedBuf: ByteBuffer,db: DbiB): Boolean {
+    return db.get(txn,keyHashedBuf) != null;
   }
 
-  fun <R : Serializable?> getMultiple(keyHashedBuf: Buf, dbDup: DbiB, dbVal: DbiB): Set<R> {
-    val hashedValueBufs = ArrayList<Buf>()
+  public fun <R : Serializable?> getOne(keyHashedBuf: ByteBuffer,db: DbiB): Deserialized<R>? {
+    val valueBuf: ByteBuffer? = db.get(txn,BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */)
+    if(valueBuf == null) {
+      return null;
+    }
+    return deserializeOrDelete<R>(keyHashedBuf,valueBuf,db);
+  }
+
+  public fun <R : Serializable?> getMultiple(keyHashedBuf: ByteBuffer,dbDup: DbiB,dbVal: DbiB): Set<R> {
+    val hashedValueBufs: ArrayList<ByteBuffer> = ArrayList<ByteBuffer>();
     dbDup.openCursor(txn).use { cursor ->
-      if(!cursor.get(keyHashedBuf.copyBuffer() /* OPTO: prevent copy? */, GetOp.MDB_SET)) {
-        return setOf()
+      if(!cursor.get(BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */,GetOp.MDB_SET)) {
+        return setOf();
       }
       do {
-        val hashedValueBuf = cursor.`val`()
-        hashedValueBufs.add(hashedValueBuf.copyBuffer())
+        val hashedValueBuf: ByteBuffer = cursor.`val`();
+        hashedValueBufs.add(BufferUtil.copyBuffer(hashedValueBuf));
       } while(cursor.seek(SeekOp.MDB_NEXT_DUP))
     }
-    val results = HashSet<R>(hashedValueBufs.size)
-    for(hashedValueBuf in hashedValueBufs) {
-      val valueBuf = dbVal.get(txn, hashedValueBuf) ?: continue
-      val deserializedValueBuf = deserializeOrDelete<R>(hashedValueBuf, valueBuf, dbVal)
+    val results = HashSet<R>(hashedValueBufs.size);
+    for(hashedValueBuf: ByteBuffer in hashedValueBufs) {
+      val valueBuf: ByteBuffer? = dbVal.get(txn,hashedValueBuf)
+      if(valueBuf == null) {
+        continue;
+      }
+      val deserializedValueBuf: Deserialized<R> = deserializeOrDelete<R>(hashedValueBuf,valueBuf,dbVal);
       if(!deserializedValueBuf.failed) {
-        results.add(deserializedValueBuf.deserialized)
+        results.add(deserializedValueBuf.deserialized);
       } else {
         // Also delete key-value pair from dbDup when value could not be deserialized.
         if(isWriteTxn) {
-          dbDup.delete(txn, keyHashedBuf.copyBuffer() /* OPTO: prevent copy? */, hashedValueBuf)
+          dbDup.delete(txn,BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */,hashedValueBuf);
         } else {
           env.txnWrite().use {
-            dbDup.delete(it, keyHashedBuf.copyBuffer() /* OPTO: prevent copy? */, hashedValueBuf)
+            dbDup.delete(it,BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */,hashedValueBuf);
           }
         }
       }
     }
-    return results
+    return results;
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  private inline fun <R : Serializable?> deserializeOrDelete(keyHashedBuf: Buf, valueBuf: Buf, db: DbiB): Deserialized<R> {
-    val deserialized = valueBuf.deserialize<R>(logger)
+  public fun <R : Serializable?> deserializeOrDelete(keyHashedBuf: ByteBuffer,valueBuf: ByteBuffer,db: DbiB): Deserialized<R> {
+    val deserialized: Deserialized<R> = SerializeUtil.deserialize<R>(valueBuf,logger);
     if(deserialized.failed) {
       if(isWriteTxn) {
-        db.delete(txn, keyHashedBuf)
+        db.delete(txn,keyHashedBuf);
       } else {
         env.txnWrite().use { txn ->
           // TODO: just deleting data that cannot be deserialized is unsound; it could silently delete dependencies which are then never recreated!
-          db.delete(txn, keyHashedBuf)
-          txn.commit()
+          db.delete(txn,keyHashedBuf);
+          txn.commit();
         }
       }
     }
-    return deserialized
+    return deserialized;
   }
 
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun setBool(keyHashedBuf: Buf, value: Boolean, db: DbiB): Boolean {
+  public fun setBool(keyHashedBuf: ByteBuffer,value: Boolean,db: DbiB): Boolean {
     return if(value) {
-      db.put(txn, keyHashedBuf.copyBuffer() /* OPTO: prevent copy? */, emptyBuffer())
+      db.put(txn,BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */,BufferUtil.emptyBuffer());
     } else {
-      db.delete(txn, keyHashedBuf)
+      db.delete(txn,keyHashedBuf);
     }
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun setOne(keyHashedBuf: Buf, valueBuf: Buf, db: DbiB): Boolean {
-    return db.put(txn, keyHashedBuf, valueBuf)
+  public fun setOne(keyHashedBuf: ByteBuffer,valueBuf: ByteBuffer,db: DbiB): Boolean {
+    return db.put(txn,keyHashedBuf,valueBuf);
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun deleteOne(keyHashedBuf: Buf, db: DbiB): Boolean {
-    return db.delete(txn, keyHashedBuf)
+  public fun deleteOne(keyHashedBuf: ByteBuffer,db: DbiB): Boolean {
+    return db.delete(txn,keyHashedBuf);
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun setDup(keyHashedBuf: Buf, valueBuf: Buf, valueHashedBuf: Buf, dbDup: DbiB, dbVal: DbiB): Boolean {
-    // Put key.serialize().hash() -> value.serialize().hash()
-    val put1 = dbDup.put(txn, keyHashedBuf, valueHashedBuf.copyBuffer() /* OPTO: prevent copy? */, PutFlags.MDB_NODUPDATA)
-    // Put value.serialize().hash() -> value.serialize()
-    val put2 = dbVal.put(txn, valueHashedBuf, valueBuf)
-    return put1 && put2
+  public fun setDup(keyHashedBuf: ByteBuffer,valueBuf: ByteBuffer,valueHashedBuf: ByteBuffer,dbDup: DbiB,dbVal: DbiB): Boolean {
+    val put1: Boolean = dbDup.put(txn,keyHashedBuf,BufferUtil.copyBuffer(valueHashedBuf) /* OPTO: prevent copy? */,PutFlags.MDB_NODUPDATA);
+    val put2: Boolean = dbVal.put(txn,valueHashedBuf,valueBuf);
+    return put1 && put2;
   }
 
-  @Suppress("NOTHING_TO_INLINE")
-  inline fun deleteDup(keyHashedBuf: Buf, hashedValue: Buf, dbDup: DbiB, @Suppress("UNUSED_PARAMETER") dbVal: DbiB): Boolean {
-    return dbDup.delete(txn, keyHashedBuf, hashedValue)
+  public fun deleteDup(keyHashedBuf: ByteBuffer,hashedValue: ByteBuffer,dbDup: DbiB,dbVal: DbiB): Boolean {
+    return dbDup.delete(txn,keyHashedBuf,hashedValue);
     // TODO: cannot delete (hashedValue, value) from value database, since multiple entries from dbDup may refer to it.
   }
 }

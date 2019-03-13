@@ -1,184 +1,218 @@
 package mb.pie.store.lmdb
 
 import mb.pie.api.*
+import java.nio.ByteBuffer
+import java.util.function.Function
 
-internal open class LMDBStoreTxn(
-  env: EnvB,
-  private val txn: TxnB,
-  isWriteTxn: Boolean,
-  private val logger: Logger,
-  private val inputDb: DbiB,
-  private val outputDb: DbiB,
-  private val taskRequiresDb: DbiB,
-  private val callersOfDb: DbiB,
-  private val callersOfValuesDb: DbiB,
-  private val resourceRequiresDb: DbiB,
-  private val requireesOfDb: DbiB,
-  private val requireesOfValuesDb: DbiB,
-  private val resourceProvidesDb: DbiB,
-  private val providerOfDb: DbiB
-) : StoreReadTxn, StoreWriteTxn {
-  private val shared = DbiShared(env, txn, isWriteTxn, logger)
+public open class LMDBStoreTxn : StoreReadTxn,StoreWriteTxn {
+  private val txn: TxnB;
+  private val logger: Logger;
+  private val inputDb: DbiB;
+  private val outputDb: DbiB;
+  private val taskRequiresDb: DbiB;
+  private val callersOfDb: DbiB;
+  private val callersOfValuesDb: DbiB;
+  private val resourceRequiresDb: DbiB;
+  private val requireesOfDb: DbiB;
+  private val requireesOfValuesDb: DbiB;
+  private val resourceProvidesDb: DbiB;
+  private val providerOfDb: DbiB;
+  private val shared: DbiShared;
+
+
+  public constructor(
+    env: EnvB,
+    txn: TxnB,
+    isWriteTxn: Boolean,
+    logger: Logger,
+    inputDb: DbiB,
+    outputDb: DbiB,
+    taskRequiresDb: DbiB,
+    callersOfDb: DbiB,
+    callersOfValuesDb: DbiB,
+    resourceRequiresDb: DbiB,
+    requireesOfDb: DbiB,
+    requireesOfValuesDb: DbiB,
+    resourceProvidesDb: DbiB,
+    providerOfDb: DbiB
+  ) {
+    this.txn = txn;
+    this.logger = logger;
+    this.inputDb = inputDb;
+    this.outputDb = outputDb;
+    this.taskRequiresDb = taskRequiresDb;
+    this.callersOfDb = callersOfDb;
+    this.callersOfValuesDb = callersOfValuesDb;
+    this.resourceRequiresDb = resourceRequiresDb;
+    this.requireesOfDb = requireesOfDb;
+    this.requireesOfValuesDb = requireesOfValuesDb;
+    this.resourceProvidesDb = resourceProvidesDb;
+    this.providerOfDb = providerOfDb;
+    this.shared = DbiShared(env,txn,isWriteTxn,logger);
+  }
+
+  override fun close() {
+    txn.commit();
+    txn.close();
+  }
 
 
   override fun input(key: TaskKey): In? {
-    return shared.getOne<In>(key.serialize().hash().toBuffer(), inputDb).orElse(null)
+    return Deserialized.orElse(shared.getOne<In>(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),inputDb),null)
   }
 
   override fun output(key: TaskKey): Output<*>? {
-    return shared.getOne<Out>(key.serialize().hash().toBuffer(), outputDb).mapOrElse(null) { value ->
-      Output(value)
-    }
+    val keyHashedBuf: ByteBuffer = BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key)));
+    val deserialized: Deserialized<Out>? = shared.getOne<Out>(keyHashedBuf,outputDb);
+    return Deserialized.mapOrElse<Out,Output<*>?>(deserialized,null,Function { value -> Output(value) });
   }
 
   override fun taskRequires(key: TaskKey): ArrayList<TaskRequireDep> {
-    return shared.getOne<ArrayList<TaskRequireDep>>(key.serialize().hash().toBuffer(), taskRequiresDb).orElse(arrayListOf())
+    return Deserialized.orElse(shared.getOne<ArrayList<TaskRequireDep>>(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),taskRequiresDb),arrayListOf());
   }
 
   override fun callersOf(key: TaskKey): Set<TaskKey> {
-    return shared.getMultiple(key.serialize().hash().toBuffer(), callersOfDb, callersOfValuesDb)
+    return shared.getMultiple(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),callersOfDb,callersOfValuesDb);
   }
 
   override fun resourceRequires(key: TaskKey): ArrayList<ResourceRequireDep> {
-    return shared.getOne<ArrayList<ResourceRequireDep>>(key.serialize().hash().toBuffer(), resourceRequiresDb).orElse(arrayListOf())
+    return Deserialized.orElse(shared.getOne<ArrayList<ResourceRequireDep>>(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),resourceRequiresDb),arrayListOf());
   }
 
   override fun requireesOf(key: ResourceKey): Set<TaskKey> {
-    return shared.getMultiple(key.serialize().hash().toBuffer(), requireesOfDb, requireesOfValuesDb)
+    return shared.getMultiple(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),requireesOfDb,requireesOfValuesDb);
   }
 
   override fun resourceProvides(key: TaskKey): ArrayList<ResourceProvideDep> {
-    return shared.getOne<ArrayList<ResourceProvideDep>>(key.serialize().hash().toBuffer(), resourceProvidesDb).orElse(arrayListOf())
+    return Deserialized.orElse(shared.getOne<ArrayList<ResourceProvideDep>>(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),resourceProvidesDb),arrayListOf());
   }
 
   override fun providerOf(key: ResourceKey): TaskKey? {
-    return shared.getOne<TaskKey?>(key.serialize().hash().toBuffer(), providerOfDb).orElse(null)
+    return Deserialized.orElse(shared.getOne<TaskKey?>(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),providerOfDb),null);
   }
 
-  override fun data(key: TaskKey): TaskData<*, *>? {
+  override fun data(key: TaskKey): TaskData<*,*>? {
     // OPTO: reuse buffers? is that safe?
-    val keyHashedBytes = key.serialize().hash()
-    val inputDeserialized = shared.getOne<In>(keyHashedBytes.toBuffer(), inputDb)
+    val keyHashedBytes: ByteArray = SerializeUtil.hash(SerializeUtil.serialize(key));
+    val inputDeserialized: Deserialized<In>? = shared.getOne<In>(BufferUtil.toBuffer(keyHashedBytes),inputDb);
     if(inputDeserialized == null || inputDeserialized.failed) {
-      return null
+      return null;
     }
-    val outputDeserialized = shared.getOne<Out>(keyHashedBytes.toBuffer(), outputDb)
+    val outputDeserialized: Deserialized<Out>? = shared.getOne<Out>(BufferUtil.toBuffer(keyHashedBytes),outputDb);
     if(outputDeserialized == null || outputDeserialized.failed) {
-      return null
+      return null;
     }
-    val input = inputDeserialized.deserialized
-    val output = outputDeserialized.deserialized
-    val taskRequires = shared.getOne<ArrayList<TaskRequireDep>>(keyHashedBytes.toBuffer(), taskRequiresDb).orElse(arrayListOf())
-    val resourceRequires = shared.getOne<ArrayList<ResourceRequireDep>>(keyHashedBytes.toBuffer(), resourceRequiresDb).orElse(arrayListOf())
-    val resourceProvides = shared.getOne<ArrayList<ResourceProvideDep>>(keyHashedBytes.toBuffer(), resourceProvidesDb).orElse(arrayListOf())
-    return TaskData(input, output, taskRequires, resourceRequires, resourceProvides)
+    val input: In = inputDeserialized.deserialized;
+    val output: Out = outputDeserialized.deserialized;
+    val taskRequires: ArrayList<TaskRequireDep> = Deserialized.orElse(shared.getOne<ArrayList<TaskRequireDep>>(BufferUtil.toBuffer(keyHashedBytes),taskRequiresDb),arrayListOf());
+    val resourceRequires: ArrayList<ResourceRequireDep> = Deserialized.orElse(shared.getOne<ArrayList<ResourceRequireDep>>(BufferUtil.toBuffer(keyHashedBytes),resourceRequiresDb),arrayListOf());
+    val resourceProvides: ArrayList<ResourceProvideDep> = Deserialized.orElse(shared.getOne<ArrayList<ResourceProvideDep>>(BufferUtil.toBuffer(keyHashedBytes),resourceProvidesDb),arrayListOf());
+    return TaskData(input,output,taskRequires,resourceRequires,resourceProvides);
   }
 
   override fun numSourceFiles(): Int {
     // Cannot use files in requireesOfValuesDb, as these are never cleaned up at the moment. Instead use values of resourceRequiresDb.
-    val requiredFiles = run {
-      val set = hashSetOf<ResourceKey>()
-      resourceRequiresDb.iterate(txn).use { cursor ->
-        cursor.iterable().flatMapTo(set) { keyVal ->
-          keyVal.`val`().deserialize<ArrayList<ResourceRequireDep>>(logger).orElse(arrayListOf()).map { it.key }
-        }
-      }
-      set
-    }
-    var numSourceFiles = 0
-    for(file in requiredFiles) {
-      if(!shared.getBool(file.serialize().hash().toBuffer(), providerOfDb)) {
-        ++numSourceFiles
+    val requiredFiles: HashSet<ResourceKey> = hashSetOf<ResourceKey>();
+    resourceRequiresDb.iterate(txn).use { cursor ->
+      cursor.iterable().flatMapTo(requiredFiles) { keyVal ->
+        Deserialized.orElse(SerializeUtil.deserialize<ArrayList<ResourceRequireDep>>(keyVal.`val`(),logger),arrayListOf()).map { it.key }
       }
     }
-    return numSourceFiles
+
+    var numSourceFiles: Int = 0;
+    for(file: ResourceKey in requiredFiles) {
+      if(!shared.getBool(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(file))),providerOfDb)) {
+        ++numSourceFiles;
+      }
+    }
+    return numSourceFiles;
   }
 
 
-  override fun setInput(key: TaskKey, input: In) {
-    shared.setOne(key.serialize().hash().toBuffer(), input.serialize().toBuffer(), inputDb)
+  override fun setInput(key: TaskKey,input: In) {
+    shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),BufferUtil.toBuffer(SerializeUtil.serialize(input)),inputDb);
   }
 
-  override fun setOutput(key: TaskKey, output: Out) {
-    shared.setOne(key.serialize().hash().toBuffer(), output.serialize().toBuffer(), outputDb)
+  override fun setOutput(key: TaskKey,output: Out) {
+    shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),BufferUtil.toBuffer(SerializeUtil.serialize(output)),outputDb);
   }
 
-  override fun setTaskRequires(key: TaskKey, taskRequires: ArrayList<TaskRequireDep>) {
+  override fun setTaskRequires(key: TaskKey,taskRequires: ArrayList<TaskRequireDep>) {
     // OPTO: reuse buffers? is that safe?
-    val (keyBytes, keyHashedBytes) = key.serializeAndHash()
+    val serializedAndHashed: SerializedAndHashed = SerializeUtil.serializeAndHash(key)
+    val keyBytes: ByteArray = serializedAndHashed.serialized;
+    val keyHashedBytes: ByteArray = serializedAndHashed.hashed;
 
     // Remove old inverse task requirements.
-    val oldTaskRequires = shared.getOne<ArrayList<TaskRequireDep>>(keyHashedBytes.toBuffer(), taskRequiresDb).orElse(arrayListOf())
-    for(taskRequire in oldTaskRequires) {
-      shared.deleteDup(taskRequire.callee.serialize().hash().toBuffer(), keyHashedBytes.toBuffer(), callersOfDb, callersOfValuesDb)
+    val oldTaskRequires: ArrayList<TaskRequireDep> = Deserialized.orElse(shared.getOne<ArrayList<TaskRequireDep>>(BufferUtil.toBuffer(keyHashedBytes),taskRequiresDb),arrayListOf());
+    for(taskRequire: TaskRequireDep in oldTaskRequires) {
+      shared.deleteDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(taskRequire.callee))),BufferUtil.toBuffer(keyHashedBytes),callersOfDb,callersOfValuesDb);
     }
 
     // Add new task requirements.
-    shared.setOne(keyHashedBytes.toBuffer(), taskRequires.serialize().toBuffer(), taskRequiresDb)
-    for(taskRequire in taskRequires) {
-      shared.setDup(taskRequire.callee.serialize().hash().toBuffer(), keyBytes.toBuffer(), keyHashedBytes.toBuffer(), callersOfDb, callersOfValuesDb)
+    shared.setOne(BufferUtil.toBuffer(keyHashedBytes),BufferUtil.toBuffer(SerializeUtil.serialize(taskRequires)),taskRequiresDb);
+    for(taskRequire: TaskRequireDep in taskRequires) {
+      shared.setDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(taskRequire.callee))),BufferUtil.toBuffer(keyBytes),BufferUtil.toBuffer(keyHashedBytes),callersOfDb,callersOfValuesDb);
     }
   }
 
-  override fun setResourceRequires(key: TaskKey, resourceRequires: ArrayList<ResourceRequireDep>) {
+  override fun setResourceRequires(key: TaskKey,resourceRequires: ArrayList<ResourceRequireDep>) {
     // OPTO: reuse buffers? is that safe?
-    val (keyBytes, keyHashedBytes) = key.serializeAndHash()
+    val serializedAndHashed: SerializedAndHashed = SerializeUtil.serializeAndHash(key)
+    val keyBytes: ByteArray = serializedAndHashed.serialized;
+    val keyHashedBytes: ByteArray = serializedAndHashed.hashed;
 
     // Remove old inverse file requirements.
-    val oldResourceRequires = shared.getOne<ArrayList<ResourceRequireDep>>(keyHashedBytes.toBuffer(), resourceRequiresDb).orElse(arrayListOf())
+    val oldResourceRequires = Deserialized.orElse(shared.getOne<ArrayList<ResourceRequireDep>>(BufferUtil.toBuffer(keyHashedBytes),resourceRequiresDb),arrayListOf());
     for(resourceRequire in oldResourceRequires) {
-      shared.deleteDup(resourceRequire.key.serialize().hash().toBuffer(), keyHashedBytes.toBuffer(), requireesOfDb, requireesOfValuesDb)
+      shared.deleteDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceRequire.key))),BufferUtil.toBuffer(keyHashedBytes),requireesOfDb,requireesOfValuesDb);
     }
 
     // Add new file requirements.
-    shared.setOne(keyHashedBytes.toBuffer(), resourceRequires.serialize().toBuffer(), resourceRequiresDb)
+    shared.setOne(BufferUtil.toBuffer(keyHashedBytes),BufferUtil.toBuffer(SerializeUtil.serialize(resourceRequires)),resourceRequiresDb);
     for(resourceRequire in resourceRequires) {
-      shared.setDup(resourceRequire.key.serialize().hash().toBuffer(), keyBytes.toBuffer(), keyHashedBytes.toBuffer(), requireesOfDb, requireesOfValuesDb)
+      shared.setDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceRequire.key))),BufferUtil.toBuffer(keyBytes),BufferUtil.toBuffer(keyHashedBytes),requireesOfDb,requireesOfValuesDb);
     }
   }
 
-  override fun setResourceProvides(key: TaskKey, resourceProvides: ArrayList<ResourceProvideDep>) {
+  override fun setResourceProvides(key: TaskKey,resourceProvides: ArrayList<ResourceProvideDep>) {
     // OPTO: reuse buffers? is that safe?
-    val (keyBytes, keyHashedBytes) = key.serializeAndHash()
+    val serializedAndHashed: SerializedAndHashed = SerializeUtil.serializeAndHash(key)
+    val keyBytes: ByteArray = serializedAndHashed.serialized;
+    val keyHashedBytes: ByteArray = serializedAndHashed.hashed;
 
     // Remove old inverse file generates.
-    val oldResourceProvides = shared.getOne<ArrayList<ResourceProvideDep>>(keyHashedBytes.toBuffer(), resourceProvidesDb).orElse(arrayListOf())
-    for(resourceProvide in oldResourceProvides) {
-      shared.deleteOne(resourceProvide.key.serialize().hash().toBuffer(), providerOfDb)
+    val oldResourceProvides: ArrayList<ResourceProvideDep> = Deserialized.orElse(shared.getOne<ArrayList<ResourceProvideDep>>(BufferUtil.toBuffer(keyHashedBytes),resourceProvidesDb),arrayListOf());
+    for(resourceProvide: ResourceProvideDep in oldResourceProvides) {
+      shared.deleteOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceProvide.key))),providerOfDb);
     }
 
     // Add new file generates.
-    shared.setOne(keyHashedBytes.toBuffer(), resourceProvides.serialize().toBuffer(), resourceProvidesDb)
-    for(resourceProvide in resourceProvides) {
-      shared.setOne(resourceProvide.key.serialize().hash().toBuffer(), keyBytes.toBuffer(), providerOfDb)
+    shared.setOne(BufferUtil.toBuffer(keyHashedBytes),BufferUtil.toBuffer(SerializeUtil.serialize(resourceProvides)),resourceProvidesDb);
+    for(resourceProvide: ResourceProvideDep in resourceProvides) {
+      shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceProvide.key))),BufferUtil.toBuffer(keyBytes),providerOfDb);
     }
   }
 
-  override fun setData(key: TaskKey, data: TaskData<*, *>) {
+  override fun setData(key: TaskKey,data: TaskData<*,*>) {
     // OPTO: serialize and hash task only once
-    setInput(key, data.input)
-    setOutput(key, data.output)
-    setTaskRequires(key, data.taskRequires)
-    setResourceRequires(key, data.resourceRequires)
-    setResourceProvides(key, data.resourceProvides)
+    setInput(key,data.input);
+    setOutput(key,data.output);
+    setTaskRequires(key,data.taskRequires);
+    setResourceRequires(key,data.resourceRequires);
+    setResourceProvides(key,data.resourceProvides);
   }
 
   override fun drop() {
-    inputDb.drop(txn)
-    outputDb.drop(txn)
-    taskRequiresDb.drop(txn)
-    callersOfDb.drop(txn)
-    callersOfValuesDb.drop(txn)
-    resourceRequiresDb.drop(txn)
-    requireesOfDb.drop(txn)
-    requireesOfValuesDb.drop(txn)
-    resourceProvidesDb.drop(txn)
-    providerOfDb.drop(txn)
-  }
-
-
-  override fun close() {
-    txn.commit()
-    txn.close()
+    inputDb.drop(txn);
+    outputDb.drop(txn);
+    taskRequiresDb.drop(txn);
+    callersOfDb.drop(txn);
+    callersOfValuesDb.drop(txn);
+    resourceRequiresDb.drop(txn);
+    requireesOfDb.drop(txn);
+    requireesOfValuesDb.drop(txn);
+    resourceProvidesDb.drop(txn);
+    providerOfDb.drop(txn);
   }
 }

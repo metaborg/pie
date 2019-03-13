@@ -3,6 +3,7 @@ package mb.pie.store.lmdb
 import mb.pie.api.*
 import org.lmdbjava.*
 import java.io.File
+import java.nio.ByteBuffer
 
 /**
  * Sets the store of this builder to the [LMDBStore], stored at given [envDir], with parameters [maxDbSize] determining the maximum
@@ -14,9 +15,9 @@ fun PieBuilder.withLMDBStore(envDir: File, maxDbSize: Int = 1024 * 1024 * 1024, 
   return this
 }
 
-typealias EnvB = Env<Buf>
-typealias DbiB = Dbi<Buf>
-typealias TxnB = Txn<Buf>
+typealias EnvB = Env<ByteBuffer>
+typealias DbiB = Dbi<ByteBuffer>
+typealias TxnB = Txn<ByteBuffer>
 
 class LMDBStore(
   private val logger: Logger,

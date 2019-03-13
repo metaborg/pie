@@ -2,27 +2,23 @@ package mb.pie.store.lmdb
 
 import java.nio.ByteBuffer
 
+object BufferUtil {
+  public fun toBuffer(bytes: ByteArray): ByteBuffer {
+    val buffer: ByteBuffer = ByteBuffer.allocateDirect(bytes.size);
+    buffer.put(bytes).flip();
+    return buffer;
+  }
 
-typealias Buf = ByteBuffer
+  public fun copyBuffer(byteBuffer: ByteBuffer): ByteBuffer {
+    val readOnlyBuffer: ByteBuffer = byteBuffer.asReadOnlyBuffer();
+    val newBuffer: ByteBuffer = ByteBuffer.allocateDirect(readOnlyBuffer.capacity());
+    readOnlyBuffer.rewind();
+    newBuffer.put(readOnlyBuffer);
+    newBuffer.flip();
+    return newBuffer;
+  }
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun ByteArray.toBuffer(): Buf {
-  val buffer = Buf.allocateDirect(size)
-  buffer.put(this).flip()
-  return buffer
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun Buf.copyBuffer(): Buf {
-  val readOnlyBuffer = asReadOnlyBuffer()
-  val newBuffer = Buf.allocateDirect(readOnlyBuffer.capacity())
-  readOnlyBuffer.rewind()
-  newBuffer.put(readOnlyBuffer)
-  newBuffer.flip()
-  return newBuffer
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun emptyBuffer(): Buf {
-  return Buf.allocateDirect(0)
+  public fun emptyBuffer(): ByteBuffer {
+    return ByteBuffer.allocateDirect(0);
+  }
 }
