@@ -31,7 +31,7 @@ public class GuiceTaskDefs implements TaskDefs {
         return pieBuilder;
     }
 
-    
+
     private final HashMap<String, TaskDef<?, ?>> taskDefs;
 
     @Inject public GuiceTaskDefs(HashMap<String, TaskDef<?, ?>> taskDefs) {

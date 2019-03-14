@@ -1,5 +1,5 @@
 plugins {
-  id("org.metaborg.gradle.config.kotlin-library") // TODO: turn into Java library
+  id("org.metaborg.gradle.config.java-library")
 }
 
 dependencies {

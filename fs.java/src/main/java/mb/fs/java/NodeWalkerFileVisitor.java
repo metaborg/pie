@@ -7,7 +7,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
@@ -21,7 +23,7 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
 
 
     public NodeWalkerFileVisitor(FSNodeWalker walker, FSNodeMatcher matcher, JavaFSNode root, Builder<JavaFSNode> streamBuilder,
-        @Nullable FSNodeAccess access) {
+                                 @Nullable FSNodeAccess access) {
         this.matcher = matcher;
         this.walker = walker;
         this.root = root;

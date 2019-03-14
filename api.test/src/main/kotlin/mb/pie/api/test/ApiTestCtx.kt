@@ -3,7 +3,10 @@ package mb.pie.api.test
 import mb.fs.api.node.FSNode
 import mb.fs.java.JavaFSNode
 import mb.pie.api.*
-import mb.pie.api.exec.*
+import mb.pie.api.exec.BottomUpExecutor
+import mb.pie.api.exec.TopDownExecutor
+import mb.pie.api.exec.TopDownSession
+import java.io.Serializable
 import java.nio.file.FileSystem
 
 open class ApiTestCtx(
@@ -29,19 +32,19 @@ open class ApiTestCtx(
     return JavaFSNode(javaFs.getPath(path))
   }
 
-  fun <I : In, O : Out> taskDef(id: String, descFunc: (I, Int) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+  fun <I : Serializable, O : Serializable?> taskDef(id: String, descFunc: (I, Int) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
     return LambdaTaskDef(id, execFunc, null, descFunc)
   }
 
-  fun <I : In, O : Out> task(taskDef: TaskDef<I, O>, input: I): Task<I, O> {
+  fun <I : Serializable, O : Serializable?> task(taskDef: TaskDef<I, O>, input: I): Task<I, O> {
     return Task(taskDef, input)
   }
 
-  fun <I : In> stask(taskDef: TaskDef<I, *>, input: I): STask<I> {
+  fun <I : Serializable> stask(taskDef: TaskDef<I, *>, input: I): STask<I> {
     return STask(taskDef.id, input)
   }
 
-  fun <I : In> stask(taskDefId: String, input: I): STask<I> {
+  fun <I : Serializable> stask(taskDefId: String, input: I): STask<I> {
     return STask(taskDefId, input)
   }
 

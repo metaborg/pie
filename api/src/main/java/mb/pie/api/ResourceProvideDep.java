@@ -3,7 +3,9 @@ package mb.pie.api;
 import mb.pie.api.stamp.ResourceStamp;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.UncheckedIOException;
 
 /**
  * Resource 'provides' (writes) dependency.

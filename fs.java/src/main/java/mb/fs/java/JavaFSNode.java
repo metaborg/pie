@@ -1,6 +1,8 @@
 package mb.fs.java;
 
-import mb.fs.api.node.*;
+import mb.fs.api.node.FSNode;
+import mb.fs.api.node.FSNodeAccess;
+import mb.fs.api.node.FSNodeType;
 import mb.fs.api.node.match.FSNodeMatcher;
 import mb.fs.api.node.walk.FSNodeWalker;
 import mb.fs.api.path.FSPath;
@@ -9,10 +11,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

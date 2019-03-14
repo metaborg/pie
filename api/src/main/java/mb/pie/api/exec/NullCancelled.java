@@ -8,5 +8,6 @@ public class NullCancelled implements Cancelled {
         return false;
     }
 
-    @Override public void throwIfCancelled() {}
+    @Override public void throwIfCancelled() {
+    }
 }

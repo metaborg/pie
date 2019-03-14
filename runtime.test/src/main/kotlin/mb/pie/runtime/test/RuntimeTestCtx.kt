@@ -1,10 +1,15 @@
 package mb.pie.runtime.test
 
-import mb.pie.api.*
+import mb.pie.api.TaskDef
+import mb.pie.api.TaskKey
 import mb.pie.api.test.ApiTestCtx
 import mb.pie.runtime.PieImpl
-import mb.pie.runtime.exec.*
+import mb.pie.runtime.exec.BottomUpExecutorImpl
+import mb.pie.runtime.exec.BottomUpSession
+import mb.pie.runtime.exec.TopDownExecutorImpl
+import mb.pie.runtime.exec.TopDownSessionImpl
 import mb.pie.runtime.taskdefs.MapTaskDefs
+import java.io.Serializable
 import java.nio.file.FileSystem
 import java.util.function.Consumer
 
@@ -21,7 +26,7 @@ open class RuntimeTestCtx(
     return pieImpl.topDownExecutor.newSession() as TopDownSessionImpl
   }
 
-  fun bottomUpSession(observers: Map<TaskKey, Consumer<Out>> = mapOf()): BottomUpSession {
+  fun bottomUpSession(observers: Map<TaskKey, Consumer<Serializable?>> = mapOf()): BottomUpSession {
     for(pair in observers) {
       bottomUpExecutor.setObserver(pair.key, pair.value)
     }

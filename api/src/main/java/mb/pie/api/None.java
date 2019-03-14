@@ -7,7 +7,8 @@ import java.io.Serializable;
 public class None implements Serializable {
     public static final None instance = new None();
 
-    private None() {}
+    private None() {
+    }
 
     public boolean equals(@Nullable Object other) {
         return this == other || other != null && this.getClass() == other.getClass();

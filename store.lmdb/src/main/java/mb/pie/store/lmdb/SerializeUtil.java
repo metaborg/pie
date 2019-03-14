@@ -34,7 +34,7 @@ public class SerializeUtil {
         }
     }
 
-    public static <T extends @Nullable Serializable> SerializedAndHashed serializeAndHash(T obj){
+    public static <T extends @Nullable Serializable> SerializedAndHashed serializeAndHash(T obj) {
         final byte[] serialized = serialize(obj);
         final byte[] hashed = hash(serialized);
         return new SerializedAndHashed(serialized, hashed);

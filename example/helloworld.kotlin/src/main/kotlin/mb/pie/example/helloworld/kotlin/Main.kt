@@ -20,7 +20,7 @@ import java.io.File
  * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][File] to a file, and then writes "Hello, world!" to it. This
  * task does not return a value, so we use [None] as output type.
  */
-class WriteHelloWorld : TaskDef<File,None> {
+class WriteHelloWorld : TaskDef<File, None> {
   /**
    * The [id] property must be overridden to provide a unique identifier for this task definition. In this case, we use reflection to create
    * a unique identifier.
@@ -31,7 +31,7 @@ class WriteHelloWorld : TaskDef<File,None> {
    * The [exec] method must be overridden to implement the logic of this task definition. This function is executed with an
    * [execution context][ExecContext] object as receiver, which is used to tell PIE about dynamic task or file dependencies.
    */
-  override fun exec(context: ExecContext,input: File): None {
+  override fun exec(context: ExecContext, input: File): None {
     // We write "Hello, world!" to the file.
     input.outputStream().buffered().use {
       it.write("Hello, world!".toByteArray())
@@ -56,14 +56,14 @@ fun main(args: Array<String>) {
 
   // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
   val taskDefs = MapTaskDefs()
-  taskDefs.add(writeHelloWorld.id,writeHelloWorld)
+  taskDefs.add(writeHelloWorld.id, writeHelloWorld)
 
   // We need to create the PIE runtime, using a PieBuilderImpl.
   val pieBuilder = PieBuilderImpl()
   // We pass in the TaskDefs object we created.
   pieBuilder.withTaskDefs(taskDefs)
   // For storing build results and the dependency graph, we will use the LMDB embedded database, stored at target/lmdb.
-  LMDBStore.withLMDBStore(pieBuilder,File("build/run/lmdb"))
+  LMDBStore.withLMDBStore(pieBuilder, File("build/run/lmdb"))
   // For example purposes, we use verbose logging which will output to stdout.
   pieBuilder.withLogger(StreamLogger.verbose())
   // Then we build the PIE runtime.

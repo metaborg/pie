@@ -3,13 +3,19 @@ package mb.fs.api.node;
 import mb.fs.api.FileSystem;
 import mb.fs.api.node.match.FSNodeMatcher;
 import mb.fs.api.node.walk.FSNodeWalker;
-import mb.fs.api.path.*;
+import mb.fs.api.path.FSPath;
+import mb.fs.api.path.FilenameExtensionUtil;
+import mb.fs.api.path.InvalidFSPathRuntimeException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

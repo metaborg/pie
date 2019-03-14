@@ -11,7 +11,8 @@ public class JavaFileSystem implements FileSystem, Serializable {
     public static final String id = "java";
     public static JavaFileSystem instance = new JavaFileSystem();
 
-    private JavaFileSystem() {}
+    private JavaFileSystem() {
+    }
 
     @Override public String getId() {
         return id;
