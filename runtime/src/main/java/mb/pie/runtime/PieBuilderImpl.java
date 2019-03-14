@@ -26,9 +26,9 @@ public class PieBuilderImpl implements PieBuilder {
     private @Nullable ResourceSystems resourceSystems = null;
     private Function<Logger, Store> store = (logger) -> new InMemoryStore();
     private Function<Logger, Share> share = (logger) -> new NonSharingShare();
-    private OutputStamper defaultOutputStamper = OutputStampers.getEquals();
-    private ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper = FileSystemStampers.getModified();
-    private ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper = FileSystemStampers.getModified();
+    private OutputStamper defaultOutputStamper = OutputStampers.equals();
+    private ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper = FileSystemStampers.modified();
+    private ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper = FileSystemStampers.modified();
     private Function<Logger, Layer> layerFactory = ValidationLayer::new;
     private Logger logger = new NoopLogger();
     private Function<Logger, ExecutorLogger> executorLoggerFactory = LoggerExecutorLogger::new;

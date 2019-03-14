@@ -15,8 +15,6 @@ public interface StoreReadTxn extends StoreTxn {
      */
     @Nullable Serializable input(TaskKey key);
 
-    // TODO: use Option!
-
     /**
      * @return wrapper around output for [key], or `null` if no output is stored.
      */

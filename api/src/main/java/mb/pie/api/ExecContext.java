@@ -5,7 +5,7 @@ import mb.fs.api.path.FSPath;
 import mb.fs.java.JavaFSNode;
 import mb.fs.java.JavaFSPath;
 import mb.pie.api.fs.FileSystemResource;
-import mb.pie.api.fs.ResourceUtils;
+import mb.pie.api.fs.ResourceUtil;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -23,40 +23,34 @@ public interface ExecContext {
     /**
      * Requires given [task], using the default [output stamper][OutputStamper], and returns its output.
      */
-
     <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task) throws ExecException, InterruptedException;
 
     /**
      * Requires given [task], using given [output stamper][stamper], and returns its output.
      */
-
     <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its [task definition][taskDef] and [input], using the default [output stamper][OutputStamper], and returns its
      * output.
      */
-
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its [task definition][taskDef] and [input], using given [output stamper][stamper], and returns its output.
      */
-
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its [serializable task form][task], using the default [output stamper][OutputStamper], and returns its output.
      * Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
      */
-
     <I extends Serializable> Serializable require(STask<I> task) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its [serializable task form][task], using given [output stamper][stamper], and returns its output.
      * Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
      */
-
     <I extends Serializable> Serializable require(STask<I> task, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
@@ -64,14 +58,12 @@ public interface ExecContext {
      * [output stamper][OutputStamper], and returns its output. Requires lookup and cast of a task definition, prefer [require] with [Task] or
      * [TaskDef] if possible.
      */
-
     <I extends Serializable> Serializable require(String taskDefId, I input) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by the [identifier of its task definition][taskDefId] and [input], using given [output stamper][stamper],
      * and returns its output. Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
      */
-
     <I extends Serializable> Serializable require(String taskDefId, I input, OutputStamper stamper) throws ExecException, InterruptedException;
 
 
@@ -119,7 +111,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(FSNode node) throws IOException {
-        require(ResourceUtils.toResource(node), defaultRequireFileSystemStamper());
+        require(ResourceUtil.toResource(node), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -127,7 +119,7 @@ public interface ExecContext {
      * dependency.
      */
     default void require(FSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtils.toResource(node), stamper);
+        require(ResourceUtil.toResource(node), stamper);
     }
 
     /**
@@ -157,7 +149,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(JavaFSNode node) throws IOException {
-        require(ResourceUtils.toResource(node), defaultRequireFileSystemStamper());
+        require(ResourceUtil.toResource(node), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -165,7 +157,7 @@ public interface ExecContext {
      * resource dependency.
      */
     default void require(JavaFSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtils.toResource(node), stamper);
+        require(ResourceUtil.toResource(node), stamper);
     }
 
     /**
@@ -173,7 +165,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(Path path) throws IOException {
-        require(ResourceUtils.toResource(path), defaultRequireFileSystemStamper());
+        require(ResourceUtil.toResource(path), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -181,7 +173,7 @@ public interface ExecContext {
      * required resource dependency.
      */
     default void require(Path path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtils.toResource(path), stamper);
+        require(ResourceUtil.toResource(path), stamper);
     }
 
     /**
@@ -189,7 +181,7 @@ public interface ExecContext {
      * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
      */
     default void require(File file) throws IOException {
-        require(ResourceUtils.toResource(file), defaultRequireFileSystemStamper());
+        require(ResourceUtil.toResource(file), defaultRequireFileSystemStamper());
     }
 
     /**
@@ -197,7 +189,7 @@ public interface ExecContext {
      * resource dependency.
      */
     default void require(File file, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtils.toResource(file), stamper);
+        require(ResourceUtil.toResource(file), stamper);
     }
 
     /**
@@ -231,7 +223,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(FSNode node) throws IOException {
-        provide(ResourceUtils.toResource(node), defaultProvideFileSystemStamper());
+        provide(ResourceUtil.toResource(node), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -240,7 +232,7 @@ public interface ExecContext {
      * writing to the file or directory.
      */
     default void provide(FSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtils.toResource(node), stamper);
+        provide(ResourceUtil.toResource(node), stamper);
     }
 
     /**
@@ -249,7 +241,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSPath path) throws IOException {
-        provide(ResourceUtils.toResource(path), defaultProvideFileSystemStamper());
+        provide(ResourceUtil.toResource(path), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -258,7 +250,7 @@ public interface ExecContext {
      * [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtils.toResource(path), stamper);
+        provide(ResourceUtil.toResource(path), stamper);
     }
 
     /**
@@ -267,7 +259,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSNode node) throws IOException {
-        provide(ResourceUtils.toResource(node), defaultProvideFileSystemStamper());
+        provide(ResourceUtil.toResource(node), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -276,7 +268,7 @@ public interface ExecContext {
      * [provide] AFTER writing to the file or directory.
      */
     default void provide(JavaFSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtils.toResource(node), stamper);
+        provide(ResourceUtil.toResource(node), stamper);
     }
 
     /**
@@ -285,7 +277,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(Path path) throws IOException {
-        provide(ResourceUtils.toResource(path), defaultProvideFileSystemStamper());
+        provide(ResourceUtil.toResource(path), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -294,7 +286,7 @@ public interface ExecContext {
      * change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(Path path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtils.toResource(path), stamper);
+        provide(ResourceUtil.toResource(path), stamper);
     }
 
     /**
@@ -303,7 +295,7 @@ public interface ExecContext {
      * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
      */
     default void provide(File file) throws IOException {
-        provide(ResourceUtils.toResource(file), defaultProvideFileSystemStamper());
+        provide(ResourceUtil.toResource(file), defaultProvideFileSystemStamper());
     }
 
     /**
@@ -312,7 +304,7 @@ public interface ExecContext {
      * call [provide] AFTER writing to the file or directory.
      */
     default void provide(File file, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtils.toResource(file), stamper);
+        provide(ResourceUtil.toResource(file), stamper);
     }
 
     /**

@@ -4,7 +4,7 @@ pluginManagement {
   repositories {
     maven(url = "https://artifacts.metaborg.org/content/repositories/releases/")
     maven(url = "https://artifacts.metaborg.org/content/repositories/snapshots/")
-    // Following repositories are required for Spoofax Gradle plugin.
+    // Following repositories are required by Spoofax Gradle plugin.
     maven("https://pluto-build.github.io/mvnrepository/")
     maven("https://sugar-lang.github.io/mvnrepository/")
     maven("http://nexus.usethesource.io/content/repositories/public/")

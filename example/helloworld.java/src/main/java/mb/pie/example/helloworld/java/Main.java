@@ -25,7 +25,7 @@ public class Main {
      */
     public static class WriteHelloWorld implements TaskDef<File, None> {
         /**
-         * The {@link #getId} method must be overridden to provide a unique identifier for this task definition. In this case, we use
+         * The {@link TaskDef#getId} method must be overridden to provide a unique identifier for this task definition. In this case, we use
          * reflection to create a unique identifier.
          */
         @Override public String getId() {
@@ -33,7 +33,7 @@ public class Main {
         }
 
         /**
-         * The {@link #exec} method must be overridden to implement the logic of this task definition. This function is executed with an
+         * The {@link TaskDef#exec} method must be overridden to implement the logic of this task definition. This function is executed with an
          * {@link ExecContext execution context} object, which is used to tell PIE about dynamic task or file dependencies.
          */
         @Override public None exec(ExecContext context, File input) throws Exception {

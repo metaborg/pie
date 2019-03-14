@@ -15,7 +15,7 @@ val ApiTestCtx.toLowerCase
 
 val ApiTestCtx.readPath
   get() = taskDef<JavaFSNode, String>("read", { input, _ -> "read($input)" }) {
-    require(it, FileSystemStampers.getModified())
+    require(it, FileSystemStampers.modified())
     read(it)
   }
 

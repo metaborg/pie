@@ -24,6 +24,6 @@ public class ExistsResourceStamper implements ResourceStamper<FileSystemResource
     }
 
     @Override public String toString() {
-        return "Exists";
+        return "ExistsResourceStamper()";
     }
 }

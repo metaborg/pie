@@ -7,8 +7,7 @@ plugins {
 dependencies {
   api(project(":pie.api"))
   implementation("org.lmdbjava:lmdbjava:0.6.3")
-  // Include annotations as API, because checker framework annotations have a runtime retention policy.
-  api("org.checkerframework:checker-qual:2.6.0")
+  compileOnly("org.checkerframework:checker-qual-android:2.6.0") // Use android version: annotation retention policy is class instead of runtime.
 
   testImplementation(project(":pie.runtime.test"))
   testImplementation("com.nhaarman:mockito-kotlin:1.5.0")

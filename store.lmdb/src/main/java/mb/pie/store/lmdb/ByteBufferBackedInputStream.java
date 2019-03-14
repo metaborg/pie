@@ -3,10 +3,10 @@ package mb.pie.store.lmdb;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-public class ByteBufferBackedInputStream extends InputStream {
+class ByteBufferBackedInputStream extends InputStream {
     private final ByteBuffer buf;
 
-    public ByteBufferBackedInputStream(ByteBuffer buf) {
+    ByteBufferBackedInputStream(ByteBuffer buf) {
         super();
         this.buf = buf;
     }

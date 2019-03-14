@@ -28,7 +28,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     private final Dbi<ByteBuffer> providerOfDb;
     private final DbiShared shared;
 
-    public LMDBStoreTxn(
+    LMDBStoreTxn(
         Env<ByteBuffer> env,
         Txn<ByteBuffer> txn,
         boolean isWriteTxn,

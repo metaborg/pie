@@ -8,8 +8,8 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class SerializeUtil {
-    public static <T extends @Nullable Serializable> byte[] serialize(T obj) {
+class SerializeUtil {
+    static <T extends @Nullable Serializable> byte[] serialize(T obj) {
         try(
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)
@@ -25,7 +25,7 @@ public class SerializeUtil {
         }
     }
 
-    public static byte[] hash(byte[] bytes) {
+    static byte[] hash(byte[] bytes) {
         try {
             final MessageDigest digest = MessageDigest.getInstance("SHA-1");
             return digest.digest(bytes);
@@ -34,14 +34,14 @@ public class SerializeUtil {
         }
     }
 
-    public static <T extends @Nullable Serializable> SerializedAndHashed serializeAndHash(T obj) {
+    static <T extends @Nullable Serializable> SerializedAndHashed serializeAndHash(T obj) {
         final byte[] serialized = serialize(obj);
         final byte[] hashed = hash(serialized);
         return new SerializedAndHashed(serialized, hashed);
     }
 
 
-    public static <T extends @Nullable Serializable> ByteBuffer serializeHashedToBuffer(T obj) {
+    static <T extends @Nullable Serializable> ByteBuffer serializeHashedToBuffer(T obj) {
         return BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(obj)));
     }
 
@@ -50,7 +50,7 @@ public class SerializeUtil {
     }
 
 
-    public static <T extends @Nullable Serializable> Deserialized<T> deserialize(ByteBuffer byteBuffer, Logger logger) {
+    static <T extends @Nullable Serializable> Deserialized<T> deserialize(ByteBuffer byteBuffer, Logger logger) {
         try(
             final ByteBufferBackedInputStream bufferInputStream = new ByteBufferBackedInputStream(byteBuffer);
             final ObjectInputStream objectInputStream = new ObjectInputStream(bufferInputStream)

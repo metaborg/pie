@@ -18,7 +18,7 @@ operator fun JavaFSPath.plus(other: String): JavaFSPath {
 }
 
 fun ExecContext.exists(path: JavaFSPath): Boolean {
-  val node = require(path, FileSystemStampers.getExists())
+  val node = require(path, FileSystemStampers.exists())
   return node.exists()
 }
 
@@ -56,7 +56,7 @@ fun ExecContext.walk(path: JavaFSPath, walker: FSNodeWalker?, matcher: FSNodeMat
 
 @Throws(ExecException::class)
 fun ExecContext.readToString(path: JavaFSPath): String? {
-  val node = require(path, FileSystemStampers.getHash())
+  val node = require(path, FileSystemStampers.hash())
   try {
     if(!node.exists()) {
       return null

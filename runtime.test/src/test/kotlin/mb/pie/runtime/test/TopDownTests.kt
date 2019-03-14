@@ -6,7 +6,7 @@ import mb.pie.api.InconsistentResourceProvide
 import mb.pie.api.InconsistentResourceRequire
 import mb.pie.api.InconsistentTaskReq
 import mb.pie.api.None
-import mb.pie.api.fs.ResourceUtils
+import mb.pie.api.fs.ResourceUtil
 import mb.pie.api.test.*
 import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.layer.ValidationException
@@ -118,7 +118,7 @@ internal class TopDownTests {
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceRequire
       assertNotNull(reason)
-      assertEquals(ResourceUtils.toResourceKey(fileNode), reason!!.dep.key)
+      assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
     }, anyC())
   }
 
@@ -155,7 +155,7 @@ internal class TopDownTests {
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceProvide
       assertNotNull(reason)
-      assertEquals(ResourceUtils.toResourceKey(fileNode), reason!!.dep.key)
+      assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
     }, anyC())
 
     assertEquals("HELLO WORLD!", read(fileNode))
@@ -221,7 +221,7 @@ internal class TopDownTests {
       verify(session3, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(ResourceUtils.toResourceKey(fileNode), reason!!.dep.key)
+        assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
       }, anyC())
       verify(session3, times(1)).exec(eq(combKey), eq(combTask), check {
         val reason = it as? InconsistentTaskReq
@@ -244,7 +244,7 @@ internal class TopDownTests {
       verify(session4, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(ResourceUtils.toResourceKey(fileNode), reason!!.dep.key)
+        assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
       }, anyC())
     }
     verify(session4, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())

@@ -5,7 +5,7 @@ import mb.fs.api.path.FSPath;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.fs.FileSystemResource;
-import mb.pie.api.fs.ResourceUtils;
+import mb.pie.api.fs.ResourceUtil;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamp;
@@ -136,7 +136,7 @@ public class ExecContextImpl implements ExecContext {
         if(resourceSystem == null) {
             throw new RuntimeException("Cannot get resource system for path " + path + "; resource system with id '" + fileSystemId + "' does not exist");
         }
-        final FSNode node = ResourceUtils.toNode(path, resourceSystem);
+        final FSNode node = ResourceUtil.toNode(path, resourceSystem);
         require(node, stamper);
         return node;
     }
@@ -151,7 +151,7 @@ public class ExecContextImpl implements ExecContext {
         if(resourceSystem == null) {
             throw new RuntimeException("Cannot get resource system for path " + path + "; resource system with id '" + fileSystemId + "' does not exist");
         }
-        final FSNode node = ResourceUtils.toNode(path, resourceSystem);
+        final FSNode node = ResourceUtil.toNode(path, resourceSystem);
         provide(node, stamper);
     }
 
@@ -162,7 +162,7 @@ public class ExecContextImpl implements ExecContext {
         if(resourceSystem == null) {
             throw new RuntimeException("Cannot get resource system for path " + path + "; resource system with id '" + fileSystemId + "' does not exist");
         }
-        return ResourceUtils.toNode(path, resourceSystem);
+        return ResourceUtil.toNode(path, resourceSystem);
     }
 
 

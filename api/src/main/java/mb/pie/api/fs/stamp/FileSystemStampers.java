@@ -7,7 +7,7 @@ import mb.fs.api.node.walk.FSNodeWalker;
  * Common file system stampers.
  */
 public class FileSystemStampers {
-    public static HashResourceStamper getHash() {
+    public static HashResourceStamper hash() {
         return new HashResourceStamper();
     }
 
@@ -20,7 +20,7 @@ public class FileSystemStampers {
     }
 
 
-    public static ModifiedResourceStamper getModified() {
+    public static ModifiedResourceStamper modified() {
         return new ModifiedResourceStamper();
     }
 
@@ -33,7 +33,7 @@ public class FileSystemStampers {
     }
 
 
-    public static ExistsResourceStamper getExists() {
+    public static ExistsResourceStamper exists() {
         return new ExistsResourceStamper();
     }
 }

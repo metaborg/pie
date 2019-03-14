@@ -2,11 +2,11 @@ package mb.pie.store.lmdb;
 
 import java.util.Arrays;
 
-public class SerializedAndHashed {
-    public final byte[] serialized;
-    public final byte[] hashed;
+class SerializedAndHashed {
+    final byte[] serialized;
+    final byte[] hashed;
 
-    public SerializedAndHashed(byte[] serialized, byte[] hashed) {
+    SerializedAndHashed(byte[] serialized, byte[] hashed) {
         this.serialized = serialized;
         this.hashed = hashed;
     }

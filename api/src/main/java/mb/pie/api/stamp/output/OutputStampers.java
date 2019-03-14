@@ -9,15 +9,15 @@ import java.util.function.Function;
  * Common task output stampers.
  */
 public class OutputStampers {
-    public static EqualsOutputStamper getEquals() {
+    public static EqualsOutputStamper equals() {
         return new EqualsOutputStamper();
     }
 
-    public static FuncEqualsOutputStamper getFuncEquals(Function<@Nullable Serializable, @Nullable Serializable> func) {
+    public static FuncEqualsOutputStamper funcEquals(Function<@Nullable Serializable, @Nullable Serializable> func) {
         return new FuncEqualsOutputStamper(func);
     }
 
-    public static InconsequentialOutputStamper getInconsequential() {
+    public static InconsequentialOutputStamper inconsequential() {
         return InconsequentialOutputStamper.instance;
     }
 }

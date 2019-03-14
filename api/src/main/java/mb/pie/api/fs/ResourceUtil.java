@@ -14,7 +14,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.File;
 import java.nio.file.Path;
 
-public class ResourceUtils {
+public class ResourceUtil {
     public static ResourceKey toResourceKey(FSPath path) {
         return new ResourceKey(path.getFileSystemId(), path);
     }

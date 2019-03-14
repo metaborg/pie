@@ -3,7 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockitokotlin2.*
 import mb.fs.java.JavaFSNode
 import mb.pie.api.exec.NullCancelled
-import mb.pie.api.fs.ResourceUtils
+import mb.pie.api.fs.ResourceUtil
 import mb.pie.api.test.anyC
 import mb.pie.api.test.anyER
 import mb.pie.api.test.readPath
@@ -127,7 +127,7 @@ internal class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
     val session2 = spy(bottomUpSession())
-    session2.requireBottomUpInitial(setOf(ResourceUtils.toResourceKey(fileNode)), NullCancelled())
+    session2.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
     inOrder(session2) {
       verify(session2).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(session2).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -137,7 +137,7 @@ internal class BottomUpTests {
 
     // Notify of file change, but file hasn't actually changed, observe no execution.
     val session3 = spy(bottomUpSession())
-    session3.requireBottomUpInitial(setOf(ResourceUtils.toResourceKey(fileNode)), NullCancelled())
+    session3.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
     verify(session3, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
     verify(session3, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
     verify(session3, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
@@ -147,7 +147,7 @@ internal class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent.
     val exec4 = spy(bottomUpSession())
-    exec4.requireBottomUpInitial(setOf(ResourceUtils.toResourceKey(fileNode)), NullCancelled())
+    exec4.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
     inOrder(exec4) {
       verify(exec4).exec(eq(readKey), eq(readTask), anyER(), anyC())
     }

@@ -77,7 +77,7 @@ class FileCopier : TaskDef<FileCopier.Input, File> {
     // and the file, which we do as follows.
     context.require(sourceTask)
     // We use a hash stamper on the source file, to prevent copies when the contents of the source file does not change.
-    context.require(sourceFile, FileSystemStampers.getHash())
+    context.require(sourceFile, FileSystemStampers.hash())
     // Then we read the source file, add some text to it, and write it to the destination.
     val sourceText = sourceFile.readText() + ", and universe!"
     destination.outputStream().buffered().use {
