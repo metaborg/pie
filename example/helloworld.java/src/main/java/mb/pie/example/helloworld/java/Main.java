@@ -4,9 +4,12 @@ import mb.pie.api.*;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 import mb.pie.runtime.taskdefs.MapTaskDefs;
-import mb.pie.store.lmdb.LMDBStoreKt;
+import mb.pie.store.lmdb.LMDBStore;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 
 /**
@@ -67,7 +70,7 @@ public class Main {
         // We pass in the TaskDefs object we created.
         pieBuilder.withTaskDefs(taskDefs);
         // For storing build results and the dependency graph, we will use the LMDB embedded database, stored at target/lmdb.
-        LMDBStoreKt.withLMDBStore(pieBuilder, new File("build/run/lmdb"));
+        LMDBStore.withLMDBStore(pieBuilder, new File("build/run/lmdb"));
         // For example purposes, we use verbose logging which will output to stdout.
         pieBuilder.withLogger(StreamLogger.verbose());
         // Then we build the PIE runtime.
