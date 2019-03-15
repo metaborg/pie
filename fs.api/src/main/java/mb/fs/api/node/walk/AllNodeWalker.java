@@ -1,10 +1,9 @@
 package mb.fs.api.node.walk;
 
 import mb.fs.api.node.FSNode;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class AllNodeWalker implements FSNodeWalker {
-    private static final long serialVersionUID = 1L;
-
     public static final AllNodeWalker instance = new AllNodeWalker();
 
 
@@ -13,7 +12,7 @@ public class AllNodeWalker implements FSNodeWalker {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         return this == o || (o != null && getClass() == o.getClass());
     }
 
@@ -22,6 +21,6 @@ public class AllNodeWalker implements FSNodeWalker {
     }
 
     @Override public String toString() {
-        return "AllNodeWalker";
+        return "AllNodeWalker()";
     }
 }

@@ -2,10 +2,9 @@ package mb.fs.api.node.walk;
 
 import mb.fs.api.node.FSNode;
 import mb.fs.api.path.match.FSPathMatcher;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class PathNodeWalker implements FSNodeWalker {
-    private static final long serialVersionUID = 1L;
-
     private final FSPathMatcher matcher;
 
 
@@ -19,7 +18,7 @@ public class PathNodeWalker implements FSNodeWalker {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final PathNodeWalker that = (PathNodeWalker) o;

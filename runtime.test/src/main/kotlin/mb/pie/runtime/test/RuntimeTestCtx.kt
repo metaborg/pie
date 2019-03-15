@@ -4,13 +4,18 @@ import mb.pie.api.TaskDef
 import mb.pie.api.TaskKey
 import mb.pie.api.test.ApiTestCtx
 import mb.pie.runtime.PieImpl
-import mb.pie.runtime.exec.*
-import mb.pie.runtime.taskdefs.MutableMapTaskDefs
+import mb.pie.runtime.exec.BottomUpExecutorImpl
+import mb.pie.runtime.exec.BottomUpSession
+import mb.pie.runtime.exec.TopDownExecutorImpl
+import mb.pie.runtime.exec.TopDownSessionImpl
+import mb.pie.runtime.taskdefs.MapTaskDefs
+import java.io.Serializable
 import java.nio.file.FileSystem
+import java.util.function.Consumer
 
 open class RuntimeTestCtx(
   private val pieImpl: PieImpl,
-  private val taskDefs: MutableMapTaskDefs,
+  private val taskDefs: MapTaskDefs,
   fs: FileSystem
 ) : ApiTestCtx(pieImpl, fs) {
   override val pie: PieImpl get() = pieImpl
@@ -21,7 +26,7 @@ open class RuntimeTestCtx(
     return pieImpl.topDownExecutor.newSession() as TopDownSessionImpl
   }
 
-  fun bottomUpSession(observers: Map<TaskKey, TaskObserver> = mapOf()): BottomUpSession {
+  fun bottomUpSession(observers: Map<TaskKey, Consumer<Serializable?>> = mapOf()): BottomUpSession {
     for(pair in observers) {
       bottomUpExecutor.setObserver(pair.key, pair.value)
     }

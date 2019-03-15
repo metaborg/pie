@@ -1,12 +1,9 @@
 package mb.fs.api.path.match;
 
 import mb.fs.api.path.FSPath;
-
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class ExtensionPathMatcher implements FSPathMatcher {
-    private static final long serialVersionUID = 1L;
-
     private final String extension;
 
 
@@ -24,7 +21,7 @@ public class ExtensionPathMatcher implements FSPathMatcher {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final ExtensionPathMatcher that = (ExtensionPathMatcher) o;

@@ -1,8 +1,11 @@
 package mb.pie.api.test
 
 import mb.fs.java.JavaFSNode
-import mb.pie.api.*
+import mb.pie.api.None
+import mb.pie.api.STask
+import mb.pie.api.TaskDef
 import mb.pie.api.fs.stamp.FileSystemStampers
+import java.io.Serializable
 import javax.swing.text.html.HTML.Tag.I
 
 val ApiTestCtx.toLowerCase
@@ -12,7 +15,7 @@ val ApiTestCtx.toLowerCase
 
 val ApiTestCtx.readPath
   get() = taskDef<JavaFSNode, String>("read", { input, _ -> "read($input)" }) {
-    require(it, FileSystemStampers.modified)
+    require(it, FileSystemStampers.modified())
     read(it)
   }
 
@@ -23,7 +26,7 @@ val ApiTestCtx.writePath
     None.instance
   }
 
-inline fun <reified I : In, reified O : Out> ApiTestCtx.requireOutputFunc(): TaskDef<STask<I>, O> {
+inline fun <reified I : Serializable, reified O : Serializable?> ApiTestCtx.requireOutputFunc(): TaskDef<STask<I>, O> {
   return taskDef<STask<I>, O>("require(${I::class}):${O::class}", { input, _ -> "require($input)" }) { task ->
     require(task) as O
   }

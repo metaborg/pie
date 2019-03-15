@@ -1,13 +1,15 @@
 package mb.fs.java;
 
-import mb.fs.api.node.*;
+import mb.fs.api.node.FSNodeAccess;
 import mb.fs.api.node.match.FSNodeMatcher;
 import mb.fs.api.node.walk.FSNodeWalker;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
@@ -21,7 +23,7 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
 
 
     public NodeWalkerFileVisitor(FSNodeWalker walker, FSNodeMatcher matcher, JavaFSNode root, Builder<JavaFSNode> streamBuilder,
-        @Nullable FSNodeAccess access) {
+                                 @Nullable FSNodeAccess access) {
         this.matcher = matcher;
         this.walker = walker;
         this.root = root;
@@ -30,7 +32,8 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
     }
 
 
-    @Override public FileVisitResult preVisitDirectory(@Nonnull Path dir, @Nonnull BasicFileAttributes attrs) throws IOException {
+    @Override
+    public FileVisitResult preVisitDirectory(@NonNull Path dir, @NonNull BasicFileAttributes attrs) throws IOException {
         final JavaFSNode node = new JavaFSNode(dir);
         if(access != null) {
             access.read(node);
@@ -44,7 +47,8 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
         return FileVisitResult.SKIP_SUBTREE;
     }
 
-    @Override public FileVisitResult visitFile(@Nonnull Path file, @Nonnull BasicFileAttributes attrs) throws IOException {
+    @Override
+    public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) throws IOException {
         final JavaFSNode node = new JavaFSNode(file);
         if(access != null) {
             access.read(node);
@@ -55,12 +59,12 @@ public class NodeWalkerFileVisitor implements FileVisitor<Path> {
         return FileVisitResult.CONTINUE;
     }
 
-    @Override public FileVisitResult visitFileFailed(@Nonnull Path file, @Nonnull IOException exc) {
+    @Override public FileVisitResult visitFileFailed(@NonNull Path file, @NonNull IOException exc) {
         // TODO: handle visit file failed.
         return FileVisitResult.CONTINUE;
     }
 
-    @Override public FileVisitResult postVisitDirectory(@Nonnull Path dir, @Nullable IOException exc) {
+    @Override public FileVisitResult postVisitDirectory(@NonNull Path dir, @Nullable IOException exc) {
         // TODO: handle visit directory failed (exc != null).
         return FileVisitResult.CONTINUE;
     }

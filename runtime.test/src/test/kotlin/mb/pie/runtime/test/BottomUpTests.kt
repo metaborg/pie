@@ -1,9 +1,13 @@
 package mb.pie.runtime.test
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockitokotlin2.*
 import mb.fs.java.JavaFSNode
-import mb.pie.api.fs.toResourceKey
-import mb.pie.api.test.*
+import mb.pie.api.exec.NullCancelled
+import mb.pie.api.fs.ResourceUtil
+import mb.pie.api.test.anyC
+import mb.pie.api.test.anyER
+import mb.pie.api.test.readPath
+import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestFactory
@@ -19,7 +23,7 @@ internal class BottomUpTests {
     val key = task.key()
 
     val session = spy(bottomUpSession())
-    val output = session.requireTopDownInitial(task)
+    val output = session.requireTopDownInitial(task, NullCancelled())
     Assertions.assertEquals("capitalized", output)
 
     inOrder(session, taskDef) {
@@ -37,14 +41,14 @@ internal class BottomUpTests {
     val task1 = task(taskDef, input1)
     val key1 = task1.key()
     val session1 = spy(bottomUpSession())
-    val output1 = session1.requireTopDownInitial(task1)
+    val output1 = session1.requireTopDownInitial(task1, NullCancelled())
     Assertions.assertEquals("capitalized", output1)
 
     val input2 = "CAPITALIZED_EVEN_MORE"
     val task2 = task(taskDef, input2)
     val key2 = task2.key()
     val session2 = spy(bottomUpSession())
-    val output2 = session2.requireTopDownInitial(task2)
+    val output2 = session2.requireTopDownInitial(task2, NullCancelled())
     Assertions.assertEquals("capitalized_even_more", output2)
 
     Assertions.assertNotEquals(output1, output2)
@@ -68,11 +72,11 @@ internal class BottomUpTests {
     val key = task.key()
 
     val session1 = bottomUpSession()
-    val output1 = session1.requireTopDownInitial(task)
+    val output1 = session1.requireTopDownInitial(task, NullCancelled())
     Assertions.assertEquals("capitalized", output1)
 
     val session2 = spy(bottomUpSession())
-    val output2 = session2.requireTopDownInitial(task)
+    val output2 = session2.requireTopDownInitial(task, NullCancelled())
     Assertions.assertEquals("capitalized", output2)
 
     Assertions.assertEquals(output1, output2)
@@ -106,7 +110,7 @@ internal class BottomUpTests {
 
     // Build 'combine', observe rebuild of all.
     val session1 = spy(bottomUpSession())
-    val output1 = session1.requireTopDownInitial(combTask)
+    val output1 = session1.requireTopDownInitial(combTask, NullCancelled())
     Assertions.assertEquals("hello world!", output1)
     inOrder(session1) {
       verify(session1).exec(eq(combKey), eq(combTask), eq(NoData()), anyC())
@@ -123,7 +127,7 @@ internal class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
     val session2 = spy(bottomUpSession())
-    session2.requireBottomUpInitial(setOf(fileNode.toResourceKey()))
+    session2.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
     inOrder(session2) {
       verify(session2).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(session2).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -133,7 +137,7 @@ internal class BottomUpTests {
 
     // Notify of file change, but file hasn't actually changed, observe no execution.
     val session3 = spy(bottomUpSession())
-    session3.requireBottomUpInitial(setOf(fileNode.toResourceKey()))
+    session3.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
     verify(session3, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
     verify(session3, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
     verify(session3, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
@@ -143,7 +147,7 @@ internal class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent.
     val exec4 = spy(bottomUpSession())
-    exec4.requireBottomUpInitial(setOf(fileNode.toResourceKey()))
+    exec4.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
     inOrder(exec4) {
       verify(exec4).exec(eq(readKey), eq(readTask), anyER(), anyC())
     }

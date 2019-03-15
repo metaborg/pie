@@ -3,10 +3,15 @@ package mb.pie.api.test
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import mb.pie.api.*
-import mb.pie.api.fs.stamp.*
+import mb.pie.api.fs.FileSystemResource
+import mb.pie.api.fs.stamp.HashResourceStamper
+import mb.pie.api.fs.stamp.ModifiedResourceStamper
 import mb.pie.api.stamp.OutputStamper
+import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.DynamicContainer
+import org.junit.jupiter.api.DynamicNode
+import org.junit.jupiter.api.DynamicTest
 import java.nio.file.FileSystem
 import java.util.stream.Stream
 
@@ -19,8 +24,8 @@ object ApiTestGenerator {
     shareGens: Array<(Logger) -> Share>,
     layerGens: Array<(Logger) -> Layer>,
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
-    defaultRequireFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
-    defaultProvideFileSystemStampers: Array<FileSystemStamper> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
+    defaultRequireFileSystemStampers: Array<ResourceStamper<FileSystemResource>> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
+    defaultProvideFileSystemStampers: Array<ResourceStamper<FileSystemResource>> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger,
     logger: Logger,
     testCtxGen: (Pie, TaskDefs, FileSystem) -> Ctx,

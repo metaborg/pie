@@ -11,7 +11,8 @@ public class JavaFileSystem implements FileSystem, Serializable {
     public static final String id = "java";
     public static JavaFileSystem instance = new JavaFileSystem();
 
-    private JavaFileSystem() {}
+    private JavaFileSystem() {
+    }
 
     @Override public String getId() {
         return id;
@@ -19,7 +20,8 @@ public class JavaFileSystem implements FileSystem, Serializable {
 
     @Override public JavaFSNode getNode(FSPath path) {
         if(!(path instanceof JavaFSPath)) {
-            throw new InvalidFSPathRuntimeException("Cannot get file system node for path " + path + ", it is not a Java file system path");
+            throw new InvalidFSPathRuntimeException(
+                "Cannot get file system node for path " + path + ", it is not a Java file system path");
         }
         final JavaFSPath javaFsPath = (JavaFSPath) path;
         return new JavaFSNode(javaFsPath);

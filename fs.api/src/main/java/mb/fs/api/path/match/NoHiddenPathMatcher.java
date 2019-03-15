@@ -1,12 +1,9 @@
 package mb.fs.api.path.match;
 
 import mb.fs.api.path.FSPath;
-
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class NoHiddenPathMatcher implements FSPathMatcher {
-    private static final long serialVersionUID = 1L;
-
     public static final NoHiddenPathMatcher instance = new NoHiddenPathMatcher();
 
 
@@ -19,7 +16,7 @@ public class NoHiddenPathMatcher implements FSPathMatcher {
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         return this == o || (o != null && getClass() == o.getClass());
     }
 
@@ -28,6 +25,6 @@ public class NoHiddenPathMatcher implements FSPathMatcher {
     }
 
     @Override public String toString() {
-        return "NoHiddenPathMatcher";
+        return "NoHiddenPathMatcher()";
     }
 }

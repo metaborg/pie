@@ -1,8 +1,12 @@
 package mb.pie.share.coroutine
 
-import kotlinx.coroutines.experimental.*
-import kotlinx.coroutines.experimental.sync.Mutex
-import mb.pie.api.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import mb.pie.api.PieBuilder
+import mb.pie.api.Share
+import mb.pie.api.TaskData
+import mb.pie.api.TaskKey
+import java.util.function.Supplier
 
 /**
  * Sets the share of this builder to the [CoroutineShare].
@@ -20,11 +24,11 @@ class CoroutineShare : Share {
   private val mutex = Mutex()
 
 
-  override fun share(key: TaskKey, execFunc: () -> TaskData<*, *>, visitedFunc: () -> TaskData<*, *>?): TaskData<*, *> {
+  override fun share(key: TaskKey, execFunc: Supplier<TaskData<*, *>>, visitedFunc: Supplier<TaskData<*, *>>?): TaskData<*, *>? {
     return runBlocking { getResult(key, execFunc, visitedFunc) }
   }
 
-  private suspend fun CoroutineScope.getResult(key: TaskKey, execFunc: () -> TaskData<*, *>, visitedFunc: () -> TaskData<*, *>?): TaskData<*, *> {
+  private suspend fun CoroutineScope.getResult(key: TaskKey, execFunc: Supplier<TaskData<*, *>>, visitedFunc: Supplier<TaskData<*, *>>?): TaskData<*, *> {
     mutex.lock()
 
     val existingDeferredExec = deferredTasks[key]
@@ -39,7 +43,7 @@ class CoroutineShare : Share {
     First check if task was already visited. This handles the case where a deferred task was removed from deferredTasks before another
     coroutine could acquire the first lock, causing a recomputation.
     */
-    val visited = visitedFunc()
+    val visited = visitedFunc?.get()
     if(visited != null) {
       mutex.unlock()
       return visited
@@ -48,7 +52,7 @@ class CoroutineShare : Share {
     // Task has not been visited yet, execute the task asynchronously.
     val deferredExec: Deferred<TaskData<*, *>>
     try {
-      deferredExec = async(coroutineContext) { execFunc() }
+      deferredExec = coroutineScope { async(coroutineContext) { execFunc.get() } }
       deferredTasks[key] = deferredExec
     } finally {
       mutex.unlock()
