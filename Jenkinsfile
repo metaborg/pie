@@ -1,3 +1,3 @@
 @Library('metaborg.jenkins.pipeline') _
 
-gradlePipeline()
+gradlePipeline(gradleRefreshDependencies: true)
