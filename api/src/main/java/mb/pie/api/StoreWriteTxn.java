@@ -1,5 +1,7 @@
 package mb.pie.api;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 
@@ -15,7 +17,7 @@ public interface StoreWriteTxn extends StoreReadTxn {
     /**
      * Sets the output of task [key] to [output].
      */
-    void setOutput(TaskKey key, Serializable output);
+    void setOutput(TaskKey key, @Nullable Serializable output);
 
     /**
      * Sets the task require dependencies of task [key] to [taskRequires].

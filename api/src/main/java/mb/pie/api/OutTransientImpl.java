@@ -2,17 +2,19 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Objects;
+
 public class OutTransientImpl<T extends @Nullable Object> implements OutTransient<T> {
-    private final @Nullable T value;
+    private final T value;
     private final boolean consistent;
 
-    public OutTransientImpl(@Nullable T value, boolean consistent) {
+    public OutTransientImpl(T value, boolean consistent) {
         this.value = value;
         this.consistent = consistent;
     }
 
 
-    @Override public @Nullable T getValue() {
+    @Override public T getValue() {
         return value;
     }
 
@@ -26,11 +28,11 @@ public class OutTransientImpl<T extends @Nullable Object> implements OutTransien
         if(o == null || getClass() != o.getClass()) return false;
         final OutTransientImpl<?> that = (OutTransientImpl<?>) o;
         if(consistent != that.consistent) return false;
-        return value != null ? value.equals(that.value) : that.value == null;
+        return Objects.equals(value, that.value);
     }
 
     @Override public int hashCode() {
-        int result = value != null ? value.hashCode() : 0;
+        @SuppressWarnings("ConstantConditions") int result = value != null ? value.hashCode() : 0;
         result = 31 * result + (consistent ? 1 : 0);
         return result;
     }

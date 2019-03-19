@@ -1,5 +1,5 @@
 plugins {
-  id("org.metaborg.spoofax.gradle.langspec") version "0.1.5"
+  id("org.metaborg.spoofax.gradle.langspec") version "0.1.6"
 }
 
 spoofax {

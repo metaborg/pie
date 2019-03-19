@@ -75,7 +75,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         try {
             final DataAndExecutionStatus<I, O> status = executeOrGetExisting(key, task, cancel);
             final TaskData<I, O> data = status.data;
-            final @Nullable O output = data.output;
+            final O output = data.output;
             if(!status.executed) {
                 // Validate well-formedness of the dependency graph.
                 try(final StoreReadTxn txn = store.readTxn()) {
@@ -85,7 +85,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 visited.put(key, data);
             }
             executorLogger.requireTopDownEnd(key, task, output);
-            return output; // TODO: can return null.
+            return output;
         } finally {
             layer.requireTopDownEnd(key);
         }

@@ -9,7 +9,7 @@ import java.io.Serializable;
  * deserialize it, and then cached.
  */
 public interface OutTransient<T extends @Nullable Object> extends Serializable {
-    @Nullable T getValue();
+    T getValue();
 
     boolean isConsistent();
 }

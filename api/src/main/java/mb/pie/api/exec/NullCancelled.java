@@ -9,5 +9,6 @@ public class NullCancelled implements Cancelled {
     }
 
     @Override public void throwIfCancelled() {
+
     }
 }

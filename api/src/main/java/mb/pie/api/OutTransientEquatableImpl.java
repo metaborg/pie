@@ -3,24 +3,25 @@ package mb.pie.api;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Serializable> implements OutTransientEquatable<T, E> {
-    private final @Nullable T value;
-    private final @Nullable E equatable;
+    private final T value;
+    private final E equatable;
     private final boolean consistent;
 
-    public OutTransientEquatableImpl(@Nullable T value, @Nullable E equatable, boolean consistent) {
+    public OutTransientEquatableImpl(T value, E equatable, boolean consistent) {
         this.value = value;
         this.equatable = equatable;
         this.consistent = consistent;
     }
 
 
-    @Override public @Nullable T getValue() {
+    @Override public T getValue() {
         return value;
     }
 
-    @Override public @Nullable E getEquatableValue() {
+    @Override public E getEquatableValue() {
         return equatable;
     }
 
@@ -34,12 +35,14 @@ public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Ser
         if(o == null || getClass() != o.getClass()) return false;
         final OutTransientEquatableImpl<?, ?> that = (OutTransientEquatableImpl<?, ?>) o;
         if(consistent != that.consistent) return false;
-        if(value != null ? !value.equals(that.value) : that.value != null) return false;
-        return equatable != null ? equatable.equals(that.equatable) : that.equatable == null;
+        if(!Objects.equals(value, that.value)) return false;
+        return Objects.equals(equatable, that.equatable);
     }
 
     @Override public int hashCode() {
+        //noinspection ConstantConditions
         int result = value != null ? value.hashCode() : 0;
+        //noinspection ConstantConditions
         result = 31 * result + (equatable != null ? equatable.hashCode() : 0);
         result = 31 * result + (consistent ? 1 : 0);
         return result;
