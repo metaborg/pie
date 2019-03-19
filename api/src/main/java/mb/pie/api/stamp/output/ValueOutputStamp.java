@@ -6,13 +6,14 @@ import mb.pie.api.stamp.OutputStamper;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class ValueOutputStamp<V extends @Nullable Serializable> implements OutputStamp {
-    private final @Nullable V value;
+    private final V value;
     private final OutputStamper stamper;
 
 
-    public ValueOutputStamp(@Nullable V value, OutputStamper stamper) {
+    public ValueOutputStamp(V value, OutputStamper stamper) {
         this.value = value;
         this.stamper = stamper;
     }
@@ -30,10 +31,10 @@ public class ValueOutputStamp<V extends @Nullable Serializable> implements Outpu
             // TODO: should OutTransientEquatable not have a special equality implementation that compares the equatable @Nullable value?
             final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>) value).getEquatableValue();
             final @Nullable Serializable thatEq = ((OutTransientEquatable<?, ?>) that.value).getEquatableValue();
-            if(valueEq != null ? !valueEq.equals(thatEq) : thatEq != null) {
+            if(!Objects.equals(valueEq, thatEq)) {
                 return false;
             }
-        } else if(value != null ? !value.equals(that.value) : that.value != null) {
+        } else if(!Objects.equals(value, that.value)) {
             return false;
         }
         return stamper.equals(that.stamper);
@@ -41,11 +42,13 @@ public class ValueOutputStamp<V extends @Nullable Serializable> implements Outpu
 
     @Override public int hashCode() {
         int result;
+        //noinspection ConstantConditions
         if(value == null) {
             result = 0;
         } else if(value instanceof OutTransientEquatable<?, ?>) {
             // TODO: should OutTransientEquatable not have a special hashCode implementation that hashes the equatable @Nullable value?
             final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>) value).getEquatableValue();
+            //noinspection ConstantConditions
             result = valueEq != null ? valueEq.hashCode() : 0;
         } else {
             result = value.hashCode();

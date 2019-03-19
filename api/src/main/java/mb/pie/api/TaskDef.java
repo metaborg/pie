@@ -33,23 +33,23 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
     String getId();
 
     /**
-     * Returns a key that uniquely identifies the task for given input.
+     * Executes the task with given input, and returns its output.
+     *
+     * @throws Exception            when execution of the task fails unexpectedly.
+     * @throws InterruptedException when execution of the task is cancelled or otherwise interrupted.
+     */
+    O exec(ExecContext context, I input) throws Exception;
+
+
+    /**
+     * Returns a key that uniquely identifies the task for given input. Defaults to entire input.
      */
     default Serializable key(I input) {
         return input;
     }
 
     /**
-     * Executes the task with given input, and returns its output.
-     *
-     * @throws Exception            when execution of the task fails unexpectedly.
-     * @throws InterruptedException when execution of the task is cancelled or otherwise interrupted.
-     */
-    @Nullable O exec(ExecContext context, I input) throws Exception;
-
-
-    /**
-     * Returns the description of task for given [input], with given [maximum length][maxLength].
+     * Returns the description of task for given [input], with given [maximum length][maxLength]. Defaults to ID(input).
      */
     default String desc(I input, int maxLength) {
         return this.getId() + '(' + StringUtil.toShortString(input.toString(), maxLength) + ')';

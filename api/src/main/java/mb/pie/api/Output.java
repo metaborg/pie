@@ -3,12 +3,12 @@ package mb.pie.api;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-// TODO: replace with Option<O>
 public final class Output<@Nullable O extends Serializable> {
-    public final @Nullable O output;
+    public final O output;
 
-    public Output(@Nullable O output) {
+    public Output(O output) {
         this.output = output;
     }
 
@@ -16,11 +16,12 @@ public final class Output<@Nullable O extends Serializable> {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final Output<?> output1 = (Output<?>) o;
-        return output != null ? output.equals(output1.output) : output1.output == null;
+        final Output<?> that = (Output<?>) o;
+        return Objects.equals(this.output, that.output);
     }
 
     @Override public int hashCode() {
+        //noinspection ConstantConditions
         return output != null ? output.hashCode() : 0;
     }
 

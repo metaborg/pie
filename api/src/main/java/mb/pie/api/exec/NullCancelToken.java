@@ -5,6 +5,7 @@ package mb.pie.api.exec;
  */
 public class NullCancelToken implements Cancel, Cancelled {
     @Override public void requestCancel() {
+
     }
 
     @Override public boolean isCancelled() {
@@ -12,5 +13,6 @@ public class NullCancelToken implements Cancel, Cancelled {
     }
 
     @Override public void throwIfCancelled() {
+
     }
 }

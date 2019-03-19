@@ -165,9 +165,9 @@ public class BottomUpSession implements RequireTask {
         executorLogger.requireTopDownStart(key, task);
         try {
             final TaskData<I, O> data = getData(key, task, cancel);
-            final @Nullable O output = data.output;
+            final O output = data.output;
             executorLogger.requireTopDownEnd(key, task, output);
-            return output; // TODO: can return null
+            return output;
         } finally {
             layer.requireTopDownEnd(key);
         }
@@ -200,7 +200,7 @@ public class BottomUpSession implements RequireTask {
             // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
             final TaskData<I, O> existingData = storedData.cast();
             final I input = existingData.input;
-            final @Nullable O output = existingData.output;
+            final O output = existingData.output;
 
             // Internal input consistency changes.
             {

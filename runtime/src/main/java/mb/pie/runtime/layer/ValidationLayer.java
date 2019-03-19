@@ -8,6 +8,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StatementWithEmptyBody", "StringBufferReplaceableByString"})
 public class ValidationLayer implements Layer {
     public class Options {
         public boolean cycle = true;
