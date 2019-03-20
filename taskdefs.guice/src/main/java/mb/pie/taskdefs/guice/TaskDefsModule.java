@@ -12,7 +12,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
  * bind task definitions.
  */
 public abstract class TaskDefsModule extends AbstractModule {
-    abstract void bindTaskDefs();
+    protected abstract void bindTaskDefs();
 
     protected <B extends TaskDef<?, ?>> void bindTaskDef(Class<B> clazz, String id) {
         bind(clazz).in(Singleton.class);
