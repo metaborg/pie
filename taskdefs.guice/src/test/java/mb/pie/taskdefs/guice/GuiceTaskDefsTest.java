@@ -46,7 +46,7 @@ public class GuiceTaskDefsTest {
     }
 
     static class TestTaskDefsModule extends TaskDefsModule {
-        @Override void bindTaskDefs() {
+        @Override protected void bindTaskDefs() {
             bindTaskDef(ReturnResultString.class, ReturnResultString.id);
             bindTaskDef(ReturnInjectedString.class, ReturnInjectedString.id);
         }
