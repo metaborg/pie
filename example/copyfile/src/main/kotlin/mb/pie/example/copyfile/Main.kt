@@ -104,8 +104,8 @@ fun main(args: Array<String>) {
 
   // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
   val taskDefs = MapTaskDefs()
-  taskDefs.add(fileCreator.id, fileCreator)
-  taskDefs.add(fileCopier.id, fileCopier)
+  taskDefs.add(fileCreator)
+  taskDefs.add(fileCopier)
 
   // We need to create the PIE runtime, using a PieBuilderImpl.
   val pieBuilder = PieBuilderImpl()

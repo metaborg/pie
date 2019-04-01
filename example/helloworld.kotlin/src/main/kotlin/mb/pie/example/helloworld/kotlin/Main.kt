@@ -56,7 +56,7 @@ fun main(args: Array<String>) {
 
   // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
   val taskDefs = MapTaskDefs()
-  taskDefs.add(writeHelloWorld.id, writeHelloWorld)
+  taskDefs.add(writeHelloWorld)
 
   // We need to create the PIE runtime, using a PieBuilderImpl.
   val pieBuilder = PieBuilderImpl()

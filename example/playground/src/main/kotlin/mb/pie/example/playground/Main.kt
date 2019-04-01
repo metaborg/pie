@@ -5,7 +5,6 @@ import mb.pie.api.fs.stamp.FileSystemStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.taskdefs.MapTaskDefs
-import mb.pie.store.lmdb.LMDBStore
 import java.io.File
 import java.io.Serializable
 
@@ -54,8 +53,8 @@ fun main(args: Array<String>) {
   val createFile = CreateFile()
   val transformFile = TransformFile()
   val taskDefs = MapTaskDefs()
-  taskDefs.add(createFile.id, createFile)
-  taskDefs.add(transformFile.id, transformFile)
+  taskDefs.add(createFile)
+  taskDefs.add(transformFile)
 
   val pieBuilder = PieBuilderImpl()
   pieBuilder.withTaskDefs(taskDefs)

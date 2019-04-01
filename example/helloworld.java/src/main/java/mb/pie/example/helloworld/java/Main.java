@@ -63,7 +63,7 @@ public class Main {
 
         // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
         final MapTaskDefs taskDefs = new MapTaskDefs();
-        taskDefs.add(writeHelloWorld.getId(), writeHelloWorld);
+        taskDefs.add(writeHelloWorld);
 
         // We need to create the PIE runtime, using a PieBuilderImpl.
         final PieBuilder pieBuilder = new PieBuilderImpl();
