@@ -41,6 +41,10 @@ public class MapTaskDefs implements TaskDefs {
         taskDefs.put(taskDef.getId(), taskDef);
     }
 
+    public void remove(TaskDef<?, ?> taskDef) {
+        taskDefs.remove(taskDef.getId());
+    }
+
     public void remove(String id) {
         taskDefs.remove(id);
     }

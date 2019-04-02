@@ -12,8 +12,16 @@ import java.util.HashMap;
 public class MapResourceSystems implements ResourceSystems {
     private final HashMap<String, ResourceSystem> resourceSystems;
 
+
     public MapResourceSystems() {
         this.resourceSystems = new HashMap<>();
+    }
+
+    public MapResourceSystems(Iterable<ResourceSystem> resourceSystems) {
+        this.resourceSystems = new HashMap<>();
+        for(ResourceSystem resourceSystem : resourceSystems) {
+            this.resourceSystems.put(resourceSystem.getId(), resourceSystem);
+        }
     }
 
     public MapResourceSystems(HashMap<String, ResourceSystem> resourceSystems) {
@@ -26,8 +34,12 @@ public class MapResourceSystems implements ResourceSystems {
     }
 
 
-    public void add(String id, ResourceSystem resourceSystem) {
-        resourceSystems.put(id, resourceSystem);
+    public void add(ResourceSystem resourceSystem) {
+        resourceSystems.put(resourceSystem.getId(), resourceSystem);
+    }
+
+    public void remove(ResourceSystem resourceSystem) {
+        resourceSystems.remove(resourceSystem.getId());
     }
 
     public void remove(String id) {
