@@ -3,6 +3,9 @@ plugins {
 }
 
 dependencies {
+  api(platform(project(":pie.depconstraints")))
+  
   api(project(":pie.api"))
-  compileOnly("org.checkerframework:checker-qual-android:2.6.0") // Use android version: annotation retention policy is class instead of runtime.
+  
+  compileOnly("org.checkerframework:checker-qual-android")
 }

@@ -25,6 +25,7 @@ fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
   project(":$id").projectDir = file(path)
 }
 
+includeProject("depconstraints")
 includeProject("api")
 includeProject("api.test")
 includeProject("runtime")
