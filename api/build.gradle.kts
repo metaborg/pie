@@ -4,9 +4,8 @@ plugins {
 
 dependencies {
   api(platform(project(":pie.depconstraints")))
-  
-  api(project(":fs.api"))
-  api(project(":fs.java"))
-  
+
+  api("org.metaborg:resource")
+
   compileOnly("org.checkerframework:checker-qual-android")
 }

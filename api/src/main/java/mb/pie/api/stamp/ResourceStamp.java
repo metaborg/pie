@@ -1,6 +1,6 @@
 package mb.pie.api.stamp;
 
-import mb.pie.api.Resource;
+import mb.resource.Resource;
 
 import java.io.Serializable;
 

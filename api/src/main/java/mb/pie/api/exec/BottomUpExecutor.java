@@ -1,9 +1,9 @@
 package mb.pie.api.exec;
 
 import mb.pie.api.ExecException;
-import mb.pie.api.ResourceKey;
 import mb.pie.api.Task;
 import mb.pie.api.TaskKey;
+import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;

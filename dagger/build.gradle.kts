@@ -16,4 +16,6 @@ dependencies {
   annotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
 
   compileOnly("org.checkerframework:checker-qual-android")
+
+  testAnnotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
 }

@@ -5,6 +5,7 @@ plugins {
 dependencies {
   constraints {
     // Main
+    api("org.metaborg:resource:0.2.0")
     api("org.checkerframework:checker-qual-android:2.6.0") // Use android version: annotation retention policy is class instead of runtime.
 
     // Test

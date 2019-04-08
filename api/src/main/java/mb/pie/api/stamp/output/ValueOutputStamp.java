@@ -28,7 +28,7 @@ public class ValueOutputStamp<V extends @Nullable Serializable> implements Outpu
         if(o == null || getClass() != o.getClass()) return false;
         final ValueOutputStamp<?> that = (ValueOutputStamp<?>) o;
         if(value instanceof OutTransientEquatable<?, ?> && that.value instanceof OutTransientEquatable<?, ?>) {
-            // TODO: should OutTransientEquatable not have a special equality implementation that compares the equatable @Nullable value?
+            // TODO: should OutTransientEquatable not have a special equality implementation that compares the equatable value?
             final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>) value).getEquatableValue();
             final @Nullable Serializable thatEq = ((OutTransientEquatable<?, ?>) that.value).getEquatableValue();
             if(!Objects.equals(valueEq, thatEq)) {

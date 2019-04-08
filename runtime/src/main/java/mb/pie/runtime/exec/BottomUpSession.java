@@ -3,19 +3,25 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.fs.FileSystemResource;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.ResourceKey;
+import mb.resource.ResourceRegistry;
+import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class BottomUpSession implements RequireTask {
     private final TaskDefs taskDefs;
-    private final ResourceSystems resourceSystems;
+    private final ResourceRegistry resourceRegistry;
     private final Map<TaskKey, Consumer<@Nullable Serializable>> observers;
     private final Store store;
     private final Layer layer;
@@ -29,19 +35,19 @@ public class BottomUpSession implements RequireTask {
 
     public BottomUpSession(
         TaskDefs taskDefs,
-        ResourceSystems resourceSystems,
+        ResourceRegistry resourceRegistry,
         Map<TaskKey, Consumer<@Nullable Serializable>> observers,
         Store store,
         Share share,
         OutputStamper defaultOutputStamper,
-        ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper,
+        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
+        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger
     ) {
         this.taskDefs = taskDefs;
-        this.resourceSystems = resourceSystems;
+        this.resourceRegistry = resourceRegistry;
         this.observers = observers;
         this.store = store;
         this.layer = layer;
@@ -49,17 +55,19 @@ public class BottomUpSession implements RequireTask {
         this.executorLogger = executorLogger;
 
         this.queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store);
-        this.executor = new TaskExecutor(taskDefs, resourceSystems, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, (TaskKey key, TaskData<?, ?> data) -> {
-            // Notify observer, if any.
-            final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
-            if(observer != null) {
-                final @Nullable Serializable output = data.output;
-                executorLogger.invokeObserverStart(observer, key, output);
-                observer.accept(output);
-                executorLogger.invokeObserverEnd(observer, key, output);
-            }
-        });
-        this.requireShared = new RequireShared(taskDefs, resourceSystems, visited, store, executorLogger);
+        this.executor = new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultOutputStamper,
+            defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger,
+            (TaskKey key, TaskData<?, ?> data) -> {
+                // Notify observer, if any.
+                final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
+                if(observer != null) {
+                    final @Nullable Serializable output = data.output;
+                    executorLogger.invokeObserverStart(observer, key, output);
+                    observer.accept(output);
+                    executorLogger.invokeObserverEnd(observer, key, output);
+                }
+            });
+        this.requireShared = new RequireShared(taskDefs, resourceRegistry, visited, store, executorLogger);
     }
 
 
@@ -126,7 +134,7 @@ public class BottomUpSession implements RequireTask {
         logger.trace("Scheduling tasks affected by resources: " + resources);
         final HashSet<TaskKey> affected;
         try(final StoreReadTxn txn = store.readTxn()) {
-            affected = BottomUpShared.directlyAffectedTaskKeys(txn, resources, resourceSystems, logger);
+            affected = BottomUpShared.directlyAffectedTaskKeys(txn, resources, resourceRegistry, logger);
         }
         for(TaskKey key : affected) {
             logger.trace("- scheduling: " + key);
@@ -143,7 +151,8 @@ public class BottomUpSession implements RequireTask {
             final List<TaskKey> inconsistentCallers = txn
                 .callersOf(callee)
                 .stream()
-                .filter((caller) -> txn.taskRequires(caller).stream().filter((dep) -> dep.calleeEqual(callee)).anyMatch((dep) -> !dep.isConsistent(output)))
+                .filter((caller) -> txn.taskRequires(caller).stream().filter((dep) -> dep.calleeEqual(callee)).anyMatch(
+                    (dep) -> !dep.isConsistent(output)))
                 .collect(Collectors.toList());
 
             for(TaskKey key : inconsistentCallers) {

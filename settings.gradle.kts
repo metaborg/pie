@@ -17,9 +17,6 @@ pluginManagement {
   }
 }
 
-include("fs.api")
-include("fs.java")
-
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
   include(id)
   project(":$id").projectDir = file(path)

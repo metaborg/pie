@@ -5,9 +5,10 @@ import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.api.exec.NullCancelled;
 import mb.pie.api.exec.TopDownSession;
-import mb.pie.api.fs.FileSystemResource;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.ResourceRegistry;
+import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -25,12 +26,12 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
 
     public TopDownSessionImpl(
         TaskDefs taskDefs,
-        ResourceSystems resourceSystems,
+        ResourceRegistry resourceRegistry,
         Store store,
         Share share,
         OutputStamper defaultOutputStamper,
-        ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper,
+        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
+        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger
@@ -38,8 +39,9 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         this.store = store;
         this.layer = layer;
         this.executorLogger = executorLogger;
-        this.executor = new TaskExecutor(taskDefs, resourceSystems, visited, store, share, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null);
-        this.requireShared = new RequireShared(taskDefs, resourceSystems, visited, store, executorLogger);
+        this.executor = new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultOutputStamper,
+            defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null);
+        this.requireShared = new RequireShared(taskDefs, resourceRegistry, visited, store, executorLogger);
     }
 
 
@@ -159,7 +161,8 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
 
         // Total call consistency requirements.
         for(TaskRequireDep taskReq : taskRequires) {
-            final @Nullable InconsistentTaskReq reason = requireShared.checkTaskRequire(key, task, taskReq, this, cancel);
+            final @Nullable InconsistentTaskReq reason =
+                requireShared.checkTaskRequire(key, task, taskReq, this, cancel);
             if(reason != null) {
                 return new DataAndExecutionStatus<>(exec(key, task, reason, cancel), true);
             }

@@ -1,11 +1,19 @@
 package mb.pie.runtime;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.Pie;
+import mb.pie.api.Share;
+import mb.pie.api.Store;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.TaskDefs;
 import mb.pie.api.exec.BottomUpExecutor;
 import mb.pie.api.exec.TopDownExecutor;
-import mb.pie.api.fs.FileSystemResource;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.ResourceRegistry;
+import mb.resource.fs.FSResource;
 
 import java.util.function.Function;
 
@@ -13,12 +21,12 @@ public class PieImpl implements Pie {
     private final TopDownExecutor topDownExecutor;
     private final BottomUpExecutor bottomUpExecutor;
     final TaskDefs taskDefs;
-    final ResourceSystems resourceSystems;
+    final ResourceRegistry resourceRegistry;
     final Store store;
     final Share share;
     final OutputStamper defaultOutputStamper;
-    final ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper;
-    final ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper;
+    final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
+    final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
     final Function<Logger, Layer> layerFactory;
     final Logger logger;
     final Function<Logger, ExecutorLogger> executorLoggerFactory;
@@ -27,12 +35,12 @@ public class PieImpl implements Pie {
         TopDownExecutor topDownExecutor,
         BottomUpExecutor bottomUpExecutor,
         TaskDefs taskDefs,
-        ResourceSystems resourceSystems,
+        ResourceRegistry resourceRegistry,
         Store store,
         Share share,
         OutputStamper defaultOutputStamper,
-        ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper,
+        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
+        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
         Function<Logger, Layer> layerFactory,
         Logger logger,
         Function<Logger, ExecutorLogger> executorLoggerFactory
@@ -40,7 +48,7 @@ public class PieImpl implements Pie {
         this.topDownExecutor = topDownExecutor;
         this.bottomUpExecutor = bottomUpExecutor;
         this.taskDefs = taskDefs;
-        this.resourceSystems = resourceSystems;
+        this.resourceRegistry = resourceRegistry;
         this.store = store;
         this.share = share;
         this.defaultOutputStamper = defaultOutputStamper;

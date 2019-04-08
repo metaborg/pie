@@ -1,29 +1,30 @@
 package mb.pie.lang.runtime
 
-import mb.fs.api.node.match.FSNodeMatcher
-import mb.fs.api.node.walk.FSNodeWalker
-import mb.fs.java.JavaFSPath
 import mb.pie.api.ExecContext
 import mb.pie.api.ExecException
-import mb.pie.api.fs.stamp.FileSystemStampers
+import mb.pie.api.stamp.fs.FileSystemStampers
+import mb.resource.fs.FSPath
+import mb.resource.fs.FSResource
+import mb.resource.fs.match.ResourceMatcher
+import mb.resource.fs.walk.ResourceWalker
 import java.io.IOException
 import java.util.stream.Collectors
 
-operator fun JavaFSPath.plus(other: JavaFSPath): JavaFSPath {
+operator fun FSPath.plus(other: FSPath): FSPath {
   return this.appendRelativePath(other)
 }
 
-operator fun JavaFSPath.plus(other: String): JavaFSPath {
+operator fun FSPath.plus(other: String): FSPath {
   return this.appendSegment(other)
 }
 
-fun ExecContext.exists(path: JavaFSPath): Boolean {
+fun ExecContext.exists(path: FSPath): Boolean {
   val node = require(path, FileSystemStampers.exists())
   return node.exists()
 }
 
 @Throws(ExecException::class)
-fun ExecContext.list(path: JavaFSPath, matcher: FSNodeMatcher?): ArrayList<JavaFSPath> {
+fun ExecContext.list(path: FSPath, matcher: ResourceMatcher?): ArrayList<FSPath> {
   val node = require(path, FileSystemStampers.modified(matcher))
   if(!node.isDirectory) {
     throw ExecException("Cannot list '$path', it is not a directory")
@@ -31,7 +32,7 @@ fun ExecContext.list(path: JavaFSPath, matcher: FSNodeMatcher?): ArrayList<JavaF
   try {
     val nodes = if(matcher != null) node.list(matcher) else node.list()
     nodes.use { stream ->
-      return stream.map { it.path }.collect(Collectors.toCollection { ArrayList<JavaFSPath>() })
+      return stream.map { it.path }.collect(Collectors.toCollection { ArrayList<FSPath>() })
     }
   } catch(e: IOException) {
     throw ExecException("Cannot list '$path'", e)
@@ -39,7 +40,7 @@ fun ExecContext.list(path: JavaFSPath, matcher: FSNodeMatcher?): ArrayList<JavaF
 }
 
 @Throws(ExecException::class)
-fun ExecContext.walk(path: JavaFSPath, walker: FSNodeWalker?, matcher: FSNodeMatcher?): ArrayList<JavaFSPath> {
+fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMatcher?): ArrayList<FSPath> {
   val node = require(path, FileSystemStampers.modified(walker, matcher))
   if(!node.isDirectory) {
     throw ExecException("Cannot walk '$path', it is not a directory")
@@ -47,7 +48,7 @@ fun ExecContext.walk(path: JavaFSPath, walker: FSNodeWalker?, matcher: FSNodeMat
   try {
     val nodes = if(walker != null && matcher != null) node.walk(walker, matcher) else node.walk()
     nodes.use { stream ->
-      return stream.map { it.path }.collect(Collectors.toCollection { ArrayList<JavaFSPath>() })
+      return stream.map { it.path }.collect(Collectors.toCollection { ArrayList<FSPath>() })
     }
   } catch(e: IOException) {
     throw ExecException("Cannot walk '$path'", e)
@@ -55,13 +56,13 @@ fun ExecContext.walk(path: JavaFSPath, walker: FSNodeWalker?, matcher: FSNodeMat
 }
 
 @Throws(ExecException::class)
-fun ExecContext.readToString(path: JavaFSPath): String? {
+fun ExecContext.readToString(path: FSPath): String? {
   val node = require(path, FileSystemStampers.hash())
   try {
     if(!node.exists()) {
       return null
     }
-    val bytes = node.readAllBytes()
+    val bytes = node.readBytes()
     return String(bytes)
   } catch(e: IOException) {
     throw ExecException("Reading '$path' failed", e)
@@ -69,11 +70,11 @@ fun ExecContext.readToString(path: JavaFSPath): String? {
 }
 
 @Throws(ExecException::class)
-fun ExecContext.copy(from: JavaFSPath, to: JavaFSPath) {
-  val fromNode = require(from)
-  val toNode = toNode(to)
+fun ExecContext.copy(from: FSPath, to: FSPath) {
+  val fromResource = require(from)
+  val toResource = FSResource(to)
   try {
-    fromNode.copyTo(toNode)
+    fromResource.copyTo(toResource)
   } catch(e: IOException) {
     throw ExecException("Copying '$from' to '$to' failed", e)
   }

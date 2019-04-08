@@ -2,6 +2,7 @@ package mb.pie.runtime.exec;
 
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
+import mb.resource.ResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -9,14 +10,14 @@ import java.util.HashMap;
 
 public class RequireShared {
     private final TaskDefs taskDefs;
-    private final ResourceSystems resourceSystems;
+    private final ResourceRegistry resourceRegistry;
     private final HashMap<TaskKey, TaskData<?, ?>> visited;
     private final Store store;
     private final ExecutorLogger executorLogger;
 
-    public RequireShared(TaskDefs taskDefs, ResourceSystems resourceSystems, HashMap<TaskKey, TaskData<?, ?>> visited, Store store, ExecutorLogger executorLogger) {
+    public RequireShared(TaskDefs taskDefs, ResourceRegistry resourceRegistry, HashMap<TaskKey, TaskData<?, ?>> visited, Store store, ExecutorLogger executorLogger) {
         this.taskDefs = taskDefs;
-        this.resourceSystems = resourceSystems;
+        this.resourceRegistry = resourceRegistry;
         this.visited = visited;
         this.store = store;
         this.executorLogger = executorLogger;
@@ -69,7 +70,7 @@ public class RequireShared {
      */
     public @Nullable InconsistentResourceRequire checkResourceRequire(TaskKey key, Task<?, ?> task, ResourceRequireDep fileReq) {
         executorLogger.checkResourceRequireStart(key, task, fileReq);
-        final @Nullable InconsistentResourceRequire reason = fileReq.checkConsistency(resourceSystems);
+        final @Nullable InconsistentResourceRequire reason = fileReq.checkConsistency(resourceRegistry);
         executorLogger.checkResourceRequireEnd(key, task, fileReq, reason);
         return reason;
     }
@@ -79,7 +80,7 @@ public class RequireShared {
      */
     public @Nullable InconsistentResourceProvide checkResourceProvide(TaskKey key, Task<?, ?> task, ResourceProvideDep fileGen) {
         executorLogger.checkResourceProvideStart(key, task, fileGen);
-        final @Nullable InconsistentResourceProvide reason = fileGen.checkConsistency(resourceSystems);
+        final @Nullable InconsistentResourceProvide reason = fileGen.checkConsistency(resourceRegistry);
         executorLogger.checkResourceProvideEnd(key, task, fileGen, reason);
         return reason;
     }
