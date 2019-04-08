@@ -1,5 +1,6 @@
 package mb.pie.api;
 
+import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;

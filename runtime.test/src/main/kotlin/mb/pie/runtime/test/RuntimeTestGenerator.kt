@@ -1,9 +1,8 @@
 package mb.pie.runtime.test
 
 import mb.pie.api.*
-import mb.pie.api.fs.FileSystemResource
-import mb.pie.api.fs.stamp.HashResourceStamper
-import mb.pie.api.fs.stamp.ModifiedResourceStamper
+import mb.pie.api.stamp.fs.HashMatchResourceStamper
+import mb.pie.api.stamp.fs.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
@@ -16,6 +15,7 @@ import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
 import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.resource.fs.FSResource
 import org.junit.jupiter.api.DynamicNode
 import java.util.stream.Stream
 
@@ -26,8 +26,8 @@ object RuntimeTestGenerator {
     shareGens: Array<(Logger) -> Share> = arrayOf({ _ -> NonSharingShare() }),
     layerGens: Array<(Logger) -> Layer> = arrayOf({ l -> ValidationLayer(l) }),
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
-    defaultRequireFileSystemStampers: Array<ResourceStamper<FileSystemResource>> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
-    defaultProvideFileSystemStampers: Array<ResourceStamper<FileSystemResource>> = arrayOf(ModifiedResourceStamper(), HashResourceStamper()),
+    defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),
+    defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),
     executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
     logger: Logger = StreamLogger.onlyErrors(),
     testFunc: RuntimeTestCtx.() -> Unit

@@ -1,15 +1,15 @@
 package mb.pie.runtime.exec;
 
-import mb.fs.api.node.FSNode;
-import mb.fs.api.path.FSPath;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
-import mb.pie.api.fs.FileSystemResource;
-import mb.pie.api.fs.ResourceUtil;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamp;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.Resource;
+import mb.resource.ResourceKey;
+import mb.resource.ResourceRegistry;
+import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -20,11 +20,11 @@ public class ExecContextImpl implements ExecContext {
     private final RequireTask requireTask;
     private final Cancelled cancel;
     private final TaskDefs taskDefs;
-    private final ResourceSystems resourceSystems;
+    private final ResourceRegistry resourceRegistry;
     private final Store store;
     private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper;
+    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
+    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
     private final Logger logger;
 
     private final ArrayList<TaskRequireDep> taskRequires = new ArrayList<>();
@@ -36,17 +36,17 @@ public class ExecContextImpl implements ExecContext {
         RequireTask requireTask,
         Cancelled cancel,
         TaskDefs taskDefs,
-        ResourceSystems resourceSystems,
+        ResourceRegistry resourceRegistry,
         Store store,
         OutputStamper defaultOutputStamper,
-        ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper,
+        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
+        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
         Logger logger
     ) {
         this.requireTask = requireTask;
         this.cancel = cancel;
         this.taskDefs = taskDefs;
-        this.resourceSystems = resourceSystems;
+        this.resourceRegistry = resourceRegistry;
         this.store = store;
         this.defaultOutputStamper = defaultOutputStamper;
         this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
@@ -114,65 +114,33 @@ public class ExecContextImpl implements ExecContext {
 
 
     @Override public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
-        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>) stamper.stamp(resource);
+        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
+            (ResourceStamp<Resource>) stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
         Stats.addFileReq();
     }
 
     @Override public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
-        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>) stamper.stamp(resource);
+        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
+            (ResourceStamp<Resource>) stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
         Stats.addFileGen();
     }
 
 
-    @Override public FSNode require(FSPath path) throws IOException {
-        return require(path, defaultRequireFileSystemStamper);
-    }
-
-    @Override public FSNode require(FSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        final String fileSystemId = path.getFileSystemId();
-        final @Nullable ResourceSystem resourceSystem = resourceSystems.getResourceSystem(fileSystemId);
-        if(resourceSystem == null) {
-            throw new RuntimeException("Cannot get resource system for path " + path + "; resource system with id '" + fileSystemId + "' does not exist");
-        }
-        final FSNode node = ResourceUtil.toNode(path, resourceSystem);
-        require(node, stamper);
-        return node;
-    }
-
-    @Override public void provide(FSPath path) throws IOException {
-        provide(path, defaultProvideFileSystemStamper);
-    }
-
-    @Override public void provide(FSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        final String fileSystemId = path.getFileSystemId();
-        final @Nullable ResourceSystem resourceSystem = resourceSystems.getResourceSystem(fileSystemId);
-        if(resourceSystem == null) {
-            throw new RuntimeException("Cannot get resource system for path " + path + "; resource system with id '" + fileSystemId + "' does not exist");
-        }
-        final FSNode node = ResourceUtil.toNode(path, resourceSystem);
-        provide(node, stamper);
+    @Override public Resource getResource(ResourceKey key) {
+        return resourceRegistry.getResource(key);
     }
 
 
-    @Override public FSNode toNode(FSPath path) {
-        final String fileSystemId = path.getFileSystemId();
-        final @Nullable ResourceSystem resourceSystem = resourceSystems.getResourceSystem(fileSystemId);
-        if(resourceSystem == null) {
-            throw new RuntimeException("Cannot get resource system for path " + path + "; resource system with id '" + fileSystemId + "' does not exist");
-        }
-        return ResourceUtil.toNode(path, resourceSystem);
-    }
-
-
-    @Override public ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper() {
+    @Override public ResourceStamper<FSResource> defaultRequireFileSystemStamper() {
         return defaultRequireFileSystemStamper;
     }
 
-    @Override public ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper() {
+    @Override public ResourceStamper<FSResource> defaultProvideFileSystemStamper() {
         return defaultProvideFileSystemStamper;
     }
+
 
     @Override public Logger logger() {
         return logger;

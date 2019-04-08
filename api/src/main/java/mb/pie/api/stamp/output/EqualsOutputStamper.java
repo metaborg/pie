@@ -14,11 +14,8 @@ public class EqualsOutputStamper implements OutputStamper {
         return new ValueOutputStamp<>(output, this);
     }
 
-
     @Override public boolean equals(@Nullable Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        return true;
+        return this == o || o != null && this.getClass() == o.getClass();
     }
 
     @Override public int hashCode() {

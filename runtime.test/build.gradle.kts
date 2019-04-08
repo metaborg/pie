@@ -4,10 +4,13 @@ plugins {
 }
 
 dependencies {
+  api(platform(project(":pie.depconstraints")))
+  
   api(project(":pie.api"))
   api(project(":pie.api.test"))
   api(project(":pie.runtime"))
-  api("org.junit.jupiter:junit-jupiter-api:5.2.0")
-  api("com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0")
+  
+  api("org.junit.jupiter:junit-jupiter-api")
+  api("com.nhaarman.mockitokotlin2:mockito-kotlin")
   implementation(kotlin("reflect")) // Use correct version of reflection library; mockito-kotlin uses an old one.
 }

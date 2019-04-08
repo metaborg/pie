@@ -1,14 +1,13 @@
 package mb.pie.api.test
 
-import mb.fs.api.node.FSNode
-import mb.fs.api.path.FSPath
 import mb.pie.api.*
-import mb.pie.api.exec.Cancelled
-import mb.pie.api.exec.ExecReason
-import mb.pie.api.exec.NullCancelled
-import mb.pie.api.fs.FileSystemResource
+import mb.pie.api.exec.*
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
+import mb.resource.Resource
+import mb.resource.ResourceKey
+import mb.resource.fs.FSPath
+import mb.resource.fs.FSResource
 import org.mockito.Mockito
 import java.io.Serializable
 
@@ -67,16 +66,16 @@ class NoExecContext : ExecContext {
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
   override fun require(path: FSPath) = null!!
-  override fun require(path: FSPath, stamper: ResourceStamper<FileSystemResource>) = null!!
-  override fun defaultRequireFileSystemStamper(): ResourceStamper<FileSystemResource> = null!!
+  override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
+  override fun defaultRequireFileSystemStamper(): ResourceStamper<FSResource> = null!!
   override fun provide(path: FSPath) {}
-  override fun provide(path: FSPath, stamper: ResourceStamper<FileSystemResource>) {}
-  override fun defaultProvideFileSystemStamper(): ResourceStamper<FileSystemResource> = null!!
+  override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
+  override fun defaultProvideFileSystemStamper(): ResourceStamper<FSResource> = null!!
 
 
-  override fun toNode(path: FSPath): FSNode {
+  override fun getResource(key: ResourceKey): Resource {
     @Suppress("CAST_NEVER_SUCCEEDS")
-    return null as FSNode
+    return null as Resource
   }
 
 

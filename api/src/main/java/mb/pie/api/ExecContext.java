@@ -1,13 +1,13 @@
 package mb.pie.api;
 
-import mb.fs.api.node.FSNode;
-import mb.fs.api.path.FSPath;
-import mb.fs.java.JavaFSNode;
-import mb.fs.java.JavaFSPath;
-import mb.pie.api.fs.FileSystemResource;
-import mb.pie.api.fs.ResourceUtil;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.Resource;
+import mb.resource.ResourceKey;
+import mb.resource.ResourceRegistry;
+import mb.resource.ResourceRuntimeException;
+import mb.resource.fs.FSPath;
+import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.File;
@@ -73,14 +73,27 @@ public interface ExecContext {
 
 
     /**
-     * Marks given [resource] as required (read), using given [resource stamper][stamper], creating a required resource dependency.
+     * Marks given {@code resource} as required (read), using given {@code stamper}, creating a required resource
+     * dependency.
      */
     <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException;
 
     /**
-     * Marks given [resource] as provided (written to/created), using given [resource stamper][stamper], creating a provided resource
-     * dependency. The current contents of the resource may be used for change detection, so be sure to call [provide] AFTER modifying the
-     * resource.
+     * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
+     * resource dependency.
+     *
+     * @return resource for given key.
+     */
+    default Resource require(ResourceKey key, ResourceStamper<Resource> stamper) throws IOException {
+        final Resource resource = getResource(key);
+        require(resource, stamper);
+        return resource;
+    }
+
+    /**
+     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
+     * resource dependency. The current contents of the resource may be used for change detection, so be sure to call
+     * this method *AFTER* modifying the resource.
      */
     <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException;
 
@@ -89,113 +102,90 @@ public interface ExecContext {
     // Recording required (read) dependencies to files and directories of file systems.
     //
 
-
     /**
-     * Marks given [file system path][path] as required (read), using the
-     * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
+     * Marks given {@code path} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * required resource dependency.
      *
-     * @return resolved file system node.
+     * @return file system resource for given path.
      */
-    FSNode require(FSPath path) throws IOException;
+    default FSResource require(FSPath path) throws IOException {
+        final FSResource resource = new FSResource(path);
+        require(resource, defaultRequireFileSystemStamper());
+        return resource;
+    }
 
     /**
-     * Marks given [file system path][path] as required (read), using given [file system stamper][stamper], creating a required resource
+     * Marks given {@code path} as required (read), using given {@code stamper}, creating a required resource
      * dependency.
      *
-     * @return resolved file system node.
+     * @return file system resource for given path.
      */
-    FSNode require(FSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException;
-
-    /**
-     * Marks given [file system node][node] as required (read), using the
-     * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
-     */
-    default void require(FSNode node) throws IOException {
-        require(ResourceUtil.toResource(node), defaultRequireFileSystemStamper());
+    default FSResource require(FSPath path, ResourceStamper<FSResource> stamper) throws IOException {
+        final FSResource resource = new FSResource(path);
+        require(resource, stamper);
+        return resource;
     }
 
     /**
-     * Marks given [file system node][node] as required (read), using given [file system stamper][stamper], creating a required resource
-     * dependency.
-     */
-    default void require(FSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtil.toResource(node), stamper);
-    }
-
-    /**
-     * Marks given [Java file system path][path] as required (read), using the
-     * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
-     *
-     * @return resolved Java file system node.
-     */
-    default JavaFSNode require(JavaFSPath path) throws IOException {
-        return require(path, defaultRequireFileSystemStamper());
-    }
-
-    /**
-     * Marks given [Java file system path][path] as required (read), using given [file system stamper][stamper], creating a required
-     * resource dependency.
-     *
-     * @return resolved Java file system node.
-     */
-    default JavaFSNode require(JavaFSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        final JavaFSNode node = path.toNode();
-        require(node, stamper);
-        return node;
-    }
-
-    /**
-     * Marks given [Java file system node][node] as required (read), using the
-     * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
-     */
-    default void require(JavaFSNode node) throws IOException {
-        require(ResourceUtil.toResource(node), defaultRequireFileSystemStamper());
-    }
-
-    /**
-     * Marks given [Java file system node][node] as required (read), using given [file system stamper][stamper], creating a required
-     * resource dependency.
-     */
-    default void require(JavaFSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtil.toResource(node), stamper);
-    }
-
-    /**
-     * Marks given [Java file system (java.nio.file) path][path] as required (read), using the
-     * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
-     */
-    default void require(Path path) throws IOException {
-        require(ResourceUtil.toResource(path), defaultRequireFileSystemStamper());
-    }
-
-    /**
-     * Marks given [Java file system (java.nio.file) path][path] as required (read), using given [file system stamper][stamper], creating a
+     * Marks given {@code resource} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
      * required resource dependency.
      */
-    default void require(Path path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtil.toResource(path), stamper);
+    default void require(FSResource resource) throws IOException {
+        require(resource, defaultRequireFileSystemStamper());
     }
 
     /**
-     * Marks given [Java local file (java.io) path][file] as required (read), using the
-     * [default 'require' file system stamper][defaultRequireFileSystemStamper], creating a required resource dependency.
+     * Marks given {@code path} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * required resource dependency.
+     *
+     * @return file system resource for given path.
      */
-    default void require(File file) throws IOException {
-        require(ResourceUtil.toResource(file), defaultRequireFileSystemStamper());
+    default FSResource require(Path path) throws IOException {
+        final FSResource resource = new FSResource(path);
+        require(resource, defaultRequireFileSystemStamper());
+        return resource;
     }
 
     /**
-     * Marks given [Java local file (java.io) path][file] as required (read), using given [file system stamper][stamper], creating a required
-     * resource dependency.
+     * Marks given {@code path} as required (read), using the give {@code stamper}, creating a required resource
+     * dependency.
+     *
+     * @return file system resource for given path.
      */
-    default void require(File file, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        require(ResourceUtil.toResource(file), stamper);
+    default FSResource require(Path path, ResourceStamper<FSResource> stamper) throws IOException {
+        final FSResource resource = new FSResource(path);
+        require(resource, stamper);
+        return resource;
     }
 
     /**
-     * Default 'require' file system stamper.
+     * Marks given {@code file} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * required resource dependency.
+     *
+     * @return file system resource for given file object.
      */
-    ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper();
+    default FSResource require(File file) throws IOException {
+        final FSResource resource = new FSResource(file);
+        require(resource, defaultRequireFileSystemStamper());
+        return resource;
+    }
+
+    /**
+     * Marks given {@code file} as required (read), using the give {@code stamper}, creating a required resource
+     * dependency.
+     *
+     * @return file system resource for given file object.
+     */
+    default FSResource require(File file, ResourceStamper<FSResource> stamper) throws IOException {
+        final FSResource resource = new FSResource(file);
+        require(resource, stamper);
+        return resource;
+    }
+
+    /**
+     * Default 'require' resource stamper for file system resources.
+     */
+    ResourceStamper<FSResource> defaultRequireFileSystemStamper();
 
 
     //
@@ -204,137 +194,87 @@ public interface ExecContext {
 
 
     /**
-     * Marks given [file system path][path] as provided (written to/created), using the
-     * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
-     * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
+     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
+     * to call this method *AFTER* modifying the resource.
      */
-    void provide(FSPath path) throws IOException;
-
-    /**
-     * Marks given [file system path][path] as provided (written to/created), using given [file system stamper][stamper], creating a provided
-     * resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call [provide] AFTER
-     * writing to the file or directory.
-     */
-    void provide(FSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException;
-
-    /**
-     * Marks given [file system node][node] as provided (written to/created), using the
-     * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
-     * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
-     */
-    default void provide(FSNode node) throws IOException {
-        provide(ResourceUtil.toResource(node), defaultProvideFileSystemStamper());
+    default void provide(FSPath path) throws IOException {
+        provide(new FSResource(path), defaultProvideFileSystemStamper());
     }
 
     /**
-     * Marks given [file system node][node] as provided (written to/created), using given [file system stamper][stamper], creating a provided
-     * resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call [provide] AFTER
-     * writing to the file or directory.
+     * Marks given {@code path} as provided (write), using given {@code stamper}, creating a provided resource
+     * dependency. The current contents of the resource may be used for change detection, so be sure to call this method
+     * *AFTER* modifying the resource.
      */
-    default void provide(FSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtil.toResource(node), stamper);
+    default void provide(FSPath path, ResourceStamper<FSResource> stamper) throws IOException {
+        provide(new FSResource(path), stamper);
     }
 
     /**
-     * Marks given [Java file system path][path] as provided (written to/created), using the
-     * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
-     * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
+     * Marks given {@code resource} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
+     * to call this method *AFTER* modifying the resource.
      */
-    default void provide(JavaFSPath path) throws IOException {
-        provide(ResourceUtil.toResource(path), defaultProvideFileSystemStamper());
+    default void provide(FSResource resource) throws IOException {
+        provide(resource, defaultProvideFileSystemStamper());
     }
 
     /**
-     * Marks given [Java file system path][path] as provided (written to/created), using given [file system stamper][stamper], creating a
-     * provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call
-     * [provide] AFTER writing to the file or directory.
-     */
-    default void provide(JavaFSPath path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtil.toResource(path), stamper);
-    }
-
-    /**
-     * Marks given [Java file system node][node] as provided (written to/created), using the
-     * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
-     * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
-     */
-    default void provide(JavaFSNode node) throws IOException {
-        provide(ResourceUtil.toResource(node), defaultProvideFileSystemStamper());
-    }
-
-    /**
-     * Marks given [Java file system node][node] as provided (written to/created), using given [file system stamper][stamper], creating a
-     * provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to call
-     * [provide] AFTER writing to the file or directory.
-     */
-    default void provide(JavaFSNode node, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtil.toResource(node), stamper);
-    }
-
-    /**
-     * Marks given [Java file system (java.nio.file) path][path] as provided (written to/created), using the
-     * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
-     * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
+     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
+     * to call this method *AFTER* modifying the resource.
      */
     default void provide(Path path) throws IOException {
-        provide(ResourceUtil.toResource(path), defaultProvideFileSystemStamper());
+        provide(new FSResource(path), defaultProvideFileSystemStamper());
     }
 
     /**
-     * Marks given [Java file system (java.nio.file) path][path] as provided (written to/created), using given
-     * [file system stamper][stamper], creating a provided resource dependency. The current contents of the file or directory may be used for
-     * change detection, so be sure to call [provide] AFTER writing to the file or directory.
+     * Marks given {@code path} as provided (write), using the give {@code stamper}, creating a provided resource
+     * dependency. The current contents of the resource may be used for change detection, so be sure to call this method
+     * *AFTER* modifying the resource.
      */
-    default void provide(Path path, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtil.toResource(path), stamper);
+    default void provide(Path path, ResourceStamper<FSResource> stamper) throws IOException {
+        provide(new FSResource(path), stamper);
     }
 
     /**
-     * Marks given [Java local file (java.io) path][file] as provided (written to/created), using the
-     * [default 'provide' file system stamper][defaultProvideFileSystemStamper], creating a provided resource dependency. The current contents
-     * of the file or directory may be used for change detection, so be sure to call [provide] AFTER writing to the file or directory.
+     * Marks given {@code file} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
+     * to call this method *AFTER* modifying the resource.
      */
     default void provide(File file) throws IOException {
-        provide(ResourceUtil.toResource(file), defaultProvideFileSystemStamper());
+        provide(new FSResource(file), defaultProvideFileSystemStamper());
     }
 
     /**
-     * Marks given [Java local file (java.io) path][file] as provided (written to/created), using given [file system stamper][stamper],
-     * creating a provided resource dependency. The current contents of the file or directory may be used for change detection, so be sure to
-     * call [provide] AFTER writing to the file or directory.
+     * Marks given {@code file} as provided (write), using the give {@code stamper}, creating a provided resource
+     * dependency. The current contents of the resource may be used for change detection, so be sure to call this method
+     * *AFTER* modifying the resource.
      */
-    default void provide(File file, ResourceStamper<FileSystemResource> stamper) throws IOException {
-        provide(ResourceUtil.toResource(file), stamper);
+    default void provide(File file, ResourceStamper<FSResource> stamper) throws IOException {
+        provide(new FSResource(file), stamper);
     }
 
     /**
-     * Default 'provide' file system stamper.
+     * Default 'provide' resource stamper for file system resources.
      */
-    ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper();
+    ResourceStamper<FSResource> defaultProvideFileSystemStamper();
 
 
     //
-    // Resolving file system paths to file system nodes.
+    // Resource key to resource.
     //
 
 
     /**
-     * Resolves a file system path into a file system node, providing I/O. Does not create a dependency, use [require] or [provide] to record
-     * a dependency.
+     * Gets resource for given key.
      *
-     * @return resolved file system node.
+     * @param key Key to get resource for.
+     * @return Resource for {@code key}.
+     * @throws ResourceRuntimeException when given {@code key} cannot be handled by the {@link ResourceRegistry}.
      */
-    FSNode toNode(FSPath path);
-
-    /**
-     * Resolves a Java file system path into a Java file system node, providing I/O. Does not create a dependency, use [require] or [provide]
-     * to record a dependency.
-     *
-     * @return resolved Java file system node.
-     */
-    default JavaFSNode toNode(JavaFSPath path) {
-        return new JavaFSNode(path);
-    }
+    Resource getResource(ResourceKey key);
 
 
     //

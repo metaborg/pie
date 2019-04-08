@@ -1,15 +1,14 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
-import mb.fs.java.JavaFSNode
 import mb.pie.api.InconsistentResourceProvide
 import mb.pie.api.InconsistentResourceRequire
 import mb.pie.api.InconsistentTaskReq
 import mb.pie.api.None
-import mb.pie.api.fs.ResourceUtil
 import mb.pie.api.test.*
 import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.layer.ValidationException
+import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
 
@@ -91,7 +90,7 @@ internal class TopDownTests {
     val readPath = spy(readPath)
     addTaskDef(readPath)
 
-    val fileNode = fsNode("/file")
+    val fileNode = resource("/file")
     val task = task(readPath, fileNode)
     val key = task.key()
     write("HELLO WORLD!", fileNode)
@@ -118,7 +117,7 @@ internal class TopDownTests {
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceRequire
       assertNotNull(reason)
-      assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
+      assertEquals(fileNode.key, reason!!.dep.key)
     }, anyC())
   }
 
@@ -127,7 +126,7 @@ internal class TopDownTests {
     val writePath = spy(writePath)
     addTaskDef(writePath)
 
-    val fileNode = fsNode("/file")
+    val fileNode = resource("/file")
     assertTrue(!fileNode.exists())
 
     val task = task(writePath, Pair("HELLO WORLD!", fileNode))
@@ -155,7 +154,7 @@ internal class TopDownTests {
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceProvide
       assertNotNull(reason)
-      assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
+      assertEquals(fileNode.key, reason!!.dep.key)
     }, anyC())
 
     assertEquals("HELLO WORLD!", read(fileNode))
@@ -168,12 +167,12 @@ internal class TopDownTests {
     val readDef = spy(readPath)
     addTaskDef(readDef)
 
-    val fileNode = fsNode("/file")
+    val fileNode = resource("/file")
 
     val readTask = task(readDef, fileNode)
     val readKey = readTask.key()
 
-    val combDef = spy(taskDef<JavaFSNode, String>("combine", { it, _ -> "combine($it)" }) {
+    val combDef = spy(taskDef<FSResource, String>("combine", { it, _ -> "combine($it)" }) {
       val text = require(readTask)
       require(lowerDef, text)
     })
@@ -221,7 +220,7 @@ internal class TopDownTests {
       verify(session3, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
+        assertEquals(fileNode.key, reason!!.dep.key)
       }, anyC())
       verify(session3, times(1)).exec(eq(combKey), eq(combTask), check {
         val reason = it as? InconsistentTaskReq
@@ -244,7 +243,7 @@ internal class TopDownTests {
       verify(session4, times(1)).exec(eq(readKey), eq(readTask), check {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
-        assertEquals(ResourceUtil.toResourceKey(fileNode), reason!!.dep.key)
+        assertEquals(fileNode.key, reason!!.dep.key)
       }, anyC())
     }
     verify(session4, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -257,7 +256,7 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val filePath = fsNode("/file")
+    val filePath = resource("/file")
     assertThrows(ValidationException::class.java) {
       val session = executor.newSession()
       session.requireInitial(task(writePath, Pair("HELLO WORLD 1!", filePath)))
@@ -278,7 +277,7 @@ internal class TopDownTests {
 
     val executor = topDownExecutor
 
-    val filePath = fsNode("/file")
+    val filePath = resource("/file")
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
@@ -298,26 +297,26 @@ internal class TopDownTests {
   fun testRequireGeneratedHiddenDep() = RuntimeTestGenerator.generate("testRequireGeneratedHiddenDep") {
     addTaskDef(writePath)
     addTaskDef(readPath)
-    val indirection = requireOutputFunc<Pair<String, JavaFSNode>, None>()
+    val indirection = requireOutputFunc<Pair<String, FSResource>, None>()
     addTaskDef(indirection)
 
     val executor = topDownExecutor
 
-    val combineIncorrect = spy(taskDef<Pair<String, JavaFSNode>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+    val combineIncorrect = spy(taskDef<Pair<String, FSResource>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
       require(task(indirection, stask(writePath, Pair(text, path))))
       require(task(readPath, path))
     })
     addTaskDef(combineIncorrect)
 
     run {
-      val fileNode = fsNode("/file1")
+      val fileNode = resource("/file1")
       assertThrows(ValidationException::class.java) {
         val session = executor.newSession()
         session.requireInitial(task(combineIncorrect, Pair("HELLO WORLD!", fileNode)))
       }
     }
 
-    val combineStillIncorrect = spy(taskDef<Pair<String, JavaFSNode>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+    val combineStillIncorrect = spy(taskDef<Pair<String, FSResource>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
       require(task(indirection, stask(writePath, Pair(text, path))))
       require(task(writePath, Pair(text, path)))
       require(task(readPath, path))
@@ -325,7 +324,7 @@ internal class TopDownTests {
     addTaskDef(combineStillIncorrect)
 
     run {
-      val filePath2 = fsNode("/file2")
+      val filePath2 = resource("/file2")
       assertThrows(ValidationException::class.java) {
         val exec = executor.newSession()
         exec.requireInitial(task(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))

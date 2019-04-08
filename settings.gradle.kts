@@ -17,14 +17,12 @@ pluginManagement {
   }
 }
 
-include("fs.api")
-include("fs.java")
-
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
   include(id)
   project(":$id").projectDir = file(path)
 }
 
+includeProject("depconstraints")
 includeProject("api")
 includeProject("api.test")
 includeProject("runtime")
@@ -32,8 +30,10 @@ includeProject("runtime.test")
 includeProject("share.coroutine")
 includeProject("store.lmdb")
 includeProject("taskdefs.guice")
+includeProject("dagger")
 includeProject("lang")
 includeProject("lang.runtime")
 includeProject("example/copyfile")
 includeProject("example/helloworld.java")
 includeProject("example/helloworld.kotlin")
+includeProject("example/playground")

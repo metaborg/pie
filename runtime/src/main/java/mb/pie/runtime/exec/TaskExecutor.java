@@ -3,10 +3,11 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.fs.FileSystemResource;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.share.NonSharingShare;
+import mb.resource.ResourceRegistry;
+import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -15,13 +16,13 @@ import java.util.function.BiConsumer;
 
 public class TaskExecutor {
     private final TaskDefs taskDefs;
-    private final ResourceSystems resourceSystems;
+    private final ResourceRegistry resourceRegistry;
     private final HashMap<TaskKey, TaskData<?, ?>> visited;
     private final Store store;
     private final Share share;
     private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper;
+    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
+    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
@@ -29,20 +30,20 @@ public class TaskExecutor {
 
     public TaskExecutor(
         TaskDefs taskDefs,
-        ResourceSystems resourceSystems,
+        ResourceRegistry resourceRegistry,
         HashMap<TaskKey, TaskData<?, ?>> visited,
         Store store,
         Share share,
         OutputStamper defaultOutputStamper,
-        ResourceStamper<FileSystemResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FileSystemResource> defaultProvideFileSystemStamper,
+        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
+        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger,
         @Nullable BiConsumer<TaskKey, TaskData<?, ?>> postExecFunc
     ) {
         this.taskDefs = taskDefs;
-        this.resourceSystems = resourceSystems;
+        this.resourceRegistry = resourceRegistry;
         this.visited = visited;
         this.store = store;
         this.share = share;
@@ -89,7 +90,9 @@ public class TaskExecutor {
     private <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> execInternal(TaskKey key, Task<I, O> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         // Execute
-        final ExecContextImpl context = new ExecContextImpl(requireTask, cancel, taskDefs, resourceSystems, store, defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger);
+        final ExecContextImpl context =
+            new ExecContextImpl(requireTask, cancel, taskDefs, resourceRegistry, store, defaultOutputStamper,
+                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger);
         final @Nullable O output;
         try {
             output = task.exec(context);
@@ -104,7 +107,8 @@ public class TaskExecutor {
         }
         Stats.addExecution();
         final ExecContextImpl.Deps deps = context.deps();
-        final TaskData<I, O> data = new TaskData<>(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
+        final TaskData<I, O> data =
+            new TaskData<>(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
         // Validate well-formedness of the dependency graph, before writing.
         try(final StoreReadTxn txn = store.readTxn()) {
             layer.validatePreWrite(key, data, txn);

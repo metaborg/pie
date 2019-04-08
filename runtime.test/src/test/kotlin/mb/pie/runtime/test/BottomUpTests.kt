@@ -1,14 +1,10 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
-import mb.fs.java.JavaFSNode
 import mb.pie.api.exec.NullCancelled
-import mb.pie.api.fs.ResourceUtil
-import mb.pie.api.test.anyC
-import mb.pie.api.test.anyER
-import mb.pie.api.test.readPath
-import mb.pie.api.test.toLowerCase
+import mb.pie.api.test.*
 import mb.pie.runtime.exec.NoData
+import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestFactory
 
@@ -91,19 +87,19 @@ internal class BottomUpTests {
     addTaskDef(lowerDef)
     val readDef = spy(readPath)
     addTaskDef(readDef)
-    val combDef = spy(taskDef<JavaFSNode, String>("combine", { input, _ -> "toLowerCase(read($input))" }) {
+    val combDef = spy(taskDef<FSResource, String>("combine", { input, _ -> "toLowerCase(read($input))" }) {
       val text = require(task(readDef, it))
       require(task(lowerDef, text))
     })
     addTaskDef(combDef)
 
     val str = "HELLO WORLD!"
-    val fileNode = fsNode("/file")
-    write(str, fileNode)
+    val file = resource("/file")
+    write(str, file)
 
-    val combTask = task(combDef, fileNode)
+    val combTask = task(combDef, file)
     val combKey = combTask.key()
-    val readTask = task(readDef, fileNode)
+    val readTask = task(readDef, file)
     val readKey = readTask.key()
     val lowerTask = task(lowerDef, str)
     val lowerKey = lowerTask.key()
@@ -120,14 +116,14 @@ internal class BottomUpTests {
 
     // Change required file in such a way that the output of 'readPath' changes (change file content).
     val newStr = "!DLROW OLLEH"
-    write(newStr, fileNode)
+    write(newStr, file)
 
     val lowerRevTask = task(lowerDef, newStr)
     val lowerRevKey = lowerRevTask.key()
 
     // Notify of file change, observe bottom-up execution to [combine], and then top-down execution of [toLowerCase].
     val session2 = spy(bottomUpSession())
-    session2.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
+    session2.requireBottomUpInitial(setOf(file.key), NullCancelled())
     inOrder(session2) {
       verify(session2).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(session2).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -137,17 +133,17 @@ internal class BottomUpTests {
 
     // Notify of file change, but file hasn't actually changed, observe no execution.
     val session3 = spy(bottomUpSession())
-    session3.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
+    session3.requireBottomUpInitial(setOf(file.key), NullCancelled())
     verify(session3, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
     verify(session3, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
     verify(session3, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
 
     // Change required file in such a way that the file changes, but the output of [readPath] does not.
-    write(newStr, fileNode)
+    write(newStr, file)
 
     // Notify of file change, observe bottom-up execution of [readPath], but stop there because [combine] is still consistent.
     val exec4 = spy(bottomUpSession())
-    exec4.requireBottomUpInitial(setOf(ResourceUtil.toResourceKey(fileNode)), NullCancelled())
+    exec4.requireBottomUpInitial(setOf(file.key), NullCancelled())
     inOrder(exec4) {
       verify(exec4).exec(eq(readKey), eq(readTask), anyER(), anyC())
     }

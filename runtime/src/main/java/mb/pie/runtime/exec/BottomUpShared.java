@@ -1,15 +1,25 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
+import mb.pie.api.Logger;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
+import mb.resource.ResourceKey;
+import mb.resource.ResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 
 public class BottomUpShared {
     /**
      * Returns keys of tasks that are directly affected by changed resources.
      */
-    public static HashSet<TaskKey> directlyAffectedTaskKeys(StoreReadTxn txn, Collection<ResourceKey> changedResources, ResourceSystems resourceSystems, Logger logger) {
+    public static HashSet<TaskKey> directlyAffectedTaskKeys(StoreReadTxn txn, Collection<ResourceKey> changedResources, ResourceRegistry resourceRegistry, Logger logger) {
         final HashSet<TaskKey> affected = new HashSet<>();
         for(ResourceKey changedResource : changedResources) {
             logger.trace("* resource: " + changedResource);
@@ -17,7 +27,8 @@ public class BottomUpShared {
             final Set<TaskKey> requirees = txn.requireesOf(changedResource);
             for(TaskKey key : requirees) {
                 logger.trace("  * required by: " + key.toShortString(200));
-                if(!txn.resourceRequires(key).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(dep -> dep.isConsistent(resourceSystems))) {
+                if(!txn.resourceRequires(key).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(
+                    dep -> dep.isConsistent(resourceRegistry))) {
                     affected.add(key);
                 }
             }
@@ -25,7 +36,8 @@ public class BottomUpShared {
             final @Nullable TaskKey provider = txn.providerOf(changedResource);
             if(provider != null) {
                 logger.trace("  * provided by: " + provider.toShortString(200));
-                if(!txn.resourceProvides(provider).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(dep -> dep.isConsistent(resourceSystems))) {
+                if(!txn.resourceProvides(provider).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(
+                    dep -> dep.isConsistent(resourceRegistry))) {
                     affected.add(provider);
                 }
             }

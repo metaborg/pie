@@ -7,7 +7,10 @@ application {
 }
 
 dependencies {
+  compile(platform(project(":pie.depconstraints")))
+
   compile(project(":pie.runtime"))
   compile(project(":pie.store.lmdb"))
-  compileOnly("org.checkerframework:checker-qual:2.6.0")
+
+  compileOnly("org.checkerframework:checker-qual-android")
 }

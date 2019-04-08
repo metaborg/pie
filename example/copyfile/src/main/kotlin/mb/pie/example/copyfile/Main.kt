@@ -1,7 +1,7 @@
 package mb.pie.example.copyfile
 
 import mb.pie.api.*
-import mb.pie.api.fs.stamp.FileSystemStampers
+import mb.pie.api.stamp.fs.FileSystemStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.taskdefs.MapTaskDefs
@@ -104,8 +104,8 @@ fun main(args: Array<String>) {
 
   // Then, we add them to a TaskDefs object, which tells PIE about which task definitions are available.
   val taskDefs = MapTaskDefs()
-  taskDefs.add(fileCreator.id, fileCreator)
-  taskDefs.add(fileCopier.id, fileCopier)
+  taskDefs.add(fileCreator)
+  taskDefs.add(fileCopier)
 
   // We need to create the PIE runtime, using a PieBuilderImpl.
   val pieBuilder = PieBuilderImpl()

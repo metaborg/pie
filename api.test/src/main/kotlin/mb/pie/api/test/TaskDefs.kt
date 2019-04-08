@@ -1,10 +1,8 @@
 package mb.pie.api.test
 
-import mb.fs.java.JavaFSNode
-import mb.pie.api.None
-import mb.pie.api.STask
-import mb.pie.api.TaskDef
-import mb.pie.api.fs.stamp.FileSystemStampers
+import mb.pie.api.*
+import mb.pie.api.stamp.fs.FileSystemStampers
+import mb.resource.fs.FSResource
 import java.io.Serializable
 import javax.swing.text.html.HTML.Tag.I
 
@@ -14,13 +12,13 @@ val ApiTestCtx.toLowerCase
   }
 
 val ApiTestCtx.readPath
-  get() = taskDef<JavaFSNode, String>("read", { input, _ -> "read($input)" }) {
+  get() = taskDef<FSResource, String>("read", { input, _ -> "read($input)" }) {
     require(it, FileSystemStampers.modified())
     read(it)
   }
 
 val ApiTestCtx.writePath
-  get() = taskDef<Pair<String, JavaFSNode>, None>("write", { input, _ -> "write($input)" }) { (text, path) ->
+  get() = taskDef<Pair<String, FSResource>, None>("write", { input, _ -> "write($input)" }) { (text, path) ->
     write(text, path)
     provide(path)
     None.instance

@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-  api(project(":fs.java"))
-  implementation(project(":pie.api"))
+  api(platform(project(":pie.depconstraints")))
+  
+  api(project(":pie.api"))
 }

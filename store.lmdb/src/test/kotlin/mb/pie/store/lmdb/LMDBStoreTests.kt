@@ -1,9 +1,6 @@
 package mb.pie.store.lmdb
 
-import com.nhaarman.mockito_kotlin.eq
-import com.nhaarman.mockito_kotlin.never
-import com.nhaarman.mockito_kotlin.spy
-import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.test.anyC
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData

@@ -5,11 +5,14 @@ plugins {
 }
 
 dependencies {
+  api(platform(project(":pie.depconstraints")))
+
   api(project(":pie.api"))
   implementation("org.lmdbjava:lmdbjava:0.6.3")
-  compileOnly("org.checkerframework:checker-qual-android:2.6.0") // Use android version: annotation retention policy is class instead of runtime.
+
+  compileOnly("org.checkerframework:checker-qual-android")
 
   testImplementation(project(":pie.runtime.test"))
-  testImplementation("com.nhaarman:mockito-kotlin:1.5.0")
+  testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin")
   testImplementation(kotlin("reflect")) // Use correct version of reflection library; mockito-kotlin uses an old one.
 }

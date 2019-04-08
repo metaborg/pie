@@ -9,10 +9,12 @@ metaborg {
 }
 
 dependencies {
+  api(platform(project(":pie.depconstraints")))
+
   api(project(":pie.api"))
   api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
 
   testImplementation(project(":pie.runtime.test"))
-  testImplementation("com.nhaarman:mockito-kotlin:1.5.0")
+  testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin")
   testImplementation(kotlin("reflect")) // Use correct version of reflection library; mockito-kotlin uses an old one.
 }

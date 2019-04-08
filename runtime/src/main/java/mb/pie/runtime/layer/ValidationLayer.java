@@ -1,11 +1,28 @@
 package mb.pie.runtime.layer;
 
-import mb.pie.api.*;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.OutTransientEquatable;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskKey;
 import mb.pie.runtime.exec.BottomUpShared;
+import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StatementWithEmptyBody", "StringBufferReplaceableByString"})
@@ -213,7 +230,8 @@ public class ValidationLayer implements Layer {
             final int hash1 = obj.hashCode();
             final int hash2 = obj.hashCode();
             if(hash1 != hash2) {
-                errors.add("Produced different hash codes.\n  Possible incorrect cause hashCode implementation.\n  Hashes:\n    " + hash1 + "\n  vs\n    " + hash2);
+                errors.add(
+                    "Produced different hash codes.\n  Possible incorrect cause hashCode implementation.\n  Hashes:\n    " + hash1 + "\n  vs\n    " + hash2);
             }
         }
 
@@ -221,11 +239,14 @@ public class ValidationLayer implements Layer {
         final byte[] serializedAfterCalls = serialize(obj);
         final byte[] serializedAfterCallsAgain = serialize(obj);
         if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsAgain)) {
-            errors.add("Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
+            errors.add(
+                "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
         } else if(!Arrays.equals(serializedBeforeCalls, serializedAfterCalls)) {
-            errors.add("Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
+            errors.add(
+                "Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
         } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsAgain)) {
-            errors.add("Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedAfterCalls + "\n  vs\n    " + serializedAfterCallsAgain);
+            errors.add(
+                "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedAfterCalls + "\n  vs\n    " + serializedAfterCallsAgain);
         }
 
         if(checkSerializeRoundtrip) {
@@ -234,21 +255,25 @@ public class ValidationLayer implements Layer {
             final Serializable objDeserializedBeforeCalls = deserialize(serializedBeforeCalls);
             final Serializable objDeserializedAfterCalls = deserialize(serializedAfterCalls);
             if(!obj.equals(objDeserializedBeforeCalls) || !objDeserializedBeforeCalls.equals(obj)) {
-                errors.add("Not equal to itself after deserialization.\n  Possible incorrect cause serialization or equals implementation.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedBeforeCalls);
+                errors.add(
+                    "Not equal to itself after deserialization.\n  Possible incorrect cause serialization or equals implementation.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedBeforeCalls);
             } else if(!obj.equals(objDeserializedAfterCalls) || !objDeserializedAfterCalls.equals(obj)) {
-                errors.add("Not equal to itself after deserialization, when serialized with calls to equals and hashCode : between.\n  Possible incorrect cause serialization or equals implementation, possibly by using a non-transient hashCode cache.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedAfterCalls);
+                errors.add(
+                    "Not equal to itself after deserialization, when serialized with calls to equals and hashCode : between.\n  Possible incorrect cause serialization or equals implementation, possibly by using a non-transient hashCode cache.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedAfterCalls);
             }
             // Hash code.
             {
                 final int beforeHash1 = obj.hashCode();
                 final int beforeHash2 = objDeserializedBeforeCalls.hashCode();
                 if(beforeHash1 != beforeHash2) {
-                    errors.add("Produced different hash codes after deserialization.\n  Possible incorrect cause serialization or hashCode implementation.\n  Hashes:\n    " + beforeHash1 + "\n  vs\n    " + beforeHash2);
+                    errors.add(
+                        "Produced different hash codes after deserialization.\n  Possible incorrect cause serialization or hashCode implementation.\n  Hashes:\n    " + beforeHash1 + "\n  vs\n    " + beforeHash2);
                 } else {
                     final int afterHash1 = obj.hashCode();
                     final int afterHash2 = objDeserializedAfterCalls.hashCode();
                     if(afterHash1 != afterHash2) {
-                        errors.add("Produced different hash codes after deserialization, when serialized with calls to equals and hashCode : between.\n  Possible incorrect cause serialization or hashCode implementation.\n  Hashes:\n    " + afterHash1 + "\n  vs\n    " + afterHash2);
+                        errors.add(
+                            "Produced different hash codes after deserialization, when serialized with calls to equals and hashCode : between.\n  Possible incorrect cause serialization or hashCode implementation.\n  Hashes:\n    " + afterHash1 + "\n  vs\n    " + afterHash2);
                     } else {
                     }
                 }
@@ -258,9 +283,11 @@ public class ValidationLayer implements Layer {
             final byte[] serializedBeforeCallsTwice = serialize(objDeserializedBeforeCalls);
             final byte[] serializedAfterCallsTwice = serialize(objDeserializedAfterCalls);
             if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsTwice)) {
-                errors.add("Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
+                errors.add(
+                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
             } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsTwice)) {
-                errors.add("Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
+                errors.add(
+                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
             }
         }
 

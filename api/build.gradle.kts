@@ -3,7 +3,9 @@ plugins {
 }
 
 dependencies {
-  api(project(":fs.api"))
-  api(project(":fs.java"))
-  compileOnly("org.checkerframework:checker-qual-android:2.6.0") // Use android version: annotation retention policy is class instead of runtime.
+  api(platform(project(":pie.depconstraints")))
+
+  api("org.metaborg:resource")
+
+  compileOnly("org.checkerframework:checker-qual-android")
 }

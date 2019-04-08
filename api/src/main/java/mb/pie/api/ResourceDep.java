@@ -1,6 +1,7 @@
 package mb.pie.api;
 
 import mb.pie.api.exec.ExecReason;
+import mb.resource.ResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -10,10 +11,10 @@ public interface ResourceDep {
     /**
      * @return an execution reason when this resource dependency is inconsistent, `null` otherwise.
      */
-    @Nullable ExecReason checkConsistency(ResourceSystems systems);
+    @Nullable ExecReason checkConsistency(ResourceRegistry registry);
 
     /**
      * @return `true` when this resource dependency is consistent, `false` otherwise.
      */
-    boolean isConsistent(ResourceSystems systems);
+    boolean isConsistent(ResourceRegistry registry);
 }

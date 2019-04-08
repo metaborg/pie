@@ -2,6 +2,7 @@ package mb.pie.runtime.logger.exec;
 
 import mb.pie.api.*;
 import mb.pie.api.exec.ExecReason;
+import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -87,7 +88,8 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     public void checkResourceProvideEnd(TaskKey key, Task<?, ?> task, ResourceProvideDep dep, @Nullable ExecReason reason) {
         if(reason != null) {
             if(reason instanceof InconsistentResourceProvide) {
-                logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentResourceProvide) reason).newStamp + ")");
+                logger.trace(
+                    getIndent() + "␦ " + dep.key + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentResourceProvide) reason).newStamp + ")");
             } else {
                 logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent)");
             }
@@ -103,7 +105,8 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     public void checkResourceRequireEnd(TaskKey key, Task<?, ?> task, ResourceRequireDep dep, @Nullable ExecReason reason) {
         if(reason != null) {
             if(reason instanceof InconsistentResourceProvide) {
-                logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentResourceProvide) reason).newStamp + ")");
+                logger.trace(
+                    getIndent() + "␦ " + dep.key + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentResourceProvide) reason).newStamp + ")");
             } else {
                 logger.trace(getIndent() + "␦ " + dep.key + " (inconsistent)");
             }
@@ -118,7 +121,8 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     @Override
     public void checkTaskRequireEnd(TaskKey key, Task<?, ?> task, TaskRequireDep dep, @Nullable ExecReason reason) {
         if(reason instanceof InconsistentTaskReq) {
-            logger.trace(getIndent() + "␦ " + dep.callee.toShortString(descLimit) + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentTaskReq) reason).newStamp + ")");
+            logger.trace(getIndent() + "␦ " + dep.callee.toShortString(
+                descLimit) + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentTaskReq) reason).newStamp + ")");
         } else if(reason == null) {
             logger.trace(getIndent() + "␦ " + dep.callee.toShortString(descLimit) + " (consistent: " + dep.stamp + ")");
         }
@@ -130,7 +134,8 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     }
 
     @Override public void executeEnd(TaskKey key, Task<?, ?> task, ExecReason reason, TaskData<?, ?> data) {
-        final String outputString = data.output != null ? StringUtil.toShortString(data.output.toString(), descLimit) : "null";
+        final String outputString =
+            data.output != null ? StringUtil.toShortString(data.output.toString(), descLimit) : "null";
         logger.info(getIndent() + "< " + StringUtil.toShortString(outputString, descLimit));
     }
 
@@ -138,7 +143,8 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     @Override
     public void invokeObserverStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
         final String outputString = output != null ? StringUtil.toShortString(output.toString(), descLimit) : "null";
-        logger.trace(getIndent() + "@ " + StringUtil.toShortString(observer.toString(), descLimit) + "(" + outputString + ")");
+        logger.trace(
+            getIndent() + "@ " + StringUtil.toShortString(observer.toString(), descLimit) + "(" + outputString + ")");
     }
 
     @Override

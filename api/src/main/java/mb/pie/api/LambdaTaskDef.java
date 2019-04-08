@@ -16,6 +16,14 @@ public class LambdaTaskDef<I extends Serializable, @Nullable O extends Serializa
     private final @Nullable Function<I, Serializable> keyFunc;
     private final @Nullable BiFunction<I, Integer, String> descFunc;
 
+    public LambdaTaskDef(String id, BiFunction<ExecContext, I, O> execFunc) {
+        this(id, execFunc, null, null);
+    }
+
+    public LambdaTaskDef(String id, BiFunction<ExecContext, I, O> execFunc, @Nullable Function<I, Serializable> keyFunc) {
+        this(id, execFunc, keyFunc, null);
+    }
+
     public LambdaTaskDef(String id, BiFunction<ExecContext, I, O> execFunc, @Nullable Function<I, Serializable> keyFunc, @Nullable BiFunction<I, Integer, String> descFunc) {
         this.id = id;
         this.execFunc = execFunc;
