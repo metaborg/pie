@@ -2,7 +2,7 @@ package mb.pie.lang.runtime
 
 import mb.pie.api.ExecContext
 import mb.pie.api.ExecException
-import mb.pie.api.stamp.fs.FileSystemStampers
+import mb.pie.api.stamp.resource.FileSystemStampers
 import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
 import mb.resource.fs.match.ResourceMatcher
@@ -19,7 +19,7 @@ operator fun FSPath.plus(other: String): FSPath {
 }
 
 fun ExecContext.exists(path: FSPath): Boolean {
-  val node = require(path, FileSystemStampers.exists())
+  val node = require(path, FileSystemStampers.exists<FSResource>())
   return node.exists()
 }
 
@@ -57,7 +57,7 @@ fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMat
 
 @Throws(ExecException::class)
 fun ExecContext.readToString(path: FSPath): String? {
-  val node = require(path, FileSystemStampers.hash())
+  val node = require(path, FileSystemStampers.hash<FSResource>())
   try {
     if(!node.exists()) {
       return null

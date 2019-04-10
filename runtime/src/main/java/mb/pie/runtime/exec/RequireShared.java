@@ -51,7 +51,7 @@ public class RequireShared {
     /**
      * Check if input is internally consistent.
      */
-    public <I extends Serializable> @Nullable InconsistentInput checkInput(I input, Task<I, ?> task) {
+    public @Nullable InconsistentInput checkInput(Serializable input, Task<?, ?> task) {
         if(!input.equals(task.input)) {
             return new InconsistentInput(input, task.input);
         }

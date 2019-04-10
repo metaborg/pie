@@ -15,6 +15,7 @@ import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.taskdefs.MapTaskDefs;
+import mb.resource.ReadableResource;
 import mb.resource.ResourceRegistry;
 import mb.resource.fs.FSResource;
 
@@ -25,14 +26,16 @@ import java.util.function.Function;
 
 @Module
 public abstract class PieModule {
-    @Provides static Pie providePie(
+    @Provides @PieScope static Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
         Optional<ResourceRegistry> resourceRegistry,
         Optional<Function<Logger, Store>> storeFunc,
         Optional<Function<Logger, Share>> shareFunc,
         Optional<OutputStamper> defaultOutputStamper,
-        @Named("require") Optional<ResourceStamper<FSResource>> defaultRequireFileSystemStamper,
-        @Named("provide") Optional<ResourceStamper<FSResource>> defaultProvideFileSystemStamper,
+        @Named("require") Optional<ResourceStamper<ReadableResource>> defaultRequireReadableResourceStamper,
+        @Named("provide") Optional<ResourceStamper<ReadableResource>> defaultProvideReadableResourceStamper,
+        @Named("require") Optional<ResourceStamper<FSResource>> defaultRequireFSResourceStamper,
+        @Named("provide") Optional<ResourceStamper<FSResource>> defaultProvideFSResourceStamper,
         Optional<Function<Logger, Layer>> layerFunc,
         Optional<Logger> logger,
         Optional<Function<Logger, ExecutorLogger>> executorLoggerFunc
@@ -47,8 +50,10 @@ public abstract class PieModule {
         storeFunc.ifPresent(builder::withStore);
         shareFunc.ifPresent(builder::withShare);
         defaultOutputStamper.ifPresent(builder::withDefaultOutputStamper);
-        defaultRequireFileSystemStamper.ifPresent(builder::withDefaultRequireFileSystemStamper);
-        defaultProvideFileSystemStamper.ifPresent(builder::withDefaultProvideFileSystemStamper);
+        defaultRequireReadableResourceStamper.ifPresent(builder::withDefaultRequireReadableResourceStamper);
+        defaultProvideReadableResourceStamper.ifPresent(builder::withDefaultProvideReadableResourceStamper);
+        defaultRequireFSResourceStamper.ifPresent(builder::withDefaultRequireFSResourceStamper);
+        defaultProvideFSResourceStamper.ifPresent(builder::withDefaultProvideFSResourceStamper);
         layerFunc.ifPresent(builder::withLayer);
         logger.ifPresent(builder::withLogger);
         executorLoggerFunc.ifPresent(builder::withExecutorLogger);
@@ -63,9 +68,15 @@ public abstract class PieModule {
 
     @BindsOptionalOf abstract OutputStamper defaultOutputStamper();
 
-    @BindsOptionalOf @Named("require") abstract ResourceStamper<FSResource> defaultRequireFileSystemStamper();
+    @BindsOptionalOf @Named("require")
+    abstract ResourceStamper<ReadableResource> defaultRequireReadableResourceStamper();
 
-    @BindsOptionalOf @Named("provide") abstract ResourceStamper<FSResource> defaultProvideFileSystemStamper();
+    @BindsOptionalOf @Named("provide")
+    abstract ResourceStamper<ReadableResource> defaultProvideReadableResourceStamper();
+
+    @BindsOptionalOf @Named("require") abstract ResourceStamper<FSResource> defaultRequireFSResourceStamper();
+
+    @BindsOptionalOf @Named("provide") abstract ResourceStamper<FSResource> defaultProvideFSResourceStamper();
 
     @BindsOptionalOf abstract Function<Logger, Layer> layerFunc();
 

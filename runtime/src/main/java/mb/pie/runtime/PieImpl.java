@@ -10,10 +10,7 @@ import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.exec.BottomUpExecutor;
 import mb.pie.api.exec.TopDownExecutor;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
 
 import java.util.function.Function;
 
@@ -24,9 +21,7 @@ public class PieImpl implements Pie {
     final ResourceRegistry resourceRegistry;
     final Store store;
     final Share share;
-    final OutputStamper defaultOutputStamper;
-    final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
-    final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
+    final DefaultStampers defaultStampers;
     final Function<Logger, Layer> layerFactory;
     final Logger logger;
     final Function<Logger, ExecutorLogger> executorLoggerFactory;
@@ -38,9 +33,7 @@ public class PieImpl implements Pie {
         ResourceRegistry resourceRegistry,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Function<Logger, Layer> layerFactory,
         Logger logger,
         Function<Logger, ExecutorLogger> executorLoggerFactory
@@ -51,9 +44,7 @@ public class PieImpl implements Pie {
         this.resourceRegistry = resourceRegistry;
         this.store = store;
         this.share = share;
-        this.defaultOutputStamper = defaultOutputStamper;
-        this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
-        this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+        this.defaultStampers = defaultStampers;
         this.layerFactory = layerFactory;
         this.logger = logger;
         this.executorLoggerFactory = executorLoggerFactory;
@@ -78,6 +69,6 @@ public class PieImpl implements Pie {
     }
 
     @Override public String toString() {
-        return "PieImpl(" + store + ", " + share + ", " + defaultOutputStamper + ", " + defaultRequireFileSystemStamper + ", " + defaultProvideFileSystemStamper + ", " + layerFactory.apply(logger) + ")";
+        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(logger) + ")";
     }
 }

@@ -1,13 +1,13 @@
-package mb.pie.api.stamp.fs;
+package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamper;
-import mb.resource.fs.FSResource;
+import mb.resource.ReadableResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 
-public class HashResourceStamper implements ResourceStamper<FSResource> {
-    @Override public ByteArrayResourceStamp<FSResource> stamp(FSResource resource) throws IOException {
+public class HashResourceStamper<R extends ReadableResource> implements ResourceStamper<R> {
+    @Override public ByteArrayResourceStamp<R> stamp(R resource) throws IOException {
         final Hash hasher = new Hash();
         hasher.updateFile(resource);
         final byte[] bytes = hasher.getHashBytesAndReset();

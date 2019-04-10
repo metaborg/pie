@@ -5,10 +5,8 @@ import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.api.exec.NullCancelled;
 import mb.pie.api.exec.TopDownSession;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
 import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -29,9 +27,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         ResourceRegistry resourceRegistry,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger
@@ -39,8 +35,9 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         this.store = store;
         this.layer = layer;
         this.executorLogger = executorLogger;
-        this.executor = new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultOutputStamper,
-            defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger, null);
+        this.executor =
+            new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultStampers, layer, logger,
+                executorLogger, null);
         this.requireShared = new RequireShared(taskDefs, resourceRegistry, visited, store, executorLogger);
     }
 

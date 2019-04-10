@@ -1,11 +1,13 @@
-package mb.pie.api.stamp.fs;
+package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamper;
-import mb.resource.fs.FSResource;
+import mb.resource.ReadableResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class ExistsResourceStamper implements ResourceStamper<FSResource> {
-    @Override public ValueResourceStamp<FSResource> stamp(FSResource resource) {
+import java.io.IOException;
+
+public class ExistsResourceStamper<R extends ReadableResource> implements ResourceStamper<R> {
+    @Override public ValueResourceStamp<R> stamp(R resource) throws IOException {
         return new ValueResourceStamp<>(resource.exists(), this);
     }
 

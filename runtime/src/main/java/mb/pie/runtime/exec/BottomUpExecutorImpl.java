@@ -6,6 +6,7 @@ import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.NullCancelled;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceRegistry;
 import mb.resource.fs.FSResource;
@@ -22,9 +23,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
     private final ResourceRegistry resourceRegistry;
     private final Store store;
     private final Share share;
-    private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
+    private final DefaultStampers defaultStampers;
     private final Function<Logger, Layer> layerFactory;
     private final Logger logger;
     private final Function<Logger, ExecutorLogger> executorLoggerFactory;
@@ -35,9 +34,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
         ResourceRegistry resourceRegistry,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Function<Logger, Layer> layerFactory,
         Logger logger,
         Function<Logger, ExecutorLogger> executorLoggerFactory
@@ -46,9 +43,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
         this.resourceRegistry = resourceRegistry;
         this.store = store;
         this.share = share;
-        this.defaultOutputStamper = defaultOutputStamper;
-        this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
-        this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+        this.defaultStampers = defaultStampers;
         this.layerFactory = layerFactory;
         this.logger = logger;
         this.executorLoggerFactory = executorLoggerFactory;
@@ -92,8 +87,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
         final float changedRate = (float) changedResources.size() / numSourceFiles;
         if(changedRate > 0.5) {
             final TopDownSessionImpl topdownSession =
-                new TopDownSessionImpl(taskDefs, resourceRegistry, store, share, defaultOutputStamper,
-                    defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger),
+                new TopDownSessionImpl(taskDefs, resourceRegistry, store, share, defaultStampers, layerFactory.apply(logger),
                     logger, executorLoggerFactory.apply(logger));
             for(TaskKey key : observers.keySet()) {
                 try(final StoreReadTxn txn = store.readTxn()) {
@@ -132,8 +126,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
 
 
     public BottomUpSession newSession() {
-        return new BottomUpSession(taskDefs, resourceRegistry, observers, store, share, defaultOutputStamper,
-            defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger,
+        return new BottomUpSession(taskDefs, resourceRegistry, observers, store, share, defaultStampers, layerFactory.apply(logger), logger,
             executorLoggerFactory.apply(logger));
     }
 }

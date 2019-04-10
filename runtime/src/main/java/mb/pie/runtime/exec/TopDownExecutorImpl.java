@@ -8,10 +8,8 @@ import mb.pie.api.Store;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.exec.TopDownExecutor;
 import mb.pie.api.exec.TopDownSession;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
 import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
 
 import java.util.function.Function;
 
@@ -20,9 +18,7 @@ public class TopDownExecutorImpl implements TopDownExecutor {
     private final ResourceRegistry resourceRegistry;
     private final Store store;
     private final Share share;
-    private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
+    private final DefaultStampers defaultStampers;
     private final Function<Logger, Layer> layerFactory;
     private final Logger logger;
     private final Function<Logger, ExecutorLogger> executorLoggerFactory;
@@ -32,9 +28,7 @@ public class TopDownExecutorImpl implements TopDownExecutor {
         ResourceRegistry resourceRegistry,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Function<Logger, Layer> layerFactory,
         Logger logger,
         Function<Logger, ExecutorLogger> executorLoggerFactory
@@ -43,17 +37,14 @@ public class TopDownExecutorImpl implements TopDownExecutor {
         this.resourceRegistry = resourceRegistry;
         this.store = store;
         this.share = share;
-        this.defaultOutputStamper = defaultOutputStamper;
-        this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
-        this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+        this.defaultStampers = defaultStampers;
         this.layerFactory = layerFactory;
         this.logger = logger;
         this.executorLoggerFactory = executorLoggerFactory;
     }
 
     @Override public TopDownSession newSession() {
-        return new TopDownSessionImpl(taskDefs, resourceRegistry, store, share, defaultOutputStamper,
-            defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory.apply(logger), logger,
-            executorLoggerFactory.apply(logger));
+        return new TopDownSessionImpl(taskDefs, resourceRegistry, store, share, defaultStampers,
+            layerFactory.apply(logger), logger, executorLoggerFactory.apply(logger));
     }
 }

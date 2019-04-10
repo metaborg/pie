@@ -1,8 +1,8 @@
 package mb.pie.runtime.test
 
 import mb.pie.api.*
-import mb.pie.api.stamp.fs.HashMatchResourceStamper
-import mb.pie.api.stamp.fs.ModifiedMatchResourceStamper
+import mb.pie.api.stamp.resource.HashMatchResourceStamper
+import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper

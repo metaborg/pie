@@ -3,11 +3,9 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -39,9 +37,7 @@ public class BottomUpSession implements RequireTask {
         Map<TaskKey, Consumer<@Nullable Serializable>> observers,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger
@@ -55,18 +51,19 @@ public class BottomUpSession implements RequireTask {
         this.executorLogger = executorLogger;
 
         this.queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store);
-        this.executor = new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultOutputStamper,
-            defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layer, logger, executorLogger,
-            (TaskKey key, TaskData<?, ?> data) -> {
-                // Notify observer, if any.
-                final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
-                if(observer != null) {
-                    final @Nullable Serializable output = data.output;
-                    executorLogger.invokeObserverStart(observer, key, output);
-                    observer.accept(output);
-                    executorLogger.invokeObserverEnd(observer, key, output);
-                }
-            });
+        this.executor =
+            new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultStampers, layer, logger,
+                executorLogger,
+                (TaskKey key, TaskData<?, ?> data) -> {
+                    // Notify observer, if any.
+                    final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
+                    if(observer != null) {
+                        final @Nullable Serializable output = data.output;
+                        executorLogger.invokeObserverStart(observer, key, output);
+                        observer.accept(output);
+                        executorLogger.invokeObserverEnd(observer, key, output);
+                    }
+                });
         this.requireShared = new RequireShared(taskDefs, resourceRegistry, visited, store, executorLogger);
     }
 
@@ -167,7 +164,8 @@ public class BottomUpSession implements RequireTask {
      * Require the result of a task.
      */
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable>
+    O require(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
         Stats.addRequires();
         cancel.throwIfCancelled();
         layer.requireTopDownStart(key, task.input);
@@ -185,7 +183,8 @@ public class BottomUpSession implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> getData(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private <I extends Serializable, O extends @Nullable Serializable>
+    TaskData<I, O> getData(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution. Return immediately if so.
         final @Nullable TaskData<?, ?> visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {

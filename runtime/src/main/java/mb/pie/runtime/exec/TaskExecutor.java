@@ -3,11 +3,9 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -20,9 +18,7 @@ public class TaskExecutor {
     private final HashMap<TaskKey, TaskData<?, ?>> visited;
     private final Store store;
     private final Share share;
-    private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
+    private final DefaultStampers defaultStampers;
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
@@ -34,9 +30,7 @@ public class TaskExecutor {
         HashMap<TaskKey, TaskData<?, ?>> visited,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger,
@@ -47,19 +41,18 @@ public class TaskExecutor {
         this.visited = visited;
         this.store = store;
         this.share = share;
-        this.defaultOutputStamper = defaultOutputStamper;
-        this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
-        this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+        this.defaultStampers = defaultStampers;
         this.layer = layer;
         this.logger = logger;
         this.executorLogger = executorLogger;
         this.postExecFunc = postExecFunc;
     }
 
-    <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    <I extends Serializable, O extends @Nullable Serializable>
+    TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         executorLogger.executeStart(key, task, reason);
-        final TaskData<?, ?> data;
+        final TaskData<I, O> data;
         if(share instanceof NonSharingShare) {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
             data = execInternal(key, task, requireTask, cancel);
@@ -71,7 +64,7 @@ public class TaskExecutor {
                     } catch(InterruptedException | ExecException e) {
                         throw new RuntimeException(e);
                     }
-                }, () -> visited.get(key));
+                }, () -> visited.get(key)).cast();
             } catch(RuntimeException e) {
                 final Throwable cause = e.getCause();
                 if(cause instanceof InterruptedException) {
@@ -84,15 +77,15 @@ public class TaskExecutor {
             }
         }
         executorLogger.executeEnd(key, task, reason, data);
-        return data.cast();
+        return data;
     }
 
-    private <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> execInternal(TaskKey key, Task<I, O> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    private <I extends Serializable, O extends @Nullable Serializable>
+    TaskData<I, O> execInternal(TaskKey key, Task<I, O> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         // Execute
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, cancel, taskDefs, resourceRegistry, store, defaultOutputStamper,
-                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger);
+            new ExecContextImpl(requireTask, cancel, taskDefs, resourceRegistry, store, defaultStampers, logger);
         final @Nullable O output;
         try {
             output = task.exec(context);

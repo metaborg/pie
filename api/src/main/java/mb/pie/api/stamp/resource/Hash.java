@@ -1,5 +1,6 @@
-package mb.pie.api.stamp.fs;
+package mb.pie.api.stamp.resource;
 
+import mb.resource.ReadableResource;
 import mb.resource.fs.FSResource;
 import mb.resource.fs.match.ResourceMatcher;
 import mb.resource.fs.walk.ResourceWalker;
@@ -11,7 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.stream.Stream;
 
-class Hash {
+public class Hash {
     private final MessageDigest digest;
 
     Hash() {
@@ -40,7 +41,7 @@ class Hash {
         }
     }
 
-    void updateFile(FSResource file) throws IOException {
+    void updateFile(ReadableResource file) throws IOException {
         digest.update(file.readBytes());
     }
 

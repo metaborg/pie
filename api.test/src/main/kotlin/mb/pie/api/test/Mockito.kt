@@ -65,19 +65,21 @@ class NoExecContext : ExecContext {
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
-  override fun require(path: FSPath) = null!!
-  override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
-  override fun defaultRequireFileSystemStamper(): ResourceStamper<FSResource> = null!!
-  override fun provide(path: FSPath) {}
-  override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
-  override fun defaultProvideFileSystemStamper(): ResourceStamper<FSResource> = null!!
-
-
   override fun getResource(key: ResourceKey): Resource {
     @Suppress("CAST_NEVER_SUCCEEDS")
     return null as Resource
   }
 
+  override fun defaultRequireReadableResourceStamper() = null!!
+  override fun defaultProvideReadableResourceStamper() = null!!
+
+  override fun require(path: FSPath) = null!!
+  override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
+  override fun defaultRequireFSResourceStamper(): ResourceStamper<FSResource> = null!!
+
+  override fun provide(path: FSPath) {}
+  override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
+  override fun defaultProvideFSResourceStamper(): ResourceStamper<FSResource> = null!!
 
   override fun logger(): Logger = null!!
 }

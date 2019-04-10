@@ -3,8 +3,8 @@ package mb.pie.api.test
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import mb.pie.api.*
-import mb.pie.api.stamp.fs.HashMatchResourceStamper
-import mb.pie.api.stamp.fs.ModifiedMatchResourceStamper
+import mb.pie.api.stamp.resource.HashMatchResourceStamper
+import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
@@ -44,8 +44,8 @@ object ApiTestGenerator {
                     .withStore(storeGen)
                     .withShare(shareGen)
                     .withDefaultOutputStamper(defaultOutputStamper)
-                    .withDefaultRequireFileSystemStamper(defaultFileReqStamper)
-                    .withDefaultProvideFileSystemStamper(defaultFileGenStamper)
+                    .withDefaultRequireFSResourceStamper(defaultFileReqStamper)
+                    .withDefaultProvideFSResourceStamper(defaultFileGenStamper)
                     .withLayer(layerGen)
                     .withLogger(logger)
                     .withExecutorLogger(executorLoggerGen)

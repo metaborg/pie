@@ -1,4 +1,4 @@
-package mb.pie.api.stamp.fs;
+package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.fs.FSResource;
@@ -8,28 +8,26 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 
-public class HashMatchResourceStamper implements ResourceStamper<FSResource> {
+public class ModifiedMatchResourceStamper implements ResourceStamper<FSResource> {
     private final @Nullable ResourceMatcher matcher;
 
-    public HashMatchResourceStamper(ResourceMatcher matcher) {
+    public ModifiedMatchResourceStamper(ResourceMatcher matcher) {
         this.matcher = matcher;
     }
 
-    public HashMatchResourceStamper() {
+    public ModifiedMatchResourceStamper() {
         this.matcher = null;
     }
 
-    @Override public ByteArrayResourceStamp<FSResource> stamp(FSResource resource) throws IOException {
-        final Hash hasher = new Hash();
-        hasher.update(resource, matcher);
-        final byte[] bytes = hasher.getHashBytesAndReset();
-        return new ByteArrayResourceStamp<>(bytes, this);
+    @Override public ValueResourceStamp<FSResource> stamp(FSResource resource) throws IOException {
+        final long modified = Modified.modified(resource, matcher);
+        return new ValueResourceStamp<>(modified, this);
     }
 
     @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final HashMatchResourceStamper that = (HashMatchResourceStamper) o;
+        final ModifiedMatchResourceStamper that = (ModifiedMatchResourceStamper) o;
         return Objects.equals(matcher, that.matcher);
     }
 
@@ -38,6 +36,6 @@ public class HashMatchResourceStamper implements ResourceStamper<FSResource> {
     }
 
     @Override public String toString() {
-        return "HashMatchResourceStamper(" + matcher + ")";
+        return "ModifiedMatchResourceStamper(" + matcher + ")";
     }
 }

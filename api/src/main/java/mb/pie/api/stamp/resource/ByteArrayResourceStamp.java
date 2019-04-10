@@ -1,4 +1,4 @@
-package mb.pie.api.stamp.fs;
+package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamp;
 import mb.pie.api.stamp.ResourceStamper;

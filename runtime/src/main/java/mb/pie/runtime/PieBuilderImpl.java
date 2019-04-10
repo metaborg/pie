@@ -7,10 +7,10 @@ import mb.pie.api.PieBuilder;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.TaskDefs;
-import mb.pie.api.stamp.fs.FileSystemStampers;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
+import mb.pie.api.stamp.resource.FileSystemStampers;
 import mb.pie.runtime.exec.BottomUpExecutorImpl;
 import mb.pie.runtime.exec.TopDownExecutorImpl;
 import mb.pie.runtime.layer.ValidationLayer;
@@ -18,6 +18,7 @@ import mb.pie.runtime.logger.NoopLogger;
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
+import mb.resource.ReadableResource;
 import mb.resource.ResourceRegistry;
 import mb.resource.fs.FSRegistry;
 import mb.resource.fs.FSResource;
@@ -31,6 +32,8 @@ public class PieBuilderImpl implements PieBuilder {
     private Function<Logger, Store> store = (logger) -> new InMemoryStore();
     private Function<Logger, Share> share = (logger) -> new NonSharingShare();
     private OutputStamper defaultOutputStamper = OutputStampers.equals();
+    private ResourceStamper<ReadableResource> defaultRequireReadableStamper = FileSystemStampers.modified();
+    private ResourceStamper<ReadableResource> defaultProvideReadableStamper = FileSystemStampers.modified();
     private ResourceStamper<FSResource> defaultRequireFileSystemStamper = FileSystemStampers.modified();
     private ResourceStamper<FSResource> defaultProvideFileSystemStamper = FileSystemStampers.modified();
     private Function<Logger, Layer> layerFactory = ValidationLayer::new;
@@ -63,12 +66,24 @@ public class PieBuilderImpl implements PieBuilder {
         return this;
     }
 
-    @Override public PieBuilderImpl withDefaultRequireFileSystemStamper(ResourceStamper<FSResource> stamper) {
+    @Override
+    public PieBuilder withDefaultRequireReadableResourceStamper(ResourceStamper<ReadableResource> stamper) {
+        this.defaultRequireReadableStamper = stamper;
+        return this;
+    }
+
+    @Override
+    public PieBuilder withDefaultProvideReadableResourceStamper(ResourceStamper<ReadableResource> stamper) {
+        this.defaultProvideReadableStamper = stamper;
+        return this;
+    }
+
+    @Override public PieBuilderImpl withDefaultRequireFSResourceStamper(ResourceStamper<FSResource> stamper) {
         this.defaultRequireFileSystemStamper = stamper;
         return this;
     }
 
-    @Override public PieBuilderImpl withDefaultProvideFileSystemStamper(ResourceStamper<FSResource> stamper) {
+    @Override public PieBuilderImpl withDefaultProvideFSResourceStamper(ResourceStamper<FSResource> stamper) {
         this.defaultProvideFileSystemStamper = stamper;
         return this;
     }
@@ -106,16 +121,18 @@ public class PieBuilderImpl implements PieBuilder {
 
         final Store store = this.store.apply(logger);
         final Share share = this.share.apply(logger);
+
+        final DefaultStampers defaultStampers =
+            new DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
+                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper);
+
         final TopDownExecutorImpl topDownExecutor =
-            new TopDownExecutorImpl(taskDefs, resourceRegistry, store, share, defaultOutputStamper,
-                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory, logger,
+            new TopDownExecutorImpl(taskDefs, resourceRegistry, store, share, defaultStampers, layerFactory, logger,
                 executorLoggerFactory);
         final BottomUpExecutorImpl bottomUpExecutor =
-            new BottomUpExecutorImpl(taskDefs, resourceRegistry, store, share, defaultOutputStamper,
-                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory, logger,
+            new BottomUpExecutorImpl(taskDefs, resourceRegistry, store, share, defaultStampers, layerFactory, logger,
                 executorLoggerFactory);
-        return new PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, resourceRegistry, store, share,
-            defaultOutputStamper, defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, layerFactory,
-            logger, executorLoggerFactory);
+        return new PieImpl(topDownExecutor, bottomUpExecutor, taskDefs, resourceRegistry, store, share, defaultStampers,
+            layerFactory, logger, executorLoggerFactory);
     }
 }

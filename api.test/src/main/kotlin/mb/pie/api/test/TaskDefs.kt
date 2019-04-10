@@ -1,7 +1,7 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
-import mb.pie.api.stamp.fs.FileSystemStampers
+import mb.pie.api.stamp.resource.FileSystemStampers
 import mb.resource.fs.FSResource
 import java.io.Serializable
 import javax.swing.text.html.HTML.Tag.I

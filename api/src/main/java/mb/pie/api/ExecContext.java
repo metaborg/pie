@@ -2,9 +2,9 @@ package mb.pie.api;
 
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
 import mb.resource.ResourceRuntimeException;
 import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
@@ -79,10 +79,27 @@ public interface ExecContext {
     <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException;
 
     /**
+     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
+     * resource dependency. The current contents of the resource may be used for change detection, so be sure to call
+     * this method *AFTER* modifying the resource.
+     */
+    <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException;
+
+    /**
+     * Gets resource for given key.
+     *
+     * @param key Key to get resource for.
+     * @return Resource for {@code key}.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
+     */
+    Resource getResource(ResourceKey key);
+
+    /**
      * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
      * resource dependency.
      *
      * @return resource for given key.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
      */
     default Resource require(ResourceKey key, ResourceStamper<Resource> stamper) throws IOException {
         final Resource resource = getResource(key);
@@ -90,27 +107,59 @@ public interface ExecContext {
         return resource;
     }
 
+
+    //
+    // Recording required (read) dependencies to readable resources.
+    //
+
+
     /**
-     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
-     * resource dependency. The current contents of the resource may be used for change detection, so be sure to call
-     * this method *AFTER* modifying the resource.
+     * Marks given {@code resource} as required (read), using the {@link #defaultRequireReadableResourceStamper},
+     * creating a required resource dependency.
      */
-    <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException;
+    default void require(ReadableResource resource) throws IOException {
+        require(resource, defaultRequireReadableResourceStamper());
+    }
+
+    /**
+     * Default 'require' resource stamper for readable resources.
+     */
+    ResourceStamper<ReadableResource> defaultRequireReadableResourceStamper();
+
+
+    //
+    // Recording provided (write) dependencies to writwable resources.
+    //
+
+
+    /**
+     * Marks given {@code resource} as provided (write), using the {@link #defaultProvideReadableResourceStamper},
+     * creating a provided resource dependency.
+     */
+    default void provide(ReadableResource resource) throws IOException {
+        provide(resource, defaultProvideReadableResourceStamper());
+    }
+
+    /**
+     * Default 'provide' resource stamper for readable resources.
+     */
+    ResourceStamper<ReadableResource> defaultProvideReadableResourceStamper();
 
 
     //
     // Recording required (read) dependencies to files and directories of file systems.
     //
 
+
     /**
-     * Marks given {@code path} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * Marks given {@code path} as required (read), using the {@link #defaultRequireFSResourceStamper}, creating a
      * required resource dependency.
      *
      * @return file system resource for given path.
      */
     default FSResource require(FSPath path) throws IOException {
         final FSResource resource = new FSResource(path);
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, defaultRequireFSResourceStamper());
         return resource;
     }
 
@@ -127,22 +176,22 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code resource} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * Marks given {@code resource} as required (read), using the {@link #defaultRequireFSResourceStamper}, creating a
      * required resource dependency.
      */
     default void require(FSResource resource) throws IOException {
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, defaultRequireFSResourceStamper());
     }
 
     /**
-     * Marks given {@code path} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * Marks given {@code path} as required (read), using the {@link #defaultRequireFSResourceStamper}, creating a
      * required resource dependency.
      *
      * @return file system resource for given path.
      */
     default FSResource require(Path path) throws IOException {
         final FSResource resource = new FSResource(path);
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, defaultRequireFSResourceStamper());
         return resource;
     }
 
@@ -159,14 +208,14 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code file} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
+     * Marks given {@code file} as required (read), using the {@link #defaultRequireFSResourceStamper}, creating a
      * required resource dependency.
      *
      * @return file system resource for given file object.
      */
     default FSResource require(File file) throws IOException {
         final FSResource resource = new FSResource(file);
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, defaultRequireFSResourceStamper());
         return resource;
     }
 
@@ -185,7 +234,7 @@ public interface ExecContext {
     /**
      * Default 'require' resource stamper for file system resources.
      */
-    ResourceStamper<FSResource> defaultRequireFileSystemStamper();
+    ResourceStamper<FSResource> defaultRequireFSResourceStamper();
 
 
     //
@@ -194,12 +243,12 @@ public interface ExecContext {
 
 
     /**
-     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFSResourceStamper}, creating a
      * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
      * to call this method *AFTER* modifying the resource.
      */
     default void provide(FSPath path) throws IOException {
-        provide(new FSResource(path), defaultProvideFileSystemStamper());
+        provide(new FSResource(path), defaultProvideFSResourceStamper());
     }
 
     /**
@@ -212,21 +261,21 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code resource} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * Marks given {@code resource} as provided (write), using the {@link #defaultProvideFSResourceStamper}, creating a
      * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
      * to call this method *AFTER* modifying the resource.
      */
     default void provide(FSResource resource) throws IOException {
-        provide(resource, defaultProvideFileSystemStamper());
+        provide(resource, defaultProvideFSResourceStamper());
     }
 
     /**
-     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFSResourceStamper}, creating a
      * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
      * to call this method *AFTER* modifying the resource.
      */
     default void provide(Path path) throws IOException {
-        provide(new FSResource(path), defaultProvideFileSystemStamper());
+        provide(new FSResource(path), defaultProvideFSResourceStamper());
     }
 
     /**
@@ -239,12 +288,12 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code file} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
+     * Marks given {@code file} as provided (write), using the {@link #defaultProvideFSResourceStamper}, creating a
      * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
      * to call this method *AFTER* modifying the resource.
      */
     default void provide(File file) throws IOException {
-        provide(new FSResource(file), defaultProvideFileSystemStamper());
+        provide(new FSResource(file), defaultProvideFSResourceStamper());
     }
 
     /**
@@ -259,22 +308,7 @@ public interface ExecContext {
     /**
      * Default 'provide' resource stamper for file system resources.
      */
-    ResourceStamper<FSResource> defaultProvideFileSystemStamper();
-
-
-    //
-    // Resource key to resource.
-    //
-
-
-    /**
-     * Gets resource for given key.
-     *
-     * @param key Key to get resource for.
-     * @return Resource for {@code key}.
-     * @throws ResourceRuntimeException when given {@code key} cannot be handled by the {@link ResourceRegistry}.
-     */
-    Resource getResource(ResourceKey key);
+    ResourceStamper<FSResource> defaultProvideFSResourceStamper();
 
 
     //
