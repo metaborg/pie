@@ -19,14 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
     private final ConcurrentHashMap<TaskKey, Serializable> inputs = new ConcurrentHashMap<>();
-    // TODO: use Option!
-    private final ConcurrentHashMap<TaskKey, Output<?>> outputs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TaskKey, Output> outputs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>> taskReqs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, Set<TaskKey>> callersOf = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>> fileReqs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ResourceKey, Set<TaskKey>> requireesOf = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>> fileGens = new ConcurrentHashMap<>();
-    // TODO: null may not be used as a value in ConcurrentHashMap! Use Option!
+    // TODO: null may not be used as a value in ConcurrentHashMap!
     private final ConcurrentHashMap<ResourceKey, @Nullable TaskKey> generatorOf = new ConcurrentHashMap<>();
 
 
@@ -65,10 +64,10 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         inputs.put(key, input);
     }
 
-    @Override public @Nullable Output<Serializable> output(TaskKey key) {
-        final @Nullable Output<?> wrapper = outputs.get(key);
+    @Override public @Nullable Output output(TaskKey key) {
+        final @Nullable Output wrapper = outputs.get(key);
         if(wrapper != null) {
-            return new Output<>(wrapper.output);
+            return new Output(wrapper.output);
         } else {
             return null;
         }
@@ -76,8 +75,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
 
     @Override public void setOutput(TaskKey key, @Nullable Serializable output) {
         // ConcurrentHashMap does not support null values, so also wrap outputs (which can be null) : an Output object.
-        // TODO: use Option.
-        outputs.put(key, new Output<>(output));
+        outputs.put(key, new Output(output));
     }
 
     @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
@@ -149,22 +147,22 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         }
     }
 
-    @Override public @Nullable TaskData<?, ?> data(TaskKey key) {
+    @Override public @Nullable TaskData data(TaskKey key) {
         final @Nullable Serializable input = input(key);
         if(input == null) {
             return null;
         }
-        final @Nullable Output<Serializable> output = output(key);
+        final @Nullable Output output = output(key);
         if(output == null) {
             return null;
         }
         final ArrayList<TaskRequireDep> callReqs = taskRequires(key);
         final ArrayList<ResourceRequireDep> pathReqs = resourceRequires(key);
         final ArrayList<ResourceProvideDep> pathGens = resourceProvides(key);
-        return new TaskData<>(input, output.output, callReqs, pathReqs, pathGens);
+        return new TaskData(input, output.output, callReqs, pathReqs, pathGens);
     }
 
-    @Override public void setData(TaskKey key, TaskData<?, ?> data) {
+    @Override public void setData(TaskKey key, TaskData data) {
         setInput(key, data.input);
         setOutput(key, data.output);
         setTaskRequires(key, data.taskRequires);

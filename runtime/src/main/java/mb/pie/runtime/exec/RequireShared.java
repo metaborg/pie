@@ -11,11 +11,11 @@ import java.util.HashMap;
 public class RequireShared {
     private final TaskDefs taskDefs;
     private final ResourceRegistry resourceRegistry;
-    private final HashMap<TaskKey, TaskData<?, ?>> visited;
+    private final HashMap<TaskKey, TaskData> visited;
     private final Store store;
     private final ExecutorLogger executorLogger;
 
-    public RequireShared(TaskDefs taskDefs, ResourceRegistry resourceRegistry, HashMap<TaskKey, TaskData<?, ?>> visited, Store store, ExecutorLogger executorLogger) {
+    public RequireShared(TaskDefs taskDefs, ResourceRegistry resourceRegistry, HashMap<TaskKey, TaskData> visited, Store store, ExecutorLogger executorLogger) {
         this.taskDefs = taskDefs;
         this.resourceRegistry = resourceRegistry;
         this.visited = visited;
@@ -27,9 +27,9 @@ public class RequireShared {
     /**
      * Attempt to get task data from the visited cache.
      */
-    public @Nullable TaskData<?, ?> dataFromVisited(TaskKey key) {
+    public @Nullable TaskData dataFromVisited(TaskKey key) {
         executorLogger.checkVisitedStart(key);
-        final @Nullable TaskData<?, ?> data = visited.get(key);
+        final @Nullable TaskData data = visited.get(key);
         executorLogger.checkVisitedEnd(key, data != null ? data.output : null);
         return data;
     }
@@ -37,9 +37,9 @@ public class RequireShared {
     /**
      * Attempt to get task data from the store.
      */
-    public @Nullable TaskData<?, ?> dataFromStore(TaskKey key) {
+    public @Nullable TaskData dataFromStore(TaskKey key) {
         executorLogger.checkStoredStart(key);
-        final @Nullable TaskData<?, ?> data;
+        final @Nullable TaskData data;
         try(final StoreReadTxn txn = store.readTxn()) {
             data = txn.data(key);
         }
@@ -51,7 +51,7 @@ public class RequireShared {
     /**
      * Check if input is internally consistent.
      */
-    public @Nullable InconsistentInput checkInput(Serializable input, Task<?, ?> task) {
+    public @Nullable InconsistentInput checkInput(Serializable input, Task<?> task) {
         if(!input.equals(task.input)) {
             return new InconsistentInput(input, task.input);
         }
@@ -68,7 +68,7 @@ public class RequireShared {
     /**
      * Check if a file requires dependency is internally consistent.
      */
-    public @Nullable InconsistentResourceRequire checkResourceRequire(TaskKey key, Task<?, ?> task, ResourceRequireDep fileReq) {
+    public @Nullable InconsistentResourceRequire checkResourceRequire(TaskKey key, Task<?> task, ResourceRequireDep fileReq) {
         executorLogger.checkResourceRequireStart(key, task, fileReq);
         final @Nullable InconsistentResourceRequire reason = fileReq.checkConsistency(resourceRegistry);
         executorLogger.checkResourceRequireEnd(key, task, fileReq, reason);
@@ -78,7 +78,7 @@ public class RequireShared {
     /**
      * Check if a file generates dependency is internally consistent.
      */
-    public @Nullable InconsistentResourceProvide checkResourceProvide(TaskKey key, Task<?, ?> task, ResourceProvideDep fileGen) {
+    public @Nullable InconsistentResourceProvide checkResourceProvide(TaskKey key, Task<?> task, ResourceProvideDep fileGen) {
         executorLogger.checkResourceProvideStart(key, task, fileGen);
         final @Nullable InconsistentResourceProvide reason = fileGen.checkConsistency(resourceRegistry);
         executorLogger.checkResourceProvideEnd(key, task, fileGen, reason);
@@ -88,9 +88,9 @@ public class RequireShared {
     /**
      * Check if a task requires dependency is totally consistent.
      */
-    public @Nullable InconsistentTaskReq checkTaskRequire(TaskKey key, Task<?, ?> task, TaskRequireDep taskRequire, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    public @Nullable InconsistentTaskReq checkTaskRequire(TaskKey key, Task<?> task, TaskRequireDep taskRequire, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         final TaskKey calleeKey = taskRequire.callee;
-        final Task<Serializable, @Nullable Serializable> calleeTask;
+        final Task<?> calleeTask;
         try(final StoreReadTxn txn = store.readTxn()) {
             calleeTask = calleeKey.toTask(taskDefs, txn);
         }

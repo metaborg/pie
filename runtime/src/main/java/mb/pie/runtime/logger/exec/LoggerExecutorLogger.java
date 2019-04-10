@@ -35,20 +35,20 @@ public class LoggerExecutorLogger implements ExecutorLogger {
         return sb.toString();
     }
 
-    @Override public void requireTopDownInitialStart(TaskKey key, Task<?, ?> task) {
+    @Override public void requireTopDownInitialStart(TaskKey key, Task<?> task) {
 
     }
 
-    @Override public void requireTopDownInitialEnd(TaskKey key, Task<?, ?> task, @Nullable Serializable output) {
+    @Override public void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {
 
     }
 
-    @Override public void requireTopDownStart(TaskKey key, Task<?, ?> task) {
+    @Override public void requireTopDownStart(TaskKey key, Task<?> task) {
         logger.trace(getIndent() + "v " + task.desc(descLimit));
         indentation.incrementAndGet();
     }
 
-    @Override public void requireTopDownEnd(TaskKey key, Task<?, ?> task, @Nullable Serializable output) {
+    @Override public void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {
         indentation.decrementAndGet();
         final String outputString = output != null ? StringUtil.toShortString(output.toString(), descLimit) : "null";
         logger.trace(getIndent() + "✔ " + task.desc(descLimit) + " -> " + outputString);
@@ -80,12 +80,12 @@ public class LoggerExecutorLogger implements ExecutorLogger {
 
     }
 
-    @Override public void checkResourceProvideStart(TaskKey key, Task<?, ?> task, ResourceProvideDep dep) {
+    @Override public void checkResourceProvideStart(TaskKey key, Task<?> task, ResourceProvideDep dep) {
 
     }
 
     @Override
-    public void checkResourceProvideEnd(TaskKey key, Task<?, ?> task, ResourceProvideDep dep, @Nullable ExecReason reason) {
+    public void checkResourceProvideEnd(TaskKey key, Task<?> task, ResourceProvideDep dep, @Nullable ExecReason reason) {
         if(reason != null) {
             if(reason instanceof InconsistentResourceProvide) {
                 logger.trace(
@@ -98,11 +98,11 @@ public class LoggerExecutorLogger implements ExecutorLogger {
         }
     }
 
-    @Override public void checkResourceRequireStart(TaskKey key, Task<?, ?> task, ResourceRequireDep dep) {
+    @Override public void checkResourceRequireStart(TaskKey key, Task<?> task, ResourceRequireDep dep) {
     }
 
     @Override
-    public void checkResourceRequireEnd(TaskKey key, Task<?, ?> task, ResourceRequireDep dep, @Nullable ExecReason reason) {
+    public void checkResourceRequireEnd(TaskKey key, Task<?> task, ResourceRequireDep dep, @Nullable ExecReason reason) {
         if(reason != null) {
             if(reason instanceof InconsistentResourceProvide) {
                 logger.trace(
@@ -115,11 +115,11 @@ public class LoggerExecutorLogger implements ExecutorLogger {
         }
     }
 
-    @Override public void checkTaskRequireStart(TaskKey key, Task<?, ?> task, TaskRequireDep dep) {
+    @Override public void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep) {
     }
 
     @Override
-    public void checkTaskRequireEnd(TaskKey key, Task<?, ?> task, TaskRequireDep dep, @Nullable ExecReason reason) {
+    public void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable ExecReason reason) {
         if(reason instanceof InconsistentTaskReq) {
             logger.trace(getIndent() + "␦ " + dep.callee.toShortString(
                 descLimit) + " (inconsistent: " + dep.stamp + " vs " + ((InconsistentTaskReq) reason).newStamp + ")");
@@ -129,11 +129,11 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     }
 
 
-    @Override public void executeStart(TaskKey key, Task<?, ?> task, ExecReason reason) {
+    @Override public void executeStart(TaskKey key, Task<?> task, ExecReason reason) {
         logger.info(getIndent() + "> " + task.desc(descLimit) + " (reason: " + reason + ")");
     }
 
-    @Override public void executeEnd(TaskKey key, Task<?, ?> task, ExecReason reason, TaskData<?, ?> data) {
+    @Override public void executeEnd(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {
         final String outputString =
             data.output != null ? StringUtil.toShortString(data.output.toString(), descLimit) : "null";
         logger.info(getIndent() + "< " + StringUtil.toShortString(outputString, descLimit));

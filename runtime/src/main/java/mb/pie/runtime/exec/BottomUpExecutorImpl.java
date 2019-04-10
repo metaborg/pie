@@ -4,12 +4,9 @@ import mb.pie.api.*;
 import mb.pie.api.exec.BottomUpExecutor;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.NullCancelled;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.DefaultStampers;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -51,7 +48,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
 
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O requireTopDown(Task<I, O> task) throws ExecException {
+    public <O extends @Nullable Serializable> O requireTopDown(Task<O> task) throws ExecException {
         try {
             return requireTopDown(task, new NullCancelled());
         } catch(InterruptedException e) {
@@ -61,7 +58,7 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O requireTopDown(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O requireTopDown(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         final BottomUpSession session = newSession();
         return session.requireTopDownInitial(task, cancel);
     }
@@ -87,11 +84,12 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
         final float changedRate = (float) changedResources.size() / numSourceFiles;
         if(changedRate > 0.5) {
             final TopDownSessionImpl topdownSession =
-                new TopDownSessionImpl(taskDefs, resourceRegistry, store, share, defaultStampers, layerFactory.apply(logger),
+                new TopDownSessionImpl(taskDefs, resourceRegistry, store, share, defaultStampers,
+                    layerFactory.apply(logger),
                     logger, executorLoggerFactory.apply(logger));
             for(TaskKey key : observers.keySet()) {
                 try(final StoreReadTxn txn = store.readTxn()) {
-                    final Task<Serializable, @Nullable Serializable> task = key.toTask(taskDefs, txn);
+                    final Task<?> task = key.toTask(taskDefs, txn);
                     topdownSession.requireInitial(task, cancel);
                     // TODO: observers are not called when using a topdown session.
                 }
@@ -126,7 +124,8 @@ public class BottomUpExecutorImpl implements BottomUpExecutor {
 
 
     public BottomUpSession newSession() {
-        return new BottomUpSession(taskDefs, resourceRegistry, observers, store, share, defaultStampers, layerFactory.apply(logger), logger,
+        return new BottomUpSession(taskDefs, resourceRegistry, observers, store, share, defaultStampers,
+            layerFactory.apply(logger), logger,
             executorLoggerFactory.apply(logger));
     }
 }

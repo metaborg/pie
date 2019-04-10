@@ -297,7 +297,7 @@ internal class TopDownTests {
   fun testRequireGeneratedHiddenDep() = RuntimeTestGenerator.generate("testRequireGeneratedHiddenDep") {
     addTaskDef(writePath)
     addTaskDef(readPath)
-    val indirection = requireOutputFunc<Pair<String, FSResource>, None>()
+    val indirection = requireOutputFunc<None>()
     addTaskDef(indirection)
 
     val executor = topDownExecutor

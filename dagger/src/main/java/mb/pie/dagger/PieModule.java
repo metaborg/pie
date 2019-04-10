@@ -24,8 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-@Module
-public abstract class PieModule {
+@Module public abstract class PieModule {
     @Provides @PieScope static Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
         Optional<ResourceRegistry> resourceRegistry,

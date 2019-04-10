@@ -15,26 +15,26 @@ import java.util.function.BiConsumer;
 public class TaskExecutor {
     private final TaskDefs taskDefs;
     private final ResourceRegistry resourceRegistry;
-    private final HashMap<TaskKey, TaskData<?, ?>> visited;
+    private final HashMap<TaskKey, TaskData> visited;
     private final Store store;
     private final Share share;
     private final DefaultStampers defaultStampers;
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
-    private final @Nullable BiConsumer<TaskKey, TaskData<?, ?>> postExecFunc;
+    private final @Nullable BiConsumer<TaskKey, TaskData> postExecFunc;
 
     public TaskExecutor(
         TaskDefs taskDefs,
         ResourceRegistry resourceRegistry,
-        HashMap<TaskKey, TaskData<?, ?>> visited,
+        HashMap<TaskKey, TaskData> visited,
         Store store,
         Share share,
         DefaultStampers defaultStampers,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger,
-        @Nullable BiConsumer<TaskKey, TaskData<?, ?>> postExecFunc
+        @Nullable BiConsumer<TaskKey, TaskData> postExecFunc
     ) {
         this.taskDefs = taskDefs;
         this.resourceRegistry = resourceRegistry;
@@ -48,11 +48,10 @@ public class TaskExecutor {
         this.postExecFunc = postExecFunc;
     }
 
-    <I extends Serializable, O extends @Nullable Serializable>
-    TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    <O extends @Nullable Serializable> TaskData exec(TaskKey key, Task<O> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         executorLogger.executeStart(key, task, reason);
-        final TaskData<I, O> data;
+        final TaskData data;
         if(share instanceof NonSharingShare) {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
             data = execInternal(key, task, requireTask, cancel);
@@ -64,7 +63,7 @@ public class TaskExecutor {
                     } catch(InterruptedException | ExecException e) {
                         throw new RuntimeException(e);
                     }
-                }, () -> visited.get(key)).cast();
+                }, () -> visited.get(key));
             } catch(RuntimeException e) {
                 final Throwable cause = e.getCause();
                 if(cause instanceof InterruptedException) {
@@ -80,8 +79,7 @@ public class TaskExecutor {
         return data;
     }
 
-    private <I extends Serializable, O extends @Nullable Serializable>
-    TaskData<I, O> execInternal(TaskKey key, Task<I, O> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    private <O extends @Nullable Serializable> TaskData execInternal(TaskKey key, Task<O> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         // Execute
         final ExecContextImpl context =
@@ -100,8 +98,8 @@ public class TaskExecutor {
         }
         Stats.addExecution();
         final ExecContextImpl.Deps deps = context.deps();
-        final TaskData<I, O> data =
-            new TaskData<>(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
+        final TaskData data =
+            new TaskData(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
         // Validate well-formedness of the dependency graph, before writing.
         try(final StoreReadTxn txn = store.readTxn()) {
             layer.validatePreWrite(key, data, txn);

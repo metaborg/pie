@@ -3,7 +3,14 @@ package mb.pie.taskdefs.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import mb.pie.api.*;
+import mb.pie.api.ExecContext;
+import mb.pie.api.ExecException;
+import mb.pie.api.None;
+import mb.pie.api.Pie;
+import mb.pie.api.PieBuilder;
+import mb.pie.api.STask;
+import mb.pie.api.TaskDef;
+import mb.pie.api.TaskDefs;
 import mb.pie.api.exec.TopDownSession;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
@@ -14,7 +21,7 @@ import javax.inject.Inject;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class GuiceTaskDefsTest {
-    public static class ReturnResultString implements TaskDef<STask<None>, String> {
+    public static class ReturnResultString implements TaskDef<STask, String> {
         public static String id = "ReturnResultString";
 
         @Override public String getId() {
@@ -22,7 +29,7 @@ public class GuiceTaskDefsTest {
         }
 
         @Override
-        public String exec(ExecContext context, STask<None> input) throws ExecException, InterruptedException {
+        public String exec(ExecContext context, STask input) throws ExecException, InterruptedException {
             return (String) context.require(input);
         }
     }
@@ -67,7 +74,8 @@ public class GuiceTaskDefsTest {
     @Test
     void test() throws Exception {
         final String string = "Hello, enterprise!";
-        final Injector injector = Guice.createInjector(new GuiceTaskDefsModule(), new TestTaskDefsModule(), new StringModule(string));
+        final Injector injector =
+            Guice.createInjector(new GuiceTaskDefsModule(), new TestTaskDefsModule(), new StringModule(string));
         final TaskDefs taskDefs = injector.getInstance(TaskDefs.class);
         assertNotNull(taskDefs);
 
@@ -83,7 +91,8 @@ public class GuiceTaskDefsTest {
         pieBuilder.withLogger(StreamLogger.verbose());
         try(final Pie pie = pieBuilder.build()) {
             final TopDownSession session = pie.getTopDownExecutor().newSession();
-            final String returnedString = session.requireInitial(returnResultString.createTask(returnInjectedString.createSerializableTask(None.instance)));
+            final String returnedString = session.requireInitial(
+                returnResultString.createTask(returnInjectedString.createSerializableTask(None.instance)));
             assertEquals(string, returnedString);
         }
     }

@@ -9,5 +9,5 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 
 public interface RequireTask {
-    <I extends Serializable, O extends @Nullable Serializable> O require(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 }

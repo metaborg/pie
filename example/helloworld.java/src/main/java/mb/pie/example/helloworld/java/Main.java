@@ -76,7 +76,7 @@ public class Main {
         // Then we build the PIE runtime.
         try(final Pie pie = pieBuilder.build()) {
             // Now we create concrete task instances from the task definitions.
-            final Task<File, None> writeHelloWorldTask = writeHelloWorld.createTask(file);
+            final Task<None> writeHelloWorldTask = writeHelloWorld.createTask(file);
 
             // We incrementally execute the hello world task using the top-down executor.
             // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is

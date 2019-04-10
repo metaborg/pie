@@ -20,7 +20,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
     private final TaskExecutor executor;
     private final RequireShared requireShared;
 
-    private final HashMap<TaskKey, TaskData<?, ?>> visited = new HashMap<>();
+    private final HashMap<TaskKey, TaskData> visited = new HashMap<>();
 
     public TopDownSessionImpl(
         TaskDefs taskDefs,
@@ -43,7 +43,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
 
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O requireInitial(Task<I, O> task) throws ExecException {
+    public <O extends @Nullable Serializable> O requireInitial(Task<O> task) throws ExecException {
         try {
             return requireInitial(task, new NullCancelled());
         } catch(InterruptedException e) {
@@ -53,7 +53,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O requireInitial(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O requireInitial(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         try {
             final TaskKey key = task.key();
             executorLogger.requireTopDownInitialStart(key, task);
@@ -66,15 +66,15 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         executorLogger.requireTopDownStart(key, task);
         try {
-            final DataAndExecutionStatus<I, O> status = executeOrGetExisting(key, task, cancel);
-            final TaskData<I, O> data = status.data;
-            final O output = data.output;
+            final DataAndExecutionStatus status = executeOrGetExisting(key, task, cancel);
+            final TaskData data = status.data;
+            @SuppressWarnings("unchecked") final O output = (O) data.output;
             if(!status.executed) {
                 // Validate well-formedness of the dependency graph.
                 try(final StoreReadTxn txn = store.readTxn()) {
@@ -90,11 +90,11 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         }
     }
 
-    private class DataAndExecutionStatus<I extends Serializable, O extends @Nullable Serializable> {
-        final TaskData<I, O> data;
+    private class DataAndExecutionStatus {
+        final TaskData data;
         final boolean executed;
 
-        private DataAndExecutionStatus(TaskData<I, O> data, boolean executed) {
+        private DataAndExecutionStatus(TaskData data, boolean executed) {
             this.data = data;
             this.executed = executed;
         }
@@ -103,23 +103,23 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private <I extends Serializable, O extends @Nullable Serializable> DataAndExecutionStatus<I, O> executeOrGetExisting(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private <O extends @Nullable Serializable> DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution. Return immediately if so.
-        final @Nullable TaskData<?, ?> visitedData = requireShared.dataFromVisited(key);
+        final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
-            return new DataAndExecutionStatus<>(visitedData.cast(), false);
+            return new DataAndExecutionStatus(visitedData, false);
         }
 
         // Check if data is stored for task. Execute if not.
-        final @Nullable TaskData<?, ?> storedData = requireShared.dataFromStore(key);
+        final @Nullable TaskData storedData = requireShared.dataFromStore(key);
         if(storedData == null) {
-            return new DataAndExecutionStatus<>(exec(key, task, new NoData(), cancel), true);
+            return new DataAndExecutionStatus(exec(key, task, new NoData(), cancel), true);
         }
 
         // Check consistency of task.
-        final TaskData<I, O> existingData = storedData.cast();
-        final I input = existingData.input;
-        final @Nullable O output = existingData.output;
+        final TaskData existingData = storedData;
+        final Serializable input = existingData.input;
+        final @Nullable Serializable output = existingData.output;
         final ArrayList<TaskRequireDep> taskRequires = existingData.taskRequires;
         final ArrayList<ResourceRequireDep> resourceRequires = existingData.resourceRequires;
         final ArrayList<ResourceProvideDep> resourceProvides = existingData.resourceProvides;
@@ -128,7 +128,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         {
             final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
             if(reason != null) {
-                return new DataAndExecutionStatus<>(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
 
@@ -136,7 +136,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         {
             final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(output);
             if(reason != null) {
-                return new DataAndExecutionStatus<>(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
 
@@ -144,7 +144,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         for(ResourceRequireDep fileReq : resourceRequires) {
             final @Nullable InconsistentResourceRequire reason = requireShared.checkResourceRequire(key, task, fileReq);
             if(reason != null) {
-                return new DataAndExecutionStatus<>(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
 
@@ -152,7 +152,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         for(ResourceProvideDep fileGen : resourceProvides) {
             final @Nullable InconsistentResourceProvide reason = requireShared.checkResourceProvide(key, task, fileGen);
             if(reason != null) {
-                return new DataAndExecutionStatus<>(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
 
@@ -161,15 +161,15 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
             final @Nullable InconsistentTaskReq reason =
                 requireShared.checkTaskRequire(key, task, taskReq, this, cancel);
             if(reason != null) {
-                return new DataAndExecutionStatus<>(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
 
         // Task is consistent.
-        return new DataAndExecutionStatus<>(existingData, false);
+        return new DataAndExecutionStatus(existingData, false);
     }
 
-    public <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> TaskData exec(TaskKey key, Task<O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
         return executor.exec(key, task, reason, this, cancel);
     }
 }

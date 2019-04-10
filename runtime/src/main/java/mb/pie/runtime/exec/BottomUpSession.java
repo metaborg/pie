@@ -26,7 +26,7 @@ public class BottomUpSession implements RequireTask {
     private final Logger logger;
     private final ExecutorLogger executorLogger;
 
-    private final HashMap<TaskKey, TaskData<?, ?>> visited = new HashMap<>();
+    private final HashMap<TaskKey, TaskData> visited = new HashMap<>();
     private final DistinctTaskKeyPriorityQueue queue;
     private final TaskExecutor executor;
     private final RequireShared requireShared;
@@ -54,7 +54,7 @@ public class BottomUpSession implements RequireTask {
         this.executor =
             new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultStampers, layer, logger,
                 executorLogger,
-                (TaskKey key, TaskData<?, ?> data) -> {
+                (TaskKey key, TaskData data) -> {
                     // Notify observer, if any.
                     final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
                     if(observer != null) {
@@ -71,7 +71,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Entry point for top-down builds.
      */
-    public <I extends Serializable, O extends @Nullable Serializable> O requireTopDownInitial(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O requireTopDownInitial(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         try {
             final TaskKey key = task.key();
             executorLogger.requireTopDownInitialStart(key, task);
@@ -106,7 +106,7 @@ public class BottomUpSession implements RequireTask {
         while(queue.isNotEmpty()) {
             cancel.throwIfCancelled();
             final TaskKey key = queue.poll();
-            final Task<Serializable, @Nullable Serializable> task;
+            final Task<?> task;
             try(final StoreReadTxn txn = store.readTxn()) {
                 task = key.toTask(taskDefs, txn);
             }
@@ -118,8 +118,8 @@ public class BottomUpSession implements RequireTask {
     /**
      * Executes given task, and schedules new tasks based on given task's output.
      */
-    private <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> execAndSchedule(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
-        final TaskData<I, O> data = exec(key, task, new AffectedExecReason(), cancel);
+    private <O extends @Nullable Serializable> TaskData execAndSchedule(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+        final TaskData data = exec(key, task, new AffectedExecReason(), cancel);
         scheduleAffectedCallersOf(key, data.output);
         return data;
     }
@@ -164,15 +164,14 @@ public class BottomUpSession implements RequireTask {
      * Require the result of a task.
      */
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable>
-    O require(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         Stats.addRequires();
         cancel.throwIfCancelled();
         layer.requireTopDownStart(key, task.input);
         executorLogger.requireTopDownStart(key, task);
         try {
-            final TaskData<I, O> data = getData(key, task, cancel);
-            final O output = data.output;
+            final TaskData data = getData(key, task, cancel);
+            @SuppressWarnings("unchecked") final O output = (O) data.output;
             executorLogger.requireTopDownEnd(key, task, output);
             return output;
         } finally {
@@ -183,32 +182,31 @@ public class BottomUpSession implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private <I extends Serializable, O extends @Nullable Serializable>
-    TaskData<I, O> getData(TaskKey key, Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private <O extends @Nullable Serializable> TaskData getData(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution. Return immediately if so.
-        final @Nullable TaskData<?, ?> visitedData = requireShared.dataFromVisited(key);
+        final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
-            return visitedData.cast();
+            return visitedData;
         }
 
         // Check if data is stored for task. Execute if not.
-        final @Nullable TaskData<?, ?> storedData = requireShared.dataFromStore(key);
+        final @Nullable TaskData storedData = requireShared.dataFromStore(key);
         if(storedData == null) {
             // This tasks's output cannot affect other tasks since it is new. Therefore, we do not have to schedule new tasks.
             return exec(key, task, new NoData(), cancel);
         }
 
         // Task is : dependency graph. It may be scheduled to be run, but we need its output *now*.
-        final @Nullable TaskData<?, ?> requireNowData = requireScheduledNow(key, cancel);
+        final @Nullable TaskData requireNowData = requireScheduledNow(key, cancel);
         if(requireNowData != null) {
             // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been executed.
-            return requireNowData.cast();
+            return requireNowData;
         } else {
             // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
             // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
-            final TaskData<I, O> existingData = storedData.cast();
-            final I input = existingData.input;
-            final O output = existingData.output;
+            final TaskData existingData = storedData;
+            final Serializable input = existingData.input;
+            final @Nullable Serializable output = existingData.output;
 
             // Internal input consistency changes.
             {
@@ -242,7 +240,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
      */
-    private @Nullable TaskData<?, ?> requireScheduledNow(TaskKey key, Cancelled cancel) throws ExecException, InterruptedException {
+    private @Nullable TaskData requireScheduledNow(TaskKey key, Cancelled cancel) throws ExecException, InterruptedException {
         logger.trace("Executing scheduled (and its dependencies) task NOW: " + key);
         while(queue.isNotEmpty()) {
             cancel.throwIfCancelled();
@@ -250,21 +248,21 @@ public class BottomUpSession implements RequireTask {
             if(minTaskKey == null) {
                 break;
             }
-            final Task<Serializable, @Nullable Serializable> minTask;
+            final Task<?> minTask;
             try(final StoreReadTxn txn = store.readTxn()) {
                 minTask = minTaskKey.toTask(taskDefs, txn);
             }
             logger.trace("- least element less than task: " + minTask.desc(100));
-            final TaskData<Serializable, @Nullable Serializable> data = execAndSchedule(minTaskKey, minTask, cancel);
+            final TaskData data = execAndSchedule(minTaskKey, minTask, cancel);
             if(minTaskKey.equals(key)) {
-                return data; // Task was affected, and has been return executed result
+                return data; // Task was affected, and has been executed: return result.
             }
         }
-        return null; // Task was not return affected null
+        return null; // Task was not affected: return null.
     }
 
 
-    public <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> TaskData exec(TaskKey key, Task<O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
         return executor.exec(key, task, reason, this, cancel);
     }
 }

@@ -59,14 +59,14 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
     /**
      * Creates a task instance with given [input] for this task definition.
      */
-    default Task<I, O> createTask(I input) {
+    default Task<O> createTask(I input) {
         return new Task<>(this, input);
     }
 
     /**
      * Creates a serializable task instance with given [input] for this task definition.
      */
-    default STask<I> createSerializableTask(I input) {
-        return new STask<>(this.getId(), input);
+    default STask createSerializableTask(I input) {
+        return new STask(this.getId(), input);
     }
 }

@@ -18,9 +18,14 @@ public class GuiceTaskDefs implements TaskDefs {
         this.taskDefs = taskDefs;
     }
 
+    @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
+        return taskDefs.get(id);
+    }
+
     @Override
-    public @Nullable <I extends Serializable, O extends @Nullable Serializable> TaskDef<I, O> getTaskDef(String id) {
-        @SuppressWarnings("unchecked") final @Nullable TaskDef<I, O> taskDef = (@Nullable TaskDef<I, O>) taskDefs.get(id);
+    public <I extends Serializable, O extends Serializable> @Nullable TaskDef<I, O> getCastedTaskDef(String id) {
+        @SuppressWarnings("unchecked") final @Nullable TaskDef<I, O> taskDef =
+            (@Nullable TaskDef<I, O>) taskDefs.get(id);
         return taskDef;
     }
 }

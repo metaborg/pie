@@ -30,7 +30,12 @@ public class MapTaskDefs implements TaskDefs {
     }
 
 
-    @Override public <I extends Serializable, O extends Serializable> @Nullable TaskDef<I, O> getTaskDef(String id) {
+
+    @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
+        return taskDefs.get(id);
+    }
+
+    @Override public <I extends Serializable, O extends Serializable> @Nullable TaskDef<I, O> getCastedTaskDef(String id) {
         @SuppressWarnings("unchecked") final @Nullable TaskDef<I, O> taskDef =
             (@Nullable TaskDef<I, O>) taskDefs.get(id);
         return taskDef;

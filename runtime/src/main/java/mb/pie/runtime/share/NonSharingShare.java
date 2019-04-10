@@ -9,8 +9,8 @@ import java.util.function.Supplier;
 
 public class NonSharingShare implements Share {
     @Override
-    public TaskData<?, ?> share(TaskKey key, Supplier<TaskData<?, ?>> execFunc, @Nullable Supplier<TaskData<?, ?>> visitedFunc) {
-        final @Nullable TaskData<?, ?> taskData;
+    public TaskData share(TaskKey key, Supplier<TaskData> execFunc, @Nullable Supplier<TaskData> visitedFunc) {
+        final @Nullable TaskData taskData;
         if(visitedFunc != null) {
             taskData = visitedFunc.get();
         } else {

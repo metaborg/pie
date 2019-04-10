@@ -6,14 +6,20 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public final class TaskData<I extends Serializable, O extends @Nullable Serializable> {
-    public final I input;
-    public final O output;
+public final class TaskData {
+    public final Serializable input;
+    public final @Nullable Serializable output;
     public final ArrayList<TaskRequireDep> taskRequires;
     public final ArrayList<ResourceRequireDep> resourceRequires;
     public final ArrayList<ResourceProvideDep> resourceProvides;
 
-    public TaskData(I input, O output, ArrayList<TaskRequireDep> taskRequires, ArrayList<ResourceRequireDep> resourceRequires, ArrayList<ResourceProvideDep> resourceProvides) {
+    public TaskData(
+        Serializable input,
+        @Nullable Serializable output,
+        ArrayList<TaskRequireDep> taskRequires,
+        ArrayList<ResourceRequireDep> resourceRequires,
+        ArrayList<ResourceProvideDep> resourceProvides
+    ) {
         this.input = input;
         this.output = output;
         this.taskRequires = taskRequires;
@@ -21,18 +27,10 @@ public final class TaskData<I extends Serializable, O extends @Nullable Serializ
         this.resourceProvides = resourceProvides;
     }
 
-
-    public <IC extends Serializable, OC extends @Nullable Serializable> TaskData<IC, OC> cast() {
-        @SuppressWarnings("unchecked")
-        TaskData<IC, OC> casted = (TaskData<IC, OC>) this;
-        return casted;
-    }
-
-
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final TaskData<?, ?> taskData = (TaskData<?, ?>) o;
+        final TaskData taskData = (TaskData) o;
         if(!input.equals(taskData.input)) return false;
         if(!Objects.equals(output, taskData.output)) return false;
         if(!taskRequires.equals(taskData.taskRequires)) return false;
@@ -42,7 +40,6 @@ public final class TaskData<I extends Serializable, O extends @Nullable Serializ
 
     @Override public int hashCode() {
         int result = input.hashCode();
-        //noinspection ConstantConditions
         result = 31 * result + (output != null ? output.hashCode() : 0);
         result = 31 * result + taskRequires.hashCode();
         result = 31 * result + resourceRequires.hashCode();

@@ -29,12 +29,12 @@ public interface BottomUpExecutor {
     /**
      * Requires given [task] in a top-down fashion, returning its result.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O requireTopDown(Task<I, O> task) throws ExecException;
+    <O extends @Nullable Serializable> O requireTopDown(Task<O> task) throws ExecException;
 
     /**
      * Requires given [task] in a top-down fashion, with given [cancel] requester, returning its result.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O requireTopDown(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O requireTopDown(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 
     /**
      * Checks whether given task has been required at least once.

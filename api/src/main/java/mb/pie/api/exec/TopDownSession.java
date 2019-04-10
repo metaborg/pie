@@ -10,10 +10,10 @@ public interface TopDownSession {
     /**
      * Requires given [task], returning its output.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O requireInitial(Task<I, O> task) throws ExecException;
+    <O extends @Nullable Serializable> O requireInitial(Task<O> task) throws ExecException;
 
     /**
      * Requires given [task], with given [cancel] requester, returning its output.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O requireInitial(Task<I, O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O requireInitial(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 }

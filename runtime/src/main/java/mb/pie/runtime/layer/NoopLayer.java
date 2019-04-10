@@ -4,7 +4,6 @@ import mb.pie.api.Layer;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 
@@ -22,12 +21,12 @@ public class NoopLayer implements Layer {
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> void validatePreWrite(TaskKey key, TaskData<I, O> data, StoreReadTxn txn) {
+    public void validatePreWrite(TaskKey key, TaskData data, StoreReadTxn txn) {
 
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> void validatePostWrite(TaskKey key, TaskData<I, O> data, StoreReadTxn txn) {
+    public void validatePostWrite(TaskKey key, TaskData data, StoreReadTxn txn) {
 
     }
 }

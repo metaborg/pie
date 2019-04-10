@@ -22,12 +22,12 @@ fun anyER() = safeAny<ExecReason>(NoExecReason())
 
 
 class NoExecContext : ExecContext {
-  override fun <I : Serializable, O : Serializable?> require(task: Task<I, O>): O {
+  override fun <O : Serializable?> require(task: Task<O>): O {
     @Suppress("UNCHECKED_CAST")
     return null as O
   }
 
-  override fun <I : Serializable, O : Serializable?> require(task: Task<I, O>, stamper: OutputStamper): O {
+  override fun <O : Serializable?> require(task: Task<O>, stamper: OutputStamper): O {
     @Suppress("UNCHECKED_CAST")
     return null as O
   }
@@ -42,25 +42,27 @@ class NoExecContext : ExecContext {
     return null as O
   }
 
-  override fun <I : Serializable> require(task: STask<I>): Serializable? {
+  override fun require(task: STask): Serializable? {
     @Suppress("UNCHECKED_CAST")
     return null
   }
 
-  override fun <I : Serializable> require(task: STask<I>, stamper: OutputStamper): Serializable? {
+  override fun require(task: STask, stamper: OutputStamper): Serializable? {
     @Suppress("UNCHECKED_CAST")
     return null
   }
 
-  override fun <I : Serializable> require(taskDefId: String, input: I): Serializable? {
+  override fun require(taskDefId: String, input: Serializable): Serializable? {
     @Suppress("UNCHECKED_CAST")
     return null
   }
 
-  override fun <I : Serializable> require(taskDefId: String, input: I, stamper: OutputStamper): Serializable? {
+  override fun require(taskDefId: String, input: Serializable, stamper: OutputStamper): Serializable? {
     @Suppress("UNCHECKED_CAST")
     return null
   }
+
+  override fun defaultOutputStamper() = null!!
 
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}

@@ -20,24 +20,27 @@ public interface ExecContext {
     // Executing and recording dependencies to tasks.
     //
 
-    /**
-     * Requires given [task], using the default [output stamper][OutputStamper], and returns its output.
-     */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task) throws ExecException, InterruptedException;
 
     /**
-     * Requires given [task], using given [output stamper][stamper], and returns its output.
+     * Requires given {@code task}, using the {@link #defaultOutputStamper()}, returning the output of executing the
+     * task.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task, OutputStamper stamper) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by its [task definition][taskDef] and [input], using the default [output stamper][OutputStamper], and returns its
-     * output.
+     * Requires given {@code task}, using given {@code stamper}, returning the output of executing the task.
+     */
+    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException;
+
+    /**
+     * Requires task given by its {@code taskDef} and {@code input}, using the {@link #defaultOutputStamper()},
+     * returning the output of executing the task.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by its [task definition][taskDef] and [input], using given [output stamper][stamper], and returns its output.
+     * Requires task given by its {@code taskDef} and {@code input}, using given {@code stamper}, returning the output
+     * of executing the task.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
 
@@ -45,26 +48,31 @@ public interface ExecContext {
      * Requires task given by its [serializable task form][task], using the default [output stamper][OutputStamper], and returns its output.
      * Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
      */
-    <I extends Serializable> @Nullable Serializable require(STask<I> task) throws ExecException, InterruptedException;
+    @Nullable Serializable require(STask sTask) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its [serializable task form][task], using given [output stamper][stamper], and returns its output.
      * Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
      */
-    <I extends Serializable> @Nullable Serializable require(STask<I> task, OutputStamper stamper) throws ExecException, InterruptedException;
+    @Nullable Serializable require(STask sTask, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by the [identifier of its task definition][taskDefId] and [input], using the default
      * [output stamper][OutputStamper], and returns its output. Requires lookup and cast of a task definition, prefer [require] with [Task] or
      * [TaskDef] if possible.
      */
-    <I extends Serializable> @Nullable Serializable require(String taskDefId, I input) throws ExecException, InterruptedException;
+    @Nullable Serializable require(String taskDefId, Serializable input) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by the [identifier of its task definition][taskDefId] and [input], using given [output stamper][stamper],
      * and returns its output. Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
      */
-    <I extends Serializable> @Nullable Serializable require(String taskDefId, I input, OutputStamper stamper) throws ExecException, InterruptedException;
+    @Nullable Serializable require(String taskDefId, Serializable input, OutputStamper stamper) throws ExecException, InterruptedException;
+
+    /**
+     * Default output stamper.
+     */
+    OutputStamper defaultOutputStamper();
 
 
     //

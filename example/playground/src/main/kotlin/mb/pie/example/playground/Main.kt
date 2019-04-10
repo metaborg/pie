@@ -25,7 +25,7 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
 
   data class Input(
     val sourceFile: File,
-    val sourceTask: STask<*>,
+    val sourceTask: STask,
     val destinationFile: File
   ) : Serializable
 
