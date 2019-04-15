@@ -25,35 +25,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
     private final ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>> fileReqs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ResourceKey, Set<TaskKey>> requireesOf = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>> fileGens = new ConcurrentHashMap<>();
-    // TODO: null may not be used as a value in ConcurrentHashMap!
-    private final ConcurrentHashMap<ResourceKey, @Nullable TaskKey> generatorOf = new ConcurrentHashMap<>();
-
-
-    private static <K, V> Set<V> getOrPutEmptyConcurrentHashSet(ConcurrentHashMap<K, Set<V>> map, K key) {
-        // TODO: is computeIfAbsent correct? Kotlin implementation: return map.getOrPut(key) { ConcurrentHashMap.newKeySet<V>() }!!;
-        return map.computeIfAbsent(key, (k) -> ConcurrentHashMap.newKeySet());
-    }
-
-    private static <K, V> ArrayList<V> getOrEmptyArrayList(ConcurrentHashMap<K, ArrayList<V>> map, K key) {
-        return map.getOrDefault(key, new ArrayList<>());
-    }
-
-
-    @Override public InMemoryStore readTxn() {
-        return this;
-    }
-
-    @Override public InMemoryStore writeTxn() {
-        return this;
-    }
-
-    @Override public void sync() {
-
-    }
-
-    @Override public void close() {
-
-    }
+    private final ConcurrentHashMap<ResourceKey, TaskKey> generatorOf = new ConcurrentHashMap<>();
 
 
     @Override public @Nullable Serializable input(TaskKey key) {
@@ -74,7 +46,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
     }
 
     @Override public void setOutput(TaskKey key, @Nullable Serializable output) {
-        // ConcurrentHashMap does not support null values, so also wrap outputs (which can be null) : an Output object.
+        // ConcurrentHashMap does not support null values, so wrap outputs (which can be null) into an Output object.
         outputs.put(key, new Output(output));
     }
 
@@ -191,6 +163,28 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         fileGens.clear();
         generatorOf.clear();
     }
+
+
+    private static <K, V> Set<V> getOrPutEmptyConcurrentHashSet(ConcurrentHashMap<K, Set<V>> map, K key) {
+        return map.computeIfAbsent(key, (k) -> ConcurrentHashMap.newKeySet());
+    }
+
+    private static <K, V> ArrayList<V> getOrEmptyArrayList(ConcurrentHashMap<K, ArrayList<V>> map, K key) {
+        return map.getOrDefault(key, new ArrayList<>());
+    }
+
+
+    @Override public InMemoryStore readTxn() {
+        return this;
+    }
+
+    @Override public InMemoryStore writeTxn() {
+        return this;
+    }
+
+    @Override public void sync() {}
+
+    @Override public void close() {}
 
 
     @Override public String toString() {

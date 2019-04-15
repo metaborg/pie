@@ -1,6 +1,12 @@
 package mb.pie.example.helloworld.java;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecContext;
+import mb.pie.api.None;
+import mb.pie.api.Pie;
+import mb.pie.api.PieBuilder;
+import mb.pie.api.PieSession;
+import mb.pie.api.Task;
+import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 import mb.pie.runtime.taskdefs.MapTaskDefs;
@@ -77,14 +83,16 @@ public class Main {
         try(final Pie pie = pieBuilder.build()) {
             // Now we create concrete task instances from the task definitions.
             final Task<None> writeHelloWorldTask = writeHelloWorld.createTask(file);
+            // We create a new session to perform an incremental build.
+            try(final PieSession session = pie.newSession()) {
+                // We incrementally execute the hello world task by requiring it in a top-down fashion.
+                // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
+                // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
+                session.requireTopDown(writeHelloWorldTask);
 
-            // We incrementally execute the hello world task using the top-down executor.
-            // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
-            // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
-            pie.getTopDownExecutor().newSession().requireInitial(writeHelloWorldTask);
-
-            // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
-            System.out.println("File contents: " + new String(Files.readAllBytes(file.toPath())));
+                // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
+                System.out.println("File contents: " + new String(Files.readAllBytes(file.toPath())));
+            }
         }
         // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized.
         // Using a try-with-resources block is the best way to ensure that.

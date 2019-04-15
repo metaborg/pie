@@ -8,10 +8,10 @@ import mb.pie.api.ExecException;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
+import mb.pie.api.PieSession;
 import mb.pie.api.STask;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
-import mb.pie.api.exec.TopDownSession;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 import org.junit.jupiter.api.Test;
@@ -89,9 +89,8 @@ public class GuiceTaskDefsTest {
         final PieBuilder pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
         pieBuilder.withLogger(StreamLogger.verbose());
-        try(final Pie pie = pieBuilder.build()) {
-            final TopDownSession session = pie.getTopDownExecutor().newSession();
-            final String returnedString = session.requireInitial(
+        try(final Pie pie = pieBuilder.build(); final PieSession session = pie.newSession()) {
+            final String returnedString = session.requireTopDown(
                 returnResultString.createTask(returnInjectedString.createSerializableTask(None.instance)));
             assertEquals(string, returnedString);
         }

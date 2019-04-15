@@ -3,56 +3,43 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.exec.NullCancelled;
-import mb.pie.api.exec.TopDownSession;
-import mb.pie.runtime.DefaultStampers;
-import mb.resource.ResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
-public class TopDownSessionImpl implements TopDownSession, RequireTask {
+public class TopDownSession implements RequireTask {
     private final Store store;
     private final Layer layer;
     private final ExecutorLogger executorLogger;
-    private final TaskExecutor executor;
+    private final TaskExecutor taskExecutor;
     private final RequireShared requireShared;
+    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
 
-    private final HashMap<TaskKey, TaskData> visited = new HashMap<>();
+    private final HashMap<TaskKey, TaskData> visited;
 
-    public TopDownSessionImpl(
-        TaskDefs taskDefs,
-        ResourceRegistry resourceRegistry,
+    public TopDownSession(
         Store store,
-        Share share,
-        DefaultStampers defaultStampers,
         Layer layer,
-        Logger logger,
-        ExecutorLogger executorLogger
+        ExecutorLogger executorLogger,
+        TaskExecutor taskExecutor,
+        RequireShared requireShared,
+        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers,
+        HashMap<TaskKey, TaskData> visited
     ) {
         this.store = store;
         this.layer = layer;
         this.executorLogger = executorLogger;
-        this.executor =
-            new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultStampers, layer, logger,
-                executorLogger, null);
-        this.requireShared = new RequireShared(taskDefs, resourceRegistry, visited, store, executorLogger);
+        this.taskExecutor = taskExecutor;
+        this.requireShared = requireShared;
+        this.observers = observers;
+
+        this.visited = visited;
     }
 
-
-    @Override
-    public <O extends @Nullable Serializable> O requireInitial(Task<O> task) throws ExecException {
-        try {
-            return requireInitial(task, new NullCancelled());
-        } catch(InterruptedException e) {
-            // Cannot occur: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public <O extends @Nullable Serializable> O requireInitial(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         try {
             final TaskKey key = task.key();
@@ -82,6 +69,13 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 }
                 // Mark task as visited.
                 visited.put(key, data);
+                // Notify observer, if any.
+                final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
+                if(observer != null) {
+                    executorLogger.invokeObserverStart(observer, key, output);
+                    observer.accept(output);
+                    executorLogger.invokeObserverEnd(observer, key, output);
+                }
             }
             executorLogger.requireTopDownEnd(key, task, output);
             return output;
@@ -103,7 +97,7 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private <O extends @Nullable Serializable> DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution. Return immediately if so.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -117,13 +111,11 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
         }
 
         // Check consistency of task.
-        final TaskData existingData = storedData;
-        final Serializable input = existingData.input;
-        final @Nullable Serializable output = existingData.output;
-        final ArrayList<TaskRequireDep> taskRequires = existingData.taskRequires;
-        final ArrayList<ResourceRequireDep> resourceRequires = existingData.resourceRequires;
-        final ArrayList<ResourceProvideDep> resourceProvides = existingData.resourceProvides;
-
+        final Serializable input = storedData.input;
+        final @Nullable Serializable output = storedData.output;
+        final ArrayList<TaskRequireDep> taskRequires = storedData.taskRequires;
+        final ArrayList<ResourceRequireDep> resourceRequires = storedData.resourceRequires;
+        final ArrayList<ResourceProvideDep> resourceProvides = storedData.resourceProvides;
         // Internal input consistency changes.
         {
             final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
@@ -131,7 +123,6 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
-
         // Internal transient consistency output consistency.
         {
             final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(output);
@@ -139,7 +130,6 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
-
         // Internal resource consistency requires.
         for(ResourceRequireDep fileReq : resourceRequires) {
             final @Nullable InconsistentResourceRequire reason = requireShared.checkResourceRequire(key, task, fileReq);
@@ -147,7 +137,6 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
-
         // Internal resource consistency provides.
         for(ResourceProvideDep fileGen : resourceProvides) {
             final @Nullable InconsistentResourceProvide reason = requireShared.checkResourceProvide(key, task, fileGen);
@@ -155,7 +144,6 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
-
         // Total call consistency requirements.
         for(TaskRequireDep taskReq : taskRequires) {
             final @Nullable InconsistentTaskReq reason =
@@ -164,12 +152,11 @@ public class TopDownSessionImpl implements TopDownSession, RequireTask {
                 return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
             }
         }
-
         // Task is consistent.
-        return new DataAndExecutionStatus(existingData, false);
+        return new DataAndExecutionStatus(storedData, false);
     }
 
-    public <O extends @Nullable Serializable> TaskData exec(TaskKey key, Task<O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
-        return executor.exec(key, task, reason, this, cancel);
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+        return taskExecutor.exec(key, task, reason, this, cancel);
     }
 }

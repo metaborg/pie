@@ -70,14 +70,16 @@ fun main(args: Array<String>) {
   pieBuilder.build().use { pie ->
     // Now we create concrete task instances from the task definitions.
     val writeHelloWorldTask = writeHelloWorld.createTask(file)
+    // We create a new session to perform an incremental build.
+    pie.newSession().use { session ->
+      // We incrementally execute the hello world task by requiring it in a top-down fashion.
+      // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
+      // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
+      session.requireTopDown(writeHelloWorldTask)
 
-    // We incrementally execute the hello world task using the top-down executor.
-    // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
-    // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
-    pie.topDownExecutor.newSession().requireInitial(writeHelloWorldTask)
-
-    // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
-    println("File contents: ${file.readText()}")
+      // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
+      println("File contents: ${file.readText()}")
+    }
   }
   // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a
   // 'use' block is the best way to ensure that.

@@ -16,7 +16,7 @@ import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.taskdefs.MapTaskDefs;
 import mb.resource.ReadableResource;
-import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 
 import javax.inject.Named;
@@ -27,7 +27,7 @@ import java.util.function.Function;
 @Module public abstract class PieModule {
     @Provides @PieScope static Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
-        Optional<ResourceRegistry> resourceRegistry,
+        Optional<ResourceService> resourceService,
         Optional<Function<Logger, Store>> storeFunc,
         Optional<Function<Logger, Share>> shareFunc,
         Optional<OutputStamper> defaultOutputStamper,
@@ -45,7 +45,7 @@ import java.util.function.Function;
 
         final PieBuilder builder = new PieBuilderImpl();
         builder.withTaskDefs(new MapTaskDefs(taskDefs));
-        resourceRegistry.ifPresent(builder::withResourceRegistry);
+        resourceService.ifPresent(builder::withResourceService);
         storeFunc.ifPresent(builder::withStore);
         shareFunc.ifPresent(builder::withShare);
         defaultOutputStamper.ifPresent(builder::withDefaultOutputStamper);
@@ -59,7 +59,7 @@ import java.util.function.Function;
         return builder.build();
     }
 
-    @BindsOptionalOf abstract ResourceRegistry resourceRegistry();
+    @BindsOptionalOf abstract ResourceService resourceService();
 
     @BindsOptionalOf abstract Function<Logger, Store> storeFunc();
 
@@ -73,9 +73,11 @@ import java.util.function.Function;
     @BindsOptionalOf @Named("provide")
     abstract ResourceStamper<ReadableResource> defaultProvideReadableResourceStamper();
 
-    @BindsOptionalOf @Named("require") abstract ResourceStamper<FSResource> defaultRequireFSResourceStamper();
+    @BindsOptionalOf @Named("require")
+    abstract ResourceStamper<FSResource> defaultRequireFSResourceStamper();
 
-    @BindsOptionalOf @Named("provide") abstract ResourceStamper<FSResource> defaultProvideFSResourceStamper();
+    @BindsOptionalOf @Named("provide")
+    abstract ResourceStamper<FSResource> defaultProvideFSResourceStamper();
 
     @BindsOptionalOf abstract Function<Logger, Layer> layerFunc();
 

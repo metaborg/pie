@@ -5,7 +5,6 @@ import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -20,12 +19,5 @@ public class GuiceTaskDefs implements TaskDefs {
 
     @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
         return taskDefs.get(id);
-    }
-
-    @Override
-    public <I extends Serializable, O extends Serializable> @Nullable TaskDef<I, O> getCastedTaskDef(String id) {
-        @SuppressWarnings("unchecked") final @Nullable TaskDef<I, O> taskDef =
-            (@Nullable TaskDef<I, O>) taskDefs.get(id);
-        return taskDef;
     }
 }

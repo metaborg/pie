@@ -8,8 +8,8 @@ import mb.pie.api.LambdaTaskDef;
 import mb.pie.api.Logger;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
+import mb.pie.api.PieSession;
 import mb.pie.api.TaskDef;
-import mb.pie.api.exec.TopDownSession;
 import mb.pie.runtime.logger.StreamLogger;
 import org.junit.jupiter.api.Test;
 
@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class PieComponentTest {
     // Create a module that binds task definitions separately and as a set.
     @Module static class TestTaskDefsModule {
-        @Provides @TaskDefsScope LambdaTaskDef<None, String> providesCreateHelloWorldString() {
-            return new LambdaTaskDef<>("createHelloWorldString", (ctx, input) -> "Hello, world!");
+        @Provides @TaskDefsScope LambdaTaskDef<None, String> providesCreateString() {
+            return new LambdaTaskDef<>("createString", (ctx, input) -> "Hello, world!");
         }
 
         @Provides @TaskDefsScope LambdaTaskDef<String, String> providesModifyString() {
@@ -44,7 +44,7 @@ class PieComponentTest {
     // TestTaskDefsModule as a module of this component.
     @TaskDefsScope @Component(modules = TestTaskDefsModule.class)
     interface TestTaskDefsComponent extends TaskDefsComponent {
-        LambdaTaskDef<None, String> createHelloWorldString();
+        LambdaTaskDef<None, String> createString();
 
         LambdaTaskDef<String, String> modifyString();
     }
@@ -67,9 +67,9 @@ class PieComponentTest {
 
     @Test void test() throws Exception {
         final TestTaskDefsComponent taskDefsComponent = DaggerPieComponentTest_TestTaskDefsComponent.create();
-        assertSame(taskDefsComponent.createHelloWorldString(), taskDefsComponent.createHelloWorldString());
+        assertSame(taskDefsComponent.createString(), taskDefsComponent.createString());
         assertSame(taskDefsComponent.modifyString(), taskDefsComponent.modifyString());
-        assertTrue(taskDefsComponent.getTaskDefs().contains(taskDefsComponent.createHelloWorldString()));
+        assertTrue(taskDefsComponent.getTaskDefs().contains(taskDefsComponent.createString()));
         assertTrue(taskDefsComponent.getTaskDefs().contains(taskDefsComponent.modifyString()));
 
         final TestPieComponent pieComponent = DaggerPieComponentTest_TestPieComponent
@@ -78,12 +78,10 @@ class PieComponentTest {
             .build();
         assertSame(pieComponent.getPie(), pieComponent.getPie());
 
-        try(final Pie pie = pieComponent.getPie()) {
-            final TopDownSession session = pie.getTopDownExecutor().newSession();
-            final String str1 =
-                session.requireInitial(taskDefsComponent.createHelloWorldString().createTask(None.instance));
+        try(final Pie pie = pieComponent.getPie(); final PieSession session = pie.newSession()) {
+            final String str1 = session.requireTopDown(taskDefsComponent.createString().createTask(None.instance));
             assertEquals("Hello, world!", str1);
-            final String str2 = session.requireInitial(taskDefsComponent.modifyString().createTask(str1));
+            final String str2 = session.requireTopDown(taskDefsComponent.modifyString().createTask(str1));
             assertEquals("Hello, universe!", str2);
         }
     }

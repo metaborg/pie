@@ -3,6 +3,7 @@ package mb.pie.runtime.exec;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Comparator;
 
@@ -14,7 +15,7 @@ public class DependencyComparator implements Comparator<TaskKey> {
     }
 
     @Override
-    public int compare(TaskKey key1, TaskKey key2) {
+    public int compare(@NonNull TaskKey key1, @NonNull TaskKey key2) {
         if(key1.equals(key2)) {
             return 0;
         }

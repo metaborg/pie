@@ -12,21 +12,11 @@ import java.io.Serializable;
  * DO NOT USE in production, as it disables checking for inconsistencies in the build.
  */
 public class NoopLayer implements Layer {
-    @Override public void requireTopDownStart(TaskKey key, Serializable input) {
+    @Override public void requireTopDownStart(TaskKey key, Serializable input) {}
 
-    }
+    @Override public void requireTopDownEnd(TaskKey key) {}
 
-    @Override public void requireTopDownEnd(TaskKey key) {
+    @Override public void validatePreWrite(TaskKey key, TaskData data, StoreReadTxn txn) {}
 
-    }
-
-    @Override
-    public void validatePreWrite(TaskKey key, TaskData data, StoreReadTxn txn) {
-
-    }
-
-    @Override
-    public void validatePostWrite(TaskKey key, TaskData data, StoreReadTxn txn) {
-
-    }
+    @Override public void validatePostWrite(TaskKey key, TaskData data, StoreReadTxn txn) {}
 }

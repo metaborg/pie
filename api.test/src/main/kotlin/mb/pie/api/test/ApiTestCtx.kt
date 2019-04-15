@@ -1,7 +1,6 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
-import mb.pie.api.exec.*
 import mb.resource.fs.FSResource
 import java.io.Serializable
 import java.nio.file.FileSystem
@@ -20,9 +19,7 @@ open class ApiTestCtx(
 
 
   open val pie: Pie get() = pieImpl
-  open val topDownExecutor: TopDownExecutor get() = pie.topDownExecutor
-  open val bottomUpExecutor: BottomUpExecutor get() = pie.bottomUpExecutor
-  open fun topDownSession(): TopDownSession = pie.topDownExecutor.newSession()
+  open fun newSession(): PieSession = pie.newSession()
 
 
   fun resource(path: String): FSResource {

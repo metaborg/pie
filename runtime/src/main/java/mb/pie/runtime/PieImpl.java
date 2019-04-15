@@ -1,36 +1,34 @@
 package mb.pie.runtime;
 
-import mb.pie.api.ExecutorLogger;
-import mb.pie.api.Layer;
-import mb.pie.api.Logger;
-import mb.pie.api.Pie;
-import mb.pie.api.Share;
-import mb.pie.api.Store;
-import mb.pie.api.StoreWriteTxn;
-import mb.pie.api.TaskDefs;
-import mb.pie.api.exec.BottomUpExecutor;
-import mb.pie.api.exec.TopDownExecutor;
-import mb.resource.ResourceRegistry;
+import mb.pie.api.*;
+import mb.pie.runtime.exec.BottomUpSession;
+import mb.pie.runtime.exec.RequireShared;
+import mb.pie.runtime.exec.TaskExecutor;
+import mb.pie.runtime.exec.TopDownSession;
+import mb.resource.ResourceService;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieImpl implements Pie {
-    private final TopDownExecutor topDownExecutor;
-    private final BottomUpExecutor bottomUpExecutor;
-    final TaskDefs taskDefs;
-    final ResourceRegistry resourceRegistry;
-    final Store store;
-    final Share share;
-    final DefaultStampers defaultStampers;
-    final Function<Logger, Layer> layerFactory;
-    final Logger logger;
-    final Function<Logger, ExecutorLogger> executorLoggerFactory;
+    private final TaskDefs taskDefs;
+    private final ResourceService resourceService;
+    private final Store store;
+    private final Share share;
+    private final DefaultStampers defaultStampers;
+    private final Function<Logger, Layer> layerFactory;
+    private final Logger logger;
+    private final Function<Logger, ExecutorLogger> executorLoggerFactory;
+
+    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers = new ConcurrentHashMap<>();
 
     public PieImpl(
-        TopDownExecutor topDownExecutor,
-        BottomUpExecutor bottomUpExecutor,
         TaskDefs taskDefs,
-        ResourceRegistry resourceRegistry,
+        ResourceService resourceService,
         Store store,
         Share share,
         DefaultStampers defaultStampers,
@@ -38,10 +36,8 @@ public class PieImpl implements Pie {
         Logger logger,
         Function<Logger, ExecutorLogger> executorLoggerFactory
     ) {
-        this.topDownExecutor = topDownExecutor;
-        this.bottomUpExecutor = bottomUpExecutor;
         this.taskDefs = taskDefs;
-        this.resourceRegistry = resourceRegistry;
+        this.resourceService = resourceService;
         this.store = store;
         this.share = share;
         this.defaultStampers = defaultStampers;
@@ -50,13 +46,65 @@ public class PieImpl implements Pie {
         this.executorLoggerFactory = executorLoggerFactory;
     }
 
-    @Override public TopDownExecutor getTopDownExecutor() {
-        return topDownExecutor;
+    @Override public void close() throws Exception {
+        store.close();
     }
 
-    @Override public BottomUpExecutor getBottomUpExecutor() {
-        return bottomUpExecutor;
+
+    @Override public PieSession newSession() {
+        return createSession(this.taskDefs);
     }
+
+    @Override public PieSession newSession(TaskDefs taskDefs) {
+        return createSession(taskDefs);
+    }
+
+    private PieSession createSession(TaskDefs taskDefs) {
+        final Layer layer = layerFactory.apply(logger);
+        final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);
+        final HashMap<TaskKey, TaskData> visited = new HashMap<>();
+        final TaskExecutor taskExecutor =
+            new TaskExecutor(taskDefs, resourceService, store, share, defaultStampers, layer, logger, executorLogger,
+                observers, visited);
+        final RequireShared requireShared =
+            new RequireShared(taskDefs, resourceService, store, executorLogger, visited);
+        final TopDownSession topDownSession =
+            new TopDownSession(store, layer, executorLogger, taskExecutor, requireShared, observers, visited);
+        final BottomUpSession bottomUpSession =
+            new BottomUpSession(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
+                requireShared, observers, visited);
+        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, store, observers);
+    }
+
+
+    @Override public boolean hasBeenExecuted(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.output(key) != null;
+        }
+    }
+
+    @Override public <O extends @Nullable Serializable> void setObserver(Task<O> task, Consumer<O> observer) {
+        @SuppressWarnings("unchecked") final Consumer<@Nullable Serializable> generalizedObserver =
+            (Consumer<@Nullable Serializable>) observer;
+        observers.put(task.key(), generalizedObserver);
+    }
+
+    @Override public void setObserver(TaskKey key, Consumer<@Nullable Serializable> observer) {
+        observers.put(key, observer);
+    }
+
+    @Override public void removeObserver(Task<?> task) {
+        observers.remove(task.key());
+    }
+
+    @Override public void removeObserver(TaskKey key) {
+        observers.remove(key);
+    }
+
+    @Override public void dropObservers() {
+        observers.clear();
+    }
+
 
     @Override public void dropStore() {
         try(final StoreWriteTxn txn = store.writeTxn()) {
@@ -64,9 +112,6 @@ public class PieImpl implements Pie {
         }
     }
 
-    @Override public void close() throws Exception {
-        store.close();
-    }
 
     @Override public String toString() {
         return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(logger) + ")";

@@ -3,90 +3,61 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.runtime.DefaultStampers;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class BottomUpSession implements RequireTask {
     private final TaskDefs taskDefs;
-    private final ResourceRegistry resourceRegistry;
-    private final Map<TaskKey, Consumer<@Nullable Serializable>> observers;
+    private final ResourceService resourceService;
     private final Store store;
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
-
-    private final HashMap<TaskKey, TaskData> visited = new HashMap<>();
-    private final DistinctTaskKeyPriorityQueue queue;
-    private final TaskExecutor executor;
+    private final TaskExecutor taskExecutor;
     private final RequireShared requireShared;
+    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
+
+    private final HashMap<TaskKey, TaskData> visited;
+    private final DistinctTaskKeyPriorityQueue queue;
 
     public BottomUpSession(
         TaskDefs taskDefs,
-        ResourceRegistry resourceRegistry,
-        Map<TaskKey, Consumer<@Nullable Serializable>> observers,
+        ResourceService resourceService,
         Store store,
-        Share share,
-        DefaultStampers defaultStampers,
         Layer layer,
         Logger logger,
-        ExecutorLogger executorLogger
+        ExecutorLogger executorLogger,
+        TaskExecutor taskExecutor,
+        RequireShared requireShared,
+        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers,
+        HashMap<TaskKey, TaskData> visited
     ) {
         this.taskDefs = taskDefs;
-        this.resourceRegistry = resourceRegistry;
-        this.observers = observers;
+        this.resourceService = resourceService;
         this.store = store;
         this.layer = layer;
         this.logger = logger;
         this.executorLogger = executorLogger;
+        this.taskExecutor = taskExecutor;
+        this.requireShared = requireShared;
+        this.observers = observers;
 
+        this.visited = visited;
         this.queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store);
-        this.executor =
-            new TaskExecutor(taskDefs, resourceRegistry, visited, store, share, defaultStampers, layer, logger,
-                executorLogger,
-                (TaskKey key, TaskData data) -> {
-                    // Notify observer, if any.
-                    final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
-                    if(observer != null) {
-                        final @Nullable Serializable output = data.output;
-                        executorLogger.invokeObserverStart(observer, key, output);
-                        observer.accept(output);
-                        executorLogger.invokeObserverEnd(observer, key, output);
-                    }
-                });
-        this.requireShared = new RequireShared(taskDefs, resourceRegistry, visited, store, executorLogger);
     }
 
 
-    /**
-     * Entry point for top-down builds.
-     */
-    public <O extends @Nullable Serializable> O requireTopDownInitial(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
-        try {
-            final TaskKey key = task.key();
-            executorLogger.requireTopDownInitialStart(key, task);
-            final O output = require(key, task, cancel);
-            executorLogger.requireTopDownInitialEnd(key, task, output);
-            return output;
-        } finally {
-            store.sync();
-        }
-    }
-
-    /**
-     * Entry point for bottom-up builds.
-     */
-    public void requireBottomUpInitial(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
+    public void requireInitial(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
         try {
             executorLogger.requireBottomUpInitialStart(changedResources);
             scheduleAffectedByResources(changedResources);
@@ -118,7 +89,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Executes given task, and schedules new tasks based on given task's output.
      */
-    private <O extends @Nullable Serializable> TaskData execAndSchedule(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData execAndSchedule(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
         final TaskData data = exec(key, task, new AffectedExecReason(), cancel);
         scheduleAffectedCallersOf(key, data.output);
         return data;
@@ -131,7 +102,7 @@ public class BottomUpSession implements RequireTask {
         logger.trace("Scheduling tasks affected by resources: " + resources);
         final HashSet<TaskKey> affected;
         try(final StoreReadTxn txn = store.readTxn()) {
-            affected = BottomUpShared.directlyAffectedTaskKeys(txn, resources, resourceRegistry, logger);
+            affected = BottomUpShared.directlyAffectedTaskKeys(txn, resources, resourceService, logger);
         }
         for(TaskKey key : affected) {
             logger.trace("- scheduling: " + key);
@@ -182,7 +153,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private <O extends @Nullable Serializable> TaskData getData(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData getData(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution. Return immediately if so.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -196,7 +167,7 @@ public class BottomUpSession implements RequireTask {
             return exec(key, task, new NoData(), cancel);
         }
 
-        // Task is : dependency graph. It may be scheduled to be run, but we need its output *now*.
+        // Task is in dependency graph. It may be scheduled to be run, but we need its output *now*.
         final @Nullable TaskData requireNowData = requireScheduledNow(key, cancel);
         if(requireNowData != null) {
             // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been executed.
@@ -204,36 +175,32 @@ public class BottomUpSession implements RequireTask {
         } else {
             // Task was not scheduled. That is, it was not directly affected by file changes, and not indirectly affected by other tasks.
             // Therefore, it has not been executed. However, the task may still be affected by internal inconsistencies.
-            final TaskData existingData = storedData;
-            final Serializable input = existingData.input;
-            final @Nullable Serializable output = existingData.output;
-
             // Internal input consistency changes.
+            final Serializable input = storedData.input;
             {
                 final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
                 if(reason != null) {
                     return exec(key, task, reason, cancel);
                 }
             }
-
             // Internal transient consistency output consistency.
+            final @Nullable Serializable output = storedData.output;
             {
                 final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(output);
                 if(reason != null) {
                     return exec(key, task, reason, cancel);
                 }
             }
-
-            // Notify observer.
+            // Mark as visited.
+            visited.put(key, storedData);
+            // Notify observer, if any.
             final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
             if(observer != null) {
                 executorLogger.invokeObserverStart(observer, key, output);
                 observer.accept(output);
                 executorLogger.invokeObserverEnd(observer, key, output);
             }
-
-            // Task is consistent.
-            return existingData;
+            return storedData;
         }
     }
 
@@ -262,7 +229,7 @@ public class BottomUpSession implements RequireTask {
     }
 
 
-    public <O extends @Nullable Serializable> TaskData exec(TaskKey key, Task<O> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
-        return executor.exec(key, task, reason, this, cancel);
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+        return taskExecutor.exec(key, task, reason, this, cancel);
     }
 }

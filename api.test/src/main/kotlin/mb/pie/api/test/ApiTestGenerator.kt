@@ -3,11 +3,11 @@ package mb.pie.api.test
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import mb.pie.api.*
-import mb.pie.api.stamp.resource.HashMatchResourceStamper
-import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
+import mb.pie.api.stamp.resource.HashMatchResourceStamper
+import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.*
 import java.nio.file.FileSystem

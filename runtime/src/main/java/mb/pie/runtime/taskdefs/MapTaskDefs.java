@@ -4,7 +4,6 @@ import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Serializable;
 import java.util.HashMap;
 
 /**
@@ -12,7 +11,6 @@ import java.util.HashMap;
  */
 public class MapTaskDefs implements TaskDefs {
     private final HashMap<String, TaskDef<?, ?>> taskDefs;
-
 
     public MapTaskDefs() {
         this.taskDefs = new HashMap<>();
@@ -29,18 +27,9 @@ public class MapTaskDefs implements TaskDefs {
         this.taskDefs = taskDefs;
     }
 
-
-
     @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
         return taskDefs.get(id);
     }
-
-    @Override public <I extends Serializable, O extends Serializable> @Nullable TaskDef<I, O> getCastedTaskDef(String id) {
-        @SuppressWarnings("unchecked") final @Nullable TaskDef<I, O> taskDef =
-            (@Nullable TaskDef<I, O>) taskDefs.get(id);
-        return taskDef;
-    }
-
 
     public void add(TaskDef<?, ?> taskDef) {
         taskDefs.put(taskDef.getId(), taskDef);

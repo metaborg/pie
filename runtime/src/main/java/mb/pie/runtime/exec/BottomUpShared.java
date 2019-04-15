@@ -5,7 +5,7 @@ import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
@@ -19,7 +19,12 @@ public class BottomUpShared {
     /**
      * Returns keys of tasks that are directly affected by changed resources.
      */
-    public static HashSet<TaskKey> directlyAffectedTaskKeys(StoreReadTxn txn, Collection<ResourceKey> changedResources, ResourceRegistry resourceRegistry, Logger logger) {
+    public static HashSet<TaskKey> directlyAffectedTaskKeys(
+        StoreReadTxn txn,
+        Collection<ResourceKey> changedResources,
+        ResourceService resourceService,
+        Logger logger
+    ) {
         final HashSet<TaskKey> affected = new HashSet<>();
         for(ResourceKey changedResource : changedResources) {
             logger.trace("* resource: " + changedResource);
@@ -28,7 +33,7 @@ public class BottomUpShared {
             for(TaskKey key : requirees) {
                 logger.trace("  * required by: " + key.toShortString(200));
                 if(!txn.resourceRequires(key).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(
-                    dep -> dep.isConsistent(resourceRegistry))) {
+                    dep -> dep.isConsistent(resourceService))) {
                     affected.add(key);
                 }
             }
@@ -37,7 +42,7 @@ public class BottomUpShared {
             if(provider != null) {
                 logger.trace("  * provided by: " + provider.toShortString(200));
                 if(!txn.resourceProvides(provider).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(
-                    dep -> dep.isConsistent(resourceRegistry))) {
+                    dep -> dep.isConsistent(resourceService))) {
                     affected.add(provider);
                 }
             }

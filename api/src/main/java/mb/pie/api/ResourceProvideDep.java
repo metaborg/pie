@@ -3,7 +3,7 @@ package mb.pie.api;
 import mb.pie.api.stamp.ResourceStamp;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -22,8 +22,8 @@ public class ResourceProvideDep implements ResourceDep, Serializable {
         this.stamp = stamp;
     }
 
-    @Override public @Nullable InconsistentResourceProvide checkConsistency(ResourceRegistry registry) {
-        final Resource resource = registry.getResource(key);
+    @Override public @Nullable InconsistentResourceProvide checkConsistency(ResourceService resourceService) {
+        final Resource resource = resourceService.getResource(key);
         final ResourceStamp<Resource> newStamp;
         try {
             newStamp = stamp.getStamper().stamp(resource);
@@ -36,8 +36,8 @@ public class ResourceProvideDep implements ResourceDep, Serializable {
         return null;
     }
 
-    @Override public boolean isConsistent(ResourceRegistry registry) {
-        final Resource resource = registry.getResource(key);
+    @Override public boolean isConsistent(ResourceService resourceService) {
+        final Resource resource = resourceService.getResource(key);
         final ResourceStamp<Resource> newStamp;
         try {
             newStamp = stamp.getStamper().stamp(resource);

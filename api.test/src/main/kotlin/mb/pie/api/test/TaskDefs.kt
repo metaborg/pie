@@ -11,13 +11,13 @@ val ApiTestCtx.toLowerCase
     it.toLowerCase()
   }
 
-val ApiTestCtx.readPath
+val ApiTestCtx.readResource
   get() = taskDef<FSResource, String>("read", { input, _ -> "read($input)" }) {
     require(it, FileSystemStampers.modified())
     read(it)
   }
 
-val ApiTestCtx.writePath
+val ApiTestCtx.writeResource
   get() = taskDef<Pair<String, FSResource>, None>("write", { input, _ -> "write($input)" }) { (text, path) ->
     write(text, path)
     provide(path)

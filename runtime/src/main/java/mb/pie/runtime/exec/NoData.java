@@ -8,9 +8,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class NoData implements ExecReason {
     @Override public boolean equals(@Nullable Object other) {
-        if(this == other) return true;
-        if(other != null && other.getClass() != getClass()) return false;
-        return true;
+        return this == other || other != null && this.getClass() == other.getClass();
     }
 
     @Override public int hashCode() {

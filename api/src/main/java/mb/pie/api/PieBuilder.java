@@ -4,17 +4,18 @@ import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 
 import java.util.function.Function;
 
 /**
- * Builder for [PIE][Pie] facade.
+ * Builder for {@link Pie} entry point.
  */
 public interface PieBuilder {
     PieBuilder withTaskDefs(TaskDefs taskDefs);
 
-    PieBuilder withResourceRegistry(ResourceRegistry resourceRegistry);
+    PieBuilder withResourceService(ResourceService resourceService);
 
     PieBuilder withStore(Function<Logger, Store> storeFunc);
 

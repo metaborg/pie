@@ -62,7 +62,7 @@ public interface StoreReadTxn extends StoreTxn {
 
 
     /**
-     * @return number of source required files files for which there is no generator.
+     * @return number of source required resources for which there is no provider.
      */
     int numSourceFiles();
 }

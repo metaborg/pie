@@ -10,7 +10,7 @@ import mb.pie.runtime.DefaultStampers;
 import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -22,7 +22,7 @@ public class ExecContextImpl implements ExecContext {
     private final RequireTask requireTask;
     private final Cancelled cancel;
     private final TaskDefs taskDefs;
-    private final ResourceRegistry resourceRegistry;
+    private final ResourceService resourceService;
     private final Store store;
     private final DefaultStampers defaultStampers;
     private final Logger logger;
@@ -36,7 +36,7 @@ public class ExecContextImpl implements ExecContext {
         RequireTask requireTask,
         Cancelled cancel,
         TaskDefs taskDefs,
-        ResourceRegistry resourceRegistry,
+        ResourceService resourceService,
         Store store,
         DefaultStampers defaultStampers,
         Logger logger
@@ -44,7 +44,7 @@ public class ExecContextImpl implements ExecContext {
         this.requireTask = requireTask;
         this.cancel = cancel;
         this.taskDefs = taskDefs;
-        this.resourceRegistry = resourceRegistry;
+        this.resourceService = resourceService;
         this.store = store;
         this.defaultStampers = defaultStampers;
         this.logger = logger;
@@ -130,7 +130,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override public Resource getResource(ResourceKey key) {
-        return resourceRegistry.getResource(key);
+        return resourceService.getResource(key);
     }
 
 
