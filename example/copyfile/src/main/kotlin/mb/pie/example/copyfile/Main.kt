@@ -119,7 +119,7 @@ fun main(args: Array<String>) {
   pieBuilder.build().use { pie ->
     // Now we create concrete task instances from the task definitions.
     val fileCreatorTask = fileCreator.createTask(sourceFile)
-    val fileCopierTask = fileCopier.createTask(FileCopier.Input(sourceFile, fileCreatorTask.toSTask(), destinationFile))
+    val fileCopierTask = fileCopier.createTask(FileCopier.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
 
     // We (incrementally) execute the file copier task by creating a new session and requiring the task in a top-down fashion.
     val output = pie.newSession().use { session -> session.requireTopDown(fileCopierTask) }

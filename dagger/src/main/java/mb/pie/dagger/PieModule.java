@@ -3,6 +3,7 @@ package mb.pie.dagger;
 import dagger.BindsOptionalOf;
 import dagger.Module;
 import dagger.Provides;
+import dagger.multibindings.ElementsIntoSet;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
@@ -20,12 +21,14 @@ import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
 @Module public abstract class PieModule {
-    @Provides @PieScope static Pie providePie(
+    @Provides @Singleton static Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
         Optional<ResourceService> resourceService,
         Optional<Function<Logger, Store>> storeFunc,
@@ -39,10 +42,6 @@ import java.util.function.Function;
         Optional<Logger> logger,
         Optional<Function<Logger, ExecutorLogger>> executorLoggerFunc
     ) {
-        if(taskDefs.isEmpty()) {
-            throw new RuntimeException("Cannot provide PIE instance; no task definitions have been set");
-        }
-
         final PieBuilder builder = new PieBuilderImpl();
         builder.withTaskDefs(new MapTaskDefs(taskDefs));
         resourceService.ifPresent(builder::withResourceService);
@@ -58,6 +57,11 @@ import java.util.function.Function;
         executorLoggerFunc.ifPresent(builder::withExecutorLogger);
         return builder.build();
     }
+
+    @Provides @Singleton @ElementsIntoSet static Set<TaskDef<?, ?>> provideTaskDefs() {
+        return new HashSet<>();
+    }
+
 
     @BindsOptionalOf abstract ResourceService resourceService();
 

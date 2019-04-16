@@ -99,7 +99,7 @@ public class ExecContextImpl implements ExecContext {
         return require(new Task<>(taskDef, input), stamper);
     }
 
-    @Override public OutputStamper defaultOutputStamper() {
+    @Override public OutputStamper getDefaultOutputStamper() {
         return defaultStampers.output;
     }
 
@@ -134,19 +134,19 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
-    @Override public ResourceStamper<ReadableResource> defaultRequireReadableResourceStamper() {
+    @Override public ResourceStamper<ReadableResource> getDefaultRequireReadableResourceStamper() {
         return defaultStampers.requireReadableResource;
     }
 
-    @Override public ResourceStamper<ReadableResource> defaultProvideReadableResourceStamper() {
+    @Override public ResourceStamper<ReadableResource> getDefaultProvideReadableResourceStamper() {
         return defaultStampers.provideReadableResource;
     }
 
-    @Override public ResourceStamper<FSResource> defaultRequireFSResourceStamper() {
+    @Override public ResourceStamper<FSResource> getDefaultRequireFSResourceStamper() {
         return defaultStampers.requireFSResource;
     }
 
-    @Override public ResourceStamper<FSResource> defaultProvideFSResourceStamper() {
+    @Override public ResourceStamper<FSResource> getDefaultProvideFSResourceStamper() {
         return defaultStampers.provideFSResource;
     }
 

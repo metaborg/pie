@@ -62,7 +62,7 @@ class NoExecContext : ExecContext {
     return null
   }
 
-  override fun defaultOutputStamper() = null!!
+  override fun getDefaultOutputStamper() = null!!
 
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
@@ -72,16 +72,16 @@ class NoExecContext : ExecContext {
     return null as Resource
   }
 
-  override fun defaultRequireReadableResourceStamper() = null!!
-  override fun defaultProvideReadableResourceStamper() = null!!
+  override fun getDefaultRequireReadableResourceStamper() = null!!
+  override fun getDefaultProvideReadableResourceStamper() = null!!
 
   override fun require(path: FSPath) = null!!
   override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
-  override fun defaultRequireFSResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun getDefaultRequireFSResourceStamper(): ResourceStamper<FSResource> = null!!
 
   override fun provide(path: FSPath) {}
   override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
-  override fun defaultProvideFSResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun getDefaultProvideFSResourceStamper(): ResourceStamper<FSResource> = null!!
 
   override fun logger(): Logger = null!!
 }

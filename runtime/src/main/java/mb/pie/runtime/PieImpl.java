@@ -5,6 +5,7 @@ import mb.pie.runtime.exec.BottomUpSession;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
 import mb.pie.runtime.exec.TopDownSession;
+import mb.pie.runtime.taskdefs.CompositeTaskDefs;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -55,8 +56,8 @@ public class PieImpl implements Pie {
         return createSession(this.taskDefs);
     }
 
-    @Override public PieSession newSession(TaskDefs taskDefs) {
-        return createSession(taskDefs);
+    @Override public PieSession newSession(TaskDefs addTaskDefs) {
+        return createSession(new CompositeTaskDefs(this.taskDefs, addTaskDefs));
     }
 
     private PieSession createSession(TaskDefs taskDefs) {

@@ -63,7 +63,7 @@ fun main(args: Array<String>) {
   pieBuilder.build().use { pie ->
     val fileCreatorTask = createFile.createTask(sourceFile)
     val transformFileTask = transformFile.createTask(
-      TransformFile.Input(sourceFile, fileCreatorTask.toSTask(), destinationFile))
+      TransformFile.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
     val output = pie.newSession().requireTopDown(transformFileTask)
     println("Transformed '$sourceFile' ('${sourceFile.readText()}') to '$output' ('${output.readText()}')")
   }
