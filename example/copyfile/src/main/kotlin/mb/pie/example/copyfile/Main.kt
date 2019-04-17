@@ -4,7 +4,7 @@ import mb.pie.api.*
 import mb.pie.api.stamp.resource.FileSystemStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import mb.pie.store.lmdb.LMDBStore
 import java.io.File
 import java.io.Serializable

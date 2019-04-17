@@ -5,7 +5,7 @@ import mb.pie.api.None
 import mb.pie.api.TaskDef
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import mb.pie.store.lmdb.LMDBStore
 import java.io.File
 

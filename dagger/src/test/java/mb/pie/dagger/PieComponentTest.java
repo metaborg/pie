@@ -10,6 +10,7 @@ import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.PieSession;
 import mb.pie.api.TaskDef;
+import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 import org.junit.jupiter.api.Test;
 
@@ -24,16 +25,16 @@ class PieComponentTest {
      * Module that provides two task definitions, and provides a verbose logger, overriding the optional binding of
      * PieModule.
      */
-    @Module static class TestPieModule {
-        @Provides @Singleton LambdaTaskDef<None, String> providesCreateString() {
+    @Module static abstract class TestPieModule {
+        @Provides @Singleton static LambdaTaskDef<None, String> providesCreateString() {
             return new LambdaTaskDef<>("getCreateString", (ctx, input) -> "Hello, world!");
         }
 
-        @Provides @Singleton LambdaTaskDef<String, String> providesModifyString() {
+        @Provides @Singleton static LambdaTaskDef<String, String> providesModifyString() {
             return new LambdaTaskDef<>("getModifyString", (ctx, input) -> input.substring(0, 7) + "universe!");
         }
 
-        @Provides @Singleton @ElementsIntoSet Set<TaskDef<?, ?>> provideTaskDefs(
+        @Provides @Singleton @ElementsIntoSet static Set<TaskDef<?, ?>> provideTaskDefs(
             LambdaTaskDef<None, String> createHelloWorldString,
             LambdaTaskDef<String, String> printString
         ) {
@@ -64,7 +65,10 @@ class PieComponentTest {
 
 
     @Test void test() throws Exception {
-        final TestPieComponent pieComponent = DaggerPieComponentTest_TestPieComponent.create();
+        final TestPieComponent pieComponent = DaggerPieComponentTest_TestPieComponent
+            .builder()
+            .pieModule(new PieModule(PieBuilderImpl::new))
+            .build();
         assertSame(pieComponent.getCreateString(), pieComponent.getCreateString());
         assertSame(pieComponent.getModifyString(), pieComponent.getModifyString());
         assertTrue(pieComponent.getTaskDefs().contains(pieComponent.getCreateString()));

@@ -14,7 +14,7 @@ import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.DynamicNode
 import java.util.stream.Stream

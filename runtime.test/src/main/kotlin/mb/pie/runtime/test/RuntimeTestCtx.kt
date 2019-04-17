@@ -4,7 +4,7 @@ import mb.pie.api.TaskDef
 import mb.pie.api.test.ApiTestCtx
 import mb.pie.runtime.PieImpl
 import mb.pie.runtime.PieSessionImpl
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import java.nio.file.FileSystem
 
 open class RuntimeTestCtx(

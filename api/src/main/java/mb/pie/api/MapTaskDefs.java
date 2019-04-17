@@ -1,4 +1,4 @@
-package mb.pie.runtime.taskdefs;
+package mb.pie.api;
 
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
