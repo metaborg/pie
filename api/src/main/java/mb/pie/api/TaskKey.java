@@ -24,7 +24,7 @@ public class TaskKey implements Serializable {
         }
         final @Nullable Serializable input = txn.input(this);
         if(input == null) {
-            throw new RuntimeException("Cannot get task for task key $this; input object does not exist");
+            throw new RuntimeException("Cannot get task for task key " + this + " ; input object does not exist");
         }
         return new Task<>(taskDef, input);
     }
