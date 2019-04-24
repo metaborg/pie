@@ -3,6 +3,7 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
   id("net.ltgt.apt") version "0.21"
   id("net.ltgt.apt-idea") version "0.21"
+  id("net.ltgt.apt-eclipse") version "0.21"
 }
 
 val daggerVersion = "2.21"
