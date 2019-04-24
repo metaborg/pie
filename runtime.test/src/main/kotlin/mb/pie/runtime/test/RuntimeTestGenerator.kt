@@ -1,11 +1,11 @@
 package mb.pie.runtime.test
 
 import mb.pie.api.*
-import mb.pie.api.stamp.fs.HashMatchResourceStamper
-import mb.pie.api.stamp.fs.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
+import mb.pie.api.stamp.resource.HashMatchResourceStamper
+import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.test.ApiTestGenerator
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.PieImpl
@@ -14,7 +14,7 @@ import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.DynamicNode
 import java.util.stream.Stream

@@ -3,63 +3,58 @@ package mb.pie.runtime.exec;
 import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
-import mb.resource.ResourceRegistry;
-import mb.resource.fs.FSResource;
+import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class TaskExecutor {
     private final TaskDefs taskDefs;
-    private final ResourceRegistry resourceRegistry;
-    private final HashMap<TaskKey, TaskData<?, ?>> visited;
+    private final ResourceService resourceService;
     private final Store store;
     private final Share share;
-    private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
+    private final DefaultStampers defaultStampers;
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
-    private final @Nullable BiConsumer<TaskKey, TaskData<?, ?>> postExecFunc;
+    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
+
+    private final HashMap<TaskKey, TaskData> visited;
 
     public TaskExecutor(
         TaskDefs taskDefs,
-        ResourceRegistry resourceRegistry,
-        HashMap<TaskKey, TaskData<?, ?>> visited,
+        ResourceService resourceService,
         Store store,
         Share share,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger,
-        @Nullable BiConsumer<TaskKey, TaskData<?, ?>> postExecFunc
+        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers,
+        HashMap<TaskKey, TaskData> visited
     ) {
         this.taskDefs = taskDefs;
-        this.resourceRegistry = resourceRegistry;
-        this.visited = visited;
+        this.resourceService = resourceService;
         this.store = store;
         this.share = share;
-        this.defaultOutputStamper = defaultOutputStamper;
-        this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
-        this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+        this.defaultStampers = defaultStampers;
         this.layer = layer;
         this.logger = logger;
         this.executorLogger = executorLogger;
-        this.postExecFunc = postExecFunc;
+        this.observers = observers;
+
+        this.visited = visited;
     }
 
-    <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> exec(TaskKey key, Task<I, O> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    TaskData exec(TaskKey key, Task<?> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         executorLogger.executeStart(key, task, reason);
-        final TaskData<?, ?> data;
+        final TaskData data;
         if(share instanceof NonSharingShare) {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
             data = execInternal(key, task, requireTask, cancel);
@@ -84,16 +79,15 @@ public class TaskExecutor {
             }
         }
         executorLogger.executeEnd(key, task, reason, data);
-        return data.cast();
+        return data;
     }
 
-    private <I extends Serializable, O extends @Nullable Serializable> TaskData<I, O> execInternal(TaskKey key, Task<I, O> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData execInternal(TaskKey key, Task<?> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         // Execute
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, cancel, taskDefs, resourceRegistry, store, defaultOutputStamper,
-                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper, logger);
-        final @Nullable O output;
+            new ExecContextImpl(requireTask, cancel, taskDefs, resourceService, store, defaultStampers, logger);
+        final @Nullable Serializable output;
         try {
             output = task.exec(context);
         } catch(InterruptedException | RuntimeException | ExecException e) {
@@ -107,15 +101,11 @@ public class TaskExecutor {
         }
         Stats.addExecution();
         final ExecContextImpl.Deps deps = context.deps();
-        final TaskData<I, O> data =
-            new TaskData<>(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
+        final TaskData data =
+            new TaskData(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
         // Validate well-formedness of the dependency graph, before writing.
         try(final StoreReadTxn txn = store.readTxn()) {
             layer.validatePreWrite(key, data, txn);
-        }
-        // Call post-execution function.
-        if(postExecFunc != null) {
-            postExecFunc.accept(key, data);
         }
         // Write output and dependencies to the store.
         try(final StoreWriteTxn txn = store.writeTxn()) {
@@ -127,6 +117,13 @@ public class TaskExecutor {
         }
         // Mark as visited.
         visited.put(key, data);
+        // Notify observer, if any.
+        final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
+        if(observer != null) {
+            executorLogger.invokeObserverStart(observer, key, output);
+            observer.accept(output);
+            executorLogger.invokeObserverEnd(observer, key, output);
+        }
         return data;
     }
 }

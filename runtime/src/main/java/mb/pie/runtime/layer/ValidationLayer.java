@@ -76,8 +76,7 @@ public class ValidationLayer implements Layer {
         stack.remove(key);
     }
 
-    @Override
-    public <I extends Serializable, O extends @Nullable Serializable> void validatePreWrite(TaskKey currentTask, TaskData<I, O> data, StoreReadTxn txn) {
+    @Override public void validatePreWrite(TaskKey currentTask, TaskData data, StoreReadTxn txn) {
         for(ResourceProvideDep provideDep : data.resourceProvides) {
             final ResourceKey resource = provideDep.key;
             final @Nullable TaskKey provider = txn.providerOf(resource);
@@ -96,8 +95,7 @@ public class ValidationLayer implements Layer {
         }
     }
 
-    @Override
-    public <I extends Serializable, O extends @Nullable Serializable> void validatePostWrite(TaskKey currentTask, TaskData<I, O> data, StoreReadTxn txn) {
+    @Override public void validatePostWrite(TaskKey currentTask, TaskData data, StoreReadTxn txn) {
         for(ResourceRequireDep requireDep : data.resourceRequires) {
             final ResourceKey resource = requireDep.key;
             final @Nullable TaskKey provider = txn.providerOf(resource);

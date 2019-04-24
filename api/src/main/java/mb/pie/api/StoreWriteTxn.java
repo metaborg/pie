@@ -37,7 +37,7 @@ public interface StoreWriteTxn extends StoreReadTxn {
     /**
      * Sets the output and dependencies for task [key] to [data].
      */
-    void setData(TaskKey key, TaskData<?, ?> data);
+    void setData(TaskKey key, TaskData data);
 
     /**
      * Removes all data from (drops) the store.

@@ -30,9 +30,25 @@ class Deserialized<R extends @Nullable Serializable> {
         }
     }
 
+    static <R extends @Nullable Serializable> R orElseNull(@Nullable Deserialized<R> deserialized) {
+        if(deserialized == null || deserialized.failed) {
+            return null;
+        } else {
+            return deserialized.deserialized;
+        }
+    }
+
     static <R extends @Nullable Serializable, RR> RR mapOrElse(@Nullable Deserialized<R> deserialized, RR def, Function<R, RR> func) {
         if(deserialized == null || deserialized.failed) {
             return def;
+        } else {
+            return func.apply(deserialized.deserialized);
+        }
+    }
+
+    static <R extends @Nullable Serializable, @Nullable RR> RR mapOrElseNull(@Nullable Deserialized<R> deserialized, Function<R, RR> func) {
+        if(deserialized == null || deserialized.failed) {
+            return null;
         } else {
             return func.apply(deserialized.deserialized);
         }

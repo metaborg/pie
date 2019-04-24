@@ -1,10 +1,10 @@
 package mb.pie.example.playground
 
 import mb.pie.api.*
-import mb.pie.api.stamp.fs.FileSystemStampers
+import mb.pie.api.stamp.resource.FileSystemStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import java.io.File
 import java.io.Serializable
 
@@ -25,7 +25,7 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
 
   data class Input(
     val sourceFile: File,
-    val sourceTask: STask<*>,
+    val sourceTask: STask,
     val destinationFile: File
   ) : Serializable
 
@@ -63,8 +63,8 @@ fun main(args: Array<String>) {
   pieBuilder.build().use { pie ->
     val fileCreatorTask = createFile.createTask(sourceFile)
     val transformFileTask = transformFile.createTask(
-      TransformFile.Input(sourceFile, fileCreatorTask.toSTask(), destinationFile))
-    val output = pie.topDownExecutor.newSession().requireInitial(transformFileTask)
+      TransformFile.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
+    val output = pie.newSession().requireTopDown(transformFileTask)
     println("Transformed '$sourceFile' ('${sourceFile.readText()}') to '$output' ('${output.readText()}')")
   }
 }

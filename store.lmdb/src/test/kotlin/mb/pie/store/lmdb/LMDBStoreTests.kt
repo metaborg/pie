@@ -1,6 +1,7 @@
 package mb.pie.store.lmdb
 
 import com.nhaarman.mockitokotlin2.*
+import mb.pie.api.exec.NullCancelled
 import mb.pie.api.test.anyC
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData
@@ -15,11 +16,11 @@ internal class LMDBStoreTests {
     val task = task(toLowerCase, "HELLO WORLD!")
     val key = task.key()
 
-    val session1 = topDownSession()
-    session1.requireInitial(task)
+    val session1 = newSession().topDownSession
+    session1.requireInitial(task, NullCancelled())
 
-    val session2 = spy(topDownSession())
-    session2.requireInitial(task)
+    val session2 = spy(newSession().topDownSession)
+    session2.requireInitial(task, NullCancelled())
     verify(session2, never()).exec(eq(key), eq(task), eq(NoData()), anyC())
   }
 }

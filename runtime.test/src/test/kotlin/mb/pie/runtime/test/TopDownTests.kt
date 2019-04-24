@@ -1,10 +1,8 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
-import mb.pie.api.InconsistentResourceProvide
-import mb.pie.api.InconsistentResourceRequire
-import mb.pie.api.InconsistentTaskReq
-import mb.pie.api.None
+import mb.pie.api.*
+import mb.pie.api.exec.NullCancelled
 import mb.pie.api.test.*
 import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.layer.ValidationException
@@ -22,8 +20,8 @@ internal class TopDownTests {
     val task = task(taskDef, input)
     val key = task.key()
 
-    val session = spy(topDownSession())
-    val output = session.requireInitial(task)
+    val session = spy(newSession().topDownSession)
+    val output = session.requireInitial(task, NullCancelled())
     assertEquals("capitalized", output)
 
     inOrder(session, taskDef) {
@@ -40,15 +38,15 @@ internal class TopDownTests {
     val input1 = "CAPITALIZED"
     val task1 = task(taskDef, input1)
     val key1 = task1.key()
-    val session1 = spy(topDownSession())
-    val output1 = session1.requireInitial(task1)
+    val session1 = spy(newSession().topDownSession)
+    val output1 = session1.requireInitial(task1, NullCancelled())
     assertEquals("capitalized", output1)
 
     val input2 = "CAPITALIZED_EVEN_MORE"
     val task2 = task(taskDef, input2)
     val key2 = task2.key()
-    val session2 = spy(topDownSession())
-    val output2 = session2.requireInitial(task2)
+    val session2 = spy(newSession().topDownSession)
+    val output2 = session2.requireInitial(task2, NullCancelled())
     assertEquals("capitalized_even_more", output2)
 
     assertNotEquals(output1, output2)
@@ -71,12 +69,12 @@ internal class TopDownTests {
     val task = task(taskDef, input)
     val key = task.key()
 
-    val session1 = topDownSession()
-    val output1 = session1.requireInitial(task)
+    val session1 = newSession().topDownSession
+    val output1 = session1.requireInitial(task, NullCancelled())
     assertEquals("capitalized", output1)
 
-    val session2 = spy(topDownSession())
-    val output2 = session2.requireInitial(task)
+    val session2 = spy(newSession().topDownSession)
+    val output2 = session2.requireInitial(task, NullCancelled())
     assertEquals("capitalized", output2)
 
     assertEquals(output1, output2)
@@ -87,7 +85,7 @@ internal class TopDownTests {
 
   @TestFactory
   fun testFileReq() = RuntimeTestGenerator.generate("testFileReq") {
-    val readPath = spy(readPath)
+    val readPath = spy(readResource)
     addTaskDef(readPath)
 
     val fileNode = resource("/file")
@@ -96,14 +94,14 @@ internal class TopDownTests {
     write("HELLO WORLD!", fileNode)
 
     // Build 'readPath', observe rebuild
-    val session1 = spy(topDownSession())
-    val output1 = session1.requireInitial(task(readPath, fileNode))
+    val session1 = spy(newSession().topDownSession)
+    val output1 = session1.requireInitial(task(readPath, fileNode), NullCancelled())
     assertEquals("HELLO WORLD!", output1)
     verify(session1, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
 
     // No changes - exec 'readPath', observe no rebuild
-    val session2 = spy(topDownSession())
-    val output2 = session2.requireInitial(task(readPath, fileNode))
+    val session2 = spy(newSession().topDownSession)
+    val output2 = session2.requireInitial(task(readPath, fileNode), NullCancelled())
     assertEquals("HELLO WORLD!", output2)
     verify(session2, never()).exec(eq(key), eq(task), anyER(), anyC())
 
@@ -111,8 +109,8 @@ internal class TopDownTests {
     write("!DLROW OLLEH", fileNode)
 
     // Run again - expect rebuild
-    val session3 = spy(topDownSession())
-    val output3 = session3.requireInitial(task(readPath, fileNode))
+    val session3 = spy(newSession().topDownSession)
+    val output3 = session3.requireInitial(task(readPath, fileNode), NullCancelled())
     assertEquals("!DLROW OLLEH", output3)
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceRequire
@@ -123,7 +121,7 @@ internal class TopDownTests {
 
   @TestFactory
   fun testFileGen() = RuntimeTestGenerator.generate("testFileGen") {
-    val writePath = spy(writePath)
+    val writePath = spy(writeResource)
     addTaskDef(writePath)
 
     val fileNode = resource("/file")
@@ -133,24 +131,24 @@ internal class TopDownTests {
     val key = task.key()
 
     // Build 'writePath', observe rebuild and existence of file
-    val session1 = spy(topDownSession())
-    session1.requireInitial(task)
+    val session1 = spy(newSession().topDownSession)
+    session1.requireInitial(task, NullCancelled())
     verify(session1, times(1)).exec(eq(key), eq(task), eq(NoData()), anyC())
 
     assertTrue(fileNode.exists())
     assertEquals("HELLO WORLD!", read(fileNode))
 
     // No changes - exec 'writePath', observe no rebuild, no change to file
-    val session2 = spy(topDownSession())
-    session2.requireInitial(task)
+    val session2 = spy(newSession().topDownSession)
+    session2.requireInitial(task, NullCancelled())
     verify(session2, never()).exec(eq(key), eq(task), anyER(), anyC())
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
     write("!DLROW OLLEH", fileNode)
 
     // Build 'writePath', observe rebuild and change of file
-    val session3 = spy(topDownSession())
-    session3.requireInitial(task)
+    val session3 = spy(newSession().topDownSession)
+    session3.requireInitial(task, NullCancelled())
     verify(session3, times(1)).exec(eq(key), eq(task), check {
       val reason = it as? InconsistentResourceProvide
       assertNotNull(reason)
@@ -164,7 +162,7 @@ internal class TopDownTests {
   fun testTaskReq() = RuntimeTestGenerator.generate("testTaskReq") {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
-    val readDef = spy(readPath)
+    val readDef = spy(readResource)
     addTaskDef(readDef)
 
     val fileNode = resource("/file")
@@ -187,8 +185,8 @@ internal class TopDownTests {
     val combKey = combTask.key()
 
     // Build 'combine', observe rebuild of all.
-    val session1 = spy(topDownSession())
-    val output1 = session1.requireInitial(combTask)
+    val session1 = spy(newSession().topDownSession)
+    val output1 = session1.requireInitial(combTask, NullCancelled())
     assertEquals("hello world!", output1)
     inOrder(session1) {
       verify(session1, times(1)).exec(eq(combKey), eq(combTask), eq(NoData()), anyC())
@@ -197,8 +195,8 @@ internal class TopDownTests {
     }
 
     // No changes - exec 'combine', observe no rebuild.
-    val session2 = spy(topDownSession())
-    val output2 = session2.requireInitial(combTask)
+    val session2 = spy(newSession().topDownSession)
+    val output2 = session2.requireInitial(combTask, NullCancelled())
     assertEquals("hello world!", output2)
     verify(session2, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
     verify(session2, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
@@ -212,8 +210,8 @@ internal class TopDownTests {
     val lowerRevKey = lowerRevTask.key()
 
     // Build 'combine', observe rebuild of all in dependency order
-    val session3 = spy(topDownSession())
-    val output3 = session3.requireInitial(combTask)
+    val session3 = spy(newSession().topDownSession)
+    val output3 = session3.requireInitial(combTask, NullCancelled())
     assertEquals("!dlrow olleh", output3)
     inOrder(session3) {
       verify(session3, times(1)).requireInitial(eq(combTask), anyC())
@@ -235,8 +233,8 @@ internal class TopDownTests {
     fileNode.lastModifiedTime = fileNode.lastModifiedTime.plusMillis(1)
 
     // Build 'combine', observe rebuild of 'readPath' only
-    val session4 = spy(topDownSession())
-    val output4 = session4.requireInitial(combTask)
+    val session4 = spy(newSession().topDownSession)
+    val output4 = session4.requireInitial(combTask, NullCancelled())
     assertEquals("!dlrow olleh", output4)
     inOrder(session4) {
       verify(session4, times(1)).requireInitial(eq(combTask), anyC())
@@ -252,82 +250,76 @@ internal class TopDownTests {
 
   @TestFactory
   fun testOverlappingGeneratedPath() = RuntimeTestGenerator.generate("testOverlappingGeneratedPath") {
-    addTaskDef(writePath)
-
-    val executor = topDownExecutor
+    addTaskDef(writeResource)
 
     val filePath = resource("/file")
     assertThrows(ValidationException::class.java) {
-      val session = executor.newSession()
-      session.requireInitial(task(writePath, Pair("HELLO WORLD 1!", filePath)))
-      session.requireInitial(task(writePath, Pair("HELLO WORLD 2!", filePath)))
+      val session = newSession().topDownSession
+      session.requireInitial(task(writeResource, Pair("HELLO WORLD 1!", filePath)), NullCancelled())
+      session.requireInitial(task(writeResource, Pair("HELLO WORLD 2!", filePath)), NullCancelled())
     }
 
     // Overlapping generated file exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val session = executor.newSession()
-      session.requireInitial(task(writePath, Pair("HELLO WORLD 3!", filePath)))
+      val session = newSession().topDownSession
+      session.requireInitial(task(writeResource, Pair("HELLO WORLD 3!", filePath)), NullCancelled())
     }
   }
 
   @TestFactory
   fun testGenerateRequiredHiddenDep() = RuntimeTestGenerator.generate("testGenerateRequiredHiddenDep") {
-    addTaskDef(readPath)
-    addTaskDef(writePath)
-
-    val executor = topDownExecutor
+    addTaskDef(readResource)
+    addTaskDef(writeResource)
 
     val filePath = resource("/file")
     write("HELLO WORLD!", filePath)
 
     assertThrows(ValidationException::class.java) {
-      val session = executor.newSession()
-      session.requireInitial(task(readPath, filePath))
-      session.requireInitial(task(writePath, Pair("HELLO WORLD!", filePath)))
+      val session = newSession().topDownSession
+      session.requireInitial(task(readResource, filePath), NullCancelled())
+      session.requireInitial(task(writeResource, Pair("HELLO WORLD!", filePath)), NullCancelled())
     }
 
     // Hidden dependency exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
-      val session = executor.newSession()
-      session.requireInitial(task(writePath, Pair("HELLO WORLD!", filePath)))
+      val session = newSession().topDownSession
+      session.requireInitial(task(writeResource, Pair("HELLO WORLD!", filePath)), NullCancelled())
     }
   }
 
   @TestFactory
   fun testRequireGeneratedHiddenDep() = RuntimeTestGenerator.generate("testRequireGeneratedHiddenDep") {
-    addTaskDef(writePath)
-    addTaskDef(readPath)
-    val indirection = requireOutputFunc<Pair<String, FSResource>, None>()
+    addTaskDef(writeResource)
+    addTaskDef(readResource)
+    val indirection = requireOutputFunc<None>()
     addTaskDef(indirection)
 
-    val executor = topDownExecutor
-
     val combineIncorrect = spy(taskDef<Pair<String, FSResource>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
-      require(task(indirection, stask(writePath, Pair(text, path))))
-      require(task(readPath, path))
+      require(task(indirection, stask(writeResource, Pair(text, path))))
+      require(task(readResource, path))
     })
     addTaskDef(combineIncorrect)
 
     run {
       val fileNode = resource("/file1")
       assertThrows(ValidationException::class.java) {
-        val session = executor.newSession()
-        session.requireInitial(task(combineIncorrect, Pair("HELLO WORLD!", fileNode)))
+        val session = newSession().topDownSession
+        session.requireInitial(task(combineIncorrect, Pair("HELLO WORLD!", fileNode)), NullCancelled())
       }
     }
 
     val combineStillIncorrect = spy(taskDef<Pair<String, FSResource>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
-      require(task(indirection, stask(writePath, Pair(text, path))))
-      require(task(writePath, Pair(text, path)))
-      require(task(readPath, path))
+      require(task(indirection, stask(writeResource, Pair(text, path))))
+      require(task(writeResource, Pair(text, path)))
+      require(task(readResource, path))
     })
     addTaskDef(combineStillIncorrect)
 
     run {
       val filePath2 = resource("/file2")
       assertThrows(ValidationException::class.java) {
-        val exec = executor.newSession()
-        exec.requireInitial(task(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)))
+        val exec = newSession().topDownSession
+        exec.requireInitial(task(combineStillIncorrect, Pair("HELLO WORLD!", filePath2)), NullCancelled())
       }
     }
   }
@@ -337,10 +329,9 @@ internal class TopDownTests {
     val cyclicTaskDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(stask("b1", None.instance)) as None }
     addTaskDef(cyclicTaskDef)
 
-    val executor = topDownExecutor
     assertThrows(ValidationException::class.java) {
-      val session = executor.newSession()
-      session.requireInitial(task(cyclicTaskDef, None.instance))
+      val session = newSession().topDownSession
+      session.requireInitial(task(cyclicTaskDef, None.instance), NullCancelled())
     }
   }
 }

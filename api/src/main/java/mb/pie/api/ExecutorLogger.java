@@ -12,13 +12,13 @@ import java.util.function.Consumer;
  * Logger interface for task executors.
  */
 public interface ExecutorLogger {
-    void requireTopDownInitialStart(TaskKey key, Task<?, ?> task);
+    void requireTopDownInitialStart(TaskKey key, Task<?> task);
 
-    void requireTopDownInitialEnd(TaskKey key, Task<?, ?> task, @Nullable Serializable output);
+    void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output);
 
-    void requireTopDownStart(TaskKey key, Task<?, ?> task);
+    void requireTopDownStart(TaskKey key, Task<?> task);
 
-    void requireTopDownEnd(TaskKey key, Task<?, ?> task, @Nullable Serializable output);
+    void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output);
 
     void requireBottomUpInitialStart(Set<ResourceKey> changedResources);
 
@@ -32,21 +32,21 @@ public interface ExecutorLogger {
 
     void checkStoredEnd(TaskKey key, @Nullable Serializable output);
 
-    void checkResourceProvideStart(TaskKey key, Task<?, ?> task, ResourceProvideDep dep);
+    void checkResourceProvideStart(TaskKey key, Task<?> task, ResourceProvideDep dep);
 
-    void checkResourceProvideEnd(TaskKey key, Task<?, ?> task, ResourceProvideDep dep, @Nullable ExecReason reason);
+    void checkResourceProvideEnd(TaskKey key, Task<?> task, ResourceProvideDep dep, @Nullable ExecReason reason);
 
-    void checkResourceRequireStart(TaskKey key, Task<?, ?> task, ResourceRequireDep dep);
+    void checkResourceRequireStart(TaskKey key, Task<?> task, ResourceRequireDep dep);
 
-    void checkResourceRequireEnd(TaskKey key, Task<?, ?> task, ResourceRequireDep dep, @Nullable ExecReason reason);
+    void checkResourceRequireEnd(TaskKey key, Task<?> task, ResourceRequireDep dep, @Nullable ExecReason reason);
 
-    void checkTaskRequireStart(TaskKey key, Task<?, ?> task, TaskRequireDep dep);
+    void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep);
 
-    void checkTaskRequireEnd(TaskKey key, Task<?, ?> task, TaskRequireDep dep, @Nullable ExecReason reason);
+    void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable ExecReason reason);
 
-    void executeStart(TaskKey key, Task<?, ?> task, ExecReason reason);
+    void executeStart(TaskKey key, Task<?> task, ExecReason reason);
 
-    void executeEnd(TaskKey key, Task<?, ?> task, ExecReason reason, TaskData<?, ?> data);
+    void executeEnd(TaskKey key, Task<?> task, ExecReason reason, TaskData data);
 
     void invokeObserverStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 

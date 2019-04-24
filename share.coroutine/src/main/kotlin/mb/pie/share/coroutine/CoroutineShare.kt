@@ -2,10 +2,7 @@ package mb.pie.share.coroutine
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
-import mb.pie.api.PieBuilder
-import mb.pie.api.Share
-import mb.pie.api.TaskData
-import mb.pie.api.TaskKey
+import mb.pie.api.*
 import java.util.function.Supplier
 
 /**
@@ -20,15 +17,15 @@ fun PieBuilder.withCoroutineShare(): PieBuilder {
  * [Share] implementation that shares concurrently executing tasks using Kotlin coroutines.
  */
 class CoroutineShare : Share {
-  private val deferredTasks = mutableMapOf<TaskKey, Deferred<TaskData<*, *>>>()
+  private val deferredTasks = mutableMapOf<TaskKey, Deferred<TaskData>>()
   private val mutex = Mutex()
 
 
-  override fun share(key: TaskKey, execFunc: Supplier<TaskData<*, *>>, visitedFunc: Supplier<TaskData<*, *>>?): TaskData<*, *>? {
+  override fun share(key: TaskKey, execFunc: Supplier<TaskData>, visitedFunc: Supplier<TaskData>?): TaskData? {
     return runBlocking { getResult(key, execFunc, visitedFunc) }
   }
 
-  private suspend fun CoroutineScope.getResult(key: TaskKey, execFunc: Supplier<TaskData<*, *>>, visitedFunc: Supplier<TaskData<*, *>>?): TaskData<*, *> {
+  private suspend fun CoroutineScope.getResult(key: TaskKey, execFunc: Supplier<TaskData>, visitedFunc: Supplier<TaskData>?): TaskData {
     mutex.lock()
 
     val existingDeferredExec = deferredTasks[key]
@@ -50,7 +47,7 @@ class CoroutineShare : Share {
     }
 
     // Task has not been visited yet, execute the task asynchronously.
-    val deferredExec: Deferred<TaskData<*, *>>
+    val deferredExec: Deferred<TaskData>
     try {
       deferredExec = coroutineScope { async(coroutineContext) { execFunc.get() } }
       deferredTasks[key] = deferredExec

@@ -19,42 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
     private final ConcurrentHashMap<TaskKey, Serializable> inputs = new ConcurrentHashMap<>();
-    // TODO: use Option!
-    private final ConcurrentHashMap<TaskKey, Output<?>> outputs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TaskKey, Output> outputs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>> taskReqs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, Set<TaskKey>> callersOf = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>> fileReqs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ResourceKey, Set<TaskKey>> requireesOf = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>> fileGens = new ConcurrentHashMap<>();
-    // TODO: null may not be used as a value in ConcurrentHashMap! Use Option!
-    private final ConcurrentHashMap<ResourceKey, @Nullable TaskKey> generatorOf = new ConcurrentHashMap<>();
-
-
-    private static <K, V> Set<V> getOrPutEmptyConcurrentHashSet(ConcurrentHashMap<K, Set<V>> map, K key) {
-        // TODO: is computeIfAbsent correct? Kotlin implementation: return map.getOrPut(key) { ConcurrentHashMap.newKeySet<V>() }!!;
-        return map.computeIfAbsent(key, (k) -> ConcurrentHashMap.newKeySet());
-    }
-
-    private static <K, V> ArrayList<V> getOrEmptyArrayList(ConcurrentHashMap<K, ArrayList<V>> map, K key) {
-        return map.getOrDefault(key, new ArrayList<>());
-    }
-
-
-    @Override public InMemoryStore readTxn() {
-        return this;
-    }
-
-    @Override public InMemoryStore writeTxn() {
-        return this;
-    }
-
-    @Override public void sync() {
-
-    }
-
-    @Override public void close() {
-
-    }
+    private final ConcurrentHashMap<ResourceKey, TaskKey> generatorOf = new ConcurrentHashMap<>();
 
 
     @Override public @Nullable Serializable input(TaskKey key) {
@@ -65,19 +36,18 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         inputs.put(key, input);
     }
 
-    @Override public @Nullable Output<Serializable> output(TaskKey key) {
-        final @Nullable Output<?> wrapper = outputs.get(key);
+    @Override public @Nullable Output output(TaskKey key) {
+        final @Nullable Output wrapper = outputs.get(key);
         if(wrapper != null) {
-            return new Output<>(wrapper.output);
+            return new Output(wrapper.output);
         } else {
             return null;
         }
     }
 
     @Override public void setOutput(TaskKey key, @Nullable Serializable output) {
-        // ConcurrentHashMap does not support null values, so also wrap outputs (which can be null) : an Output object.
-        // TODO: use Option.
-        outputs.put(key, new Output<>(output));
+        // ConcurrentHashMap does not support null values, so wrap outputs (which can be null) into an Output object.
+        outputs.put(key, new Output(output));
     }
 
     @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
@@ -149,22 +119,22 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         }
     }
 
-    @Override public @Nullable TaskData<?, ?> data(TaskKey key) {
+    @Override public @Nullable TaskData data(TaskKey key) {
         final @Nullable Serializable input = input(key);
         if(input == null) {
             return null;
         }
-        final @Nullable Output<Serializable> output = output(key);
+        final @Nullable Output output = output(key);
         if(output == null) {
             return null;
         }
         final ArrayList<TaskRequireDep> callReqs = taskRequires(key);
         final ArrayList<ResourceRequireDep> pathReqs = resourceRequires(key);
         final ArrayList<ResourceProvideDep> pathGens = resourceProvides(key);
-        return new TaskData<>(input, output.output, callReqs, pathReqs, pathGens);
+        return new TaskData(input, output.output, callReqs, pathReqs, pathGens);
     }
 
-    @Override public void setData(TaskKey key, TaskData<?, ?> data) {
+    @Override public void setData(TaskKey key, TaskData data) {
         setInput(key, data.input);
         setOutput(key, data.output);
         setTaskRequires(key, data.taskRequires);
@@ -193,6 +163,28 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         fileGens.clear();
         generatorOf.clear();
     }
+
+
+    private static <K, V> Set<V> getOrPutEmptyConcurrentHashSet(ConcurrentHashMap<K, Set<V>> map, K key) {
+        return map.computeIfAbsent(key, (k) -> ConcurrentHashMap.newKeySet());
+    }
+
+    private static <K, V> ArrayList<V> getOrEmptyArrayList(ConcurrentHashMap<K, ArrayList<V>> map, K key) {
+        return map.getOrDefault(key, new ArrayList<>());
+    }
+
+
+    @Override public InMemoryStore readTxn() {
+        return this;
+    }
+
+    @Override public InMemoryStore writeTxn() {
+        return this;
+    }
+
+    @Override public void sync() {}
+
+    @Override public void close() {}
 
 
     @Override public String toString() {

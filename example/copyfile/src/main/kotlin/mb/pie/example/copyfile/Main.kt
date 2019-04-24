@@ -1,10 +1,10 @@
 package mb.pie.example.copyfile
 
 import mb.pie.api.*
-import mb.pie.api.stamp.fs.FileSystemStampers
+import mb.pie.api.stamp.resource.FileSystemStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.taskdefs.MapTaskDefs
+import mb.pie.api.MapTaskDefs
 import mb.pie.store.lmdb.LMDBStore
 import java.io.File
 import java.io.Serializable
@@ -64,7 +64,7 @@ class FileCopier : TaskDef<FileCopier.Input, File> {
      * We need to pass this task as an input to this task, so that we can require it, to prevent a hidden dependency error.
      * Tasks can be passed to other tasks using the [STask] or [TaskKey] type.
      */
-    val sourceTask: STask<*>,
+    val sourceTask: STask,
     /**
      * Path of the destination we want to copy the source file to.
      */
@@ -119,10 +119,10 @@ fun main(args: Array<String>) {
   pieBuilder.build().use { pie ->
     // Now we create concrete task instances from the task definitions.
     val fileCreatorTask = fileCreator.createTask(sourceFile)
-    val fileCopierTask = fileCopier.createTask(FileCopier.Input(sourceFile, fileCreatorTask.toSTask(), destinationFile))
+    val fileCopierTask = fileCopier.createTask(FileCopier.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
 
-    // We (incrementally) execute the file copier task using the top-down executor.
-    val output = pie.topDownExecutor.newSession().requireInitial(fileCopierTask)
+    // We (incrementally) execute the file copier task by creating a new session and requiring the task in a top-down fashion.
+    val output = pie.newSession().use { session -> session.requireTopDown(fileCopierTask) }
     println("Copied to: $output")
   }
   // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a

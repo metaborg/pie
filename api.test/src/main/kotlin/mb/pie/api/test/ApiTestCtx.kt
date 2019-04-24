@@ -1,7 +1,6 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
-import mb.pie.api.exec.*
 import mb.resource.fs.FSResource
 import java.io.Serializable
 import java.nio.file.FileSystem
@@ -20,9 +19,7 @@ open class ApiTestCtx(
 
 
   open val pie: Pie get() = pieImpl
-  open val topDownExecutor: TopDownExecutor get() = pie.topDownExecutor
-  open val bottomUpExecutor: BottomUpExecutor get() = pie.bottomUpExecutor
-  open fun topDownSession(): TopDownSession = pie.topDownExecutor.newSession()
+  open fun newSession(): PieSession = pie.newSession()
 
 
   fun resource(path: String): FSResource {
@@ -33,15 +30,15 @@ open class ApiTestCtx(
     return LambdaTaskDef(id, execFunc, null, descFunc)
   }
 
-  fun <I : Serializable, O : Serializable?> task(taskDef: TaskDef<I, O>, input: I): Task<I, O> {
+  fun <I : Serializable, O : Serializable?> task(taskDef: TaskDef<I, O>, input: I): Task<O> {
     return Task(taskDef, input)
   }
 
-  fun <I : Serializable> stask(taskDef: TaskDef<I, *>, input: I): STask<I> {
+  fun stask(taskDef: TaskDef<*, *>, input: Serializable): STask {
     return STask(taskDef.id, input)
   }
 
-  fun <I : Serializable> stask(taskDefId: String, input: I): STask<I> {
+  fun stask(taskDefId: String, input: Serializable): STask {
     return STask(taskDefId, input)
   }
 

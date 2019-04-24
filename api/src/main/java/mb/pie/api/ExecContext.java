@@ -2,9 +2,10 @@ package mb.pie.api;
 
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.api.stamp.resource.HashResourceStamper;
+import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
 import mb.resource.ResourceRuntimeException;
 import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
@@ -15,56 +16,144 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 
+/**
+ * Execution context for requiring (creating a dependency to, and getting the up-to-date output object of) tasks, and
+ * for requiring (creating a read dependency to) and providing (creating a write dependency to) resources.
+ * <p>
+ * {@link OutputStamper Output stampers} are use to stamp output objects of tasks, such that a task is only marked
+ * out-of-date when the output stamp changes, providing more fine-grained control over incrementality.
+ * <p>
+ * Similarly, {@link ResourceStamper Resource stampers} are use to stamp required (read) and provided (written)
+ * resources (e.g., files), such that a task is only marked out-of-date when the resource stamp changes. For example,
+ * the {@link HashResourceStamper} creates a stamp with the hash of a resource, and is only invalidated when the
+ * contents of the resource actually change, even if its last modification date changes.
+ */
 public interface ExecContext {
     //
-    // Executing and recording dependencies to tasks.
+    // Recording dependencies to tasks, and getting their up-to-date output.
     //
 
-    /**
-     * Requires given [task], using the default [output stamper][OutputStamper], and returns its output.
-     */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task) throws ExecException, InterruptedException;
 
     /**
-     * Requires given [task], using given [output stamper][stamper], and returns its output.
+     * Requires given {@code task}, using the {@link #getDefaultOutputStamper() default output stamper}, returning the
+     * up-to-date output object of the task.
+     *
+     * @param <O>  Type of the output object.
+     * @param task Task to require.
+     * @return Up-to-date output object of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task, OutputStamper stamper) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by its [task definition][taskDef] and [input], using the default [output stamper][OutputStamper], and returns its
-     * output.
+     * Requires given {@code task}, using given {@code stamper}, returning the up-to-date output object of the task.
+     *
+     * @param <O>     Type of the output object.
+     * @param task    Task to require.
+     * @param stamper {@link OutputStamper Output stamper} to use.
+     * @return Up-to-date output object of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException;
+
+    /**
+     * Requires task given by its {@code taskDef} and {@code input}, using the {@link #getDefaultOutputStamper() default
+     * output stamper}, returning the up-to-date output object of the task.
+     *
+     * @param <I>     Type of the input object.
+     * @param <O>     Type of the output object.
+     * @param taskDef Task definition of the task to require.
+     * @param input   Input object of the task to require.
+     * @return Up-to-date output object of the task.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by its [task definition][taskDef] and [input], using given [output stamper][stamper], and returns its output.
+     * Requires task given by its {@code taskDef} and {@code input}, using given {@code stamper}, returning the
+     * up-to-date output object of the task.
+     *
+     * @param <I>     Type of the input object.
+     * @param <O>     Type of the output object.
+     * @param taskDef Task definition of the task to require.
+     * @param input   Input object of the task to require.
+     * @param stamper {@link OutputStamper Output stamper} to use.
+     * @return Up-to-date output object of the task.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by its [serializable task form][task], using the default [output stamper][OutputStamper], and returns its output.
-     * Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
+     * Requires task given by its {@link STask serializable task form}, using the {@link #getDefaultOutputStamper()
+     * default output stamper}, returning the up-to-date output object of the task.
+     * <p>
+     * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
+     * lookup of the task definition, which is less efficient.
+     *
+     * @param sTask {@link STask Serializable task form} of the task to require.
+     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
-    <I extends Serializable> @Nullable Serializable require(STask<I> task) throws ExecException, InterruptedException;
+    @Nullable Serializable require(STask sTask) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by its [serializable task form][task], using given [output stamper][stamper], and returns its output.
-     * Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
+     * Requires task given by its {@link STask serializable task form}, using given {@code stamper}, returning the
+     * up-to-date output object of the task.
+     * <p>
+     * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
+     * possible, as this methods performs a lookup of the task definition, which is less efficient.
+     *
+     * @param sTask   {@link STask Serializable task form} of the task to require.
+     * @param stamper {@link OutputStamper Output stamper} to use.
+     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
-    <I extends Serializable> @Nullable Serializable require(STask<I> task, OutputStamper stamper) throws ExecException, InterruptedException;
+    @Nullable Serializable require(STask sTask, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by the [identifier of its task definition][taskDefId] and [input], using the default
-     * [output stamper][OutputStamper], and returns its output. Requires lookup and cast of a task definition, prefer [require] with [Task] or
-     * [TaskDef] if possible.
+     * Requires task given by the {@link TaskDef#getId() identifier of the task definition} and {@code input} of the
+     * task, using the {@link #getDefaultOutputStamper() default output stamper}, returning the up-to-date output object
+     * of the task.
+     * <p>
+     * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
+     * lookup of the task definition, which is less efficient.
+     *
+     * @param taskDefId {@link TaskDef#getId() identifier of the task definition} of the task to require.
+     * @param input     Input object of the task to require.
+     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
-    <I extends Serializable> @Nullable Serializable require(String taskDefId, I input) throws ExecException, InterruptedException;
+    @Nullable Serializable require(String taskDefId, Serializable input) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by the [identifier of its task definition][taskDefId] and [input], using given [output stamper][stamper],
-     * and returns its output. Requires lookup and cast of a task definition, prefer [require] with [Task] or [TaskDef] if possible.
+     * Requires task given by the {@link TaskDef#getId() identifier of the task definition} and {@code input} of the
+     * task, using given {@code stamper}, returning the up-to-date output object of the task.
+     * <p>
+     * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
+     * possible, as this methods performs a lookup of the task definition, which is less efficient.
+     *
+     * @param taskDefId {@link TaskDef#getId() identifier of the task definition} of the task to require.
+     * @param input     Input object of the task to require.
+     * @param stamper   {@link OutputStamper Output stamper} to use.
+     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
-    <I extends Serializable> @Nullable Serializable require(String taskDefId, I input, OutputStamper stamper) throws ExecException, InterruptedException;
+    @Nullable Serializable require(String taskDefId, Serializable input, OutputStamper stamper) throws ExecException, InterruptedException;
+
+    /**
+     * Gets the default output stamper.
+     *
+     * @return Default output stamper.
+     */
+    OutputStamper getDefaultOutputStamper();
 
 
     //
@@ -75,14 +164,46 @@ public interface ExecContext {
     /**
      * Marks given {@code resource} as required (read), using given {@code stamper}, creating a required resource
      * dependency.
+     *
+     * @param <R>      Type of the resource.
+     * @param resource Resource to require.
+     * @param stamper  {@link ResourceStamper Resource stamper} to use.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException;
+
+    /**
+     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
+     * resource dependency.
+     * <p>
+     * The current contents of the resource may be used for change detection, so be sure to call this method *AFTER*
+     * modifying the resource.
+     *
+     * @param <R>      Type of the resource.
+     * @param resource Resource to provide.
+     * @param stamper  {@link ResourceStamper Resource stamper} to use.
+     * @throws IOException When stamping the resource fails unexpectedly.
+     */
+    <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException;
+
+    /**
+     * Gets resource for given key.
+     *
+     * @param key Key to get resource for.
+     * @return Resource for {@code key}.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
+     */
+    Resource getResource(ResourceKey key);
 
     /**
      * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
      * resource dependency.
      *
+     * @param key     Key of the resource to mark as required.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @return resource for given key.
+     * @throws IOException              When stamping the resource fails unexpectedly.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
      */
     default Resource require(ResourceKey key, ResourceStamper<Resource> stamper) throws IOException {
         final Resource resource = getResource(key);
@@ -90,35 +211,82 @@ public interface ExecContext {
         return resource;
     }
 
+
+    //
+    // Recording required (read) dependencies to readable resources.
+    //
+
+
     /**
-     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
-     * resource dependency. The current contents of the resource may be used for change detection, so be sure to call
-     * this method *AFTER* modifying the resource.
+     * Marks given {@code resource} as required (read), using the {@link #getDefaultRequireReadableResourceStamper
+     * default require resource stamper for readable resources}, creating a required resource dependency.
+     *
+     * @param resource {@link ReadableResource Readable resource} to create a require dependency for.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
-    <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException;
+    default void require(ReadableResource resource) throws IOException {
+        require(resource, getDefaultRequireReadableResourceStamper());
+    }
+
+    /**
+     * Gets the default require resource stamper for {@link ReadableResource readable resources}.
+     *
+     * @return Default require resource stamper for {@link ReadableResource readable resource}.
+     */
+    ResourceStamper<ReadableResource> getDefaultRequireReadableResourceStamper();
+
+
+    //
+    // Recording provided (write) dependencies to writwable resources.
+    //
+
+
+    /**
+     * Marks given {@code resource} as provided (write), using the {@link #getDefaultProvideReadableResourceStamper default
+     * provide resource stamper for readable resources}, creating a provided resource dependency.
+     *
+     * @param resource {@link ReadableResource Readable resource} to create a provide dependency for.
+     * @throws IOException When stamping the resource fails unexpectedly.
+     */
+    default void provide(ReadableResource resource) throws IOException {
+        provide(resource, getDefaultProvideReadableResourceStamper());
+    }
+
+    /**
+     * Gets the default provide resource stamper for {@link ReadableResource readable resource}.
+     *
+     * @return Default provide resource stamper for {@link ReadableResource readable resource}.
+     */
+    ResourceStamper<ReadableResource> getDefaultProvideReadableResourceStamper();
 
 
     //
     // Recording required (read) dependencies to files and directories of file systems.
     //
 
+
     /**
-     * Marks given {@code path} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
-     * required resource dependency.
+     * Marks resource for given {@code path} as required (read), using the {@link #getDefaultRequireFSResourceStamper
+     * default require file system resource stamper}, creating a required resource dependency.
      *
-     * @return file system resource for given path.
+     * @param path Path of the resource to require.
+     * @return {@link FSResource File system resource} for given {@code path}.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default FSResource require(FSPath path) throws IOException {
         final FSResource resource = new FSResource(path);
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, getDefaultRequireFSResourceStamper());
         return resource;
     }
 
     /**
-     * Marks given {@code path} as required (read), using given {@code stamper}, creating a required resource
-     * dependency.
+     * Marks resource for given {@code path} as required (read), using given {@code stamper}, creating a required
+     * resource dependency.
      *
+     * @param path    Path of the resource to require.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @return file system resource for given path.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default FSResource require(FSPath path, ResourceStamper<FSResource> stamper) throws IOException {
         final FSResource resource = new FSResource(path);
@@ -127,30 +295,38 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code resource} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
-     * required resource dependency.
+     * Marks given {@code resource} as required (read), using the {@link #getDefaultRequireFSResourceStamper default
+     * require file system resource stamper}, creating a required resource dependency.
+     *
+     * @param resource Resource to require.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void require(FSResource resource) throws IOException {
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, getDefaultRequireFSResourceStamper());
     }
 
     /**
-     * Marks given {@code path} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
-     * required resource dependency.
+     * Marks resource for given {@code path} as required (read), using the {@link #getDefaultRequireFSResourceStamper
+     * default require file system resource stamper}, creating a required resource dependency.
      *
-     * @return file system resource for given path.
+     * @param path Path of the resource to require.
+     * @return {@link FSResource File system resource} for given {@code path}.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default FSResource require(Path path) throws IOException {
         final FSResource resource = new FSResource(path);
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, getDefaultRequireFSResourceStamper());
         return resource;
     }
 
     /**
-     * Marks given {@code path} as required (read), using the give {@code stamper}, creating a required resource
-     * dependency.
+     * Marks resource for given {@code path} as required (read), using given {@code stamper}, creating a required
+     * resource dependency.
      *
+     * @param path    Path of the resource to require.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @return file system resource for given path.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default FSResource require(Path path, ResourceStamper<FSResource> stamper) throws IOException {
         final FSResource resource = new FSResource(path);
@@ -159,22 +335,26 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code file} as required (read), using the {@link #defaultRequireFileSystemStamper}, creating a
-     * required resource dependency.
+     * Marks resource for given {@code file} as required (read), using the {@link #getDefaultRequireFSResourceStamper
+     * default require file system resource stamper}, creating a required resource dependency.
      *
-     * @return file system resource for given file object.
+     * @param file File to require.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default FSResource require(File file) throws IOException {
         final FSResource resource = new FSResource(file);
-        require(resource, defaultRequireFileSystemStamper());
+        require(resource, getDefaultRequireFSResourceStamper());
         return resource;
     }
 
     /**
-     * Marks given {@code file} as required (read), using the give {@code stamper}, creating a required resource
-     * dependency.
+     * Marks resource for given {@code file} as required (read), using given {@code stamper}, creating a required
+     * resource dependency.
      *
-     * @return file system resource for given file object.
+     * @param file    File to require.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
+     * @return file system resource for given path.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default FSResource require(File file, ResourceStamper<FSResource> stamper) throws IOException {
         final FSResource resource = new FSResource(file);
@@ -183,9 +363,11 @@ public interface ExecContext {
     }
 
     /**
-     * Default 'require' resource stamper for file system resources.
+     * Gets the default require resource stamper for {@link FSResource file system resources}.
+     *
+     * @return Default require resource stamper for {@link FSResource file system resources}.
      */
-    ResourceStamper<FSResource> defaultRequireFileSystemStamper();
+    ResourceStamper<FSResource> getDefaultRequireFSResourceStamper();
 
 
     //
@@ -194,96 +376,106 @@ public interface ExecContext {
 
 
     /**
-     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
-     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
-     * to call this method *AFTER* modifying the resource.
+     * Marks resource for given {@code path} as provided (written to/created)), using the {@link
+     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
+     * dependency.
+     *
+     * @param path Path of the resource to provide.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(FSPath path) throws IOException {
-        provide(new FSResource(path), defaultProvideFileSystemStamper());
+        provide(new FSResource(path), getDefaultProvideFSResourceStamper());
     }
 
     /**
-     * Marks given {@code path} as provided (write), using given {@code stamper}, creating a provided resource
-     * dependency. The current contents of the resource may be used for change detection, so be sure to call this method
-     * *AFTER* modifying the resource.
+     * Marks given {@code path} as provided (written to/created)), using given {@code stamper}, creating a provided
+     * resource dependency.
+     *
+     * @param path    Path of the resource to provide.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(FSPath path, ResourceStamper<FSResource> stamper) throws IOException {
         provide(new FSResource(path), stamper);
     }
 
     /**
-     * Marks given {@code resource} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
-     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
-     * to call this method *AFTER* modifying the resource.
+     * Marks given {@code resource} as provided (written to/created)), using the {@link
+     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
+     * dependency.
+     *
+     * @param resource Resource to provide.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(FSResource resource) throws IOException {
-        provide(resource, defaultProvideFileSystemStamper());
+        provide(resource, getDefaultProvideFSResourceStamper());
     }
 
     /**
-     * Marks given {@code path} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
-     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
-     * to call this method *AFTER* modifying the resource.
+     * Marks resource for given {@code path} as provided (written to/created)), using the {@link
+     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
+     * dependency.
+     *
+     * @param path Path of the resource to provide.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(Path path) throws IOException {
-        provide(new FSResource(path), defaultProvideFileSystemStamper());
+        provide(new FSResource(path), getDefaultProvideFSResourceStamper());
     }
 
     /**
-     * Marks given {@code path} as provided (write), using the give {@code stamper}, creating a provided resource
-     * dependency. The current contents of the resource may be used for change detection, so be sure to call this method
-     * *AFTER* modifying the resource.
+     * Marks resource for given {@code path} as provided (written to/created)), using given {@code stamper}, creating a
+     * provided resource dependency.
+     *
+     * @param path    Path of the resource to provide.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(Path path, ResourceStamper<FSResource> stamper) throws IOException {
         provide(new FSResource(path), stamper);
     }
 
     /**
-     * Marks given {@code file} as provided (write), using the {@link #defaultProvideFileSystemStamper}, creating a
-     * provided resource dependency. The current contents of the resource may be used for change detection, so be sure
-     * to call this method *AFTER* modifying the resource.
+     * Marks resource for given {@code file} as provided (written to/created), using the {@link
+     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
+     * dependency.
+     *
+     * @param file File to provide.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(File file) throws IOException {
-        provide(new FSResource(file), defaultProvideFileSystemStamper());
+        provide(new FSResource(file), getDefaultProvideFSResourceStamper());
     }
 
     /**
-     * Marks given {@code file} as provided (write), using the give {@code stamper}, creating a provided resource
-     * dependency. The current contents of the resource may be used for change detection, so be sure to call this method
-     * *AFTER* modifying the resource.
+     * Marks resource for given {@code file} as provided (written to/created), using given {@code stamper}, creating a
+     * provided resource dependency.
+     *
+     * @param file    File to provide.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
+     * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(File file, ResourceStamper<FSResource> stamper) throws IOException {
         provide(new FSResource(file), stamper);
     }
 
     /**
-     * Default 'provide' resource stamper for file system resources.
-     */
-    ResourceStamper<FSResource> defaultProvideFileSystemStamper();
-
-
-    //
-    // Resource key to resource.
-    //
-
-
-    /**
-     * Gets resource for given key.
+     * Gets the default provide resource stamper for {@link FSResource file system resources}.
      *
-     * @param key Key to get resource for.
-     * @return Resource for {@code key}.
-     * @throws ResourceRuntimeException when given {@code key} cannot be handled by the {@link ResourceRegistry}.
+     * @return Default provide resource stamper for {@link FSResource file system resources}.
      */
-    Resource getResource(ResourceKey key);
+    ResourceStamper<FSResource> getDefaultProvideFSResourceStamper();
 
 
     //
-    // Logging.
+    // Other.
     //
 
 
     /**
-     * Logger.
+     * Gets the logger.
+     *
+     * @return Logger.
      */
     Logger logger();
 }

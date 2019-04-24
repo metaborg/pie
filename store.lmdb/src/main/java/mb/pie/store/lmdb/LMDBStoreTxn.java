@@ -74,13 +74,13 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     }
 
     @Override public @Nullable Serializable input(TaskKey key) {
-        return Deserialized.orElse(shared.getOne(SerializeUtil.serializeHashedToBuffer(key), inputDb), null);
+        return Deserialized.orElseNull(shared.getOne(SerializeUtil.serializeHashedToBuffer(key), inputDb));
     }
 
-    @Override public @Nullable Output<?> output(TaskKey key) {
+    @Override public @Nullable Output output(TaskKey key) {
         final ByteBuffer keyHashedBuf = SerializeUtil.serializeHashedToBuffer(key);
         final @Nullable Deserialized<@Nullable Serializable> deserialized = shared.getOne(keyHashedBuf, outputDb);
-        return Deserialized.<@Nullable Serializable, @Nullable Output<?>>mapOrElse(deserialized, null, Output::new);
+        return Deserialized.mapOrElseNull(deserialized, Output::new);
     }
 
     @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
@@ -116,7 +116,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
             shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), providerOfDb), null);
     }
 
-    @Override public @Nullable TaskData<?, ?> data(TaskKey key) {
+    @Override public @Nullable TaskData data(TaskKey key) {
         // OPTO: reuse buffers? is that safe?
         final byte[] keyHashedBytes = SerializeUtil.hash(SerializeUtil.serialize(key));
         final @Nullable Deserialized<Serializable> inputDeserialized =
@@ -139,7 +139,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         final ArrayList<ResourceProvideDep> resourceProvides =
             Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb),
                 new ArrayList<>());
-        return new TaskData<>(input, output, taskRequires, resourceRequires, resourceProvides);
+        return new TaskData(input, output, taskRequires, resourceRequires, resourceProvides);
     }
 
     @Override public int numSourceFiles() {
@@ -247,7 +247,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         }
     }
 
-    @Override public void setData(TaskKey key, TaskData<?, ?> data) {
+    @Override public void setData(TaskKey key, TaskData data) {
         // OPTO: serialize and hash task only once?
         setInput(key, data.input);
         setOutput(key, data.output);

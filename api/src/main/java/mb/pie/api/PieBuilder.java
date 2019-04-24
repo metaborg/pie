@@ -2,18 +2,20 @@ package mb.pie.api;
 
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.ReadableResource;
 import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 
 import java.util.function.Function;
 
 /**
- * Builder for [PIE][Pie] facade.
+ * Builder for {@link Pie} entry point.
  */
 public interface PieBuilder {
     PieBuilder withTaskDefs(TaskDefs taskDefs);
 
-    PieBuilder withResourceRegistry(ResourceRegistry resourceRegistry);
+    PieBuilder withResourceService(ResourceService resourceService);
 
     PieBuilder withStore(Function<Logger, Store> storeFunc);
 
@@ -21,9 +23,13 @@ public interface PieBuilder {
 
     PieBuilder withDefaultOutputStamper(OutputStamper outputStamper);
 
-    PieBuilder withDefaultRequireFileSystemStamper(ResourceStamper<FSResource> stamper);
+    PieBuilder withDefaultRequireReadableResourceStamper(ResourceStamper<ReadableResource> stamper);
 
-    PieBuilder withDefaultProvideFileSystemStamper(ResourceStamper<FSResource> stamper);
+    PieBuilder withDefaultProvideReadableResourceStamper(ResourceStamper<ReadableResource> stamper);
+
+    PieBuilder withDefaultRequireFSResourceStamper(ResourceStamper<FSResource> stamper);
+
+    PieBuilder withDefaultProvideFSResourceStamper(ResourceStamper<FSResource> stamper);
 
     PieBuilder withLayer(Function<Logger, Layer> layerFunc);
 

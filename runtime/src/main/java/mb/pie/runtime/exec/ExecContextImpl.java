@@ -6,9 +6,11 @@ import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamp;
 import mb.pie.api.stamp.ResourceStamper;
+import mb.pie.runtime.DefaultStampers;
+import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
+import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -20,11 +22,9 @@ public class ExecContextImpl implements ExecContext {
     private final RequireTask requireTask;
     private final Cancelled cancel;
     private final TaskDefs taskDefs;
-    private final ResourceRegistry resourceRegistry;
+    private final ResourceService resourceService;
     private final Store store;
-    private final OutputStamper defaultOutputStamper;
-    private final ResourceStamper<FSResource> defaultRequireFileSystemStamper;
-    private final ResourceStamper<FSResource> defaultProvideFileSystemStamper;
+    private final DefaultStampers defaultStampers;
     private final Logger logger;
 
     private final ArrayList<TaskRequireDep> taskRequires = new ArrayList<>();
@@ -36,32 +36,28 @@ public class ExecContextImpl implements ExecContext {
         RequireTask requireTask,
         Cancelled cancel,
         TaskDefs taskDefs,
-        ResourceRegistry resourceRegistry,
+        ResourceService resourceService,
         Store store,
-        OutputStamper defaultOutputStamper,
-        ResourceStamper<FSResource> defaultRequireFileSystemStamper,
-        ResourceStamper<FSResource> defaultProvideFileSystemStamper,
+        DefaultStampers defaultStampers,
         Logger logger
     ) {
         this.requireTask = requireTask;
         this.cancel = cancel;
         this.taskDefs = taskDefs;
-        this.resourceRegistry = resourceRegistry;
+        this.resourceService = resourceService;
         this.store = store;
-        this.defaultOutputStamper = defaultOutputStamper;
-        this.defaultRequireFileSystemStamper = defaultRequireFileSystemStamper;
-        this.defaultProvideFileSystemStamper = defaultProvideFileSystemStamper;
+        this.defaultStampers = defaultStampers;
         this.logger = logger;
     }
 
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task) throws ExecException, InterruptedException {
-        return require(task, defaultOutputStamper);
+    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+        return require(task, defaultStampers.output);
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(Task<I, O> task, OutputStamper stamper) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         final TaskKey key = task.key();
         final O output = requireTask.require(key, task, cancel);
@@ -73,7 +69,7 @@ public class ExecContextImpl implements ExecContext {
 
     @Override
     public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException {
-        return require(new Task<>(taskDef, input), defaultOutputStamper);
+        return require(new Task<>(taskDef, input), defaultStampers.output);
     }
 
     @Override
@@ -82,29 +78,33 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <I extends Serializable> @Nullable Serializable require(STask<I> task) throws ExecException, InterruptedException {
-        return require(task.toTask(taskDefs), defaultOutputStamper);
+    public @Nullable Serializable require(STask sTask) throws ExecException, InterruptedException {
+        return require(sTask.toTask(taskDefs), defaultStampers.output);
     }
 
     @Override
-    public <I extends Serializable> @Nullable Serializable require(STask<I> task, OutputStamper stamper) throws ExecException, InterruptedException {
-        return require(task.toTask(taskDefs), stamper);
+    public @Nullable Serializable require(STask sTask, OutputStamper stamper) throws ExecException, InterruptedException {
+        return require(sTask.toTask(taskDefs), stamper);
     }
 
     @Override
-    public <I extends Serializable> @Nullable Serializable require(String taskDefId, I input) throws ExecException, InterruptedException {
-        final TaskDef<I, @Nullable Serializable> taskDef = getTaskDef(taskDefId);
-        return require(new Task<>(taskDef, input), defaultOutputStamper);
+    public @Nullable Serializable require(String taskDefId, Serializable input) throws ExecException, InterruptedException {
+        final TaskDef<?, ?> taskDef = getTaskDef(taskDefId);
+        return require(new Task<>(taskDef, input), defaultStampers.output);
     }
 
     @Override
-    public <I extends Serializable> @Nullable Serializable require(String taskDefId, I input, OutputStamper stamper) throws ExecException, InterruptedException {
-        final TaskDef<I, @Nullable Serializable> taskDef = getTaskDef(taskDefId);
+    public @Nullable Serializable require(String taskDefId, Serializable input, OutputStamper stamper) throws ExecException, InterruptedException {
+        final TaskDef<?, ?> taskDef = getTaskDef(taskDefId);
         return require(new Task<>(taskDef, input), stamper);
     }
 
-    private <I extends Serializable> TaskDef<I, @Nullable Serializable> getTaskDef(String id) {
-        final @Nullable TaskDef<I, @Nullable Serializable> taskDef = taskDefs.getTaskDef(id);
+    @Override public OutputStamper getDefaultOutputStamper() {
+        return defaultStampers.output;
+    }
+
+    private TaskDef<?, ?> getTaskDef(String id) {
+        final @Nullable TaskDef<?, ?> taskDef = taskDefs.getTaskDef(id);
         if(taskDef != null) {
             return taskDef;
         } else {
@@ -113,32 +113,41 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
-    @Override public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
+    @Override
+    public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
             (ResourceStamp<Resource>) stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
         Stats.addFileReq();
     }
 
-    @Override public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
+    @Override
+    public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
             (ResourceStamp<Resource>) stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
         Stats.addFileGen();
     }
 
-
     @Override public Resource getResource(ResourceKey key) {
-        return resourceRegistry.getResource(key);
+        return resourceService.getResource(key);
     }
 
 
-    @Override public ResourceStamper<FSResource> defaultRequireFileSystemStamper() {
-        return defaultRequireFileSystemStamper;
+    @Override public ResourceStamper<ReadableResource> getDefaultRequireReadableResourceStamper() {
+        return defaultStampers.requireReadableResource;
     }
 
-    @Override public ResourceStamper<FSResource> defaultProvideFileSystemStamper() {
-        return defaultProvideFileSystemStamper;
+    @Override public ResourceStamper<ReadableResource> getDefaultProvideReadableResourceStamper() {
+        return defaultStampers.provideReadableResource;
+    }
+
+    @Override public ResourceStamper<FSResource> getDefaultRequireFSResourceStamper() {
+        return defaultStampers.requireFSResource;
+    }
+
+    @Override public ResourceStamper<FSResource> getDefaultProvideFSResourceStamper() {
+        return defaultStampers.provideFSResource;
     }
 
 
@@ -147,7 +156,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
-    public class Deps {
+    class Deps {
         final ArrayList<TaskRequireDep> taskRequires;
         final ArrayList<ResourceRequireDep> resourceRequires;
         final ArrayList<ResourceProvideDep> resourceProvides;

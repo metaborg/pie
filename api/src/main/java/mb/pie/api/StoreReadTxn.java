@@ -19,7 +19,7 @@ public interface StoreReadTxn extends StoreTxn {
     /**
      * @return wrapper around output for [key], or `null` if no output is stored.
      */
-    @Nullable Output<?> output(TaskKey key);
+    @Nullable Output output(TaskKey key);
 
 
     /**
@@ -58,11 +58,11 @@ public interface StoreReadTxn extends StoreTxn {
     /**
      * @return output and dependencies for task [key], or `null` when no output was stored.
      */
-    @Nullable TaskData<?, ?> data(TaskKey key);
+    @Nullable TaskData data(TaskKey key);
 
 
     /**
-     * @return number of source required files files for which there is no generator.
+     * @return number of source required resources for which there is no provider.
      */
     int numSourceFiles();
 }

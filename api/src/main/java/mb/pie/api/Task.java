@@ -5,16 +5,36 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 
 /**
- * Executable task, consisting of a [task definition][TaskDef] and its [input].
+ * Executable task, consisting of a {@code taskDef} and its {@code input}. Users of this library should only call
+ * documented constructors and/or methods for sound incrementality.
  */
-public class Task<I extends Serializable, O extends @Nullable Serializable> {
-    public final TaskDef<I, O> taskDef;
-    public final I input;
+public class Task<O extends @Nullable Serializable> {
+    public final TaskDef<Serializable, O> taskDef;
+    public final Serializable input;
 
-
-    public Task(TaskDef<I, O> taskDef, I input) {
-        this.taskDef = taskDef;
+    /**
+     * Creates a task from {@code taskDef} and {@code input}.
+     *
+     * @param taskDef Task definition to create a task for.
+     * @param input   Input object to create a task for. The (super)type of this object MUST BE {@code I}. This cannot
+     *                be statically checked due to limitations of Java's generics (or my lack of understanding of
+     *                them).
+     * @param <I>     Type of input objects.
+     */
+    public <I extends Serializable> Task(TaskDef<I, O> taskDef, Serializable input) {
+        @SuppressWarnings("unchecked") final TaskDef<Serializable, O> inputErasedTaskDef =
+            (TaskDef<Serializable, O>) taskDef;
+        this.taskDef = inputErasedTaskDef;
         this.input = input;
+    }
+
+    /**
+     * Creates a {@link STask serializable task} for this task.
+     *
+     * @return {@link STask Serializable task} for this task.
+     */
+    public STask toSerializableTask() {
+        return new STask(taskDef.getId(), input);
     }
 
 
@@ -35,16 +55,10 @@ public class Task<I extends Serializable, O extends @Nullable Serializable> {
         return taskDef.desc(input, maxLength);
     }
 
-
-    public STask<I> toSTask() {
-        return new STask<>(taskDef.getId(), input);
-    }
-
-
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final Task<?, ?> task = (Task<?, ?>) o;
+        final Task<?> task = (Task<?>) o;
         if(!taskDef.getId().equals(task.taskDef.getId())) return false; // Note: comparing TaskDef IDs.
         return input.equals(task.input);
     }
