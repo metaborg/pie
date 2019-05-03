@@ -89,4 +89,6 @@ public interface PieSession extends AutoCloseable {
      * @throws InterruptedException When execution is cancelled.
      */
     void requireBottomUp(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
+
+    @Override void close();
 }
