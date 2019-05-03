@@ -84,6 +84,10 @@ public class PieImpl implements Pie {
         }
     }
 
+    @Override public boolean hasBeenExecuted(Task<?> task) {
+        return hasBeenExecuted(task.key());
+    }
+
     @Override public <O extends @Nullable Serializable> void setObserver(Task<O> task, Consumer<O> observer) {
         @SuppressWarnings("unchecked") final Consumer<@Nullable Serializable> generalizedObserver =
             (Consumer<@Nullable Serializable>) observer;
