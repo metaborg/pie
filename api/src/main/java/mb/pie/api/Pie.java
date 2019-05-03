@@ -34,9 +34,18 @@ public interface Pie extends AutoCloseable {
 
 
     /**
+     * Checks whether {@code task} has been executed at least once.
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task was executed at least once, false otherwise.
+     */
+    boolean hasBeenExecuted(Task<?> task);
+
+    /**
      * Checks whether task with given {@code key} has been executed at least once.
      *
      * @param key Key of task to check.
+     * @return True if task was executed at least once, false otherwise.
      */
     boolean hasBeenExecuted(TaskKey key);
 
