@@ -19,4 +19,6 @@ public interface Store extends AutoCloseable {
      * Force synchronization of in-memory data to persistent storage.
      */
     void sync();
+
+    @Override void close();
 }
