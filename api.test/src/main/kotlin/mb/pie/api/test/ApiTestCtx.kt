@@ -44,16 +44,15 @@ open class ApiTestCtx(
 
 
   fun read(resource: FSResource): String {
-    resource.newInputStream().use {
+    resource.newInputStream().buffered().use {
       return String(it.readBytes())
     }
   }
 
   fun write(text: String, resource: FSResource) {
-    resource.newOutputStream().use {
+    resource.newOutputStream().buffered().use {
       it.write(text.toByteArray())
+      it.flush()
     }
-    // HACK: for some reason, sleeping is required for writes to the file to be picked up by reads...
-    Thread.sleep(1)
   }
 }
