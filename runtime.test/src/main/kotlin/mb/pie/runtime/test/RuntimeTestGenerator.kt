@@ -24,7 +24,7 @@ object RuntimeTestGenerator {
     name: String,
     storeGens: Array<(Logger) -> Store> = arrayOf({ _ -> InMemoryStore() }),
     shareGens: Array<(Logger) -> Share> = arrayOf({ _ -> NonSharingShare() }),
-    layerGens: Array<(Logger) -> Layer> = arrayOf({ l -> ValidationLayer(l) }),
+    layerGens: Array<(TaskDefs, Logger) -> Layer> = arrayOf({ td, l -> ValidationLayer(td, l) }),
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
     defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),
     defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),

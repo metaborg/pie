@@ -10,6 +10,7 @@ import mb.pie.api.Logger;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.TaskDef;
+import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -20,6 +21,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Module public abstract class PieOptionalsModule {
@@ -47,7 +49,7 @@ import java.util.function.Function;
     @BindsOptionalOf @Named("provide")
     abstract ResourceStamper<FSResource> defaultProvideFSResourceStamper();
 
-    @BindsOptionalOf abstract Function<Logger, Layer> layerFunc();
+    @BindsOptionalOf abstract BiFunction<TaskDefs, Logger, Layer> layerFunc();
 
     @BindsOptionalOf abstract Logger logger();
 

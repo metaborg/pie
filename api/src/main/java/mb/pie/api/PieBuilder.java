@@ -7,6 +7,7 @@ import mb.resource.ResourceRegistry;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -31,7 +32,7 @@ public interface PieBuilder {
 
     PieBuilder withDefaultProvideFSResourceStamper(ResourceStamper<FSResource> stamper);
 
-    PieBuilder withLayer(Function<Logger, Layer> layerFunc);
+    PieBuilder withLayer(BiFunction<TaskDefs, Logger, Layer> layerFunc);
 
     PieBuilder withLogger(Logger logger);
 

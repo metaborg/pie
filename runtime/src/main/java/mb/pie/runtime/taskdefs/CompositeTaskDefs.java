@@ -24,4 +24,8 @@ public class CompositeTaskDefs implements TaskDefs {
             return childTaskDefs.getTaskDef(id);
         }
     }
+
+    @Override public boolean exists(String id) {
+        return parentTaskDefs.exists(id) || childTaskDefs.exists(id);
+    }
 }

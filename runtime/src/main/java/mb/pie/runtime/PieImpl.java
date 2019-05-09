@@ -12,6 +12,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -21,7 +22,7 @@ public class PieImpl implements Pie {
     private final Store store;
     private final Share share;
     private final DefaultStampers defaultStampers;
-    private final Function<Logger, Layer> layerFactory;
+    private final BiFunction<TaskDefs, Logger, Layer> layerFactory;
     private final Logger logger;
     private final Function<Logger, ExecutorLogger> executorLoggerFactory;
 
@@ -33,7 +34,7 @@ public class PieImpl implements Pie {
         Store store,
         Share share,
         DefaultStampers defaultStampers,
-        Function<Logger, Layer> layerFactory,
+        BiFunction<TaskDefs, Logger, Layer> layerFactory,
         Logger logger,
         Function<Logger, ExecutorLogger> executorLoggerFactory
     ) {
@@ -47,7 +48,7 @@ public class PieImpl implements Pie {
         this.executorLoggerFactory = executorLoggerFactory;
     }
 
-    @Override public void close() throws Exception {
+    @Override public void close() {
         store.close();
     }
 
@@ -61,7 +62,7 @@ public class PieImpl implements Pie {
     }
 
     private PieSession createSession(TaskDefs taskDefs) {
-        final Layer layer = layerFactory.apply(logger);
+        final Layer layer = layerFactory.apply(taskDefs, logger);
         final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
         final TaskExecutor taskExecutor =
@@ -119,6 +120,6 @@ public class PieImpl implements Pie {
 
 
     @Override public String toString() {
-        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(logger) + ")";
+        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, logger) + ")";
     }
 }

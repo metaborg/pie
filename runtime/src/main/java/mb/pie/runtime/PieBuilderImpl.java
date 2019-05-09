@@ -23,6 +23,7 @@ import mb.resource.ResourceService;
 import mb.resource.fs.FSRegistry;
 import mb.resource.fs.FSResource;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class PieBuilderImpl implements PieBuilder {
@@ -35,7 +36,7 @@ public class PieBuilderImpl implements PieBuilder {
     private ResourceStamper<ReadableResource> defaultProvideReadableStamper = FileSystemStampers.modified();
     private ResourceStamper<FSResource> defaultRequireFileSystemStamper = FileSystemStampers.modified();
     private ResourceStamper<FSResource> defaultProvideFileSystemStamper = FileSystemStampers.modified();
-    private Function<Logger, Layer> layerFactory = ValidationLayer::new;
+    private BiFunction<TaskDefs, Logger, Layer> layerFactory = ValidationLayer::new;
     private Logger logger = new NoopLogger();
     private Function<Logger, ExecutorLogger> executorLoggerFactory = LoggerExecutorLogger::new;
 
@@ -84,7 +85,7 @@ public class PieBuilderImpl implements PieBuilder {
         return this;
     }
 
-    @Override public PieBuilderImpl withLayer(Function<Logger, Layer> layer) {
+    @Override public PieBuilderImpl withLayer(BiFunction<TaskDefs, Logger, Layer> layer) {
         this.layerFactory = layer;
         return this;
     }

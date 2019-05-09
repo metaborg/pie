@@ -20,7 +20,7 @@ object ApiTestGenerator {
     taskDefsGen: () -> TaskDefs,
     storeGens: Array<(Logger) -> Store>,
     shareGens: Array<(Logger) -> Share>,
-    layerGens: Array<(Logger) -> Layer>,
+    layerGens: Array<(TaskDefs, Logger) -> Layer>,
     defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
     defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),
     defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),

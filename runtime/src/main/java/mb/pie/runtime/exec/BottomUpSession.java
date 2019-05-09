@@ -136,8 +136,8 @@ public class BottomUpSession implements RequireTask {
      */
     @Override
     public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
-        Stats.addRequires();
         cancel.throwIfCancelled();
+        Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         executorLogger.requireTopDownStart(key, task);
         try {
