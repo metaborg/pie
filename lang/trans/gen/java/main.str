@@ -1,0 +1,48 @@
+module gen/java/main
+
+imports
+
+  nabl2/api
+
+  gen/util
+  gen/java/func_def 
+  gen/java/func_body
+
+rules
+
+  generate-java-file:
+    (ast, _, _, file, _) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"java")> file
+    ; mod      := <base-filename;remove-extension> file
+    ; result   := <p2j(|mod)> ast
+
+rules
+
+  p2j(|mod):
+    Program(defs) -> str
+    with
+    {| AstAnalysis, ModuleBindings:
+    <pie-set-ast-analysis> defs
+      
+    ; classes      := "" // <filter(p2j-def)> defs
+    ; bindings     := <bagof-ModuleBindings; pie-concat-nl>
+    ; bindingStmts := "" // todo: map from bindings
+    |}
+    with
+      str := 
+$[// This file was generated from Pie source file [mod].
+
+[classes]
+
+class TaskDefsModule_[mod] extends TaskDefsModule {
+  @Override
+  protected void bindTaskDefs() {
+    bindTaskDefs(binder);
+  }
+  
+  protected bindTaskDefs(MapBinder<String, TaskDef<?, ?>> taskDefsBinder) {
+    [bindingStmts]
+  }
+}
+]

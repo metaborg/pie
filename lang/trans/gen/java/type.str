@@ -1,0 +1,63 @@
+module gen/java/type
+
+imports
+
+  libspoofax/stratego/debug
+
+  signatures/-
+  signatures/lex/-
+  signatures/impl/-
+
+  statsem/pie
+  
+  gen/idtype-tuples
+  gen/util
+
+rules
+
+  p2j-type-sig: UnitTy() -> "Unit"
+  p2j-type-sig: BoolTy() -> "Boolean"
+  p2j-type-sig: IntTy()  -> "Integer"
+  p2j-type-sig: StrTy()  -> "String"
+  p2j-type-sig: PathTy() -> "Path"
+  p2j-type-sig: TopTy()  -> "Object"
+
+  p2j-type-sig:
+    DataTy(occ) -> javaClassId
+    where 
+      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
+    ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
+    with  
+      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+
+  p2j-type-sig:
+    DataTy(occ) -> $[OutTransient<[javaClassId]>]
+    where 
+      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
+    ; <pie-prop(|"Type", "mods"); collect-one(?Transient())> occ
+    with  
+      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+
+
+  p2j-type-sig: 
+    TupleTy(tys) -> $[Tuple[length]<[tyStr]>]
+    with
+      length := <length> tys
+    ; tyStr  := <map(p2j-type-sig); pie-concat-comma> tys
+
+  p2j-type-sig: ListTy(ty)     -> $[ArrayList<[<p2j-type-sig> ty]>]
+  p2j-type-sig: NullableTy(ty) -> $[[<p2j-type-sig> ty]?]
+  
+rules
+
+  p2j-type-generate-dataclass(|name):
+    idTypeTuples -> 
+$[data class [name]([params]) : [tupleSig] {
+  constructor(tuple: [tupleSig]): this([constructorCall])
+}]
+    with
+      paramStrs       := <map(\(typeId, ty) -> $[val [typeId] : [<p2j-type-sig> ty]]\)> idTypeTuples
+    ; params          := <pie-sep-comma; concat-strings> paramStrs
+    ; tys             := <map(Snd)> idTypeTuples
+    ; tupleSig        := <p2j-type-sig> TupleTy(tys)
+    ; constructorCall := <range; map(\i -> $[tuple.component[i]()]\); pie-concat-comma> (1, <length; inc> tys)

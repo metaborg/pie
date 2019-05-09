@@ -1,0 +1,23 @@
+module gen/java/binder
+
+imports
+
+  signatures/-
+  signatures/lex/-
+  signatures/impl/-
+  
+  gen/java/type
+  gen/util
+  gen/debug
+
+rules
+
+  p2j-binder:
+    SingleBinder(bind) -> <p2j-bind> bind
+  p2j-binder:
+    TupleBinder(binds) -> $[([bindStr])]
+    with
+      bindStr := <map(p2j-bind); pie-sep-comma; concat-strings> binds
+
+  p2j-bind: Bind(varId)      -> $[[varId]]
+  p2j-bind: TBind(varId, ty) -> $[[varId] : [[<p2j-type-sig> ty]]]
