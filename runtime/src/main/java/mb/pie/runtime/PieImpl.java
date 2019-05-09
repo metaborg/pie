@@ -47,7 +47,7 @@ public class PieImpl implements Pie {
         this.executorLoggerFactory = executorLoggerFactory;
     }
 
-    @Override public void close() throws Exception {
+    @Override public void close() {
         store.close();
     }
 
