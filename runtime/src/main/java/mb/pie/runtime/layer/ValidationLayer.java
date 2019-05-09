@@ -7,6 +7,7 @@ import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskData;
+import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.runtime.exec.BottomUpShared;
 import mb.resource.ResourceKey;
@@ -27,31 +28,45 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StatementWithEmptyBody", "StringBufferReplaceableByString"})
 public class ValidationLayer implements Layer {
-    public class Options {
+    public static class ValidationOptions {
         public boolean cycle = true;
         public boolean overlappingResourceProvide = true;
         public boolean provideAfterRequire = true;
         public boolean requireWithoutDepToProvider = true;
 
-        public boolean keyObject = false;
-        public boolean inputObject = false;
-        public boolean outputObject = false;
+        public boolean checkKeyObjects = false;
+        public boolean checkInputObjects = false;
+        public boolean checkOutputObjects = false;
 
         public boolean throwErrors = true;
         public boolean throwWarnings = false;
     }
 
+    private final ValidationOptions options;
+    private final TaskDefs taskDefs;
     private final Logger logger;
     private final HashSet<TaskKey> stack = new HashSet<>();
-    public Options options = new Options();
 
 
-    public ValidationLayer(Logger logger) {
+    public ValidationLayer(ValidationOptions options, TaskDefs taskDefs, Logger logger) {
+        this.options = options;
+        this.taskDefs = taskDefs;
         this.logger = logger;
+    }
+
+    public ValidationLayer(TaskDefs taskDefs, Logger logger) {
+        this(new ValidationOptions(), taskDefs, logger);
     }
 
 
     @Override public void requireTopDownStart(TaskKey currentTask, Serializable input) {
+        final String taskDefId = currentTask.id;
+        if(!taskDefs.exists(taskDefId)) {
+            throw new RuntimeException(
+                "Required task '" + currentTask.toShortString(
+                    100) + "', but the ID of its task definition '" + taskDefId + "' has not been registered with the task definition collection");
+        }
+
         if(stack.contains(currentTask)) {
             // Cyclic dependency.
             final StringBuilder sb = new StringBuilder();
@@ -64,10 +79,10 @@ public class ValidationLayer implements Layer {
         }
         stack.add(currentTask);
 
-        if(options.keyObject) {
+        if(options.checkKeyObjects) {
             validateKey(currentTask);
         }
-        if(options.inputObject) {
+        if(options.checkInputObjects) {
             validateInput(input, currentTask);
         }
     }
@@ -139,7 +154,7 @@ public class ValidationLayer implements Layer {
             }
         }
 
-        if(options.outputObject) {
+        if(options.checkOutputObjects) {
             validateOutput(data.output, currentTask);
         }
     }

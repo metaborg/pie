@@ -2,15 +2,7 @@ package mb.pie.dagger;
 
 import dagger.Module;
 import dagger.Provides;
-import mb.pie.api.ExecutorLogger;
-import mb.pie.api.Layer;
-import mb.pie.api.Logger;
-import mb.pie.api.MapTaskDefs;
-import mb.pie.api.Pie;
-import mb.pie.api.PieBuilder;
-import mb.pie.api.Share;
-import mb.pie.api.Store;
-import mb.pie.api.TaskDef;
+import mb.pie.api.*;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -21,6 +13,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,7 +35,7 @@ public class PieModule {
         @Named("provide") Optional<ResourceStamper<ReadableResource>> defaultProvideReadableResourceStamper,
         @Named("require") Optional<ResourceStamper<FSResource>> defaultRequireFSResourceStamper,
         @Named("provide") Optional<ResourceStamper<FSResource>> defaultProvideFSResourceStamper,
-        Optional<Function<Logger, Layer>> layerFunc,
+        Optional<BiFunction<TaskDefs, Logger, Layer>> layerFunc,
         Optional<Logger> logger,
         Optional<Function<Logger, ExecutorLogger>> executorLoggerFunc
     ) {

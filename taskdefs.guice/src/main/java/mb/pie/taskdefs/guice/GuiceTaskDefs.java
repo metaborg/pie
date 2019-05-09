@@ -20,4 +20,8 @@ public class GuiceTaskDefs implements TaskDefs {
     @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
         return taskDefs.get(id);
     }
+
+    @Override public boolean exists(String id) {
+        return taskDefs.containsKey(id);
+    }
 }
