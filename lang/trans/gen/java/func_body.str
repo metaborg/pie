@@ -378,7 +378,7 @@ rules // Interpolated string literal
 rules // Interpolated path literal
 
   p2j-exp:
-    PathLit(prefix, parts) -> $[JavaFSPath("[prefix][partsStr]")]
+    PathLit(prefix, parts) -> $[Paths.get("[prefix][partsStr]")]
     with
       partsStr := <map(p2j-strpart); concat-strings> parts
 
@@ -390,7 +390,9 @@ rules // Interpolated path literal
     with
       refExpStr := <try-p2j-exp> refExp
 
-  p2j-strpart:
-    PathInterpExp(exp) -> $[${[expStr]}]
-    with
-      expStr := <try-p2j-exp> exp
+//  This is probably a duplicate of the rule above, if so:
+//  todo: remove this rule
+//  p2j-strpart:
+//    PathInterpExp(exp) -> $[${[expStr]}]
+//    with
+//      expStr := <try-p2j-exp> exp
