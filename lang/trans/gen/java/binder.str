@@ -18,6 +18,9 @@ rules
     TupleBinder(binds) -> $[([bindStr])]
     with
       bindStr := <map(p2j-bind); pie-sep-comma; concat-strings> binds
+      // todo: change `pie-sep-comma; concat-strings` to `pie-concat-comma`
+      // Note: not an equivalent change, first need to figure out if removing
+      //       empty strings can be done without causing problems
 
   p2j-bind: Bind(varId)      -> $[[varId]]
   p2j-bind: TBind(varId, ty) -> $[[varId] : [[<p2j-type-sig> ty]]]
