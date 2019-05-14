@@ -15,7 +15,7 @@ imports
 
 rules
 
-  p2j-type-sig: UnitTy() -> "Unit"
+  p2j-type-sig: UnitTy() -> "Void"
   p2j-type-sig: BoolTy() -> "Boolean"
   p2j-type-sig: IntTy()  -> "Integer"
   p2j-type-sig: StrTy()  -> "String"
