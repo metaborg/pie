@@ -81,3 +81,7 @@ rules
 rules
 
   pie-sanitize-class-id = string-replace(|"-", "_")
+  
+rules
+
+  error(|message) = debug(|message); fail
