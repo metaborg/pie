@@ -52,16 +52,16 @@ import java.util.stream.Stream;
 
 [classes]
 
-class TaskDefsModule_[mod] extends TaskDefsModule {
+class TaskDefsModule_[<pie-sanitize-class-id> mod] extends TaskDefsModule {
   @Override
   protected void bindTaskDefs() {
-    bindTaskDefs(binder);
+    bindTaskDefs(getBinder());
   }
   
-  protected bindTaskDefs(MapBinder<String, TaskDef<?, ?>> taskDefsBinder) {
+  protected void bindTaskDefs(Binder taskDefsBinder) {
     [bindings]
   }
   
-  // last cache update: 2019-05-21 21:49
+  // last cache update: 2019-05-22 00:35
 }
 ]

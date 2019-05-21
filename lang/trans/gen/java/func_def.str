@@ -29,7 +29,7 @@ rules // PIE function definitions
     ; emptyReturn  := <?UnitTy(); !"return null" <+ !""> type
    |}
     with
-      rules(ModuleBindings :+= $[bindTaskDef<[className]>(taskDefsBinder, "[className]");])
+      rules(ModuleBindings :+= $[bindTaskDef([className].class, "[className]");])
     with
       str := 
 $[class [className] implements TaskDef<[inputName], [outputName]> {
