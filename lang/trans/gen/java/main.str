@@ -25,13 +25,12 @@ rules
     {| AstAnalysis, ModuleBindings:
     <pie-set-ast-analysis> defs
       
-    ; classes      := "" // <filter(p2j-def)> defs
+    ; classes      := <filter(p2j-def)> defs
     ; bindings     := <bagof-ModuleBindings; pie-concat-nl>
-    ; bindingStmts := "" // todo: map from bindings
     |}
     with
       str := 
-$[// This file was generated from Pie source file [mod].
+$[// This file was generated from Pie source file [mod].pie.
 
 [classes]
 
@@ -42,7 +41,9 @@ class TaskDefsModule_[mod] extends TaskDefsModule {
   }
   
   protected bindTaskDefs(MapBinder<String, TaskDef<?, ?>> taskDefsBinder) {
-    [bindingStmts]
+    [bindings]
   }
+  
+  // last cache update: 2019-05-21 13:44
 }
 ]

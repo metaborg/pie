@@ -26,29 +26,43 @@ rules // PIE function definitions
     ; execImpl     := <p2j-pie-func-impl-body> body
     ; keyImpl      := <p2j-pie-func-key-body> optKeyBody
     ; injectValues := <bagof-InjectValues; make-set; pie-concat-commanl>
-    ; emptyReturn  := <?UnitTy(); !"return Unit.instance" <+ !""> type
+    ; emptyReturn  := <?UnitTy(); !"return null" <+ !""> type
    |}
     with
       rules(ModuleBindings :+= $[bindTaskDef<[className]>(taskDefsBinder, "[className]")])
     with
       str := 
-$[class [className] @Inject constructor(
-  [injectValues]
-) : TaskDef<[inputName], [outputName]> {
-  companion object {
-    const val id = "[className]"
+$[class [className] extends TaskDef<[inputName], [outputName]> {
+  @Inject
+  [className](
+    [injectValues]
+  ) { }
+  private static final String _id = "[className]";
+  
+  [inputDataClass]
+  [outputDataClass]
+  
+  final String getId() {
+    return _id;
   }
-  [inputDataClass][outputDataClass]override val id = Companion.id
-  override fun key(input: [inputName]): Key = [keyImpl]
-  override fun ExecContext.exec(input: [inputName]): [outputName] = [execImpl]
+  
+  @Override
+  Key key(input: [inputName]) {
+    [keyImpl]
+  }
+  
+  @Override
+  [outputName] exec(ExecContext execContext, input: [inputName]) {
+    [execImpl]
+  }
 }
 ]
 
   p2j-pie-func-impl-body:
     Block(exps) -> 
-$[run {
+$[{
   [restExpsStr]
-  [lastExpStr]
+  return [lastExpStr];
 }]
     with
       numExps     := <length> exps
@@ -58,7 +72,7 @@ $[run {
     ; lastExpStr  := <p2j-pie-func-impl-returnvalue> lastExp
 
   p2j-pie-func-impl-body:
-    EmptyBlock() -> "run { Unit.instance }"
+    EmptyBlock() -> "{ return null; }"
 
   p2j-pie-func-impl-body:
     exp -> <try-p2j-exp> exp

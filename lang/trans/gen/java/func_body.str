@@ -26,7 +26,7 @@ rules // Expression composition
 
   p2j-exp:
     Block(exps) -> 
-$[run {
+$[{
   [str]
 }]
     with
@@ -111,8 +111,9 @@ rules // Binding
     with
       binderStr := <p2j-binder> binder
     ; expStr    := <try-p2j-exp> exp
-    ; ty         := <pie-ast-type> e
+    ; ty         := <pie-ast-type> exp
     ; tyStr      := <p2j-type-sig> ty
+    
 
 rules // References
 
@@ -196,11 +197,11 @@ rules // PIE function calls
     with
       expStr              := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
     ; safeJavaClassId     := <string-replace(|".", "_")> javaClassId
-    ; rules(InjectValues :+= $[private val _[safeJavaClassId]: [javaClassId]])
+    ; rules(InjectValues :+= $[[javaClassId] _[safeJavaClassId]])
 
 
   p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> "None.instance"
+    exps -> "null"
     where
       0 := <length> exps
 
@@ -223,13 +224,13 @@ rules // PIE function calls
 rules // Path operations
 
   p2j-exp:
-    RequiresPath(exp, filterOpt, stamper) -> $[require([expStr], [stamperStr])]
+    RequiresPath(exp, filterOpt, stamper) -> $[execContext.require([expStr], [stamperStr])]
     with
       expStr     := <p2j-exp> exp
     ; stamperStr := <p2j-stamper> (filterOpt, stamper)
 
   p2j-exp:
-    GeneratesPath(exp, stamper) -> $[provide([expStr], [stamperStr])]
+    GeneratesPath(exp, stamper) -> $[execContext.provide([expStr], [stamperStr])]
     with
       expStr     := <p2j-exp> exp
     ; stamperStr := <p2j-stamper> (None(), stamper)
@@ -258,7 +259,7 @@ rules // Path operations
     ; matcherStr := <p2j-filter-match> filterOpt
     
   p2j-exp:
-    WalkPath(exp, filterOpt) -> $[walk([expStr], [walkerStr], [matcherStr])]
+    WalkPath(exp, filterOpt) -> $[execContext.walk([expStr], [walkerStr], [matcherStr])]
     with
       expStr                  := <p2j-exp> exp
     ; (walkerStr, matcherStr) := <p2j-filter-walk> filterOpt
@@ -338,7 +339,7 @@ rules // Early return and failure
 
 rules // Literals
 
-  p2j-exp: UnitLit()        -> $[Unit.instance]
+  p2j-exp: UnitLit()        -> $[null]
   p2j-exp: BoolLit(True())  -> $[true]
   p2j-exp: BoolLit(False()) -> $[false]
   p2j-exp: IntLit(i)        -> i
@@ -351,7 +352,7 @@ rules // Literals
       expsStr := <map(try-p2j-exp); pie-concat-comma> exps
     
   p2j-exp:
-    ListLit(exps) -> $[list([expsStr])]
+    ListLit(exps) -> $[new ArrayList<>(Arrays.asList({[expsStr]}))]
     with
       expsStr := <map(try-p2j-exp); pie-concat-comma> exps
 
@@ -366,7 +367,7 @@ rules // Interpolated string literal
     Str(chars) -> chars
 
   p2j-strpart:
-    StrInterpRef(refExp) -> $[${[refExpStr]}]
+    StrInterpRef(refExp) -> $[" + [refExpStr] + "]
     with
       refExpStr := <try-p2j-exp> refExp
 
@@ -390,9 +391,7 @@ rules // Interpolated path literal
     with
       refExpStr := <try-p2j-exp> refExp
 
-//  This is probably a duplicate of the rule above, if so:
-//  todo: remove this rule
-//  p2j-strpart:
-//    PathInterpExp(exp) -> $[${[expStr]}]
-//    with
-//      expStr := <try-p2j-exp> exp
+  p2j-strpart:
+    PathInterpExp(exp) -> $[${[expStr]}]
+    with
+      expStr := <try-p2j-exp> exp

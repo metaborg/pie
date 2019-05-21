@@ -40,13 +40,10 @@ rules
 
 
   p2j-type-sig: 
-    TupleTy(tys) -> ""
+    TupleTy(tys) -> $[Tuple[length]<[tyStr]>]
     with
-      error(|"Tuple types are not supported for Java generation")
-//    TupleTy(tys) -> $[Tuple[length]<[tyStr]>]
-//    with
-//      length := <length> tys
-//    ; tyStr  := <map(p2j-type-sig); pie-concat-comma> tys
+      length := <length> tys
+    ; tyStr  := <map(p2j-type-sig); pie-concat-comma> tys
 
   p2j-type-sig: ListTy(ty)     -> $[ArrayList<[<p2j-type-sig> ty]>]
   p2j-type-sig: NullableTy(ty) -> $[[<p2j-type-sig> ty]?]

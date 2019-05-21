@@ -23,4 +23,4 @@ rules
       //       empty strings can be done without causing problems
 
   p2j-bind: Bind(varId)      -> $[[varId]]
-  p2j-bind: TBind(varId, ty) -> $[[varId] : [[<p2j-type-sig> ty]]]
+  p2j-bind: TBind(varId, ty) -> $[[[<p2j-type-sig> ty]] [varId]]
