@@ -89,10 +89,43 @@ rules // Control flow
     ; falseExpStr := <try-p2j-exp> falseExp
 
   p2j-exp:
-    Add(lExp, rExp) -> $[[lExpStr] + [rExpStr]]
+    Add(lExp, rExp) -> result
     with
       lExpStr := <try-p2j-exp> lExp
     ; rExpStr := <try-p2j-exp> rExp
+    ; lType   := <pie-ast-type> lExp
+    ; rType   := <pie-ast-type> rExp
+    ; result  := <p2j-add(|lType, rType, lExpStr, rExpStr)> ""
+
+  p2j-add(|lType, rType, lExpStr, rExpStr):
+    _ -> $[[lExpStr] + [rExpStr]]
+    where
+      (IntTy(), IntTy()) := (lType, rType)
+
+  p2j-add(|lType, rType, lExpStr, rExpStr):
+    _ -> $[[lExpStr] + [rExpStr]]
+    where
+      (StrTy(), _) := (lType, rType)
+
+  p2j-add(|lType, rType, lExpStr, rExpStr):
+    _ -> $[[lExpStr].resolve([rExpStr])]
+    where
+      (PathTy(), PathTy()) := (lType, rType)
+
+  p2j-add(|lType, rType, lExpStr, rExpStr):
+    _ -> $[[lExpStr].resolve([rExpStr])]
+    where
+      (PathTy(), StrTy()) := (lType, rType)
+
+  p2j-add(|lType, rType, lExpStr, rExpStr):
+    _ -> $[Stream.concat(([lExpStr]).stream(), Stream.of([rExpStr])).collect(Collectors.toList())]
+    where
+      (ListTy(a), a) := (lType, rType)
+
+  p2j-add(|lType, rType, lExpStr, rExpStr):
+    _ -> $[Stream.concat(([lExpStr]).stream(), ([rExpStr]).stream()).collect(Collectors.toList())]
+    where
+      (ListTy(a), ListTy(a)) := (lType, rType)
 
 
   p2j-exp:
