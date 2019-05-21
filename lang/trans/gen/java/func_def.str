@@ -42,17 +42,17 @@ $[class [className] extends TaskDef<[inputName], [outputName]> {
   [inputDataClass]
   [outputDataClass]
   
-  final String getId() {
+  public String getId() {
     return _id;
   }
   
   @Override
-  Key key(input: [inputName]) {
+  public TaskKey key([inputName] input) {
     [keyImpl]
   }
   
   @Override
-  [outputName] exec(ExecContext execContext, input: [inputName]) {
+  public [outputName] exec(ExecContext execContext, [inputName] input) {
     [execImpl]
   }
 }
@@ -149,7 +149,7 @@ $[{
 
     
   p2j-pie-func-key-body:
-    None() -> "input"
+    None() -> "return input;"
     
   p2j-pie-func-key-body:
-    PieKeyFunc(exp) -> <try-p2j-exp> exp
+    PieKeyFunc(exp) -> $[return [<try-p2j-exp> exp];]
