@@ -132,7 +132,7 @@ rules // Control flow
     e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].stream().map([binderStr] -> {[mapExpStr]}).collect(Collectors.toList([tyStr]))]
     with
       mapExpStr  := <try-p2j-exp> mapExp
-    ; binderStr  := <p2j-binder> binder
+    ; binderStr  := <p2j-binder(|True())> binder
     ; listExpStr := <try-p2j-exp> listExp
     ; ty         := <pie-ast-type> e
     ; tyStr      := <p2j-type-sig> ty
@@ -142,7 +142,7 @@ rules // Binding
   p2j-exp:
     e@ValDec(binder, exp) -> $[final [tyStr] [binderStr] = [expStr]]
     with
-      binderStr := <p2j-binder> binder
+      binderStr := <p2j-binder(|False())> binder
     ; expStr    := <try-p2j-exp> exp
     ; ty         := <pie-ast-type> exp
     ; tyStr      := <p2j-type-sig> ty
