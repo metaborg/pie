@@ -37,9 +37,12 @@ import com.google.inject.multibindings.MapBinder;
 import mb.pie.api.ExecContext;
 import mb.pie.api.None;
 import mb.pie.api.TaskDef;
-import mb.pie.api.TaskKey;
 import mb.pie.api.stamp.resource.FileSystemStampers;
+import mb.pie.taskdefs.guice.TaskDefsModule;
+import mb.resource.fs.path.match.NoHiddenPathMatcher;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -49,7 +52,7 @@ import java.util.stream.Stream;
 
 [classes]
 
-class TaskDefsModule_[mod] implements TaskDefsModule {
+class TaskDefsModule_[mod] extends TaskDefsModule {
   @Override
   protected void bindTaskDefs() {
     bindTaskDefs(binder);
@@ -59,6 +62,6 @@ class TaskDefsModule_[mod] implements TaskDefsModule {
     [bindings]
   }
   
-  // last cache update: 2019-05-21 14:51
+  // last cache update: 2019-05-21 21:49
 }
 ]

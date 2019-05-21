@@ -32,7 +32,7 @@ rules // PIE function definitions
       rules(ModuleBindings :+= $[bindTaskDef<[className]>(taskDefsBinder, "[className]")])
     with
       str := 
-$[class [className] extends TaskDef<[inputName], [outputName]> {
+$[class [className] implements TaskDef<[inputName], [outputName]> {
   @Inject
   [className](
     [injectValues]
@@ -40,6 +40,7 @@ $[class [className] extends TaskDef<[inputName], [outputName]> {
   private static final String _id = "[className]";
   
   [inputDataClass]
+  
   [outputDataClass]
   
   public String getId() {
@@ -47,12 +48,12 @@ $[class [className] extends TaskDef<[inputName], [outputName]> {
   }
   
   @Override
-  public TaskKey key([inputName] input) {
+  public Serializable key([inputName] input) throws IOException {
     [keyImpl]
   }
   
   @Override
-  public [outputName] exec(ExecContext execContext, [inputName] input) {
+  public [outputName] exec(ExecContext execContext, [inputName] input) throws IOException {
     [execImpl]
   }
 }
