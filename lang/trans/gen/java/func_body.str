@@ -129,7 +129,7 @@ rules // Control flow
 
 
   p2j-exp:
-    e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].stream().map([tmpVar] -> {[assignmentsStr]["\n"][mapExpStr];}).collect(Collectors.toList())]
+    e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].stream().map([tmpVar] -> {[assignmentsStr]["\n"]return [mapExpStr];}).collect(Collectors.toList())]
     with
       listExpStr            := <try-p2j-exp> listExp
     ; tmpVar                := <newname> "tmpVar"
