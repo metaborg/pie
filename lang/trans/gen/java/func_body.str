@@ -136,7 +136,10 @@ rules // Control flow
     ; ListTy(listExpElemTy)   := listExpTy
     ; mapExpStr               := <try-p2j-exp> mapExp
     ; (varId, assignmentsStr) := <bind-tuples-to-assignments> (binder, listExpElemTy)
-    ; result                  := $[[listExpStr].stream().map([varId] -> {[assignmentsStr]["\n"]return [mapExpStr];}).collect(Collectors.toList())]
+    ; result                  := 
+    $[[listExpStr].stream().map(throwingLambda([varId] -> {
+      [assignmentsStr]["\n"]return [mapExpStr];
+    })).collect(Collectors.toCollection(ArrayList::new))]
 
 rules // Binding
 

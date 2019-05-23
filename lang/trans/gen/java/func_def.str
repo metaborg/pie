@@ -61,7 +61,11 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   
   @Override
   public [outputName] exec(ExecContext execContext, [inputName] input) throws Exception {
-    [execImpl]
+    try {
+      [execImpl]
+    } catch (Util.WrapperException e) {
+      throw e.getWrappedException();
+    }
   }
 }
 ]
