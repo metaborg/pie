@@ -39,12 +39,11 @@ import mb.pie.api.TaskDef;
 import mb.pie.api.stamp.resource.FileSystemStampers;
 import mb.pie.taskdefs.guice.TaskDefsModule;
 import mb.resource.fs.path.match.NoHiddenPathMatcher;
+import mb.resource.fs.FSPath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -58,6 +57,6 @@ class TaskDefsModule_[<pie-sanitize-class-id> mod] extends TaskDefsModule {
     [bindings]
   }
   
-  // last cache update: 2019-05-23 03:13
+  // last cache update: 2019-05-23 11:00
 }
 ]

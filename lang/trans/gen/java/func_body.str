@@ -441,7 +441,7 @@ rules // Interpolated string literal
 rules // Interpolated path literal
 
   p2j-exp:
-    PathLit(prefix, parts) -> $[Paths.get("[prefix][partsStr]")]
+    PathLit(prefix, parts) -> $[new FSPath("[prefix][partsStr]")]
     with
       partsStr := <map(p2j-strpart); concat-strings> parts
 

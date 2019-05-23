@@ -19,7 +19,7 @@ rules
   p2j-type-sig: BoolTy() -> "Boolean"
   p2j-type-sig: IntTy()  -> "Integer"
   p2j-type-sig: StrTy()  -> "String"
-  p2j-type-sig: PathTy() -> "Path"
+  p2j-type-sig: PathTy() -> "FSPath"
   p2j-type-sig: TopTy()  -> "Object"
 
   p2j-type-sig:
