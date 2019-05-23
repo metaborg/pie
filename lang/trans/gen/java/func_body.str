@@ -151,10 +151,7 @@ rules // Binding
   
   // bind-tuples-to-assignments: (Binder, ExpressionType) -> (varName, assignmentsStr)
   bind-tuples-to-assignments:
-    (SingleBinder(bind), _) -> result
-    with
-      varId := <p2j-bind> bind
-    ; result := (varId, "")
+    (SingleBinder(bind), _) -> (<p2j-bind> bind, "")
   
   bind-tuples-to-assignments:
     (TupleBinder(binds), expTy) -> result
