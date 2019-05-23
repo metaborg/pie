@@ -62,7 +62,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   p2j-pie-func-impl-body:
     Block(exps) -> 
 $[{
-  [restExpsStr]
+  [restExpsStr];
   return [lastExpStr];
 }]
     with
