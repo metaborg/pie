@@ -52,12 +52,24 @@ rules
 
   p2j-type-generate-dataclass(|name):
     idTypeTuples -> 
-$[data class [name]([params]) : [tupleSig] {
-  constructor(tuple: [tupleSig]): this([constructorCall])
+$[public final class [name] {
+  [fields]
+  
+  public [name]([params]) {
+    [assignments]
+  }
 }]
     with
-      paramStrs       := <map(\(typeId, ty) -> $[val [typeId] : [<p2j-type-sig> ty]]\)> idTypeTuples
-    ; params          := <pie-sep-comma; concat-strings> paramStrs
-    ; tys             := <map(Snd)> idTypeTuples
-    ; tupleSig        := <p2j-type-sig> TupleTy(tys)
-    ; constructorCall := <range; map(\i -> $[tuple.component[i]()]\); pie-concat-comma> (1, <length; inc> tys)
+      tys             := <map(Snd)> idTypeTuples
+    ; typeStrs        := <map(p2j-type-sig)> tys
+    ; idTypeStrTuples := <zip> (<map(Fst)> idTypeTuples, typeStrs)
+    ; fieldStrs       := <map(type-tuple-to-field)> idTypeStrTuples
+    ; fields          := <pie-concat-nl> fieldStrs
+    ; paramStrs       := <map(type-tuple-to-param)> idTypeStrTuples
+    ; params          := <pie-concat-commanl> paramStrs
+    ; assignmentStrs  := <map(type-tuple-to-assignment)> idTypeStrTuples
+    ; assignments     := <pie-concat-nl> assignmentStrs
+
+  type-tuple-to-field: (varId, ty) -> $[public final [ty] [varId];]
+  type-tuple-to-param: (varId, ty) -> $[[ty] [varId]]
+  type-tuple-to-assignment: (varId, ty) -> $[this.[varId] = [varId];]
