@@ -55,7 +55,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   }
   
   @Override
-  public Serializable key(@Nullable [inputName] input) throws Exception {
+  public Serializable key([inputName] input) {
     [keyImpl]
   }
   
