@@ -48,7 +48,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   }
   
   @Override
-  public Serializable key([inputName] input) throws IOException {
+  public Serializable key(@Nullable [inputName] input) throws IOException {
     [keyImpl]
   }
   

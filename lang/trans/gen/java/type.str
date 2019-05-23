@@ -52,7 +52,7 @@ rules
 
   p2j-type-generate-dataclass(|name):
     idTypeTuples -> 
-$[public final class [name] {
+$[public final class [name] implements Serializable {
   [fields]
   
   public [name]([params]) {
