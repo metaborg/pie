@@ -108,12 +108,12 @@ rules // Control flow
       (StrTy(), _) := (lType, rType)
 
   p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[[lExpStr].resolve([rExpStr])]
+    _ -> $[[lExpStr].appendRelativePath([rExpStr])]
     where
       (PathTy(), PathTy()) := (lType, rType)
 
   p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[[lExpStr].resolve([rExpStr])]
+    _ -> $[[lExpStr].appendSegment([rExpStr])]
     where
       (PathTy(), StrTy()) := (lType, rType)
 
