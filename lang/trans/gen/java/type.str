@@ -46,7 +46,7 @@ rules
     ; tyStr  := <map(p2j-type-sig); pie-concat-comma> tys
 
   p2j-type-sig: ListTy(ty)     -> $[ArrayList<[<p2j-type-sig> ty]>]
-  p2j-type-sig: NullableTy(ty) -> $[[<p2j-type-sig> ty]?]
+  p2j-type-sig: NullableTy(ty) -> $[[<p2j-type-sig> ty]]
   
 rules
 
