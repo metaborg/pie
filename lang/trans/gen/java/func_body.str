@@ -255,7 +255,7 @@ rules // PIE function calls
 
 
   p2j-exp-pie-call(|javaClassId):
-   Call(funcId, exps) -> $[require(_[safeJavaClassId], [expStr])]
+   Call(funcId, exps) -> $[execContext.require(_[safeJavaClassId], [expStr])]
     with
       expStr              := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
     ; safeJavaClassId     := <string-replace(|".", "_")> javaClassId
