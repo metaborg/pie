@@ -12,20 +12,12 @@ imports
 
 rules
 
-  p2j-binder(|includeType):
-    SingleBinder(bind) -> <p2j-bind(|includeType)> bind
-  p2j-binder(|includeType):
-    TupleBinder(binds) -> $[([bindStr])]
-    with
-      bindStr := <map(p2j-bind(|includeType)); pie-concat-comma> binds
+  p2j-binder:
+    SingleBinder(bind) -> [ <p2j-bind> bind ]
+  p2j-binder:
+    TupleBinder(binds) -> <map(p2j-bind)> binds
 
-  p2j-bind(|includeType):
-    Bind(varId) -> $[[varId]]
-  p2j-bind(|includeType):
-    TBind(varId, ty) -> $[[[<p2j-type-sig> ty]] [varId]]
-    where
-      True() := includeType
-  p2j-bind(|includeType):
-    TBind(varId, ty) -> $[[varId]]
-    where
-      False() := includeType
+  p2j-bind:
+    Bind(varId) -> varId
+  p2j-bind:
+    TBind(varId, ty) -> varId

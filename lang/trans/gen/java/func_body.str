@@ -129,24 +129,53 @@ rules // Control flow
 
 
   p2j-exp:
-    e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].stream().map([binderStr] -> {[mapExpStr]}).collect(Collectors.toList([tyStr]))]
+    e@ListComprehension(mapExp, binder, listExp) -> $[[listExpStr].stream().map([tmpVar] -> {[assignmentsStr]["\n"][mapExpStr];}).collect(Collectors.toList())]
     with
-      mapExpStr  := <try-p2j-exp> mapExp
-    ; binderStr  := <p2j-binder(|True())> binder
-    ; listExpStr := <try-p2j-exp> listExp
-    ; ty         := <pie-ast-type> e
-    ; tyStr      := <p2j-type-sig> ty
+      listExpStr            := <try-p2j-exp> listExp
+    ; tmpVar                := <newname> "tmpVar"
+    ; idList                := <p2j-binder> binder
+    ; listExpTy             := <pie-ast-type> listExp
+    ; ListTy(listExpElemTy) := listExpTy
+    ; typeList              := <type-to-typeList(|binder)> listExpElemTy
+    ; typeStrList           := <map(p2j-type-sig)> typeList
+    ; bindList              := <zip> (idList, typeStrList)
+    ; assignments           := <nmap-par(bind-tuple-to-string | 1, tmpVar)> bindList
+    ; assignmentsStr        := <pie-concat-nl> assignments
+    ; mapExpStr             := <try-p2j-exp> mapExp
+
+
+  // nmap that passes an extra parameter to the strategy
+  nmap-par(s : Int * c * a -> b | i, par) =
+    ?[] + [s(|i,par) | nmap-par(s | <inc> i, par)]
 
 rules // Binding
 
   p2j-exp:
-    e@ValDec(binder, exp) -> $[final [tyStr] [binderStr] = [expStr]]
+    e@ValDec(binder, exp) -> $[final [expTyStr] [tmpVar] = [expStr];["\n"][assignmentsStr]]
     with
-      binderStr := <p2j-binder(|False())> binder
-    ; expStr    := <try-p2j-exp> exp
-    ; ty         := <pie-ast-type> exp
-    ; tyStr      := <p2j-type-sig> ty
-    
+      expTy          := <pie-ast-type> exp
+    ; expTyStr       := <p2j-type-sig> expTy
+    ; tmpVar         := <newname> "tmpVar"
+    ; expStr         := <try-p2j-exp> exp
+    ; idList         := <p2j-binder> binder
+    ; typeList       := <type-to-typeList(|binder)> expTy
+    ; typeStrList    := <map(p2j-type-sig)> typeList
+    ; bindList       := <zip> (idList, typeStrList)
+    ; assignments    := <nmap-par(bind-tuple-to-string | 1, tmpVar)> bindList
+    ; assignmentsStr := <pie-concat-nl> assignments
+  
+  type-to-typeList(|binder):
+    TupleTy(typeList) -> typeList
+    where
+      <?TupleBinder(_)> binder
+      
+  type-to-typeList(|binder):
+    ty -> [ ty ]
+    where
+      <not(?TupleTy(_))> ty <+ <?SingleBinder(_)> binder
+  
+  bind-tuple-to-string(|i, tmpVar):
+    (varId, tyStr) -> $[final [tyStr] [varId] = [tmpVar].component[i]();]
 
 rules // References
 
