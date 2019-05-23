@@ -425,8 +425,11 @@ rules // Interpolated string literal
     with
       partsStr := <map(p2j-strpart); concat-strings> parts
 
+  // Replace all escaped \$ with $. Note: "\\$" because the \ needs to be escaped in stratego.
+  // todo: Check if simply replacing is fine, or if it is possible that it is actually a $,
+  // e.g. "\\$foo" should evaluate to "\<valueOfFoo>"
   p2j-strpart:
-    Str(chars) -> chars
+    Str(chars) -> <string-replace(|"\\$", "$")> chars
 
   p2j-strpart:
     StrInterpRef(refExp) -> $[" + [refExpStr] + "]
@@ -434,7 +437,7 @@ rules // Interpolated string literal
       refExpStr := <try-p2j-exp> refExp
 
   p2j-strpart:
-    StrInterpExp(exp) -> $[${[expStr]}]
+    StrInterpExp(exp) -> $[" + [expStr] + "]
     with
       expStr := <try-p2j-exp> exp
 
