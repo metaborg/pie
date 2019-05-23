@@ -131,69 +131,42 @@ rules // Control flow
   p2j-exp:
     e@ListComprehension(mapExp, binder, listExp) -> result
     with
-      <debug(|"begin ListComprehension: ")> e
-    ; listExpStr              := <try-p2j-exp> listExp
-    ; <debug(|"  listExpStr: ")> listExpStr
+      listExpStr              := <try-p2j-exp> listExp
     ; listExpTy               := <pie-ast-type> listExp
-    ; <debug(|"  listExpTy: ")> listExpTy
     ; ListTy(listExpElemTy)   := listExpTy
-    ; <debug(|"  listExpElemTy: ")> listExpElemTy
     ; mapExpStr               := <try-p2j-exp> mapExp
-    ; <debug(|"  mapExpStr: ")> mapExpStr
     ; (varId, assignmentsStr) := <bind-tuples-to-assignments> (binder, listExpElemTy)
-    ; <debug(|"  varId: ")> varId
-    ; <debug(|"  assignmentsStr: ")> assignmentsStr
     ; result                  := $[[listExpStr].stream().map([varId] -> {[assignmentsStr]["\n"]return [mapExpStr];}).collect(Collectors.toList())]
-    ; <debug(|"finished ListComprehension: ")> result
 
 rules // Binding
 
   p2j-exp:
     e@ValDec(binder, exp) -> result
     with
-      <debug(|"begin ValDec: ")> e
-    ; expTy                   := <pie-ast-type> exp
-    ; <debug(|"  expTy: ")> expTy
+      expTy                   := <pie-ast-type> exp
     ; expTyStr                := <p2j-type-sig> expTy
-    ; <debug(|"  expTy: ")> expTy
     ; expStr                  := <try-p2j-exp> exp
-    ; <debug(|"  expStr: ")> expStr
     ; (varId, assignmentsStr) := <bind-tuples-to-assignments> (binder, expTy)
-    ; <debug(|"  varId: ")> varId
-    ; <debug(|"  assignmentsStr: ")> assignmentsStr
     ; result                  := $[final [expTyStr] [varId] = [expStr];["\n"][assignmentsStr]]
-    ; <debug(|"finished ValDec: ")> result
   
   // bind-tuples-to-assignments: (Binder, ExpressionType) -> (varName, assignmentsStr)
   bind-tuples-to-assignments:
     (SingleBinder(bind), _) -> result
     with
-    debug(|"  begin bind-tuples-to-assignments: ")
-    ; varId := <p2j-bind> bind
-    ; <debug(|"    varId: ")> varId
+      varId := <p2j-bind> bind
     ; result := (varId, "")
-    ; <debug(|"  finished bind-tuples-to-assignments: ")> result
   
   bind-tuples-to-assignments:
     (TupleBinder(binds), expTy) -> result
     with
-    debug(|"  begin bind-tuples-to-assignments: ")
-    ; varIds := <map(p2j-bind)> binds
-    ; <debug(|"    varIds: ")> varIds
+      varIds := <map(p2j-bind)> binds
     ; TupleTy(tys) := expTy
-    ; <debug(|"    tys: ")> tys
     ; tyStrs := <map(p2j-type-sig)> tys
-    ; <debug(|"    tyStrs: ")> tyStrs
     ; bindList       := <zip> (varIds, tyStrs)
-    ; <debug(|"    bindList: ")> bindList
     ; tmpVar         := <newname> "tmpTupleVar"
-    ; <debug(|"    tmpVar: ")> tmpVar
     ; assignments    := <nmap-par(bind-tuple-to-string | 1, tmpVar)> bindList
-    ; <debug(|"    assignments: ")> assignments
     ; assignmentsStr := <pie-concat-nl> assignments
-    ; <debug(|"    assignmentsStr: ")> assignmentsStr
     ; result := (tmpVar, assignmentsStr)
-    ; <debug(|"  finished bind-tuples-to-assignments: ")> result
 
   // nmap that passes an extra parameter to the strategy
   nmap-par(s : Int * c * a -> b | i, par) =
