@@ -414,7 +414,7 @@ rules // Literals
       expsStr := <map(try-p2j-exp); pie-concat-comma> exps
     
   p2j-exp:
-    ListLit(exps) -> $[new ArrayList<>(Arrays.asList({[expsStr]}))]
+    ListLit(exps) -> $[new ArrayList<>(Arrays.asList([expsStr]))]
     with
       expsStr := <map(try-p2j-exp); pie-concat-comma> exps
 
