@@ -259,7 +259,7 @@ rules // PIE function calls
     with
       expStr              := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
     ; safeJavaClassId     := <string-replace(|".", "_")> javaClassId
-    ; rules(InjectValues :+= $[[javaClassId] _[safeJavaClassId]])
+    ; rules(InjectValues :+= ($[_[safeJavaClassId]], $[[javaClassId]]))
 
 
   p2j-exp-pie-call-inputexp(|javaClassId):

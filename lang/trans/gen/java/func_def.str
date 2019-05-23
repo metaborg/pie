@@ -23,20 +23,27 @@ rules // PIE function definitions
     {| InputKind, InjectValues:
       (inputName , inputDataClass)  := <p2j-pie-func-impl-inputsig(|className)> params
     ; (outputName, outputDataClass) := <p2j-pie-func-impl-outputsig(|className)> type
-    ; execImpl     := <p2j-pie-func-impl-body> body
-    ; keyImpl      := <p2j-pie-func-key-body> optKeyBody
-    ; injectValues := <bagof-InjectValues; make-set; pie-concat-commanl>
-    ; emptyReturn  := <?UnitTy(); !"return null" <+ !""> type
+    ; execImpl          := <p2j-pie-func-impl-body> body
+    ; keyImpl           := <p2j-pie-func-key-body> optKeyBody
+    ; injectTuples      := <bagof-InjectValues; make-set>
+    ; fields            := <map(type-tuple-to-field); pie-concat-nl> injectTuples
+    ; constructorParams := <map(type-tuple-to-param); pie-concat-commanl> injectTuples
+    ; assignments       := <map(type-tuple-to-assignment); pie-concat-nl> injectTuples
+    ; emptyReturn       := <?UnitTy(); !"return null" <+ !""> type
    |}
     with
       rules(ModuleBindings :+= $[bindTaskDef([className].class, "[className]");])
     with
       str := 
 $[class [className] implements TaskDef<[inputName], [outputName]> {
+  [fields]
+  
   @Inject
   [className](
-    [injectValues]
-  ) { }
+    [constructorParams]
+  ) {
+    [assignments]
+  }
   private static final String _id = "[className]";
   
   [inputDataClass]
@@ -48,12 +55,12 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   }
   
   @Override
-  public Serializable key(@Nullable [inputName] input) throws IOException {
+  public Serializable key(@Nullable [inputName] input) throws Exception {
     [keyImpl]
   }
   
   @Override
-  public [outputName] exec(ExecContext execContext, [inputName] input) throws IOException {
+  public [outputName] exec(ExecContext execContext, [inputName] input) throws Exception {
     [execImpl]
   }
 }

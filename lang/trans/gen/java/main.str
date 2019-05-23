@@ -42,7 +42,6 @@ import mb.resource.fs.path.match.NoHiddenPathMatcher;
 import mb.resource.fs.FSPath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,6 +56,6 @@ class TaskDefsModule_[<pie-sanitize-class-id> mod] extends TaskDefsModule {
     [bindings]
   }
   
-  // last cache update: 2019-05-23 11:00
+  // last cache update: 2019-05-23 12:03
 }
 ]
