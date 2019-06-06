@@ -319,10 +319,10 @@ rules // Path operations
     ; matcherStr := <p2j-filter-match> filterOpt
     
   p2j-exp:
-    WalkPath(exp, filterOpt) -> $[execContext.walk([expStr], [walkerStr], [matcherStr])]
+    WalkPath(exp, filterOpt) -> $[execContext.require([expStr]).walk([walkParams]).map(FSResource::getPath).collect(Collectors.toCollection(ArrayList::new))]
     with
       expStr                  := <p2j-exp> exp
-    ; (walkerStr, matcherStr) := <p2j-filter-walk> filterOpt
+    ; walkParams := <p2j-filter-walk> filterOpt
       
   p2j-filter-match:
     None() -> $[null]
@@ -348,32 +348,32 @@ rules // Path operations
       expStr := <try-p2j-exp> exp
 
   p2j-filter-walk:
-    None() -> ( $[null], $[null] )
+    None() -> $[]
   p2j-filter-walk:
-    Regex(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    Regex(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
     with
       expStr  := <try-p2j-exp> exp
-    ; matcher := $[RegexPathMatcher([expStr])]
+    ; matcher := $[new RegexPathMatcher([expStr])]
   p2j-filter-walk:
-    Pattern(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    Pattern(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
     with
       expStr := <try-p2j-exp> exp
     ; matcher := $[PatternPathMatcher([expStr])]
   p2j-filter-walk:
-    Patterns(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    Patterns(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
     with
       expStr := <try-p2j-exp> exp
-    ; matcher := $[PatternsPathMatcher([expStr])]
+    ; matcher := $[new PatternsPathMatcher([expStr])]
   p2j-filter-walk:
-    Extension(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    Extension(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
     with
       expStr := <try-p2j-exp> exp
-    ; matcher := $[ExtensionPathMatcher([expStr])]
+    ; matcher := $[new ExtensionPathMatcher([expStr])]
   p2j-filter-walk:
-    Extensions(exp) -> ( $[PathNodeWalker(NoHiddenPathMatcher.instance)], $[PathNodeMatcher([matcher])] )
+    Extensions(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
     with
       expStr := <try-p2j-exp> exp
-    ; matcher := $[ExtensionsPathMatcher([expStr])]
+    ; matcher := $[new ExtensionsPathMatcher([expStr])]
 
   p2j-exp:
     ReadPath(exp) -> $[readToString([expStr])]
