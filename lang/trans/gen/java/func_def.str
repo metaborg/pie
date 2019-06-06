@@ -23,13 +23,13 @@ rules // PIE function definitions
     {| InputKind, InjectValues:
       (inputName , inputDataClass)  := <p2j-pie-func-impl-inputsig(|className)> params
     ; (outputName, outputDataClass) := <p2j-pie-func-impl-outputsig(|className)> type
-    ; execImpl          := <p2j-pie-func-impl-body> body
+    ; execImpl          := <p2j-pie-func-impl-body(|<?UnitTy(); !False() <+ !True()> type)> body
     ; keyImpl           := <p2j-pie-func-key-body> optKeyBody
     ; injectTuples      := <bagof-InjectValues; make-set>
     ; fields            := <map(type-tuple-to-field); pie-concat-nl> injectTuples
     ; constructorParams := <map(type-tuple-to-param); pie-concat-commanl> injectTuples
     ; assignments       := <map(type-tuple-to-assignment); pie-concat-nl> injectTuples
-    ; emptyReturn       := <?UnitTy(); !"return null" <+ !""> type
+    ; emptyReturn       := <?UnitTy(); !$[["\n"]return None.instance;] <+ !$[]> type
    |}
     with
       rules(ModuleBindings :+= $[bindTaskDef([className].class, "[className]");])
@@ -63,6 +63,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   public [outputName] exec(ExecContext execContext, [inputName] input) throws Exception {
     try {
       [execImpl]
+      [emptyReturn]
     } catch (Util.WrapperException e) {
       throw e.getWrappedException();
     }
@@ -70,26 +71,31 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
 }
 ]
 
-  p2j-pie-func-impl-body:
+  p2j-pie-func-impl-body(|addReturn):
     Block(exps) -> 
-$[{
+$[
   [restExpsStr];
-  return [lastExpStr];
-}]
+  [return][lastExpStr];
+]
     with
       numExps     := <length> exps
     ; restExps    := <take(|<dec> numExps)> exps 
     ; restExpsStr := <map(try-p2j-exp); pie-sep-concat(|";\n")> restExps
     ; lastExp     := <last> exps
     ; lastExpStr  := <p2j-pie-func-impl-returnvalue> lastExp
+    ; return      := <?True(); !$[return bladiebla] <+ !$[]> addReturn
 
-  p2j-pie-func-impl-body:
-    EmptyBlock() -> "{ return null; }"
+  p2j-pie-func-impl-body(|addReturn):
+    EmptyBlock() -> $[{ [return] }]
+    with
+      return := <?True(); !$[return null;] <+ !$[]> addReturn
 
-  p2j-pie-func-impl-body:
-    exp -> <try-p2j-exp> exp
+  p2j-pie-func-impl-body(|addReturn):
+    exp -> $[{ [return] [<p2j-pie-func-impl-returnvalue> <try-p2j-exp> exp];}]
     where
       <not(?Block(_) <+ ?EmptyBlock())> exp
+    with
+      return := <?True(); !$[return ] <+ !$[]> addReturn
 
   
   p2j-pie-func-impl-returnvalue:

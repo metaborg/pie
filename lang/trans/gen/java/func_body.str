@@ -261,7 +261,7 @@ rules // PIE function calls
 
 
   p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> "null"
+    exps -> "None.instance"
     where
       0 := <length> exps
 
