@@ -5,8 +5,8 @@ import mb.pie.api.ExecException
 import mb.pie.api.stamp.resource.FileSystemStampers
 import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
-import mb.resource.fs.match.ResourceMatcher
-import mb.resource.fs.walk.ResourceWalker
+import mb.resource.hierarchical.match.ResourceMatcher
+import mb.resource.hierarchical.walk.ResourceWalker
 import java.io.IOException
 import java.util.stream.Collectors
 
