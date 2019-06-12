@@ -399,7 +399,7 @@ rules // Early return and failure
 
 rules // Literals
 
-  p2j-exp: UnitLit()        -> $[null]
+  p2j-exp: UnitLit()        -> $[None.instance]
   p2j-exp: BoolLit(True())  -> $[true]
   p2j-exp: BoolLit(False()) -> $[false]
   p2j-exp: IntLit(i)        -> i
