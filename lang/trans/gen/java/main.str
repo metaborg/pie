@@ -16,6 +16,7 @@ rules
       filename := <guarantee-extension(|"java")> file
     ; mod      := <base-filename;remove-extension> file
     ; result   := <p2j(|mod)> ast
+    ; <debug(|"Successfully transpiled file to Java: ")> file
 
 rules
 
