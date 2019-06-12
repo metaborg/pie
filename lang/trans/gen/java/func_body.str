@@ -393,7 +393,7 @@ rules // Early return and failure
       expStr := <p2j-pie-func-impl-returnvalue> exp
 
   p2j-exp:
-    Fail(exp) -> $[throw ExecException([expStr].toString())]
+    Fail(exp) -> $[throw new ExecException([expStr].toString())]
     with
       expStr := <try-p2j-exp> exp
 
