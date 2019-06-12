@@ -35,20 +35,8 @@ $[{
 rules // Unary expressions
   
   p2j-exp:
-    ToNullable(exp) -> <p2j-exp> exp
-    where
-      NullableTy(ty) := <pie-ast-type> exp
-
-  p2j-exp:
-    ToNullable(exp) -> $[[expStr] as [tySig]?]
-    with
-      ty := <pie-ast-type> exp
-    where
-      not(NullableTy(_) := ty)
-    with
-      tySig  := <p2j-type-sig> ty
-    ; expStr := <p2j-exp> exp
-
+    ToNullable(exp) -> <p2j-exp> exp // non-primitive Java types are always nullable
+  
   p2j-exp:
     ToNonNullable(exp) -> $[Objects.requireNonNull([expStr])]
     with
