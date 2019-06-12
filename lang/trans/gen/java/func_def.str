@@ -83,7 +83,7 @@ $[
     ; restExpsStr := <map(try-p2j-exp); pie-sep-concat(|";\n")> restExps
     ; lastExp     := <last> exps
     ; lastExpStr  := <p2j-pie-func-impl-returnvalue> lastExp
-    ; return      := <?True(); !$[return bladiebla] <+ !$[]> addReturn
+    ; return      := <?True(); !"return " <+ !$[]> addReturn
 
   p2j-pie-func-impl-body(|addReturn):
     EmptyBlock() -> $[{ [return] }]
