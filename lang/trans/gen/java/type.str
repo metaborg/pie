@@ -21,6 +21,7 @@ rules
   p2j-type-sig: StrTy()  -> "String"
   p2j-type-sig: PathTy() -> "FSPath"
   p2j-type-sig: TopTy()  -> "Object"
+  p2j-type-sig: NullTy()  -> "Void"
 
   p2j-type-sig:
     DataTy(occ) -> javaClassId
