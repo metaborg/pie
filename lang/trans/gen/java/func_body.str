@@ -50,7 +50,7 @@ rules // Unary expressions
     ; expStr := <p2j-exp> exp
 
   p2j-exp:
-    ToNonNullable(exp) -> $[[expStr]!!]
+    ToNonNullable(exp) -> $[Objects.requireNonNull([expStr])]
     with
       expStr := <p2j-exp> exp
 
