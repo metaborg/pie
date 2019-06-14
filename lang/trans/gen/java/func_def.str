@@ -72,18 +72,30 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
 ]
 
   p2j-pie-func-impl-body(|addReturn):
-    Block(exps) -> 
-$[
-  [restExpsStr];
-  [return][lastExpStr];
-]
+    Block(exps) -> result  
     with
-      numExps     := <length> exps
-    ; restExps    := <take(|<dec> numExps)> exps 
-    ; restExpsStr := <map(try-p2j-exp); pie-sep-concat(|";\n")> restExps
-    ; lastExp     := <last> exps
-    ; lastExpStr  := <p2j-pie-func-impl-returnvalue> lastExp
-    ; return      := <?True(); !"return " <+ !$[]> addReturn
+      debug(|"Start Block (function): ")
+    ; numExps                   := <length> exps
+    ; <debug(|"  numExps: ")> numExps
+    ; restExps                  := <take(|<dec> numExps)> exps 
+    ; <debug(|"  restExps: ")> restExps
+    ; restStmtStrs              := <map(try-p2j-exp); map(Fst); concat> restExps
+    ; <debug(|"  restStmtStrs: ")> restStmtStrs
+    ; lastExp                   := <last> exps
+    ; <debug(|"  lastExp: ")> lastExp
+    ; (lastStmtStr, lastExpStr) := <p2j-pie-func-impl-returnvalue> lastExp
+    ; <debug(|"  lastStmtStr: ")> lastStmtStr
+    ; <debug(|"  lastExpStr: ")> lastExpStr
+    ; stmtStrs                  := <concat> [restStmtStrs, lastStmtStr]
+    ; <debug(|"  stmtStrs: ")> stmtStrs
+    ; return                    := <?True(); !"return " <+ !$[]> addReturn
+    ; <debug(|"  return: ")> return
+    ; result                    :=
+      $[{
+        [stmtStrs]
+        [return][lastExpStr];
+      }]
+    ; <debug(|"End Block (function): ")> result
 
   p2j-pie-func-impl-body(|addReturn):
     EmptyBlock() -> $[{ [return] }]
@@ -91,27 +103,33 @@ $[
       return := <?True(); !$[return null;] <+ !$[]> addReturn
 
   p2j-pie-func-impl-body(|addReturn):
-    exp -> $[{ [return] [<p2j-pie-func-impl-returnvalue> <try-p2j-exp> exp];}]
+    exp -> result
     where
       <not(?Block(_) <+ ?EmptyBlock())> exp
     with
-      return := <?True(); !$[return ] <+ !$[]> addReturn
+      return                := <?True(); !"return " <+ !""> addReturn
+    ; (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; returnValue           := <p2j-pie-func-impl-returnvalue> expStr
+    ; result                := 
+      $[{
+        [expStmtStrs]
+        [return][returnValue];
+      }]
 
   
   p2j-pie-func-impl-returnvalue:
-    exp -> $[output([expStr])]
+    exp -> result
     where
       <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
     with
-      expStr := <try-p2j-exp> exp
-      
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; resultExpStr          := $[output([expStr])]
+    ; result                := (expStmtStrs, resultExpStr)
+
   p2j-pie-func-impl-returnvalue:
-    exp -> expStr
+    exp -> <try-p2j-exp> exp
     where
       <pie-ast-type; not(?TupleTy(_))> exp
-    with
-      expStr := <try-p2j-exp> exp
-
 
   p2j-pie-func-impl-inputsig(|className):
     Params(params) -> ("None", "")
@@ -170,4 +188,8 @@ $[
     None() -> "return input;"
     
   p2j-pie-func-key-body:
-    PieKeyFunc(exp) -> $[return [<try-p2j-exp> exp];]
+    PieKeyFunc(exp) -> result 
+    with
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; stmtStr               := <pie-concat-nl> expStmtStrs
+    ; result                := $[[stmtStr]["\n"]return [expStr];]

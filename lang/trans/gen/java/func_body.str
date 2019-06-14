@@ -25,36 +25,53 @@ rules
 rules // Expression composition
 
   p2j-exp:
-    Block(exps) -> 
-$[{
-  [str]
-}]
+    e@Block(exps) -> result
+      
     with
-      str := <map(try-p2j-exp); pie-sep-concat(|";\n")> exps
+      numExps                   := <length> exps
+    ; restExps                  := <take(|<dec> numExps)> exps 
+    ; restStmtStrs              := <map(try-p2j-exp); map(Fst); concat> restExps
+    ; lastExp                   := <last> exps
+    ; (lastStmtStr, lastExpStr) := <try-p2j-exp> lastExp
+    ; stmtStrs                  := <concat> [restStmtStrs, lastStmtStr]
+    ; blockResultVal            := <newname> "blockResult"
+    ; tyStr                     := <p2j-type-sig> <pie-type> e
+    ; resultStmtStrs            := [$[final [tyStr] [blockResultVal];], 
+    $[{
+      [stmtStrs]
+      [blockResultVal] = [lastExpStr];
+    }]]
+    ; result                    := (resultStmtStrs, blockResultVal)
+    ; <debug(|"End Block (expression): ")> result
 
 rules // Unary expressions
   
   p2j-exp:
-    ToNullable(exp) -> <p2j-exp> exp // non-primitive Java types are always nullable
+    ToNullable(exp) -> <try-p2j-exp> exp // non-primitive Java types are always nullable
   
   p2j-exp:
-    ToNonNullable(exp) -> $[Objects.requireNonNull([expStr])]
+    ToNonNullable(exp) -> result
     with
-      expStr := <p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; result                := (expStmtStrs, $[Objects.requireNonNull([expStr])])
 
 
   p2j-exp:
-    Not(exp) -> $[![expStr]]
+    Not(exp) -> result
     with
-      expStr := <p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; result                := (expStmtStrs, $[![expStr]])
 
 rules // Binary expressions
 
   p2j-binexp(|symbol):
-    (lExp, rExp) -> $[[lExpStr] [symbol] [rExpStr]]
+    (lExp, rExp) -> result
     with
-      lExpStr := <try-p2j-exp> lExp
-    ; rExpStr := <try-p2j-exp> rExp
+      (lStmtStrs, lExpStr) := <try-p2j-exp> lExp
+    ; (rStmtStrs, rExpStr) := <try-p2j-exp> rExp
+    ; stmtStrs             := <concat> [lStmtStrs, rStmtStrs]
+    ; expStr               := $[[lExpStr] [symbol] [rExpStr]]
+    ; result               := (stmtStrs, expStr)
   
   p2j-exp: Eq(lExp, rExp) -> <p2j-binexp(|"==")> (lExp, rExp)
   p2j-exp: Neq(lExp, rExp) -> <p2j-binexp(|"!=")> (lExp, rExp)
@@ -64,26 +81,51 @@ rules // Binary expressions
 rules // Control flow
 
   p2j-exp:
-    If(condExp, exp) -> $[if([condExpStr]) [expStr]]
+    If(condExp, branch) -> result
     with
-      condExpStr := <try-p2j-exp> condExp
-    ; expStr     := <try-p2j-exp> exp
-
+      (condStmtStrs, condExpStr) := <try-p2j-exp> condExp
+    ; (branchStmtStrs, _)        := <try-p2j-exp> branch
+    ; branchStmtStr              := <pie-concat-nl> branchStmtStrs
+    ; stmtStr                    := $[if ([condExpStr]) {[branchStmtStr]}]
+    ; stmtStrs                   := <concat> [condStmtStrs, [stmtStr]]
+    ; expStr                     := <Snd> <try-p2j-exp> UnitLit()
+    ; result                     := (stmtStrs, expStr)
+    
   p2j-exp:
-    IfElse(condExp, trueExp, falseExp) -> $[if([condExpStr]) [trueExpStr] else [falseExpStr]]
+    e@IfElse(condExp, trueExp, falseExp) -> result
     with
-      condExpStr  := <try-p2j-exp> condExp
-    ; trueExpStr  := <try-p2j-exp> trueExp
-    ; falseExpStr := <try-p2j-exp> falseExp
+      (condStmtStrs, condExpStr)   := <try-p2j-exp> condExp
+    ; (trueStmtStrs, trueExpStr)   := <try-p2j-exp> trueExp
+    ; (falseStmtStrs, falseExpStr) := <try-p2j-exp> falseExp
+    ; resultName                   := <newname> "ifResult"
+    ; trueStmtStr                  := <pie-concat-nl> trueStmtStrs
+    ; falseStmtStr                 := <pie-concat-nl> falseStmtStrs
+    ; ty                           := <pie-type> e
+    ; tyStr                        := <p2j-type-sig> ty
+    ; stmtStrs                     := <concat> [
+      condStmtStrs,
+      [
+        $[final [tyStr] [resultName];],
+        $[if ([condExpStr]) {
+          [trueStmtStr]
+          [resultName] = [trueExpStr];
+        } else {
+          [falseStmtStr]
+          [resultName] = [falseExpStr];
+        }]
+      ]]
+    ; result                       := (stmtStrs, resultName)
 
   p2j-exp:
     Add(lExp, rExp) -> result
     with
-      lExpStr := <try-p2j-exp> lExp
-    ; rExpStr := <try-p2j-exp> rExp
-    ; lType   := <pie-ast-type> lExp
-    ; rType   := <pie-ast-type> rExp
-    ; result  := <p2j-add(|lType, rType, lExpStr, rExpStr)> ""
+      (lStmtStrs, lExpStr) := <try-p2j-exp> lExp
+    ; (rStmtStrs, rExpStr) := <try-p2j-exp> rExp
+    ; stmtStrs             := <concat> [lStmtStrs, rStmtStrs]
+    ; lType                := <pie-ast-type> lExp
+    ; rType                := <pie-ast-type> rExp
+    ; expStr               := <p2j-add(|lType, rType, lExpStr, rExpStr)> ""
+    ; result               := (stmtStrs, expStr)
 
   p2j-add(|lType, rType, lExpStr, rExpStr):
     _ -> $[[lExpStr] + [rExpStr]]
@@ -119,15 +161,20 @@ rules // Control flow
   p2j-exp:
     e@ListComprehension(mapExp, binder, listExp) -> result
     with
-      listExpStr              := <try-p2j-exp> listExp
-    ; listExpTy               := <pie-ast-type> listExp
-    ; ListTy(listExpElemTy)   := listExpTy
-    ; mapExpStr               := <try-p2j-exp> mapExp
-    ; (varId, assignmentsStr) := <bind-tuples-to-assignments> (binder, listExpElemTy)
-    ; result                  := 
-    $[[listExpStr].stream().map(throwingLambda([varId] -> {
-      [assignmentsStr]["\n"]return [mapExpStr];
-    })).collect(Collectors.toCollection(ArrayList::new))]
+      (listStmtStrs, listExpStr) := <try-p2j-exp> listExp
+    ; listExpTy                  := <pie-ast-type> listExp
+    ; ListTy(listExpElemTy)      := listExpTy
+    ; (mapStmtStrs, mapExpStr)   := <try-p2j-exp> mapExp
+    ; (assignmentStrs, varId)    := <bind-tuples-to-assignments> (binder, listExpElemTy)
+    ; assignmentsStr             := <pie-concat-nl> assignmentStrs
+    ; mapStmtsStr                := <pie-concat-nl> mapStmtStrs
+    ; expStr                     := 
+      $[[listExpStr].stream().map(Util.throwingLambda([varId] -> {
+        [assignmentsStr]
+        [mapStmtsStr]
+        return [mapExpStr];
+      })).collect(Collectors.toCollection(ArrayList::new))]
+    ; result                     := (listStmtStrs, expStr)
 
 rules // Binding
 
@@ -136,25 +183,29 @@ rules // Binding
     with
       expTy                   := <pie-ast-type> exp
     ; expTyStr                := <p2j-type-sig> expTy
-    ; expStr                  := <try-p2j-exp> exp
-    ; (varId, assignmentsStr) := <bind-tuples-to-assignments> (binder, expTy)
-    ; result                  := $[final [expTyStr] [varId] = [expStr];["\n"][assignmentsStr]]
+    ; (expStmtStrs, expStr)   := <try-p2j-exp> exp
+    ; (assignmentStrs, varId) := <bind-tuples-to-assignments> (binder, expTy)
+    ; stmtStrs                := <concat> [
+      expStmtStrs,
+      [$[final [expTyStr] [varId] = [expStr]]],
+      assignmentStrs]
+    ; resultExpStr            := <Snd> <try-p2j-exp> UnitLit()
+    ; result                  := (stmtStrs, resultExpStr)
   
   // bind-tuples-to-assignments: (Binder, ExpressionType) -> (varName, assignmentsStr)
   bind-tuples-to-assignments:
-    (SingleBinder(bind), _) -> (<p2j-bind> bind, "")
+    (SingleBinder(bind), _) -> ("", <p2j-bind> bind)
   
   bind-tuples-to-assignments:
     (TupleBinder(binds), expTy) -> result
     with
-      varIds := <map(p2j-bind)> binds
-    ; TupleTy(tys) := expTy
-    ; tyStrs := <map(p2j-type-sig)> tys
+      varIds         := <map(p2j-bind)> binds
+    ; TupleTy(tys)   := expTy
+    ; tyStrs         := <map(p2j-type-sig)> tys
     ; bindList       := <zip> (varIds, tyStrs)
     ; tmpVar         := <newname> "tmpTupleVar"
-    ; assignments    := <nmap-par(bind-tuple-to-string | 1, tmpVar)> bindList
-    ; assignmentsStr := <pie-concat-nl> assignments
-    ; result := (tmpVar, assignmentsStr)
+    ; assignmentStrs := <nmap-par(bind-tuple-to-string | 1, tmpVar)> bindList
+    ; result         := (assignmentStrs, tmpVar)
 
   // nmap that passes an extra parameter to the strategy
   nmap-par(s : Int * c * a -> b | i, par) =
@@ -166,7 +217,7 @@ rules // Binding
 rules // References
 
   p2j-exp:
-    r@Ref(varId) -> <p2j-ref-add-transient-val(|varId)> r 
+    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|varId)> r)
     where
       LocalVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
   
@@ -177,13 +228,13 @@ rules // References
     ; 0 := <InputKind>
       
   p2j-exp: 
-    r@Ref(varId) -> <p2j-ref-add-transient-val(|"input")> r
+    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|"input")> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 1 := <InputKind>
       
   p2j-exp: 
-    r@Ref(varId) -> <p2j-ref-add-transient-val(|$[input.[varId]])> r
+    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|$[input.[varId]])> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 2 := <InputKind>
@@ -207,21 +258,29 @@ rules // References
 rules // Java foreign function calls
 
   p2j-exp:
-    Call(funcId, exps) -> $[[javaClassId].[javaMethodId]([expStr])]
+    Call(funcId, exps) -> result
     where
       JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
-      javaClassId  := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
-    ; javaMethodId := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
-    ; expStr       := <map(try-p2j-exp); pie-concat-comma> exps
+      javaClassId               := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+    ; javaMethodId              := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
+    ; (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
+    ; stmtStrs                  := <concat> expsStmtsStrs
+    ; expsStr                   := <pie-concat-comma> expsStrs
+    ; expStr                    := $[[javaClassId].[javaMethodId]([expsStr])]
+    ; result                    := (stmtStrs, expStr)
 
 rules // Qualified function calls
 
   p2j-exp: 
-    QCall(exp, funcId, argsExps) -> $[[expStr].[funcId]([argsExpStr])]
+    QCall(exp, funcId, argExps) -> result
     with
-      argsExpStr := <map(try-p2j-exp); pie-concat-comma> argsExps
-    ; expStr     := <try-p2j-exp> exp
+      (expStmtStrs, expStr)           := <try-p2j-exp> exp
+    ; (argExpsStmtsStrs, argExpsStrs) := <unzip> <map(try-p2j-exp)> argExps
+    ; stmtStrs                        := <concat> [expStmtStrs, <concat> argExpsStmtsStrs]
+    ; argExpsStr                      := <pie-concat-comma> argExpsStrs
+    ; resultExpStr                    := $[[expStr].[funcId]([argExpsStr])]
+    ; result                          := (stmtStrs, resultExpStr)
 
 rules // PIE function calls
   
@@ -241,208 +300,248 @@ rules // PIE function calls
 
 
   p2j-exp-pie-call(|javaClassId):
-   Call(funcId, exps) -> $[execContext.require(_[safeJavaClassId], [expStr])]
+   Call(funcId, exps) -> result
     with
-      expStr              := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
-    ; safeJavaClassId     := <string-replace(|".", "_")> javaClassId
+      (expStmtStrs, expStr) := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
+    ; safeJavaClassId       := <string-replace(|".", "_")> javaClassId
+    ; resultExpStr          := $[execContext.require(_[safeJavaClassId], [expStr])]
+    ; result                := (expStmtStrs, resultExpStr)
     ; rules(InjectValues :+= ($[_[safeJavaClassId]], $[[javaClassId]]))
 
 
   p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> "None.instance"
+    exps -> <try-p2j-exp> UnitLit()
     where
       0 := <length> exps
 
   p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> expStr
+    exps -> result
     where
       1 := <length> exps
     with
       [exp]  := exps
-    ; expStr := <try-p2j-exp> exp
+    ; result := <try-p2j-exp> exp
     
   p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> $[new [javaClassId].Input([expStr])]
+    exps -> result // $[new [javaClassId].Input([expStr])]
     where
       length := <length> exps
     ; <gt> (length, 1)
     with
-      expStr := <map(try-p2j-exp); pie-concat-comma> exps
+      (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
+    ; stmtStrs                   := <concat> expsStmtsStrs
+    ; expsStr                   := <pie-concat-comma> expsStrs
+    ; expStr                    := $[new [javaClassId].Input([expsStr])]
+    ; result                    := (stmtStrs, expStr)
 
 rules // Path operations
 
   p2j-exp:
-    RequiresPath(exp, filterOpt, stamper) -> $[execContext.require([expStr], [stamperStr])]
+    RequiresPath(exp, filterOpt, stamper) -> result
     with
-      expStr     := <p2j-exp> exp
-    ; stamperStr := <p2j-stamper> (filterOpt, stamper)
+      (expStmtStrs, expStr)         := <p2j-exp> exp
+    ; (stamperStmtStrs, stamperStr) := <p2j-stamper> (filterOpt, stamper)
+    ; resultExpStr                  := $[execContext.require([expStr], [stamperStr])]
+    ; stmtStrs                      := <concat> [expStmtStrs, stamperStmtStrs]
+    ; result                        := (stmtStrs, resultExpStr)
 
   p2j-exp:
-    GeneratesPath(exp, stamper) -> $[execContext.provide([expStr], [stamperStr])]
+    GeneratesPath(exp, stamper) -> result
     with
-      expStr     := <p2j-exp> exp
-    ; stamperStr := <p2j-stamper> (None(), stamper)
+      (expStmtStrs, expStr)         := <p2j-exp> exp
+    ; (stamperStmtStrs, stamperStr) := <p2j-stamper> (None(), stamper)
+    ; resultExpStr                  := $[execContext.provide([expStr], [stamperStr])]
+    ; stmtStrs                      := <concat> [expStmtStrs, stamperStmtStrs]
+    ; result                        := (stmtStrs, resultExpStr)
   
   p2j-stamper:
-    (None(), Modified()) -> "FileSystemStampers.modified()"
+    (None(), Modified()) -> ([], "FileSystemStampers.modified()")
   p2j-stamper:
-    (None(), Hash()    ) -> "FileSystemStampers.hash()"
+    (None(), Hash()    ) -> ([], "FileSystemStampers.hash()")
   p2j-stamper:
-    (filter, Modified()) -> $[FileSystemStampers.modified([filterStr])]
+    (filter, Modified()) -> result
     where
       <not(?None())> filter
     with
-      filterStr := <p2j-filter-match> filter
-  p2j-stamper:
-    (filter, Hash()) -> $[FileSystemStampers.hash([filterStr])]
-    where
-      <not(?None())> filter
-    with
-      filterStr := <p2j-filter-match> filter
-
-  p2j-exp:
-    ListPath(exp, filterOpt) -> $[list([expStr], [matcherStr])]
-    with
-      expStr     := <p2j-exp> exp
-    ; matcherStr := <p2j-filter-match> filterOpt
-    
-  p2j-exp:
-    WalkPath(exp, filterOpt) -> $[execContext.require([expStr]).walk([walkParams]).map(FSResource::getPath).collect(Collectors.toCollection(ArrayList::new))]
-    with
-      expStr                  := <p2j-exp> exp
-    ; walkParams := <p2j-filter-walk> filterOpt
+      (stmtStrs, filterStr) := <p2j-filter> filter
+    ; expStr                := $[FileSystemStampers.modified([filterStr])]
+    ; result                := (stmtStrs, expStr)
       
-  p2j-filter-match:
-    None() -> $[null]
-  p2j-filter-match:
-    Regex(exp) -> $[PathNodeMatcher(RegexPathMatcher([expStr]))]
+  p2j-stamper:
+    (filter, Hash()) -> result
+    where
+      <not(?None())> filter
     with
-      expStr := <try-p2j-exp> exp
-  p2j-filter-match:
-    Pattern(exp) -> $[PathNodeMatcher(PatternPathMatcher([expStr]))]
-    with
-      expStr := <try-p2j-exp> exp
-  p2j-filter-match:
-    Patterns(exp) -> $[PathNodeMatcher(PatternsPathMatcher([expStr]))]
-    with
-      expStr := <try-p2j-exp> exp
-  p2j-filter-match:
-    Extension(exp)  -> $[PathNodeMatcher(ExtensionPathMatcher([expStr]))]
-    with
-      expStr := <try-p2j-exp> exp
-  p2j-filter-match:
-    Extensions(exp)  -> $[PathNodeMatcher(ExtensionsPathMatcher([expStr]))]
-    with
-      expStr := <try-p2j-exp> exp
-
-  p2j-filter-walk:
-    None() -> $[]
-  p2j-filter-walk:
-    Regex(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
-    with
-      expStr  := <try-p2j-exp> exp
-    ; matcher := $[new RegexPathMatcher([expStr])]
-  p2j-filter-walk:
-    Pattern(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
-    with
-      expStr := <try-p2j-exp> exp
-    ; matcher := $[PatternPathMatcher([expStr])]
-  p2j-filter-walk:
-    Patterns(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
-    with
-      expStr := <try-p2j-exp> exp
-    ; matcher := $[new PatternsPathMatcher([expStr])]
-  p2j-filter-walk:
-    Extension(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
-    with
-      expStr := <try-p2j-exp> exp
-    ; matcher := $[new ExtensionPathMatcher([expStr])]
-  p2j-filter-walk:
-    Extensions(exp) -> $[new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher])]
-    with
-      expStr := <try-p2j-exp> exp
-    ; matcher := $[new ExtensionsPathMatcher([expStr])]
+      (stmtStrs, filterStr) := <p2j-filter> filter
+    ; expStr                := $[FileSystemStampers.hash([filterStr])]
+    ; result                := (stmtStrs, expStr)
 
   p2j-exp:
-    ReadPath(exp) -> $[readToString([expStr])]
+    ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (exp, filterOpt)
+  p2j-exp:
+    WalkPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (exp, filterOpt)
+
+  p2j-dir(s):
+    (exp, filterOpt) -> result
+    with
+      (expStmtStrs, expStr) := <p2j-exp> exp
+    ; func                  := <s> filterOpt
+    ; resultExpStr          := 
+      $[execContext.require([expStr]).[func])
+        .map(FSResource::getPath)
+        .collect(Collectors.toCollection(ArrayList::new))]
+    ; result                := (expStmtStrs, resultExpStr)
+
+  p2j-filter-list:
+    None() -> ([], $[list()])
+  p2j-filter-list:
+    matcher -> <p2j-filter> matcher
+    where
+      <not(?None())> matcher
+  
+  p2j-filter-walk:
+    None() -> ([], $[walk()])
+  p2j-filter-walk:
+    matcherExp -> result
+    where
+      <not(?None())> matcherExp
+    with
+      (stmtStrs, matcher) := <p2j-filter> matcherExp
+    ; expStr              := $[walk(new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher]))]
+    ; result              := (stmtStrs, expStr)
+
+  p2j-filter:
+    None() -> ([], "")
+  p2j-filter:
+    Regex(exp) -> <p2j-filter-common> ("RegexPathMatcher", exp)
+  p2j-filter:
+    Pattern(exp) -> <p2j-filter-common> ("PatternPathMatcher", exp)
+  p2j-filter:
+    Patterns(exp) -> <p2j-filter-common> ("PatternsPathMatcher", exp)
+  p2j-filter:
+    Extension(exp) -> <p2j-filter-common> ("ExtensionPathMatcher", exp)
+  p2j-filter:
+    Extensions(exp) -> <p2j-filter-common> ("ExtensionsPathMatcher", exp)
+
+  p2j-filter-common:
+    (matcher, exp) -> result
+    with
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; resultExpStr          := $[new PathResourceMatcher(new [matcher]([expStr]))]
+    ; result                := (expStmtStrs, resultExpStr)
+
+
+  p2j-exp:
+    ReadPath(exp) -> $[Util.readToString([expStr])]
     with
       expStr := <p2j-exp> exp
       
   p2j-exp:
-    ExistsPath(exp) -> $[exists([expStr])]
+    ExistsPath(exp) -> result
     with
-      expStr := <p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; resultExpStr          := $[Files.exists([expStr].getJavaPath())]
+    ; result                := (expStmtStrs, resultExpStr)
 
 rules // Early return and failure
 
   p2j-exp:
-    Return(exp) -> $[return [expStr]]
+    Return(exp) -> result
     with
-      expStr := <p2j-pie-func-impl-returnvalue> exp
+      (expStmtStrs, expStr) := <p2j-pie-func-impl-returnvalue> exp
+    ; resultExpStr          := <Snd> <try-p2j-exp> UnitLit()
+    ; stmtStrs              := <concat> [expStmtStrs, [$[return [expStr];]]]
+    ; result                := (stmtStrs, resultExpStr)
 
   p2j-exp:
-    Fail(exp) -> $[throw new ExecException([expStr].toString())]
+    Fail(exp) -> result
     with
-      expStr := <try-p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; resultExpStr          := $[throw new ExecException([expStr].toString())]
+    ; result                := (expStmtStrs, resultExpStr)
 
 rules // Literals
 
-  p2j-exp: UnitLit()        -> $[None.instance]
-  p2j-exp: BoolLit(True())  -> $[true]
-  p2j-exp: BoolLit(False()) -> $[false]
-  p2j-exp: IntLit(i)        -> i
-  p2j-exp: NullLit()        -> $[null]
+  p2j-exp: UnitLit()        -> ([], $[None.instance])
+  p2j-exp: BoolLit(True())  -> ([], $[true])
+  p2j-exp: BoolLit(False()) -> ([], $[false])
+  p2j-exp: IntLit(i)        -> ([], i)
+  p2j-exp: NullLit()        -> ([], $[null])
 
 
   p2j-exp:
-    TupleLit(exps) -> $[tuple([expsStr])]
+    TupleLit(exps) -> result
     with
-      expsStr := <map(try-p2j-exp); pie-concat-comma> exps
+      (expsStmtStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
+    ; stmtStrs                 := <concat> expsStmtStrs
+    ; expsStr                  := <pie-concat-comma> expsStrs
+    ; expStr                   := $[tuple([expsStr])]
+    ; result                   := (stmtStrs, expStr)
     
   p2j-exp:
-    ListLit(exps) -> $[new ArrayList<>(Arrays.asList([expsStr]))]
+    ListLit(exps) -> result
     with
-      expsStr := <map(try-p2j-exp); pie-concat-comma> exps
+      (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
+    ; stmtStrs                  := <concat> expsStmtsStrs
+    ; expsStr                   := <pie-concat-comma> expsStrs
+    ; expStr                    := $[new ArrayList<>(Arrays.asList([expsStr]))]
+    ; result                    := (stmtStrs, expStr)
 
 rules // Interpolated string literal
 
   p2j-exp:
-    StrLit(parts) -> $["[partsStr]"]
+    StrLit(parts) -> result
     with
-      partsStr := <map(p2j-strpart); concat-strings> parts
+      (partsStmtsStrs, partStrs) := <unzip> <map(p2j-strpart)> parts
+    ; stmtStrs                   := <concat> partsStmtsStrs
+    ; partsStr                   := <concat-strings> partStrs
+    ; expStr                     := $["[partsStr]"]
+    ; result                     := (stmtStrs, expStr)
 
   // Replace all escaped \$ with $. Note: "\\$" because the \ needs to be escaped in stratego.
   // todo: Check if simply replacing is fine, or if it is possible that it is actually a $,
   // e.g. "\\$foo" should evaluate to "\<valueOfFoo>"
   p2j-strpart:
-    Str(chars) -> <string-replace(|"\\$", "$")> chars
+    Str(chars) -> ([], <string-replace(|"\\$", "$")> chars)
 
   p2j-strpart:
-    StrInterpRef(refExp) -> $[" + [refExpStr] + "]
+    StrInterpRef(refExp) -> result
     with
-      refExpStr := <try-p2j-exp> refExp
-
+      (refExpStmtStrs, refExpStr) := <try-p2j-exp> refExp
+    ; expStr                      := $[" + [refExpStr] + "]
+    ; result                      := (refExpStmtStrs, expStr)
+      
   p2j-strpart:
     StrInterpExp(exp) -> $[" + [expStr] + "]
     with
-      expStr := <try-p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; resultExpStr          := $[" + [expStr] + "]
+    ; result                := (expStmtStrs, resultExpStr)
 
 rules // Interpolated path literal
 
   p2j-exp:
-    PathLit(prefix, parts) -> $[new FSPath("[prefix][partsStr]")]
+    e@PathLit(prefix, parts) -> result
     with
-      partsStr := <map(p2j-strpart); concat-strings> parts
+      (partsStmtsStrs, partsStrs) := <unzip> <map(p2j-strpart)> parts
+    ; partsStr                    := <concat-strings> partsStrs
+    ; stmtStrs                    := <concat> partsStmtsStrs
+    ; expStr                      := $[new FSPath("[prefix][partsStr]")]
+    ; result                      := (stmtStrs, expStr)
 
   p2j-strpart:
-    Path(chars) -> chars
+    Path(chars) -> ([], <string-replace(|"\\$", "$")> chars)
 
   p2j-strpart:
-    PathInterpRef(refExp) -> $[${[refExpStr]}]
+    PathInterpRef(refExp) -> result
     with
-      refExpStr := <try-p2j-exp> refExp
+      (refExpStmtStrs, refExpStr) := <try-p2j-exp> refExp
+    ; expStr                      := $[" + [refExpStr] + "]
+    ; result                      := (refExpStmtStrs, expStr)
 
   p2j-strpart:
     PathInterpExp(exp) -> $[${[expStr]}]
     with
-      expStr := <try-p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; resultExpStr          := $[" + [expStr] + "]
+    ; result                := (expStmtStrs, resultExpStr)
