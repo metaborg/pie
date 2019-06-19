@@ -20,6 +20,11 @@ public interface StoreWriteTxn extends StoreReadTxn {
     void setOutput(TaskKey key, @Nullable Serializable output);
 
     /**
+     * Sets the observability status to {@code observability} of task for {@code key}.
+     */
+    void setObservability(TaskKey key, Observability observability);
+
+    /**
      * Sets the task require dependencies of task [key] to [taskRequires].
      */
     void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires);
