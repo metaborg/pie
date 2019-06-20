@@ -183,7 +183,7 @@ rules // Control flow
         listStmtStrs,
         [$[final [tyStr] [comprehensionTmpVarName] = [listExpStr].stream().map(Util.throwingLambda([varId] -> {
           [<pie-concat-nl> innerStmtStrs]
-        })).collect(Collectors.toCollection(ArrayList::new))]]
+        })).collect(Collectors.toCollection(ArrayList::new));]]
       ]
     ; result                     := (stmtStrs, comprehensionTmpVarName)
 
