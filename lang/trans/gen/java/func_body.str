@@ -413,12 +413,13 @@ rules // Path operations
     (astNode, exp, filterOpt) -> result
     with
       (expStmtStrs, expStr) := <p2j-exp> exp
-    ; func                  := <s> filterOpt
+    ; (funcStmts, funcCall)  := <s> filterOpt
     ; tyStr                 := <p2j-type-sig> <pie-type> astNode
     ; expVarName            := <newname> "dirResult"
     ; stmtStrs              := <concat> [
         expStmtStrs,
-        [$[[tyStr] [expVarName] = execContext.require([expStr]).[func])
+        funcStmts,
+        [$[[tyStr] [expVarName] = execContext.require([expStr]).[funcCall])
         .map(FSResource::getPath)
         .collect(Collectors.toCollection(ArrayList::new));]]
       ]
