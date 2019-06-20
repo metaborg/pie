@@ -23,13 +23,13 @@ rules // PIE function definitions
     {| InputKind, InjectValues:
       (inputName , inputDataClass)  := <p2j-pie-func-impl-inputsig(|className)> params
     ; (outputName, outputDataClass) := <p2j-pie-func-impl-outputsig(|className)> type
-    ; execImpl          := <p2j-pie-func-impl-body(|<?UnitTy(); !False() <+ !True()> type)> body
-    ; keyImpl           := <p2j-pie-func-key-body> optKeyBody
-    ; injectTuples      := <bagof-InjectValues; make-set>
-    ; fields            := <map(type-tuple-to-field); pie-concat-nl> injectTuples
-    ; constructorParams := <map(type-tuple-to-param); pie-concat-commanl> injectTuples
-    ; assignments       := <map(type-tuple-to-assignment); pie-concat-nl> injectTuples
-    ; emptyReturn       := <?UnitTy(); !$[["\n"]return None.instance;] <+ !$[]> type
+    ; (execStmts, execExp)          := <p2j-pie-func-impl-body> body
+    ; keyImpl                       := <p2j-pie-func-key-body> optKeyBody
+    ; injectTuples                  := <bagof-InjectValues; make-set>
+    ; fields                        := <map(type-tuple-to-field); pie-concat-nl> injectTuples
+    ; constructorParams             := <map(type-tuple-to-param); pie-concat-commanl> injectTuples
+    ; assignments                   := <map(type-tuple-to-assignment); pie-concat-nl> injectTuples
+    ; returnValue                   := <?UnitTy(); !$[None.instance] <+ !execExp> type
    |}
     with
       rules(ModuleBindings :+= $[bindTaskDef([className].class, "[className]");])
@@ -62,8 +62,8 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   @Override
   public [outputName] exec(ExecContext execContext, [inputName] input) throws Exception {
     try {
-      [execImpl]
-      [emptyReturn]
+      [<pie-concat-nl> execStmts]
+      return [returnValue];
     } catch (Util.WrapperException e) {
       throw e.getWrappedException();
     }
@@ -71,7 +71,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
 }
 ]
 
-  p2j-pie-func-impl-body(|addReturn):
+  p2j-pie-func-impl-body():
     Block(exps) -> result  
     with
       debug(|"Start Block (function): ")
@@ -88,33 +88,20 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     ; <debug(|"  lastExpStr: ")> lastExpStr
     ; stmtStrs                  := <concat> [restStmtStrs, lastStmtStr]
     ; <debug(|"  stmtStrs: ")> stmtStrs
-    ; return                    := <?True(); !$[return [lastExpStr];] <+ !$[]> addReturn
-    ; <debug(|"  return: ")> return
-    ; result                    :=
-      $[
-        [stmtStrs]
-        [return]
-      ]
+    ; result                    := (stmtStrs, lastExpStr)
     ; <debug(|"End Block (function): ")> result
 
-  p2j-pie-func-impl-body(|addReturn):
-    EmptyBlock() -> $[ [return] ]
-    with
-      return := <?True(); !$[return [<Snd> <p2j-type-sig> UnitLit()];] <+ !$[]> addReturn
+  p2j-pie-func-impl-body():
+    EmptyBlock() -> ([], <Snd> <p2j-type-sig> UnitLit())
 
-  p2j-pie-func-impl-body(|addReturn):
+  p2j-pie-func-impl-body():
     exp -> result
     where
       <not(?Block(_) <+ ?EmptyBlock())> exp
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
     ; returnValue           := <p2j-pie-func-impl-returnvalue> expStr
-    ; return                := <?True(); !$[return [returnValue];] <+ !""> addReturn
-    ; result                := 
-      $[
-        [expStmtStrs]
-        [return]
-      ]
+    ; result                := (expStmtStrs, returnValue)
 
   
   p2j-pie-func-impl-returnvalue:
