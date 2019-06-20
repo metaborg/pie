@@ -57,7 +57,7 @@ rules // Unary expressions
     ; tyStr                 := <p2j-type-sig> <pie-type> n
     ; stmStrs               := <concat> [
         expStmtStrs,
-        [$[[tyStr] [tmpVarName] = Objects.requireNonNull([expStr]);]]
+        [$[final [tyStr] [tmpVarName] = Objects.requireNonNull([expStr]);]]
       ]
     ; result                := (expStmtStrs, tmpVarName)
 
@@ -276,7 +276,7 @@ rules // Java foreign function calls
     ; expsStr                   := <pie-concat-comma> expsStrs
     ; stmtStrs                  := <concat> [
         <concat> expsStmtsStrs,
-        [$[[tyStr] [callResultName] = [javaClassId].[javaMethodId]([expsStr]);]]
+        [$[final [tyStr] [callResultName] = [javaClassId].[javaMethodId]([expsStr]);]]
       ]
     ; result                    := (stmtStrs, callResultName)
 
@@ -293,7 +293,7 @@ rules // Qualified function calls
     ; stmtStrs                        := <concat> [
         expStmtStrs, 
         <concat> argExpsStmtsStrs,
-        [$[[tyStr] [callResultName] = [expStr].[funcId]([argExpsStr]);]]
+        [$[final [tyStr] [callResultName] = [expStr].[funcId]([argExpsStr]);]]
         ]
     ; result                          := (stmtStrs, callResultName)
 
@@ -323,7 +323,7 @@ rules // PIE function calls
     ; tyStr                 := <p2j-type-sig> <pie-type> c
     ; stmtStrs              := <concat> [
         expStmtStrs,
-        [$[[tyStr] [callResultName] = execContext.require(_[safeJavaClassId], [expStr]);]]
+        [$[final [tyStr] [callResultName] = execContext.require(_[safeJavaClassId], [expStr]);]]
       ]
     ; result                := (stmtStrs, callResultName)
     ; rules(InjectValues :+= ($[_[safeJavaClassId]], $[[javaClassId]]))
@@ -419,7 +419,7 @@ rules // Path operations
     ; stmtStrs              := <concat> [
         expStmtStrs,
         funcStmts,
-        [$[[tyStr] [expVarName] = execContext.require([expStr]).[funcCall])
+        [$[final [tyStr] [expVarName] = execContext.require([expStr]).[funcCall])
         .map(FSResource::getPath)
         .collect(Collectors.toCollection(ArrayList::new));]]
       ]
@@ -472,7 +472,7 @@ rules // Path operations
     ; readResultName        := <newname> "readResult"
     ; stmtStrs              := <concat> [
         expStmtStrs,
-        [$[[tyStr] [readResultName] = Util.readToString([expStr]);]]
+        [$[final [tyStr] [readResultName] = Util.readToString([expStr]);]]
       ]
     ; result                := (stmtStrs, readResultName)
       
@@ -484,7 +484,7 @@ rules // Path operations
     ; existsResultName        := <newname> "existsResult"
     ; stmtStrs              := <concat> [
         expStmtStrs,
-        [$[[tyStr] [existsResultName] = Files.exists([expStr].getJavaPath());]]
+        [$[final [tyStr] [existsResultName] = Files.exists([expStr].getJavaPath());]]
       ]
     ; result                := (stmtStrs, existsResultName)
 
