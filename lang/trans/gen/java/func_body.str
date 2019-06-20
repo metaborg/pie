@@ -405,7 +405,7 @@ rules // Path operations
     ; result                := (stmtStrs, expStr)
 
   p2j-exp:
-    l@ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (l, exp, filterOpt)
+    l@ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-list)> (l, exp, filterOpt)
   p2j-exp:
     w@WalkPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (w, exp, filterOpt)
 
