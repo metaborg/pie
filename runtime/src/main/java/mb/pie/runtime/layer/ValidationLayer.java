@@ -138,9 +138,9 @@ public class ValidationLayer implements Layer {
             final Set<TaskKey> requirees = txn.requireesOf(resource);
             for(TaskKey requiree : requirees) {
                 if(currentTask.equals(requiree)) {
-                    // Required resource provided by itself current task.
+                    // Required resource provided by current task.
                 } else if(!BottomUpShared.hasTransitiveTaskReq(txn, requiree, currentTask)) {
-                    // Resource is provided by current task, and resource is required by task 'requiree', thus task 'requiree' must (transitively) require the current task.
+                    // Resource is provided by current task, and resource is required by task `requiree`, thus task `requiree` must (transitively) require the current task.
                     final StringBuilder sb = new StringBuilder();
                     sb.append("Hidden dependency. Cause:\n");
                     sb.append("resource\n");

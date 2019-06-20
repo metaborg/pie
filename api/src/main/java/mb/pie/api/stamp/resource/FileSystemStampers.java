@@ -1,8 +1,8 @@
 package mb.pie.api.stamp.resource;
 
 import mb.resource.fs.FSResource;
-import mb.resource.fs.match.ResourceMatcher;
-import mb.resource.fs.walk.ResourceWalker;
+import mb.resource.hierarchical.match.ResourceMatcher;
+import mb.resource.hierarchical.walk.ResourceWalker;
 
 /**
  * Common resource stampers for {@link FSResource}s.

@@ -54,5 +54,7 @@ open class ApiTestCtx(
       it.write(text.toByteArray())
       it.flush()
     }
+    // HACK: for some reason, sleeping is sometimes required for writes to the file to be picked up by reads...
+    Thread.sleep(1)
   }
 }

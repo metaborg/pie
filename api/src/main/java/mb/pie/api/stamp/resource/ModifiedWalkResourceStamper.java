@@ -2,8 +2,8 @@ package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.fs.FSResource;
-import mb.resource.fs.match.ResourceMatcher;
-import mb.resource.fs.walk.ResourceWalker;
+import mb.resource.hierarchical.match.ResourceMatcher;
+import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;

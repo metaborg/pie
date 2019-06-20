@@ -8,10 +8,6 @@ pluginManagement {
     // Required by several Gradle plugins (Maven central).
     maven("https://artifacts.metaborg.org/content/repositories/central/") // Maven central mirror.
     mavenCentral() // Maven central as backup.
-    // Required by Spoofax Gradle plugin.
-    maven("https://pluto-build.github.io/mvnrepository/")
-    maven("https://sugar-lang.github.io/mvnrepository/")
-    maven("http://nexus.usethesource.io/content/repositories/public/")
     // Get plugins from Gradle plugin portal.
     gradlePluginPortal()
   }
