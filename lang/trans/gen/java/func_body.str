@@ -589,7 +589,7 @@ rules // Interpolated path literal
     ; result                      := (refExpStmtStrs, expStr)
 
   p2j-strpart:
-    PathInterpExp(exp) -> $[${[expStr]}]
+    PathInterpExp(exp) -> ([], $[${[expStr]}])
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
     ; resultExpStr          := $[" + [expStr] + "]
