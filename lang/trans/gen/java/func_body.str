@@ -524,7 +524,7 @@ rules // Literals
       (expsStmtStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
     ; stmtStrs                 := <concat> expsStmtStrs
     ; expsStr                  := <pie-concat-comma> expsStrs
-    ; expStr                   := $[tuple([expsStr])]
+    ; expStr                   := $[Util.tuple([expsStr])]
     ; result                   := (stmtStrs, expStr)
     
   p2j-exp:
