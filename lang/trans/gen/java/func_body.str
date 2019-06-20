@@ -55,11 +55,11 @@ rules // Unary expressions
       (expStmtStrs, expStr) := <try-p2j-exp> exp
     ; tmpVarName            := <newname> "exp"
     ; tyStr                 := <p2j-type-sig> <pie-type> n
-    ; stmStrs               := <concat> [
+    ; stmtStrs              := <concat> [
         expStmtStrs,
         [$[final [tyStr] [tmpVarName] = Objects.requireNonNull([expStr]);]]
       ]
-    ; result                := (expStmtStrs, tmpVarName)
+    ; result                := (stmtStrs, tmpVarName)
 
 
   p2j-exp:
