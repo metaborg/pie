@@ -428,7 +428,7 @@ rules // Path operations
         .map(FSResource::getPath)
         .collect(Collectors.toCollection(ArrayList::new));]]
       ]
-    ; result                := (expStmtStrs, expVarName)
+    ; result                := (stmtStrs, expVarName)
 
   p2j-filter-list:
     None() -> ([], $[list()])
