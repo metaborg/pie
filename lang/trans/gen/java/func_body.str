@@ -433,9 +433,13 @@ rules // Path operations
   p2j-filter-list:
     None() -> ([], $[list()])
   p2j-filter-list:
-    matcher -> <p2j-filter> matcher
+    matcherExp -> result
     where
-      <not(?None())> matcher
+      <not(?None())> matcherExp
+    with
+      (stmtStrs, matcher) := <p2j-filter> matcherExp
+    ; expStr              := $[list(new PathResourceMatcher([matcher]))]
+    ; result              := (stmtStrs, expStr)
   
   p2j-filter-walk:
     None() -> ([], $[walk()])
@@ -465,7 +469,7 @@ rules // Path operations
     (matcher, exp) -> result
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[list(new PathResourceMatcher(new [matcher]([expStr])))]
+    ; resultExpStr          := $[new [matcher]([expStr])]
     ; result                := (expStmtStrs, resultExpStr)
 
 
