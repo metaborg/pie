@@ -50,10 +50,16 @@ rules // Unary expressions
     ToNullable(exp) -> <try-p2j-exp> exp // non-primitive Java types are always nullable
   
   p2j-exp:
-    ToNonNullable(exp) -> result
+    n@ToNonNullable(exp) -> result
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; result                := (expStmtStrs, $[Objects.requireNonNull([expStr])])
+    ; tmpVarName            := <newname> "exp"
+    ; tyStr                 := <p2j-type-sig> <pie-type> n
+    ; stmStrs               := <concat> [
+        expStmtStrs,
+        [$[[tyStr] [tmpVarName] = Objects.requireNonNull([expStr]);]]
+      ]
+    ; result                := (expStmtStrs, tmpVarName)
 
 
   p2j-exp:
@@ -258,29 +264,38 @@ rules // References
 rules // Java foreign function calls
 
   p2j-exp:
-    Call(funcId, exps) -> result
+    c@Call(funcId, exps) -> result
     where
       JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId               := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     ; javaMethodId              := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
     ; (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
-    ; stmtStrs                  := <concat> expsStmtsStrs
+    ; callResultName            := <newname> "callResult"
+    ; tyStr                     := <p2j-type-sig> <pie-type> c
     ; expsStr                   := <pie-concat-comma> expsStrs
-    ; expStr                    := $[[javaClassId].[javaMethodId]([expsStr])]
-    ; result                    := (stmtStrs, expStr)
+    ; stmtStrs                  := <concat> [
+        <concat> expsStmtsStrs,
+        [$[[tyStr] [callResultName] = [javaClassId].[javaMethodId]([expsStr]);]]
+      ]
+    ; result                    := (stmtStrs, callResultName)
 
 rules // Qualified function calls
 
   p2j-exp: 
-    QCall(exp, funcId, argExps) -> result
+    c@QCall(exp, funcId, argExps) -> result
     with
       (expStmtStrs, expStr)           := <try-p2j-exp> exp
     ; (argExpsStmtsStrs, argExpsStrs) := <unzip> <map(try-p2j-exp)> argExps
-    ; stmtStrs                        := <concat> [expStmtStrs, <concat> argExpsStmtsStrs]
     ; argExpsStr                      := <pie-concat-comma> argExpsStrs
-    ; resultExpStr                    := $[[expStr].[funcId]([argExpsStr])]
-    ; result                          := (stmtStrs, resultExpStr)
+    ; callResultName                  := <newname> "callResult"
+    ; tyStr                           := <p2j-type-sig> <pie-type> c
+    ; stmtStrs                        := <concat> [
+        expStmtStrs, 
+        <concat> argExpsStmtsStrs,
+        [$[[tyStr] [callResultName] = [expStr].[funcId]([argExpsStr]);]]
+        ]
+    ; result                          := (stmtStrs, callResultName)
 
 rules // PIE function calls
   
@@ -300,12 +315,17 @@ rules // PIE function calls
 
 
   p2j-exp-pie-call(|javaClassId):
-   Call(funcId, exps) -> result
+   c@Call(funcId, exps) -> result
     with
       (expStmtStrs, expStr) := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
     ; safeJavaClassId       := <string-replace(|".", "_")> javaClassId
-    ; resultExpStr          := $[execContext.require(_[safeJavaClassId], [expStr])]
-    ; result                := (expStmtStrs, resultExpStr)
+    ; callResultName        := <newname> "callResult"
+    ; tyStr                 := <p2j-type-sig> <pie-type> c
+    ; stmtStrs              := <concat> [
+        expStmtStrs,
+        [$[[tyStr] [callResultName] = execContext.require(_[safeJavaClassId], [expStr]);]]
+      ]
+    ; result                := (stmtStrs, callResultName)
     ; rules(InjectValues :+= ($[_[safeJavaClassId]], $[[javaClassId]]))
 
 
@@ -323,13 +343,13 @@ rules // PIE function calls
     ; result := <try-p2j-exp> exp
     
   p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> result // $[new [javaClassId].Input([expStr])]
+    exps -> result
     where
       length := <length> exps
     ; <gt> (length, 1)
     with
       (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
-    ; stmtStrs                   := <concat> expsStmtsStrs
+    ; stmtStrs                  := <concat> expsStmtsStrs
     ; expsStr                   := <pie-concat-comma> expsStrs
     ; expStr                    := $[new [javaClassId].Input([expsStr])]
     ; result                    := (stmtStrs, expStr)
@@ -337,12 +357,16 @@ rules // PIE function calls
 rules // Path operations
 
   p2j-exp:
-    RequiresPath(exp, filterOpt, stamper) -> result
+    r@RequiresPath(exp, filterOpt, stamper) -> result
     with
       (expStmtStrs, expStr)         := <p2j-exp> exp
     ; (stamperStmtStrs, stamperStr) := <p2j-stamper> (filterOpt, stamper)
-    ; resultExpStr                  := $[execContext.require([expStr], [stamperStr])]
-    ; stmtStrs                      := <concat> [expStmtStrs, stamperStmtStrs]
+    ; stmtStrs                      := <concat> [
+        expStmtStrs, 
+        stamperStmtStrs,
+        [$[execContext.require([expStr], [stamperStr]);]]
+      ]
+    ; resultExpStr                  := <Snd> <try-p2j-exp> UnitLit()
     ; result                        := (stmtStrs, resultExpStr)
 
   p2j-exp:
@@ -350,8 +374,12 @@ rules // Path operations
     with
       (expStmtStrs, expStr)         := <p2j-exp> exp
     ; (stamperStmtStrs, stamperStr) := <p2j-stamper> (None(), stamper)
-    ; resultExpStr                  := $[execContext.provide([expStr], [stamperStr])]
-    ; stmtStrs                      := <concat> [expStmtStrs, stamperStmtStrs]
+    ; stmtStrs                      := <concat> [
+        expStmtStrs, 
+        stamperStmtStrs,
+        [$[execContext.provide([expStr], [stamperStr]);]]
+      ]
+    ; resultExpStr                  := <Snd> <try-p2j-exp> UnitLit()
     ; result                        := (stmtStrs, resultExpStr)
   
   p2j-stamper:
@@ -377,20 +405,24 @@ rules // Path operations
     ; result                := (stmtStrs, expStr)
 
   p2j-exp:
-    ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (exp, filterOpt)
+    l@ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (l, exp, filterOpt)
   p2j-exp:
-    WalkPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (exp, filterOpt)
+    w@WalkPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (w, exp, filterOpt)
 
   p2j-dir(s):
-    (exp, filterOpt) -> result
+    (astNode, exp, filterOpt) -> result
     with
       (expStmtStrs, expStr) := <p2j-exp> exp
     ; func                  := <s> filterOpt
-    ; resultExpStr          := 
-      $[execContext.require([expStr]).[func])
+    ; tyStr                 := <p2j-type-sig> <pie-type> astNode
+    ; expVarName            := <newname> "dirResult"
+    ; stmtStrs              := <concat> [
+        expStmtStrs,
+        [$[[tyStr] [expVarName] = execContext.require([expStr]).[func])
         .map(FSResource::getPath)
-        .collect(Collectors.toCollection(ArrayList::new))]
-    ; result                := (expStmtStrs, resultExpStr)
+        .collect(Collectors.toCollection(ArrayList::new));]]
+      ]
+    ; result                := (expStmtStrs, expVarName)
 
   p2j-filter-list:
     None() -> ([], $[list()])
@@ -432,16 +464,28 @@ rules // Path operations
 
 
   p2j-exp:
-    ReadPath(exp) -> $[Util.readToString([expStr])]
-    with
-      expStr := <p2j-exp> exp
-      
-  p2j-exp:
-    ExistsPath(exp) -> result
+    r@ReadPath(exp) -> result
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[Files.exists([expStr].getJavaPath())]
-    ; result                := (expStmtStrs, resultExpStr)
+    ; tyStr                 := <p2j-type-sig> <pie-type> r
+    ; readResultName        := <newname> "readResult"
+    ; stmtStrs              := <concat> [
+        expStmtStrs,
+        [$[[tyStr] [readResultName] = Util.readToString([expStr]);]]
+      ]
+    ; result                := (stmtStrs, readResultName)
+      
+  p2j-exp:
+    e@ExistsPath(exp) -> result
+    with
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
+    ; tyStr                 := <p2j-type-sig> <pie-type> e
+    ; existsResultName        := <newname> "existsResult"
+    ; stmtStrs              := <concat> [
+        expStmtStrs,
+        [$[[tyStr] [existsResultName] = Files.exists([expStr].getJavaPath());]]
+      ]
+    ; result                := (stmtStrs, existsResultName)
 
 rules // Early return and failure
 
@@ -457,8 +501,12 @@ rules // Early return and failure
     Fail(exp) -> result
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[throw new ExecException([expStr].toString())]
-    ; result                := (expStmtStrs, resultExpStr)
+    ; stmtStrs              := <concat> [
+        expStmtStrs,
+        [$[throw new ExecException([expStr].toString());]]
+      ]
+    ; resultExpStr          := <Snd> <try-p2j-exp> UnitLit()
+    ; result                := (stmtStrs, resultExpStr)
 
 rules // Literals
 

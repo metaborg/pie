@@ -88,33 +88,33 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     ; <debug(|"  lastExpStr: ")> lastExpStr
     ; stmtStrs                  := <concat> [restStmtStrs, lastStmtStr]
     ; <debug(|"  stmtStrs: ")> stmtStrs
-    ; return                    := <?True(); !"return " <+ !$[]> addReturn
+    ; return                    := <?True(); !$[return [lastExpStr];] <+ !$[]> addReturn
     ; <debug(|"  return: ")> return
     ; result                    :=
-      $[{
+      $[
         [stmtStrs]
-        [return][lastExpStr];
-      }]
+        [return]
+      ]
     ; <debug(|"End Block (function): ")> result
 
   p2j-pie-func-impl-body(|addReturn):
-    EmptyBlock() -> $[{ [return] }]
+    EmptyBlock() -> $[ [return] ]
     with
-      return := <?True(); !$[return null;] <+ !$[]> addReturn
+      return := <?True(); !$[return [<Snd> <p2j-type-sig> UnitLit()];] <+ !$[]> addReturn
 
   p2j-pie-func-impl-body(|addReturn):
     exp -> result
     where
       <not(?Block(_) <+ ?EmptyBlock())> exp
     with
-      return                := <?True(); !"return " <+ !""> addReturn
-    ; (expStmtStrs, expStr) := <try-p2j-exp> exp
+      (expStmtStrs, expStr) := <try-p2j-exp> exp
     ; returnValue           := <p2j-pie-func-impl-returnvalue> expStr
+    ; return                := <?True(); !$[return [returnValue];] <+ !""> addReturn
     ; result                := 
-      $[{
+      $[
         [expStmtStrs]
-        [return][returnValue];
-      }]
+        [return]
+      ]
 
   
   p2j-pie-func-impl-returnvalue:
