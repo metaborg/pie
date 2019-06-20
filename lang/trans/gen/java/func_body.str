@@ -172,15 +172,20 @@ rules // Control flow
     ; ListTy(listExpElemTy)      := listExpTy
     ; (mapStmtStrs, mapExpStr)   := <try-p2j-exp> mapExp
     ; (assignmentStrs, varId)    := <bind-tuples-to-assignments> (binder, listExpElemTy)
-    ; assignmentsStr             := <pie-concat-nl> assignmentStrs
-    ; mapStmtsStr                := <pie-concat-nl> mapStmtStrs
-    ; expStr                     := 
-      $[[listExpStr].stream().map(Util.throwingLambda([varId] -> {
-        [assignmentsStr]
-        [mapStmtsStr]
-        return [mapExpStr];
-      })).collect(Collectors.toCollection(ArrayList::new))]
-    ; result                     := (listStmtStrs, expStr)
+    ; innerStmtStrs                   := <concat> [
+        assignmentStrs,
+        mapStmtStrs,
+        [$[return [mapExpStr];]]
+      ]
+    ; comprehensionTmpVarName     := <newname> "comprehensionResult"
+    ; tyStr                       := <p2j-type-sig> <pie-type> e
+    ; stmtStrs                    := <concat> [
+        listStmtStrs,
+        [$[final [tyStr] [comprehensionTmpVarName] = [listExpStr].stream().map(Util.throwingLambda([varId] -> {
+          [<pie-concat-nl> innerStmtStrs]
+        })).collect(Collectors.toCollection(ArrayList::new))]]
+      ]
+    ; result                     := (stmtStrs, comprehensionTmpVarName)
 
 rules // Binding
 
