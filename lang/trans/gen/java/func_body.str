@@ -424,7 +424,7 @@ rules // Path operations
     ; stmtStrs              := <concat> [
         expStmtStrs,
         funcStmts,
-        [$[final [tyStr] [expVarName] = execContext.require([expStr]).[funcCall])
+        [$[final [tyStr] [expVarName] = execContext.require([expStr]).[funcCall]
         .map(FSResource::getPath)
         .collect(Collectors.toCollection(ArrayList::new));]]
       ]
@@ -465,7 +465,7 @@ rules // Path operations
     (matcher, exp) -> result
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[new PathResourceMatcher(new [matcher]([expStr]))]
+    ; resultExpStr          := $[list(new PathResourceMatcher(new [matcher]([expStr])))]
     ; result                := (expStmtStrs, resultExpStr)
 
 
