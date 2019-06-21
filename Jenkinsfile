@@ -1,3 +1,3 @@
 @Library('metaborg.jenkins.pipeline') _
 
-gradlePipeline(gradleRefreshDependencies: true, deleteWorkspaceAfterBuild: true)
+gradlePipeline(upstreamProjects: ["metaborg/resource/develop"])
