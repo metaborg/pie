@@ -4,6 +4,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Storage read/write transaction. Must be closed after use.
@@ -43,6 +45,14 @@ public interface StoreWriteTxn extends StoreReadTxn {
      * Sets the output and dependencies for task [key] to [data].
      */
     void setData(TaskKey key, TaskData data);
+
+    /**
+     * Deletes the data of task for {@code key}.
+     *
+     * @param key Key of task to delete data for.
+     * @return deleted task require dependencies, or an empty list if none.
+     */
+    List<TaskRequireDep> deleteData(TaskKey key);
 
     /**
      * Removes all data from (drops) the store.

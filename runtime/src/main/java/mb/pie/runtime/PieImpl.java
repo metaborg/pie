@@ -17,14 +17,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieImpl implements Pie {
-    private final TaskDefs taskDefs;
-    private final ResourceService resourceService;
-    private final Store store;
-    private final Share share;
-    private final DefaultStampers defaultStampers;
-    private final BiFunction<TaskDefs, Logger, Layer> layerFactory;
-    private final Logger logger;
-    private final Function<Logger, ExecutorLogger> executorLoggerFactory;
+    // Public for testability of incrementality
+    public final TaskDefs taskDefs;
+    public final ResourceService resourceService;
+    public final Store store;
+    public final Share share;
+    public final DefaultStampers defaultStampers;
+    public final BiFunction<TaskDefs, Logger, Layer> layerFactory;
+    public final Logger logger;
+    public final Function<Logger, ExecutorLogger> executorLoggerFactory;
 
     private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks = new ConcurrentHashMap<>();
 

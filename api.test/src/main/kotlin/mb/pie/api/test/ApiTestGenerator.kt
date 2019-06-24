@@ -14,6 +14,10 @@ import java.nio.file.FileSystem
 import java.util.stream.Stream
 
 object ApiTestGenerator {
+  val defaultDefaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper())
+  val defaultDefaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
+  val defaultDefaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
+
   fun <Ctx : ApiTestCtx> generate(
     name: String,
     pieBuilderGen: () -> PieBuilder,
@@ -21,9 +25,9 @@ object ApiTestGenerator {
     storeGens: Array<(Logger) -> Store>,
     shareGens: Array<(Logger) -> Share>,
     layerGens: Array<(TaskDefs, Logger) -> Layer>,
-    defaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper()),
-    defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),
-    defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()),
+    defaultOutputStampers: Array<OutputStamper> = defaultDefaultOutputStampers,
+    defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = defaultDefaultRequireFileSystemStampers,
+    defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = defaultDefaultProvideFileSystemStampers,
     executorLoggerGen: (Logger) -> ExecutorLogger,
     logger: Logger,
     testCtxGen: (Pie, TaskDefs, FileSystem) -> Ctx,

@@ -267,12 +267,12 @@ public class BottomUpSession implements RequireTask {
         }
 
         // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
-        storedData = storedData.withTaskObservability(Observability.TransitivelyObserved);
+        storedData = storedData.withTaskObservability(Observability.ImplicitObserved);
 
         // Validate well-formedness of the dependency graph, and set task to observed.
         try(final StoreWriteTxn txn = store.writeTxn()) {
             layer.validatePostWrite(key, storedData, txn);
-            txn.setTaskObservability(key, Observability.TransitivelyObserved);
+            txn.setTaskObservability(key, Observability.ImplicitObserved);
         }
 
         // Mark task as visited.

@@ -45,7 +45,7 @@ public class TopDownSession implements RequireTask {
         final O output = require(key, task, cancel);
         try(StoreWriteTxn txn = store.writeTxn()) {
             // Set task as root observable when required initially.
-            txn.setTaskObservability(key, Observability.RootObserved);
+            txn.setTaskObservability(key, Observability.ExplicitObserved);
         }
         executorLogger.requireTopDownInitialEnd(key, task, output);
         return output;
@@ -64,11 +64,11 @@ public class TopDownSession implements RequireTask {
             if(!status.executed) {
                 if(data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
-                    data = data.withTaskObservability(Observability.TransitivelyObserved);
+                    data = data.withTaskObservability(Observability.ImplicitObserved);
                     // Validate well-formedness of the dependency graph, and set task to observed.
                     try(final StoreWriteTxn txn = store.writeTxn()) {
                         layer.validatePostWrite(key, data, txn);
-                        txn.setTaskObservability(key, Observability.TransitivelyObserved);
+                        txn.setTaskObservability(key, Observability.ImplicitObserved);
                     }
                 } else { // PERF: duplicate code to prevent creation of two transactions.
                     // Validate well-formedness of the dependency graph.

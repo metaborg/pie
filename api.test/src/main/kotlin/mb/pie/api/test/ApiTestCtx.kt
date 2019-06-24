@@ -26,6 +26,14 @@ open class ApiTestCtx(
     return FSResource(javaFs.getPath(path))
   }
 
+  fun <I : Serializable, O : Serializable?> taskDef(id: String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+    return LambdaTaskDef(id, execFunc)
+  }
+
+  fun <I : Serializable, O : Serializable?> taskDef(id: String, keyFunc: (I) -> Serializable, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+    return LambdaTaskDef(id, execFunc, keyFunc)
+  }
+
   fun <I : Serializable, O : Serializable?> taskDef(id: String, descFunc: (I, Int) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
     return LambdaTaskDef(id, execFunc, null, descFunc)
   }

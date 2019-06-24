@@ -13,15 +13,15 @@ import java.util.Set;
  * <li>
  * Top-down: given a root task to execute, check whether the task must be executed by checking its required and provided
  * resources, and by recursively checking required tasks, resulting in a top-down depth-first traversal of the
- * dependency graph. This also marks the task as a {@link Observability#RootObserved root observed} task, indicating
- * that it should be kept up-to-date in bottom-up builds.
+ * dependency graph. This also marks the task as an {@link Observability#ExplicitObserved explicitly observed} task,
+ * indicating that it, and its transitive dependencies, should be kept up-to-date in bottom-up builds.
  * </li>
  * <li>
  * Bottom-up (change-driven): given a set of changed resources, schedule all directly affected tasks in a topologically
  * sorted dependency queue, pop and execute tasks from the front of the queue until it is empty, where changed outputs
  * or provided resources of an executed task cause dependent affected tasks to be scheduled into the queue. Only tasks
- * that are observed (either {@link Observability#RootObserved root observed} or {@link Observability#TransitivelyObserved
- * transitively observed}) are considered.
+ * that are {@link Observability#ExplicitObserved explicitly observed} or {@link Observability#ImplicitObserved
+ * implicitly observed} are considered.
  * </li>
  * </ul>
  * <p>
@@ -55,8 +55,8 @@ import java.util.Set;
 public interface PieSession extends AutoCloseable {
     /**
      * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
-     * {@link Observability#RootObserved root observed}, indicating that it (and its transitive dependencies) should be
-     * kept up-to-date in bottom-up builds.
+     * {@link Observability#ExplicitObserved explicitly observed}, indicating that it (and its transitive dependencies)
+     * should be kept up-to-date in bottom-up builds.
      *
      * @param task Task to make up-to-date.
      * @return Up-to-date output of {@code task}.
@@ -66,8 +66,8 @@ public interface PieSession extends AutoCloseable {
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
-     * output. Also marks the task as {@link Observability#RootObserved root observed}, indicating that it (and its
-     * transitive dependencies) should be kept up-to-date in bottom-up builds.
+     * output. Also marks the task as {@link Observability#ExplicitObserved explicitly observed}, indicating that it
+     * (and its transitive dependencies) should be kept up-to-date in bottom-up builds.
      *
      * @param task   Task to make up-to-date.
      * @param cancel Cancel checker to use.
@@ -79,9 +79,9 @@ public interface PieSession extends AutoCloseable {
 
 
     /**
-     * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion. Only
-     * observed (either {@link Observability#RootObserved root observed} or {@link Observability#TransitivelyObserved transitively
-     * observed}) tasks are considered.
+     * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion. Only {@link
+     * Observability#ExplicitObserved explicitly observed} or {@link Observability#ImplicitObserved implicitly observed}
+     * tasks are considered.
      *
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @throws ExecException When an executing task throws an exception.
@@ -90,8 +90,8 @@ public interface PieSession extends AutoCloseable {
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
-     * {@code cancel} checker. Only observed (either {@link Observability#RootObserved root observed} or {@link
-     * Observability#TransitivelyObserved transitively observed}) tasks are considered.
+     * {@code cancel} checker. Only {@link Observability#ExplicitObserved explicitly observed} or {@link
+     * Observability#ImplicitObserved implicitly observed} tasks are considered.
      *
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @param cancel           Cancel checker to use.
@@ -102,11 +102,31 @@ public interface PieSession extends AutoCloseable {
 
 
     /**
-     * @param task
+     * Explicitly unobserves {@code task}, settings its observability status to {@link Observability#ImplicitObserved
+     * implicitly observed} if it was {@link Observability#ExplicitObserved explicitly observed} but still observed by
+     * another observed task. Otherwise, sets the observability status to {@link Observability#Unobserved unobserved}
+     * and then propagates this to required tasks. Unobserved tasks are not considered in bottom-up builds.
+     *
+     * @param task Task to unobserve.
      */
     void setUnobserved(Task<?> task);
 
+    /**
+     * Explicitly unobserves task for {@code key}, settings its observability status to {@link
+     * Observability#ImplicitObserved implicitly observed} if it was {@link Observability#ExplicitObserved explicitly
+     * observed} but still observed by another observed task. Otherwise, sets the observability status to {@link
+     * Observability#Unobserved unobserved} and then propagates this to required tasks. Unobserved tasks are not
+     * considered in bottom-up builds.
+     *
+     * @param key Key of task to unobserve.
+     */
     void setUnobserved(TaskKey key);
+
+
+    /**
+     * Deletes all {@link Observability#Unobserved unobserved} from the store.
+     */
+    void deleteUnobservedTasks();
 
 
     @Override void close();

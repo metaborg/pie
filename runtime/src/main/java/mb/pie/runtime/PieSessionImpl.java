@@ -1,14 +1,6 @@
 package mb.pie.runtime;
 
-import mb.pie.api.ExecException;
-import mb.pie.api.Observability;
-import mb.pie.api.PieSession;
-import mb.pie.api.Store;
-import mb.pie.api.StoreReadTxn;
-import mb.pie.api.StoreWriteTxn;
-import mb.pie.api.Task;
-import mb.pie.api.TaskDefs;
-import mb.pie.api.TaskKey;
+import mb.pie.api.*;
 import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.NullCancelled;
 import mb.pie.runtime.exec.BottomUpSession;
@@ -17,11 +9,15 @@ import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class PieSessionImpl implements PieSession {
+    // Public for testability of incrementality
     public final TopDownSession topDownSession;
     public final BottomUpSession bottomUpSession;
 
@@ -108,5 +104,22 @@ public class PieSessionImpl implements PieSession {
 
     @Override public void setUnobserved(Task<?> task) {
         setUnobserved(task.key());
+    }
+
+
+    @Override public void deleteUnobservedTasks() {
+        try(StoreWriteTxn txn = store.writeTxn()) {
+            final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
+            while(!tasksToDelete.isEmpty()) {
+                final TaskKey key = tasksToDelete.pop();
+                final List<TaskRequireDep> deletedTaskRequireDeps = txn.deleteData(key);
+                deletedTaskRequireDeps
+                    .stream()
+                    .filter((d) -> txn.callersOf(d.callee).isEmpty())
+                    .forEach((d) -> {
+                        tasksToDelete.add(d.callee);
+                    });
+            }
+        }
     }
 }

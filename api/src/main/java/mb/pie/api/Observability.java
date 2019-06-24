@@ -7,14 +7,14 @@ import java.io.Serializable;
  */
 public enum Observability implements Serializable {
     /**
-     * A root observed task is one that has been explicitly required by the user of the system. It is observed even if
-     * no other tasks observes it.
+     * An explicitly observed task is one that has been explicitly required by the user of the system. It is observed
+     * even if no other tasks observes it.
      */
-    RootObserved,
+    ExplicitObserved,
     /**
-     * A transitively observed task is one that is transitively observed by a {@link #RootObserved} task.
+     * An implicitly observed task is one that is transitively observed by a {@link #ExplicitObserved} task.
      */
-    TransitivelyObserved,
+    ImplicitObserved,
     /**
      * An unobserved task is one where no other task observes it. This can either occur implicitly, when a task no
      * longer requires another task, which is not observed by any other task; or explicitly, when the user of the system
@@ -24,11 +24,11 @@ public enum Observability implements Serializable {
 
 
     /**
-     * @return True when the observability status is {@link #RootObserved} or {@link #TransitivelyObserved}. False
+     * @return True when the observability status is {@link #ExplicitObserved} or {@link #ImplicitObserved}. False
      * otherwise.
      */
     public boolean isObserved() {
-        return this == RootObserved || this == TransitivelyObserved;
+        return this == ExplicitObserved || this == ImplicitObserved;
     }
 
     /**
@@ -41,7 +41,7 @@ public enum Observability implements Serializable {
 
     /**
      * Explicitly unobserves task with given {@code key}, settings its observability status to {@link
-     * Observability#TransitivelyObserved} if it was {@link Observability#RootObserved} but still observed by another
+     * Observability#ImplicitObserved} if it was {@link Observability#ExplicitObserved} but still observed by another
      * task. Otherwise, sets the observability status to {@link Observability#Unobserved} and then propagates this to
      * required tasks.
      *
@@ -51,7 +51,7 @@ public enum Observability implements Serializable {
     public static void explicitUnobserve(StoreWriteTxn txn, TaskKey key) {
         if(isObservedByCaller(txn, key)) {
             // Task is observed, therefore we cannot detach it. If the task was RootObserved, we set it to Observed.
-            txn.setTaskObservability(key, Observability.TransitivelyObserved);
+            txn.setTaskObservability(key, Observability.ImplicitObserved);
         } else {
             txn.setTaskObservability(key, Observability.Unobserved);
             for(TaskRequireDep taskRequire : txn.taskRequires(key)) {
@@ -69,8 +69,11 @@ public enum Observability implements Serializable {
      * @param key Key of the task to detach.
      */
     public static void implicitUnobserve(StoreWriteTxn txn, TaskKey key) {
-        if(txn.taskObservability(key).isUnobserved()) {
-            return; // Already detached, no need to propagate.
+        final Observability observability = txn.taskObservability(key);
+        if(observability != Observability.ImplicitObserved) {
+            // If task is already detached, there is no need to do anything.
+            // If task is explicitly observed, we may not implicitly unobserve it, so we stop.
+            return;
         }
         if(isObservedByCaller(txn, key)) {
             return; // Cannot detach, an observed task requires the task.

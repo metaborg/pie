@@ -119,7 +119,7 @@ public class TaskExecutor {
         final Observability newObservability;
         if(previousObservability.isUnobserved()) {
             // Set to observed if previously detached.
-            newObservability = Observability.TransitivelyObserved;
+            newObservability = Observability.ImplicitObserved;
         } else {
             // Copy observability otherwise, such that RootObserved -> RootObserved, and Observed -> Observed.
             newObservability = previousObservability;

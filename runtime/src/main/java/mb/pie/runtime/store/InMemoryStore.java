@@ -6,8 +6,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
     private final ConcurrentHashMap<TaskKey, Serializable> taskInputs = new ConcurrentHashMap<>();
@@ -148,6 +153,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         return new TaskData(input, output.output, taskObservability, taskRequires, resourceRequires, resourceProvides);
     }
 
+
     @Override public void setData(TaskKey key, TaskData data) {
         setInput(key, data.input);
         setOutput(key, data.output);
@@ -155,6 +161,51 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         setTaskRequires(key, data.taskRequires);
         setResourceRequires(key, data.resourceRequires);
         setResourceProvides(key, data.resourceProvides);
+    }
+
+    @Override public List<TaskRequireDep> deleteData(TaskKey key) {
+        taskInputs.remove(key);
+        taskOutputs.remove(key);
+        taskObservability.remove(key);
+
+        final @Nullable ArrayList<TaskRequireDep> removedTaskRequires = taskRequires.remove(key);
+        if(removedTaskRequires != null) {
+            for(final TaskRequireDep taskRequire : removedTaskRequires) {
+                final @Nullable Set<TaskKey> callers = callersOf.get(taskRequire.callee);
+                if(callers != null) {
+                    callers.remove(key);
+                }
+            }
+        }
+
+        final @Nullable ArrayList<ResourceRequireDep> removedResourceRequires = resourceRequires.remove(key);
+        if(removedResourceRequires != null) {
+            for(final ResourceRequireDep resourceRequire : removedResourceRequires) {
+                final @Nullable Set<TaskKey> requirees = requireesOf.get(resourceRequire.key);
+                if(requirees != null) {
+                    requirees.remove(key);
+                }
+            }
+        }
+
+        final @Nullable ArrayList<ResourceProvideDep> removedResourceProvides = resourceProvides.remove(key);
+        if(removedResourceProvides != null) {
+            for(final ResourceProvideDep resourceProvide : removedResourceProvides) {
+                providerOf.remove(resourceProvide.key);
+            }
+        }
+
+        return removedTaskRequires != null ? removedTaskRequires : Collections.emptyList();
+    }
+
+
+    @Override public Set<TaskKey> tasksWithoutCallers() {
+        return callersOf
+            .entrySet()
+            .stream()
+            .filter((e) -> e.getValue().isEmpty())
+            .map(Entry::getKey)
+            .collect(Collectors.toCollection(HashSet::new));
     }
 
 

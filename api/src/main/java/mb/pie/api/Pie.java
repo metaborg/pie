@@ -51,8 +51,8 @@ public interface Pie extends AutoCloseable {
 
 
     /**
-     * Checks whether {@code task} is observed. A task is observed when it is marked as observed by the user with {@link
-     * PieSession#setObserved(Task, boolean)}, or when a task is (transitively) required by an observed task.
+     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build) or implicitly observed
+     * (when another observed task requires it).
      *
      * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
      * @return True if task is observed, false otherwise.
@@ -60,9 +60,8 @@ public interface Pie extends AutoCloseable {
     boolean isObserved(Task<?> task);
 
     /**
-     * Checks whether task with given {@code key} is observed. A task is observed when it is marked as observed by the
-     * user with {@link PieSession#setObserved(Task, boolean)}, or when a task is (transitively) required by an observed
-     * task.
+     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or
+     * implicitly observed (when another observed task requires it).
      *
      * @param key Key of task to check.
      * @return True if task is observed, false otherwise.
@@ -105,13 +104,13 @@ public interface Pie extends AutoCloseable {
     void removeCallback(TaskKey key);
 
     /**
-     * Removes all (drops) callback functions.
+     * Removes all callback functions.
      */
     void dropCallbacks();
 
 
     /**
-     * Removes all data (drops) from the store.
+     * Removes all data from the store.
      */
     void dropStore();
 }

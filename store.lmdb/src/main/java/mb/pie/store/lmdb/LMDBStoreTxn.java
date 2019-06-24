@@ -12,6 +12,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
@@ -153,6 +154,11 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     }
 
 
+    @Override public Set<TaskKey> tasksWithoutCallers() {
+        // TODO: implement
+        throw new UnsupportedOperationException("tasksWithoutCallers has not been implemented for LMDB yet, sorry");
+    }
+
     @Override public int numSourceFiles() {
         // Cannot use requireesOfValuesDb, as these are never cleaned up at the moment. Instead use values of resourceRequiresDb.
         final HashSet<ResourceKey> requiredResources = new HashSet<>();
@@ -273,6 +279,11 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         setTaskRequires(key, data.taskRequires);
         setResourceRequires(key, data.resourceRequires);
         setResourceProvides(key, data.resourceProvides);
+    }
+
+    @Override public List<TaskRequireDep> deleteData(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("deleteData has not been implemented for LMDB yet, sorry");
     }
 
 

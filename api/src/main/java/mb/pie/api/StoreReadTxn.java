@@ -68,6 +68,11 @@ public interface StoreReadTxn extends StoreTxn {
 
 
     /**
+     * @return task keys for all tasks that have no callers.
+     */
+    Set<TaskKey> tasksWithoutCallers();
+
+    /**
      * @return number of source required resources for which there is no provider.
      */
     int numSourceFiles();
