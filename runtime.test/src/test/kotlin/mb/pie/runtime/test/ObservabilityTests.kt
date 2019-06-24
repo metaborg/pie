@@ -76,11 +76,11 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitToUnobserved() = ObservabilityTestGenerator.generate("testImplicitToUnobserved") {
+  fun testImplicitUnobserve() = ObservabilityTestGenerator.generate("testImplicitUnobserve") {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
-      session.requireTopDown(callNoopMaybeTaskDef.createTask(true))
+      session.requireTopDown(callNoopMaybeDef.createTask(true))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -90,7 +90,7 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`, making `noopTask`
       // now unobserved.
-      session.requireTopDown(callNoopMaybeTaskDef.createTask(false))
+      session.requireTopDown(callNoopMaybeDef.createTask(false))
       pie.store.readTxn().use { txn ->
         val observability = txn.taskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
@@ -102,7 +102,7 @@ internal class ObservabilityTests {
     // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true` again, making it implicitly observed again.
-      session.requireTopDown(callNoopMaybeTaskDef.createTask(true))
+      session.requireTopDown(callNoopMaybeDef.createTask(true))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -110,11 +110,11 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitObservedStays() = ObservabilityTestGenerator.generate("testExplicitObservedStays") {
+  fun testImplicitUnobserveExplicitObservedStays() = ObservabilityTestGenerator.generate("testImplicitUnobserveExplicitObservedStays") {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
-      session.requireTopDown(callNoopMaybeTaskDef.createTask(true))
+      session.requireTopDown(callNoopMaybeDef.createTask(true))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -130,11 +130,92 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`. However,
       // `noopTask` is explicitly observed, and it should stay that way.
-      session.requireTopDown(callNoopMaybeTaskDef.createTask(false))
+      session.requireTopDown(callNoopMaybeDef.createTask(false))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
     }
+  }
+
+  @TestFactory
+  fun testExplicitUnobserveRoot() = ObservabilityTestGenerator.generate("testExplicitUnobserveRoot") {
+    newSession().use { session ->
+      session.requireTopDown(callNoopTask)
+      pie.store.readTxn().use { txn ->
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+      }
+      session.setUnobserved(callNoopTask)
+      pie.store.readTxn().use { txn ->
+        // After explicitly unobserving `callNoop`, the entire spine is unobserved.
+        assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.Unobserved, txn.taskObservability(noopKey))
+      }
+    }
+  }
+
+  @TestFactory
+  fun testExplicitUnobserveLeaf() = ObservabilityTestGenerator.generate("testExplicitUnobserveLeaf") {
+    newSession().use { session ->
+      session.requireTopDown(callNoopTask)
+      pie.store.readTxn().use { txn ->
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+      }
+      session.setUnobserved(noopTask)
+      pie.store.readTxn().use { txn ->
+        // Explicitly unobserving `noop` does nothing, as it is still observed by `callNoop`.
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+      }
+    }
+  }
+
+  @TestFactory
+  fun testExplicitUnobserveBothExplicitObservedRoot() = ObservabilityTestGenerator.generate("testExplicitUnobserveBothExplicitObservedRoot") {
+    newSession().use { session ->
+      session.requireTopDown(callNoopTask)
+      session.requireTopDown(noopTask)
+      pie.store.readTxn().use { txn ->
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+      }
+      session.setUnobserved(callNoopTask)
+      pie.store.readTxn().use { txn ->
+        // After explicitly unobserving `callNoop`, only `callNoop` is unobserved, as `noop` is still explicitly observed.
+        assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+      }
+    }
+  }
+
+  @TestFactory
+  fun testExplicitUnobserveBothExplicitObservedLeaf() = ObservabilityTestGenerator.generate("testExplicitUnobserveBothExplicitObservedLeaf") {
+    newSession().use { session ->
+      session.requireTopDown(callNoopTask)
+      session.requireTopDown(noopTask)
+      pie.store.readTxn().use { txn ->
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+      }
+      session.setUnobserved(noopTask)
+      pie.store.readTxn().use { txn ->
+        // Explicitly unobserving `noop` turns it into an implicitly observed task, as `callNoop` still observes it.
+        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+      }
+    }
+  }
+
+
+  @TestFactory
+  fun testBottomUpExecutesObserved() = ObservabilityTestGenerator.generate("testBottomUpExecutesObserved") {
+    // TODO
+  }
+
+  @TestFactory
+  fun testBottomUpSkipsUnobserved() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobserved") {
+    // TODO
   }
 }
 
@@ -144,27 +225,27 @@ class ObservabilityTestCtx(
   taskDefs: MapTaskDefs,
   fs: FileSystem
 ) : RuntimeTestCtx(pieImpl, taskDefs, fs) {
-  val noopTaskDef = taskDef<None, None>("noop") { None.instance }
-  val noopTask = noopTaskDef.createTask(None.instance)
+  val noopDef = taskDef<None, None>("noop") { None.instance }
+  val noopTask = noopDef.createTask(None.instance)
   val noopKey = noopTask.key()
 
-  val callNoopTaskDef = taskDef<None, None>("callNoop") { require(noopTaskDef.createTask(None.instance)) }
-  val callNoopTask = callNoopTaskDef.createTask(None.instance)
+  val callNoopDef = taskDef<None, None>("callNoop") { require(noopDef.createTask(None.instance)) }
+  val callNoopTask = callNoopDef.createTask(None.instance)
   val callNoopKey = callNoopTask.key()
 
-  // The `callNoopMaybe` task has a key that is always `None.instance` despite its input being different. Therefore,
-  // there is only a single instance of this task. This is intended to show the same task flipping its dependencies.
-  val callNoopMaybeTaskDef = taskDef<Boolean, None>("callNoopMaybe", { _ -> None.instance }) { input ->
+  /* `callNoopMaybeDef` has a key that is always `None.instance` despite its input being different. Therefore, there is
+  only a single instance of this task. This is intended to show the same task flipping its dependencies. */
+  val callNoopMaybeDef = taskDef<Boolean, None>("callNoopMaybe", { _ -> None.instance }) { input ->
     if(input)
-      require(noopTaskDef.createTask(None.instance))
+      require(noopDef.createTask(None.instance))
     else
       None.instance
   }
 
   init {
-    addTaskDef(noopTaskDef)
-    addTaskDef(callNoopTaskDef)
-    addTaskDef(callNoopMaybeTaskDef)
+    addTaskDef(noopDef)
+    addTaskDef(callNoopDef)
+    addTaskDef(callNoopMaybeDef)
   }
 }
 
