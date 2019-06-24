@@ -26,7 +26,7 @@ public class PieImpl implements Pie {
     private final Logger logger;
     private final Function<Logger, ExecutorLogger> executorLoggerFactory;
 
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks = new ConcurrentHashMap<>();
 
     public PieImpl(
         TaskDefs taskDefs,
@@ -67,15 +67,15 @@ public class PieImpl implements Pie {
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
         final TaskExecutor taskExecutor =
             new TaskExecutor(taskDefs, resourceService, store, share, defaultStampers, layer, logger, executorLogger,
-                observers, visited);
+                callbacks, visited);
         final RequireShared requireShared =
             new RequireShared(taskDefs, resourceService, store, executorLogger, visited);
         final TopDownSession topDownSession =
-            new TopDownSession(store, layer, executorLogger, taskExecutor, requireShared, observers, visited);
+            new TopDownSession(store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited);
         final BottomUpSession bottomUpSession =
             new BottomUpSession(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
-                requireShared, observers, visited);
-        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, store, observers);
+                requireShared, callbacks, visited);
+        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, store, callbacks);
     }
 
 
@@ -89,26 +89,38 @@ public class PieImpl implements Pie {
         return hasBeenExecuted(task.key());
     }
 
-    @Override public <O extends @Nullable Serializable> void setObserver(Task<O> task, Consumer<O> observer) {
+
+    @Override public boolean isObserved(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.taskObservability(key).isObserved();
+        }
+    }
+
+    @Override public boolean isObserved(Task<?> task) {
+        return isObserved(task.key());
+    }
+
+
+    @Override public <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function) {
         @SuppressWarnings("unchecked") final Consumer<@Nullable Serializable> generalizedObserver =
-            (Consumer<@Nullable Serializable>) observer;
-        observers.put(task.key(), generalizedObserver);
+            (Consumer<@Nullable Serializable>) function;
+        callbacks.put(task.key(), generalizedObserver);
     }
 
-    @Override public void setObserver(TaskKey key, Consumer<@Nullable Serializable> observer) {
-        observers.put(key, observer);
+    @Override public void setCallback(TaskKey key, Consumer<@Nullable Serializable> function) {
+        callbacks.put(key, function);
     }
 
-    @Override public void removeObserver(Task<?> task) {
-        observers.remove(task.key());
+    @Override public void removeCallback(Task<?> task) {
+        callbacks.remove(task.key());
     }
 
-    @Override public void removeObserver(TaskKey key) {
-        observers.remove(key);
+    @Override public void removeCallback(TaskKey key) {
+        callbacks.remove(key);
     }
 
-    @Override public void dropObservers() {
-        observers.clear();
+    @Override public void dropCallbacks() {
+        callbacks.clear();
     }
 
 
@@ -120,6 +132,7 @@ public class PieImpl implements Pie {
 
 
     @Override public String toString() {
-        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, logger) + ")";
+        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs,
+            logger) + ")";
     }
 }

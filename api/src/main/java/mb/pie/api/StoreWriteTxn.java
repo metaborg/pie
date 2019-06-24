@@ -22,7 +22,7 @@ public interface StoreWriteTxn extends StoreReadTxn {
     /**
      * Sets the observability status to {@code observability} of task for {@code key}.
      */
-    void setObservability(TaskKey key, Observability observability);
+    void setTaskObservability(TaskKey key, Observability observability);
 
     /**
      * Sets the task require dependencies of task [key] to [taskRequires].

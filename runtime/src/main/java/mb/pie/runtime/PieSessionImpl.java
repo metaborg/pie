@@ -1,9 +1,11 @@
 package mb.pie.runtime;
 
 import mb.pie.api.ExecException;
+import mb.pie.api.Observability;
 import mb.pie.api.PieSession;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
@@ -27,6 +29,7 @@ public class PieSessionImpl implements PieSession {
     private final Store store;
     private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
 
+
     public PieSessionImpl(
         TopDownSession topDownSession,
         BottomUpSession bottomUpSession,
@@ -40,6 +43,11 @@ public class PieSessionImpl implements PieSession {
         this.store = store;
         this.observers = observers;
     }
+
+    @Override public void close() {
+        store.sync();
+    }
+
 
     @Override
     public <O extends Serializable> O requireTopDown(Task<O> task) throws ExecException {
@@ -55,6 +63,7 @@ public class PieSessionImpl implements PieSession {
     public <O extends @Nullable Serializable> O requireTopDown(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         return topDownSession.requireInitial(task, cancel);
     }
+
 
     @Override
     public void requireBottomUp(Set<ResourceKey> changedResources) throws ExecException {
@@ -79,7 +88,7 @@ public class PieSessionImpl implements PieSession {
             // PERF: If more than 50% of required sources (resources that have no provider) have been changed (i.e.,
             // high-impact change), perform top-down builds for all observed tasks instead, since this has less overhead
             // than a bottom-up build.
-            for(TaskKey key : observers.keySet()) {
+            for(TaskKey key : observers.keySet()) { // TODO: get RootObserved tasks instead?
                 try(final StoreReadTxn txn = store.readTxn()) {
                     final Task<?> task = key.toTask(taskDefs, txn);
                     topDownSession.requireInitial(task, cancel);
@@ -90,7 +99,14 @@ public class PieSessionImpl implements PieSession {
         }
     }
 
-    @Override public void close() {
-        // Nothing to close for now.
+
+    @Override public void setUnobserved(TaskKey key) {
+        try(StoreWriteTxn txn = store.writeTxn()) {
+            Observability.explicitUnobserve(txn, key);
+        }
+    }
+
+    @Override public void setUnobserved(Task<?> task) {
+        setUnobserved(task.key());
     }
 }

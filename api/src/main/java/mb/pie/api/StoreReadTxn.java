@@ -25,7 +25,7 @@ public interface StoreReadTxn extends StoreTxn {
     /**
      * @return observability status of task for {@code key}.
      */
-    @Nullable Observability observability(TaskKey key);
+    Observability taskObservability(TaskKey key);
 
 
     /**

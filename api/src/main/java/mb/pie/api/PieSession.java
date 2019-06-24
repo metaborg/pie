@@ -13,12 +13,15 @@ import java.util.Set;
  * <li>
  * Top-down: given a root task to execute, check whether the task must be executed by checking its required and provided
  * resources, and by recursively checking required tasks, resulting in a top-down depth-first traversal of the
- * dependency graph.
+ * dependency graph. This also marks the task as a {@link Observability#RootObserved root observed} task, indicating
+ * that it should be kept up-to-date in bottom-up builds.
  * </li>
  * <li>
  * Bottom-up (change-driven): given a set of changed resources, schedule all directly affected tasks in a topologically
  * sorted dependency queue, pop and execute tasks from the front of the queue until it is empty, where changed outputs
- * or provided resources of an executed task cause dependent affected tasks to be scheduled into the queue.
+ * or provided resources of an executed task cause dependent affected tasks to be scheduled into the queue. Only tasks
+ * that are observed (either {@link Observability#RootObserved root observed} or {@link Observability#TransitivelyObserved
+ * transitively observed}) are considered.
  * </li>
  * </ul>
  * <p>
@@ -43,7 +46,7 @@ import java.util.Set;
  * </li>
  * </ul>
  * <p>
- * Outputs of required tasks are observed by the observers {@link Pie#setObserver set} in the {@link Pie} object this
+ * Outputs of required tasks are observed by the observers {@link Pie#setCallback set} in the {@link Pie} object this
  * session was created from.
  * <p>
  * When using a {@link Cancelled cancel checker}, execution is cancelled between task executions by throwing an {@link
@@ -51,7 +54,9 @@ import java.util.Set;
  */
 public interface PieSession extends AutoCloseable {
     /**
-     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output.
+     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
+     * {@link Observability#RootObserved root observed}, indicating that it (and its transitive dependencies) should be
+     * kept up-to-date in bottom-up builds.
      *
      * @param task Task to make up-to-date.
      * @return Up-to-date output of {@code task}.
@@ -61,7 +66,8 @@ public interface PieSession extends AutoCloseable {
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
-     * output.
+     * output. Also marks the task as {@link Observability#RootObserved root observed}, indicating that it (and its
+     * transitive dependencies) should be kept up-to-date in bottom-up builds.
      *
      * @param task   Task to make up-to-date.
      * @param cancel Cancel checker to use.
@@ -71,8 +77,11 @@ public interface PieSession extends AutoCloseable {
      */
     <O extends @Nullable Serializable> O requireTopDown(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 
+
     /**
-     * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion.
+     * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion. Only
+     * observed (either {@link Observability#RootObserved root observed} or {@link Observability#TransitivelyObserved transitively
+     * observed}) tasks are considered.
      *
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @throws ExecException When an executing task throws an exception.
@@ -81,7 +90,8 @@ public interface PieSession extends AutoCloseable {
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
-     * {@code cancel} checker.
+     * {@code cancel} checker. Only observed (either {@link Observability#RootObserved root observed} or {@link
+     * Observability#TransitivelyObserved transitively observed}) tasks are considered.
      *
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @param cancel           Cancel checker to use.
@@ -89,6 +99,15 @@ public interface PieSession extends AutoCloseable {
      * @throws InterruptedException When execution is cancelled.
      */
     void requireBottomUp(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
+
+
+    /**
+     * @param task
+     */
+    void setUnobserved(Task<?> task);
+
+    void setUnobserved(TaskKey key);
+
 
     @Override void close();
 }

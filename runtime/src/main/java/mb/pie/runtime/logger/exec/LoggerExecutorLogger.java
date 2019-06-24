@@ -141,14 +141,14 @@ public class LoggerExecutorLogger implements ExecutorLogger {
 
 
     @Override
-    public void invokeObserverStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
+    public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
         final String outputString = output != null ? StringUtil.toShortString(output.toString(), descLimit) : "null";
         logger.trace(
             getIndent() + "@ " + StringUtil.toShortString(observer.toString(), descLimit) + "(" + outputString + ")");
     }
 
     @Override
-    public void invokeObserverEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
+    public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
 
     }
 }
