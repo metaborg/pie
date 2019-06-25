@@ -1,9 +1,11 @@
 package mb.pie.runtime.test
 
+import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.*
+import mb.pie.api.exec.NullCancelled
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
-import mb.pie.api.test.ApiTestGenerator
+import mb.pie.api.test.*
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.PieImpl
 import mb.pie.runtime.logger.StreamLogger
@@ -12,6 +14,7 @@ import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
+import java.io.Serializable
 import java.nio.file.FileSystem
 import java.util.stream.Stream
 
@@ -210,12 +213,83 @@ internal class ObservabilityTests {
 
   @TestFactory
   fun testBottomUpExecutesObserved() = ObservabilityTestGenerator.generate("testBottomUpExecutesObserved") {
-    // TODO
+    val resource = resource("/file")
+    write("Hello, world!", resource)
+    val readTask = readDef.createTask(resource)
+    val readSTask = readTask.toSerializableTask()
+    val readKey = readTask.key()
+    val callTask = callDef.createTask(readSTask)
+    val callKey = callTask.key()
+
+    newSession().use { session ->
+      session.requireTopDown(callTask)
+    }
+
+    // Change the resource and perform a bottom-up build.
+    write("Hello, galaxy!", resource)
+    newSession().use { pieSession ->
+      val session = spy(pieSession.bottomUpSession)
+      session.requireInitial(setOf(resource.key), NullCancelled())
+      // Both tasks are executed because they are observable.
+      inOrder(session) {
+        verify(session).exec(eq(readKey), eq(readTask), anyER(), anyC())
+        verify(session).exec(eq(callKey), eq(callTask), anyER(), anyC())
+      }
+    }
   }
 
   @TestFactory
-  fun testBottomUpSkipsUnobserved() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobserved") {
-    // TODO
+  fun testBottomUpSkipsUnobservedRequiree() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobservedRequiree") {
+    val resource = resource("/file")
+    write("Hello, world!", resource)
+    val readTask = readDef.createTask(resource)
+    val readSTask = readTask.toSerializableTask()
+    val readKey = readTask.key()
+    val callTask = callDef.createTask(readSTask)
+    val callKey = callTask.key()
+
+    newSession().use { session ->
+      session.requireTopDown(callTask)
+      // Unobserve `callTask`, making both `callTask` and `readTask` unobservable.
+      session.setUnobserved(callTask)
+    }
+
+    // Change the resource and perform a bottom-up build.
+    write("Hello, galaxy!", resource)
+    newSession().use { pieSession ->
+      val session = spy(pieSession.bottomUpSession)
+      session.requireInitial(setOf(resource.key), NullCancelled())
+      // Both tasks are NOT executed because they are unobservable.
+      verify(session, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
+      verify(session, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
+    }
+  }
+
+  @TestFactory
+  fun testBottomUpSkipsUnobservedProvider() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobservedProvider") {
+    val resource = resource("/file")
+    //write("Hello, world!", resource)
+    val writeTask = writeDef.createTask(ObservabilityTestCtx.Write(resource, "Hello, world!"))
+    val writeSTask = writeTask.toSerializableTask()
+    val writeKey = writeTask.key()
+    val callTask = callDef.createTask(writeSTask)
+    val callKey = callTask.key()
+
+    newSession().use { session ->
+      session.requireTopDown(callTask)
+      // Unobserve `callTask`, making both `callTask` and `writeTask` unobservable.
+      session.setUnobserved(callTask)
+    }
+
+    // Change the resource and perform a bottom-up build.
+    write("Hello, galaxy!", resource)
+    newSession().use { pieSession ->
+      val session = spy(pieSession.bottomUpSession)
+      session.requireInitial(setOf(resource.key), NullCancelled())
+      // Both tasks are NOT executed because they are unobservable.
+      verify(session, never()).exec(eq(writeKey), eq(writeTask), anyER(), anyC())
+      verify(session, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
+    }
   }
 }
 
@@ -242,10 +316,34 @@ class ObservabilityTestCtx(
       None.instance
   }
 
+  val readDef = taskDef<FSResource, String>("read") { resource ->
+    require(resource)
+    resource.newInputStream().buffered().use {
+      String(it.readBytes())
+    }
+  }
+
+  data class Write(val resource: FSResource, val text: String): Serializable
+  val writeDef = taskDef<Write, None>("write") { (resource, text) ->
+    resource.newOutputStream().buffered().use {
+      it.write(text.toByteArray())
+      it.flush()
+    }
+    provide(resource)
+    None.instance
+  }
+
+  val callDef = taskDef<STask, Serializable?>("call") {
+    require(it)
+  }
+
   init {
     addTaskDef(noopDef)
     addTaskDef(callNoopDef)
     addTaskDef(callNoopMaybeDef)
+    addTaskDef(readDef)
+    addTaskDef(writeDef)
+    addTaskDef(callDef)
   }
 }
 

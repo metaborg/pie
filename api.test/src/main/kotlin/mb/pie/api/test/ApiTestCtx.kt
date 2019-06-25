@@ -1,6 +1,7 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
+import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
 import java.io.Serializable
 import java.nio.file.FileSystem
@@ -21,6 +22,10 @@ open class ApiTestCtx(
   open val pie: Pie get() = pieImpl
   open fun newSession(): PieSession = pie.newSession()
 
+
+  fun path(path: String): FSPath {
+    return FSPath(javaFs.getPath(path))
+  }
 
   fun resource(path: String): FSResource {
     return FSResource(javaFs.getPath(path))
