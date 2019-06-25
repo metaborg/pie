@@ -175,7 +175,7 @@ public class BottomUpSession implements RequireTask {
         if(storedData.taskObservability.isUnobserved()) {
             // Task is detached (not observed) and therefore may not be consistent because detached tasks are not
             // scheduled. Require the detached task it in a top-down manner to make it consistent.
-            return requireDetached(key, task, storedData, cancel);
+            return requireUnobserved(key, task, storedData, cancel);
         }
 
         // The task is observed. It may be scheduled to be run, but we need its output *now*.
@@ -221,7 +221,7 @@ public class BottomUpSession implements RequireTask {
         }
     }
 
-    private TaskData requireDetached(TaskKey key, Task<?> task, TaskData storedData, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, Cancelled cancel) throws ExecException, InterruptedException {
         // Input consistency.
         {
             final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);

@@ -268,7 +268,6 @@ internal class ObservabilityTests {
   @TestFactory
   fun testBottomUpSkipsUnobservedProvider() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobservedProvider") {
     val resource = resource("/file")
-    //write("Hello, world!", resource)
     val writeTask = writeDef.createTask(ObservabilityTestCtx.Write(resource, "Hello, world!"))
     val writeSTask = writeTask.toSerializableTask()
     val writeKey = writeTask.key()
@@ -289,6 +288,87 @@ internal class ObservabilityTests {
       // Both tasks are NOT executed because they are unobservable.
       verify(session, never()).exec(eq(writeKey), eq(writeTask), anyER(), anyC())
       verify(session, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
+    }
+  }
+
+  @TestFactory
+  fun testBottomUpRequireUnobserved() = ObservabilityTestGenerator.generate("testBottomUpRequireUnobserved") {
+    val resource1 = resource("/file1")
+    write("Hello, world 1!", resource1)
+    val read1Task = readDef.createTask(resource1)
+    val read1STask = read1Task.toSerializableTask()
+    val read1Key = read1Task.key()
+
+    val resource2 = resource("/file2")
+    write("Hello, world 2!", resource2)
+    val read2Task = readDef.createTask(resource2)
+    val read2STask = read2Task.toSerializableTask()
+    val read2Key = read2Task.key()
+
+    val callTask = call2IfContainsGalaxyDef.createTask(ObservabilityTestCtx.Call(read1STask, read2STask))
+    val callKey = callTask.key()
+
+    newSession().use { session ->
+      session.requireTopDown(callTask)
+      session.requireTopDown(read2Task)
+      // Unobserve `read2Task`, making it unobserved.
+      session.setUnobserved(read2Task)
+    }
+
+    // Change resources and perform a bottom-up build.
+    write("Hello, galaxy 1!", resource1)
+    write("Hello, galaxy 2!", resource2)
+    newSession().use { pieSession ->
+      val session = spy(pieSession.bottomUpSession)
+      session.requireInitial(setOf(resource1.key, resource2.key), NullCancelled())
+      inOrder(session) {
+        // `read2Task` is not scheduled or executed despite its resource being changed, because it is unobserved.
+        // `read1Task` gets executed because it is observed and its resource changed.
+        verify(session).exec(eq(read1Key), eq(read1Task), anyER(), anyC())
+        // This in turn affects `callTask`, so it gets executed.
+        verify(session).exec(eq(callKey), eq(callTask), anyER(), anyC())
+        // `callTask` now requires `read2Task`, because `read1Task` returns a string with 'galaxy' in it.
+        verify(session).require(eq(read2Key), eq(read2Task), anyC())
+        // `read2Task` then gets executed despite being unobserved, because it is required and not consistent yet.
+        verify(session).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
+      }
+      pie.store.readTxn().use { txn ->
+        // Because `callTask` depends on `read2Task`, it becomes implicitly observed.
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(read2Key))
+      }
+    }
+
+    // Rollback: change resource1 to not have the trigger word 'galaxy' any more.
+    write("Hello, world 1!", resource1)
+    newSession().use { pieSession ->
+      val session = spy(pieSession.bottomUpSession)
+      session.requireInitial(setOf(resource1.key), NullCancelled())
+      pie.store.readTxn().use { txn ->
+        // Because `callTask` does not depend on `read2Task` any more, it becomes unobserved.
+        assertEquals(Observability.Unobserved, txn.taskObservability(read2Key))
+      }
+    }
+
+    // Now we only change resource1.
+    write("Hello, galaxy 1!", resource1)
+    newSession().use { pieSession ->
+      val session = spy(pieSession.bottomUpSession)
+      session.requireInitial(setOf(resource1.key, resource2.key), NullCancelled())
+      inOrder(session) {
+        // `read2Task` is not scheduled or executed because its resource did not change.
+        // `read1Task` gets executed because it is observed and its resource changed.
+        verify(session).exec(eq(read1Key), eq(read1Task), anyER(), anyC())
+        // This in turn affects `callTask`, so it gets executed.
+        verify(session).exec(eq(callKey), eq(callTask), anyER(), anyC())
+        // `callTask` now requires `read2Task`, because `read1Task` returns a string with 'galaxy' in it.
+        verify(session).require(eq(read2Key), eq(read2Task), anyC())
+      }
+      // However, `read2Task` does not get executed, because none of its dependencies are inconsistent.
+      verify(session, never()).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
+      pie.store.readTxn().use { txn ->
+        // Despite not being executed, because `callTask` depends on `read2Task`, it does become implicitly observed again.
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(read2Key))
+      }
     }
   }
 }
@@ -337,6 +417,15 @@ class ObservabilityTestCtx(
     require(it)
   }
 
+  data class Call(val task1: STask, val task2: STask): Serializable
+  val call2IfContainsGalaxyDef = taskDef<Call, None>("call2Maybe") {(task1, task2) ->
+    val result1 = require(task1) as String
+    if(result1.contains("galaxy")) {
+      require(task2)
+    }
+    None.instance
+  }
+
   init {
     addTaskDef(noopDef)
     addTaskDef(callNoopDef)
@@ -344,6 +433,7 @@ class ObservabilityTestCtx(
     addTaskDef(readDef)
     addTaskDef(writeDef)
     addTaskDef(callDef)
+    addTaskDef(call2IfContainsGalaxyDef)
   }
 }
 
