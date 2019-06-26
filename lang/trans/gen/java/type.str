@@ -53,24 +53,44 @@ rules
 
   p2j-type-generate-dataclass(|name):
     idTypeTuples -> 
-$[public static final class [name] implements Serializable {
-  [fields]
-  
+$[public static final class [name] extends [tupleTy]<[tupleTypes]> implements Serializable {
   public [name]([params]) {
-    [assignments]
+    super([callParams]);
   }
+  
+  @Nullable
+  public static [name] from[tupleTy](@Nullable [tupleTy]<[tupleTypes]> tuple) {
+    if (tuple == null) {
+      return null;
+    }
+    return new [name]([tupleNumParams]);
+  }
+  [getters]
 }]
     with
-      tys             := <map(Snd)> idTypeTuples
-    ; typeStrs        := <map(p2j-type-sig)> tys
-    ; idTypeStrTuples := <zip> (<map(Fst)> idTypeTuples, typeStrs)
-    ; fieldStrs       := <map(type-tuple-to-field)> idTypeStrTuples
-    ; fields          := <pie-concat-nl> fieldStrs
-    ; paramStrs       := <map(type-tuple-to-param)> idTypeStrTuples
-    ; params          := <pie-concat-commanl> paramStrs
-    ; assignmentStrs  := <map(type-tuple-to-assignment)> idTypeStrTuples
-    ; assignments     := <pie-concat-nl> assignmentStrs
+      tupleTy           := $[Tuple[<length> idTypeTuples]]
+    ; tys               := <map(Snd)> idTypeTuples
+    ; typeStrs          := <map(p2j-type-sig)> tys
+    ; idTypeStrTuples   := <zip> (<map(Fst)> idTypeTuples, typeStrs)
+    ; getterStrs        := <nmap(type-tuple-to-getter | 1)> idTypeStrTuples
+    ; getters           := <pie-concat-nl> getterStrs
+    ; paramStrs         := <map(type-tuple-to-param)> idTypeStrTuples
+    ; params            := <pie-concat-comma> paramStrs
+    ; callParamStrs     := <map(type-tuple-to-call-param)> idTypeStrTuples
+    ; callParams        := <pie-concat-comma> callParamStrs
+    ; tupleNumParamStrs := <nmap(type-tuple-to-tuple-field-get | 1)> idTypeStrTuples
+    ; tupleNumParams    := <pie-concat-comma> tupleNumParamStrs
+    ; tupleTypeStrs     := <map(type-tuple-to-type)> idTypeStrTuples
+    ; tupleTypes        := <pie-concat-comma> tupleTypeStrs
 
   type-tuple-to-field: (varId, ty) -> $[public final [ty] [varId];]
+  type-tuple-to-type: (varId, ty) -> ty
+  type-tuple-to-tuple-field-get(|number): _ -> $[tuple.component[number]()]
+  type-tuple-to-getter(|number): (varId, ty) -> 
+    $[
+    public final [ty] get_[varId]() {
+      return component[number]();
+    }]
   type-tuple-to-param: (varId, ty) -> $[[ty] [varId]]
+  type-tuple-to-call-param: (varId, ty) -> varId
   type-tuple-to-assignment: (varId, ty) -> $[this.[varId] = [varId];]

@@ -246,7 +246,7 @@ rules // References
     ; 1 := <InputKind>
       
   p2j-exp: 
-    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|$[input.[varId]])> r)
+    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|$[input.get_[varId]()])> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 2 := <InputKind>
