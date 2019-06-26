@@ -74,22 +74,13 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   p2j-pie-func-impl-body():
     Block(exps) -> result  
     with
-      debug(|"Start Block (function): ")
-    ; numExps                   := <length> exps
-    ; <debug(|"  numExps: ")> numExps
+      numExps                   := <length> exps
     ; restExps                  := <take(|<dec> numExps)> exps 
-    ; <debug(|"  restExps: ")> restExps
     ; restStmtStrs              := <map(try-p2j-exp); map(Fst); concat> restExps
-    ; <debug(|"  restStmtStrs: ")> restStmtStrs
     ; lastExp                   := <last> exps
-    ; <debug(|"  lastExp: ")> lastExp
     ; (lastStmtStr, lastExpStr) := <p2j-pie-func-impl-returnvalue> lastExp
-    ; <debug(|"  lastStmtStr: ")> lastStmtStr
-    ; <debug(|"  lastExpStr: ")> lastExpStr
     ; stmtStrs                  := <concat> [restStmtStrs, lastStmtStr]
-    ; <debug(|"  stmtStrs: ")> stmtStrs
     ; result                    := (stmtStrs, lastExpStr)
-    ; <debug(|"End Block (function): ")> result
 
   p2j-pie-func-impl-body():
     EmptyBlock() -> ([], <Snd> <p2j-type-sig> UnitLit())
