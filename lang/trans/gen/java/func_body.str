@@ -197,9 +197,10 @@ rules // Binding
     ; (expStmtStrs, expStr)   := <try-p2j-exp> exp
     ; (assignmentStrs, varId) := <bind-tuples-to-assignments> (binder, expTy)
     ; stmtStrs                := <concat> [
-      expStmtStrs,
-      [$[final [expTyStr] [varId] = [expStr];]],
-      assignmentStrs]
+        expStmtStrs,
+        [$[final [expTyStr] [varId] = [expStr];]],
+        assignmentStrs
+      ]
     ; resultExpStr            := <Snd> <try-p2j-exp> UnitLit()
     ; result                  := (stmtStrs, resultExpStr)
   
