@@ -5,16 +5,21 @@ import mb.pie.api.exec.Cancelled;
 import mb.pie.api.exec.NullCancelled;
 import mb.pie.runtime.exec.BottomUpSession;
 import mb.pie.runtime.exec.TopDownSession;
+import mb.resource.Resource;
 import mb.resource.ResourceKey;
+import mb.resource.ResourceService;
+import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class PieSessionImpl implements PieSession {
     // Public for testability of incrementality
@@ -22,6 +27,7 @@ public class PieSessionImpl implements PieSession {
     public final BottomUpSession bottomUpSession;
 
     private final TaskDefs taskDefs;
+    private final ResourceService resourceService;
     private final Store store;
     private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
 
@@ -30,12 +36,13 @@ public class PieSessionImpl implements PieSession {
         TopDownSession topDownSession,
         BottomUpSession bottomUpSession,
         TaskDefs taskDefs,
-        Store store,
+        ResourceService resourceService, Store store,
         ConcurrentHashMap<TaskKey, Consumer<Serializable>> observers
     ) {
         this.topDownSession = topDownSession;
         this.bottomUpSession = bottomUpSession;
         this.taskDefs = taskDefs;
+        this.resourceService = resourceService;
         this.store = store;
         this.observers = observers;
     }
@@ -107,18 +114,43 @@ public class PieSessionImpl implements PieSession {
     }
 
 
-    @Override public void deleteUnobservedTasks() {
+    @Override
+    public void deleteUnobservedTasks(Function<Task<?>, Boolean> shouldDeleteTask, BiFunction<Task<?>, Resource, Boolean> shouldDeleteProvidedResource) throws IOException {
         try(StoreWriteTxn txn = store.writeTxn()) {
+            // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
             final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
             while(!tasksToDelete.isEmpty()) {
                 final TaskKey key = tasksToDelete.pop();
-                final List<TaskRequireDep> deletedTaskRequireDeps = txn.deleteData(key);
-                deletedTaskRequireDeps
-                    .stream()
-                    .filter((d) -> txn.callersOf(d.callee).isEmpty())
-                    .forEach((d) -> {
-                        tasksToDelete.add(d.callee);
-                    });
+                if(!txn.taskObservability(key).isUnobserved()) {
+                    // Do not delete observed tasks. This filters out ExplicitlyObserved tasks.
+                    continue;
+                }
+                final Task<?> task = key.toTask(taskDefs, txn);
+                if(!shouldDeleteTask.apply(task)) {
+                    // Do not delete tasks that the caller of this function does not want to delete.
+                    continue;
+                }
+                final @Nullable TaskData deletedData = txn.deleteData(key);
+                if(deletedData != null) {
+                    // Delete provided resources.
+                    for(ResourceProvideDep dep : deletedData.resourceProvides) {
+                        final Resource resource = resourceService.getResource(dep.key);
+                        if(shouldDeleteProvidedResource.apply(task, resource)) {
+                            if(resource instanceof HierarchicalResource) {
+                                ((HierarchicalResource) resource).delete();
+                            }
+                        }
+                    }
+
+                    // Iterate the task requirements of the deleted task to continue deleting tasks.
+                    deletedData.taskRequires
+                        .stream()
+                        // Filter out tasks that still have incoming callers.
+                        .filter((d) -> txn.callersOf(d.callee).isEmpty())
+                        // Push tasks onto the stack that have no incoming callers for deletion.
+                        // The start of the while loop will ensure that only unobserved tasks will be deleted.
+                        .forEach((d) -> tasksToDelete.push(d.callee));
+                }
             }
         }
     }

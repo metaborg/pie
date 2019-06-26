@@ -393,6 +393,234 @@ internal class ObservabilityTests {
       }
     }
   }
+
+
+  @TestFactory
+  fun testGCDeletesCorrect() = ObservabilityTestGenerator.generate("testGCKeepsObserved") {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        pie.store.readTxn().use { txn ->
+          assertNull(txn.input(aTask.key()))
+          assertNull(txn.input(bTask.key()))
+          assertNotNull(txn.input(cTask.key()))
+          assertNull(txn.input(dTask.key()))
+          assertNotNull(txn.input(eTask.key()))
+          assertNull(txn.input(fTask.key()))
+          assertNotNull(txn.input(gTask.key()))
+          assertNotNull(txn.input(hTask.key()))
+          assertNull(txn.input(iTask.key()))
+          assertNull(txn.input(jTask.key()))
+          assertNull(txn.input(kTask.key()))
+          assertFalse(file0.exists()) // Deleted provided file
+          assertTrue(file1.exists()) // Unobserved required file
+          assertTrue(file2.exists()) // Observed provided file
+          assertFalse(file3.exists()) // Deleted provided file
+          assertTrue(file4.exists()) // Observed required file
+          assertTrue(file5.exists()) // Observed provided file
+        }
+      }
+    }
+  }
+
+  @TestFactory
+  fun testGCDeletesAllDataFromStore() = ObservabilityTestGenerator.generate("testGCDeletesAllDataFromStore") {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        pie.store.readTxn().use { txn ->
+          for(key in listOf(aTask.key(), bTask.key(), dTask.key(), fTask.key(), iTask.key(), jTask.key(), kTask.key())) {
+            assertNull(txn.input(key))
+            assertNull(txn.output(key))
+            assertEquals(Observability.Unobserved, txn.taskObservability(key)) // Default value: Observability.Unobserved
+            assertTrue(txn.taskRequires(key).isEmpty()) // Default value: empty list
+            assertTrue(txn.callersOf(key).isEmpty()) // Default value: empty set
+            assertTrue(txn.resourceRequires(key).isEmpty()) // Default value: empty list
+            assertTrue(txn.resourceProvides(key).isEmpty()) // Default value: empty list
+            assertNull(txn.data(key))
+          }
+          for(key in listOf(file0.key, file3.key)) {
+            assertTrue(txn.requireesOf(key).isEmpty()) // Default value: empty set
+            assertNull(txn.providerOf(key))
+          }
+        }
+      }
+    }
+  }
+
+  @TestFactory
+  fun testGCDoesNotInfluenceExecution() = ObservabilityTestGenerator.generate("testGCDoesNotInfluenceExecution") {
+    // First run without garbage collection.
+    this.GCSetup().run {
+      // Modify all files.
+      write("Hello, galaxy 0!", file0)
+      write("Hello, galaxy 1!", file1)
+      write("Hello, galaxy 2!", file2)
+      write("Hello, galaxy 3!", file3)
+      write("Hello, galaxy 4!", file4)
+      write("Hello, galaxy 5!", file5)
+      newSession().use { pieSession ->
+        val session = spy(pieSession.bottomUpSession)
+        session.requireInitial(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet(), NullCancelled())
+        verify(session, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
+        verify(session, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
+        verify(session, never()).exec(eq(dTask.key()), eq(dTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), anyC())
+        verify(session, never()).exec(eq(fTask.key()), eq(fTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), anyC())
+        verify(session, never()).exec(eq(iTask.key()), eq(iTask), anyER(), anyC())
+        verify(session, never()).exec(eq(jTask.key()), eq(jTask), anyER(), anyC())
+        verify(session, never()).exec(eq(kTask.key()), eq(kTask), anyER(), anyC())
+        verify(session, never()).exec(eq(lTask.key()), eq(lTask), anyER(), anyC())
+      }
+    }
+
+    // Second run with garbage collection
+    pie.dropStore() // Drop store to begin with a clean slate: all tasks will be re-executed.
+    this.GCSetup().run {
+      // Run setup, which executes tasks and set some tasks to unobserved again.
+      // Modify all files.
+      write("Hello, galaxy 0!", file0)
+      write("Hello, galaxy 1!", file1)
+      write("Hello, galaxy 2!", file2)
+      write("Hello, galaxy 3!", file3)
+      write("Hello, galaxy 4!", file4)
+      write("Hello, galaxy 5!", file5)
+      newSession().use { pieSession ->
+        // First run garbage collection.
+        pieSession.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        // Then build and confirm that the exact same tasks are executed.
+        val session = spy(pieSession.bottomUpSession)
+        session.requireInitial(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet(), NullCancelled())
+        verify(session, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
+        verify(session, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
+        verify(session, never()).exec(eq(dTask.key()), eq(dTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), anyC())
+        verify(session, never()).exec(eq(fTask.key()), eq(fTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), anyC())
+        verify(session, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), anyC())
+        verify(session, never()).exec(eq(iTask.key()), eq(iTask), anyER(), anyC())
+        verify(session, never()).exec(eq(jTask.key()), eq(jTask), anyER(), anyC())
+        verify(session, never()).exec(eq(kTask.key()), eq(kTask), anyER(), anyC())
+        verify(session, never()).exec(eq(lTask.key()), eq(lTask), anyER(), anyC())
+      }
+    }
+  }
+
+  @TestFactory
+  fun testGCShouldDeleteFunctionFalse() = ObservabilityTestGenerator.generate("testGCShouldDeleteFunctionFalse") {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ _ -> false }, { _, _ -> true })
+        pie.store.readTxn().use { txn ->
+          assertNotNull(txn.input(aTask.key()))
+          assertNotNull(txn.input(bTask.key()))
+          assertNotNull(txn.input(cTask.key()))
+          assertNotNull(txn.input(dTask.key()))
+          assertNotNull(txn.input(eTask.key()))
+          assertNotNull(txn.input(fTask.key()))
+          assertNotNull(txn.input(gTask.key()))
+          assertNotNull(txn.input(hTask.key()))
+          assertNotNull(txn.input(iTask.key()))
+          assertNotNull(txn.input(jTask.key()))
+          assertNotNull(txn.input(kTask.key()))
+          assertTrue(file0.exists()) // Kept provided file
+          assertTrue(file1.exists()) // Unobserved required file
+          assertTrue(file2.exists()) // Observed provided file
+          assertTrue(file3.exists()) // Kept provided file
+          assertTrue(file4.exists()) // Observed required file
+          assertTrue(file5.exists()) // Observed provided file
+        }
+      }
+    }
+  }
+
+  @TestFactory
+  fun testGCShouldDeleteFunctionSpecific() = ObservabilityTestGenerator.generate("testGCShouldDeleteFunctionSpecific") {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ t -> t == aTask || t == dTask || t == iTask }, { _, _ -> true })
+        pie.store.readTxn().use { txn ->
+          assertNull(txn.input(aTask.key()))
+          assertNotNull(txn.input(bTask.key()))
+          assertNotNull(txn.input(cTask.key()))
+          assertNull(txn.input(dTask.key()))
+          assertNotNull(txn.input(eTask.key()))
+          assertNotNull(txn.input(fTask.key()))
+          assertNotNull(txn.input(gTask.key()))
+          assertNotNull(txn.input(hTask.key()))
+          assertNull(txn.input(iTask.key()))
+          assertNotNull(txn.input(jTask.key()))
+          assertNotNull(txn.input(kTask.key()))
+          assertFalse(file0.exists()) // Deleted provided file
+          assertTrue(file1.exists()) // Unobserved required file
+          assertTrue(file2.exists()) // Observed provided file
+          assertTrue(file3.exists()) // Deleted provided file
+          assertTrue(file4.exists()) // Observed required file
+          assertTrue(file5.exists()) // Observed provided file
+        }
+      }
+    }
+  }
+
+  @TestFactory
+  fun testGCShouldDeleteProvidedResourceFalse() = ObservabilityTestGenerator.generate("testGCShouldDeleteProvidedResourceFalse") {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> false })
+        pie.store.readTxn().use { txn ->
+          assertNull(txn.input(aTask.key()))
+          assertNull(txn.input(bTask.key()))
+          assertNotNull(txn.input(cTask.key()))
+          assertNull(txn.input(dTask.key()))
+          assertNotNull(txn.input(eTask.key()))
+          assertNull(txn.input(fTask.key()))
+          assertNotNull(txn.input(gTask.key()))
+          assertNotNull(txn.input(hTask.key()))
+          assertNull(txn.input(iTask.key()))
+          assertNull(txn.input(jTask.key()))
+          assertNull(txn.input(kTask.key()))
+          assertTrue(file0.exists()) // Kept provided file
+          assertTrue(file1.exists()) // Unobserved required file
+          assertTrue(file2.exists()) // Observed provided file
+          assertTrue(file3.exists()) // Kept provided file
+          assertTrue(file4.exists()) // Observed required file
+          assertTrue(file5.exists()) // Observed provided file
+        }
+      }
+    }
+  }
+
+  @TestFactory
+  fun testGCShouldDeleteProvidedResourceSpecific() = ObservabilityTestGenerator.generate("testGCShouldDeleteProvidedResourceSpecific") {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ _ -> true }, { _, r -> r == file3 })
+        pie.store.readTxn().use { txn ->
+          assertNull(txn.input(aTask.key()))
+          assertNull(txn.input(bTask.key()))
+          assertNotNull(txn.input(cTask.key()))
+          assertNull(txn.input(dTask.key()))
+          assertNotNull(txn.input(eTask.key()))
+          assertNull(txn.input(fTask.key()))
+          assertNotNull(txn.input(gTask.key()))
+          assertNotNull(txn.input(hTask.key()))
+          assertNull(txn.input(iTask.key()))
+          assertNull(txn.input(jTask.key()))
+          assertNull(txn.input(kTask.key()))
+          assertTrue(file0.exists()) // Kept provided file
+          assertTrue(file1.exists()) // Unobserved required file
+          assertTrue(file2.exists()) // Observed provided file
+          assertFalse(file3.exists()) // Deleted provided file
+          assertTrue(file4.exists()) // Observed required file
+          assertTrue(file5.exists()) // Observed provided file
+        }
+      }
+    }
+  }
 }
 
 
@@ -425,7 +653,8 @@ class ObservabilityTestCtx(
     }
   }
 
-  data class Write(val resource: FSResource, val text: String): Serializable
+  data class Write(val resource: FSResource, val text: String) : Serializable
+
   val writeDef = taskDef<Write, None>("write") { (resource, text) ->
     resource.newOutputStream().buffered().use {
       it.write(text.toByteArray())
@@ -439,8 +668,14 @@ class ObservabilityTestCtx(
     require(it)
   }
 
-  data class Call(val task1: STask, val task2: STask): Serializable
-  val call2IfContainsGalaxyDef = taskDef<Call, None>("call2IfContainsGalaxyDef") {(task1, task2) ->
+  data class Call(val task1: STask, val task2: STask) : Serializable
+
+  val call2Def = taskDef<Call, None>("call2") { (task1, task2) ->
+    require(task1)
+    require(task2)
+    None.instance
+  }
+  val call2IfContainsGalaxyDef = taskDef<Call, None>("call2IfContainsGalaxyDef") { (task1, task2) ->
     val result1 = require(task1) as String
     if(result1.contains("galaxy")) {
       require(task2)
@@ -455,7 +690,46 @@ class ObservabilityTestCtx(
     addTaskDef(readDef)
     addTaskDef(writeDef)
     addTaskDef(callDef)
+    addTaskDef(call2Def)
     addTaskDef(call2IfContainsGalaxyDef)
+  }
+
+  inner class GCSetup {
+    val file0 = resource("/file0")
+    val file1 = resource("/file1")
+    val file2 = resource("/file2")
+    val file3 = resource("/file3")
+    val file4 = resource("/file4")
+    val file5 = resource("/file5")
+
+    val iTask = writeDef.createTask(Write(file0, "Hello, world 0!"))
+    val jTask = readDef.createTask(file1)
+    val dTask = call2Def.createTask(Call(iTask.toSerializableTask(), jTask.toSerializableTask()))
+    val eTask = writeDef.createTask(Write(file2, "Hello, world 2!"))
+    val aTask = call2Def.createTask(Call(dTask.toSerializableTask(), eTask.toSerializableTask()))
+
+    val kTask = noopTask
+    val lTask = writeDef.createTask(Write(file3, "Hello, world 3!"))
+    val fTask = call2Def.createTask(Call(kTask.toSerializableTask(), lTask.toSerializableTask()))
+    val bTask = call2Def.createTask(Call(eTask.toSerializableTask(), fTask.toSerializableTask()))
+
+    val gTask = readDef.createTask(file4)
+    val hTask = writeDef.createTask(Write(file5, "Hello, world 5!"))
+    val cTask = call2Def.createTask(Call(gTask.toSerializableTask(), hTask.toSerializableTask()))
+
+    init {
+      write("Hello, world 1!", file1)
+      write("Hello, world 4!", file4)
+      newSession().use { session ->
+        session.requireTopDown(aTask)
+        session.requireTopDown(bTask)
+        session.requireTopDown(cTask)
+        session.requireTopDown(eTask)
+
+        session.setUnobserved(aTask)
+        session.setUnobserved(bTask)
+      }
+    }
   }
 }
 

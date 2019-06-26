@@ -1,11 +1,15 @@
 package mb.pie.api;
 
 import mb.pie.api.exec.Cancelled;
+import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * A session for incrementally executing PIE tasks, supporting two different traversal strategies:
@@ -124,9 +128,18 @@ public interface PieSession extends AutoCloseable {
 
 
     /**
-     * Deletes all {@link Observability#Unobserved unobserved} from the store.
+     * Deletes {@link Observability#Unobserved unobserved} tasks from the store, and deletes provided resources of
+     * deleted tasks.
+     *
+     * @param shouldDeleteTask             Function that gets called to determine if a task should be deleted. When this
+     *                                     function returns false, the unobserved task and its unobserved task
+     *                                     requirements will not be deleted.
+     * @param shouldDeleteProvidedResource Function that gets called to determine if a provided resource of a deleted
+     *                                     task should be deleted. When this function returns false, the provided file
+     *                                     will not be deleted.
+     * @throws IOException when deleting a resource fails unexpectedly.
      */
-    void deleteUnobservedTasks();
+    void deleteUnobservedTasks(Function<Task<?>, Boolean> shouldDeleteTask, BiFunction<Task<?>, Resource, Boolean> shouldDeleteProvidedResource) throws IOException;
 
 
     @Override void close();

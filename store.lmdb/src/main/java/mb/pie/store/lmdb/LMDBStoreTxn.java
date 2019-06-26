@@ -281,7 +281,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         setResourceProvides(key, data.resourceProvides);
     }
 
-    @Override public List<TaskRequireDep> deleteData(TaskKey key) {
+    @Override public TaskData deleteData(TaskKey key) {
         // TODO: implement
         throw new UnsupportedOperationException("deleteData has not been implemented for LMDB yet, sorry");
     }

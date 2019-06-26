@@ -6,9 +6,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -163,10 +161,16 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         setResourceProvides(key, data.resourceProvides);
     }
 
-    @Override public List<TaskRequireDep> deleteData(TaskKey key) {
-        taskInputs.remove(key);
-        taskOutputs.remove(key);
-        taskObservability.remove(key);
+    @Override public @Nullable TaskData deleteData(TaskKey key) {
+        final @Nullable Serializable input = taskInputs.remove(key);
+        if(input == null) {
+            return null;
+        }
+        final @Nullable Output output = taskOutputs.remove(key);
+        if(output == null) {
+            throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
+        }
+        final @Nullable Observability observability = taskObservability.remove(key);
 
         final @Nullable ArrayList<TaskRequireDep> removedTaskRequires = taskRequires.remove(key);
         if(removedTaskRequires != null) {
@@ -195,7 +199,14 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
             }
         }
 
-        return removedTaskRequires != null ? removedTaskRequires : Collections.emptyList();
+        return new TaskData(
+            input,
+            output.output,
+            observability != null ? observability : Observability.Unobserved,
+            removedTaskRequires != null ? removedTaskRequires : new ArrayList<>(),
+            removedResourceRequires != null ? removedResourceRequires : new ArrayList<>(),
+            removedResourceProvides != null ? removedResourceProvides : new ArrayList<>()
+        );
     }
 
 

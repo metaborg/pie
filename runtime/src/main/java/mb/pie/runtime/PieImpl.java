@@ -76,7 +76,7 @@ public class PieImpl implements Pie {
         final BottomUpSession bottomUpSession =
             new BottomUpSession(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
                 requireShared, callbacks, visited);
-        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, store, callbacks);
+        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, store, callbacks);
     }
 
 
