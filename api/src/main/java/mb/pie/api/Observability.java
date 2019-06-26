@@ -50,7 +50,7 @@ public enum Observability implements Serializable {
      */
     public static void explicitUnobserve(StoreWriteTxn txn, TaskKey key) {
         if(isObservedByCaller(txn, key)) {
-            // Task is observed, therefore we cannot detach it. If the task was RootObserved, we set it to Observed.
+            // Task is observed, therefore we cannot unobserve it. If the task was RootObserved, we set it to Observed.
             txn.setTaskObservability(key, Observability.ImplicitObserved);
         } else {
             txn.setTaskObservability(key, Observability.Unobserved);
@@ -62,21 +62,21 @@ public enum Observability implements Serializable {
 
     /**
      * Implicitly unobserves task with given {@code key}, settings its observability status to {@link
-     * Observability#Unobserved} if it was not already detached and if no other task observes it. Then propagates this
+     * Observability#Unobserved} if it was not already unobserved and if no other task observes it. Then propagates this
      * to required tasks.
      *
      * @param txn Store write transaction.
-     * @param key Key of the task to detach.
+     * @param key Key of the task to unobserve.
      */
     public static void implicitUnobserve(StoreWriteTxn txn, TaskKey key) {
         final Observability observability = txn.taskObservability(key);
         if(observability != Observability.ImplicitObserved) {
-            // If task is already detached, there is no need to do anything.
+            // If task is already unobserved, there is no need to do anything.
             // If task is explicitly observed, we may not implicitly unobserve it, so we stop.
             return;
         }
         if(isObservedByCaller(txn, key)) {
-            return; // Cannot detach, an observed task requires the task.
+            return; // Cannot unobserve, an observed task requires the task.
         }
         txn.setTaskObservability(key, Observability.Unobserved);
         for(TaskRequireDep taskRequire : txn.taskRequires(key)) {
