@@ -59,7 +59,7 @@ $[public static final class [name] extends [tupleTy]<[tupleTypes]> implements Se
   }
   
   @Nullable
-  public static [name] from[tupleTy](@Nullable [tupleTy]<[tupleTypes]> tuple) {
+  public static [name] fromTuple(@Nullable [tupleTy]<[tupleTypes]> tuple) {
     if (tuple == null) {
       return null;
     }

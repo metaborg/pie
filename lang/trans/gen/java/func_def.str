@@ -101,7 +101,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
       <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
     with
       (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[output([expStr])]
+    ; resultExpStr          := $[Output.fromTuple([expStr])]
     ; result                := (expStmtStrs, resultExpStr)
 
   p2j-pie-func-impl-returnvalue:
@@ -144,22 +144,20 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
       <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
       
   p2j-pie-func-impl-outputsig(|className):
-    ty -> ($[[className].Output], $[[dataClassStr]["\n"][outputFun]["\n\n"]])
+    ty -> ($[[className].Output], $[[dataClassStr]["\n\n"]])
     where
       <?TupleTy(_)> ty
     with
       idTypeTuples := <pie-idtype-tuples> ty
     ; dataClassStr := <p2j-type-generate-dataclass(|"Output")> idTypeTuples
-    ; outputFun    := $[private fun output(tuple: [<p2j-type-sig> ty]) = Output(tuple)]
 
   p2j-pie-func-impl-outputsig(|className):
-    ty -> ($[[className].Output?], $[[dataClassStr]["\n"][outputFun]["\n\n"]])
+    ty -> ($[[className].Output?], $[[dataClassStr]["\n\n"]])
     where
       <?NullableTy(tty@TupleTy(_))> ty
     with
       idTypeTuples := <pie-idtype-tuples> tty
     ; dataClassStr := <p2j-type-generate-dataclass(|"Output")> idTypeTuples
-    ; outputFun    := $[private fun output(tuple: [<p2j-type-sig> ty]) = if(tuple == null) null else Output(tuple)]
 
     
   p2j-pie-func-key-body:
