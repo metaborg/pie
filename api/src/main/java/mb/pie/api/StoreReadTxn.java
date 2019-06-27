@@ -23,6 +23,12 @@ public interface StoreReadTxn extends StoreTxn {
 
 
     /**
+     * @return observability status of task for {@code key}.
+     */
+    Observability taskObservability(TaskKey key);
+
+
+    /**
      * @return task require dependencies (calls) of task [key].
      */
     List<TaskRequireDep> taskRequires(TaskKey key);
@@ -60,6 +66,11 @@ public interface StoreReadTxn extends StoreTxn {
      */
     @Nullable TaskData data(TaskKey key);
 
+
+    /**
+     * @return task keys for all tasks that have no callers.
+     */
+    Set<TaskKey> tasksWithoutCallers();
 
     /**
      * @return number of source required resources for which there is no provider.

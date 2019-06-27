@@ -1,6 +1,7 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
+import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
 import java.io.Serializable
 import java.nio.file.FileSystem
@@ -22,8 +23,20 @@ open class ApiTestCtx(
   open fun newSession(): PieSession = pie.newSession()
 
 
+  fun path(path: String): FSPath {
+    return FSPath(javaFs.getPath(path))
+  }
+
   fun resource(path: String): FSResource {
     return FSResource(javaFs.getPath(path))
+  }
+
+  fun <I : Serializable, O : Serializable?> taskDef(id: String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+    return LambdaTaskDef(id, execFunc)
+  }
+
+  fun <I : Serializable, O : Serializable?> taskDef(id: String, keyFunc: (I) -> Serializable, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {
+    return LambdaTaskDef(id, execFunc, keyFunc)
   }
 
   fun <I : Serializable, O : Serializable?> taskDef(id: String, descFunc: (I, Int) -> String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {

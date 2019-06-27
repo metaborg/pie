@@ -33,6 +33,7 @@ public class LMDBStore implements Store {
     private final Env<ByteBuffer> env;
     private final Dbi<ByteBuffer> input;
     private final Dbi<ByteBuffer> output;
+    private final Dbi<ByteBuffer> taskObservability;
     private final Dbi<ByteBuffer> taskRequires;
     private final Dbi<ByteBuffer> callersOf;
     private final Dbi<ByteBuffer> callersOfValues;
@@ -52,10 +53,11 @@ public class LMDBStore implements Store {
         this.env = Env.create()
             .setMapSize(maxDbSize)
             .setMaxReaders(maxReaders)
-            .setMaxDbs(10)
+            .setMaxDbs(11)
             .open(envDir);
         this.input = env.openDbi("input", DbiFlags.MDB_CREATE);
         this.output = env.openDbi("output", DbiFlags.MDB_CREATE);
+        this.taskObservability = env.openDbi("taskObservability", DbiFlags.MDB_CREATE);
         this.taskRequires = env.openDbi("taskRequires", DbiFlags.MDB_CREATE);
         this.callersOf = env.openDbi("callersOf", DbiFlags.MDB_CREATE, DbiFlags.MDB_DUPSORT);
         this.callersOfValues = env.openDbi("callersOfValues", DbiFlags.MDB_CREATE);
@@ -76,6 +78,7 @@ public class LMDBStore implements Store {
         return new LMDBStoreTxn(env, txn, false, logger,
             input,
             output,
+            taskObservability,
             taskRequires,
             callersOf,
             callersOfValues,
@@ -92,6 +95,7 @@ public class LMDBStore implements Store {
         return new LMDBStoreTxn(env, txn, true, logger,
             input,
             output,
+            taskObservability,
             taskRequires,
             callersOf,
             callersOfValues,

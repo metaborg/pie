@@ -31,7 +31,11 @@ public class BottomUpShared {
 
             final Set<TaskKey> requirees = txn.requireesOf(changedResource);
             for(TaskKey key : requirees) {
-                logger.trace("  * required by: " + key.toShortString(200));
+                logger.trace("  - required by: " + key.toShortString(200));
+                if(txn.taskObservability(key).isUnobserved()) {
+                    logger.trace("    @ is detached; skipping ");
+                    continue;
+                }
                 if(!txn.resourceRequires(key).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(
                     dep -> dep.isConsistent(resourceService))) {
                     affected.add(key);
@@ -40,7 +44,11 @@ public class BottomUpShared {
 
             final @Nullable TaskKey provider = txn.providerOf(changedResource);
             if(provider != null) {
-                logger.trace("  * provided by: " + provider.toShortString(200));
+                logger.trace("  - provided by: " + provider.toShortString(200));
+                if(txn.taskObservability(provider).isUnobserved()) {
+                    logger.trace("    @ is detached; skipping ");
+                    continue;
+                }
                 if(!txn.resourceProvides(provider).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(
                     dep -> dep.isConsistent(resourceService))) {
                     affected.add(provider);

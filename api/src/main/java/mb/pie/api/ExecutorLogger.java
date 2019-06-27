@@ -48,7 +48,7 @@ public interface ExecutorLogger {
 
     void executeEnd(TaskKey key, Task<?> task, ExecReason reason, TaskData data);
 
-    void invokeObserverStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
+    void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 
-    void invokeObserverEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
+    void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 }

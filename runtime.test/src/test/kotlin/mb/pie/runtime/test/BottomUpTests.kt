@@ -29,19 +29,19 @@ internal class BottomUpTests {
     val combKey = combTask.key()
     var combOutput: String? = null
     var combObserved = 0
-    pie.setObserver(combTask) { s -> combOutput = s; ++combObserved }
+    pie.setCallback(combTask) { s -> combOutput = s; ++combObserved }
 
     val readTask = task(readDef, file)
     val readKey = readTask.key()
     var readOutput: String? = null
     var readObserved = 0
-    pie.setObserver(readTask) { s -> readOutput = s; ++readObserved }
+    pie.setCallback(readTask) { s -> readOutput = s; ++readObserved }
 
     val lowerTask = task(lowerDef, str)
     val lowerKey = lowerTask.key()
     var lowerOutput: String? = null
     var lowerObserved = 0
-    pie.setObserver(lowerTask) { s -> lowerOutput = s; ++lowerObserved }
+    pie.setCallback(lowerTask) { s -> lowerOutput = s; ++lowerObserved }
 
     // Build [combineTask] in top-down fashion, observe rebuild of all.
     val session1 = spy(newSession().topDownSession)
@@ -67,7 +67,7 @@ internal class BottomUpTests {
     val lowerRevKey = lowerRevTask.key()
     var lowerRevOutput: String? = null
     var lowerRevObserved = 0
-    pie.setObserver(lowerRevTask) { s -> lowerRevOutput = s; ++lowerRevObserved }
+    pie.setCallback(lowerRevTask) { s -> lowerRevOutput = s; ++lowerRevObserved }
 
     // Notify of file change, observe bottom-up execution of directly affected [readTask], which then affects
     // [combTask], which in turn requires [lowerRevTask].

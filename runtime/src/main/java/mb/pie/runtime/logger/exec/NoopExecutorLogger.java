@@ -56,8 +56,8 @@ public class NoopExecutorLogger implements ExecutorLogger {
     @Override public void executeEnd(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {}
 
     @Override
-    public void invokeObserverStart(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackStart(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
 
     @Override
-    public void invokeObserverEnd(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackEnd(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
 }
