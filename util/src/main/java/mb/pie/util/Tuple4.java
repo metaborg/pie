@@ -1,5 +1,7 @@
 package mb.pie.util;
 
+import java.util.Objects;
+
 public class Tuple4<T1, T2, T3, T4> {
     private final T1 f1;
     private final T2 f2;
@@ -43,5 +45,21 @@ public class Tuple4<T1, T2, T3, T4> {
 
     public T4 component4() {
         return f4;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tuple4)) return false;
+        Tuple4<?, ?, ?, ?> tuple4 = (Tuple4<?, ?, ?, ?>) o;
+        return Objects.equals(f1, tuple4.f1) &&
+                Objects.equals(f2, tuple4.f2) &&
+                Objects.equals(f3, tuple4.f3) &&
+                Objects.equals(f4, tuple4.f4);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(f1, f2, f3, f4);
     }
 }
