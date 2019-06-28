@@ -1,8 +1,9 @@
 package mb.pie.util;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Tuple2<T1, T2> {
+public class Tuple2<T1 extends Serializable, T2 extends Serializable> implements Serializable {
     private final T1 f1;
     private final T2 f2;
 
