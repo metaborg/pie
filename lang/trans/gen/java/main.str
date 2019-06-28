@@ -17,12 +17,12 @@ rules
     with
       filename := <guarantee-extension(|"java")> file
     ; mod      := <base-filename;remove-extension> file
-    ; result   := <p2j(|mod)> ast
+    ; result   := <p2j(|mod, "mb.pie.example.helloworld.java")> ast
     ; <debug(|"Successfully transpiled file to Java: ")> file
 
 rules
 
-  p2j(|mod):
+  p2j(|mod, package):
     Program(defs) -> str
     with
     {| AstAnalysis, ModuleBindings:
@@ -34,6 +34,7 @@ rules
     with
       str := 
 $[// This file was generated from Pie source file [mod].pie.
+package [package];
 
 import com.google.inject.Inject;
 import mb.pie.api.ExecContext;
