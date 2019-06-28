@@ -154,12 +154,12 @@ rules // Control flow
       (PathTy(), StrTy()) := (lType, rType)
 
   p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[Stream.concat(([lExpStr]).stream(), Stream.of([rExpStr])).collect(Collectors.toList())]
+    _ -> $[Stream.concat(([lExpStr]).stream(), Stream.of([rExpStr])).collect(Collectors.toCollection(ArrayList::new))]
     where
       (ListTy(a), a) := (lType, rType)
 
   p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[Stream.concat(([lExpStr]).stream(), ([rExpStr]).stream()).collect(Collectors.toList())]
+    _ -> $[Stream.concat(([lExpStr]).stream(), ([rExpStr]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where
       (ListTy(a), ListTy(a)) := (lType, rType)
 
