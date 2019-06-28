@@ -70,19 +70,19 @@ rules // Unary expressions
 
 rules // Binary expressions
 
-  p2j-binexp(|symbol):
+  p2j-binexp(|begin, middle, end): // start is a reserved word?
     (lExp, rExp) -> result
     with
       (lStmtStrs, lExpStr) := <try-p2j-exp> lExp
     ; (rStmtStrs, rExpStr) := <try-p2j-exp> rExp
     ; stmtStrs             := <concat> [lStmtStrs, rStmtStrs]
-    ; expStr               := $[[lExpStr] [symbol] [rExpStr]]
+    ; expStr               := $[[begin][lExpStr][middle][rExpStr][end]]
     ; result               := (stmtStrs, expStr)
   
-  p2j-exp: Eq(lExp, rExp) -> <p2j-binexp(|"==")> (lExp, rExp)
-  p2j-exp: Neq(lExp, rExp) -> <p2j-binexp(|"!=")> (lExp, rExp)
-  p2j-exp: Lor(lExp, rExp) -> <p2j-binexp(|"||")> (lExp, rExp)
-  p2j-exp: Land(lExp, rExp) -> <p2j-binexp(|"&&")> (lExp, rExp)
+  p2j-exp: Eq(lExp, rExp) -> <p2j-binexp(|"", ".equals(", ")")> (lExp, rExp)
+  p2j-exp: Neq(lExp, rExp) -> <p2j-binexp(|"!", ".equals(", ")")> (lExp, rExp)
+  p2j-exp: Lor(lExp, rExp) -> <p2j-binexp(|"", "||", "")> (lExp, rExp)
+  p2j-exp: Land(lExp, rExp) -> <p2j-binexp(|"", "&&", "")> (lExp, rExp)
 
 rules // Control flow
 
