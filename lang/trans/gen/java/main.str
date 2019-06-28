@@ -38,6 +38,7 @@ package [package];
 
 import com.google.inject.Inject;
 import mb.pie.api.ExecContext;
+import mb.pie.api.ExecException;
 import mb.pie.api.None;
 import mb.pie.api.TaskDef;
 import mb.pie.api.stamp.resource.FileSystemStampers;
