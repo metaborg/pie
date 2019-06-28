@@ -8,4 +8,4 @@ func hello(file: path) -> unit = {
 }
 
 func writeString(file: path, text: string) -> unit = 
-  foreign java mb.pie.example.helloworld.java.Util#writeString
+  foreign java mb.pie.util.Util#writeString
