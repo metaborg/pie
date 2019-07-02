@@ -12,6 +12,7 @@ import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -142,12 +143,12 @@ public class ExecContextImpl implements ExecContext {
         return defaultStampers.provideReadableResource;
     }
 
-    @Override public ResourceStamper<FSResource> getDefaultRequireFSResourceStamper() {
-        return defaultStampers.requireFSResource;
+    @Override public ResourceStamper<HierarchicalResource> getDefaultRequireHierarchicalResourceStamper() {
+        return defaultStampers.requireHierarchicalResource;
     }
 
-    @Override public ResourceStamper<FSResource> getDefaultProvideFSResourceStamper() {
-        return defaultStampers.provideFSResource;
+    @Override public ResourceStamper<HierarchicalResource> getDefaultProvideHierarchicalResourceStamper() {
+        return defaultStampers.provideHierarchicalResource;
     }
 
 

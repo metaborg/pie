@@ -77,11 +77,11 @@ class NoExecContext : ExecContext {
 
   override fun require(path: FSPath) = null!!
   override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
-  override fun getDefaultRequireFSResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<FSResource> = null!!
 
   override fun provide(path: FSPath) {}
   override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
-  override fun getDefaultProvideFSResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun getDefaultProvideHierarchicalResourceStamper(): ResourceStamper<FSResource> = null!!
 
   override fun logger(): Logger = null!!
 }

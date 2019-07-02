@@ -16,6 +16,7 @@ import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -44,10 +45,10 @@ import java.util.function.Function;
     abstract ResourceStamper<ReadableResource> defaultProvideReadableResourceStamper();
 
     @BindsOptionalOf @Named("require")
-    abstract ResourceStamper<FSResource> defaultRequireFSResourceStamper();
+    abstract ResourceStamper<HierarchicalResource> defaultRequireHierarchicalResourceStamper();
 
     @BindsOptionalOf @Named("provide")
-    abstract ResourceStamper<FSResource> defaultProvideFSResourceStamper();
+    abstract ResourceStamper<HierarchicalResource> defaultProvideHierarchicalResourceStamper();
 
     @BindsOptionalOf abstract BiFunction<TaskDefs, Logger, Layer> layerFunc();
 

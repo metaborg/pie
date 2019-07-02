@@ -8,6 +8,7 @@ import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -33,8 +34,8 @@ public class PieModule {
         Optional<OutputStamper> defaultOutputStamper,
         @Named("require") Optional<ResourceStamper<ReadableResource>> defaultRequireReadableResourceStamper,
         @Named("provide") Optional<ResourceStamper<ReadableResource>> defaultProvideReadableResourceStamper,
-        @Named("require") Optional<ResourceStamper<FSResource>> defaultRequireFSResourceStamper,
-        @Named("provide") Optional<ResourceStamper<FSResource>> defaultProvideFSResourceStamper,
+        @Named("require") Optional<ResourceStamper<HierarchicalResource>> defaultRequireHierarchicalResourceStamper,
+        @Named("provide") Optional<ResourceStamper<HierarchicalResource>> defaultProvideHierarchicalResourceStamper,
         Optional<BiFunction<TaskDefs, Logger, Layer>> layerFunc,
         Optional<Logger> logger,
         Optional<Function<Logger, ExecutorLogger>> executorLoggerFunc
@@ -47,8 +48,8 @@ public class PieModule {
         defaultOutputStamper.ifPresent(builder::withDefaultOutputStamper);
         defaultRequireReadableResourceStamper.ifPresent(builder::withDefaultRequireReadableResourceStamper);
         defaultProvideReadableResourceStamper.ifPresent(builder::withDefaultProvideReadableResourceStamper);
-        defaultRequireFSResourceStamper.ifPresent(builder::withDefaultRequireFSResourceStamper);
-        defaultProvideFSResourceStamper.ifPresent(builder::withDefaultProvideFSResourceStamper);
+        defaultRequireHierarchicalResourceStamper.ifPresent(builder::withDefaultRequireHierarchicalResourceStamper);
+        defaultProvideHierarchicalResourceStamper.ifPresent(builder::withDefaultProvideHierarchicalResourceStamper);
         layerFunc.ifPresent(builder::withLayer);
         logger.ifPresent(builder::withLogger);
         executorLoggerFunc.ifPresent(builder::withExecutorLogger);

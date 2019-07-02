@@ -9,6 +9,7 @@ import mb.resource.ResourceKey;
 import mb.resource.ResourceRuntimeException;
 import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.File;
@@ -242,8 +243,8 @@ public interface ExecContext {
 
 
     /**
-     * Marks given {@code resource} as provided (write), using the {@link #getDefaultProvideReadableResourceStamper default
-     * provide resource stamper for readable resources}, creating a provided resource dependency.
+     * Marks given {@code resource} as provided (write), using the {@link #getDefaultProvideReadableResourceStamper
+     * default provide resource stamper for readable resources}, creating a provided resource dependency.
      *
      * @param resource {@link ReadableResource Readable resource} to create a provide dependency for.
      * @throws IOException When stamping the resource fails unexpectedly.
@@ -266,7 +267,7 @@ public interface ExecContext {
 
 
     /**
-     * Marks resource for given {@code path} as required (read), using the {@link #getDefaultRequireFSResourceStamper
+     * Marks resource for given {@code path} as required (read), using the {@link #getDefaultRequireHierarchicalResourceStamper
      * default require file system resource stamper}, creating a required resource dependency.
      *
      * @param path Path of the resource to require.
@@ -275,7 +276,7 @@ public interface ExecContext {
      */
     default FSResource require(FSPath path) throws IOException {
         final FSResource resource = new FSResource(path);
-        require(resource, getDefaultRequireFSResourceStamper());
+        require(resource, getDefaultRequireHierarchicalResourceStamper());
         return resource;
     }
 
@@ -295,18 +296,18 @@ public interface ExecContext {
     }
 
     /**
-     * Marks given {@code resource} as required (read), using the {@link #getDefaultRequireFSResourceStamper default
-     * require file system resource stamper}, creating a required resource dependency.
+     * Marks given {@code resource} as required (read), using the {@link #getDefaultRequireHierarchicalResourceStamper
+     * default require file system resource stamper}, creating a required resource dependency.
      *
      * @param resource Resource to require.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void require(FSResource resource) throws IOException {
-        require(resource, getDefaultRequireFSResourceStamper());
+    default void require(HierarchicalResource resource) throws IOException {
+        require(resource, getDefaultRequireHierarchicalResourceStamper());
     }
 
     /**
-     * Marks resource for given {@code path} as required (read), using the {@link #getDefaultRequireFSResourceStamper
+     * Marks resource for given {@code path} as required (read), using the {@link #getDefaultRequireHierarchicalResourceStamper
      * default require file system resource stamper}, creating a required resource dependency.
      *
      * @param path Path of the resource to require.
@@ -315,7 +316,7 @@ public interface ExecContext {
      */
     default FSResource require(Path path) throws IOException {
         final FSResource resource = new FSResource(path);
-        require(resource, getDefaultRequireFSResourceStamper());
+        require(resource, getDefaultRequireHierarchicalResourceStamper());
         return resource;
     }
 
@@ -335,7 +336,7 @@ public interface ExecContext {
     }
 
     /**
-     * Marks resource for given {@code file} as required (read), using the {@link #getDefaultRequireFSResourceStamper
+     * Marks resource for given {@code file} as required (read), using the {@link #getDefaultRequireHierarchicalResourceStamper
      * default require file system resource stamper}, creating a required resource dependency.
      *
      * @param file File to require.
@@ -343,7 +344,7 @@ public interface ExecContext {
      */
     default FSResource require(File file) throws IOException {
         final FSResource resource = new FSResource(file);
-        require(resource, getDefaultRequireFSResourceStamper());
+        require(resource, getDefaultRequireHierarchicalResourceStamper());
         return resource;
     }
 
@@ -367,7 +368,7 @@ public interface ExecContext {
      *
      * @return Default require resource stamper for {@link FSResource file system resources}.
      */
-    ResourceStamper<FSResource> getDefaultRequireFSResourceStamper();
+    ResourceStamper<HierarchicalResource> getDefaultRequireHierarchicalResourceStamper();
 
 
     //
@@ -377,14 +378,14 @@ public interface ExecContext {
 
     /**
      * Marks resource for given {@code path} as provided (written to/created)), using the {@link
-     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
-     * dependency.
+     * #getDefaultProvideHierarchicalResourceStamper default provide file system resource stamper}, creating a provided
+     * resource dependency.
      *
      * @param path Path of the resource to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(FSPath path) throws IOException {
-        provide(new FSResource(path), getDefaultProvideFSResourceStamper());
+        provide(new FSResource(path), getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -401,26 +402,26 @@ public interface ExecContext {
 
     /**
      * Marks given {@code resource} as provided (written to/created)), using the {@link
-     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
-     * dependency.
+     * #getDefaultProvideHierarchicalResourceStamper default provide file system resource stamper}, creating a provided
+     * resource dependency.
      *
      * @param resource Resource to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(FSResource resource) throws IOException {
-        provide(resource, getDefaultProvideFSResourceStamper());
+    default void provide(HierarchicalResource resource) throws IOException {
+        provide(resource, getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
      * Marks resource for given {@code path} as provided (written to/created)), using the {@link
-     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
-     * dependency.
+     * #getDefaultProvideHierarchicalResourceStamper default provide file system resource stamper}, creating a provided
+     * resource dependency.
      *
      * @param path Path of the resource to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(Path path) throws IOException {
-        provide(new FSResource(path), getDefaultProvideFSResourceStamper());
+        provide(new FSResource(path), getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -437,14 +438,14 @@ public interface ExecContext {
 
     /**
      * Marks resource for given {@code file} as provided (written to/created), using the {@link
-     * #getDefaultProvideFSResourceStamper default provide file system resource stamper}, creating a provided resource
-     * dependency.
+     * #getDefaultProvideHierarchicalResourceStamper default provide file system resource stamper}, creating a provided
+     * resource dependency.
      *
      * @param file File to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
     default void provide(File file) throws IOException {
-        provide(new FSResource(file), getDefaultProvideFSResourceStamper());
+        provide(new FSResource(file), getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -464,7 +465,7 @@ public interface ExecContext {
      *
      * @return Default provide resource stamper for {@link FSResource file system resources}.
      */
-    ResourceStamper<FSResource> getDefaultProvideFSResourceStamper();
+    ResourceStamper<HierarchicalResource> getDefaultProvideHierarchicalResourceStamper();
 
 
     //

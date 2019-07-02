@@ -10,7 +10,7 @@ import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
-import mb.pie.api.stamp.resource.FileSystemStampers;
+import mb.pie.api.stamp.resource.ResourceStampers;
 import mb.pie.runtime.layer.ValidationLayer;
 import mb.pie.runtime.logger.NoopLogger;
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger;
@@ -21,7 +21,7 @@ import mb.resource.DefaultResourceService;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSRegistry;
-import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -32,10 +32,10 @@ public class PieBuilderImpl implements PieBuilder {
     private Function<Logger, Store> store = (logger) -> new InMemoryStore();
     private Function<Logger, Share> share = (logger) -> new NonSharingShare();
     private OutputStamper defaultOutputStamper = OutputStampers.equals();
-    private ResourceStamper<ReadableResource> defaultRequireReadableStamper = FileSystemStampers.modified();
-    private ResourceStamper<ReadableResource> defaultProvideReadableStamper = FileSystemStampers.modified();
-    private ResourceStamper<FSResource> defaultRequireFileSystemStamper = FileSystemStampers.modified();
-    private ResourceStamper<FSResource> defaultProvideFileSystemStamper = FileSystemStampers.modified();
+    private ResourceStamper<ReadableResource> defaultRequireReadableStamper = ResourceStampers.modified();
+    private ResourceStamper<ReadableResource> defaultProvideReadableStamper = ResourceStampers.modified();
+    private ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper = ResourceStampers.modified();
+    private ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper = ResourceStampers.modified();
     private BiFunction<TaskDefs, Logger, Layer> layerFactory = ValidationLayer::new;
     private Logger logger = new NoopLogger();
     private Function<Logger, ExecutorLogger> executorLoggerFactory = LoggerExecutorLogger::new;
@@ -75,13 +75,13 @@ public class PieBuilderImpl implements PieBuilder {
         return this;
     }
 
-    @Override public PieBuilderImpl withDefaultRequireFSResourceStamper(ResourceStamper<FSResource> stamper) {
-        this.defaultRequireFileSystemStamper = stamper;
+    @Override public PieBuilderImpl withDefaultRequireHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper) {
+        this.defaultRequireHierarchicalStamper = stamper;
         return this;
     }
 
-    @Override public PieBuilderImpl withDefaultProvideFSResourceStamper(ResourceStamper<FSResource> stamper) {
-        this.defaultProvideFileSystemStamper = stamper;
+    @Override public PieBuilderImpl withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper) {
+        this.defaultProvideHierarchicalStamper = stamper;
         return this;
     }
 
@@ -105,7 +105,7 @@ public class PieBuilderImpl implements PieBuilder {
         final Share share = this.share.apply(logger);
         final DefaultStampers defaultStampers =
             new DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
-                defaultRequireFileSystemStamper, defaultProvideFileSystemStamper);
+                defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper);
         return new PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, logger,
             executorLoggerFactory);
     }

@@ -1,7 +1,7 @@
 package mb.pie.example.playground
 
 import mb.pie.api.*
-import mb.pie.api.stamp.resource.FileSystemStampers
+import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.api.MapTaskDefs
@@ -32,7 +32,7 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
   override fun exec(context: ExecContext, input: Input): File {
     val (sourceFile, sourceTask, destination) = input
     context.require(sourceTask)
-    context.require(sourceFile, FileSystemStampers.hash())
+    context.require(sourceFile, ResourceStampers.hash())
     val sourceText = sourceFile.readText() + ", and universe!"
     destination.outputStream().buffered().use {
       it.write(sourceText.toByteArray())

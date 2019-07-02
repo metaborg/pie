@@ -1,7 +1,7 @@
 package mb.pie.api.stamp.resource;
 
 import mb.resource.ReadableResource;
-import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.match.ResourceMatcher;
 import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -23,7 +23,7 @@ public class Hash {
         }
     }
 
-    void update(FSResource resource, @Nullable ResourceMatcher matcher) throws IOException {
+    void update(HierarchicalResource resource, @Nullable ResourceMatcher matcher) throws IOException {
         if(resource.isFile()) {
             updateFile(resource);
         }
@@ -32,7 +32,7 @@ public class Hash {
         }
     }
 
-    void updateRec(FSResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+    void updateRec(HierarchicalResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
         if(resource.isFile()) {
             updateFile(resource);
         }
@@ -45,9 +45,9 @@ public class Hash {
         digest.update(file.readBytes());
     }
 
-    void updateDir(FSResource dir, @Nullable ResourceMatcher matcher) throws IOException {
+    void updateDir(HierarchicalResource dir, @Nullable ResourceMatcher matcher) throws IOException {
         final boolean useMatcher = matcher != null;
-        try(final Stream<FSResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
+        try(final Stream<? extends HierarchicalResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
             stream.forEach((resource) -> {
                 try {
                     if(resource.isFile()) {
@@ -62,9 +62,9 @@ public class Hash {
         }
     }
 
-    void updateDirRec(FSResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+    void updateDirRec(HierarchicalResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
         final boolean useWalker = walker != null && matcher != null;
-        try(final Stream<FSResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
+        try(final Stream<? extends HierarchicalResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
             stream.forEach((resource) -> {
                 try {
                     if(resource.isFile()) {
