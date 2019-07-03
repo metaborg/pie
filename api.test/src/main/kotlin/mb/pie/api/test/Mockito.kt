@@ -8,6 +8,7 @@ import mb.resource.Resource
 import mb.resource.ResourceKey
 import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
+import mb.resource.hierarchical.HierarchicalResource
 import org.mockito.Mockito
 import java.io.Serializable
 
@@ -76,12 +77,12 @@ class NoExecContext : ExecContext {
   override fun getDefaultProvideReadableResourceStamper() = null!!
 
   override fun require(path: FSPath) = null!!
-  override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
-  override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun require(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) = null!!
+  override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
   override fun provide(path: FSPath) {}
-  override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
-  override fun getDefaultProvideHierarchicalResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun provide(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) {}
+  override fun getDefaultProvideHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
   override fun logger(): Logger = null!!
 }

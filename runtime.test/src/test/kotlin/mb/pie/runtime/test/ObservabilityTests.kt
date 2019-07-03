@@ -11,6 +11,7 @@ import mb.pie.runtime.PieImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.resource.fs.FSResource
+import mb.resource.hierarchical.HierarchicalResource
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
@@ -740,8 +741,8 @@ object ObservabilityTestGenerator {
     shareGens: Array<(Logger) -> Share> = RuntimeTestGenerator.defaultShareGens,
     layerGens: Array<(TaskDefs, Logger) -> Layer> = RuntimeTestGenerator.defaultLayerGens,
     defaultOutputStampers: Array<OutputStamper> = ApiTestGenerator.defaultDefaultOutputStampers,
-    defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = ApiTestGenerator.defaultDefaultRequireFileSystemStampers,
-    defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = ApiTestGenerator.defaultDefaultProvideFileSystemStampers,
+    defaultRequireFileSystemStampers: Array<ResourceStamper<HierarchicalResource>> = ApiTestGenerator.defaultDefaultRequireHierarchicalStampers,
+    defaultProvideFileSystemStampers: Array<ResourceStamper<HierarchicalResource>> = ApiTestGenerator.defaultDefaultProvideHierarchicalStampers,
     executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
     logger: Logger = StreamLogger.onlyErrors(),
     testFunc: ObservabilityTestCtx.() -> Unit

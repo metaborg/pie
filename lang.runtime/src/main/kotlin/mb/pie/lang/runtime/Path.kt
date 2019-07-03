@@ -5,6 +5,7 @@ import mb.pie.api.ExecException
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
+import mb.resource.hierarchical.HierarchicalResource
 import mb.resource.hierarchical.match.ResourceMatcher
 import mb.resource.hierarchical.walk.ResourceWalker
 import java.io.IOException
@@ -19,7 +20,7 @@ operator fun FSPath.plus(other: String): FSPath {
 }
 
 fun ExecContext.exists(path: FSPath): Boolean {
-  val node = require(path, ResourceStampers.exists<FSResource>())
+  val node = require(path, ResourceStampers.exists<HierarchicalResource>())
   return node.exists()
 }
 
@@ -57,7 +58,7 @@ fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMat
 
 @Throws(ExecException::class)
 fun ExecContext.readToString(path: FSPath): String? {
-  val node = require(path, ResourceStampers.hash<FSResource>())
+  val node = require(path, ResourceStampers.hash<HierarchicalResource>())
   try {
     if(!node.exists()) {
       return null

@@ -289,7 +289,7 @@ public interface ExecContext {
      * @return file system resource for given path.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default FSResource require(FSPath path, ResourceStamper<FSResource> stamper) throws IOException {
+    default FSResource require(FSPath path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
         final FSResource resource = new FSResource(path);
         require(resource, stamper);
         return resource;
@@ -329,7 +329,7 @@ public interface ExecContext {
      * @return file system resource for given path.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default FSResource require(Path path, ResourceStamper<FSResource> stamper) throws IOException {
+    default FSResource require(Path path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
         final FSResource resource = new FSResource(path);
         require(resource, stamper);
         return resource;
@@ -357,7 +357,7 @@ public interface ExecContext {
      * @return file system resource for given path.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default FSResource require(File file, ResourceStamper<FSResource> stamper) throws IOException {
+    default FSResource require(File file, ResourceStamper<HierarchicalResource> stamper) throws IOException {
         final FSResource resource = new FSResource(file);
         require(resource, stamper);
         return resource;
@@ -396,7 +396,7 @@ public interface ExecContext {
      * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(FSPath path, ResourceStamper<FSResource> stamper) throws IOException {
+    default void provide(FSPath path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
         provide(new FSResource(path), stamper);
     }
 
@@ -432,7 +432,7 @@ public interface ExecContext {
      * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(Path path, ResourceStamper<FSResource> stamper) throws IOException {
+    default void provide(Path path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
         provide(new FSResource(path), stamper);
     }
 
@@ -456,7 +456,7 @@ public interface ExecContext {
      * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(File file, ResourceStamper<FSResource> stamper) throws IOException {
+    default void provide(File file, ResourceStamper<HierarchicalResource> stamper) throws IOException {
         provide(new FSResource(file), stamper);
     }
 

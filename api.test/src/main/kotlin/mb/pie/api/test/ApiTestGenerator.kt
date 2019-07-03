@@ -8,15 +8,15 @@ import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
 import mb.pie.api.stamp.resource.HashMatchResourceStamper
 import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
-import mb.resource.fs.FSResource
+import mb.resource.hierarchical.HierarchicalResource
 import org.junit.jupiter.api.*
 import java.nio.file.FileSystem
 import java.util.stream.Stream
 
 object ApiTestGenerator {
   val defaultDefaultOutputStampers: Array<OutputStamper> = arrayOf(EqualsOutputStamper())
-  val defaultDefaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
-  val defaultDefaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
+  val defaultDefaultRequireHierarchicalStampers: Array<ResourceStamper<HierarchicalResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
+  val defaultDefaultProvideHierarchicalStampers: Array<ResourceStamper<HierarchicalResource>> = arrayOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
 
   fun <Ctx : ApiTestCtx> generate(
     name: String,
@@ -26,8 +26,8 @@ object ApiTestGenerator {
     shareGens: Array<(Logger) -> Share>,
     layerGens: Array<(TaskDefs, Logger) -> Layer>,
     defaultOutputStampers: Array<OutputStamper> = defaultDefaultOutputStampers,
-    defaultRequireFileSystemStampers: Array<ResourceStamper<FSResource>> = defaultDefaultRequireFileSystemStampers,
-    defaultProvideFileSystemStampers: Array<ResourceStamper<FSResource>> = defaultDefaultProvideFileSystemStampers,
+    defaultRequireFileSystemStampers: Array<ResourceStamper<HierarchicalResource>> = defaultDefaultRequireHierarchicalStampers,
+    defaultProvideFileSystemStampers: Array<ResourceStamper<HierarchicalResource>> = defaultDefaultProvideHierarchicalStampers,
     executorLoggerGen: (Logger) -> ExecutorLogger,
     logger: Logger,
     testCtxGen: (Pie, TaskDefs, FileSystem) -> Ctx,
