@@ -18,7 +18,7 @@ class Modified {
         if(resource.isDirectory()) {
             return modifiedDir(resource, matcher);
         }
-        return getUnknown();
+        return getMinimum();
     }
 
     static long modifiedRec(HierarchicalResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
@@ -28,10 +28,13 @@ class Modified {
         if(resource.isDirectory()) {
             return modifiedDirRec(resource, walker, matcher);
         }
-        return getUnknown();
+        return getMinimum();
     }
 
     static long modifiedFile(ReadableResource resource) throws IOException {
+        if(!resource.exists()) {
+            return getMaximum();
+        }
         return resource.getLastModifiedTime().toEpochMilli();
     }
 
@@ -39,7 +42,10 @@ class Modified {
         if(matcher == null) {
             return modifiedFile(dir);
         }
-        final long[] lastModified = {getUnknown()}; // Use array to allow access to non-final variable in closure.
+        if(!dir.exists()) {
+            return getMaximum();
+        }
+        final long[] lastModified = {getMinimum()}; // Use array to allow access to non-final variable in closure.
         try(final Stream<? extends HierarchicalResource> stream = dir.list(matcher)) {
             stream.forEach((resource) -> {
                 try {
@@ -56,7 +62,10 @@ class Modified {
     }
 
     private static long modifiedDirRec(HierarchicalResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
-        final long[] lastModified = {getUnknown()}; // Use array to allow access to non-final variable in closure.
+        if(!dir.exists()) {
+            return getMaximum();
+        }
+        final long[] lastModified = {getMinimum()}; // Use array to allow access to non-final variable in closure.
         final boolean useWalker = walker != null && matcher != null;
         try(final Stream<? extends HierarchicalResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
             stream.forEach((resource) -> {
@@ -73,7 +82,11 @@ class Modified {
         return lastModified[0];
     }
 
-    private static long getUnknown() {
+    private static long getMinimum() {
         return Long.MIN_VALUE;
+    }
+
+    private static long getMaximum() {
+        return Long.MAX_VALUE;
     }
 }
