@@ -42,15 +42,28 @@ public class Hash {
     }
 
     void updateFile(ReadableResource file) throws IOException {
+        if(!file.exists()) {
+            digest.update((byte) 0);
+            return;
+        } else {
+            digest.update((byte) 1);
+        }
         digest.update(file.readBytes());
     }
 
     void updateDir(FSResource dir, @Nullable ResourceMatcher matcher) throws IOException {
+        if(!dir.exists()) {
+            digest.update((byte) 0);
+            return;
+        } else {
+            digest.update((byte) 1);
+        }
         final boolean useMatcher = matcher != null;
         try(final Stream<FSResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
             stream.forEach((resource) -> {
                 try {
                     if(resource.isFile()) {
+                        // TODO: should hash filename as well, such that a change in filename also triggers a hash inequality.
                         updateFile(resource);
                     }
                 } catch(IOException e) {
@@ -63,11 +76,18 @@ public class Hash {
     }
 
     void updateDirRec(FSResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+        if(!dir.exists()) {
+            digest.update((byte) 0);
+            return;
+        } else {
+            digest.update((byte) 1);
+        }
         final boolean useWalker = walker != null && matcher != null;
         try(final Stream<FSResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
             stream.forEach((resource) -> {
                 try {
                     if(resource.isFile()) {
+                        // TODO: should hash filename as well, such that a change in filename also triggers a hash inequality.
                         updateFile(resource);
                     }
                 } catch(IOException e) {
