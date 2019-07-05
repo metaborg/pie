@@ -32,7 +32,7 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
   override fun exec(context: ExecContext, input: Input): File {
     val (sourceFile, sourceTask, destination) = input
     context.require(sourceTask)
-    context.require(sourceFile, ResourceStampers.hash())
+    context.require(sourceFile, ResourceStampers.hashFile())
     val sourceText = sourceFile.readText() + ", and universe!"
     destination.outputStream().buffered().use {
       it.write(sourceText.toByteArray())

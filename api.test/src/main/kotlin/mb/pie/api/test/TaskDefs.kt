@@ -13,7 +13,7 @@ val ApiTestCtx.toLowerCase
 
 val ApiTestCtx.readResource
   get() = taskDef<FSResource, String>("read", { input, _ -> "read($input)" }) {
-    require(it, ResourceStampers.modified())
+    require(it, ResourceStampers.modifiedFile())
     read(it)
   }
 

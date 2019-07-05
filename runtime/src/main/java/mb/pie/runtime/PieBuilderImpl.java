@@ -32,10 +32,10 @@ public class PieBuilderImpl implements PieBuilder {
     private Function<Logger, Store> store = (logger) -> new InMemoryStore();
     private Function<Logger, Share> share = (logger) -> new NonSharingShare();
     private OutputStamper defaultOutputStamper = OutputStampers.equals();
-    private ResourceStamper<ReadableResource> defaultRequireReadableStamper = ResourceStampers.modified();
-    private ResourceStamper<ReadableResource> defaultProvideReadableStamper = ResourceStampers.modified();
-    private ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper = ResourceStampers.modified();
-    private ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper = ResourceStampers.modified();
+    private ResourceStamper<ReadableResource> defaultRequireReadableStamper = ResourceStampers.modifiedFile();
+    private ResourceStamper<ReadableResource> defaultProvideReadableStamper = ResourceStampers.modifiedFile();
+    private ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper = ResourceStampers.modifiedFile();
+    private ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper = ResourceStampers.modifiedFile();
     private BiFunction<TaskDefs, Logger, Layer> layerFactory = ValidationLayer::new;
     private Logger logger = new NoopLogger();
     private Function<Logger, ExecutorLogger> executorLoggerFactory = LoggerExecutorLogger::new;

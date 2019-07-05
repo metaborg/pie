@@ -63,11 +63,11 @@ open class ApiTestCtx(
   }
 
   fun write(text: String, resource: FSResource) {
+    Thread.sleep(1) // HACK: sleep before/after writing, to ensure that timestamp of file has changed. JIMFS, which we use in tests, apparently needs this.
     resource.newOutputStream().buffered().use {
       it.write(text.toByteArray())
       it.flush()
     }
-    // HACK: for some reason, sleeping is sometimes required for writes to the file to be picked up by reads...
     Thread.sleep(1)
   }
 }

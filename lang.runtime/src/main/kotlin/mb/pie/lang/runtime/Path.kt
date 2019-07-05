@@ -26,7 +26,7 @@ fun ExecContext.exists(path: FSPath): Boolean {
 
 @Throws(ExecException::class)
 fun ExecContext.list(path: FSPath, matcher: ResourceMatcher?): ArrayList<FSPath> {
-  val node = require(path, ResourceStampers.modified(matcher))
+  val node = require(path, ResourceStampers.modifiedDir(matcher))
   if(!node.isDirectory) {
     throw ExecException("Cannot list '$path', it is not a directory")
   }
@@ -42,7 +42,7 @@ fun ExecContext.list(path: FSPath, matcher: ResourceMatcher?): ArrayList<FSPath>
 
 @Throws(ExecException::class)
 fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMatcher?): ArrayList<FSPath> {
-  val node = require(path, ResourceStampers.modified(walker, matcher))
+  val node = require(path, ResourceStampers.modifiedDirRec(walker, matcher))
   if(!node.isDirectory) {
     throw ExecException("Cannot walk '$path', it is not a directory")
   }
@@ -58,7 +58,7 @@ fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMat
 
 @Throws(ExecException::class)
 fun ExecContext.readToString(path: FSPath): String? {
-  val node = require(path, ResourceStampers.hash<HierarchicalResource>())
+  val node = require(path, ResourceStampers.hashFile<HierarchicalResource>())
   try {
     if(!node.exists()) {
       return null

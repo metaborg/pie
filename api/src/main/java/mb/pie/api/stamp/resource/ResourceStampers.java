@@ -13,28 +13,44 @@ public class ResourceStampers {
     }
 
 
-    public static <R extends ReadableResource> ModifiedResourceStamper<R> modified() {
+    public static <R extends ReadableResource> ModifiedResourceStamper<R> modifiedFile() {
         return new ModifiedResourceStamper<>();
     }
 
-    public static ModifiedMatchResourceStamper modified(ResourceMatcher matcher) {
+    public static ModifiedMatchResourceStamper modifiedDir() {
+        return new ModifiedMatchResourceStamper();
+    }
+
+    public static ModifiedMatchResourceStamper modifiedDir(ResourceMatcher matcher) {
         return new ModifiedMatchResourceStamper(matcher);
     }
 
-    public static ModifiedWalkResourceStamper modified(ResourceWalker walker, ResourceMatcher matcher) {
+    public static ModifiedWalkResourceStamper modifiedDirRec() {
+        return new ModifiedWalkResourceStamper();
+    }
+
+    public static ModifiedWalkResourceStamper modifiedDirRec(ResourceWalker walker, ResourceMatcher matcher) {
         return new ModifiedWalkResourceStamper(walker, matcher);
     }
 
 
-    public static <R extends ReadableResource> HashResourceStamper<R> hash() {
+    public static <R extends ReadableResource> HashResourceStamper<R> hashFile() {
         return new HashResourceStamper<>();
     }
 
-    public static HashMatchResourceStamper hash(ResourceMatcher matcher) {
+    public static HashMatchResourceStamper hashDir() {
+        return new HashMatchResourceStamper();
+    }
+
+    public static HashMatchResourceStamper hashDir(ResourceMatcher matcher) {
         return new HashMatchResourceStamper(matcher);
     }
 
-    public static HashWalkResourceStamper hash(ResourceWalker walker, ResourceMatcher matcher) {
+    public static HashWalkResourceStamper hashDirRec() {
+        return new HashWalkResourceStamper();
+    }
+
+    public static HashWalkResourceStamper hashDirRec(ResourceWalker walker, ResourceMatcher matcher) {
         return new HashWalkResourceStamper(walker, matcher);
     }
 }
