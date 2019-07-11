@@ -39,30 +39,32 @@ public class TopDownSession implements RequireTask {
         this.visited = visited;
     }
 
-    public <O extends @Nullable Serializable> O requireInitial(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O requireInitial(Task<O> task, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
         final TaskKey key = task.key();
         executorLogger.requireTopDownInitialStart(key, task);
-        final O output = require(key, task, cancel);
-        try(StoreWriteTxn txn = store.writeTxn()) {
-            // Set task as root observable when required initially.
-            txn.setTaskObservability(key, Observability.ExplicitObserved);
+        final O output = require(key, task, modifyObservability, cancel);
+        if(modifyObservability) {
+            try(StoreWriteTxn txn = store.writeTxn()) {
+                // Set task as root observable when required initially.
+                txn.setTaskObservability(key, Observability.ExplicitObserved);
+            }
         }
         executorLogger.requireTopDownInitialEnd(key, task, output);
         return output;
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         executorLogger.requireTopDownStart(key, task);
         try {
-            final DataAndExecutionStatus status = executeOrGetExisting(key, task, cancel);
+            final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, cancel);
             TaskData data = status.data;
             @SuppressWarnings("unchecked") final O output = (O) data.output;
             if(!status.executed) {
-                if(data.taskObservability.isUnobserved()) {
+                if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
                     data = data.withTaskObservability(Observability.ImplicitObserved);
                     // Validate well-formedness of the dependency graph, and set task to observed.
@@ -108,7 +110,7 @@ public class TopDownSession implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<?> task, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution. Return immediately if so.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -118,7 +120,7 @@ public class TopDownSession implements RequireTask {
         // Check if data is stored for task. Execute if not.
         final @Nullable TaskData storedData = requireShared.dataFromStore(key);
         if(storedData == null) {
-            return new DataAndExecutionStatus(exec(key, task, new NoData(), cancel), true);
+            return new DataAndExecutionStatus(exec(key, task, new NoData(), modifyObservability, cancel), true);
         }
 
         // Check consistency of task.
@@ -126,7 +128,7 @@ public class TopDownSession implements RequireTask {
         {
             final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);
             if(reason != null) {
-                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, cancel), true);
             }
         }
 
@@ -135,7 +137,7 @@ public class TopDownSession implements RequireTask {
             final @Nullable InconsistentTransientOutput reason =
                 requireShared.checkOutputConsistency(storedData.output);
             if(reason != null) {
-                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, cancel), true);
             }
         }
 
@@ -144,7 +146,7 @@ public class TopDownSession implements RequireTask {
             final @Nullable InconsistentResourceRequire reason =
                 requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
             if(reason != null) {
-                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, cancel), true);
             }
         }
 
@@ -153,16 +155,16 @@ public class TopDownSession implements RequireTask {
             final @Nullable InconsistentResourceProvide reason =
                 requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
             if(reason != null) {
-                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, cancel), true);
             }
         }
 
         // Task require consistency.
         for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
             final @Nullable InconsistentTaskReq reason =
-                requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, cancel);
+                requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, modifyObservability, cancel);
             if(reason != null) {
-                return new DataAndExecutionStatus(exec(key, task, reason, cancel), true);
+                return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, cancel), true);
             }
         }
 
@@ -170,7 +172,7 @@ public class TopDownSession implements RequireTask {
         return new DataAndExecutionStatus(storedData, false);
     }
 
-    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
-        return taskExecutor.exec(key, task, reason, this, cancel);
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
+        return taskExecutor.exec(key, task, reason, this, modifyObservability, cancel);
     }
 }

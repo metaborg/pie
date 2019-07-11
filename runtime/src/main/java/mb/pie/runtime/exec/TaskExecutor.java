@@ -53,18 +53,25 @@ public class TaskExecutor {
         this.visited = visited;
     }
 
-    TaskData exec(TaskKey key, Task<?> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    TaskData exec(
+        TaskKey key,
+        Task<?> task,
+        ExecReason reason,
+        RequireTask requireTask,
+        boolean modifyObservability,
+        Cancelled cancel
+    ) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         executorLogger.executeStart(key, task, reason);
         final TaskData data;
         if(share instanceof NonSharingShare) {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
-            data = execInternal(key, task, requireTask, cancel);
+            data = execInternal(key, task, requireTask, modifyObservability, cancel);
         } else {
             try {
                 data = share.share(key, () -> {
                     try {
-                        return execInternal(key, task, requireTask, cancel);
+                        return execInternal(key, task, requireTask, modifyObservability, cancel);
                     } catch(InterruptedException | ExecException e) {
                         throw new RuntimeException(e);
                     }
@@ -84,7 +91,13 @@ public class TaskExecutor {
         return data;
     }
 
-    private TaskData execInternal(TaskKey key, Task<?> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData execInternal(
+        TaskKey key,
+        Task<?> task,
+        RequireTask requireTask,
+        boolean modifyObservability,
+        Cancelled cancel
+    ) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
 
         // Store previous data for observability comparison.
@@ -100,7 +113,7 @@ public class TaskExecutor {
 
         // Execute the task.
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, cancel, taskDefs, resourceService, store, defaultStampers, logger);
+            new ExecContextImpl(requireTask, modifyObservability, cancel, taskDefs, resourceService, store, defaultStampers, logger);
         final @Nullable Serializable output;
         try {
             output = task.exec(context);
@@ -117,11 +130,11 @@ public class TaskExecutor {
 
         // Gather task data.
         final Observability newObservability;
-        if(previousObservability.isUnobserved()) {
-            // Set to observed if previously detached.
+        if(modifyObservability && previousObservability.isUnobserved()) {
+            // Set to observed if previously unobserved (and we are allowed to modify observability).
             newObservability = Observability.ImplicitObserved;
         } else {
-            // Copy observability otherwise, such that RootObserved -> RootObserved, and Observed -> Observed.
+            // Copy observability otherwise.
             newObservability = previousObservability;
         }
         final ExecContextImpl.Deps deps = context.deps();
@@ -140,12 +153,14 @@ public class TaskExecutor {
             // Validate well-formedness of the dependency graph, after writing.
             layer.validatePostWrite(key, data, txn);
 
-            // Detach tasks which the executed task no longer depends on.
-            final HashSet<TaskKey> newTaskRequires =
-                deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
-            previousTaskRequires.removeAll(newTaskRequires);
-            for(TaskKey removedTaskRequire : previousTaskRequires) {
-                Observability.implicitUnobserve(txn, removedTaskRequire);
+            // Implicitly unobserve tasks which the executed task no longer depends on (if this task is observed).
+            if(newObservability.isObserved()) {
+                final HashSet<TaskKey> newTaskRequires =
+                    deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+                previousTaskRequires.removeAll(newTaskRequires);
+                for(TaskKey removedTaskRequire : previousTaskRequires) {
+                    Observability.implicitUnobserve(txn, removedTaskRequire);
+                }
             }
         }
 

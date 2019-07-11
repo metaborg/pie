@@ -11,7 +11,6 @@ import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -21,6 +20,7 @@ import java.util.ArrayList;
 
 public class ExecContextImpl implements ExecContext {
     private final RequireTask requireTask;
+    private final boolean modifyObservability;
     private final Cancelled cancel;
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
@@ -35,6 +35,7 @@ public class ExecContextImpl implements ExecContext {
 
     public ExecContextImpl(
         RequireTask requireTask,
+        boolean modifyObservability,
         Cancelled cancel,
         TaskDefs taskDefs,
         ResourceService resourceService,
@@ -43,6 +44,7 @@ public class ExecContextImpl implements ExecContext {
         Logger logger
     ) {
         this.requireTask = requireTask;
+        this.modifyObservability = modifyObservability;
         this.cancel = cancel;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
@@ -61,7 +63,7 @@ public class ExecContextImpl implements ExecContext {
     public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         final TaskKey key = task.key();
-        final O output = requireTask.require(key, task, cancel);
+        final O output = requireTask.require(key, task, modifyObservability, cancel);
         final OutputStamp stamp = stamper.stamp(output);
         taskRequires.add(new TaskRequireDep(key, stamp));
         Stats.addCallReq();

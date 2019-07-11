@@ -75,7 +75,7 @@ fun main(args: Array<String>) {
       // We incrementally execute the hello world task by requiring it in a top-down fashion.
       // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
       // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.
-      session.requireTopDown(writeHelloWorldTask)
+      session.require(writeHelloWorldTask)
 
       // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
       println("File contents: ${file.readText()}")

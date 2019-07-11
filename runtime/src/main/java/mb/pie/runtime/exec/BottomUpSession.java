@@ -137,12 +137,13 @@ public class BottomUpSession implements RequireTask {
      * Require the result of a task.
      */
     @Override
-    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
         cancel.throwIfCancelled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         executorLogger.requireTopDownStart(key, task);
         try {
+            // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
             final TaskData data = getData(key, task, cancel);
             @SuppressWarnings("unchecked") final O output = (O) data.output;
             executorLogger.requireTopDownEnd(key, task, output);
@@ -260,7 +261,7 @@ public class BottomUpSession implements RequireTask {
         // Task require consistency.
         for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
             final @Nullable InconsistentTaskReq reason =
-                requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, cancel);
+                requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, true, cancel);
             if(reason != null) {
                 return exec(key, task, reason, cancel);
             }
@@ -315,6 +316,6 @@ public class BottomUpSession implements RequireTask {
 
 
     public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
-        return taskExecutor.exec(key, task, reason, this, cancel);
+        return taskExecutor.exec(key, task, reason, this, true, cancel);
     }
 }

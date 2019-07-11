@@ -15,10 +15,10 @@ import java.util.function.Function;
  * A session for incrementally executing PIE tasks, supporting two different traversal strategies:
  * <ul>
  * <li>
- * Top-down: given a root task to execute, check whether the task must be executed by checking its required and provided
- * resources, and by recursively checking required tasks, resulting in a top-down depth-first traversal of the
- * dependency graph. This also marks the task as an {@link Observability#ExplicitObserved explicitly observed} task,
- * indicating that it, and its transitive dependencies, should be kept up-to-date in bottom-up builds.
+ * Top-down (scanning): given a root task to execute, check whether the task must be executed by checking its required
+ * and provided resources, and by recursively checking required tasks, resulting in a top-down depth-first traversal of
+ * the dependency graph. This can also mark the task as an {@link Observability#ExplicitObserved explicitly observed}
+ * task, indicating that it, and its transitive dependencies, should be kept up-to-date in bottom-up builds.
  * </li>
  * <li>
  * Bottom-up (change-driven): given a set of changed resources, schedule all directly affected tasks in a topologically
@@ -58,6 +58,28 @@ import java.util.function.Function;
  */
 public interface PieSession extends AutoCloseable {
     /**
+     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output.
+     *
+     * @param task Task to make up-to-date.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException When an executing task throws an exception.
+     */
+    <O extends Serializable> O require(Task<O> task) throws ExecException;
+
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
+     * output.
+     *
+     * @param task   Task to make up-to-date.
+     * @param cancel Cancel checker to use.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends @Nullable Serializable> O require(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
+
+
+    /**
      * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
      * {@link Observability#ExplicitObserved explicitly observed}, indicating that it (and its transitive dependencies)
      * should be kept up-to-date in bottom-up builds.
@@ -66,7 +88,7 @@ public interface PieSession extends AutoCloseable {
      * @return Up-to-date output of {@code task}.
      * @throws ExecException When an executing task throws an exception.
      */
-    <O extends Serializable> O requireTopDown(Task<O> task) throws ExecException;
+    <O extends Serializable> O requireAndObserve(Task<O> task) throws ExecException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
@@ -79,7 +101,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O requireTopDown(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O requireAndObserve(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 
 
     /**
@@ -90,7 +112,7 @@ public interface PieSession extends AutoCloseable {
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @throws ExecException When an executing task throws an exception.
      */
-    void requireBottomUp(Set<ResourceKey> changedResources) throws ExecException;
+    void updateAffectedBy(Set<ResourceKey> changedResources) throws ExecException;
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
@@ -102,7 +124,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    void requireBottomUp(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
+    void updateAffectedBy(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
 
 
     /**
@@ -113,7 +135,7 @@ public interface PieSession extends AutoCloseable {
      *
      * @param task Task to unobserve.
      */
-    void setUnobserved(Task<?> task);
+    void unobserve(Task<?> task);
 
     /**
      * Explicitly unobserves task for {@code key}, settings its observability status to {@link
@@ -124,7 +146,7 @@ public interface PieSession extends AutoCloseable {
      *
      * @param key Key of task to unobserve.
      */
-    void setUnobserved(TaskKey key);
+    void unobserve(TaskKey key);
 
 
     /**

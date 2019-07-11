@@ -45,7 +45,7 @@ internal class BottomUpTests {
 
     // Build [combineTask] in top-down fashion, observe rebuild of all.
     val session1 = spy(newSession().topDownSession)
-    val output1 = session1.requireInitial(combTask, NullCancelled())
+    val output1 = session1.requireInitial(combTask, true, NullCancelled())
     Assertions.assertEquals("hello world!", output1)
     Assertions.assertEquals("hello world!", combOutput)
     Assertions.assertEquals(1, combObserved)
@@ -54,9 +54,9 @@ internal class BottomUpTests {
     Assertions.assertEquals("hello world!", lowerOutput)
     Assertions.assertEquals(1, lowerObserved)
     inOrder(session1) {
-      verify(session1).exec(eq(combKey), eq(combTask), eq(NoData()), anyC())
-      verify(session1).exec(eq(readKey), eq(readTask), eq(NoData()), anyC())
-      verify(session1).exec(eq(lowerKey), eq(lowerTask), eq(NoData()), anyC())
+      verify(session1).exec(eq(combKey), eq(combTask), eq(NoData()), eq(true), anyC())
+      verify(session1).exec(eq(readKey), eq(readTask), eq(NoData()), eq(true), anyC())
+      verify(session1).exec(eq(lowerKey), eq(lowerTask), eq(NoData()), eq(true), anyC())
     }
 
     // Change required file in such a way that the output of [readTask] changes (change file content).
@@ -88,7 +88,7 @@ internal class BottomUpTests {
     inOrder(session2) {
       verify(session2).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(session2).exec(eq(combKey), eq(combTask), anyER(), anyC())
-      verify(session2).require(eq(lowerRevKey), eq(lowerRevTask), anyC())
+      verify(session2).require(eq(lowerRevKey), eq(lowerRevTask), eq(true), anyC())
       verify(session2).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
     }
 
@@ -126,7 +126,7 @@ internal class BottomUpTests {
       verify(exec4).exec(eq(readKey), eq(readTask), anyER(), anyC())
     }
     verify(exec4, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
-    verify(exec4, never()).require(eq(lowerRevKey), eq(lowerRevTask), anyC())
+    verify(exec4, never()).require(eq(lowerRevKey), eq(lowerRevTask), eq(true), anyC())
     verify(exec4, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
   }
 }

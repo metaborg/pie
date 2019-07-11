@@ -122,7 +122,7 @@ fun main(args: Array<String>) {
     val fileCopierTask = fileCopier.createTask(FileCopier.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
 
     // We (incrementally) execute the file copier task by creating a new session and requiring the task in a top-down fashion.
-    val output = pie.newSession().use { session -> session.requireTopDown(fileCopierTask) }
+    val output = pie.newSession().use { session -> session.require(fileCopierTask) }
     println("Copied to: $output")
   }
   // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a

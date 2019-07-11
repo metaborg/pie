@@ -90,7 +90,7 @@ public class GuiceTaskDefsTest {
         pieBuilder.withTaskDefs(taskDefs);
         pieBuilder.withLogger(StreamLogger.verbose());
         try(final Pie pie = pieBuilder.build(); final PieSession session = pie.newSession()) {
-            final String returnedString = session.requireTopDown(
+            final String returnedString = session.require(
                 returnResultString.createTask(returnInjectedString.createSerializableTask(None.instance)));
             assertEquals(string, returnedString);
         }

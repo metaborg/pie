@@ -19,7 +19,7 @@ internal class CoroutineShareTests {
         launch(coroutineContext + Dispatchers.Default) {
           val session = newSession()
           val task = task(toLowerCase, "HELLO WORLD $index!")
-          session.requireTopDown(task)
+          session.require(task)
         }
       }.forEach { it.join() }
     }
@@ -37,7 +37,7 @@ internal class CoroutineShareTests {
         launch(coroutineContext + Dispatchers.Default) {
           val session = newSession()
           val task = task(taskDef, "HELLO WORLD!")
-          session.requireTopDown(task)
+          session.require(task)
         }
       }.forEach { it.join() }
     }

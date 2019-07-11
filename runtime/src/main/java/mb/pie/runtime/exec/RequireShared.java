@@ -95,13 +95,13 @@ public class RequireShared {
     /**
      * Check if a task require dependency is totally consistent.
      */
-    @Nullable InconsistentTaskReq checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
+    @Nullable InconsistentTaskReq checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
         final TaskKey calleeKey = taskRequireDep.callee;
         final Task<?> calleeTask;
         try(final StoreReadTxn txn = store.readTxn()) {
             calleeTask = calleeKey.toTask(taskDefs, txn);
         }
-        final @Nullable Serializable calleeOutput = requireTask.require(calleeKey, calleeTask, cancel);
+        final @Nullable Serializable calleeOutput = requireTask.require(calleeKey, calleeTask, modifyObservability, cancel);
         executorLogger.checkTaskRequireStart(key, task, taskRequireDep);
         final @Nullable InconsistentTaskReq reason = taskRequireDep.checkConsistency(calleeOutput);
         executorLogger.checkTaskRequireEnd(key, task, taskRequireDep, reason);

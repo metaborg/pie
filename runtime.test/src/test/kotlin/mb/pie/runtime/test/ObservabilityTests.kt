@@ -23,7 +23,7 @@ internal class ObservabilityTests {
   @TestFactory
   fun testExplicitObserved() = ObservabilityTestGenerator.generate("testExplicitObserved") {
     newSession().use { session ->
-      session.requireTopDown(noopTask)
+      session.requireAndObserve(noopTask)
       assertTrue(pie.isObserved(noopTask))
       assertTrue(pie.isObserved(noopKey))
       pie.store.readTxn().use { txn ->
@@ -38,7 +38,7 @@ internal class ObservabilityTests {
   @TestFactory
   fun testImplicitObserved() = ObservabilityTestGenerator.generate("testImplicitObserved") {
     newSession().use { session ->
-      session.requireTopDown(callNoopTask)
+      session.requireAndObserve(callNoopTask)
 
       assertTrue(pie.isObserved(noopTask))
       assertTrue(pie.isObserved(noopKey))
@@ -64,14 +64,14 @@ internal class ObservabilityTests {
   @TestFactory
   fun testImplicitToExplicitObserved() = ObservabilityTestGenerator.generate("testImplicitToExplicitObserved") {
     newSession().use { session ->
-      session.requireTopDown(callNoopTask)
+      session.requireAndObserve(callNoopTask)
       pie.store.readTxn().use { txn ->
         // `noopTask` is required by `callNoopTask`, therefore it is implicitly observed.
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
 
       // We now explicitly require `noopTask`.
-      session.requireTopDown(noopTask)
+      session.requireAndObserve(noopTask)
       pie.store.readTxn().use { txn ->
         // `noopTask` is explicitly required, therefore it is explicitly observed.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
@@ -84,7 +84,7 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
-      session.requireTopDown(callNoopMaybeDef.createTask(true))
+      session.requireAndObserve(callNoopMaybeDef.createTask(true))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -94,7 +94,7 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`, making `noopTask`
       // now unobserved.
-      session.requireTopDown(callNoopMaybeDef.createTask(false))
+      session.requireAndObserve(callNoopMaybeDef.createTask(false))
       pie.store.readTxn().use { txn ->
         val observability = txn.taskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
@@ -106,7 +106,7 @@ internal class ObservabilityTests {
     // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true` again, making it implicitly observed again.
-      session.requireTopDown(callNoopMaybeDef.createTask(true))
+      session.requireAndObserve(callNoopMaybeDef.createTask(true))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -118,13 +118,13 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
-      session.requireTopDown(callNoopMaybeDef.createTask(true))
+      session.requireAndObserve(callNoopMaybeDef.createTask(true))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
 
       // We explicitly require `noopTask`, making `noopTask` explicitly observed
-      session.requireTopDown(noopTask)
+      session.requireAndObserve(noopTask)
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
@@ -134,7 +134,7 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`. However,
       // `noopTask` is explicitly observed, and it should stay that way.
-      session.requireTopDown(callNoopMaybeDef.createTask(false))
+      session.requireAndObserve(callNoopMaybeDef.createTask(false))
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
@@ -144,12 +144,12 @@ internal class ObservabilityTests {
   @TestFactory
   fun testExplicitUnobserveRoot() = ObservabilityTestGenerator.generate("testExplicitUnobserveRoot") {
     newSession().use { session ->
-      session.requireTopDown(callNoopTask)
+      session.requireAndObserve(callNoopTask)
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
-      session.setUnobserved(callNoopTask)
+      session.unobserve(callNoopTask)
       pie.store.readTxn().use { txn ->
         // After explicitly unobserving `callNoop`, the entire spine is unobserved.
         assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
@@ -161,12 +161,12 @@ internal class ObservabilityTests {
   @TestFactory
   fun testExplicitUnobserveLeaf() = ObservabilityTestGenerator.generate("testExplicitUnobserveLeaf") {
     newSession().use { session ->
-      session.requireTopDown(callNoopTask)
+      session.requireAndObserve(callNoopTask)
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
-      session.setUnobserved(noopTask)
+      session.unobserve(noopTask)
       pie.store.readTxn().use { txn ->
         // Explicitly unobserving `noop` does nothing, as it is still observed by `callNoop`.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
@@ -178,13 +178,13 @@ internal class ObservabilityTests {
   @TestFactory
   fun testExplicitUnobserveBothExplicitObservedRoot() = ObservabilityTestGenerator.generate("testExplicitUnobserveBothExplicitObservedRoot") {
     newSession().use { session ->
-      session.requireTopDown(callNoopTask)
-      session.requireTopDown(noopTask)
+      session.requireAndObserve(callNoopTask)
+      session.requireAndObserve(noopTask)
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
-      session.setUnobserved(callNoopTask)
+      session.unobserve(callNoopTask)
       pie.store.readTxn().use { txn ->
         // After explicitly unobserving `callNoop`, only `callNoop` is unobserved, as `noop` is still explicitly observed.
         assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
@@ -196,13 +196,13 @@ internal class ObservabilityTests {
   @TestFactory
   fun testExplicitUnobserveBothExplicitObservedLeaf() = ObservabilityTestGenerator.generate("testExplicitUnobserveBothExplicitObservedLeaf") {
     newSession().use { session ->
-      session.requireTopDown(callNoopTask)
-      session.requireTopDown(noopTask)
+      session.requireAndObserve(callNoopTask)
+      session.requireAndObserve(noopTask)
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
-      session.setUnobserved(noopTask)
+      session.unobserve(noopTask)
       pie.store.readTxn().use { txn ->
         // Explicitly unobserving `noop` turns it into an implicitly observed task, as `callNoop` still observes it.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
@@ -223,7 +223,7 @@ internal class ObservabilityTests {
     val callKey = callTask.key()
 
     newSession().use { session ->
-      session.requireTopDown(callTask)
+      session.requireAndObserve(callTask)
     }
 
     // Change the resource and perform a bottom-up build.
@@ -250,9 +250,9 @@ internal class ObservabilityTests {
     val callKey = callTask.key()
 
     newSession().use { session ->
-      session.requireTopDown(callTask)
+      session.requireAndObserve(callTask)
       // Unobserve `callTask`, making both `callTask` and `readTask` unobservable.
-      session.setUnobserved(callTask)
+      session.unobserve(callTask)
     }
 
     // Change the resource and perform a bottom-up build.
@@ -276,9 +276,9 @@ internal class ObservabilityTests {
     val callKey = callTask.key()
 
     newSession().use { session ->
-      session.requireTopDown(callTask)
+      session.requireAndObserve(callTask)
       // Unobserve `callTask`, making both `callTask` and `writeTask` unobservable.
-      session.setUnobserved(callTask)
+      session.unobserve(callTask)
     }
 
     // Change the resource and perform a bottom-up build.
@@ -314,10 +314,10 @@ internal class ObservabilityTests {
     val callMainKey = callMainTask.key()
 
     newSession().use { session ->
-      session.requireTopDown(callMainTask)
-      session.requireTopDown(callRead2Task)
+      session.requireAndObserve(callMainTask)
+      session.requireAndObserve(callRead2Task)
       // Unobserve `callRead2Task`, making it and `read2Task` unobserved.
-      session.setUnobserved(callRead2Task)
+      session.unobserve(callRead2Task)
       pie.store.readTxn().use { txn ->
         assertEquals(Observability.Unobserved, txn.taskObservability(callRead2Key))
         assertEquals(Observability.Unobserved, txn.taskObservability(read2Key))
@@ -337,12 +337,12 @@ internal class ObservabilityTests {
         // This in turn affects `callMainTask`, so it gets executed.
         verify(session).exec(eq(callMainKey), eq(callMainTask), anyER(), anyC())
         // `callMainTask` requires `read1Task`.
-        verify(session).require(eq(read1Key), eq(read1Task), anyC())
+        verify(session).require(eq(read1Key), eq(read1Task), eq(true), anyC())
         // But `read1Task` has already been executed, so it will not be executed again.
         // `callMainTask` now requires `callRead2Task`, because `read1Task` returns a string with 'galaxy' in it.
-        verify(session).require(eq(callRead2Key), eq(callRead2Task), anyC())
+        verify(session).require(eq(callRead2Key), eq(callRead2Task), eq(true), anyC())
         // While checking if `callRead2Task` must be executed, it requires unobserved task `read2Task`.
-        verify(session).require(eq(read2Key), eq(read2Task), anyC())
+        verify(session).require(eq(read2Key), eq(read2Task), eq(true), anyC())
         // `read2Task` then gets executed despite being unobserved, because it is required and not consistent yet because `resource2` has changed.
         verify(session).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
         // `callRead2Task` then gets executed despite being unobserved, because the result of required task `read2Task` changed.
@@ -379,9 +379,9 @@ internal class ObservabilityTests {
         // This in turn affects `callMainTask`, so it gets executed.
         verify(session).exec(eq(callMainKey), eq(callMainTask), anyER(), anyC())
         // `callMainTask` now requires `callRead2Task`, because `read1Task` returns a string with 'galaxy' in it.
-        verify(session).require(eq(callRead2Key), eq(callRead2Task), anyC())
+        verify(session).require(eq(callRead2Key), eq(callRead2Task), eq(true), anyC())
         // While checking if `callRead2Task` must be executed, it requires unobserved task `read2Task`.
-        verify(session).require(eq(read2Key), eq(read2Task), anyC())
+        verify(session).require(eq(read2Key), eq(read2Task), eq(true), anyC())
       }
       // However, `read2Task` does not get executed, because none of its dependencies are inconsistent.
       verify(session, never()).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
@@ -722,13 +722,13 @@ class ObservabilityTestCtx(
       write("Hello, world 1!", file1)
       write("Hello, world 4!", file4)
       newSession().use { session ->
-        session.requireTopDown(aTask)
-        session.requireTopDown(bTask)
-        session.requireTopDown(cTask)
-        session.requireTopDown(eTask)
+        session.requireAndObserve(aTask)
+        session.requireAndObserve(bTask)
+        session.requireAndObserve(cTask)
+        session.requireAndObserve(eTask)
 
-        session.setUnobserved(aTask)
-        session.setUnobserved(bTask)
+        session.unobserve(aTask)
+        session.unobserve(bTask)
       }
     }
   }

@@ -17,10 +17,10 @@ internal class LMDBStoreTests {
     val key = task.key()
 
     val session1 = newSession().topDownSession
-    session1.requireInitial(task, NullCancelled())
+    session1.requireInitial(task, true, NullCancelled())
 
     val session2 = spy(newSession().topDownSession)
-    session2.requireInitial(task, NullCancelled())
-    verify(session2, never()).exec(eq(key), eq(task), eq(NoData()), anyC())
+    session2.requireInitial(task, true, NullCancelled())
+    verify(session2, never()).exec(eq(key), eq(task), eq(NoData()), eq(true), anyC())
   }
 }
