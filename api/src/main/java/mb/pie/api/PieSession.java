@@ -58,28 +58,6 @@ import java.util.function.Function;
  */
 public interface PieSession extends AutoCloseable {
     /**
-     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output.
-     *
-     * @param task Task to make up-to-date.
-     * @return Up-to-date output of {@code task}.
-     * @throws ExecException When an executing task throws an exception.
-     */
-    <O extends Serializable> O require(Task<O> task) throws ExecException;
-
-    /**
-     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
-     * output.
-     *
-     * @param task   Task to make up-to-date.
-     * @param cancel Cancel checker to use.
-     * @return Up-to-date output of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
-     */
-    <O extends @Nullable Serializable> O require(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
-
-
-    /**
      * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
      * {@link Observability#ExplicitObserved explicitly observed}, indicating that it (and its transitive dependencies)
      * should be kept up-to-date in bottom-up builds.
@@ -88,7 +66,7 @@ public interface PieSession extends AutoCloseable {
      * @return Up-to-date output of {@code task}.
      * @throws ExecException When an executing task throws an exception.
      */
-    <O extends Serializable> O requireAndObserve(Task<O> task) throws ExecException;
+    <O extends Serializable> O require(Task<O> task) throws ExecException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
@@ -101,7 +79,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O requireAndObserve(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 
 
     /**
@@ -125,6 +103,29 @@ public interface PieSession extends AutoCloseable {
      * @throws InterruptedException When execution is cancelled.
      */
     void updateAffectedBy(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
+
+
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output, without marking it as
+     * {@link Observability#ExplicitObserved explicitly observed}.
+     *
+     * @param task Task to make up-to-date.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException When an executing task throws an exception.
+     */
+    <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException;
+
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
+     * output, without marking it as {@link Observability#ExplicitObserved explicitly observed}.
+     *
+     * @param task   Task to make up-to-date.
+     * @param cancel Cancel checker to use.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
 
 
     /**

@@ -16,7 +16,7 @@ class CoroutineShareTests {
 
 
   @TestFactory
-  fun testThreadSafety() = builder.build("testThreadSafety") {
+  fun testThreadSafety() = builder.test {
     addTaskDef(toLowerCase)
 
     runBlocking {
@@ -24,7 +24,7 @@ class CoroutineShareTests {
         launch(coroutineContext + Dispatchers.Default) {
           newSession().use { session ->
             val task = toLowerCase.createTask("HELLO WORLD $index!")
-            session.requireAndObserve(task)
+            session.require(task)
           }
         }
       }.forEach { it.join() }
@@ -33,7 +33,7 @@ class CoroutineShareTests {
 
   @Disabled("Coroutine share is not uniquely sharing on every platform; disable for now")
   @TestFactory
-  fun testConcurrentReuse() = builder.build("testConcurrentReuse") {
+  fun testConcurrentReuse() = builder.test {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
 
@@ -43,7 +43,7 @@ class CoroutineShareTests {
         launch(coroutineContext + Dispatchers.Default) {
           newSession().use { session ->
             val task = lowerDef.createTask("HELLO WORLD!")
-            session.requireAndObserve(task)
+            session.require(task)
           }
         }
       }.forEach { it.join() }

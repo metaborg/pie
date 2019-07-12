@@ -183,4 +183,10 @@ class ModifiedStamperTests {
     val stamp2 = stamper.stamp(dir)
     Assertions.assertNotEquals(stamp1, stamp2)
   }
+
+  // TODO: tests for ResourceStampers.modifiedDir(ResourceMatcher)
+
+  // TODO: tests for ResourceStampers.modifiedDirRec()
+
+  // TODO: tests for ResourceStampers.modifiedDirRec(ResourceWalker, ResourceMatcher)
 }

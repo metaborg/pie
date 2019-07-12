@@ -51,6 +51,21 @@ public class PieSessionImpl implements PieSession {
     }
 
 
+    @Override public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
+        try {
+            return requireWithoutObserving(task, new NullCancelled());
+        } catch(InterruptedException e) {
+            // Unexpected: NullCancelled is used, which does not check for interruptions.
+            throw new RuntimeException("Unexpected InterruptedException", e);
+        }
+    }
+
+    @Override
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
+        return topDownSession.requireInitial(task, false, cancel);
+    }
+
+
     @Override public <O extends Serializable> O require(Task<O> task) throws ExecException {
         try {
             return require(task, new NullCancelled());
@@ -62,21 +77,6 @@ public class PieSessionImpl implements PieSession {
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
-        return topDownSession.requireInitial(task, false, cancel);
-    }
-
-
-    @Override public <O extends Serializable> O requireAndObserve(Task<O> task) throws ExecException {
-        try {
-            return requireAndObserve(task, new NullCancelled());
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
-    }
-
-    @Override
-    public <O extends @Nullable Serializable> O requireAndObserve(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
         return topDownSession.requireInitial(task, true, cancel);
     }
 

@@ -17,10 +17,12 @@ class ObservabilityTests {
   private val builder = ObservabilityTestBuilder()
 
 
+  /*** Observability in top-down require ***/
+
   @TestFactory
-  fun testExplicitObserved() = builder.build("testExplicitObserved") {
+  fun testExplicitObserved() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(noopTask)
+      session.require(noopTask)
       assertTrue(pie.isObserved(noopTask))
       assertTrue(pie.isObserved(noopKey))
       session.store.readTxn().use { txn ->
@@ -33,9 +35,9 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitObserved() = builder.build("testImplicitObserved") {
+  fun testImplicitObserved() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(callNoopTask)
+      session.require(callNoopTask)
 
       assertTrue(pie.isObserved(noopTask))
       assertTrue(pie.isObserved(noopKey))
@@ -59,16 +61,16 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitToExplicitObserved() = builder.build("testImplicitToExplicitObserved") {
+  fun testImplicitToExplicitObserved() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(callNoopTask)
+      session.require(callNoopTask)
       session.store.readTxn().use { txn ->
         // `noopTask` is required by `callNoopTask`, therefore it is implicitly observed.
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
 
       // We now explicitly require `noopTask`.
-      session.requireAndObserve(noopTask)
+      session.require(noopTask)
       session.store.readTxn().use { txn ->
         // `noopTask` is explicitly required, therefore it is explicitly observed.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
@@ -77,11 +79,11 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitUnobserve() = builder.build("testImplicitUnobserve") {
+  fun testImplicitUnobserve() = builder.test {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
-      session.requireAndObserve(callNoopMaybeDef.createTask(true))
+      session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -91,7 +93,7 @@ class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`, making `noopTask`
       // now unobserved.
-      session.requireAndObserve(callNoopMaybeDef.createTask(false))
+      session.require(callNoopMaybeDef.createTask(false))
       session.store.readTxn().use { txn ->
         val observability = txn.taskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
@@ -102,8 +104,8 @@ class ObservabilityTests {
 
     // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
     newSession().use { session ->
-      // We call `callNoopMaybeTaskDef` with input `true` again, making it implicitly observed again.
-      session.requireAndObserve(callNoopMaybeDef.createTask(true))
+      // We call `callNoopMaybeTaskDef` with input `true` again, making `noopTask` implicitly observed again.
+      session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
@@ -111,17 +113,17 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitUnobserveExplicitObservedStays() = builder.build("testImplicitUnobserveExplicitObservedStays") {
+  fun testImplicitUnobserveExplicitObservedStays() = builder.test {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
-      session.requireAndObserve(callNoopMaybeDef.createTask(true))
+      session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
 
       // We explicitly require `noopTask`, making `noopTask` explicitly observed
-      session.requireAndObserve(noopTask)
+      session.require(noopTask)
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
@@ -131,17 +133,148 @@ class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`. However,
       // `noopTask` is explicitly observed, and it should stay that way.
-      session.requireAndObserve(callNoopMaybeDef.createTask(false))
+      session.require(callNoopMaybeDef.createTask(false))
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
     }
   }
 
+
+  /*** Observability in top-down require without observing ***/
+
   @TestFactory
-  fun testExplicitUnobserveRoot() = builder.build("testExplicitUnobserveRoot") {
+  fun testRequireWithoutObserveNewTaskStaysUnobserved() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(callNoopTask)
+      session.requireWithoutObserving(callNoopTask)
+
+      // Because we are requiring without observing, everything is unobserved.
+      assertFalse(pie.isObserved(noopTask))
+      assertFalse(pie.isObserved(noopKey))
+      assertFalse(pie.isObserved(callNoopTask))
+      assertFalse(pie.isObserved(callNoopKey))
+
+      session.store.readTxn().use { txn ->
+        val callNoopObservability = txn.taskObservability(callNoopKey)
+        assertEquals(Observability.Unobserved, callNoopObservability)
+        assertTrue(callNoopObservability.isUnobserved)
+        assertFalse(callNoopObservability.isObserved)
+
+        val noopObservability = txn.taskObservability(noopKey)
+        assertEquals(Observability.Unobserved, noopObservability)
+        assertTrue(noopObservability.isUnobserved)
+        assertFalse(noopObservability.isObserved)
+      }
+    }
+  }
+
+  @TestFactory
+  fun testRequireWithoutObserveNewTaskTreeStaysUnobserved() = builder.test {
+    newSession().use { session ->
+      // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`. However, we are not
+      // observing, so nothing is observed.
+      session.requireWithoutObserving(callNoopMaybeDef.createTask(true))
+    }
+
+    // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
+    newSession().use { session ->
+      // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`. Everything stays
+      // unobserved.
+      session.requireWithoutObserving(callNoopMaybeDef.createTask(false))
+      session.store.readTxn().use { txn ->
+        val observability = txn.taskObservability(noopKey)
+        assertEquals(Observability.Unobserved, observability)
+        assertTrue(observability.isUnobserved)
+        assertFalse(observability.isObserved)
+      }
+    }
+
+    // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
+    newSession().use { session ->
+      // We call `callNoopMaybeTaskDef` with input `true` again, but everything stays unobserved.
+      session.requireWithoutObserving(callNoopMaybeDef.createTask(true))
+      session.store.readTxn().use { txn ->
+        assertEquals(Observability.Unobserved, txn.taskObservability(noopKey))
+      }
+    }
+  }
+
+  @TestFactory
+  fun testRequireWithoutObserveDoesNotChangeObservabilityStatus() = builder.test {
+    newSession().use { session ->
+      // We first require with observing, explicitly observing `callNoopTask`, and implicitly observing `noopTask`.
+      session.require(callNoopTask)
+      session.store.readTxn().use { txn ->
+        val callNoopObservability = txn.taskObservability(callNoopKey)
+        assertEquals(Observability.ExplicitObserved, callNoopObservability)
+        val noopObservability = txn.taskObservability(noopKey)
+        assertEquals(Observability.ImplicitObserved, noopObservability)
+      }
+    }
+
+    newSession().use { session ->
+      // Then we require without observing: observability status should stay the same.
+      session.require(callNoopTask)
+      session.store.readTxn().use { txn ->
+        val callNoopObservability = txn.taskObservability(callNoopKey)
+        assertEquals(Observability.ExplicitObserved, callNoopObservability)
+        val noopObservability = txn.taskObservability(noopKey)
+        assertEquals(Observability.ImplicitObserved, noopObservability)
+      }
+    }
+
+    newSession().use { session ->
+      // When we require `noopTask` without observing, it stays implicitly observed.
+      session.requireWithoutObserving(callNoopTask)
+      session.store.readTxn().use { txn ->
+        val noopObservability = txn.taskObservability(noopKey)
+        assertEquals(Observability.ImplicitObserved, noopObservability)
+      }
+    }
+  }
+
+  @TestFactory
+  fun testRequireWithoutObserveImplicitlyUnobservesAndObserves() = builder.test {
+    newSession().use { session ->
+      // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
+      // implicitly observed.
+      session.require(callNoopMaybeDef.createTask(true))
+      session.store.readTxn().use { txn ->
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+      }
+    }
+
+    // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
+    newSession().use { session ->
+      // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`, making `noopTask`
+      // now unobserved.
+      session.requireWithoutObserving(callNoopMaybeDef.createTask(false))
+      session.store.readTxn().use { txn ->
+        val observability = txn.taskObservability(noopKey)
+        assertEquals(Observability.Unobserved, observability)
+        assertTrue(observability.isUnobserved)
+        assertFalse(observability.isObserved)
+      }
+    }
+
+    // New session is required, as we are changing the input to `callNoopMaybeTaskDef`.
+    newSession().use { session ->
+      // We call `callNoopMaybeTaskDef` with input `true` again, making `noopTask` implicitly observed again because
+      // (explicitly) observed task `callNoopMaybeTaskDef` requires it, despite requiring without observability.
+      session.requireWithoutObserving(callNoopMaybeDef.createTask(true))
+      session.store.readTxn().use { txn ->
+        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+      }
+    }
+  }
+
+
+  /*** Explicit unobserve ***/
+
+  @TestFactory
+  fun testExplicitUnobserveRoot() = builder.test {
+    newSession().use { session ->
+      session.require(callNoopTask)
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
@@ -156,9 +289,9 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitUnobserveLeaf() = builder.build("testExplicitUnobserveLeaf") {
+  fun testExplicitUnobserveLeaf() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(callNoopTask)
+      session.require(callNoopTask)
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
@@ -173,10 +306,10 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitUnobserveBothExplicitObservedRoot() = builder.build("testExplicitUnobserveBothExplicitObservedRoot") {
+  fun testExplicitUnobserveBothExplicitObservedRoot() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(callNoopTask)
-      session.requireAndObserve(noopTask)
+      session.require(callNoopTask)
+      session.require(noopTask)
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
@@ -191,10 +324,10 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitUnobserveBothExplicitObservedLeaf() = builder.build("testExplicitUnobserveBothExplicitObservedLeaf") {
+  fun testExplicitUnobserveBothExplicitObservedLeaf() = builder.test {
     newSession().use { session ->
-      session.requireAndObserve(callNoopTask)
-      session.requireAndObserve(noopTask)
+      session.require(callNoopTask)
+      session.require(noopTask)
       session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
@@ -209,8 +342,10 @@ class ObservabilityTests {
   }
 
 
+  /*** Observability in bottom-up update ***/
+
   @TestFactory
-  fun testBottomUpExecutesObserved() = builder.build("testBottomUpExecutesObserved") {
+  fun testBottomUpExecutesObserved() = builder.test {
     val resource = resource("/file")
     write("Hello, world!", resource)
     val readTask = readDef.createTask(resource)
@@ -220,7 +355,7 @@ class ObservabilityTests {
     val callKey = callTask.key()
 
     newSession().use { session ->
-      session.requireAndObserve(callTask)
+      session.require(callTask)
     }
 
     // Change the resource and perform a bottom-up build.
@@ -237,7 +372,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testBottomUpSkipsUnobservedRequiree() = builder.build("testBottomUpSkipsUnobservedRequiree") {
+  fun testBottomUpSkipsUnobservedRequiree() = builder.test {
     val resource = resource("/file")
     write("Hello, world!", resource)
     val readTask = readDef.createTask(resource)
@@ -247,7 +382,7 @@ class ObservabilityTests {
     val callKey = callTask.key()
 
     newSession().use { session ->
-      session.requireAndObserve(callTask)
+      session.require(callTask)
       // Unobserve `callTask`, making both `callTask` and `readTask` unobservable.
       session.unobserve(callTask)
     }
@@ -264,7 +399,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testBottomUpSkipsUnobservedProvider() = builder.build("testBottomUpSkipsUnobservedProvider") {
+  fun testBottomUpSkipsUnobservedProvider() = builder.test {
     val resource = resource("/file")
     val writeTask = writeDef.createTask(ObservabilityTestCtx.Write(resource, "Hello, world!"))
     val writeSTask = writeTask.toSerializableTask()
@@ -273,7 +408,7 @@ class ObservabilityTests {
     val callKey = callTask.key()
 
     newSession().use { session ->
-      session.requireAndObserve(callTask)
+      session.require(callTask)
       // Unobserve `callTask`, making both `callTask` and `writeTask` unobservable.
       session.unobserve(callTask)
     }
@@ -290,7 +425,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testBottomUpRequireUnobserved() = builder.build("testBottomUpRequireUnobserved") {
+  fun testBottomUpRequireUnobserved() = builder.test {
     val resource1 = resource("/file1")
     write("Hello, world 1!", resource1)
     val read1Task = readDef.createTask(resource1)
@@ -311,8 +446,8 @@ class ObservabilityTests {
     val callMainKey = callMainTask.key()
 
     newSession().use { session ->
-      session.requireAndObserve(callMainTask)
-      session.requireAndObserve(callRead2Task)
+      session.require(callMainTask)
+      session.require(callRead2Task)
       // Unobserve `callRead2Task`, making it and `read2Task` unobserved.
       session.unobserve(callRead2Task)
       session.store.readTxn().use { txn ->
@@ -392,8 +527,10 @@ class ObservabilityTests {
   }
 
 
+  /*** Garbage collection of unobserved tasks and unobserved provided resources ***/
+
   @TestFactory
-  fun testGCDeletesCorrect() = builder.build("testGCKeepsObserved") {
+  fun testGCDeletesCorrect() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
@@ -421,7 +558,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCDeletesAllDataFromStore() = builder.build("testGCDeletesAllDataFromStore") {
+  fun testGCDeletesAllDataFromStore() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
@@ -446,7 +583,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCDoesNotInfluenceExecution() = builder.build("testGCDoesNotInfluenceExecution") {
+  fun testGCDoesNotInfluenceExecution() = builder.test {
     // First run without garbage collection.
     this.GCSetup().run {
       // Modify all files.
@@ -508,7 +645,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteFunctionFalse() = builder.build("testGCShouldDeleteFunctionFalse") {
+  fun testGCShouldDeleteFunctionFalse() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> false }, { _, _ -> true })
@@ -536,7 +673,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteFunctionSpecific() = builder.build("testGCShouldDeleteFunctionSpecific") {
+  fun testGCShouldDeleteFunctionSpecific() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ t -> t == aTask || t == dTask || t == iTask }, { _, _ -> true })
@@ -564,7 +701,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteProvidedResourceFalse() = builder.build("testGCShouldDeleteProvidedResourceFalse") {
+  fun testGCShouldDeleteProvidedResourceFalse() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> false })
@@ -592,7 +729,7 @@ class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteProvidedResourceSpecific() = builder.build("testGCShouldDeleteProvidedResourceSpecific") {
+  fun testGCShouldDeleteProvidedResourceSpecific() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, r -> r == file3 })
@@ -718,10 +855,10 @@ class ObservabilityTestCtx(
       write("Hello, world 1!", file1)
       write("Hello, world 4!", file4)
       newSession().use { session ->
-        session.requireAndObserve(aTask)
-        session.requireAndObserve(bTask)
-        session.requireAndObserve(cTask)
-        session.requireAndObserve(eTask)
+        session.require(aTask)
+        session.require(bTask)
+        session.require(cTask)
+        session.require(eTask)
 
         session.unobserve(aTask)
         session.unobserve(bTask)

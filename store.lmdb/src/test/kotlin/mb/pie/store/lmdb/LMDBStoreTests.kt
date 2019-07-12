@@ -16,17 +16,17 @@ class LMDBStoreTests {
 
 
   @TestFactory
-  fun testReuse() = builder.build("testReuse") {
+  fun testReuse() = builder.test {
     addTaskDef(toLowerCase)
     val task = toLowerCase.createTask("HELLO WORLD!")
     val key = task.key()
 
     newSession().use { session ->
-      session.requireAndObserve(task)
+      session.require(task)
     }
 
     newSession().use { session ->
-      session.requireAndObserve(task)
+      session.require(task)
       verify(session.topDownSession, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
     }
   }

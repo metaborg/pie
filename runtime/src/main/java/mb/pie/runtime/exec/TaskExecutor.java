@@ -113,7 +113,7 @@ public class TaskExecutor {
 
         // Execute the task.
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, modifyObservability, cancel, taskDefs, resourceService, store, defaultStampers, logger);
+            new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, store, defaultStampers, logger);
         final @Nullable Serializable output;
         try {
             output = task.exec(context);

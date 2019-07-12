@@ -179,4 +179,10 @@ class HashStamperTests {
     val stamp2 = stamper.stamp(dir)
     Assertions.assertNotEquals(stamp1, stamp2)
   }
+
+  // TODO: tests for ResourceStampers.hashDir(ResourceMatcher)
+
+  // TODO: tests for ResourceStampers.hashDirRec()
+
+  // TODO: tests for ResourceStampers.hashDirRec(ResourceWalker, ResourceMatcher)
 }

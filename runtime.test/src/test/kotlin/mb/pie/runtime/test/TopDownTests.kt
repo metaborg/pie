@@ -14,14 +14,14 @@ class TopDownTests {
 
 
   @TestFactory
-  fun testExec() = builder.build("testExec") {
+  fun testExec() = builder.test {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
 
     newSession().use { session ->
       val task = lowerDef.createTask("CAPITALIZED")
       val key = task.key()
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("capitalized", output)
 
       val topDownSession = session.topDownSession
@@ -33,14 +33,14 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testExecMultiple() = builder.build("testExecMultiple") {
+  fun testExecMultiple() = builder.test {
     val taskDef = spy(toLowerCase)
     addTaskDef(taskDef)
 
     val output1 = newSession().use { session ->
       val task = taskDef.createTask("CAPITALIZED")
       val key = task.key()
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("capitalized", output)
       val topDownSession = session.topDownSession
       inOrder(topDownSession) {
@@ -53,7 +53,7 @@ class TopDownTests {
     val output2 = newSession().use { session ->
       val task = taskDef.createTask("CAPITALIZED_EVEN_MORE")
       val key = task.key()
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("capitalized_even_more", output)
       val topDownSession = session.topDownSession
       inOrder(topDownSession) {
@@ -67,7 +67,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testReuse() = builder.build("testReuse") {
+  fun testReuse() = builder.test {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
 
@@ -75,13 +75,13 @@ class TopDownTests {
     val key = task.key()
 
     val output1 = newSession().use { session ->
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("capitalized", output)
       output
     }
 
     val output2 = newSession().use { session ->
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("capitalized", output)
       // Result is reused if exec is never called.
       verify(session.topDownSession, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
@@ -92,7 +92,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testFileReq() = builder.build("testFileReq") {
+  fun testFileReq() = builder.test {
     val readDef = spy(readResource)
     addTaskDef(readDef)
 
@@ -103,14 +103,14 @@ class TopDownTests {
 
     // Build 'readPath', observe rebuild.
     newSession().use { session ->
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("HELLO WORLD!", output)
       verify(session.topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
     }
 
     // No changes - exec 'readPath', observe no rebuild.
     newSession().use { session ->
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("HELLO WORLD!", output)
       verify(session.topDownSession, never()).exec(eq(key), eq(task), anyER(), any(), anyC())
     }
@@ -120,7 +120,7 @@ class TopDownTests {
 
     // Run again - expect rebuild.
     newSession().use { session ->
-      val output = session.requireAndObserve(task)
+      val output = session.require(task)
       assertEquals("!DLROW OLLEH", output)
       verify(session.topDownSession, times(1)).exec(eq(key), eq(task), check {
         val reason = it as? InconsistentResourceRequire
@@ -131,7 +131,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testFileGen() = builder.build("testFileGen") {
+  fun testFileGen() = builder.test {
     val writeDef = spy(writeResource)
     addTaskDef(writeDef)
 
@@ -143,7 +143,7 @@ class TopDownTests {
 
     // Build 'writePath', observe rebuild and existence of file
     newSession().use { session ->
-      session.requireAndObserve(task)
+      session.require(task)
       verify(session.topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
     }
 
@@ -152,7 +152,7 @@ class TopDownTests {
 
     // No changes - exec 'writePath', observe no rebuild, no change to file
     newSession().use { session ->
-      session.requireAndObserve(task)
+      session.require(task)
       verify(session.topDownSession, never()).exec(eq(key), eq(task), anyER(), any(), anyC())
     }
 
@@ -161,7 +161,7 @@ class TopDownTests {
 
     // Build 'writePath', observe rebuild and change of file
     newSession().use { session ->
-      session.requireAndObserve(task)
+      session.require(task)
       verify(session.topDownSession, times(1)).exec(eq(key), eq(task), check {
         val reason = it as? InconsistentResourceProvide
         assertNotNull(reason)
@@ -173,7 +173,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testTaskReq() = builder.build("testTaskReq") {
+  fun testTaskReq() = builder.test {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
     val readDef = spy(readResource)
@@ -200,7 +200,7 @@ class TopDownTests {
 
     // Build 'combine', observe rebuild of all.
     newSession().use { session ->
-      val output = session.requireAndObserve(combTask)
+      val output = session.require(combTask)
       assertEquals("hello world!", output)
       val topDownSession = session.topDownSession
       inOrder(topDownSession) {
@@ -212,7 +212,7 @@ class TopDownTests {
 
     // No changes - exec 'combine', observe no rebuild.
     newSession().use { session ->
-      val output = session.requireAndObserve(combTask)
+      val output = session.require(combTask)
       assertEquals("hello world!", output)
       val topDownSession = session.topDownSession
       verify(topDownSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
@@ -229,7 +229,7 @@ class TopDownTests {
 
     // Build 'combine', observe rebuild of all in dependency order
     newSession().use { session ->
-      val output = session.requireAndObserve(combTask)
+      val output = session.require(combTask)
       assertEquals("!dlrow olleh", output)
       val topDownSession = session.topDownSession
       inOrder(topDownSession) {
@@ -254,7 +254,7 @@ class TopDownTests {
 
     // Build 'combine', observe rebuild of 'readPath' only
     newSession().use { session ->
-      val output = session.requireAndObserve(combTask)
+      val output = session.require(combTask)
       assertEquals("!dlrow olleh", output)
       val topDownSession = session.topDownSession
       inOrder(topDownSession) {
@@ -271,27 +271,27 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testOverlappingGeneratedPath() = builder.build("testOverlappingGeneratedPath") {
+  fun testOverlappingGeneratedPath() = builder.test {
     addTaskDef(writeResource)
 
     val file = resource("/file")
     assertThrows(ValidationException::class.java) {
       newSession().use { session ->
-        session.requireAndObserve(writeResource.createTask(Pair("HELLO WORLD 1!", file)))
-        session.requireAndObserve(writeResource.createTask(Pair("HELLO WORLD 2!", file)))
+        session.require(writeResource.createTask(Pair("HELLO WORLD 1!", file)))
+        session.require(writeResource.createTask(Pair("HELLO WORLD 2!", file)))
       }
     }
 
     // Overlapping generated file exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
       newSession().use { session ->
-        session.requireAndObserve(writeResource.createTask(Pair("HELLO WORLD 3!", file)))
+        session.require(writeResource.createTask(Pair("HELLO WORLD 3!", file)))
       }
     }
   }
 
   @TestFactory
-  fun testGenerateRequiredHiddenDep() = builder.build("testGenerateRequiredHiddenDep") {
+  fun testGenerateRequiredHiddenDep() = builder.test {
     addTaskDef(readResource)
     addTaskDef(writeResource)
 
@@ -300,21 +300,21 @@ class TopDownTests {
 
     assertThrows(ValidationException::class.java) {
       newSession().use { session ->
-        session.requireAndObserve(readResource.createTask(file))
-        session.requireAndObserve(writeResource.createTask(Pair("HELLO WORLD!", file)))
+        session.require(readResource.createTask(file))
+        session.require(writeResource.createTask(Pair("HELLO WORLD!", file)))
       }
     }
 
     // Hidden dependency exception should also trigger between separate execs
     assertThrows(ValidationException::class.java) {
       newSession().use { session ->
-        session.requireAndObserve(writeResource.createTask(Pair("HELLO WORLD!", file)))
+        session.require(writeResource.createTask(Pair("HELLO WORLD!", file)))
       }
     }
   }
 
   @TestFactory
-  fun testRequireGeneratedHiddenDep() = builder.build("testRequireGeneratedHiddenDep") {
+  fun testRequireGeneratedHiddenDep() = builder.test {
     addTaskDef(writeResource)
     addTaskDef(readResource)
     val indirectionDef = requireOutputFunc<None>()
@@ -329,7 +329,7 @@ class TopDownTests {
     newSession().use { session ->
       val file = resource("/file1")
       assertThrows(ValidationException::class.java) {
-        session.requireAndObserve(combineIncorrect.createTask(Pair("HELLO WORLD!", file)))
+        session.require(combineIncorrect.createTask(Pair("HELLO WORLD!", file)))
       }
     }
 
@@ -343,19 +343,19 @@ class TopDownTests {
     newSession().use { session ->
       val file = resource("/file2")
       assertThrows(ValidationException::class.java) {
-        session.requireAndObserve(combineStillIncorrect.createTask(Pair("HELLO WORLD!", file)))
+        session.require(combineStillIncorrect.createTask(Pair("HELLO WORLD!", file)))
       }
     }
   }
 
   @TestFactory
-  fun testCyclicDependency() = builder.build("testCyclicDependency") {
+  fun testCyclicDependency() = builder.test {
     val cyclicDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(STask("b1", None.instance)) as None }
     addTaskDef(cyclicDef)
 
     assertThrows(ValidationException::class.java) {
       newSession().use { session ->
-        session.requireAndObserve(cyclicDef.createTask(None.instance))
+        session.require(cyclicDef.createTask(None.instance))
       }
     }
   }

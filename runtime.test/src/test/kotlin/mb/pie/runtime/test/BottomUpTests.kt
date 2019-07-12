@@ -16,7 +16,7 @@ class BottomUpTests {
 
 
   @TestFactory
-  fun testUpdateAffectedBy() = builder.build("testUpdateAffectedBy") {
+  fun testUpdateAffectedBy() = builder.test {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
     val readDef = spy(readResource)
@@ -51,7 +51,7 @@ class BottomUpTests {
 
     // Build [combineTask] in top-down fashion, observe rebuild of all.
     newSession().use { session ->
-      val output = session.requireAndObserve(combTask)
+      val output = session.require(combTask)
       Assertions.assertEquals("hello world!", output)
       Assertions.assertEquals("hello world!", combOutput)
       Assertions.assertEquals(1, combObserved)
