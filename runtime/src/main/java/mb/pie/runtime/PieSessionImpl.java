@@ -22,14 +22,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieSessionImpl implements PieSession {
-    // Public for testability of incrementality
-    public final TopDownSession topDownSession;
-    public final BottomUpSession bottomUpSession;
+    protected final TopDownSession topDownSession;
+    protected final BottomUpSession bottomUpSession;
 
-    private final TaskDefs taskDefs;
-    private final ResourceService resourceService;
-    private final Store store;
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
+    protected final TaskDefs taskDefs;
+    protected final ResourceService resourceService;
+    protected final Store store;
+    protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
 
 
     public PieSessionImpl(
@@ -95,26 +94,7 @@ public class PieSessionImpl implements PieSession {
     @Override
     public void updateAffectedBy(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
         if(changedResources.isEmpty()) return;
-
-        final float numSourceFiles;
-        try(final StoreReadTxn txn = store.readTxn()) {
-            numSourceFiles = txn.numSourceFiles();
-        }
-        final float changedRate = (float) changedResources.size() / numSourceFiles;
-        if(changedRate > 0.5) {
-            // PERF: If more than 50% of required sources (resources that have no provider) have been changed (i.e.,
-            // high-impact change), perform top-down builds for all tasks with callbacks instead, since this has less
-            // overhead than a bottom-up build.
-            // TODO: execute all explicitly observed tasks instead?
-            for(TaskKey key : callbacks.keySet()) {
-                try(final StoreReadTxn txn = store.readTxn()) {
-                    final Task<?> task = key.toTask(taskDefs, txn);
-                    topDownSession.requireInitial(task, true, cancel);
-                }
-            }
-        } else {
-            bottomUpSession.requireInitial(changedResources, cancel);
-        }
+        bottomUpSession.requireInitial(changedResources, cancel);
     }
 
 

@@ -1,32 +1,29 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
-import mb.pie.api.*
-import mb.pie.api.exec.NullCancelled
-import mb.pie.api.stamp.OutputStamper
-import mb.pie.api.stamp.ResourceStamper
-import mb.pie.api.test.*
-import mb.pie.runtime.PieBuilderImpl
-import mb.pie.runtime.PieImpl
-import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.logger.exec.LoggerExecutorLogger
+import mb.pie.api.MapTaskDefs
+import mb.pie.api.None
+import mb.pie.api.Observability
+import mb.pie.api.STask
+import mb.pie.api.test.anyC
+import mb.pie.api.test.anyER
 import mb.resource.fs.FSResource
-import mb.resource.hierarchical.HierarchicalResource
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
 import java.io.Serializable
 import java.nio.file.FileSystem
-import java.util.stream.Stream
 
-internal class ObservabilityTests {
+class ObservabilityTests {
+  private val builder = ObservabilityTestBuilder()
+
+
   @TestFactory
-  fun testExplicitObserved() = ObservabilityTestGenerator.generate("testExplicitObserved") {
+  fun testExplicitObserved() = builder.build("testExplicitObserved") {
     newSession().use { session ->
       session.requireAndObserve(noopTask)
       assertTrue(pie.isObserved(noopTask))
       assertTrue(pie.isObserved(noopKey))
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         val observability = txn.taskObservability(noopKey)
         assertEquals(Observability.ExplicitObserved, observability)
         assertTrue(observability.isObserved)
@@ -36,7 +33,7 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitObserved() = ObservabilityTestGenerator.generate("testImplicitObserved") {
+  fun testImplicitObserved() = builder.build("testImplicitObserved") {
     newSession().use { session ->
       session.requireAndObserve(callNoopTask)
 
@@ -45,7 +42,7 @@ internal class ObservabilityTests {
       assertTrue(pie.isObserved(callNoopTask))
       assertTrue(pie.isObserved(callNoopKey))
 
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // `callNoopTask` is explicitly required, therefore it is explicitly observed.
         val callNoopObservability = txn.taskObservability(callNoopKey)
         assertEquals(Observability.ExplicitObserved, callNoopObservability)
@@ -62,17 +59,17 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitToExplicitObserved() = ObservabilityTestGenerator.generate("testImplicitToExplicitObserved") {
+  fun testImplicitToExplicitObserved() = builder.build("testImplicitToExplicitObserved") {
     newSession().use { session ->
       session.requireAndObserve(callNoopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // `noopTask` is required by `callNoopTask`, therefore it is implicitly observed.
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
 
       // We now explicitly require `noopTask`.
       session.requireAndObserve(noopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // `noopTask` is explicitly required, therefore it is explicitly observed.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
@@ -80,12 +77,12 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testImplicitUnobserve() = ObservabilityTestGenerator.generate("testImplicitUnobserve") {
+  fun testImplicitUnobserve() = builder.build("testImplicitUnobserve") {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
       session.requireAndObserve(callNoopMaybeDef.createTask(true))
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
     }
@@ -95,7 +92,7 @@ internal class ObservabilityTests {
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`, making `noopTask`
       // now unobserved.
       session.requireAndObserve(callNoopMaybeDef.createTask(false))
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         val observability = txn.taskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
         assertTrue(observability.isUnobserved)
@@ -107,25 +104,25 @@ internal class ObservabilityTests {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true` again, making it implicitly observed again.
       session.requireAndObserve(callNoopMaybeDef.createTask(true))
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
     }
   }
 
   @TestFactory
-  fun testImplicitUnobserveExplicitObservedStays() = ObservabilityTestGenerator.generate("testImplicitUnobserveExplicitObservedStays") {
+  fun testImplicitUnobserveExplicitObservedStays() = builder.build("testImplicitUnobserveExplicitObservedStays") {
     newSession().use { session ->
       // We call `callNoopMaybeTaskDef` with input `true`, therefore it requires `noopTask`, making `noopTask`
       // implicitly observed.
       session.requireAndObserve(callNoopMaybeDef.createTask(true))
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
 
       // We explicitly require `noopTask`, making `noopTask` explicitly observed
       session.requireAndObserve(noopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
     }
@@ -135,22 +132,22 @@ internal class ObservabilityTests {
       // We call `callNoopMaybeTaskDef` with input `false`, therefore it DOES NOT require `noopTask`. However,
       // `noopTask` is explicitly observed, and it should stay that way.
       session.requireAndObserve(callNoopMaybeDef.createTask(false))
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
     }
   }
 
   @TestFactory
-  fun testExplicitUnobserveRoot() = ObservabilityTestGenerator.generate("testExplicitUnobserveRoot") {
+  fun testExplicitUnobserveRoot() = builder.build("testExplicitUnobserveRoot") {
     newSession().use { session ->
       session.requireAndObserve(callNoopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
       session.unobserve(callNoopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // After explicitly unobserving `callNoop`, the entire spine is unobserved.
         assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.Unobserved, txn.taskObservability(noopKey))
@@ -159,15 +156,15 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitUnobserveLeaf() = ObservabilityTestGenerator.generate("testExplicitUnobserveLeaf") {
+  fun testExplicitUnobserveLeaf() = builder.build("testExplicitUnobserveLeaf") {
     newSession().use { session ->
       session.requireAndObserve(callNoopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
       }
       session.unobserve(noopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // Explicitly unobserving `noop` does nothing, as it is still observed by `callNoop`.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
@@ -176,16 +173,16 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitUnobserveBothExplicitObservedRoot() = ObservabilityTestGenerator.generate("testExplicitUnobserveBothExplicitObservedRoot") {
+  fun testExplicitUnobserveBothExplicitObservedRoot() = builder.build("testExplicitUnobserveBothExplicitObservedRoot") {
     newSession().use { session ->
       session.requireAndObserve(callNoopTask)
       session.requireAndObserve(noopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
       session.unobserve(callNoopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // After explicitly unobserving `callNoop`, only `callNoop` is unobserved, as `noop` is still explicitly observed.
         assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
@@ -194,16 +191,16 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testExplicitUnobserveBothExplicitObservedLeaf() = ObservabilityTestGenerator.generate("testExplicitUnobserveBothExplicitObservedLeaf") {
+  fun testExplicitUnobserveBothExplicitObservedLeaf() = builder.build("testExplicitUnobserveBothExplicitObservedLeaf") {
     newSession().use { session ->
       session.requireAndObserve(callNoopTask)
       session.requireAndObserve(noopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
       }
       session.unobserve(noopTask)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // Explicitly unobserving `noop` turns it into an implicitly observed task, as `callNoop` still observes it.
         assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
@@ -213,7 +210,7 @@ internal class ObservabilityTests {
 
 
   @TestFactory
-  fun testBottomUpExecutesObserved() = ObservabilityTestGenerator.generate("testBottomUpExecutesObserved") {
+  fun testBottomUpExecutesObserved() = builder.build("testBottomUpExecutesObserved") {
     val resource = resource("/file")
     write("Hello, world!", resource)
     val readTask = readDef.createTask(resource)
@@ -228,19 +225,19 @@ internal class ObservabilityTests {
 
     // Change the resource and perform a bottom-up build.
     write("Hello, galaxy!", resource)
-    newSession().use { pieSession ->
-      val session = spy(pieSession.bottomUpSession)
-      session.requireInitial(setOf(resource.key), NullCancelled())
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(resource.key))
       // Both tasks are executed because they are observable.
-      inOrder(session) {
-        verify(session).exec(eq(readKey), eq(readTask), anyER(), anyC())
-        verify(session).exec(eq(callKey), eq(callTask), anyER(), anyC())
+      val bottomUpSession = session.bottomUpSession
+      inOrder(bottomUpSession) {
+        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(callKey), eq(callTask), anyER(), anyC())
       }
     }
   }
 
   @TestFactory
-  fun testBottomUpSkipsUnobservedRequiree() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobservedRequiree") {
+  fun testBottomUpSkipsUnobservedRequiree() = builder.build("testBottomUpSkipsUnobservedRequiree") {
     val resource = resource("/file")
     write("Hello, world!", resource)
     val readTask = readDef.createTask(resource)
@@ -257,17 +254,17 @@ internal class ObservabilityTests {
 
     // Change the resource and perform a bottom-up build.
     write("Hello, galaxy!", resource)
-    newSession().use { pieSession ->
-      val session = spy(pieSession.bottomUpSession)
-      session.requireInitial(setOf(resource.key), NullCancelled())
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(resource.key))
       // Both tasks are NOT executed because they are unobservable.
-      verify(session, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
-      verify(session, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
+      val bottomUpSession = session.bottomUpSession
+      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
+      verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
     }
   }
 
   @TestFactory
-  fun testBottomUpSkipsUnobservedProvider() = ObservabilityTestGenerator.generate("testBottomUpSkipsUnobservedProvider") {
+  fun testBottomUpSkipsUnobservedProvider() = builder.build("testBottomUpSkipsUnobservedProvider") {
     val resource = resource("/file")
     val writeTask = writeDef.createTask(ObservabilityTestCtx.Write(resource, "Hello, world!"))
     val writeSTask = writeTask.toSerializableTask()
@@ -283,17 +280,17 @@ internal class ObservabilityTests {
 
     // Change the resource and perform a bottom-up build.
     write("Hello, galaxy!", resource)
-    newSession().use { pieSession ->
-      val session = spy(pieSession.bottomUpSession)
-      session.requireInitial(setOf(resource.key), NullCancelled())
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(resource.key))
       // Both tasks are NOT executed because they are unobservable.
-      verify(session, never()).exec(eq(writeKey), eq(writeTask), anyER(), anyC())
-      verify(session, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
+      val bottomUpSession = session.bottomUpSession
+      verify(bottomUpSession, never()).exec(eq(writeKey), eq(writeTask), anyER(), anyC())
+      verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
     }
   }
 
   @TestFactory
-  fun testBottomUpRequireUnobserved() = ObservabilityTestGenerator.generate("testBottomUpRequireUnobserved") {
+  fun testBottomUpRequireUnobserved() = builder.build("testBottomUpRequireUnobserved") {
     val resource1 = resource("/file1")
     write("Hello, world 1!", resource1)
     val read1Task = readDef.createTask(resource1)
@@ -318,7 +315,7 @@ internal class ObservabilityTests {
       session.requireAndObserve(callRead2Task)
       // Unobserve `callRead2Task`, making it and `read2Task` unobserved.
       session.unobserve(callRead2Task)
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         assertEquals(Observability.Unobserved, txn.taskObservability(callRead2Key))
         assertEquals(Observability.Unobserved, txn.taskObservability(read2Key))
       }
@@ -327,28 +324,28 @@ internal class ObservabilityTests {
     // Change resources and perform a bottom-up build.
     write("Hello, galaxy 1!", resource1)
     write("Hello, galaxy 2!", resource2)
-    newSession().use { pieSession ->
-      val session = spy(pieSession.bottomUpSession)
-      session.requireInitial(setOf(resource1.key, resource2.key), NullCancelled())
-      inOrder(session) {
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(resource1.key, resource2.key))
+      val bottomUpSession = session.bottomUpSession
+      inOrder(bottomUpSession) {
         // `read2Task` is not scheduled nor executed yet, despite its resource being changed, because it is unobserved. Consequently, `callRead2Task` will also not be scheduled yet.
         // `read1Task` gets executed because it is observed and its resource changed.
-        verify(session).exec(eq(read1Key), eq(read1Task), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(read1Key), eq(read1Task), anyER(), anyC())
         // This in turn affects `callMainTask`, so it gets executed.
-        verify(session).exec(eq(callMainKey), eq(callMainTask), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(callMainKey), eq(callMainTask), anyER(), anyC())
         // `callMainTask` requires `read1Task`.
-        verify(session).require(eq(read1Key), eq(read1Task), eq(true), anyC())
+        verify(bottomUpSession).require(eq(read1Key), eq(read1Task), any(), anyC())
         // But `read1Task` has already been executed, so it will not be executed again.
         // `callMainTask` now requires `callRead2Task`, because `read1Task` returns a string with 'galaxy' in it.
-        verify(session).require(eq(callRead2Key), eq(callRead2Task), eq(true), anyC())
+        verify(bottomUpSession).require(eq(callRead2Key), eq(callRead2Task), any(), anyC())
         // While checking if `callRead2Task` must be executed, it requires unobserved task `read2Task`.
-        verify(session).require(eq(read2Key), eq(read2Task), eq(true), anyC())
+        verify(bottomUpSession).require(eq(read2Key), eq(read2Task), any(), anyC())
         // `read2Task` then gets executed despite being unobserved, because it is required and not consistent yet because `resource2` has changed.
-        verify(session).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
         // `callRead2Task` then gets executed despite being unobserved, because the result of required task `read2Task` changed.
-        verify(session).exec(eq(callRead2Key), eq(callRead2Task), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(callRead2Key), eq(callRead2Task), anyER(), anyC())
       }
-      pie.store.readTxn().use { txn ->
+      session.store.readTxn().use { txn ->
         // Because `callMainTask` depends on `callRead2Task`, which depends on `read2Task`, they become implicitly observed.
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(callRead2Key))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(read2Key))
@@ -357,10 +354,9 @@ internal class ObservabilityTests {
 
     // Rollback: change resource1 to not have the trigger word 'galaxy' any more.
     write("Hello, world 1!", resource1)
-    newSession().use { pieSession ->
-      val session = spy(pieSession.bottomUpSession)
-      session.requireInitial(setOf(resource1.key), NullCancelled())
-      pie.store.readTxn().use { txn ->
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(resource1.key))
+      session.store.readTxn().use { txn ->
         // Because `callMainTask` does not depend on `callRead2Task` any more, it and `read2Task` become unobserved again.
         assertEquals(Observability.Unobserved, txn.taskObservability(callRead2Key))
         assertEquals(Observability.Unobserved, txn.taskObservability(read2Key))
@@ -369,25 +365,25 @@ internal class ObservabilityTests {
 
     // Now we only change resource1.
     write("Hello, galaxy 1!", resource1)
-    newSession().use { pieSession ->
-      val session = spy(pieSession.bottomUpSession)
-      session.requireInitial(setOf(resource1.key, resource2.key), NullCancelled())
-      inOrder(session) {
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(resource1.key, resource2.key))
+      val bottomUpSession = session.bottomUpSession
+      inOrder(bottomUpSession) {
         // `read2Task` is not scheduled or executed because its resource did not change. Consequently, `callRead2Task` is also not scheduled.
         // `read1Task` gets executed because it is observed and its resource changed.
-        verify(session).exec(eq(read1Key), eq(read1Task), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(read1Key), eq(read1Task), anyER(), anyC())
         // This in turn affects `callMainTask`, so it gets executed.
-        verify(session).exec(eq(callMainKey), eq(callMainTask), anyER(), anyC())
+        verify(bottomUpSession).exec(eq(callMainKey), eq(callMainTask), anyER(), anyC())
         // `callMainTask` now requires `callRead2Task`, because `read1Task` returns a string with 'galaxy' in it.
-        verify(session).require(eq(callRead2Key), eq(callRead2Task), eq(true), anyC())
+        verify(bottomUpSession).require(eq(callRead2Key), eq(callRead2Task), any(), anyC())
         // While checking if `callRead2Task` must be executed, it requires unobserved task `read2Task`.
-        verify(session).require(eq(read2Key), eq(read2Task), eq(true), anyC())
+        verify(bottomUpSession).require(eq(read2Key), eq(read2Task), any(), anyC())
       }
       // However, `read2Task` does not get executed, because none of its dependencies are inconsistent.
-      verify(session, never()).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
+      verify(bottomUpSession, never()).exec(eq(read2Key), eq(read2Task), anyER(), anyC())
       // Consequently, `callRead2Task` also does not get executed.
-      verify(session, never()).exec(eq(callRead2Key), eq(callRead2Task), anyER(), anyC())
-      pie.store.readTxn().use { txn ->
+      verify(bottomUpSession, never()).exec(eq(callRead2Key), eq(callRead2Task), anyER(), anyC())
+      session.store.readTxn().use { txn ->
         // Despite not being executed, because `callTask` depends on `callRead2Task`, which depends on `read2Task`, it does become implicitly observed again.
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(callRead2Key))
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(read2Key))
@@ -397,11 +393,11 @@ internal class ObservabilityTests {
 
 
   @TestFactory
-  fun testGCDeletesCorrect() = ObservabilityTestGenerator.generate("testGCKeepsObserved") {
+  fun testGCDeletesCorrect() = builder.build("testGCKeepsObserved") {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
-        pie.store.readTxn().use { txn ->
+        session.store.readTxn().use { txn ->
           assertNull(txn.input(aTask.key()))
           assertNull(txn.input(bTask.key()))
           assertNotNull(txn.input(cTask.key()))
@@ -425,11 +421,11 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCDeletesAllDataFromStore() = ObservabilityTestGenerator.generate("testGCDeletesAllDataFromStore") {
+  fun testGCDeletesAllDataFromStore() = builder.build("testGCDeletesAllDataFromStore") {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
-        pie.store.readTxn().use { txn ->
+        session.store.readTxn().use { txn ->
           for(key in listOf(aTask.key(), bTask.key(), dTask.key(), fTask.key(), iTask.key(), jTask.key(), kTask.key())) {
             assertNull(txn.input(key))
             assertNull(txn.output(key))
@@ -450,7 +446,7 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCDoesNotInfluenceExecution() = ObservabilityTestGenerator.generate("testGCDoesNotInfluenceExecution") {
+  fun testGCDoesNotInfluenceExecution() = builder.build("testGCDoesNotInfluenceExecution") {
     // First run without garbage collection.
     this.GCSetup().run {
       // Modify all files.
@@ -460,21 +456,21 @@ internal class ObservabilityTests {
       write("Hello, galaxy 3!", file3)
       write("Hello, galaxy 4!", file4)
       write("Hello, galaxy 5!", file5)
-      newSession().use { pieSession ->
-        val session = spy(pieSession.bottomUpSession)
-        session.requireInitial(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet(), NullCancelled())
-        verify(session, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
-        verify(session, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
-        verify(session, never()).exec(eq(dTask.key()), eq(dTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), anyC())
-        verify(session, never()).exec(eq(fTask.key()), eq(fTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), anyC())
-        verify(session, never()).exec(eq(iTask.key()), eq(iTask), anyER(), anyC())
-        verify(session, never()).exec(eq(jTask.key()), eq(jTask), anyER(), anyC())
-        verify(session, never()).exec(eq(kTask.key()), eq(kTask), anyER(), anyC())
-        verify(session, never()).exec(eq(lTask.key()), eq(lTask), anyER(), anyC())
+      newSession().use { session ->
+        session.updateAffectedBy(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet())
+        val bottomUpSession = session.bottomUpSession
+        verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(dTask.key()), eq(dTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(fTask.key()), eq(fTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(iTask.key()), eq(iTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(jTask.key()), eq(jTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(kTask.key()), eq(kTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(lTask.key()), eq(lTask), anyER(), anyC())
       }
     }
 
@@ -489,34 +485,34 @@ internal class ObservabilityTests {
       write("Hello, galaxy 3!", file3)
       write("Hello, galaxy 4!", file4)
       write("Hello, galaxy 5!", file5)
-      newSession().use { pieSession ->
+      newSession().use { session ->
         // First run garbage collection.
-        pieSession.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
         // Then build and confirm that the exact same tasks are executed.
-        val session = spy(pieSession.bottomUpSession)
-        session.requireInitial(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet(), NullCancelled())
-        verify(session, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
-        verify(session, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
-        verify(session, never()).exec(eq(dTask.key()), eq(dTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), anyC())
-        verify(session, never()).exec(eq(fTask.key()), eq(fTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), anyC())
-        verify(session, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), anyC())
-        verify(session, never()).exec(eq(iTask.key()), eq(iTask), anyER(), anyC())
-        verify(session, never()).exec(eq(jTask.key()), eq(jTask), anyER(), anyC())
-        verify(session, never()).exec(eq(kTask.key()), eq(kTask), anyER(), anyC())
-        verify(session, never()).exec(eq(lTask.key()), eq(lTask), anyER(), anyC())
+        session.updateAffectedBy(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet())
+        val bottomUpSession = session.bottomUpSession
+        verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(dTask.key()), eq(dTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(fTask.key()), eq(fTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(iTask.key()), eq(iTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(jTask.key()), eq(jTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(kTask.key()), eq(kTask), anyER(), anyC())
+        verify(bottomUpSession, never()).exec(eq(lTask.key()), eq(lTask), anyER(), anyC())
       }
     }
   }
 
   @TestFactory
-  fun testGCShouldDeleteFunctionFalse() = ObservabilityTestGenerator.generate("testGCShouldDeleteFunctionFalse") {
+  fun testGCShouldDeleteFunctionFalse() = builder.build("testGCShouldDeleteFunctionFalse") {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> false }, { _, _ -> true })
-        pie.store.readTxn().use { txn ->
+        session.store.readTxn().use { txn ->
           assertNotNull(txn.input(aTask.key()))
           assertNotNull(txn.input(bTask.key()))
           assertNotNull(txn.input(cTask.key()))
@@ -540,11 +536,11 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteFunctionSpecific() = ObservabilityTestGenerator.generate("testGCShouldDeleteFunctionSpecific") {
+  fun testGCShouldDeleteFunctionSpecific() = builder.build("testGCShouldDeleteFunctionSpecific") {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ t -> t == aTask || t == dTask || t == iTask }, { _, _ -> true })
-        pie.store.readTxn().use { txn ->
+        session.store.readTxn().use { txn ->
           assertNull(txn.input(aTask.key()))
           assertNotNull(txn.input(bTask.key()))
           assertNotNull(txn.input(cTask.key()))
@@ -568,11 +564,11 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteProvidedResourceFalse() = ObservabilityTestGenerator.generate("testGCShouldDeleteProvidedResourceFalse") {
+  fun testGCShouldDeleteProvidedResourceFalse() = builder.build("testGCShouldDeleteProvidedResourceFalse") {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> false })
-        pie.store.readTxn().use { txn ->
+        session.store.readTxn().use { txn ->
           assertNull(txn.input(aTask.key()))
           assertNull(txn.input(bTask.key()))
           assertNotNull(txn.input(cTask.key()))
@@ -596,11 +592,11 @@ internal class ObservabilityTests {
   }
 
   @TestFactory
-  fun testGCShouldDeleteProvidedResourceSpecific() = ObservabilityTestGenerator.generate("testGCShouldDeleteProvidedResourceSpecific") {
+  fun testGCShouldDeleteProvidedResourceSpecific() = builder.build("testGCShouldDeleteProvidedResourceSpecific") {
     this.GCSetup().run {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, r -> r == file3 })
-        pie.store.readTxn().use { txn ->
+        session.store.readTxn().use { txn ->
           assertNull(txn.input(aTask.key()))
           assertNull(txn.input(bTask.key()))
           assertNotNull(txn.input(cTask.key()))
@@ -626,10 +622,10 @@ internal class ObservabilityTests {
 
 
 class ObservabilityTestCtx(
-  pieImpl: PieImpl,
+  fs: FileSystem,
   taskDefs: MapTaskDefs,
-  fs: FileSystem
-) : RuntimeTestCtx(pieImpl, taskDefs, fs) {
+  pieImpl: TestPieImpl
+) : RuntimeTestCtx(fs, taskDefs, pieImpl) {
   val noopDef = taskDef<None, None>("noop") { None.instance }
   val noopTask = noopDef.createTask(None.instance)
   val noopKey = noopTask.key()
@@ -734,33 +730,7 @@ class ObservabilityTestCtx(
   }
 }
 
-object ObservabilityTestGenerator {
-  fun generate(
-    name: String,
-    storeGens: Array<(Logger) -> Store> = RuntimeTestGenerator.defaultStoreGens,
-    shareGens: Array<(Logger) -> Share> = RuntimeTestGenerator.defaultShareGens,
-    layerGens: Array<(TaskDefs, Logger) -> Layer> = RuntimeTestGenerator.defaultLayerGens,
-    defaultOutputStampers: Array<OutputStamper> = ApiTestGenerator.defaultDefaultOutputStampers,
-    defaultRequireFileSystemStampers: Array<ResourceStamper<HierarchicalResource>> = ApiTestGenerator.defaultDefaultRequireHierarchicalStampers,
-    defaultProvideFileSystemStampers: Array<ResourceStamper<HierarchicalResource>> = ApiTestGenerator.defaultDefaultProvideHierarchicalStampers,
-    executorLoggerGen: (Logger) -> ExecutorLogger = { l -> LoggerExecutorLogger(l) },
-    logger: Logger = StreamLogger.onlyErrors(),
-    testFunc: ObservabilityTestCtx.() -> Unit
-  ): Stream<out DynamicNode> {
-    return ApiTestGenerator.generate(
-      name,
-      { PieBuilderImpl() },
-      { MapTaskDefs() },
-      storeGens,
-      shareGens,
-      layerGens,
-      defaultOutputStampers,
-      defaultRequireFileSystemStampers,
-      defaultProvideFileSystemStampers,
-      executorLoggerGen,
-      logger,
-      { pie, taskDefs, fs -> ObservabilityTestCtx(pie as PieImpl, taskDefs as MapTaskDefs, fs) },
-      testFunc
-    )
-  }
-}
+class ObservabilityTestBuilder(shouldSpy: Boolean = true) : RuntimeTestBuilder<ObservabilityTestCtx>(
+  shouldSpy,
+  { fs, taskDefs, pie -> ObservabilityTestCtx(fs, taskDefs, pie as TestPieImpl) }
+)

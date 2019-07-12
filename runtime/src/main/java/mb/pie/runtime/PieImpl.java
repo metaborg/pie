@@ -17,17 +17,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieImpl implements Pie {
-    // Public for testability of incrementality
-    public final TaskDefs taskDefs;
-    public final ResourceService resourceService;
-    public final Store store;
-    public final Share share;
-    public final DefaultStampers defaultStampers;
-    public final BiFunction<TaskDefs, Logger, Layer> layerFactory;
-    public final Logger logger;
-    public final Function<Logger, ExecutorLogger> executorLoggerFactory;
+    protected final TaskDefs taskDefs;
+    protected final ResourceService resourceService;
+    protected final Store store;
+    protected final Share share;
+    protected final DefaultStampers defaultStampers;
+    protected final BiFunction<TaskDefs, Logger, Layer> layerFactory;
+    protected final Logger logger;
+    protected final Function<Logger, ExecutorLogger> executorLoggerFactory;
 
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks = new ConcurrentHashMap<>();
+
 
     public PieImpl(
         TaskDefs taskDefs,
@@ -62,7 +62,7 @@ public class PieImpl implements Pie {
         return createSession(new CompositeTaskDefs(this.taskDefs, addTaskDefs));
     }
 
-    private PieSession createSession(TaskDefs taskDefs) {
+    protected PieSession createSession(TaskDefs taskDefs) {
         final Layer layer = layerFactory.apply(taskDefs, logger);
         final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();

@@ -1,13 +1,16 @@
-package mb.pie.runtime.test
+package mb.pie.api.test
 
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestFactory
 
-internal class ExistsStamperTests {
+class ExistsStamperTests {
+  private val builder = TestBuilder()
+
+
   @TestFactory
-  fun testFileStampEqual() = RuntimeTestGenerator.generate("testFileStampEqual") {
+  fun testFileStampEqual() = builder.build("testFileStampEqual") {
     val stamper = ResourceStampers.modifiedFile<FSResource>()
     val file = resource("/file")
     file.createFile(true)
@@ -17,7 +20,7 @@ internal class ExistsStamperTests {
   }
 
   @TestFactory
-  fun testNonExistentFileStampEqual() = RuntimeTestGenerator.generate("testNonExistentFileStampEqual") {
+  fun testNonExistentFileStampEqual() = builder.build("testNonExistentFileStampEqual") {
     val stamper = ResourceStampers.modifiedFile<FSResource>()
     val file = resource("/file")
     val stamp1 = stamper.stamp(file)
@@ -26,7 +29,7 @@ internal class ExistsStamperTests {
   }
 
   @TestFactory
-  fun testDeletedFileStampUnequal() = RuntimeTestGenerator.generate("testDeletedFileStampUnequal") {
+  fun testDeletedFileStampUnequal() = builder.build("testDeletedFileStampUnequal") {
     val stamper = ResourceStampers.modifiedFile<FSResource>()
     val file = resource("/file")
     file.createFile(true)
@@ -37,7 +40,7 @@ internal class ExistsStamperTests {
   }
 
   @TestFactory
-  fun testNonExistentAndExistentFileStampUnequal() = RuntimeTestGenerator.generate("testNonExistentAndExistentFileStampUnequal") {
+  fun testNonExistentAndExistentFileStampUnequal() = builder.build("testNonExistentAndExistentFileStampUnequal") {
     val stamper = ResourceStampers.modifiedFile<FSResource>()
     val file = resource("/file")
     val stamp1 = stamper.stamp(file)
