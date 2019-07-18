@@ -1,9 +1,6 @@
 package mb.pie.runtime.layer;
 
-import mb.pie.api.Layer;
-import mb.pie.api.StoreReadTxn;
-import mb.pie.api.TaskData;
-import mb.pie.api.TaskKey;
+import mb.pie.api.*;
 
 import java.io.Serializable;
 
@@ -15,6 +12,8 @@ public class NoopLayer implements Layer {
     @Override public void requireTopDownStart(TaskKey key, Serializable input) {}
 
     @Override public void requireTopDownEnd(TaskKey key) {}
+
+    @Override public void validateVisited(TaskKey key, Task<?> task, TaskData data) {}
 
     @Override public void validatePreWrite(TaskKey key, TaskData data, StoreReadTxn txn) {}
 

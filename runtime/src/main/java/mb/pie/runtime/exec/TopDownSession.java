@@ -111,9 +111,12 @@ public class TopDownSession implements RequireTask {
      * Get data for given task/key, either by getting existing data or through execution.
      */
     private DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<?> task, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
-        // Check if task was already visited this execution. Return immediately if so.
+        // Check if task was already visited this execution.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
+            // Validate required task against visited data.
+            layer.validateVisited(key, task, visitedData);
+            // If validation succeeds, return immediately.
             return new DataAndExecutionStatus(visitedData, false);
         }
 

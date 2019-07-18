@@ -92,7 +92,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testFileReq() = builder.test {
+  fun testResourceRequire() = builder.test {
     val readDef = spy(readResource)
     addTaskDef(readDef)
 
@@ -131,7 +131,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testFileGen() = builder.test {
+  fun testResourceProvide() = builder.test {
     val writeDef = spy(writeResource)
     addTaskDef(writeDef)
 
@@ -173,7 +173,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testTaskReq() = builder.test {
+  fun testTaskRequire() = builder.test {
     val lowerDef = spy(toLowerCase)
     addTaskDef(lowerDef)
     val readDef = spy(readResource)
@@ -271,7 +271,7 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testOverlappingGeneratedPath() = builder.test {
+  fun testOverlappingProvidedResourceTriggersValidationError() = builder.test {
     addTaskDef(writeResource)
 
     val file = resource("/file")
@@ -291,39 +291,39 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testGenerateRequiredHiddenDep() = builder.test {
+  fun testProvideRequiredResourceHiddenDepTriggersValidationError() = builder.test {
     addTaskDef(readResource)
     addTaskDef(writeResource)
 
     val file = resource("/file")
     write("HELLO WORLD!", file)
 
-    assertThrows(ValidationException::class.java) {
-      newSession().use { session ->
-        session.require(readResource.createTask(file))
+    newSession().use { session ->
+      session.require(readResource.createTask(file))
+      assertThrows(ValidationException::class.java) {
         session.require(writeResource.createTask(Pair("HELLO WORLD!", file)))
       }
     }
 
-    // Hidden dependency exception should also trigger between separate execs
-    assertThrows(ValidationException::class.java) {
-      newSession().use { session ->
+    newSession().use { session ->
+      assertThrows(ValidationException::class.java) {
+        // Hidden dependency exception should also trigger between separate sessions.
         session.require(writeResource.createTask(Pair("HELLO WORLD!", file)))
       }
     }
   }
 
   @TestFactory
-  fun testRequireGeneratedHiddenDep() = builder.test {
+  fun testRequireProvidedResourceHiddenDepTriggersValidationError() = builder.test {
     addTaskDef(writeResource)
     addTaskDef(readResource)
     val indirectionDef = requireOutputFunc<None>()
     addTaskDef(indirectionDef)
 
-    val combineIncorrect = spy(taskDef<Pair<String, FSResource>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+    val combineIncorrect = taskDef<Pair<String, FSResource>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
       require(indirectionDef.createTask(writeResource.createSerializableTask(Pair(text, path))))
       require(readResource.createTask(path))
-    })
+    }
     addTaskDef(combineIncorrect)
 
     newSession().use { session ->
@@ -333,11 +333,11 @@ class TopDownTests {
       }
     }
 
-    val combineStillIncorrect = spy(taskDef<Pair<String, FSResource>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
+    val combineStillIncorrect = taskDef<Pair<String, FSResource>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
       require(indirectionDef.createTask(writeResource.createSerializableTask(Pair(text, path))))
       require(writeResource.createTask(Pair(text, path)))
       require(readResource.createTask(path))
-    })
+    }
     addTaskDef(combineStillIncorrect)
 
     newSession().use { session ->
@@ -349,13 +349,42 @@ class TopDownTests {
   }
 
   @TestFactory
-  fun testCyclicDependency() = builder.test {
+  fun testCyclicDependencyTriggersValidationError() = builder.test {
     val cyclicDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(STask("b1", None.instance)) as None }
     addTaskDef(cyclicDef)
 
-    assertThrows(ValidationException::class.java) {
-      newSession().use { session ->
+    newSession().use { session ->
+      assertThrows(ValidationException::class.java) {
         session.require(cyclicDef.createTask(None.instance))
+      }
+    }
+  }
+
+  @TestFactory
+  fun testDifferentInputsTriggersValidationError() = builder.test {
+    val singletonTaskDef = taskDef<Int, None>("singleton", { _ -> None.instance }) {
+      println(it)
+      None.instance
+    }
+    addTaskDef(singletonTaskDef)
+
+    newSession().use { session ->
+      session.require(singletonTaskDef.createTask(1))
+      assertThrows(ValidationException::class.java) {
+        session.require(singletonTaskDef.createTask(2))
+      }
+    }
+
+    val requireSingletonTaskDef = taskDef<Int, None>("requireSingletonTaskDef") {
+      require(singletonTaskDef.createTask(it))
+      require(singletonTaskDef.createTask(it + 1))
+      None.instance
+    }
+    addTaskDef(requireSingletonTaskDef)
+
+    newSession().use { session ->
+      assertThrows(ValidationException::class.java) {
+        session.require(requireSingletonTaskDef.createTask(1))
       }
     }
   }

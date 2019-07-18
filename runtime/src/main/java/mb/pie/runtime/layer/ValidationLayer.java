@@ -1,29 +1,12 @@
 package mb.pie.runtime.layer;
 
-import mb.pie.api.Layer;
-import mb.pie.api.Logger;
-import mb.pie.api.OutTransientEquatable;
-import mb.pie.api.ResourceProvideDep;
-import mb.pie.api.ResourceRequireDep;
-import mb.pie.api.StoreReadTxn;
-import mb.pie.api.TaskData;
-import mb.pie.api.TaskDefs;
-import mb.pie.api.TaskKey;
+import mb.pie.api.*;
 import mb.pie.runtime.exec.BottomUpShared;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StatementWithEmptyBody", "StringBufferReplaceableByString"})
@@ -91,18 +74,32 @@ public class ValidationLayer implements Layer {
         stack.remove(key);
     }
 
-    @Override public void validatePreWrite(TaskKey currentTask, TaskData data, StoreReadTxn txn) {
-        for(ResourceProvideDep provideDep : data.resourceProvides) {
+    @Override public void validateVisited(TaskKey currentTaskKey, Task<?> currentTask, TaskData visitedData) {
+        if(!visitedData.input.equals(currentTask.input)) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Visited task with same key was required with different input in same session. Cause:\n");
+            sb.append("task with key\n");
+            sb.append("  " + currentTaskKey + "\n");
+            sb.append("was already visited with input\n");
+            sb.append("  " + visitedData.input + "\n");
+            sb.append("while now required with input\n");
+            sb.append("  " + currentTask.input);
+            error(sb.toString());
+        }
+    }
+
+    @Override public void validatePreWrite(TaskKey currentTaskKey, TaskData dataToStore, StoreReadTxn txn) {
+        for(ResourceProvideDep provideDep : dataToStore.resourceProvides) {
             final ResourceKey resource = provideDep.key;
             final @Nullable TaskKey provider = txn.providerOf(resource);
-            if(provider != null && !provider.equals(currentTask)) {
+            if(provider != null && !provider.equals(currentTaskKey)) {
                 // Overlapping provider tasks for resource.
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Overlapping provider tasks for resource. Cause:\n");
                 sb.append("resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("was provided by task\n");
-                sb.append("  " + currentTask + "\n");
+                sb.append("  " + currentTaskKey + "\n");
                 sb.append("and task\n");
                 sb.append("  " + provider);
                 error(sb.toString());
@@ -110,20 +107,20 @@ public class ValidationLayer implements Layer {
         }
     }
 
-    @Override public void validatePostWrite(TaskKey currentTask, TaskData data, StoreReadTxn txn) {
-        for(ResourceRequireDep requireDep : data.resourceRequires) {
+    @Override public void validatePostWrite(TaskKey currentTaskKey, TaskData dataToStore, StoreReadTxn txn) {
+        for(ResourceRequireDep requireDep : dataToStore.resourceRequires) {
             final ResourceKey resource = requireDep.key;
             final @Nullable TaskKey provider = txn.providerOf(resource);
             if(provider == null) {
                 // No provider for resource.
-            } else if(currentTask.equals(provider)) {
+            } else if(currentTaskKey.equals(provider)) {
                 // Required resource provided by current task.
-            } else if(!BottomUpShared.hasTransitiveTaskReq(txn, currentTask, provider)) {
+            } else if(!BottomUpShared.hasTransitiveTaskReq(txn, currentTaskKey, provider)) {
                 // Resource is required by current task, and resource is provided by task `provider`, thus the current task must (transitively) require task `provider`.
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Hidden dependency. Cause:\n");
                 sb.append("task\n");
-                sb.append("  " + currentTask + "\n");
+                sb.append("  " + currentTaskKey + "\n");
                 sb.append("requires resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("provided by task\n");
@@ -133,20 +130,20 @@ public class ValidationLayer implements Layer {
             }
         }
 
-        for(ResourceProvideDep provideDep : data.resourceProvides) {
+        for(ResourceProvideDep provideDep : dataToStore.resourceProvides) {
             final ResourceKey resource = provideDep.key;
             final Set<TaskKey> requirees = txn.requireesOf(resource);
             for(TaskKey requiree : requirees) {
-                if(currentTask.equals(requiree)) {
+                if(currentTaskKey.equals(requiree)) {
                     // Required resource provided by current task.
-                } else if(!BottomUpShared.hasTransitiveTaskReq(txn, requiree, currentTask)) {
+                } else if(!BottomUpShared.hasTransitiveTaskReq(txn, requiree, currentTaskKey)) {
                     // Resource is provided by current task, and resource is required by task `requiree`, thus task `requiree` must (transitively) require the current task.
                     final StringBuilder sb = new StringBuilder();
                     sb.append("Hidden dependency. Cause:\n");
                     sb.append("resource\n");
                     sb.append("  " + resource + "\n");
                     sb.append("was provided by task\n");
-                    sb.append("  " + currentTask + "\n");
+                    sb.append("  " + currentTaskKey + "\n");
                     sb.append("after being previously required by task\n");
                     sb.append("  " + requiree);
                     error(sb.toString());
@@ -155,7 +152,7 @@ public class ValidationLayer implements Layer {
         }
 
         if(options.checkOutputObjects) {
-            validateOutput(data.output, currentTask);
+            validateOutput(dataToStore.output, currentTaskKey);
         }
     }
 

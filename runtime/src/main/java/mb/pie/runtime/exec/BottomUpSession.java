@@ -157,9 +157,12 @@ public class BottomUpSession implements RequireTask {
      * Get data for given task/key, either by getting existing data or through execution.
      */
     private TaskData getData(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
-        // Check if task was already visited this execution. Return immediately if so.
+        // Check if task was already visited this execution.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
+            // Validate required task against visited data.
+            layer.validateVisited(key, task, visitedData);
+            // If validation succeeds, return immediately.
             return visitedData;
         }
 
@@ -189,15 +192,6 @@ public class BottomUpSession implements RequireTask {
             // Task was not scheduled. That is, it was not directly affected by resource changes, and not indirectly
             // affected by other tasks. Therefore, we did not execute it. However, the task may still be affected by
             // internal inconsistencies that require re-execution, which we will check now.
-
-            // Internal input consistency changes.
-            final Serializable input = storedData.input;
-            {
-                final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
-                if(reason != null) {
-                    return exec(key, task, reason, cancel);
-                }
-            }
 
             // Internal transient consistency output consistency.
             final @Nullable Serializable output = storedData.output;
