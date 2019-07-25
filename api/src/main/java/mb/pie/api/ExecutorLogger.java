@@ -20,7 +20,7 @@ public interface ExecutorLogger {
 
     void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output);
 
-    void requireBottomUpInitialStart(Set<ResourceKey> changedResources);
+    void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources);
 
     void requireBottomUpInitialEnd();
 

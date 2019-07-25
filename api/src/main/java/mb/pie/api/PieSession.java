@@ -90,7 +90,7 @@ public interface PieSession extends AutoCloseable {
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @throws ExecException When an executing task throws an exception.
      */
-    void updateAffectedBy(Set<ResourceKey> changedResources) throws ExecException;
+    void updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException;
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
@@ -102,7 +102,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    void updateAffectedBy(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
+    void updateAffectedBy(Set<? extends ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
 
 
     /**

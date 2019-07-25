@@ -55,7 +55,7 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     }
 
 
-    @Override public void requireBottomUpInitialStart(Set<ResourceKey> changedResources) {
+    @Override public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {
 
     }
 

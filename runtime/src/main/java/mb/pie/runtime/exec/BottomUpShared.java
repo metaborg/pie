@@ -8,12 +8,7 @@ import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 public class BottomUpShared {
     /**
@@ -21,7 +16,7 @@ public class BottomUpShared {
      */
     public static HashSet<TaskKey> directlyAffectedTaskKeys(
         StoreReadTxn txn,
-        Collection<ResourceKey> changedResources,
+        Collection<? extends ResourceKey> changedResources,
         ResourceService resourceService,
         Logger logger
     ) {

@@ -82,7 +82,7 @@ public class PieSessionImpl implements PieSession {
 
 
     @Override
-    public void updateAffectedBy(Set<ResourceKey> changedResources) throws ExecException {
+    public void updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
         try {
             updateAffectedBy(changedResources, new NullCancelled());
         } catch(InterruptedException e) {
@@ -92,7 +92,7 @@ public class PieSessionImpl implements PieSession {
     }
 
     @Override
-    public void updateAffectedBy(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
+    public void updateAffectedBy(Set<? extends ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
         if(changedResources.isEmpty()) return;
         bottomUpSession.requireInitial(changedResources, cancel);
     }

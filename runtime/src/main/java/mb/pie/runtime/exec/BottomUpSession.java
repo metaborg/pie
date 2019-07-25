@@ -57,7 +57,7 @@ public class BottomUpSession implements RequireTask {
     }
 
 
-    public void requireInitial(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
+    public void requireInitial(Set<? extends ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
         executorLogger.requireBottomUpInitialStart(changedResources);
         scheduleAffectedByResources(changedResources);
         execScheduled(cancel);
@@ -96,7 +96,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Schedules tasks affected by (changes to) files.
      */
-    private void scheduleAffectedByResources(Collection<ResourceKey> resources) {
+    private void scheduleAffectedByResources(Collection<? extends ResourceKey> resources) {
         logger.trace("Scheduling tasks affected by resources: " + resources);
         final HashSet<TaskKey> affected; // OPTO: avoid allocation of HashSet using stream/callback?
         try(final StoreReadTxn txn = store.readTxn()) {
