@@ -10,6 +10,7 @@ import mb.resource.ResourceRuntimeException;
 import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
+import mb.resource.hierarchical.ResourcePath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.File;
@@ -197,6 +198,15 @@ public interface ExecContext {
     Resource getResource(ResourceKey key);
 
     /**
+     * Gets a hierarchical resource for given path.
+     *
+     * @param path Path to get resource for.
+     * @return Hierarchical resource for {@code path}.
+     * @throws ResourceRuntimeException when given {@code path} cannot be resolved to a hierarchical resource.
+     */
+    HierarchicalResource getResource(ResourcePath path);
+
+    /**
      * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
      * resource dependency.
      *
@@ -208,6 +218,22 @@ public interface ExecContext {
      */
     default Resource require(ResourceKey key, ResourceStamper<Resource> stamper) throws IOException {
         final Resource resource = getResource(key);
+        require(resource, stamper);
+        return resource;
+    }
+
+    /**
+     * Marks hierarchical resource with given {@code path} as required (read), using given {@code stamper}, creating a
+     * required resource dependency.
+     *
+     * @param path    Path of the hierarchical resource to mark as required.
+     * @param stamper {@link ResourceStamper Resource stamper} to use.
+     * @return hierarchical resource for given key.
+     * @throws IOException              When stamping the resource fails unexpectedly.
+     * @throws ResourceRuntimeException when given {@code path} cannot be resolved to a resource.
+     */
+    default HierarchicalResource require(ResourcePath path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
+        final HierarchicalResource resource = getResource(path);
         require(resource, stamper);
         return resource;
     }
@@ -238,7 +264,7 @@ public interface ExecContext {
 
 
     //
-    // Recording provided (write) dependencies to writwable resources.
+    // Recording provided (write) dependencies to writable resources.
     //
 
 
