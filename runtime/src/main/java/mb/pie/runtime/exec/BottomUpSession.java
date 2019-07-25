@@ -193,6 +193,15 @@ public class BottomUpSession implements RequireTask {
             // affected by other tasks. Therefore, we did not execute it. However, the task may still be affected by
             // internal inconsistencies that require re-execution, which we will check now.
 
+            // Internal input consistency changes.
+            final Serializable input = storedData.input;
+            {
+                final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
+                if(reason != null) {
+                    return exec(key, task, reason, cancel);
+                }
+            }
+
             // Internal transient consistency output consistency.
             final @Nullable Serializable output = storedData.output;
             {
