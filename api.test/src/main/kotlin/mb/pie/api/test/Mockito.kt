@@ -9,6 +9,7 @@ import mb.resource.ResourceKey
 import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
 import mb.resource.hierarchical.HierarchicalResource
+import mb.resource.hierarchical.ResourcePath
 import org.mockito.Mockito
 import java.io.Serializable
 
@@ -72,6 +73,11 @@ class NoExecContext : ExecContext {
     @Suppress("CAST_NEVER_SUCCEEDS")
     return null as Resource
   }
+  override fun getResource(path: ResourcePath?): HierarchicalResource {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as HierarchicalResource
+  }
+
 
   override fun getDefaultRequireReadableResourceStamper() = null!!
   override fun getDefaultProvideReadableResourceStamper() = null!!
