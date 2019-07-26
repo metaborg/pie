@@ -530,6 +530,16 @@ class ObservabilityTests {
   /*** Garbage collection of unobserved tasks and unobserved provided resources ***/
 
   @TestFactory
+  fun testGCTwiceNoExceptions() = builder.test {
+    this.GCSetup().run {
+      newSession().use { session ->
+        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+      }
+    }
+  }
+
+  @TestFactory
   fun testGCDeletesCorrect() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->

@@ -181,6 +181,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
                 }
             }
         }
+        callersOf.remove(key);
 
         final @Nullable ArrayList<ResourceRequireDep> removedResourceRequires = resourceRequires.remove(key);
         if(removedResourceRequires != null) {
