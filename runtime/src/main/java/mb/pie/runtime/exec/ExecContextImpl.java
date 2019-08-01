@@ -135,11 +135,11 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override public HierarchicalResource getResource(ResourcePath path) {
-        try {
-            return resourceService.getResource(path);
-        } catch(ClassCastException e) {
-            throw new ResourceRuntimeException("Cannot get hierarchical resource for path '" + path + "', a resource was found, but it does not implement HierarchicalResource", e);
+        final Resource resource = resourceService.getResource(path);
+        if(!(resource instanceof HierarchicalResource)) {
+            throw new ResourceRuntimeException("Cannot get hierarchical resource for path '" + path + "', a resource was found, but it does not implement HierarchicalResource");
         }
+        return (HierarchicalResource) resource;
     }
 
 
