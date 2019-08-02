@@ -7,7 +7,10 @@ import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamp;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.DefaultStampers;
-import mb.resource.*;
+import mb.resource.ReadableResource;
+import mb.resource.Resource;
+import mb.resource.ResourceKey;
+import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -135,11 +138,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override public HierarchicalResource getResource(ResourcePath path) {
-        final Resource resource = resourceService.getResource(path);
-        if(!(resource instanceof HierarchicalResource)) {
-            throw new ResourceRuntimeException("Cannot get hierarchical resource for path '" + path + "', a resource was found, but it does not implement HierarchicalResource");
-        }
-        return (HierarchicalResource) resource;
+        return resourceService.getHierarchicalResource(path);
     }
 
 
