@@ -1,4 +1,5 @@
-@Library('metaborg.jenkins.pipeline') _
+#!groovy
+@Library('metaborg.jenkins.pipeline@develop') _
 
 gradlePipeline(upstreamProjects: [
   '/metaborg/spoofax.gradle/develop'
