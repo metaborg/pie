@@ -20,7 +20,7 @@ import mb.pie.runtime.taskdefs.NullTaskDefs;
 import mb.resource.DefaultResourceService;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
-import mb.resource.fs.FSRegistry;
+import mb.resource.fs.FSResourceRegistry;
 import mb.resource.hierarchical.HierarchicalResource;
 
 import java.util.function.BiFunction;
@@ -28,7 +28,7 @@ import java.util.function.Function;
 
 public class PieBuilderImpl implements PieBuilder {
     protected TaskDefs taskDefs = new NullTaskDefs();
-    protected ResourceService resourceService = new DefaultResourceService(new FSRegistry());
+    protected ResourceService resourceService = new DefaultResourceService(new FSResourceRegistry());
     protected Function<Logger, Store> store = (logger) -> new InMemoryStore();
     protected Function<Logger, Share> share = (logger) -> new NonSharingShare();
     protected OutputStamper defaultOutputStamper = OutputStampers.equals();
