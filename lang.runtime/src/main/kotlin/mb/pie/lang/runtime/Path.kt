@@ -9,6 +9,7 @@ import mb.resource.hierarchical.HierarchicalResource
 import mb.resource.hierarchical.match.ResourceMatcher
 import mb.resource.hierarchical.walk.ResourceWalker
 import java.io.IOException
+import java.nio.charset.StandardCharsets
 import java.util.stream.Collectors
 
 operator fun FSPath.plus(other: FSPath): FSPath {
@@ -63,8 +64,7 @@ fun ExecContext.readToString(path: FSPath): String? {
     if(!node.exists()) {
       return null
     }
-    val bytes = node.readBytes()
-    return String(bytes)
+    return node.readString()
   } catch(e: IOException) {
     throw ExecException("Reading '$path' failed", e)
   }

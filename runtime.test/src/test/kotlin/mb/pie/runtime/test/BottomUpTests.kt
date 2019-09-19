@@ -159,7 +159,7 @@ class BottomUpTests {
     val file = resource("/file")
     val requireSingletonTaskDef = taskDef<Int, None>("requireSingletonTaskDef") {
       require(file)
-      val text = file.readString(StandardCharsets.UTF_8)
+      val text = file.readString()
       require(singletonTaskDef.createTask(it))
       if(text.contains("galaxy")) {
         require(singletonTaskDef.createTask(it + 1))
@@ -192,7 +192,7 @@ class BottomUpTests {
 
     val frontendDef = taskDef<FSResource, Pair<String, String>>("frontend") { file ->
       require(file)
-      val text = file.readString(StandardCharsets.UTF_8)
+      val text = file.readString()
       Pair("stableName", text)
     }
     addTaskDef(frontendDef)
