@@ -59,9 +59,9 @@ class ModifiedStamperTests {
   fun testDirStampEqual() = builder.build("testDirStampEqual") {
     val dir = resource("/dir")
     dir.createDirectory()
-    dir.appendSegment("file1").writeString("Hello, world 1!", StandardCharsets.UTF_8)
-    dir.appendSegment("file2").writeString("Hello, world 2!", StandardCharsets.UTF_8)
-    dir.appendSegment("file3").writeString("Hello, world 3!", StandardCharsets.UTF_8)
+    dir.appendSegment("file1").writeString("Hello, world 1!")
+    dir.appendSegment("file2").writeString("Hello, world 2!")
+    dir.appendSegment("file3").writeString("Hello, world 3!")
 
     val stamper = ResourceStampers.modifiedDir()
     val stamp1 = stamper.stamp(dir)
@@ -73,8 +73,8 @@ class ModifiedStamperTests {
   fun testDirStampFileChangedUnequal() = builder.build("testDirStampFileChangedUnequal") {
     val dir = resource("/dir")
     dir.createDirectory()
-    dir.appendSegment("file1").writeString("Hello, world 1!", StandardCharsets.UTF_8)
-    dir.appendSegment("file2").writeString("Hello, world 2!", StandardCharsets.UTF_8)
+    dir.appendSegment("file1").writeString("Hello, world 1!")
+    dir.appendSegment("file2").writeString("Hello, world 2!")
     val file = dir.appendSegment("file3")
     write("Hello, world 3!", file)
 
@@ -110,8 +110,8 @@ class ModifiedStamperTests {
   fun testDirStampFileDeletedUnequal() = builder.build("testDirStampFileDeletedUnequal") {
     val dir = resource("/dir")
     dir.createDirectory()
-    dir.appendSegment("file1").writeString("Hello, world 1!", StandardCharsets.UTF_8)
-    dir.appendSegment("file2").writeString("Hello, world 2!", StandardCharsets.UTF_8)
+    dir.appendSegment("file1").writeString("Hello, world 1!")
+    dir.appendSegment("file2").writeString("Hello, world 2!")
     val file = dir.appendSegment("file3")
     write("Hello, world 3!", file)
 
@@ -153,8 +153,8 @@ class ModifiedStamperTests {
   fun testDirStampFileAddedUnequal() = builder.build("testDirStampFileAddedUnequal") {
     val dir = resource("/dir")
     dir.createDirectory()
-    dir.appendSegment("file1").writeString("Hello, world 1!", StandardCharsets.UTF_8)
-    dir.appendSegment("file2").writeString("Hello, world 2!", StandardCharsets.UTF_8)
+    dir.appendSegment("file1").writeString("Hello, world 1!")
+    dir.appendSegment("file2").writeString("Hello, world 2!")
     val file = dir.appendSegment("file3")
 
     val dirStamper = ResourceStampers.modifiedDir()
@@ -173,9 +173,9 @@ class ModifiedStamperTests {
   fun testDirStampDirDeletedUnequal() = builder.build("testDirStampDirDeletedUnequal") {
     val dir = resource("/dir")
     dir.createDirectory()
-    dir.appendSegment("file1").writeString("Hello, world 1!", StandardCharsets.UTF_8)
-    dir.appendSegment("file2").writeString("Hello, world 2!", StandardCharsets.UTF_8)
-    dir.appendSegment("file3").writeString("Hello, world 3!", StandardCharsets.UTF_8)
+    dir.appendSegment("file1").writeString("Hello, world 1!")
+    dir.appendSegment("file2").writeString("Hello, world 2!")
+    dir.appendSegment("file3").writeString("Hello, world 3!")
 
     val stamper = ResourceStampers.modifiedDir()
     val stamp1 = stamper.stamp(dir)
