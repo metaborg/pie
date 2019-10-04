@@ -1,7 +1,7 @@
 package mb.pie.runtime.exec;
 
 import mb.pie.api.*;
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
@@ -57,7 +57,7 @@ public class BottomUpSession implements RequireTask {
     }
 
 
-    public void requireInitial(Set<? extends ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
+    public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
         executorLogger.requireBottomUpInitialStart(changedResources);
         scheduleAffectedByResources(changedResources);
         execScheduled(cancel);
@@ -68,10 +68,10 @@ public class BottomUpSession implements RequireTask {
     /**
      * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
      */
-    private void execScheduled(Cancelled cancel) throws ExecException, InterruptedException {
+    private void execScheduled(CancelToken cancel) throws ExecException, InterruptedException {
         logger.trace("Executing scheduled tasks: " + queue);
         while(queue.isNotEmpty()) {
-            cancel.throwIfCancelled();
+            cancel.throwIfCanceled();
             final TaskKey key = queue.poll();
             final Task<?> task;
             try(final StoreReadTxn txn = store.readTxn()) {
@@ -85,7 +85,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Executes given task, and schedules new tasks based on given task's output.
      */
-    private TaskData execAndSchedule(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData execAndSchedule(TaskKey key, Task<?> task, CancelToken cancel) throws ExecException, InterruptedException {
         final TaskData data = exec(key, task, new AffectedExecReason(), cancel);
         scheduleAffectedCallersOf(key, data.output);
         scheduleAffectedByResources(
@@ -137,8 +137,8 @@ public class BottomUpSession implements RequireTask {
      * Require the result of a task.
      */
     @Override
-    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, Cancelled cancel) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+        cancel.throwIfCanceled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         executorLogger.requireTopDownStart(key, task);
@@ -156,7 +156,7 @@ public class BottomUpSession implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private TaskData getData(TaskKey key, Task<?> task, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData getData(TaskKey key, Task<?> task, CancelToken cancel) throws ExecException, InterruptedException {
         // Check if task was already visited this execution.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -225,7 +225,7 @@ public class BottomUpSession implements RequireTask {
         }
     }
 
-    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, Cancelled cancel) throws ExecException, InterruptedException {
+    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, CancelToken cancel) throws ExecException, InterruptedException {
         // Input consistency.
         {
             final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);
@@ -296,10 +296,10 @@ public class BottomUpSession implements RequireTask {
     /**
      * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
      */
-    private @Nullable TaskData requireScheduledNow(TaskKey key, Cancelled cancel) throws ExecException, InterruptedException {
+    private @Nullable TaskData requireScheduledNow(TaskKey key, CancelToken cancel) throws ExecException, InterruptedException {
         logger.trace("Executing scheduled (and its dependencies) task NOW: " + key);
         while(queue.isNotEmpty()) {
-            cancel.throwIfCancelled();
+            cancel.throwIfCanceled();
             final @Nullable TaskKey minTaskKey = queue.pollLeastTaskWithDepTo(key, store);
             if(minTaskKey == null) {
                 break;
@@ -318,7 +318,7 @@ public class BottomUpSession implements RequireTask {
     }
 
 
-    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, Cancelled cancel) throws ExecException, InterruptedException {
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, CancelToken cancel) throws ExecException, InterruptedException {
         return taskExecutor.exec(key, task, reason, this, true, cancel);
     }
 }

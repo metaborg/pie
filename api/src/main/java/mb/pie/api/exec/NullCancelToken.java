@@ -1,18 +1,20 @@
 package mb.pie.api.exec;
 
 /**
- * Cancellation token implementation that never cancels.
+ * Cancelled implementation that never cancels.
  */
-public class NullCancelToken implements Cancel, Cancelled {
-    @Override public void requestCancel() {
+public final class NullCancelToken implements CancelToken {
 
-    }
+    private static NullCancelToken instance = new NullCancelToken();
+    /**
+     * Gets the singleton instance of this class.
+     * @return The instance.
+     */
+    public static NullCancelToken getInstance() { return instance; }
 
-    @Override public boolean isCancelled() {
+    private NullCancelToken() { }
+
+    @Override public boolean isCanceled() {
         return false;
-    }
-
-    @Override public void throwIfCancelled() {
-
     }
 }

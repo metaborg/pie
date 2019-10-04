@@ -1,22 +1,24 @@
 package mb.pie.api.exec;
 
 /**
- * Simple cancellation token implementation.
+ * Interface for checking if an operation has been canceled.
  */
-public class CancelToken implements Cancel, Cancelled {
-    private volatile boolean cancel = false;
+public interface CancelToken {
+    /**
+     * Gets whether the operation has been canceled.
+     *
+     * @return {@code true} when cancellation has been requested;
+     * otherwise, {@code false}.
+     */
+    boolean isCanceled();
 
-    @Override public void requestCancel() {
-        cancel = true;
-    }
-
-    @Override public boolean isCancelled() {
-        return cancel;
-    }
-
-    @Override public void throwIfCancelled() throws InterruptedException {
-        if(cancel) {
-            throw new InterruptedException();
-        }
+    /**
+     * Throws an InterruptedException when the operation has been canceled.
+     *
+     * @throws InterruptedException When cancellation has been requested.
+     */
+    default void throwIfCanceled() throws InterruptedException {
+        if (isCanceled())
+            throw new InterruptedException("The operation has been canceled.");
     }
 }

@@ -792,7 +792,7 @@ class ObservabilityTestCtx(
 
   val readDef = taskDef<FSResource, String>("read") { resource ->
     require(resource)
-    resource.newInputStream().buffered().use {
+    resource.openRead().buffered().use {
       String(it.readBytes())
     }
   }
@@ -800,7 +800,7 @@ class ObservabilityTestCtx(
   data class Write(val resource: FSResource, val text: String) : Serializable
 
   val writeDef = taskDef<Write, None>("write") { (resource, text) ->
-    resource.newOutputStream().buffered().use {
+    resource.openWrite().buffered().use {
       it.write(text.toByteArray())
       it.flush()
     }
