@@ -3,7 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.None
 import mb.pie.api.STask
-import mb.pie.api.exec.NullCancelled
+import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.test.anyC
 import mb.pie.api.test.anyER
 import mb.pie.api.test.readResource
@@ -13,7 +13,6 @@ import mb.pie.runtime.layer.ValidationException
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestFactory
-import java.nio.charset.StandardCharsets
 
 class BottomUpTests {
   private val builder = DefaultRuntimeTestBuilder()
@@ -108,7 +107,7 @@ class BottomUpTests {
 
     // Notify of file change, but file hasn't actually changed, observe no execution.
     newSession().use { session ->
-      session.updateAffectedBy(setOf(file.key), NullCancelled())
+      session.updateAffectedBy(setOf(file.key), NullCancelableToken.instance)
       // Since no task has been affected by the file change, no observers are observed (all asserts are same as last session).
       Assertions.assertEquals("!dlrow olleh", combOutput)
       Assertions.assertEquals(2, combObserved)
@@ -129,7 +128,7 @@ class BottomUpTests {
 
     // Notify of file change, observe bottom-up execution of [readTask], but stop there because [combineTask] is still consistent.
     newSession().use { session ->
-      session.updateAffectedBy(setOf(file.key), NullCancelled())
+      session.updateAffectedBy(setOf(file.key), NullCancelableToken.instance)
       Assertions.assertEquals("!dlrow olleh", combOutput)
       Assertions.assertEquals(2, combObserved)
       Assertions.assertEquals("!DLROW OLLEH", readOutput)

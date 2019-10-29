@@ -1,6 +1,6 @@
 package mb.pie.api;
 
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.exec.CancelToken;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -53,7 +53,7 @@ import java.util.function.Function;
  * Outputs of required tasks are observed by the observers {@link Pie#setCallback set} in the {@link Pie} object this
  * session was created from.
  * <p>
- * When using a {@link Cancelled cancel checker}, execution is cancelled between task executions by throwing an {@link
+ * When using a {@link CancelToken cancel checker}, execution is cancelled between task executions by throwing an {@link
  * InterruptedException}.
  */
 public interface PieSession extends AutoCloseable {
@@ -79,7 +79,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 
 
     /**
@@ -102,7 +102,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    void updateAffectedBy(Set<? extends ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException;
+    void updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
 
 
     /**
@@ -125,7 +125,7 @@ public interface PieSession extends AutoCloseable {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 
 
     /**

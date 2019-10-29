@@ -3,7 +3,7 @@ package mb.pie.api.exec;
 /**
  * Interface for requesting cancellation.
  */
-public interface Cancel {
+public interface Cancelable {
     /**
      * Request cancellation.
      */

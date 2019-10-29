@@ -7,7 +7,6 @@ import mb.pie.api.stamp.ResourceStamper
 import mb.resource.Resource
 import mb.resource.ResourceKey
 import mb.resource.fs.FSPath
-import mb.resource.fs.FSResource
 import mb.resource.hierarchical.HierarchicalResource
 import mb.resource.hierarchical.ResourcePath
 import org.mockito.Mockito
@@ -95,4 +94,4 @@ class NoExecContext : ExecContext {
 
 fun anyEC() = safeAny<ExecContext>(NoExecContext())
 
-fun anyC() = safeAny<Cancelled>(NullCancelled())
+fun anyC() = safeAny<CancelToken>(NullCancelableToken.instance)

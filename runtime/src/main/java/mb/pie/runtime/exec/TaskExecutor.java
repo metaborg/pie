@@ -1,7 +1,7 @@
 package mb.pie.runtime.exec;
 
 import mb.pie.api.*;
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
@@ -59,9 +59,9 @@ public class TaskExecutor {
         ExecReason reason,
         RequireTask requireTask,
         boolean modifyObservability,
-        Cancelled cancel
+        CancelToken cancel
     ) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
+        cancel.throwIfCanceled();
         executorLogger.executeStart(key, task, reason);
         final TaskData data;
         if(share instanceof NonSharingShare) {
@@ -96,9 +96,9 @@ public class TaskExecutor {
         Task<?> task,
         RequireTask requireTask,
         boolean modifyObservability,
-        Cancelled cancel
+        CancelToken cancel
     ) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
+        cancel.throwIfCanceled();
 
         // Store previous data for observability comparison.
         final Observability previousObservability;

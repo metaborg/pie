@@ -1,7 +1,7 @@
 package mb.pie.runtime.exec;
 
 import mb.pie.api.*;
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.exec.CancelToken;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamp;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 public class ExecContextImpl implements ExecContext {
     private final RequireTask requireTask;
     private final boolean modifyObservability;
-    private final Cancelled cancel;
+    private final CancelToken cancel;
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
     private final Store store;
@@ -37,7 +37,7 @@ public class ExecContextImpl implements ExecContext {
     public ExecContextImpl(
         RequireTask requireTask,
         boolean modifyObservability,
-        Cancelled cancel,
+        CancelToken cancel,
         TaskDefs taskDefs,
         ResourceService resourceService,
         Store store,
@@ -62,7 +62,7 @@ public class ExecContextImpl implements ExecContext {
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
+        cancel.throwIfCanceled();
         final TaskKey key = task.key();
         final O output = requireTask.require(key, task, modifyObservability, cancel);
         final OutputStamp stamp = stamper.stamp(output);
