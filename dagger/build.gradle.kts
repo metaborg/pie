@@ -6,7 +6,7 @@ plugins {
   id("net.ltgt.apt-eclipse") version "0.21"
 }
 
-val daggerVersion = "2.24"
+val daggerVersion = "2.25.2"
 
 dependencies {
   api(platform(project(":pie.depconstraints")))
