@@ -16,14 +16,14 @@ open class TestCtx(
   }
 
   fun read(resource: FSResource): String {
-    resource.newInputStream().buffered().use {
+    resource.openRead().buffered().use {
       return String(it.readBytes())
     }
   }
 
   fun write(text: String, resource: FSResource) {
     Thread.sleep(1) // HACK: sleep before/after writing, to ensure that timestamp of file has changed. JIMFS, which we use in tests, apparently needs this.
-    resource.newOutputStream().buffered().use {
+    resource.openWriteOrCreate().buffered().use {
       it.write(text.toByteArray())
       it.flush()
     }
