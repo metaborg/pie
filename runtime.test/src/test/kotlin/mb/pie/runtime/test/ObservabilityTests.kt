@@ -800,7 +800,7 @@ class ObservabilityTestCtx(
   data class Write(val resource: FSResource, val text: String) : Serializable
 
   val writeDef = taskDef<Write, None>("write") { (resource, text) ->
-    resource.openWriteOrCreate().buffered().use {
+    resource.openWrite().buffered().use {
       it.write(text.toByteArray())
       it.flush()
     }
