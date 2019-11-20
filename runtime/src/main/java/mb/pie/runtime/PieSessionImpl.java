@@ -132,7 +132,7 @@ public class PieSessionImpl implements PieSession {
                         final Resource resource = resourceService.getResource(dep.key);
                         if(shouldDeleteProvidedResource.apply(task, resource)) {
                             if(resource instanceof HierarchicalResource) {
-                                ((HierarchicalResource) resource).delete();
+                                ((HierarchicalResource)resource).delete();
                             }
                         }
                     }

@@ -5,15 +5,14 @@ package mb.pie.api.exec;
  */
 public final class NullCancelableToken implements Cancelable, CancelToken {
 
-    /** The singleton instance of this class. */
+    /**
+     * The singleton instance of this class.
+     */
     public static final NullCancelableToken instance = new NullCancelableToken();
 
     private NullCancelableToken() {}
 
-    @Override
-    public void requestCancel() {
-        // Nothing to do.
-    }
+    @Override public void requestCancel() { }
 
     @Override public boolean isCanceled() {
         return false;
