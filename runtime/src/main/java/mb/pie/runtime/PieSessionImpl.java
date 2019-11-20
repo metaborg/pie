@@ -1,27 +1,26 @@
 package mb.pie.runtime;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecException;
+import mb.pie.api.PieSession;
+import mb.pie.api.SessionAfterBottomUp;
+import mb.pie.api.Store;
+import mb.pie.api.Task;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.BottomUpSession;
 import mb.pie.runtime.exec.TopDownSession;
-import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-public class PieSessionImpl implements PieSession {
+public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     protected final TopDownSession topDownSession;
     protected final BottomUpSession bottomUpSession;
 
@@ -29,6 +28,8 @@ public class PieSessionImpl implements PieSession {
     protected final ResourceService resourceService;
     protected final Store store;
     protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
+
+    private boolean bottomUpExecuted = false;
 
 
     public PieSessionImpl(
@@ -38,6 +39,7 @@ public class PieSessionImpl implements PieSession {
         ResourceService resourceService, Store store,
         ConcurrentHashMap<TaskKey, Consumer<Serializable>> callbacks
     ) {
+        super(taskDefs, resourceService, store);
         this.topDownSession = topDownSession;
         this.bottomUpSession = bottomUpSession;
         this.taskDefs = taskDefs;
@@ -51,9 +53,10 @@ public class PieSessionImpl implements PieSession {
     }
 
 
-    @Override public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
+    @Override
+    public SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
         try {
-            return requireWithoutObserving(task, NullCancelableToken.instance);
+            return updateAffectedBy(changedResources, NullCancelableToken.instance);
         } catch(InterruptedException e) {
             // Unexpected: NullCancelled is used, which does not check for interruptions.
             throw new RuntimeException("Unexpected InterruptedException", e);
@@ -61,12 +64,28 @@ public class PieSessionImpl implements PieSession {
     }
 
     @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return topDownSession.requireInitial(task, false, cancel);
+    public SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+        checkUpdateAffectedBy();
+        if(changedResources.isEmpty())
+            return createSessionAfterBottomUp();
+        bottomUpSession.requireInitial(changedResources, cancel);
+        return createSessionAfterBottomUp();
+    }
+
+    private void checkUpdateAffectedBy() {
+        if(bottomUpExecuted) {
+            throw new IllegalStateException("Cannot call 'updateAffectedBy', because 'updateAffectedBy', 'require', or 'requireWithoutObserving' have already been called. Create a new session to call 'updateAffectedBy' again.");
+        }
+        bottomUpExecuted = true;
+    }
+
+    private SessionAfterBottomUp createSessionAfterBottomUp() {
+        return new SessionAfterBottomUpImpl(topDownSession, taskDefs, resourceService, store);
     }
 
 
-    @Override public <O extends Serializable> O require(Task<O> task) throws ExecException {
+    @Override
+    public <O extends Serializable> O require(Task<O> task) throws ExecException {
         try {
             return require(task, NullCancelableToken.instance);
         } catch(InterruptedException e) {
@@ -77,14 +96,14 @@ public class PieSessionImpl implements PieSession {
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+        checkRequire("require");
         return topDownSession.requireInitial(task, true, cancel);
     }
 
-
     @Override
-    public void updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
         try {
-            updateAffectedBy(changedResources, NullCancelableToken.instance);
+            return requireWithoutObserving(task, NullCancelableToken.instance);
         } catch(InterruptedException e) {
             // Unexpected: NullCancelled is used, which does not check for interruptions.
             throw new RuntimeException("Unexpected InterruptedException", e);
@@ -92,61 +111,14 @@ public class PieSessionImpl implements PieSession {
     }
 
     @Override
-    public void updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
-        if(changedResources.isEmpty()) return;
-        bottomUpSession.requireInitial(changedResources, cancel);
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+        checkRequire("requireWithoutObserving");
+        return topDownSession.requireInitial(task, false, cancel);
     }
 
-
-    @Override public void unobserve(TaskKey key) {
-        try(StoreWriteTxn txn = store.writeTxn()) {
-            Observability.explicitUnobserve(txn, key);
-        }
-    }
-
-    @Override public void unobserve(Task<?> task) {
-        unobserve(task.key());
-    }
-
-
-    @Override
-    public void deleteUnobservedTasks(Function<Task<?>, Boolean> shouldDeleteTask, BiFunction<Task<?>, Resource, Boolean> shouldDeleteProvidedResource) throws IOException {
-        try(StoreWriteTxn txn = store.writeTxn()) {
-            // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
-            final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
-            while(!tasksToDelete.isEmpty()) {
-                final TaskKey key = tasksToDelete.pop();
-                if(!txn.taskObservability(key).isUnobserved()) {
-                    // Do not delete observed tasks. This filters out ExplicitlyObserved tasks.
-                    continue;
-                }
-                final Task<?> task = key.toTask(taskDefs, txn);
-                if(!shouldDeleteTask.apply(task)) {
-                    // Do not delete tasks that the caller of this function does not want to delete.
-                    continue;
-                }
-                final @Nullable TaskData deletedData = txn.deleteData(key);
-                if(deletedData != null) {
-                    // Delete provided resources.
-                    for(ResourceProvideDep dep : deletedData.resourceProvides) {
-                        final Resource resource = resourceService.getResource(dep.key);
-                        if(shouldDeleteProvidedResource.apply(task, resource)) {
-                            if(resource instanceof HierarchicalResource) {
-                                ((HierarchicalResource)resource).delete();
-                            }
-                        }
-                    }
-
-                    // Iterate the task requirements of the deleted task to continue deleting tasks.
-                    deletedData.taskRequires
-                        .stream()
-                        // Filter out tasks that still have incoming callers.
-                        .filter((d) -> txn.callersOf(d.callee).isEmpty())
-                        // Push tasks onto the stack that have no incoming callers for deletion.
-                        // The start of the while loop will ensure that only unobserved tasks will be deleted.
-                        .forEach((d) -> tasksToDelete.push(d.callee));
-                }
-            }
+    private void checkRequire(String name) {
+        if(bottomUpExecuted) {
+            throw new IllegalStateException("Cannot call '" + name + "', because 'updateAffectedBy' has already been called. Use the object returned by 'updateAffectedBy' to get task outputs or to execute new tasks.");
         }
     }
 }

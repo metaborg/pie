@@ -10,7 +10,7 @@ import java.util.function.Consumer;
  */
 public interface Pie extends AutoCloseable {
     /**
-     * Creates a new session for incrementally executing tasks. See {@link PieSession} for information
+     * Creates a new session for incrementally executing tasks.
      * <p>
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
      * started after external changes have occurred. See {@link PieSession} for a list of external changes.
