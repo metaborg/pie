@@ -8,13 +8,11 @@ import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class BottomUpSession implements RequireTask {
     private final TaskDefs taskDefs;
@@ -59,7 +57,7 @@ public class BottomUpSession implements RequireTask {
 
     public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
         executorLogger.requireBottomUpInitialStart(changedResources);
-        scheduleAffectedByResources(changedResources);
+        scheduleAffectedByResources(changedResources.stream());
         execScheduled(cancel);
         executorLogger.requireBottomUpInitialEnd();
     }
@@ -88,23 +86,35 @@ public class BottomUpSession implements RequireTask {
     private TaskData execAndSchedule(TaskKey key, Task<?> task, CancelToken cancel) throws ExecException, InterruptedException {
         final TaskData data = exec(key, task, new AffectedExecReason(), cancel);
         scheduleAffectedCallersOf(key, data.output);
-        scheduleAffectedByResources(
-            data.resourceProvides.stream().map((d) -> d.key).collect(Collectors.toCollection(HashSet::new)));
+        scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key));
         return data;
     }
 
     /**
-     * Schedules tasks affected by (changes to) files.
+     * Schedules tasks affected by (changes to) required and provided files.
      */
-    private void scheduleAffectedByResources(Collection<? extends ResourceKey> resources) {
+    private void scheduleAffectedByResources(Stream<? extends ResourceKey> resources) {
         logger.trace("Scheduling tasks affected by resources: " + resources);
-        final HashSet<TaskKey> affected; // OPTO: avoid allocation of HashSet using stream/callback?
         try(final StoreReadTxn txn = store.readTxn()) {
-            affected = BottomUpShared.directlyAffectedTaskKeys(txn, resources, resourceService, logger);
+            BottomUpShared.directlyAffectedByResources(txn, resources, resourceService, logger, (key) -> {
+                logger.trace("- scheduling: " + key);
+                queue.add(key);
+            });
         }
-        for(TaskKey key : affected) {
-            logger.trace("- scheduling: " + key);
-            queue.add(key);
+    }
+
+    /**
+     * Schedules tasks affected by (changes to) required files.
+     */
+    private void scheduleAffectedByRequiredResources(Stream<? extends ResourceKey> resources) {
+        logger.trace("Scheduling tasks affected by required resources: " + resources);
+        try(final StoreReadTxn txn = store.readTxn()) {
+            resources.forEach((resource) -> {
+                BottomUpShared.directlyAffectedByRequiredResource(txn, resource, resourceService, logger, (key) -> {
+                    logger.trace("- scheduling: " + key);
+                    queue.add(key);
+                });
+            });
         }
     }
 

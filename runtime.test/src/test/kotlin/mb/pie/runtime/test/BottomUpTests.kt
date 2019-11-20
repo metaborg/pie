@@ -232,4 +232,41 @@ class BottomUpTests {
       }
     }
   }
+
+  @TestFactory
+  fun testRequireProvidedResourceAffected() = builder.test {
+    val providerDef = taskDef<FSResource, FSResource>("provider") { inputFile ->
+      require(inputFile)
+      val outputFile = inputFile.replaceLeafExtension("out")
+      inputFile.copyTo(outputFile)
+      provide(outputFile)
+      outputFile
+    }
+    addTaskDef(providerDef)
+    val file = resource("/inputFile.in")
+    write("Hello, world!", file)
+    val providerTask = providerDef.createTask(file)
+
+    val requirerDef = taskDef<None, String>("requirer") {
+      val outputFile = require(providerTask)
+      require(outputFile)
+      outputFile.readString()
+    }
+    addTaskDef(requirerDef)
+    val requirerTask = requirerDef.createTask(None.instance)
+
+    // Initial build.
+    newSession().use { session ->
+      session.require(requirerTask)
+    }
+
+    // Change input file: re-execute requirer as well, even though it is not affected by the output value of the provider.
+    write("Hello, world!!!!!", file)
+    newSession().use { session ->
+      session.updateAffectedBy(hashSetOf(file.key))
+      val bottomUpSession = session.bottomUpSession
+      verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), anyC())
+      verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), anyC())
+    }
+  }
 }
