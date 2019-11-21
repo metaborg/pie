@@ -128,7 +128,7 @@ PIE consists of several components:
 
 ### Building
 
-As prerequisites for building PIE, you need a [Java Development Kit (JDK)](http://www.oracle.com/technetwork/java/javase/downloads/index.html) of version 8 or higher.
+As prerequisites for building PIE, you need a [Java Development Kit (JDK)](https://adoptopenjdk.net/) of version 8 or higher.
 To build PIE, run the Gradle wrapper as follows in the root directory of this repository:
 
 ```bash
