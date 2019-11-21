@@ -1,26 +1,40 @@
 package mb.pie.store.lmdb
 
-import com.nhaarman.mockitokotlin2.*
-import mb.pie.api.exec.NullCancelled
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.verify
 import mb.pie.api.test.anyC
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData
-import mb.pie.runtime.test.RuntimeTestGenerator
+import mb.pie.runtime.test.DefaultRuntimeTestBuilder
 import org.junit.jupiter.api.TestFactory
 import java.io.File
 
-internal class LMDBStoreTests {
+class LMDBStoreTests {
+  private val builder = LMDBStoreTestBuilder()
+
+
   @TestFactory
-  fun testReuse() = RuntimeTestGenerator.generate("testReuse", storeGens = arrayOf({ logger -> LMDBStore(logger, File("build/test/lmdbstore")) })) {
+  fun testReuse() = builder.test {
     addTaskDef(toLowerCase)
-    val task = task(toLowerCase, "HELLO WORLD!")
+    val task = toLowerCase.createTask("HELLO WORLD!")
     val key = task.key()
 
-    val session1 = newSession().topDownSession
-    session1.requireInitial(task, NullCancelled())
+    newSession().use { session ->
+      session.require(task)
+    }
 
-    val session2 = spy(newSession().topDownSession)
-    session2.requireInitial(task, NullCancelled())
-    verify(session2, never()).exec(eq(key), eq(task), eq(NoData()), anyC())
+    newSession().use { session ->
+      session.require(task)
+      verify(session.topDownSession, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+    }
+  }
+}
+
+class LMDBStoreTestBuilder(shouldSpy: Boolean = true) : DefaultRuntimeTestBuilder(shouldSpy) {
+  init {
+    storeFactories.clear()
+    storeFactories.add { l -> LMDBStore(l, File("build/test/lmdbstore")) }
   }
 }

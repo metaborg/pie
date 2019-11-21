@@ -2,16 +2,17 @@ package mb.pie.runtime;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.PieSession;
+import mb.pie.api.SessionAfterBottomUp;
 import mb.pie.api.Store;
-import mb.pie.api.StoreReadTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
-import mb.pie.api.exec.Cancelled;
-import mb.pie.api.exec.NullCancelled;
+import mb.pie.api.exec.CancelToken;
+import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.BottomUpSession;
 import mb.pie.runtime.exec.TopDownSession;
 import mb.resource.ResourceKey;
+import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -19,78 +20,110 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public class PieSessionImpl implements PieSession {
-    public final TopDownSession topDownSession;
-    public final BottomUpSession bottomUpSession;
+public class PieSessionImpl extends SessionBaseImpl implements PieSession {
+    protected final TopDownSession topDownSession;
+    protected final BottomUpSession bottomUpSession;
 
-    private final TaskDefs taskDefs;
-    private final Store store;
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
+    protected final TaskDefs taskDefs;
+    protected final ResourceService resourceService;
+    protected final Store store;
+    protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
+
+    private boolean updateAffectedByExecuted = false;
+    private boolean requireExecuted = false;
+
 
     public PieSessionImpl(
         TopDownSession topDownSession,
         BottomUpSession bottomUpSession,
         TaskDefs taskDefs,
-        Store store,
-        ConcurrentHashMap<TaskKey, Consumer<Serializable>> observers
+        ResourceService resourceService, Store store,
+        ConcurrentHashMap<TaskKey, Consumer<Serializable>> callbacks
     ) {
+        super(taskDefs, resourceService, store);
         this.topDownSession = topDownSession;
         this.bottomUpSession = bottomUpSession;
         this.taskDefs = taskDefs;
+        this.resourceService = resourceService;
         this.store = store;
-        this.observers = observers;
-    }
-
-    @Override
-    public <O extends Serializable> O requireTopDown(Task<O> task) throws ExecException {
-        try {
-            return requireTopDown(task, new NullCancelled());
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
-    }
-
-    @Override
-    public <O extends @Nullable Serializable> O requireTopDown(Task<O> task, Cancelled cancel) throws ExecException, InterruptedException {
-        return topDownSession.requireInitial(task, cancel);
-    }
-
-    @Override
-    public void requireBottomUp(Set<ResourceKey> changedResources) throws ExecException {
-        try {
-            requireBottomUp(changedResources, new NullCancelled());
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
-    }
-
-    @Override
-    public void requireBottomUp(Set<ResourceKey> changedResources, Cancelled cancel) throws ExecException, InterruptedException {
-        if(changedResources.isEmpty()) return;
-
-        final float numSourceFiles;
-        try(final StoreReadTxn txn = store.readTxn()) {
-            numSourceFiles = txn.numSourceFiles();
-        }
-        final float changedRate = (float) changedResources.size() / numSourceFiles;
-        if(changedRate > 0.5) {
-            // PERF: If more than 50% of required sources (resources that have no provider) have been changed (i.e.,
-            // high-impact change), perform top-down builds for all observed tasks instead, since this has less overhead
-            // than a bottom-up build.
-            for(TaskKey key : observers.keySet()) {
-                try(final StoreReadTxn txn = store.readTxn()) {
-                    final Task<?> task = key.toTask(taskDefs, txn);
-                    topDownSession.requireInitial(task, cancel);
-                }
-            }
-        } else {
-            bottomUpSession.requireInitial(changedResources, cancel);
-        }
+        this.callbacks = callbacks;
     }
 
     @Override public void close() {
-        // Nothing to close for now.
+        store.sync();
+    }
+
+
+    @Override
+    public SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
+        try {
+            return updateAffectedBy(changedResources, NullCancelableToken.instance);
+        } catch(InterruptedException e) {
+            // Unexpected: NullCancelled is used, which does not check for interruptions.
+            throw new RuntimeException("Unexpected InterruptedException", e);
+        }
+    }
+
+    @Override
+    public SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+        checkUpdateAffectedBy();
+        if(changedResources.isEmpty())
+            return createSessionAfterBottomUp();
+        bottomUpSession.requireInitial(changedResources, cancel);
+        return createSessionAfterBottomUp();
+    }
+
+    private void checkUpdateAffectedBy() {
+        if(updateAffectedByExecuted) {
+            throw new IllegalStateException("Cannot call 'updateAffectedBy' because it has already been called. Create a new session to call 'updateAffectedBy' again");
+        }
+        if(requireExecuted) {
+            throw new IllegalStateException("Cannot call 'updateAffectedBy' because 'require' or 'requireWithoutObserving' has already been called. Create a new session to call 'updateAffectedBy'");
+        }
+        updateAffectedByExecuted = true;
+    }
+
+    private SessionAfterBottomUp createSessionAfterBottomUp() {
+        return new SessionAfterBottomUpImpl(topDownSession, taskDefs, resourceService, store);
+    }
+
+
+    @Override
+    public <O extends Serializable> O require(Task<O> task) throws ExecException {
+        try {
+            return require(task, NullCancelableToken.instance);
+        } catch(InterruptedException e) {
+            // Unexpected: NullCancelled is used, which does not check for interruptions.
+            throw new RuntimeException("Unexpected InterruptedException", e);
+        }
+    }
+
+    @Override
+    public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+        checkRequire("require");
+        return topDownSession.requireInitial(task, true, cancel);
+    }
+
+    @Override
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
+        try {
+            return requireWithoutObserving(task, NullCancelableToken.instance);
+        } catch(InterruptedException e) {
+            // Unexpected: NullCancelled is used, which does not check for interruptions.
+            throw new RuntimeException("Unexpected InterruptedException", e);
+        }
+    }
+
+    @Override
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+        checkRequire("requireWithoutObserving");
+        return topDownSession.requireInitial(task, false, cancel);
+    }
+
+    private void checkRequire(String name) {
+        if(updateAffectedByExecuted) {
+            throw new IllegalStateException("Cannot call '" + name + "', because 'updateAffectedBy' has already been called. Use the object returned by 'updateAffectedBy' to get task outputs or to execute new tasks");
+        }
+        requireExecuted = true;
     }
 }

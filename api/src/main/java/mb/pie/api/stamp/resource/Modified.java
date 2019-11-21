@@ -1,7 +1,7 @@
 package mb.pie.api.stamp.resource;
 
 import mb.resource.ReadableResource;
-import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.match.ResourceMatcher;
 import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -11,39 +11,48 @@ import java.io.UncheckedIOException;
 import java.util.stream.Stream;
 
 class Modified {
-    static long modified(FSResource resource, @Nullable ResourceMatcher matcher) throws IOException {
-        if(resource.isFile()) {
-            return modifiedFile(resource);
+    static long modified(ReadableResource resource) throws IOException {
+        if(!resource.exists()) {
+            return getMaximum();
+        } else {
+            return modifiedResource(resource);
         }
-        if(resource.isDirectory()) {
+    }
+
+    static long modified(HierarchicalResource resource, @Nullable ResourceMatcher matcher) throws IOException {
+        if(!resource.exists()) {
+            return getMaximum();
+        } else if(resource.isFile()) {
+            return modifiedResource(resource);
+        } else if(resource.isDirectory()) {
             return modifiedDir(resource, matcher);
         }
-        return getUnknown();
+        return getMinimum();
     }
 
-    static long modifiedRec(FSResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
-        if(resource.isFile()) {
-            return modifiedFile(resource);
-        }
-        if(resource.isDirectory()) {
+    static long modifiedRec(HierarchicalResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+        if(!resource.exists()) {
+            return getMaximum();
+        } else if(resource.isFile()) {
+            return modifiedResource(resource);
+        } else if(resource.isDirectory()) {
             return modifiedDirRec(resource, walker, matcher);
         }
-        return getUnknown();
+        return getMinimum();
     }
 
-    static long modifiedFile(ReadableResource resource) throws IOException {
+
+    private static long modifiedResource(ReadableResource resource) throws IOException {
         return resource.getLastModifiedTime().toEpochMilli();
     }
 
-    private static long modifiedDir(FSResource dir, @Nullable ResourceMatcher matcher) throws IOException {
-        if(matcher == null) {
-            return modifiedFile(dir);
-        }
-        final long[] lastModified = {getUnknown()}; // Use array to allow access to non-final variable in closure.
-        try(final Stream<FSResource> stream = dir.list(matcher)) {
+    private static long modifiedDir(HierarchicalResource dir, @Nullable ResourceMatcher matcher) throws IOException {
+        final long[] lastModified = {getMinimum()}; // Use array to allow access to non-final variable in closure.
+        final boolean useMatcher = matcher != null;
+        try(final Stream<? extends HierarchicalResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
             stream.forEach((resource) -> {
                 try {
-                    final long modified = modifiedFile(resource);
+                    final long modified = modifiedResource(resource);
                     lastModified[0] = Math.max(lastModified[0], modified);
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
@@ -55,13 +64,13 @@ class Modified {
         return lastModified[0];
     }
 
-    private static long modifiedDirRec(FSResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
-        final long[] lastModified = {getUnknown()}; // Use array to allow access to non-final variable in closure.
+    private static long modifiedDirRec(HierarchicalResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+        final long[] lastModified = {getMinimum()}; // Use array to allow access to non-final variable in closure.
         final boolean useWalker = walker != null && matcher != null;
-        try(final Stream<FSResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
+        try(final Stream<? extends HierarchicalResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
             stream.forEach((resource) -> {
                 try {
-                    final long modified = modifiedFile(resource);
+                    final long modified = modifiedResource(resource);
                     lastModified[0] = Math.max(lastModified[0], modified);
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
@@ -73,7 +82,11 @@ class Modified {
         return lastModified[0];
     }
 
-    private static long getUnknown() {
+    private static long getMinimum() {
         return Long.MIN_VALUE;
+    }
+
+    private static long getMaximum() {
+        return Long.MAX_VALUE;
     }
 }

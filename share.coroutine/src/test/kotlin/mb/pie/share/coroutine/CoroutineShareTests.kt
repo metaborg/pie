@@ -2,24 +2,30 @@ package mb.pie.share.coroutine
 
 import com.nhaarman.mockitokotlin2.mockingDetails
 import com.nhaarman.mockitokotlin2.spy
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mb.pie.api.test.toLowerCase
-import mb.pie.runtime.test.RuntimeTestGenerator
+import mb.pie.runtime.test.DefaultRuntimeTestBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.TestFactory
 
-internal class CoroutineShareTests {
+class CoroutineShareTests {
+  private val builder = CoroutineShareTestBuilder()
+
+
   @TestFactory
-  fun testThreadSafety() = RuntimeTestGenerator.generate("testThreadSafety", shareGens = arrayOf({ _ -> CoroutineShare() })) {
+  fun testThreadSafety() = builder.test {
     addTaskDef(toLowerCase)
 
     runBlocking {
       List(100) { index ->
         launch(coroutineContext + Dispatchers.Default) {
-          val session = newSession()
-          val task = task(toLowerCase, "HELLO WORLD $index!")
-          session.requireTopDown(task)
+          newSession().use { session ->
+            val task = toLowerCase.createTask("HELLO WORLD $index!")
+            session.require(task)
+          }
         }
       }.forEach { it.join() }
     }
@@ -27,26 +33,34 @@ internal class CoroutineShareTests {
 
   @Disabled("Coroutine share is not uniquely sharing on every platform; disable for now")
   @TestFactory
-  fun testConcurrentReuse() = RuntimeTestGenerator.generate("testConcurrentReuse", shareGens = arrayOf({ _ -> CoroutineShare() })) {
-    val taskDef = spy(toLowerCase)
-    addTaskDef(taskDef)
+  fun testConcurrentReuse() = builder.test {
+    val lowerDef = spy(toLowerCase)
+    addTaskDef(lowerDef)
 
     // Run task concurrently 100 times.
     runBlocking {
       List(100) {
         launch(coroutineContext + Dispatchers.Default) {
-          val session = newSession()
-          val task = task(taskDef, "HELLO WORLD!")
-          session.requireTopDown(task)
+          newSession().use { session ->
+            val task = lowerDef.createTask("HELLO WORLD!")
+            session.require(task)
+          }
         }
       }.forEach { it.join() }
     }
 
     // Test that function 'exec' has only been called once, even between all threads.
     var invocations = 0
-    mockingDetails(taskDef).invocations
+    mockingDetails(lowerDef).invocations
       .filter { it.method.name == "exec" }
       .forEach { ++invocations }
     assertEquals(1, invocations)
+  }
+}
+
+class CoroutineShareTestBuilder(shouldSpy: Boolean = true) : DefaultRuntimeTestBuilder(shouldSpy) {
+  init {
+    shareFactories.clear()
+    shareFactories.add { CoroutineShare() }
   }
 }

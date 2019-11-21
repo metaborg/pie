@@ -10,7 +10,7 @@ import java.util.function.Consumer;
  */
 public interface Pie extends AutoCloseable {
     /**
-     * Creates a new session for incrementally executing tasks. See {@link PieSession} for information
+     * Creates a new session for incrementally executing tasks.
      * <p>
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
      * started after external changes have occurred. See {@link PieSession} for a list of external changes.
@@ -51,48 +51,66 @@ public interface Pie extends AutoCloseable {
 
 
     /**
-     * Sets {@code observer} as the observer for outputs of {@code task}. Whenever {@code task} is required, its
-     * up-to-date output will be observed by the {@code observer}.
+     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build) or implicitly observed
+     * (when another observed task requires it).
      *
-     * @param task     Task to observe. The {@link Task#key() key} of this task will be used to identify which observer
-     *                 to call when a task is required.
-     * @param observer Consumer (function) to call with up-to-date output when {@code task} is required.
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task is observed, false otherwise.
      */
-    <O extends @Nullable Serializable> void setObserver(Task<O> task, Consumer<O> observer);
+    boolean isObserved(Task<?> task);
 
     /**
-     * Sets {@code observer} as the observer for outputs of task with {@code key}. Whenever task with {@code key} is
-     * required, its up-to-date output will be observed by the {@code observer}.
+     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or
+     * implicitly observed (when another observed task requires it).
      *
-     * @param key      Key of task to observe.
-     * @param observer Consumer (function) to call with up-to-date output when {@code task} is required. The output
-     *                 argument passed to this observer must be casted to the correct type.
+     * @param key Key of task to check.
+     * @return True if task is observed, false otherwise.
      */
-    void setObserver(TaskKey key, Consumer<@Nullable Serializable> observer);
+    boolean isObserved(TaskKey key);
+
 
     /**
-     * Removes the observer for outputs of {@code task}.
+     * Sets {@code function} as the callback for outputs of {@code task}. Whenever {@code task} is required, its
+     * up-to-date output will be passed as an argument to the {@code function}.
      *
-     * @param task Task to remove observer for. The {@link Task#key()} of {@code task} will be used to identify which
-     *             observer to remove.
+     * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
+     *                 which callback function to call when a task is required.
+     * @param function Function to call with up-to-date output as argument when {@code task} is required.
      */
-    void removeObserver(Task<?> task);
+    <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function);
 
     /**
-     * Removes the observer for outputs of task with {@code key}.
+     * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
+     * required, its up-to-date output will be passed as an argument to the {@code function}.
      *
-     * @param key Key of task to remove observer for.
+     * @param key      Key of task to set callback for.
+     * @param function Function to call with up-to-date output as argument when task is required.
      */
-    void removeObserver(TaskKey key);
+    void setCallback(TaskKey key, Consumer<@Nullable Serializable> function);
 
     /**
-     * Removes all (drops) observers.
+     * Removes the callback function for outputs of {@code task}.
+     *
+     * @param task Task to remove the callback for. The {@link Task#key()} of {@code task} will be used to identify
+     *             which callback function to remove.
      */
-    void dropObservers();
+    void removeCallback(Task<?> task);
+
+    /**
+     * Removes the callback function for outputs of task with {@code key}.
+     *
+     * @param key Key of task to remove callback function for.
+     */
+    void removeCallback(TaskKey key);
+
+    /**
+     * Removes all callback functions.
+     */
+    void dropCallbacks();
 
 
     /**
-     * Removes all data (drops) from the store.
+     * Removes all data from the store.
      */
     void dropStore();
 }

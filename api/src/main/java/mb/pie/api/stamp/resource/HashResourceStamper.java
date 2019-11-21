@@ -9,7 +9,7 @@ import java.io.IOException;
 public class HashResourceStamper<R extends ReadableResource> implements ResourceStamper<R> {
     @Override public ByteArrayResourceStamp<R> stamp(R resource) throws IOException {
         final Hash hasher = new Hash();
-        hasher.updateFile(resource);
+        hasher.update(resource);
         final byte[] bytes = hasher.getHashBytesAndReset();
         return new ByteArrayResourceStamp<>(bytes, this);
     }

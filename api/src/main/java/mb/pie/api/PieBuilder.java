@@ -6,6 +6,7 @@ import mb.resource.ReadableResource;
 import mb.resource.ResourceRegistry;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -28,9 +29,9 @@ public interface PieBuilder {
 
     PieBuilder withDefaultProvideReadableResourceStamper(ResourceStamper<ReadableResource> stamper);
 
-    PieBuilder withDefaultRequireFSResourceStamper(ResourceStamper<FSResource> stamper);
+    PieBuilder withDefaultRequireHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
-    PieBuilder withDefaultProvideFSResourceStamper(ResourceStamper<FSResource> stamper);
+    PieBuilder withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
     PieBuilder withLayer(BiFunction<TaskDefs, Logger, Layer> layerFunc);
 

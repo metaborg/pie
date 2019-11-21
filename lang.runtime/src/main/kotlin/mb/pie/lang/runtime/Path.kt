@@ -2,12 +2,14 @@ package mb.pie.lang.runtime
 
 import mb.pie.api.ExecContext
 import mb.pie.api.ExecException
-import mb.pie.api.stamp.resource.FileSystemStampers
+import mb.pie.api.stamp.resource.ResourceStampers
 import mb.resource.fs.FSPath
 import mb.resource.fs.FSResource
+import mb.resource.hierarchical.HierarchicalResource
 import mb.resource.hierarchical.match.ResourceMatcher
 import mb.resource.hierarchical.walk.ResourceWalker
 import java.io.IOException
+import java.nio.charset.StandardCharsets
 import java.util.stream.Collectors
 
 operator fun FSPath.plus(other: FSPath): FSPath {
@@ -19,13 +21,13 @@ operator fun FSPath.plus(other: String): FSPath {
 }
 
 fun ExecContext.exists(path: FSPath): Boolean {
-  val node = require(path, FileSystemStampers.exists<FSResource>())
+  val node = require(path, ResourceStampers.exists<HierarchicalResource>())
   return node.exists()
 }
 
 @Throws(ExecException::class)
 fun ExecContext.list(path: FSPath, matcher: ResourceMatcher?): ArrayList<FSPath> {
-  val node = require(path, FileSystemStampers.modified(matcher))
+  val node = require(path, ResourceStampers.modifiedDir(matcher))
   if(!node.isDirectory) {
     throw ExecException("Cannot list '$path', it is not a directory")
   }
@@ -41,7 +43,7 @@ fun ExecContext.list(path: FSPath, matcher: ResourceMatcher?): ArrayList<FSPath>
 
 @Throws(ExecException::class)
 fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMatcher?): ArrayList<FSPath> {
-  val node = require(path, FileSystemStampers.modified(walker, matcher))
+  val node = require(path, ResourceStampers.modifiedDirRec(walker, matcher))
   if(!node.isDirectory) {
     throw ExecException("Cannot walk '$path', it is not a directory")
   }
@@ -57,13 +59,12 @@ fun ExecContext.walk(path: FSPath, walker: ResourceWalker?, matcher: ResourceMat
 
 @Throws(ExecException::class)
 fun ExecContext.readToString(path: FSPath): String? {
-  val node = require(path, FileSystemStampers.hash<FSResource>())
+  val node = require(path, ResourceStampers.hashFile<HierarchicalResource>())
   try {
     if(!node.exists()) {
       return null
     }
-    val bytes = node.readBytes()
-    return String(bytes)
+    return node.readString()
   } catch(e: IOException) {
     throw ExecException("Reading '$path' failed", e)
   }

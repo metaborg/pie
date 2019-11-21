@@ -1,7 +1,7 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
-import mb.pie.api.stamp.resource.FileSystemStampers
+import mb.pie.api.stamp.resource.ResourceStampers
 import mb.resource.fs.FSResource
 import java.io.Serializable
 import javax.swing.text.html.HTML.Tag.I
@@ -13,7 +13,7 @@ val ApiTestCtx.toLowerCase
 
 val ApiTestCtx.readResource
   get() = taskDef<FSResource, String>("read", { input, _ -> "read($input)" }) {
-    require(it, FileSystemStampers.modified())
+    require(it, ResourceStampers.modifiedFile())
     read(it)
   }
 

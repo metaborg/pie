@@ -1,7 +1,7 @@
 package mb.pie.example.copyfile
 
 import mb.pie.api.*
-import mb.pie.api.stamp.resource.FileSystemStampers
+import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.api.MapTaskDefs
@@ -77,7 +77,7 @@ class FileCopier : TaskDef<FileCopier.Input, File> {
     // and the file, which we do as follows.
     context.require(sourceTask)
     // We use a hash stamper on the source file, to prevent copies when the contents of the source file does not change.
-    context.require(sourceFile, FileSystemStampers.hash())
+    context.require(sourceFile, ResourceStampers.hashFile())
     // Then we read the source file, add some text to it, and write it to the destination.
     val sourceText = sourceFile.readText() + ", and universe!"
     destination.outputStream().buffered().use {
@@ -122,7 +122,7 @@ fun main(args: Array<String>) {
     val fileCopierTask = fileCopier.createTask(FileCopier.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
 
     // We (incrementally) execute the file copier task by creating a new session and requiring the task in a top-down fashion.
-    val output = pie.newSession().use { session -> session.requireTopDown(fileCopierTask) }
+    val output = pie.newSession().use { session -> session.require(fileCopierTask) }
     println("Copied to: $output")
   }
   // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a

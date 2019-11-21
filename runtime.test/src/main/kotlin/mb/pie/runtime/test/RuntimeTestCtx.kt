@@ -1,20 +1,18 @@
 package mb.pie.runtime.test
 
+import mb.pie.api.MapTaskDefs
 import mb.pie.api.TaskDef
 import mb.pie.api.test.ApiTestCtx
-import mb.pie.runtime.PieImpl
-import mb.pie.runtime.PieSessionImpl
-import mb.pie.api.MapTaskDefs
 import java.nio.file.FileSystem
 
 open class RuntimeTestCtx(
-  private val pieImpl: PieImpl,
+  fileSystem: FileSystem,
   private val taskDefs: MapTaskDefs,
-  fs: FileSystem
-) : ApiTestCtx(pieImpl, fs) {
-  override val pie: PieImpl get() = pieImpl
+  private val testPieImpl: TestPieImpl
+) : ApiTestCtx(fileSystem, testPieImpl) {
+  override val pie: TestPieImpl get() = testPieImpl
 
-  override fun newSession(): PieSessionImpl = pie.newSession() as PieSessionImpl
+  override fun newSession(): TestPieSessionImpl = pie.newSession() as TestPieSessionImpl
 
   fun addTaskDef(taskDef: TaskDef<*, *>) {
     taskDefs.add(taskDef)

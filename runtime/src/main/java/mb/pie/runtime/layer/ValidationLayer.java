@@ -6,6 +6,7 @@ import mb.pie.api.OutTransientEquatable;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.StoreReadTxn;
+import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
@@ -91,18 +92,32 @@ public class ValidationLayer implements Layer {
         stack.remove(key);
     }
 
-    @Override public void validatePreWrite(TaskKey currentTask, TaskData data, StoreReadTxn txn) {
-        for(ResourceProvideDep provideDep : data.resourceProvides) {
+    @Override public void validateVisited(TaskKey currentTaskKey, Task<?> currentTask, TaskData visitedData) {
+        if(!visitedData.input.equals(currentTask.input)) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Visited task with same key was required with different input in same session. Cause:\n");
+            sb.append("task with key\n");
+            sb.append("  " + currentTaskKey + "\n");
+            sb.append("was already visited with input\n");
+            sb.append("  " + visitedData.input + "\n");
+            sb.append("while now required with input\n");
+            sb.append("  " + currentTask.input);
+            error(sb.toString());
+        }
+    }
+
+    @Override public void validatePreWrite(TaskKey currentTaskKey, TaskData dataToStore, StoreReadTxn txn) {
+        for(ResourceProvideDep provideDep : dataToStore.resourceProvides) {
             final ResourceKey resource = provideDep.key;
             final @Nullable TaskKey provider = txn.providerOf(resource);
-            if(provider != null && !provider.equals(currentTask)) {
+            if(provider != null && !provider.equals(currentTaskKey)) {
                 // Overlapping provider tasks for resource.
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Overlapping provider tasks for resource. Cause:\n");
                 sb.append("resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("was provided by task\n");
-                sb.append("  " + currentTask + "\n");
+                sb.append("  " + currentTaskKey + "\n");
                 sb.append("and task\n");
                 sb.append("  " + provider);
                 error(sb.toString());
@@ -110,20 +125,20 @@ public class ValidationLayer implements Layer {
         }
     }
 
-    @Override public void validatePostWrite(TaskKey currentTask, TaskData data, StoreReadTxn txn) {
-        for(ResourceRequireDep requireDep : data.resourceRequires) {
+    @Override public void validatePostWrite(TaskKey currentTaskKey, TaskData dataToStore, StoreReadTxn txn) {
+        for(ResourceRequireDep requireDep : dataToStore.resourceRequires) {
             final ResourceKey resource = requireDep.key;
             final @Nullable TaskKey provider = txn.providerOf(resource);
             if(provider == null) {
                 // No provider for resource.
-            } else if(currentTask.equals(provider)) {
+            } else if(currentTaskKey.equals(provider)) {
                 // Required resource provided by current task.
-            } else if(!BottomUpShared.hasTransitiveTaskReq(txn, currentTask, provider)) {
+            } else if(!BottomUpShared.hasTransitiveTaskReq(txn, currentTaskKey, provider)) {
                 // Resource is required by current task, and resource is provided by task `provider`, thus the current task must (transitively) require task `provider`.
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Hidden dependency. Cause:\n");
                 sb.append("task\n");
-                sb.append("  " + currentTask + "\n");
+                sb.append("  " + currentTaskKey + "\n");
                 sb.append("requires resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("provided by task\n");
@@ -133,20 +148,20 @@ public class ValidationLayer implements Layer {
             }
         }
 
-        for(ResourceProvideDep provideDep : data.resourceProvides) {
+        for(ResourceProvideDep provideDep : dataToStore.resourceProvides) {
             final ResourceKey resource = provideDep.key;
             final Set<TaskKey> requirees = txn.requireesOf(resource);
             for(TaskKey requiree : requirees) {
-                if(currentTask.equals(requiree)) {
+                if(currentTaskKey.equals(requiree)) {
                     // Required resource provided by current task.
-                } else if(!BottomUpShared.hasTransitiveTaskReq(txn, requiree, currentTask)) {
+                } else if(!BottomUpShared.hasTransitiveTaskReq(txn, requiree, currentTaskKey)) {
                     // Resource is provided by current task, and resource is required by task `requiree`, thus task `requiree` must (transitively) require the current task.
                     final StringBuilder sb = new StringBuilder();
                     sb.append("Hidden dependency. Cause:\n");
                     sb.append("resource\n");
                     sb.append("  " + resource + "\n");
                     sb.append("was provided by task\n");
-                    sb.append("  " + currentTask + "\n");
+                    sb.append("  " + currentTaskKey + "\n");
                     sb.append("after being previously required by task\n");
                     sb.append("  " + requiree);
                     error(sb.toString());
@@ -155,7 +170,7 @@ public class ValidationLayer implements Layer {
         }
 
         if(options.checkOutputObjects) {
-            validateOutput(data.output, currentTask);
+            validateOutput(dataToStore.output, currentTaskKey);
         }
     }
 
@@ -200,7 +215,7 @@ public class ValidationLayer implements Layer {
     private void validateOutput(@Nullable Serializable output, TaskKey key) {
         final List<String> errors;
         if(output instanceof OutTransientEquatable<?, ?>) {
-            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>) output;
+            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>)output;
             errors = validateObject(outTransEq.getEquatableValue(), false);
         } else {
             errors = validateObject(output, false);
@@ -225,7 +240,7 @@ public class ValidationLayer implements Layer {
 
     @SuppressWarnings("EqualsWithItself")
     private List<String> validateObject(@Nullable Serializable obj, boolean checkSerializeRoundtrip) {
-        final ArrayList<String> errors = new ArrayList<String>();
+        final ArrayList<String> errors = new ArrayList<>();
         if(obj == null) {
             return errors;
         }
@@ -253,13 +268,13 @@ public class ValidationLayer implements Layer {
         final byte[] serializedAfterCallsAgain = serialize(obj);
         if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsAgain)) {
             errors.add(
-                "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
+                "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
         } else if(!Arrays.equals(serializedBeforeCalls, serializedAfterCalls)) {
             errors.add(
-                "Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
+                "Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
         } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsAgain)) {
             errors.add(
-                "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedAfterCalls + "\n  vs\n    " + serializedAfterCallsAgain);
+                "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedAfterCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCallsAgain));
         }
 
         if(checkSerializeRoundtrip) {
@@ -297,10 +312,10 @@ public class ValidationLayer implements Layer {
             final byte[] serializedAfterCallsTwice = serialize(objDeserializedAfterCalls);
             if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsTwice)) {
                 errors.add(
-                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
+                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
             } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsTwice)) {
                 errors.add(
-                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
+                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
             }
         }
 
@@ -326,7 +341,7 @@ public class ValidationLayer implements Layer {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)
         ) {
-            @SuppressWarnings("unchecked") final T obj = (T) objectInputStream.readObject();
+            @SuppressWarnings("unchecked") final T obj = (T)objectInputStream.readObject();
             return obj;
         } catch(IOException | ClassNotFoundException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
