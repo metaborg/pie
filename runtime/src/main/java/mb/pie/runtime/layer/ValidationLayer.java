@@ -1,12 +1,30 @@
 package mb.pie.runtime.layer;
 
-import mb.pie.api.*;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.OutTransientEquatable;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.Task;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
 import mb.pie.runtime.exec.BottomUpShared;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StatementWithEmptyBody", "StringBufferReplaceableByString"})
@@ -197,7 +215,7 @@ public class ValidationLayer implements Layer {
     private void validateOutput(@Nullable Serializable output, TaskKey key) {
         final List<String> errors;
         if(output instanceof OutTransientEquatable<?, ?>) {
-            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>) output;
+            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>)output;
             errors = validateObject(outTransEq.getEquatableValue(), false);
         } else {
             errors = validateObject(output, false);
@@ -222,7 +240,7 @@ public class ValidationLayer implements Layer {
 
     @SuppressWarnings("EqualsWithItself")
     private List<String> validateObject(@Nullable Serializable obj, boolean checkSerializeRoundtrip) {
-        final ArrayList<String> errors = new ArrayList<String>();
+        final ArrayList<String> errors = new ArrayList<>();
         if(obj == null) {
             return errors;
         }
@@ -250,13 +268,13 @@ public class ValidationLayer implements Layer {
         final byte[] serializedAfterCallsAgain = serialize(obj);
         if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsAgain)) {
             errors.add(
-                "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
+                "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
         } else if(!Arrays.equals(serializedBeforeCalls, serializedAfterCalls)) {
             errors.add(
-                "Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedAfterCalls);
+                "Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
         } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsAgain)) {
             errors.add(
-                "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedAfterCalls + "\n  vs\n    " + serializedAfterCallsAgain);
+                "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedAfterCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCallsAgain));
         }
 
         if(checkSerializeRoundtrip) {
@@ -294,10 +312,10 @@ public class ValidationLayer implements Layer {
             final byte[] serializedAfterCallsTwice = serialize(objDeserializedAfterCalls);
             if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsTwice)) {
                 errors.add(
-                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
+                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
             } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsTwice)) {
                 errors.add(
-                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + serializedBeforeCalls + "\n  vs\n    " + serializedBeforeCallsTwice);
+                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
             }
         }
 
@@ -323,7 +341,7 @@ public class ValidationLayer implements Layer {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)
         ) {
-            @SuppressWarnings("unchecked") final T obj = (T) objectInputStream.readObject();
+            @SuppressWarnings("unchecked") final T obj = (T)objectInputStream.readObject();
             return obj;
         } catch(IOException | ClassNotFoundException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);

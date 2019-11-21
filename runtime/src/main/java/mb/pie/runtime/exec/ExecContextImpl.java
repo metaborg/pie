@@ -1,6 +1,16 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecContext;
+import mb.pie.api.ExecException;
+import mb.pie.api.Logger;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.STask;
+import mb.pie.api.Task;
+import mb.pie.api.TaskDef;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
@@ -25,7 +35,6 @@ public class ExecContextImpl implements ExecContext {
     private final CancelToken cancel;
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
-    private final Store store;
     private final DefaultStampers defaultStampers;
     private final Logger logger;
 
@@ -40,7 +49,6 @@ public class ExecContextImpl implements ExecContext {
         CancelToken cancel,
         TaskDefs taskDefs,
         ResourceService resourceService,
-        Store store,
         DefaultStampers defaultStampers,
         Logger logger
     ) {
@@ -49,7 +57,6 @@ public class ExecContextImpl implements ExecContext {
         this.cancel = cancel;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
-        this.store = store;
         this.defaultStampers = defaultStampers;
         this.logger = logger;
     }
@@ -120,7 +127,7 @@ public class ExecContextImpl implements ExecContext {
     @Override
     public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>) stamper.stamp(resource);
+            (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
         Stats.addFileReq();
     }
@@ -128,7 +135,7 @@ public class ExecContextImpl implements ExecContext {
     @Override
     public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>) stamper.stamp(resource);
+            (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
         Stats.addFileGen();
     }
@@ -164,7 +171,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
-    class Deps {
+    static class Deps {
         final ArrayList<TaskRequireDep> taskRequires;
         final ArrayList<ResourceRequireDep> resourceRequires;
         final ArrayList<ResourceProvideDep> resourceProvides;

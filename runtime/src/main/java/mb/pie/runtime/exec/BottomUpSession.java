@@ -109,12 +109,10 @@ public class BottomUpSession implements RequireTask {
     private void scheduleAffectedByRequiredResources(Stream<? extends ResourceKey> resources) {
         logger.trace("Scheduling tasks affected by required resources: " + resources);
         try(final StoreReadTxn txn = store.readTxn()) {
-            resources.forEach((resource) -> {
-                BottomUpShared.directlyAffectedByRequiredResource(txn, resource, resourceService, logger, (key) -> {
-                    logger.trace("- scheduling: " + key);
-                    queue.add(key);
-                });
-            });
+            resources.forEach((resource) -> BottomUpShared.directlyAffectedByRequiredResource(txn, resource, resourceService, logger, (key) -> {
+                logger.trace("- scheduling: " + key);
+                queue.add(key);
+            }));
         }
     }
 
@@ -155,8 +153,9 @@ public class BottomUpSession implements RequireTask {
         try {
             // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
             final TaskData data = getData(key, task, cancel);
-            @SuppressWarnings("unchecked") final O output = (O) data.output;
+            @SuppressWarnings({"unchecked", "ConstantConditions"}) final O output = (O) data.output;
             executorLogger.requireTopDownEnd(key, task, output);
+            //noinspection ConstantConditions
             return output;
         } finally {
             layer.requireTopDownEnd(key);

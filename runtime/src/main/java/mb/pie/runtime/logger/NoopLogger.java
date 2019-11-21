@@ -4,9 +4,9 @@ import mb.pie.api.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class NoopLogger implements Logger {
-    @Override public void error(@Nullable String message, Throwable throwable) {}
+    @Override public void error(String message, @Nullable Throwable throwable) {}
 
-    @Override public void warn(@Nullable String message, Throwable throwable) {}
+    @Override public void warn(String message, @Nullable Throwable throwable) {}
 
     @Override public void info(String message) {}
 

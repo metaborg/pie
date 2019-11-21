@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 public class LoggerExecutorLogger implements ExecutorLogger {
     private final Logger logger;
     private final int descLimit;
-    private AtomicInteger indentation = new AtomicInteger(0);
+    private final AtomicInteger indentation = new AtomicInteger(0);
 
 
     public LoggerExecutorLogger(Logger logger) {

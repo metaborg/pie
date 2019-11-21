@@ -62,7 +62,7 @@ public class TopDownSession implements RequireTask {
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, cancel);
             TaskData data = status.data;
-            @SuppressWarnings("unchecked") final O output = (O) data.output;
+            @SuppressWarnings({"unchecked", "ConstantConditions"}) final O output = (O) data.output;
             if(!status.executed) {
                 if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
@@ -91,13 +91,14 @@ public class TopDownSession implements RequireTask {
                 }
             }
             executorLogger.requireTopDownEnd(key, task, output);
+            //noinspection ConstantConditions
             return output;
         } finally {
             layer.requireTopDownEnd(key);
         }
     }
 
-    private class DataAndExecutionStatus {
+    private static class DataAndExecutionStatus {
         final TaskData data;
         final boolean executed;
 
