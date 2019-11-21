@@ -148,7 +148,7 @@ class BottomUpTests {
   }
 
   @TestFactory
-  fun testDifferentInputsFromRequiredTriggersValidationError() = builder.test {
+  fun testDifferentInputsFromRequiredFails() = builder.test {
     val singletonTaskDef = taskDef<Int, None>("singleton", { _ -> None.instance }) {
       println(it)
       None.instance
@@ -181,7 +181,7 @@ class BottomUpTests {
   }
 
   @TestFactory
-  fun testDifferentInputsFromAffectedTriggersValidationError() = builder.test {
+  fun testDifferentInputsFromAffectedFails() = builder.test {
     val backendDef = taskDef<Triple<String, String, STask>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
       require(frontendTask)
       println(text)

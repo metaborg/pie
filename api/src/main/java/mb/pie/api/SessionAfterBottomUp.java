@@ -12,7 +12,7 @@ import java.io.Serializable;
 public interface SessionAfterBottomUp extends SessionBase {
     /**
      * Gets the up-to-date output of an existing {@code task}. This method throws an exception when used on tasks that
-     * have not been executed before (i.e, a new task). For new tasks, use {@link #require} or {@link
+     * have not been executed before (i.e, a new task or different input). For new tasks, use {@link #require} or {@link
      * #requireWithoutObserving} instead.
      *
      * @param task Task to get result for.

@@ -6,10 +6,6 @@ import mb.pie.api.*
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
-import mb.pie.api.stamp.resource.HashMatchResourceStamper
-import mb.pie.api.stamp.resource.HashResourceStamper
-import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
-import mb.pie.api.stamp.resource.ModifiedResourceStamper
 import mb.resource.ReadableResource
 import mb.resource.hierarchical.HierarchicalResource
 import org.junit.jupiter.api.DynamicTest
@@ -20,6 +16,8 @@ abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
   val pieBuilderFactory: () -> PieBuilder,
   val loggerFactory: () -> Logger,
   val executorLoggerFactory: (Logger) -> ExecutorLogger,
+  defaultResourceStampers: MutableList<ResourceStamper<ReadableResource>>,
+  defaultHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>>,
   open val testContextFactory: (FileSystem, MapTaskDefs, Pie) -> Ctx
 ) {
   var filesystemFactory: () -> FileSystem = { Jimfs.newFileSystem(Configuration.unix()) }
@@ -28,13 +26,22 @@ abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
   val storeFactories: MutableList<(Logger) -> Store> = mutableListOf()
   val shareFactories: MutableList<(Logger) -> Share> = mutableListOf()
   val defaultOutputStampers: MutableList<OutputStamper> = mutableListOf(EqualsOutputStamper())
-  val defaultRequireReadableStampers: MutableList<ResourceStamper<ReadableResource>> = mutableListOf(ModifiedResourceStamper(), HashResourceStamper())
-  val defaultProvideReadableStampers: MutableList<ResourceStamper<ReadableResource>> = mutableListOf(ModifiedResourceStamper(), HashResourceStamper())
-  val defaultRequireHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
-  val defaultProvideHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper())
+  val defaultRequireReadableStampers: MutableList<ResourceStamper<ReadableResource>> = defaultResourceStampers
+  val defaultProvideReadableStampers: MutableList<ResourceStamper<ReadableResource>> = defaultResourceStampers
+  val defaultRequireHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = defaultHierarchicalStampers
+  val defaultProvideHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = defaultHierarchicalStampers
   val layerFactories: MutableList<(TaskDefs, Logger) -> Layer> = mutableListOf()
 
   fun test(testFunc: Ctx.() -> Unit): Stream<out DynamicTest> {
+    if(storeFactories.isEmpty()) error("Store factories list is empty")
+    if(shareFactories.isEmpty()) error("Share factories list is empty")
+    if(defaultOutputStampers.isEmpty()) error("Default output stampers list is empty")
+    if(defaultRequireReadableStampers.isEmpty()) error("Default readable resource require stampers list is empty")
+    if(defaultProvideReadableStampers.isEmpty()) error("Default readable resource provide stampers list is empty")
+    if(defaultRequireHierarchicalStampers.isEmpty()) error("Default hierarchical resource require stampers list is empty")
+    if(defaultProvideHierarchicalStampers.isEmpty()) error("Default hierarchical resource provide stampers list is empty")
+    if(layerFactories.isEmpty()) error("Layer factories list is empty")
+
     return storeFactories.flatMap { storeFactory ->
       shareFactories.flatMap { shareFactory ->
         defaultOutputStampers.flatMap { defaultOutputStamper ->

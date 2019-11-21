@@ -877,7 +877,6 @@ class ObservabilityTestCtx(
   }
 }
 
-class ObservabilityTestBuilder(shouldSpy: Boolean = true) : RuntimeTestBuilder<ObservabilityTestCtx>(
-  shouldSpy,
+class ObservabilityTestBuilder : RuntimeTestBuilder<ObservabilityTestCtx>(true, true,
   { fs, taskDefs, pie -> ObservabilityTestCtx(fs, taskDefs, pie as TestPieImpl) }
 )

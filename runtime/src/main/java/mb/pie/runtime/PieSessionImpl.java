@@ -29,7 +29,8 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     protected final Store store;
     protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
 
-    private boolean bottomUpExecuted = false;
+    private boolean updateAffectedByExecuted = false;
+    private boolean requireExecuted = false;
 
 
     public PieSessionImpl(
@@ -73,10 +74,13 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     }
 
     private void checkUpdateAffectedBy() {
-        if(bottomUpExecuted) {
-            throw new IllegalStateException("Cannot call 'updateAffectedBy', because 'updateAffectedBy', 'require', or 'requireWithoutObserving' have already been called. Create a new session to call 'updateAffectedBy' again.");
+        if(updateAffectedByExecuted) {
+            throw new IllegalStateException("Cannot call 'updateAffectedBy' because it has already been called. Create a new session to call 'updateAffectedBy' again");
         }
-        bottomUpExecuted = true;
+        if(requireExecuted) {
+            throw new IllegalStateException("Cannot call 'updateAffectedBy' because 'require' or 'requireWithoutObserving' has already been called. Create a new session to call 'updateAffectedBy'");
+        }
+        updateAffectedByExecuted = true;
     }
 
     private SessionAfterBottomUp createSessionAfterBottomUp() {
@@ -117,8 +121,9 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     }
 
     private void checkRequire(String name) {
-        if(bottomUpExecuted) {
-            throw new IllegalStateException("Cannot call '" + name + "', because 'updateAffectedBy' has already been called. Use the object returned by 'updateAffectedBy' to get task outputs or to execute new tasks.");
+        if(updateAffectedByExecuted) {
+            throw new IllegalStateException("Cannot call '" + name + "', because 'updateAffectedBy' has already been called. Use the object returned by 'updateAffectedBy' to get task outputs or to execute new tasks");
         }
+        requireExecuted = true;
     }
 }

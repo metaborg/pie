@@ -2,6 +2,11 @@ package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.spy
 import mb.pie.api.*
+import mb.pie.api.stamp.ResourceStamper
+import mb.pie.api.stamp.resource.HashMatchResourceStamper
+import mb.pie.api.stamp.resource.HashResourceStamper
+import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
+import mb.pie.api.stamp.resource.ModifiedResourceStamper
 import mb.pie.api.test.ApiTestBuilder
 import mb.pie.runtime.DefaultStampers
 import mb.pie.runtime.PieBuilderImpl
@@ -16,7 +21,9 @@ import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
+import mb.resource.ReadableResource
 import mb.resource.ResourceService
+import mb.resource.hierarchical.HierarchicalResource
 import java.io.Serializable
 import java.nio.file.FileSystem
 import java.util.*
@@ -25,14 +32,17 @@ import java.util.function.BiFunction
 import java.util.function.Consumer
 import java.util.function.Function
 
-abstract class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
-  private val shouldSpy: Boolean = true,
-  override val testContextFactory: (FileSystem, MapTaskDefs, Pie) -> Ctx
+open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
+  shouldSpy: Boolean = true,
+  multipleResourceStampers: Boolean = true,
+  testContextFactory: (FileSystem, MapTaskDefs, Pie) -> Ctx
 ) : ApiTestBuilder<Ctx>(
-  { TestPieBuilderImpl(shouldSpy) },
-  { StreamLogger.onlyErrors() },
-  { l -> LoggerExecutorLogger(l) },
-  testContextFactory
+  pieBuilderFactory = { TestPieBuilderImpl(shouldSpy) },
+  loggerFactory = { StreamLogger.onlyErrors() },
+  executorLoggerFactory = { l -> LoggerExecutorLogger(l) },
+  defaultResourceStampers = if(multipleResourceStampers) mutableListOf(ModifiedResourceStamper(), HashResourceStamper()) else mutableListOf<ResourceStamper<ReadableResource>>(ModifiedResourceStamper()),
+  defaultHierarchicalStampers = if(multipleResourceStampers) mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()) else mutableListOf<ResourceStamper<HierarchicalResource>>(ModifiedMatchResourceStamper()),
+  testContextFactory = testContextFactory
 ) {
   init {
     storeFactories.add { _ -> InMemoryStore() }
@@ -110,7 +120,11 @@ open class TestPieSessionImpl(
 }
 
 
-open class DefaultRuntimeTestBuilder(shouldSpy: Boolean = true) : RuntimeTestBuilder<RuntimeTestCtx>(
+open class DefaultRuntimeTestBuilder(
+  shouldSpy: Boolean = true,
+  multipleResourceStampers: Boolean = true
+) : RuntimeTestBuilder<RuntimeTestCtx>(
   shouldSpy,
+  multipleResourceStampers,
   { fs, taskDefs, pie -> RuntimeTestCtx(fs, taskDefs, pie as TestPieImpl) }
 )
