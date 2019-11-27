@@ -1,15 +1,15 @@
 package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamper;
-import mb.resource.fs.FSResource;
-import mb.resource.fs.match.ResourceMatcher;
-import mb.resource.fs.walk.ResourceWalker;
+import mb.resource.hierarchical.HierarchicalResource;
+import mb.resource.hierarchical.match.ResourceMatcher;
+import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.util.Objects;
 
-public class ModifiedWalkResourceStamper implements ResourceStamper<FSResource> {
+public class ModifiedWalkResourceStamper implements ResourceStamper<HierarchicalResource> {
     private final @Nullable ResourceWalker walker;
     private final @Nullable ResourceMatcher matcher;
 
@@ -23,7 +23,7 @@ public class ModifiedWalkResourceStamper implements ResourceStamper<FSResource> 
         this.matcher = null;
     }
 
-    @Override public ValueResourceStamp<FSResource> stamp(FSResource resource) throws IOException {
+    @Override public ValueResourceStamp<HierarchicalResource> stamp(HierarchicalResource resource) throws IOException {
         final long modified = Modified.modifiedRec(resource, walker, matcher);
         return new ValueResourceStamp<>(modified, this);
     }

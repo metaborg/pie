@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 public class LoggerExecutorLogger implements ExecutorLogger {
     private final Logger logger;
     private final int descLimit;
-    private AtomicInteger indentation = new AtomicInteger(0);
+    private final AtomicInteger indentation = new AtomicInteger(0);
 
 
     public LoggerExecutorLogger(Logger logger) {
@@ -55,7 +55,7 @@ public class LoggerExecutorLogger implements ExecutorLogger {
     }
 
 
-    @Override public void requireBottomUpInitialStart(Set<ResourceKey> changedResources) {
+    @Override public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {
 
     }
 
@@ -141,14 +141,14 @@ public class LoggerExecutorLogger implements ExecutorLogger {
 
 
     @Override
-    public void invokeObserverStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
+    public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
         final String outputString = output != null ? StringUtil.toShortString(output.toString(), descLimit) : "null";
         logger.trace(
             getIndent() + "@ " + StringUtil.toShortString(observer.toString(), descLimit) + "(" + outputString + ")");
     }
 
     @Override
-    public void invokeObserverEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
+    public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
 
     }
 }

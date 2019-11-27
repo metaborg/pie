@@ -10,6 +10,8 @@ public interface Layer {
 
     void requireTopDownEnd(TaskKey key);
 
+    void validateVisited(TaskKey key, Task<?> task, TaskData data);
+
     void validatePreWrite(TaskKey key, TaskData data, StoreReadTxn txn);
 
     void validatePostWrite(TaskKey key, TaskData data, StoreReadTxn txn);

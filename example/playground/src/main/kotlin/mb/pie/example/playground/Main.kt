@@ -1,7 +1,7 @@
 package mb.pie.example.playground
 
 import mb.pie.api.*
-import mb.pie.api.stamp.resource.FileSystemStampers
+import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
 import mb.pie.api.MapTaskDefs
@@ -29,18 +29,17 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
             val destinationFile: File
     ) : Serializable
 
-    override fun exec(context: ExecContext, input: Input): File {
-        val (sourceFile, sourceTask, destination) = input
-        context.require(sourceTask)
-        context.require(sourceFile, FileSystemStampers.hash())
-        val sourceText = sourceFile.readText() + ", and universe!"
-        destination.outputStream().buffered().use {
-            it.write(sourceText.toByteArray())
-            it.flush()
-        }
-        context.provide(destination)
-        return destination
+  override fun exec(context: ExecContext, input: Input): File {
+    val (sourceFile, sourceTask, destination) = input
+    context.require(sourceTask)
+    context.require(sourceFile, ResourceStampers.hashFile())
+    val sourceText = sourceFile.readText() + ", and universe!"
+    destination.outputStream().buffered().use {
+      it.write(sourceText.toByteArray())
+      it.flush()
     }
+    return destination
+  }
 }
 
 /**
@@ -56,15 +55,15 @@ fun main(args: Array<String>) {
     taskDefs.add(createFile)
     taskDefs.add(transformFile)
 
-    val pieBuilder = PieBuilderImpl()
-    pieBuilder.withTaskDefs(taskDefs)
-    //LMDBStore.withLMDBStore(pieBuilder, File("build/run/lmdb"))
-    pieBuilder.withLogger(StreamLogger.verbose())
-    pieBuilder.build().use { pie ->
-        val fileCreatorTask = createFile.createTask(sourceFile)
-        val transformFileTask = transformFile.createTask(
-                TransformFile.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
-        val output = pie.newSession().requireTopDown(transformFileTask)
-        println("Transformed '$sourceFile' ('${sourceFile.readText()}') to '$output' ('${output.readText()}')")
-    }
+  val pieBuilder = PieBuilderImpl()
+  pieBuilder.withTaskDefs(taskDefs)
+  //LMDBStore.withLMDBStore(pieBuilder, File("build/run/lmdb"))
+  pieBuilder.withLogger(StreamLogger.verbose())
+  pieBuilder.build().use { pie ->
+    val fileCreatorTask = createFile.createTask(sourceFile)
+    val transformFileTask = transformFile.createTask(
+      TransformFile.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
+    val output = pie.newSession().require(transformFileTask)
+    println("Transformed '$sourceFile' ('${sourceFile.readText()}') to '$output' ('${output.readText()}')")
+  }
 }

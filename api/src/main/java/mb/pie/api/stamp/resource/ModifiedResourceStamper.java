@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public class ModifiedResourceStamper<R extends ReadableResource> implements ResourceStamper<R> {
     @Override public ValueResourceStamp<R> stamp(R file) throws IOException {
-        final long modified = Modified.modifiedFile(file);
+        final long modified = Modified.modified(file);
         return new ValueResourceStamp<>(modified, this);
     }
 

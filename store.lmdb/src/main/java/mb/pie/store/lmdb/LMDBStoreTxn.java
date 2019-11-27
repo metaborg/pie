@@ -1,14 +1,6 @@
 package mb.pie.store.lmdb;
 
-import mb.pie.api.Logger;
-import mb.pie.api.Output;
-import mb.pie.api.ResourceProvideDep;
-import mb.pie.api.ResourceRequireDep;
-import mb.pie.api.StoreReadTxn;
-import mb.pie.api.StoreWriteTxn;
-import mb.pie.api.TaskData;
-import mb.pie.api.TaskKey;
-import mb.pie.api.TaskRequireDep;
+import mb.pie.api.*;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.lmdbjava.CursorIterator;
@@ -20,6 +12,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
@@ -27,6 +20,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     private final Logger logger;
     private final Dbi<ByteBuffer> inputDb;
     private final Dbi<ByteBuffer> outputDb;
+    private final Dbi<ByteBuffer> taskObservabilityDb;
     private final Dbi<ByteBuffer> taskRequiresDb;
     private final Dbi<ByteBuffer> callersOfDb;
     private final Dbi<ByteBuffer> callersOfValuesDb;
@@ -44,6 +38,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         Logger logger,
         Dbi<ByteBuffer> inputDb,
         Dbi<ByteBuffer> outputDb,
+        Dbi<ByteBuffer> taskObservabilityDb,
         Dbi<ByteBuffer> taskRequiresDb,
         Dbi<ByteBuffer> callersOfDb,
         Dbi<ByteBuffer> callersOfValuesDb,
@@ -57,6 +52,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         this.logger = logger;
         this.inputDb = inputDb;
         this.outputDb = outputDb;
+        this.taskObservabilityDb = taskObservabilityDb;
         this.taskRequiresDb = taskRequiresDb;
         this.callersOfDb = callersOfDb;
         this.callersOfValuesDb = callersOfValuesDb;
@@ -73,6 +69,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         txn.close();
     }
 
+
     @Override public @Nullable Serializable input(TaskKey key) {
         return Deserialized.orElseNull(shared.getOne(SerializeUtil.serializeHashedToBuffer(key), inputDb));
     }
@@ -82,6 +79,12 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         final @Nullable Deserialized<@Nullable Serializable> deserialized = shared.getOne(keyHashedBuf, outputDb);
         return Deserialized.mapOrElseNull(deserialized, Output::new);
     }
+
+    @Override public Observability taskObservability(TaskKey key) {
+        return Deserialized.orElse(shared.getOne(SerializeUtil.serializeHashedToBuffer(key), taskObservabilityDb),
+            Observability.Unobserved);
+    }
+
 
     @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
         return Deserialized.orElse(
@@ -94,6 +97,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
             callersOfValuesDb);
     }
 
+
     @Override public ArrayList<ResourceRequireDep> resourceRequires(TaskKey key) {
         return Deserialized.orElse(
             shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), resourceRequiresDb),
@@ -105,6 +109,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
             requireesOfValuesDb);
     }
 
+
     @Override public ArrayList<ResourceProvideDep> resourceProvides(TaskKey key) {
         return Deserialized.orElse(
             shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), resourceProvidesDb),
@@ -115,6 +120,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         return Deserialized.orElse(
             shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), providerOfDb), null);
     }
+
 
     @Override public @Nullable TaskData data(TaskKey key) {
         // OPTO: reuse buffers? is that safe?
@@ -129,8 +135,13 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         if(outputDeserialized == null || outputDeserialized.failed) {
             return null;
         }
+        final @Nullable Deserialized<Observability> taskObservabilityDeserialized =
+            shared.getOne(BufferUtil.toBuffer(keyHashedBytes), taskObservabilityDb);
+
         final Serializable input = inputDeserialized.deserialized;
         final @Nullable Serializable output = outputDeserialized.deserialized;
+        final Observability taskObservability =
+            Deserialized.orElse(taskObservabilityDeserialized, Observability.Unobserved);
         final ArrayList<TaskRequireDep> taskRequires =
             Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
         final ArrayList<ResourceRequireDep> resourceRequires =
@@ -139,7 +150,13 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         final ArrayList<ResourceProvideDep> resourceProvides =
             Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb),
                 new ArrayList<>());
-        return new TaskData(input, output, taskRequires, resourceRequires, resourceProvides);
+        return new TaskData(input, output, taskObservability, taskRequires, resourceRequires, resourceProvides);
+    }
+
+
+    @Override public Set<TaskKey> tasksWithoutCallers() {
+        // TODO: implement
+        throw new UnsupportedOperationException("tasksWithoutCallers has not been implemented for LMDB yet, sorry");
     }
 
     @Override public int numSourceFiles() {
@@ -175,6 +192,12 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),
             BufferUtil.toBuffer(SerializeUtil.serialize(output)), outputDb);
     }
+
+    @Override public void setTaskObservability(TaskKey key, Observability observability) {
+        shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),
+            BufferUtil.toBuffer(SerializeUtil.serialize(observability)), taskObservabilityDb);
+    }
+
 
     @Override public void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires) {
         // OPTO: reuse buffers? is that safe?
@@ -247,18 +270,27 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         }
     }
 
+
     @Override public void setData(TaskKey key, TaskData data) {
         // OPTO: serialize and hash task only once?
         setInput(key, data.input);
         setOutput(key, data.output);
+        setTaskObservability(key, data.taskObservability);
         setTaskRequires(key, data.taskRequires);
         setResourceRequires(key, data.resourceRequires);
         setResourceProvides(key, data.resourceProvides);
     }
 
+    @Override public TaskData deleteData(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("deleteData has not been implemented for LMDB yet, sorry");
+    }
+
+
     @Override public void drop() {
         inputDb.drop(txn);
         outputDb.drop(txn);
+        taskObservabilityDb.drop(txn);
         taskRequiresDb.drop(txn);
         callersOfDb.drop(txn);
         callersOfValuesDb.drop(txn);

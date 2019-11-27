@@ -1,3 +1,8 @@
-@Library('metaborg.jenkins.pipeline') _
+#!groovy
+@Library('metaborg.jenkins.pipeline@develop') _
 
-gradlePipeline(gradleRefreshDependencies: true, deleteWorkspaceAfterBuild: true)
+gradlePipeline(
+  upstreamProjects: ['/metaborg/spoofax.gradle/develop', '/metaborg/resource/develop'],
+  slack: true,
+  slackChannel: "#pie-dev"
+)

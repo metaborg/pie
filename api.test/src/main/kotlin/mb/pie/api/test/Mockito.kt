@@ -7,7 +7,8 @@ import mb.pie.api.stamp.ResourceStamper
 import mb.resource.Resource
 import mb.resource.ResourceKey
 import mb.resource.fs.FSPath
-import mb.resource.fs.FSResource
+import mb.resource.hierarchical.HierarchicalResource
+import mb.resource.hierarchical.ResourcePath
 import org.mockito.Mockito
 import java.io.Serializable
 
@@ -71,21 +72,26 @@ class NoExecContext : ExecContext {
     @Suppress("CAST_NEVER_SUCCEEDS")
     return null as Resource
   }
+  override fun getResource(path: ResourcePath?): HierarchicalResource {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as HierarchicalResource
+  }
+
 
   override fun getDefaultRequireReadableResourceStamper() = null!!
   override fun getDefaultProvideReadableResourceStamper() = null!!
 
   override fun require(path: FSPath) = null!!
-  override fun require(path: FSPath, stamper: ResourceStamper<FSResource>) = null!!
-  override fun getDefaultRequireFSResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun require(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) = null!!
+  override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
   override fun provide(path: FSPath) {}
-  override fun provide(path: FSPath, stamper: ResourceStamper<FSResource>) {}
-  override fun getDefaultProvideFSResourceStamper(): ResourceStamper<FSResource> = null!!
+  override fun provide(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) {}
+  override fun getDefaultProvideHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
   override fun logger(): Logger = null!!
 }
 
 fun anyEC() = safeAny<ExecContext>(NoExecContext())
 
-fun anyC() = safeAny<Cancelled>(NullCancelled())
+fun anyC() = safeAny<CancelToken>(NullCancelableToken.instance)

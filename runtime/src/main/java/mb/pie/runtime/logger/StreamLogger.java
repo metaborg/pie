@@ -12,7 +12,7 @@ public class StreamLogger implements Logger {
     private final @Nullable PrintWriter infoWriter;
     private final @Nullable PrintWriter debugWriter;
     private final @Nullable PrintWriter traceWriter;
-    private AtomicInteger indentation = new AtomicInteger(0);
+    private final AtomicInteger indentation = new AtomicInteger(0);
 
 
     public StreamLogger(
@@ -51,14 +51,14 @@ public class StreamLogger implements Logger {
         return sb.toString();
     }
 
-    @Override public void error(@Nullable String message, Throwable throwable) {
+    @Override public void error(String message, @Nullable Throwable throwable) {
         errorWriter.println(getIndent() + message);
         if(throwable != null && throwable.getMessage() != null) {
             errorWriter.println(throwable.getMessage());
         }
     }
 
-    @Override public void warn(@Nullable String message, Throwable throwable) {
+    @Override public void warn(String message, @Nullable Throwable throwable) {
         if(warnWriter == null) return;
         warnWriter.println(getIndent() + message);
         if(throwable != null && throwable.getMessage() != null) {

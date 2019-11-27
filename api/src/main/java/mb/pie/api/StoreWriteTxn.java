@@ -20,6 +20,11 @@ public interface StoreWriteTxn extends StoreReadTxn {
     void setOutput(TaskKey key, @Nullable Serializable output);
 
     /**
+     * Sets the observability status to {@code observability} of task for {@code key}.
+     */
+    void setTaskObservability(TaskKey key, Observability observability);
+
+    /**
      * Sets the task require dependencies of task [key] to [taskRequires].
      */
     void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires);
@@ -38,6 +43,14 @@ public interface StoreWriteTxn extends StoreReadTxn {
      * Sets the output and dependencies for task [key] to [data].
      */
     void setData(TaskKey key, TaskData data);
+
+    /**
+     * Deletes the data of task for {@code key}.
+     *
+     * @param key Key of task to delete data for.
+     * @return deleted task data, or null if no data was deleted.
+     */
+    @Nullable TaskData deleteData(TaskKey key);
 
     /**
      * Removes all data from (drops) the store.

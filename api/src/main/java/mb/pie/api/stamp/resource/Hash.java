@@ -1,9 +1,9 @@
 package mb.pie.api.stamp.resource;
 
 import mb.resource.ReadableResource;
-import mb.resource.fs.FSResource;
-import mb.resource.fs.match.ResourceMatcher;
-import mb.resource.fs.walk.ResourceWalker;
+import mb.resource.hierarchical.HierarchicalResource;
+import mb.resource.hierarchical.match.ResourceMatcher;
+import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 public class Hash {
     private final MessageDigest digest;
 
+
     Hash() {
         try {
             digest = MessageDigest.getInstance("SHA-1");
@@ -23,36 +24,51 @@ public class Hash {
         }
     }
 
-    void update(FSResource resource, @Nullable ResourceMatcher matcher) throws IOException {
-        if(resource.isFile()) {
-            updateFile(resource);
+
+    void update(ReadableResource resource) throws IOException {
+        if(!resource.exists()) {
+            updateNonExistent();
+        } else {
+            updateResource(resource);
         }
-        if(resource.isDirectory()) {
+    }
+
+    void update(HierarchicalResource resource, @Nullable ResourceMatcher matcher) throws IOException {
+        if(!resource.exists()) {
+            updateNonExistent();
+        } else if(resource.isFile()) {
+            updateResource(resource);
+        } else if(resource.isDirectory()) {
             updateDir(resource, matcher);
         }
     }
 
-    void updateRec(FSResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
-        if(resource.isFile()) {
-            updateFile(resource);
-        }
-        if(resource.isDirectory()) {
+    void updateRec(HierarchicalResource resource, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+        if(!resource.exists()) {
+            updateNonExistent();
+        } else if(resource.isFile()) {
+            updateResource(resource);
+        } else if(resource.isDirectory()) {
             updateDirRec(resource, walker, matcher);
         }
     }
 
-    void updateFile(ReadableResource file) throws IOException {
+
+    private void updateNonExistent() {
+        digest.update((byte) 0);
+    }
+
+    private void updateResource(ReadableResource file) throws IOException {
+        digest.update((byte) 1);
         digest.update(file.readBytes());
     }
 
-    void updateDir(FSResource dir, @Nullable ResourceMatcher matcher) throws IOException {
+    private void updateDir(HierarchicalResource dir, @Nullable ResourceMatcher matcher) throws IOException {
         final boolean useMatcher = matcher != null;
-        try(final Stream<FSResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
+        try(final Stream<? extends HierarchicalResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
             stream.forEach((resource) -> {
                 try {
-                    if(resource.isFile()) {
-                        updateFile(resource);
-                    }
+                    updateResource(resource);
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -62,14 +78,12 @@ public class Hash {
         }
     }
 
-    void updateDirRec(FSResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
+    private void updateDirRec(HierarchicalResource dir, @Nullable ResourceWalker walker, @Nullable ResourceMatcher matcher) throws IOException {
         final boolean useWalker = walker != null && matcher != null;
-        try(final Stream<FSResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
+        try(final Stream<? extends HierarchicalResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
             stream.forEach((resource) -> {
                 try {
-                    if(resource.isFile()) {
-                        updateFile(resource);
-                    }
+                    updateResource(resource);
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
                 }

@@ -7,10 +7,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Comparator;
 
-public class DependencyComparator implements Comparator<TaskKey> {
+class DependencyComparator implements Comparator<TaskKey> {
     private final Store store;
 
-    public DependencyComparator(Store store) {
+    DependencyComparator(Store store) {
         this.store = store;
     }
 

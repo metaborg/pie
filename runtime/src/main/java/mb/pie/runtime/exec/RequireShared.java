@@ -1,7 +1,7 @@
 package mb.pie.runtime.exec;
 
 import mb.pie.api.*;
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.exec.CancelToken;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -75,36 +75,36 @@ public class RequireShared {
     /**
      * Check if a resource require dependency is internally consistent.
      */
-    @Nullable InconsistentResourceRequire checkResourceRequire(TaskKey key, Task<?> task, ResourceRequireDep fileReq) {
-        executorLogger.checkResourceRequireStart(key, task, fileReq);
-        final @Nullable InconsistentResourceRequire reason = fileReq.checkConsistency(resourceService);
-        executorLogger.checkResourceRequireEnd(key, task, fileReq, reason);
+    @Nullable InconsistentResourceRequire checkResourceRequireDep(TaskKey key, Task<?> task, ResourceRequireDep resourceRequireDep) {
+        executorLogger.checkResourceRequireStart(key, task, resourceRequireDep);
+        final @Nullable InconsistentResourceRequire reason = resourceRequireDep.checkConsistency(resourceService);
+        executorLogger.checkResourceRequireEnd(key, task, resourceRequireDep, reason);
         return reason;
     }
 
     /**
      * Check if a resource provide dependency is internally consistent.
      */
-    @Nullable InconsistentResourceProvide checkResourceProvide(TaskKey key, Task<?> task, ResourceProvideDep fileGen) {
-        executorLogger.checkResourceProvideStart(key, task, fileGen);
-        final @Nullable InconsistentResourceProvide reason = fileGen.checkConsistency(resourceService);
-        executorLogger.checkResourceProvideEnd(key, task, fileGen, reason);
+    @Nullable InconsistentResourceProvide checkResourceProvideDep(TaskKey key, Task<?> task, ResourceProvideDep resourceProvideDep) {
+        executorLogger.checkResourceProvideStart(key, task, resourceProvideDep);
+        final @Nullable InconsistentResourceProvide reason = resourceProvideDep.checkConsistency(resourceService);
+        executorLogger.checkResourceProvideEnd(key, task, resourceProvideDep, reason);
         return reason;
     }
 
     /**
      * Check if a task require dependency is totally consistent.
      */
-    @Nullable InconsistentTaskReq checkTaskRequire(TaskKey key, Task<?> task, TaskRequireDep taskRequire, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
-        final TaskKey calleeKey = taskRequire.callee;
+    @Nullable InconsistentTaskReq checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+        final TaskKey calleeKey = taskRequireDep.callee;
         final Task<?> calleeTask;
         try(final StoreReadTxn txn = store.readTxn()) {
             calleeTask = calleeKey.toTask(taskDefs, txn);
         }
-        final @Nullable Serializable calleeOutput = requireTask.require(calleeKey, calleeTask, cancel);
-        executorLogger.checkTaskRequireStart(key, task, taskRequire);
-        final @Nullable InconsistentTaskReq reason = taskRequire.checkConsistency(calleeOutput);
-        executorLogger.checkTaskRequireEnd(key, task, taskRequire, reason);
+        final @Nullable Serializable calleeOutput = requireTask.require(calleeKey, calleeTask, modifyObservability, cancel);
+        executorLogger.checkTaskRequireStart(key, task, taskRequireDep);
+        final @Nullable InconsistentTaskReq reason = taskRequireDep.checkConsistency(calleeOutput);
+        executorLogger.checkTaskRequireEnd(key, task, taskRequireDep, reason);
         return reason;
     }
 }

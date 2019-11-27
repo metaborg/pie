@@ -18,3 +18,7 @@ dependencies {
 
   compileOnly("org.checkerframework:checker-qual-android")
 }
+
+metaborg {
+  javaCreatePublication = false // Do not publish example application.
+}

@@ -1,14 +1,14 @@
 package mb.pie.api.stamp.resource;
 
 import mb.pie.api.stamp.ResourceStamper;
-import mb.resource.fs.FSResource;
-import mb.resource.fs.match.ResourceMatcher;
+import mb.resource.hierarchical.HierarchicalResource;
+import mb.resource.hierarchical.match.ResourceMatcher;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.util.Objects;
 
-public class ModifiedMatchResourceStamper implements ResourceStamper<FSResource> {
+public class ModifiedMatchResourceStamper implements ResourceStamper<HierarchicalResource> {
     private final @Nullable ResourceMatcher matcher;
 
     public ModifiedMatchResourceStamper(ResourceMatcher matcher) {
@@ -19,7 +19,7 @@ public class ModifiedMatchResourceStamper implements ResourceStamper<FSResource>
         this.matcher = null;
     }
 
-    @Override public ValueResourceStamp<FSResource> stamp(FSResource resource) throws IOException {
+    @Override public ValueResourceStamp<HierarchicalResource> stamp(HierarchicalResource resource) throws IOException {
         final long modified = Modified.modified(resource, matcher);
         return new ValueResourceStamp<>(modified, this);
     }

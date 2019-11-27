@@ -76,9 +76,9 @@ class PieComponentTest {
         assertSame(pieComponent.getPie(), pieComponent.getPie());
 
         try(final Pie pie = pieComponent.getPie(); final PieSession session = pie.newSession()) {
-            final String str1 = session.requireTopDown(pieComponent.getCreateString().createTask(None.instance));
+            final String str1 = session.require(pieComponent.getCreateString().createTask(None.instance));
             assertEquals("Hello, world!", str1);
-            final String str2 = session.requireTopDown(pieComponent.getModifyString().createTask(str1));
+            final String str2 = session.require(pieComponent.getModifyString().createTask(str1));
             assertEquals("Hello, universe!", str2);
         }
     }

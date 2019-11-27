@@ -1,12 +1,6 @@
 package mb.pie.runtime.logger.exec;
 
-import mb.pie.api.ExecutorLogger;
-import mb.pie.api.ResourceProvideDep;
-import mb.pie.api.ResourceRequireDep;
-import mb.pie.api.Task;
-import mb.pie.api.TaskData;
-import mb.pie.api.TaskKey;
-import mb.pie.api.TaskRequireDep;
+import mb.pie.api.*;
 import mb.pie.api.exec.ExecReason;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -24,7 +18,7 @@ public class NoopExecutorLogger implements ExecutorLogger {
 
     @Override public void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {}
 
-    @Override public void requireBottomUpInitialStart(Set<ResourceKey> changedResources) {}
+    @Override public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {}
 
     @Override public void requireBottomUpInitialEnd() {}
 
@@ -56,8 +50,8 @@ public class NoopExecutorLogger implements ExecutorLogger {
     @Override public void executeEnd(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {}
 
     @Override
-    public void invokeObserverStart(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackStart(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
 
     @Override
-    public void invokeObserverEnd(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackEnd(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
 }

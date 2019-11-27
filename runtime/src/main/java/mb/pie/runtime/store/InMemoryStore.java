@@ -1,43 +1,46 @@
 package mb.pie.runtime.store;
 
-import mb.pie.api.Output;
-import mb.pie.api.ResourceProvideDep;
-import mb.pie.api.ResourceRequireDep;
-import mb.pie.api.Store;
-import mb.pie.api.StoreReadTxn;
-import mb.pie.api.StoreWriteTxn;
-import mb.pie.api.TaskData;
-import mb.pie.api.TaskKey;
-import mb.pie.api.TaskRequireDep;
+import mb.pie.api.*;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
-    private final ConcurrentHashMap<TaskKey, Serializable> inputs = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TaskKey, Output> outputs = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>> taskReqs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TaskKey, Serializable> taskInputs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TaskKey, Output> taskOutputs = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<TaskKey, Observability> taskObservability = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>> taskRequires = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, Set<TaskKey>> callersOf = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>> fileReqs = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>> resourceRequires =
+        new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ResourceKey, Set<TaskKey>> requireesOf = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>> fileGens = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<ResourceKey, TaskKey> generatorOf = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>> resourceProvides =
+        new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ResourceKey, TaskKey> providerOf = new ConcurrentHashMap<>();
 
 
     @Override public @Nullable Serializable input(TaskKey key) {
-        return inputs.get(key);
+        return taskInputs.get(key);
     }
 
     @Override public void setInput(TaskKey key, Serializable input) {
-        inputs.put(key, input);
+        taskInputs.put(key, input);
     }
 
+
     @Override public @Nullable Output output(TaskKey key) {
-        final @Nullable Output wrapper = outputs.get(key);
+        final @Nullable Output wrapper = taskOutputs.get(key);
         if(wrapper != null) {
             return new Output(wrapper.output);
         } else {
@@ -47,11 +50,21 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
 
     @Override public void setOutput(TaskKey key, @Nullable Serializable output) {
         // ConcurrentHashMap does not support null values, so wrap outputs (which can be null) into an Output object.
-        outputs.put(key, new Output(output));
+        taskOutputs.put(key, new Output(output));
     }
 
+
+    @Override public Observability taskObservability(TaskKey key) {
+        return taskObservability.getOrDefault(key, Observability.Unobserved);
+    }
+
+    @Override public void setTaskObservability(TaskKey key, Observability observability) {
+        taskObservability.put(key, observability);
+    }
+
+
     @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
-        return getOrEmptyArrayList(taskReqs, key);
+        return getOrEmptyArrayList(taskRequires, key);
     }
 
     @Override public Set<TaskKey> callersOf(TaskKey key) {
@@ -60,21 +73,22 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
 
     @Override public void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires) {
         // Remove old task requirements.
-        final @Nullable ArrayList<TaskRequireDep> oldTaskReqs = this.taskReqs.remove(key);
-        if(oldTaskReqs != null) {
-            for(TaskRequireDep taskReq : oldTaskReqs) {
-                getOrPutEmptyConcurrentHashSet(callersOf, taskReq.callee).remove(key);
+        final @Nullable ArrayList<TaskRequireDep> oldTaskRequires = this.taskRequires.remove(key);
+        if(oldTaskRequires != null) {
+            for(TaskRequireDep taskRequire : oldTaskRequires) {
+                getOrPutEmptyConcurrentHashSet(callersOf, taskRequire.callee).remove(key);
             }
         }
         // Add new task requirements.
-        this.taskReqs.put(key, taskRequires);
-        for(TaskRequireDep taskReq : taskRequires) {
-            getOrPutEmptyConcurrentHashSet(callersOf, taskReq.callee).add(key);
+        this.taskRequires.put(key, taskRequires);
+        for(TaskRequireDep taskRequire : taskRequires) {
+            getOrPutEmptyConcurrentHashSet(callersOf, taskRequire.callee).add(key);
         }
     }
 
+
     @Override public ArrayList<ResourceRequireDep> resourceRequires(TaskKey key) {
-        return getOrEmptyArrayList(fileReqs, key);
+        return getOrEmptyArrayList(resourceRequires, key);
     }
 
     @Override public Set<TaskKey> requireesOf(ResourceKey key) {
@@ -83,41 +97,43 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
 
     @Override public void setResourceRequires(TaskKey key, ArrayList<ResourceRequireDep> resourceRequires) {
         // Remove old resource requirements.
-        final @Nullable ArrayList<ResourceRequireDep> oldFileReqs = this.fileReqs.remove(key);
-        if(oldFileReqs != null) {
-            for(ResourceRequireDep fileReq : oldFileReqs) {
-                getOrPutEmptyConcurrentHashSet(requireesOf, fileReq.key).remove(key);
+        final @Nullable ArrayList<ResourceRequireDep> oldResourceRequires = this.resourceRequires.remove(key);
+        if(oldResourceRequires != null) {
+            for(ResourceRequireDep resourceRequire : oldResourceRequires) {
+                getOrPutEmptyConcurrentHashSet(requireesOf, resourceRequire.key).remove(key);
             }
         }
         // Add new resource requirements.
-        this.fileReqs.put(key, resourceRequires);
-        for(ResourceRequireDep fileReq : resourceRequires) {
-            getOrPutEmptyConcurrentHashSet(requireesOf, fileReq.key).add(key);
+        this.resourceRequires.put(key, resourceRequires);
+        for(ResourceRequireDep resourceRequire : resourceRequires) {
+            getOrPutEmptyConcurrentHashSet(requireesOf, resourceRequire.key).add(key);
         }
     }
 
+
     @Override public ArrayList<ResourceProvideDep> resourceProvides(TaskKey key) {
-        return getOrEmptyArrayList(fileGens, key);
+        return getOrEmptyArrayList(resourceProvides, key);
     }
 
     @Override public @Nullable TaskKey providerOf(ResourceKey key) {
-        return generatorOf.get(key);
+        return providerOf.get(key);
     }
 
     @Override public void setResourceProvides(TaskKey key, ArrayList<ResourceProvideDep> resourceProvides) {
         // Remove old resource providers.
-        final @Nullable ArrayList<ResourceProvideDep> oldFileGens = this.fileGens.remove(key);
-        if(oldFileGens != null) {
-            for(ResourceProvideDep fileGen : oldFileGens) {
-                generatorOf.remove(fileGen.key);
+        final @Nullable ArrayList<ResourceProvideDep> oldResourceProvides = this.resourceProvides.remove(key);
+        if(oldResourceProvides != null) {
+            for(ResourceProvideDep resourceProvide : oldResourceProvides) {
+                providerOf.remove(resourceProvide.key);
             }
         }
         // Add new resource providers.
-        this.fileGens.put(key, resourceProvides);
-        for(ResourceProvideDep fileGen : resourceProvides) {
-            generatorOf.put(fileGen.key, key);
+        this.resourceProvides.put(key, resourceProvides);
+        for(ResourceProvideDep resourceProvide : resourceProvides) {
+            providerOf.put(resourceProvide.key, key);
         }
     }
+
 
     @Override public @Nullable TaskData data(TaskKey key) {
         final @Nullable Serializable input = input(key);
@@ -128,25 +144,87 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         if(output == null) {
             return null;
         }
-        final ArrayList<TaskRequireDep> callReqs = taskRequires(key);
-        final ArrayList<ResourceRequireDep> pathReqs = resourceRequires(key);
-        final ArrayList<ResourceProvideDep> pathGens = resourceProvides(key);
-        return new TaskData(input, output.output, callReqs, pathReqs, pathGens);
+        final Observability taskObservability = taskObservability(key);
+        final ArrayList<TaskRequireDep> taskRequires = taskRequires(key);
+        final ArrayList<ResourceRequireDep> resourceRequires = resourceRequires(key);
+        final ArrayList<ResourceProvideDep> resourceProvides = resourceProvides(key);
+        return new TaskData(input, output.output, taskObservability, taskRequires, resourceRequires, resourceProvides);
     }
+
 
     @Override public void setData(TaskKey key, TaskData data) {
         setInput(key, data.input);
         setOutput(key, data.output);
+        setTaskObservability(key, data.taskObservability);
         setTaskRequires(key, data.taskRequires);
         setResourceRequires(key, data.resourceRequires);
         setResourceProvides(key, data.resourceProvides);
+    }
+
+    @Override public @Nullable TaskData deleteData(TaskKey key) {
+        final @Nullable Serializable input = taskInputs.remove(key);
+        if(input == null) {
+            return null;
+        }
+        final @Nullable Output output = taskOutputs.remove(key);
+        if(output == null) {
+            throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
+        }
+        final @Nullable Observability observability = taskObservability.remove(key);
+
+        final @Nullable ArrayList<TaskRequireDep> removedTaskRequires = taskRequires.remove(key);
+        if(removedTaskRequires != null) {
+            for(final TaskRequireDep taskRequire : removedTaskRequires) {
+                final @Nullable Set<TaskKey> callers = callersOf.get(taskRequire.callee);
+                if(callers != null) {
+                    callers.remove(key);
+                }
+            }
+        }
+        callersOf.remove(key);
+
+        final @Nullable ArrayList<ResourceRequireDep> removedResourceRequires = resourceRequires.remove(key);
+        if(removedResourceRequires != null) {
+            for(final ResourceRequireDep resourceRequire : removedResourceRequires) {
+                final @Nullable Set<TaskKey> requirees = requireesOf.get(resourceRequire.key);
+                if(requirees != null) {
+                    requirees.remove(key);
+                }
+            }
+        }
+
+        final @Nullable ArrayList<ResourceProvideDep> removedResourceProvides = resourceProvides.remove(key);
+        if(removedResourceProvides != null) {
+            for(final ResourceProvideDep resourceProvide : removedResourceProvides) {
+                providerOf.remove(resourceProvide.key);
+            }
+        }
+
+        return new TaskData(
+            input,
+            output.output,
+            observability != null ? observability : Observability.Unobserved,
+            removedTaskRequires != null ? removedTaskRequires : new ArrayList<>(),
+            removedResourceRequires != null ? removedResourceRequires : new ArrayList<>(),
+            removedResourceProvides != null ? removedResourceProvides : new ArrayList<>()
+        );
+    }
+
+
+    @Override public Set<TaskKey> tasksWithoutCallers() {
+        return callersOf
+            .entrySet()
+            .stream()
+            .filter((e) -> e.getValue().isEmpty())
+            .map(Entry::getKey)
+            .collect(Collectors.toCollection(HashSet::new));
     }
 
 
     @Override public int numSourceFiles() {
         int numSourceFiles = 0;
         for(ResourceKey file : requireesOf.keySet()) {
-            if(!generatorOf.containsKey(file)) {
+            if(!providerOf.containsKey(file)) {
                 ++numSourceFiles;
             }
         }
@@ -155,13 +233,15 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
 
 
     @Override public void drop() {
-        outputs.clear();
-        taskReqs.clear();
+        taskInputs.clear();
+        taskOutputs.clear();
+        taskObservability.clear();
+        taskRequires.clear();
         callersOf.clear();
-        fileReqs.clear();
+        resourceRequires.clear();
         requireesOf.clear();
-        fileGens.clear();
-        generatorOf.clear();
+        resourceProvides.clear();
+        providerOf.clear();
     }
 
 

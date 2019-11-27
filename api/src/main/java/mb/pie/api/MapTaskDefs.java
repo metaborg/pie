@@ -1,7 +1,5 @@
 package mb.pie.api;
 
-import mb.pie.api.TaskDef;
-import mb.pie.api.TaskDefs;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HashMap;
@@ -29,6 +27,10 @@ public class MapTaskDefs implements TaskDefs {
 
     @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
         return taskDefs.get(id);
+    }
+
+    @Override public boolean exists(String id) {
+        return taskDefs.containsKey(id);
     }
 
     public void add(TaskDef<?, ?> taskDef) {

@@ -1,7 +1,17 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.ExecContext;
+import mb.pie.api.ExecException;
+import mb.pie.api.Logger;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.STask;
+import mb.pie.api.Task;
+import mb.pie.api.TaskDef;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
+import mb.pie.api.exec.CancelToken;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamp;
@@ -11,7 +21,8 @@ import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
+import mb.resource.hierarchical.ResourcePath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -20,10 +31,10 @@ import java.util.ArrayList;
 
 public class ExecContextImpl implements ExecContext {
     private final RequireTask requireTask;
-    private final Cancelled cancel;
+    private final boolean modifyObservability;
+    private final CancelToken cancel;
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
-    private final Store store;
     private final DefaultStampers defaultStampers;
     private final Logger logger;
 
@@ -34,18 +45,18 @@ public class ExecContextImpl implements ExecContext {
 
     public ExecContextImpl(
         RequireTask requireTask,
-        Cancelled cancel,
+        boolean modifyObservability,
+        CancelToken cancel,
         TaskDefs taskDefs,
         ResourceService resourceService,
-        Store store,
         DefaultStampers defaultStampers,
         Logger logger
     ) {
         this.requireTask = requireTask;
+        this.modifyObservability = modifyObservability;
         this.cancel = cancel;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
-        this.store = store;
         this.defaultStampers = defaultStampers;
         this.logger = logger;
     }
@@ -58,9 +69,9 @@ public class ExecContextImpl implements ExecContext {
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
+        cancel.throwIfCanceled();
         final TaskKey key = task.key();
-        final O output = requireTask.require(key, task, cancel);
+        final O output = requireTask.require(key, task, modifyObservability, cancel);
         final OutputStamp stamp = stamper.stamp(output);
         taskRequires.add(new TaskRequireDep(key, stamp));
         Stats.addCallReq();
@@ -116,7 +127,7 @@ public class ExecContextImpl implements ExecContext {
     @Override
     public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>) stamper.stamp(resource);
+            (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
         Stats.addFileReq();
     }
@@ -124,13 +135,17 @@ public class ExecContextImpl implements ExecContext {
     @Override
     public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>) stamper.stamp(resource);
+            (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
         Stats.addFileGen();
     }
 
     @Override public Resource getResource(ResourceKey key) {
         return resourceService.getResource(key);
+    }
+
+    @Override public HierarchicalResource getResource(ResourcePath path) {
+        return resourceService.getHierarchicalResource(path);
     }
 
 
@@ -142,12 +157,12 @@ public class ExecContextImpl implements ExecContext {
         return defaultStampers.provideReadableResource;
     }
 
-    @Override public ResourceStamper<FSResource> getDefaultRequireFSResourceStamper() {
-        return defaultStampers.requireFSResource;
+    @Override public ResourceStamper<HierarchicalResource> getDefaultRequireHierarchicalResourceStamper() {
+        return defaultStampers.requireHierarchicalResource;
     }
 
-    @Override public ResourceStamper<FSResource> getDefaultProvideFSResourceStamper() {
-        return defaultStampers.provideFSResource;
+    @Override public ResourceStamper<HierarchicalResource> getDefaultProvideHierarchicalResourceStamper() {
+        return defaultStampers.provideHierarchicalResource;
     }
 
 
@@ -156,7 +171,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
-    class Deps {
+    static class Deps {
         final ArrayList<TaskRequireDep> taskRequires;
         final ArrayList<ResourceRequireDep> resourceRequires;
         final ArrayList<ResourceProvideDep> resourceProvides;

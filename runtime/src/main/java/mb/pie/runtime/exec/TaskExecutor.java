@@ -1,7 +1,7 @@
 package mb.pie.runtime.exec;
 
 import mb.pie.api.*;
-import mb.pie.api.exec.Cancelled;
+import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
@@ -10,8 +10,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class TaskExecutor {
     private final TaskDefs taskDefs;
@@ -22,7 +24,7 @@ public class TaskExecutor {
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers;
+    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
 
@@ -35,7 +37,7 @@ public class TaskExecutor {
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger,
-        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> observers,
+        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks,
         HashMap<TaskKey, TaskData> visited
     ) {
         this.taskDefs = taskDefs;
@@ -46,23 +48,30 @@ public class TaskExecutor {
         this.layer = layer;
         this.logger = logger;
         this.executorLogger = executorLogger;
-        this.observers = observers;
+        this.callbacks = callbacks;
 
         this.visited = visited;
     }
 
-    TaskData exec(TaskKey key, Task<?> task, ExecReason reason, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
+    TaskData exec(
+        TaskKey key,
+        Task<?> task,
+        ExecReason reason,
+        RequireTask requireTask,
+        boolean modifyObservability,
+        CancelToken cancel
+    ) throws ExecException, InterruptedException {
+        cancel.throwIfCanceled();
         executorLogger.executeStart(key, task, reason);
         final TaskData data;
         if(share instanceof NonSharingShare) {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
-            data = execInternal(key, task, requireTask, cancel);
+            data = execInternal(key, task, requireTask, modifyObservability, cancel);
         } else {
             try {
                 data = share.share(key, () -> {
                     try {
-                        return execInternal(key, task, requireTask, cancel);
+                        return execInternal(key, task, requireTask, modifyObservability, cancel);
                     } catch(InterruptedException | ExecException e) {
                         throw new RuntimeException(e);
                     }
@@ -82,11 +91,29 @@ public class TaskExecutor {
         return data;
     }
 
-    private TaskData execInternal(TaskKey key, Task<?> task, RequireTask requireTask, Cancelled cancel) throws ExecException, InterruptedException {
-        cancel.throwIfCancelled();
-        // Execute
+    private TaskData execInternal(
+        TaskKey key,
+        Task<?> task,
+        RequireTask requireTask,
+        boolean modifyObservability,
+        CancelToken cancel
+    ) throws ExecException, InterruptedException {
+        cancel.throwIfCanceled();
+
+        // Store previous data for observability comparison.
+        final Observability previousObservability;
+        final HashSet<TaskKey> previousTaskRequires;
+        try(final StoreReadTxn txn = store.readTxn()) {
+            // Graceful: returns Observability.Detached if task has no observability status yet.
+            previousObservability = txn.taskObservability(key);
+            // Graceful: returns empty list if task has no task require dependencies yet.
+            previousTaskRequires =
+                txn.taskRequires(key).stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+        }
+
+        // Execute the task.
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, cancel, taskDefs, resourceService, store, defaultStampers, logger);
+            new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, logger);
         final @Nullable Serializable output;
         try {
             output = task.exec(context);
@@ -100,30 +127,54 @@ public class TaskExecutor {
             throw new ExecException("Executing task " + task.desc(100) + " failed unexpectedly", e);
         }
         Stats.addExecution();
+
+        // Gather task data.
+        final Observability newObservability;
+        if(modifyObservability && previousObservability.isUnobserved()) {
+            // Set to observed if previously unobserved (and we are allowed to modify observability).
+            newObservability = Observability.ImplicitObserved;
+        } else {
+            // Copy observability otherwise.
+            newObservability = previousObservability;
+        }
         final ExecContextImpl.Deps deps = context.deps();
         final TaskData data =
-            new TaskData(task.input, output, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
-        // Validate well-formedness of the dependency graph, before writing.
-        try(final StoreReadTxn txn = store.readTxn()) {
-            layer.validatePreWrite(key, data, txn);
-        }
-        // Write output and dependencies to the store.
+            new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires,
+                deps.resourceProvides);
+
+        // Validate, write data, and detach removed dependencies.
         try(final StoreWriteTxn txn = store.writeTxn()) {
+            // Validate well-formedness of the dependency graph, before writing.
+            layer.validatePreWrite(key, data, txn);
+
+            // Write output and dependencies to the store.
             txn.setData(key, data);
-        }
-        // Validate well-formedness of the dependency graph, after writing.
-        try(final StoreReadTxn txn = store.readTxn()) {
+
+            // Validate well-formedness of the dependency graph, after writing.
             layer.validatePostWrite(key, data, txn);
+
+            // Implicitly unobserve tasks which the executed task no longer depends on (if this task is observed).
+            if(newObservability.isObserved()) {
+                final HashSet<TaskKey> newTaskRequires =
+                    deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+                previousTaskRequires.removeAll(newTaskRequires);
+                for(TaskKey removedTaskRequire : previousTaskRequires) {
+                    Observability.implicitUnobserve(txn, removedTaskRequire);
+                }
+            }
         }
+
         // Mark as visited.
         visited.put(key, data);
-        // Notify observer, if any.
-        final @Nullable Consumer<@Nullable Serializable> observer = observers.get(key);
-        if(observer != null) {
-            executorLogger.invokeObserverStart(observer, key, output);
-            observer.accept(output);
-            executorLogger.invokeObserverEnd(observer, key, output);
+
+        // Invoke callback, if any.
+        final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
+        if(callback != null) {
+            executorLogger.invokeCallbackStart(callback, key, output);
+            callback.accept(output);
+            executorLogger.invokeCallbackEnd(callback, key, output);
         }
+
         return data;
     }
 }
