@@ -1,0 +1,22 @@
+module gen/java/main
+
+imports
+
+  nabl2/api
+
+  libspoofax/stratego/debug
+
+rules
+
+  generate-java-file-ast:
+    (ast, _, _, file, _) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"java")> file
+    ; mod      := <base-filename;remove-extension> file
+    ; result   := <p2j(|mod, "mb.pie.example.helloworld.java")> ast
+    ; <debug(|"Successfully transpiled file to Java: ")> file
+
+rules
+
+  p2j(|mod, package):
+    Program(defs) -> "Hello World!\nConverting to Java using ASTs has not yet been implemented"

@@ -8,6 +8,7 @@ imports
   analysis
   gen/kotlin/main
   gen/java/main
+  gen/java-ast/main
 
 rules // Debugging
   

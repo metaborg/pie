@@ -15,5 +15,6 @@ menus
 
   menu: "Generate"
     action: "Kotlin" = generate-kotlin-file
-    action: "Java" = generate-java-file
+    action: "Java String" = generate-java-file
+    action: "Java AST" = generate-java-file-ast
     
