@@ -10,11 +10,9 @@ dependencies {
   compile(platform(project(":pie.depconstraints")))
 
   compile(project(":pie.runtime"))
-  compile(project(":pie.util"))
+  compile(project(":pie.lang.runtime.java"))
   compile(project(":pie.store.lmdb"))
   compile(project(":pie.taskdefs.guice"))
-
-  compile("com.google.inject:guice:4.2.0")
 
   compileOnly("org.checkerframework:checker-qual-android")
 }
