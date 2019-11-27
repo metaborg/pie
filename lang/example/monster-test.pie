@@ -1,0 +1,35 @@
+func main4() -> unit = {
+  assertEquals(5, inc(4));
+  assertEquals(7, inc(inc(inc(4))));
+  assertEquals(14, sum(6, 8));
+  assertEquals(3, sum2(passNumPair(createNumPair())));
+  unit
+}
+
+func inc(in: int) -> int = {
+  in + 1
+}
+
+func assertEquals(expected: int, actual: int) -> unit = {
+  if (expected != actual) 
+    fail "Expected $expected, got ${actual + 0}";
+  unit
+}
+
+func sum(a: int, b: int) -> int = {
+  a + b
+}
+
+func sum2(pair: (int, int)) -> int = {
+  val (a, b) = pair;
+  a + b
+}
+
+func createNumPair() -> (int, int) = {
+  (1, 2)
+}
+
+func passNumPair(pair: (int, int)) -> (int, int) = {
+  pair
+}
+
