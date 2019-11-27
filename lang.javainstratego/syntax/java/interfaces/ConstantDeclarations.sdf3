@@ -1,0 +1,17 @@
+module java/interfaces/ConstantDeclarations
+
+// 9.3. Field (Constant) Declarations
+
+imports
+  java/classes/FieldDeclarations
+  java/interfaces/Annotations
+
+context-free syntax
+  
+  ConstantDeclaration.ConstantDecl = <
+  <{ConstantModifier " "}*> <UnannType> <{VarDecl ", "}+>>
+  
+  ConstantModifier        = Annotation
+  ConstantModifier.Public = "public"
+  ConstantModifier.Static = "static"
+  ConstantModifier.Final  = "final"

@@ -1,0 +1,5 @@
+<project>
+    <target name="main">
+        <copy file="target/metaborg/sdf.tbl" tofile="../lang/trans/Java-In-Stratego.tbl"/>
+    </target>
+</project>

@@ -1,0 +1,14 @@
+module java/lexical/Main
+
+// Chapter 3. Lexical Structure
+
+imports
+  java/lexical/Comments
+  java/lexical/Identifiers
+  java/lexical/Keywords
+  java/lexical/LineTerminators
+  java/lexical/UnicodeEscapes
+  java/lexical/WhiteSpace
+  
+  
+  

@@ -1,0 +1,22 @@
+module java/literals/Main
+
+// 3.10. Literals
+
+imports
+  java/literals/IntegerLiterals
+  java/literals/FloatingPointLiterals
+  java/literals/BooleanLiterals
+  java/literals/CharacterLiterals
+  java/literals/StringLiterals
+  java/literals/NullLiteral
+  
+context-free syntax
+  
+  Literal = IntLiteral
+  Literal = FloatLiteral
+  Literal = BoolLiteral
+  Literal = CharacterLiteral
+  Literal = StringLiteral
+  Literal = NullLiteral
+    
+  

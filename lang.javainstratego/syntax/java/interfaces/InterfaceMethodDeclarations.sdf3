@@ -1,0 +1,19 @@
+module java/interfaces/InterfaceMethodDeclarations
+
+// 9.4. Method Declarations
+
+imports
+  java/classes/MethodDeclarations
+  java/interfaces/Annotations
+
+context-free syntax
+  
+  InterfaceMethodDeclaration.AbstractMethodDec = <
+  <{InterfaceMethodModifier " "}*> <MethodHeader> <MethodBody>>
+  
+  InterfaceMethodModifier = Annotation
+  InterfaceMethodModifier.Public   = "public"
+  InterfaceMethodModifier.Abstract = "abstract"
+  InterfaceMethodModifier.Default  = "default"
+  InterfaceMethodModifier.Static   = "static"
+  InterfaceMethodModifier.Strictfp = "strictfp"

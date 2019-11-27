@@ -1,0 +1,60 @@
+module java/classes/MethodDeclarations
+
+// 8.4. Method Declarations
+imports
+  java/classes/FieldDeclarations
+  java/types/ReferenceTypes
+  java/classes/ClassDeclarations
+  java/lexical/Identifiers
+  java/interfaces/Annotations
+  java/statements/Blocks
+
+context-free syntax
+  
+  MethodDeclaration.MethodDecl = <
+  <{MethodModifier " "}*> <MethodHeader> <MethodBody>>
+  
+  MethodHeader.MethodHeader = <
+  <Result> <Id>(<FormalParams>) <AnnotatedDimsEmpty> <Throws?>>
+  
+  MethodHeader.MethodHeaderTypeParameters = <
+  <TypeParameters> <{Annotation " "}*> <Result> <Id>(<FormalParams>) <Throws?>>
+  
+  Result      = UnannType
+  Result.Void = "void"
+  
+  Throws.ThrowsDec = <throws <{ExceptionType ", "}+>>
+  ExceptionType    = ClassType
+  
+  MethodModifier              = Annotation
+  MethodModifier.Public       = "public"
+  MethodModifier.Protected    = "protected"
+  MethodModifier.Private      = "private"
+  MethodModifier.Abstract     = "abstract"
+  MethodModifier.Static       = "static"
+  MethodModifier.Final        = "final"
+  MethodModifier.Synchronized = "synchronized"
+  MethodModifier.Native       = "native"
+  MethodModifier.Strictfp     = "strictfp"
+  
+  MethodBody              = Block
+  MethodBody.NoMethodBody = ";"
+  
+  ReceiverParam.ReceiverParamQual = <<{Annotation " "}*> <UnannType> <Id>.this>
+  ReceiverParam.ReceiverParam     = <<{Annotation " "}*> <UnannType> this>
+  
+  FormalParams.NoParams          = 
+  FormalParams                   = ReceiverParam
+  FormalParams.SingleParam       = LastFormalParam
+  FormalParams.ParamList         = <<{FormalParam ","}+>, <LastFormalParam>>
+  FormalParams.ReceiverParamList = <<ReceiverParam>, <{FormalParam ","}*>, <LastFormalParam>>
+  
+  LastFormalParam               = FormalParam
+  LastFormalParam.VarArityParam = <<{VariableModifier " "}*> <UnannType> <{Annotation " "}*> ... <VarDeclId>>
+    
+  FormalParam.FormalParam = <<{VariableModifier " "}*> <UnannType> <VarDeclId>>
+  
+  VariableModifier       = Annotation
+  VariableModifier.Final = "final"
+  
+  

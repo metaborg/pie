@@ -1,0 +1,24 @@
+module JavaInStratego
+
+imports
+  stratego/Stratego
+  stratego/sugar/modules
+  stratego/core/modules
+  stratego/sugar/terms
+  
+  java/Java
+  java/expressions/Main
+  java/statements/Statements
+
+context-free start-symbols
+
+  Module
+  
+context-free syntax
+
+  Term.ToTerm = "|[" Expression "]|"
+  Term.ToTerm = "|[" Statement "]|"
+  Term.ToTerm = "|[" CompilationUnit "]|"
+  
+  Expression.FromTerm = "~" Term
+  Statement.FromTerm = "~" Term

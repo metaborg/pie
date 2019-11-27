@@ -8,6 +8,7 @@ imports
   analysis
   gen/kotlin/main
   gen/java/main
+  gen/concrete-syntax-test
 
 rules // Debugging
   

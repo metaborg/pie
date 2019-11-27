@@ -1,0 +1,40 @@
+module java/literals/IntegerLiterals
+
+// 3.10.1. Integer Literals
+
+context-free start-symbols
+  
+  IntLiteral
+
+context-free syntax
+
+  IntLiteral.Deci = DeciLiteral {prefer}
+  IntLiteral.Hexa = HexaLiteral {prefer}
+  IntLiteral.Octa = OctaLiteral {prefer}
+  IntLiteral.Bin  = BinLiteral  {prefer}
+  
+lexical syntax
+
+  DeciLiteral = DeciNumeral [lL]?
+  HexaLiteral = HexaNumeral [lL]?
+  OctaLiteral = OctaNumeral [lL]?
+  BinLiteral  = BinNumeral  [lL]?
+  DeciNumeral = "0"
+  DeciNumeral = [1-9] [0-9\_]* [0-9]
+  DeciNumeral = [1-9]
+  HexaNumeral = [0] [xX] [0-9a-fA-F\_]* [0-9a-fA-F]
+  OctaNumeral = [0] [\_0-7]* [0-7]
+  BinNumeral  = "0" [bB] BinDigits
+  BinDigits   = [01]
+  BinDigits   = [01] [01\_]* [01]
+
+lexical restrictions
+
+  DeciNumeral -/- [0-9\.fFdD]
+  HexaNumeral -/- [0-9a-fA-F]
+  OctaNumeral -/- [0-7]
+  BinNumeral  -/- [01]
+  DeciLiteral -/- [lL]
+  HexaLiteral -/- [lL]
+  OctaLiteral -/- [lL]
+  BinLiteral  -/- [lL]  
