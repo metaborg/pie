@@ -7,6 +7,7 @@ imports
   outline
   analysis
   gen/kotlin/main
+  gen/java/main
 
 rules // Debugging
   

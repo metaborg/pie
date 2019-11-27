@@ -9,25 +9,25 @@ import java.io.File
 import java.io.Serializable
 
 class CreateFile : TaskDef<File, None> {
-  override fun getId() = "CreateFile"
+    override fun getId() = "CreateFile"
 
-  override fun exec(context: ExecContext, input: File): None {
-    input.outputStream().buffered().use {
-      it.write("Hello world".toByteArray())
+    override fun exec(context: ExecContext, input: File): None {
+        input.outputStream().buffered().use {
+            it.write("Hello world".toByteArray())
+        }
+        context.provide(input)
+        return None.instance
     }
-    context.provide(input)
-    return None.instance
-  }
 }
 
 class TransformFile : TaskDef<TransformFile.Input, File> {
-  override fun getId() = "TransformFile"
+    override fun getId() = "TransformFile"
 
-  data class Input(
-    val sourceFile: File,
-    val sourceTask: STask,
-    val destinationFile: File
-  ) : Serializable
+    data class Input(
+            val sourceFile: File,
+            val sourceTask: STask,
+            val destinationFile: File
+    ) : Serializable
 
   override fun exec(context: ExecContext, input: Input): File {
     val (sourceFile, sourceTask, destination) = input
@@ -38,7 +38,6 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
       it.write(sourceText.toByteArray())
       it.flush()
     }
-    context.provide(destination)
     return destination
   }
 }
@@ -47,14 +46,14 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
  * The main function will start up the PIE runtime and execute the build script.
  */
 fun main(args: Array<String>) {
-  val sourceFile = File(args.getOrElse(0) { "build/run/source.txt" })
-  val destinationFile = File(args.getOrElse(1) { "build/run/destination.txt" })
+    val sourceFile = File(args.getOrElse(0) { "build/run/source.txt" })
+    val destinationFile = File(args.getOrElse(1) { "build/run/destination.txt" })
 
-  val createFile = CreateFile()
-  val transformFile = TransformFile()
-  val taskDefs = MapTaskDefs()
-  taskDefs.add(createFile)
-  taskDefs.add(transformFile)
+    val createFile = CreateFile()
+    val transformFile = TransformFile()
+    val taskDefs = MapTaskDefs()
+    taskDefs.add(createFile)
+    taskDefs.add(transformFile)
 
   val pieBuilder = PieBuilderImpl()
   pieBuilder.withTaskDefs(taskDefs)

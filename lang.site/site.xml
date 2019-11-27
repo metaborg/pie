@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/pie.lang.eclipse.feature_0.1.0.qualifier.jar" id="pie.lang.eclipse.feature" version="0.1.0.qualifier">
+      <category name="pie"/>
+   </feature>
+   <category-def name="pie" label="pie language Eclipse plugin">
+      <description>
+         pie language Eclipse plugin.
+      </description>
+   </category-def>
+</site>
