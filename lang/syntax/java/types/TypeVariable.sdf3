@@ -1,0 +1,14 @@
+module java/types/TypeVariable
+
+// 4.4. Type Variables
+
+imports
+  java/types/ReferenceTypes
+  java/lexical/Identifiers
+  java/interfaces/Annotations
+
+context-free syntax
+
+  TypeParameter.TypeParameter = <<{Annotation " "}*> <Id> <TypeBound?>>
+  TypeBound.TypeBound = <extends <{ClassType "& "}+>>
+  

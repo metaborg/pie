@@ -1,0 +1,8 @@
+module java/packages/Main
+
+// Chapter 7. Packages
+
+imports
+  java/packages/CompilationUnits
+  java/packages/ImportDeclarations
+  java/packages/PackageDeclarations

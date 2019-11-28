@@ -1,0 +1,12 @@
+module java/classes/Main
+
+// Chapter 8. Classes
+
+imports
+  java/classes/ClassDeclarations
+  java/classes/FieldDeclarations
+  java/classes/MethodDeclarations
+  java/classes/EnumDeclarations
+  java/classes/InstanceInitializers
+  java/classes/StaticInitializers
+  java/classes/ConstructorDeclarations

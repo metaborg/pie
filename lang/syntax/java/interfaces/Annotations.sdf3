@@ -1,0 +1,23 @@
+module java/interfaces/Annotations
+
+// 9.7. Annotations
+
+imports
+  java/names/Names
+  java/lexical/Identifiers
+  java/expressions/Main
+
+context-free syntax
+
+  Annotation.Anno = <@<TypeName>(<{ElementValuePair ", "}*>)>
+  Annotation.MarkerAnno = <@<TypeName>>
+  Annotation.SingleElemAnno = <@<TypeName>(<ElementValue>)>
+  
+  ElementValuePair.ElemValPair = <<Id> = <ElementValue>>
+  ElementValue = Expression  
+  ElementValue = ElementValueArrayInitializer
+  ElementValue = Annotation
+  
+  ElementValueArrayInitializer.ElementValArrayInit = <{<{ElementValue ","}*>}>
+  ElementValueArrayInitializer.ElementValArrayInitComman = <{<{ElementValue ","}*>, }>
+  

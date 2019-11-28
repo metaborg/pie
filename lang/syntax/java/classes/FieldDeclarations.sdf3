@@ -1,0 +1,54 @@
+module java/classes/FieldDeclarations
+
+// 8.3. Field Declarations
+
+imports
+  java/lexical/Identifiers
+  java/types/ReferenceTypes
+  java/types/PrimitiveTypes
+  java/types/ParameterizedTypes
+  java/interfaces/Annotations
+  java/arrays/ArrayInitializers
+  java/expressions/Main
+
+context-free syntax
+  
+  FieldDeclaration.FieldDecl = <<{FieldModifier " "}*> <UnannType> <{VarDecl ", "}+>;>
+  VarDeclId.VariableDecl      = Id
+  VarDeclId.VariableDeclArray = <<Id><AnnotatedDim+>>
+  VarDecl.VariableDeclInit    = <<VarDeclId> = <VariableInitializer>>
+  VarDecl = VarDeclId
+  
+  VariableInitializer = Expression
+  VariableInitializer = ArrayInitializer
+  
+  FieldModifier           = Annotation
+  FieldModifier.Public    = "public"
+  FieldModifier.Protected = "protected"
+  FieldModifier.Private   = "private"
+  FieldModifier.Static    = "static"
+  FieldModifier.Final     = "final"
+  FieldModifier.Transient = "transient"
+  FieldModifier.Volatile  = "volatile"
+  
+context-free syntax  
+  
+  UnannType = UnannPrimitiveType
+  UnannType = UnannReferenceType
+  
+  UnannPrimitiveType.NumericType = NumericType
+  UnannPrimitiveType.BooleanType = "boolean"
+  
+  UnannReferenceType = UnannClassType
+  UnannReferenceType = UnannArrayType
+  
+  UnannClassType.ClassType                  = <<Id><TypeArguments?>>
+  UnannClassType.ClassOrInterfaceTypeMember = <<UnannClassType>.<{Annotation " "}*> <Id><TypeArguments?>>
+  
+//  ambiguous with UnannClassType.ClassType
+//  UnannTypeVariable.TypeVar            = Id
+  
+  UnannArrayType.ArrayTypePrimitive    = <<UnannPrimitiveType> <AnnotatedDim+>>
+  UnannArrayType.ArrayTypeClassType    = <<UnannClassType> <AnnotatedDim+>>
+  
+  

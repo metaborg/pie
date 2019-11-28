@@ -1,0 +1,44 @@
+module java/lexical/Comments
+
+// 3.7. Comments
+
+imports
+
+  java/lexical/LineTerminators
+
+lexical start-symbols
+  
+  Comment
+
+lexical syntax
+
+  LAYOUT = Comment
+  Comment = "//" EOLCommentChars LineTerminator
+  EOLCommentChars = ~[\n\r]*
+  Comment = "/*" CommentPart* "*/"
+  Comment = "/**" CommentPart* "*/"
+  Comment = "/**/"
+  CommentPart = BlockCommentChars
+  CommentPart = EscChar
+  CommentPart = EscEscChar
+  CommentPart = Asterisk
+  CommentPart = UnicodeEscape
+  BlockCommentChars = ~[\*\\]+
+  Asterisk = "*"
+  EscEscChar = "\\\\"
+  EscChar = "\\"
+  UnicodeEscape = "\\" [u]+ [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]
+
+lexical restrictions
+
+  "/**" -/- [\/]
+  "/*" -/- [\*]
+  Asterisk -/- [\/]
+  EscChar -/- [\\u]
+  BlockCommentChars -/- ~[\*\\]
+  EOLCommentChars -/- ~[\n\13]
+
+context-free restrictions
+
+  LAYOUT? -/- [\/].[\*]
+  LAYOUT? -/- [\/].[\/]
