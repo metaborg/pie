@@ -108,27 +108,20 @@ rules // Control flow
   p2j-exp:
     e@IfElse(condExp, trueExp, falseExp) -> result
     with
-      (condStmtStrs, condExpStr)   := <try-p2j-exp> condExp
-    ; (trueStmtStrs, trueExpStr)   := <try-p2j-exp> trueExp
-    ; (falseStmtStrs, falseExpStr) := <try-p2j-exp> falseExp
-    ; resultName                   := <newname> "ifResult"
-    ; trueStmtStr                  := <pie-concat-nl> trueStmtStrs
-    ; falseStmtStr                 := <pie-concat-nl> falseStmtStrs
-    ; ty                           := <pie-type> e
-    ; tyStr                        := <p2j-type-sig> ty
-    ; stmtStrs                     := <concat> [
-      condStmtStrs,
+      (condStmts, condExp)   := <try-p2j-ast-exp> condExp
+    ; (trueStmts, trueExp)   := <try-p2j-ast-exp> trueExp
+    ; (falseStmts, falseExp) := <try-p2j-ast-exp> falseExp
+    ; resultName             := <newname> "ifResult"
+    ; trueBlockStmts         := <concat> [trueStmts, [Assign(resultName, trueExp)]]
+    ; falseBlockStmts        := <concat> [falseStmts, [Assign(resultName, falseExp)]]
+    ; ty                     := <p2j-ast-type-sig> <pie-type> e
+    ; stmts                  := <concat> [
+      condStmts,
       [
-        $[final [tyStr] [resultName];],
-        $[if ([condExpStr]) {
-          [trueStmtStr]
-          [resultName] = [trueExpStr];
-        } else {
-          [falseStmtStr]
-          [resultName] = [falseExpStr];
-        }]
+        LocVarDeclStm(LocalVarDecl([Final()], ty, [resultName])),
+        IfElse(condExp, Block(trueBlockStmts), Block(falseBlockStmts))
       ]]
-    ; result                       := (stmtStrs, resultName)
+    ; result                 := (stmts, resultName)
 
   p2j-exp:
     Add(lExp, rExp) -> result
