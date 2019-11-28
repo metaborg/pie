@@ -54,19 +54,22 @@ rules // Expression composition
 rules // Unary expressions
   
   p2j-exp:
-    ToNullable(exp) -> <try-p2j-exp> exp // non-primitive Java types are always nullable
+    ToNullable(exp) -> <try-p2j-ast-exp> exp // non-primitive Java types are always nullable
   
   p2j-exp:
     n@ToNonNullable(exp) -> result
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; tmpVarName            := <newname> "exp"
-    ; tyStr                 := <p2j-type-sig> <pie-type> n
-    ; stmtStrs              := <concat> [
-        expStmtStrs,
-        [$[final [tyStr] [tmpVarName] = Objects.requireNonNull([expStr]);]]
+      (expStmts, exp) := <try-p2j-ast-exp> exp
+    ; tmpVarName      := <newname> "exp"
+    ; ty              := <p2j-ast-type-sig> <pie-type> n
+    ; stmts           := <concat> [
+        expStmts,
+        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          tmpVarName, 
+          InvokeQExp(ExpressionName("Objects"), None(), "requireNonNull", [exp])
+        )]))]
       ]
-    ; result                := (stmtStrs, tmpVarName)
+    ; result                := (stmts, tmpVarName)
 
 
   p2j-exp:
