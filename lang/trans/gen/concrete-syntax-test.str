@@ -1,4 +1,4 @@
-module concrete-syntax-test
+module gen/concrete-syntax-test
 
 imports
 
