@@ -1,12 +1,12 @@
-module gen/java/main
+module gen/java-string/main
 
 imports
 
   nabl2/api
 
   gen/util
-  gen/java/func_def 
-  gen/java/func_body
+  gen/java-string/func_def 
+  gen/java-string/func_body
   
   libspoofax/stratego/debug
 

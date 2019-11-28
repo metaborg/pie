@@ -13,10 +13,10 @@ rules
     with
       filename := <guarantee-extension(|"java")> file
     ; mod      := <base-filename;remove-extension> file
-    ; result   := <p2j(|mod, "mb.pie.example.helloworld.java")> ast
+    ; result   := <p2j-ast(|mod, "mb.pie.example.helloworld.java")> ast
     ; <debug(|"Successfully transpiled file to Java: ")> file
 
 rules
 
-  p2j(|mod, package):
+  p2j-ast(|mod, package):
     Program(defs) -> "Hello World!\nConverting to Java using ASTs has not yet been implemented"
