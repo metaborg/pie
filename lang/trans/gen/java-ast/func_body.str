@@ -99,13 +99,11 @@ rules // Control flow
   p2j-exp:
     If(condExp, branch) -> result
     with
-      (condStmtStrs, condExpStr) := <try-p2j-exp> condExp
-    ; (branchStmtStrs, _)        := <try-p2j-exp> branch
-    ; branchStmtStr              := <pie-concat-nl> branchStmtStrs
-    ; stmtStr                    := $[if ([condExpStr]) {[branchStmtStr]}]
-    ; stmtStrs                   := <concat> [condStmtStrs, [stmtStr]]
-    ; expStr                     := <Snd> <try-p2j-exp> UnitLit()
-    ; result                     := (stmtStrs, expStr)
+      (condStmts, condExp) := <try-p2j-ast-exp> condExp
+    ; (branchStmts, _)     := <try-p2j-ast-exp> branch
+    ; stmts                := <concat> [condStmts, [If(condExp, Block(branchStmts))]]
+    ; exp                  := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; result               := (stmts, exp)
     
   p2j-exp:
     e@IfElse(condExp, trueExp, falseExp) -> result
