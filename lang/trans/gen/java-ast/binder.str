@@ -1,0 +1,22 @@
+module gen/java-string/binder
+
+imports
+
+  signatures/-
+  signatures/lex/-
+  signatures/impl/-
+  
+  gen/util
+  gen/debug
+
+rules
+
+  p2j-ast-binder:
+    SingleBinder(bind) -> [ <p2j-ast-bind> bind ]
+  p2j-ast-binder:
+    TupleBinder(binds) -> <map(p2j-ast-bind)> binds
+
+  p2j-ast-bind:
+    Bind(varId) -> varId
+  p2j-ast-bind:
+    TBind(varId, ty) -> varId
