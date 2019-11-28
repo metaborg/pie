@@ -190,42 +190,44 @@ rules // Control flow
 
 rules // Binding
 
-  p2j-exp:
+  p2j-ast-exp:
     e@ValDec(binder, exp) -> result
     with
-      expTy                   := <pie-ast-type> exp
-    ; expTyStr                := <p2j-type-sig> expTy
-    ; (expStmtStrs, expStr)   := <try-p2j-exp> exp
-    ; (assignmentStrs, varId) := <bind-tuples-to-assignments> (binder, expTy)
-    ; stmtStrs                := <concat> [
-        expStmtStrs,
-        [$[final [expTyStr] [varId] = [expStr];]],
-        assignmentStrs
+      expTy                := <p2j-ast-type-sig> <pie-ast-type> exp
+    ; (expStmts, exp)      := <try-p2j-ast-exp> exp
+    ; (assignments, varId) := <bind-tuples-to-assignments> (binder, expTy)
+    ; stmts                := <concat> [
+        expStmts,
+        LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(varId, exp)])),
+        assignments
       ]
-    ; resultExpStr            := <Snd> <try-p2j-exp> UnitLit()
-    ; result                  := (stmtStrs, resultExpStr)
+    ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; result               := (stmts, resultExp)
   
   // bind-tuples-to-assignments: (Binder, ExpressionType) -> (varName, assignmentsStr)
   bind-tuples-to-assignments:
-    (SingleBinder(bind), _) -> ([], <p2j-bind> bind)
+    (SingleBinder(bind), _) -> ([], <p2j-ast-bind> bind)
   
   bind-tuples-to-assignments:
     (TupleBinder(binds), expTy) -> result
     with
-      varIds         := <map(p2j-bind)> binds
-    ; TupleTy(tys)   := expTy
-    ; tyStrs         := <map(p2j-type-sig)> tys
-    ; bindList       := <zip> (varIds, tyStrs)
-    ; tmpVar         := <newname> "tmpTupleVar"
-    ; assignmentStrs := <nmap-par(bind-tuple-to-string | 1, tmpVar)> bindList
-    ; result         := (assignmentStrs, tmpVar)
+      varIds       := <map(p2j-ast-bind)> binds
+    ; TupleTy(tys) := expTy
+    ; javaTys      := <map(p2j-ast-type-sig)> tys
+    ; bindList     := <zip> (varIds, javaTys)
+    ; tmpVar       := <newname> "tmpTupleVar"
+    ; assignments  := <nmap-par(bind-tuple-to-ast | 1, tmpVar)> bindList
+    ; result       := (assignments, tmpVar)
 
   // nmap that passes an extra parameter to the strategy
   nmap-par(s : Int * c * a -> b | i, par) =
     ?[] + [s(|i,par) | nmap-par(s | <inc> i, par)]
 
-  bind-tuple-to-string(|i, tmpVar):
-    (varId, tyStr) -> $[final [tyStr] [varId] = [tmpVar].component[i]();]
+  bind-tuple-to-ast(|i, tmpVar):
+    (varId, ty) -> LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          varId,
+          InvokeQExp(tmpVar, None(), $[component[i]], [])
+    )]))
 
 rules // References
 
