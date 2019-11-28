@@ -1,0 +1,18 @@
+module java/expressions/ArrayAccess
+
+// 15.10.3. Array Access Expressions
+
+imports
+  java/names/Names
+  java/expressions/ArrayCreation
+
+context-free syntax
+
+  Expression = ArrayAccess
+  
+  ArrayAccess.ArrayAccess = <<Expression>[<Expression>]>
+  
+context-free priorities
+
+  ArrayAccess.ArrayAccess <0> . > Expression = ArrayCreationExpression
+  

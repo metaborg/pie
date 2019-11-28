@@ -1,0 +1,56 @@
+module java/literals/FloatingPointLiterals
+
+// 3.10.2. Floating-Point Literals
+
+context-free start-symbols
+  
+  FloatLiteral
+
+context-free syntax
+
+  FloatLiteral.DeciFloat = DeciFloatLiteral
+  FloatLiteral.HexaFloat = HexaFloatLiteral
+  FloatLiteral.DeciDouble = DeciDoubleLiteral
+  FloatLiteral.HexaDouble = HexaDoubleLiteral
+
+lexical syntax
+
+  DeciFloatLiteral = Digits "." Digits? DeciFloatExponentPart? [fF]
+  DeciFloatLiteral = "." Digits DeciFloatExponentPart? [fF]
+  DeciFloatLiteral = Digits DeciFloatExponentPart [fF]
+  DeciFloatLiteral = Digits [fF]
+  
+  DeciDoubleLiteral = Digits "." Digits? DeciFloatExponentPart? [dD]?
+  DeciDoubleLiteral = "." Digits DeciFloatExponentPart? [dD]?
+  DeciDoubleLiteral = Digits DeciFloatExponentPart [dD]?
+  DeciDoubleLiteral = Digits [dD]
+ 
+  DeciFloatExponentPart = [eE] SignedInteger
+  SignedInteger = [\+\-]? Digits
+  
+  Digits = Digit
+  Digits = Digit DigitsAndUnderscores? Digit
+  Digit = [0]
+  Digit = [1-9]
+  DigitsAndUnderscores = DigitsOrUnderscore+
+  DigitsOrUnderscore = (Digit | [\_])
+  Underscores = [\_]+
+
+
+lexical restrictions
+
+  DeciFloatLiteral -/- [fF]
+  DeciDoubleLiteral -/- [dD]
+  SignedInteger -/- [0-9]
+
+lexical syntax
+
+  HexaFloatLiteral = HexaSignificand BinaryExponent [fF]
+  HexaDoubleLiteral = HexaSignificand BinaryExponent [dD]?
+  HexaSignificand = [0] [xX] [0-9a-fA-F\_]* [0-9a-fA-F] "."?  
+  HexaSignificand = [0] [xX] [0-9a-fA-F\_]* [0-9a-fA-F] "." [0-9a-fA-F\_]* [0-9a-fA-F]
+  BinaryExponent = [pP] SignedInteger
+
+lexical restrictions
+
+  HexaSignificand -/- [0-9a-fA-F\.]

@@ -1,0 +1,20 @@
+module java/expressions/ArrayCreation
+
+// 15.10.1. Array Creation Expressions
+
+imports
+  java/types/ReferenceTypes
+  java/types/PrimitiveTypes
+  java/interfaces/Annotations
+  java/arrays/ArrayInitializers
+
+context-free syntax
+  
+  Expression = ArrayCreationExpression
+  ArrayCreationExpression.NewArray = <new <ArrayBaseType><{DimExpr " "}+><AnnotatedDimsEmpty>>
+  ArrayCreationExpression.NewArrayInit = <new <ArrayBaseType><AnnotatedDims><ArrayInitializer>>
+  
+  ArrayBaseType = ClassType
+  ArrayBaseType = PrimitiveType
+  
+  DimExpr.Dim = <<{Annotation " "}*> [<Expression>]>

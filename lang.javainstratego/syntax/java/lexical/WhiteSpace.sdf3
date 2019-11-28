@@ -1,0 +1,11 @@
+module java/lexical/WhiteSpace
+
+// 3.6. White Space
+
+lexical syntax
+
+  LAYOUT = [\ \t\12\r\n]
+
+context-free restrictions
+
+  LAYOUT? -/- [\ \t\12\n\r]

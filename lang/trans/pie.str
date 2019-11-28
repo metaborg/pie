@@ -1,7 +1,7 @@
 module pie
 
 imports
-  
+
   completion/completion
   pp
   outline
@@ -11,7 +11,7 @@ imports
   gen/java-ast/main
 
 rules // Debugging
-  
+
   debug-show-aterm:
     (node, _, _, path, project-path) -> (filename, result)
     with
