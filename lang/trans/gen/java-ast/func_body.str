@@ -75,8 +75,8 @@ rules // Unary expressions
   p2j-exp:
     Not(exp) -> result
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; result                := (expStmtStrs, $[!([expStr])])
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; result             := (expStmts, Not(expVal))
 
 rules // Binary expressions
 
