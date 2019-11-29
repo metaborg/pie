@@ -55,7 +55,7 @@ rules // Expression composition
 
 rules // Unary expressions
   
-  p2j-exp:
+  p2j-ast-exp:
     ToNullable(exp) -> <try-p2j-ast-exp> exp // non-primitive Java types are always nullable
   
   p2j-ast-exp:
@@ -78,7 +78,7 @@ rules // Unary expressions
     ; result             := (stmts, tmpVarName)
 
 
-  p2j-exp:
+  p2j-ast-exp:
     Not(exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
@@ -102,7 +102,7 @@ rules // Binary expressions
 
 rules // Control flow
 
-  p2j-exp:
+  p2j-ast-exp:
     If(condExp, branch) -> result
     with
       (condStmts, condExp) := <try-p2j-ast-exp> condExp
@@ -111,7 +111,7 @@ rules // Control flow
     ; exp                  := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result               := (stmts, exp)
     
-  p2j-exp:
+  p2j-ast-exp:
     e@IfElse(condExp, trueExp, falseExp) -> result
     with
       (condStmts, condExp)   := <try-p2j-ast-exp> condExp
@@ -210,11 +210,11 @@ rules // Binding
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result               := (stmts, resultExp)
   
-  // bind-tuples-to-assignments: (Binder, ExpressionType) -> (varName, assignmentsStr)
-  bind-tuples-to-assignments:
+  // bind-tuples-to-assignments: (Binder, ExpressionType) -> (varName, assignments)
+  bind-tuples-to-ast-assignments:
     (SingleBinder(bind), _) -> ([], <p2j-ast-bind> bind)
   
-  bind-tuples-to-assignments:
+  bind-tuples-to-ast-assignments:
     (TupleBinder(binds), expTy) -> result
     with
       varIds       := <map(p2j-ast-bind)> binds
