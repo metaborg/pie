@@ -299,20 +299,24 @@ rules // Java foreign function calls
 
 rules // Qualified function calls
 
-  p2j-exp: 
+  p2j-ast-exp:
     c@QCall(exp, funcId, argExps) -> result
     with
-      (expStmtStrs, expStr)           := <try-p2j-exp> exp
-    ; (argExpsStmtsStrs, argExpsStrs) := <unzip> <map(try-p2j-exp)> argExps
-    ; argExpsStr                      := <pie-concat-comma> argExpsStrs
-    ; callResultName                  := <newname> "callResult"
-    ; tyStr                           := <p2j-type-sig> <pie-type> c
-    ; stmtStrs                        := <concat> [
-        expStmtStrs, 
-        <concat> argExpsStmtsStrs,
-        [$[final [tyStr] [callResultName] = [expStr].[funcId]([argExpsStr]);]]
-        ]
-    ; result                          := (stmtStrs, callResultName)
+      (expStmts, expVal)          := <try-p2j-ast-exp> exp
+    ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
+    ; callResultName              := <newname> "callResult"
+    ; ty                          := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                       := <concat> [
+        expStmts, 
+        <concat> argExpsStmts,
+        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          callResultName, 
+          InvokeQExp(ExpressionName(expVal), None(), funcId, [argExpsVals])
+        )]))]
+        // Note: meaning of this AST:
+        //       final [ty] [callResultName] = [expVal].[funcId]([argExpsVals]);]]
+      ]
+    ; result                          := (stmts, callResultName)
 
 rules // PIE function calls
   
