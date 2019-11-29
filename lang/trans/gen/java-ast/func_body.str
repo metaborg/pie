@@ -12,6 +12,7 @@ imports
   signatures/java/expressions/-
   signatures/java/statements/-
   signatures/java/names/-
+  signatures/java/classes/-
   
   statsem/pie
   
