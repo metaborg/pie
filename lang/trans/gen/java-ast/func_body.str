@@ -621,34 +621,28 @@ rules // Literals
 
 rules // Interpolated string literal
 
-  p2j-exp:
+  p2j-ast-exp:
     StrLit(parts) -> result
     with
-      (partsStmtsStrs, partStrs) := <unzip> <map(p2j-strpart)> parts
-    ; stmtStrs                   := <concat> partsStmtsStrs
-    ; partsStr                   := <concat-strings> partStrs
-    ; expStr                     := $["[partsStr]"]
-    ; result                     := (stmtStrs, expStr)
+      (partsStmts, partStrs) := <unzip> <map(p2j-ast-strpart)> parts
+    ; stmts                  := <concat> partsStmts
+    ; exp                    := <reduce(p2j-ast-add-strings)> partStrs
+    ; result                 := (stmts, exp)
 
   // Replace all escaped \$ with $. Note: "\\$" because the \ needs to be escaped in stratego.
   // todo: Check if simply replacing is fine, or if it is possible that it is actually a $,
   // e.g. "\\$foo" should evaluate to "\<valueOfFoo>"
-  p2j-strpart:
-    Str(chars) -> ([], <string-replace(|"\\$", "$")> chars)
+  p2j-ast-strpart:
+    Str(chars) -> ([], StringLiteral($["[<string-replace(|"\\$", "$")> chars]"]))
 
-  p2j-strpart:
-    StrInterpRef(refExp) -> result
-    with
-      (refExpStmtStrs, refExpStr) := <try-p2j-exp> refExp
-    ; expStr                      := $[" + [refExpStr] + "]
-    ; result                      := (refExpStmtStrs, expStr)
+  p2j-ast-strpart:
+    StrInterpRef(refExp) -> <try-p2j-ast-exp> refExp
       
-  p2j-strpart:
-    StrInterpExp(exp) -> $[" + [expStr] + "]
-    with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[" + [expStr] + "]
-    ; result                := (expStmtStrs, resultExpStr)
+  p2j-ast-strpart:
+    StrInterpExp(exp) -> <try-p2j-ast-exp> exp
+
+  p2j-ast-add-strings:
+    (e1, e2) -> Add(e1, e2)
 
 rules // Interpolated path literal
 
