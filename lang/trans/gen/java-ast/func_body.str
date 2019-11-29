@@ -524,7 +524,7 @@ rules // Path operations
     ; result                := (expStmts, resultExp)
 
 
-  p2j-exp:
+  p2j-ast-exp:
     r@ReadPath(exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
@@ -543,7 +543,7 @@ rules // Path operations
       ]
     ; result             := (stmts, readResultName)
 
-  p2j-exp:
+  p2j-ast-exp:
     e@ExistsPath(exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
@@ -577,7 +577,7 @@ rules // Early return and failure
     ; stmtStrs              := <concat> [expStmtStrs, [$[return [expStr];]]]
     ; result                := (stmtStrs, resultExpStr)
 
-  p2j-exp:
+  p2j-ast-exp:
     Fail(exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
