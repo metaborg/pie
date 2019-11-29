@@ -13,6 +13,7 @@ imports
   signatures/java/statements/-
   signatures/java/names/-
   signatures/java/classes/-
+  signatures/java/literals/-
   
   statsem/pie
   
@@ -591,11 +592,11 @@ rules // Early return and failure
 
 rules // Literals
 
-  p2j-exp: UnitLit()        -> ([], $[None.instance])
-  p2j-exp: BoolLit(True())  -> ([], $[new Boolean(true)])
-  p2j-exp: BoolLit(False()) -> ([], $[new Boolean(false)])
-  p2j-exp: IntLit(i)        -> ([], $[new Integer([i])])
-  p2j-exp: NullLit()        -> ([], $[null])
+  p2j-ast-exp: UnitLit()        -> ([], Field(ExpressionName("None"), "instance"))
+  p2j-ast-exp: BoolLit(True())  -> ([], NewInstance(None(), [], "Boolean", [], None(), [True()]))
+  p2j-ast-exp: BoolLit(False()) -> ([], NewInstance(None(), [], "Boolean", [], None(), [False()]))
+  p2j-ast-exp: IntLit(i)        -> ([], NewInstance(None(), [], "Integer", [], None(), [Deci(<int-to-string> i)]))
+  p2j-ast-exp: NullLit()        -> ([], Null())
 
 
   p2j-exp:
