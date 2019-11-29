@@ -11,6 +11,7 @@ imports
   
   signatures/java/expressions/-
   signatures/java/statements/-
+  signatures/java/names/-
   
   statsem/pie
   
@@ -232,40 +233,40 @@ rules // Binding
 
 rules // References
 
-  p2j-exp:
-    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|varId)> r)
+  p2j-ast-exp:
+    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(varId))> r)
     where
       LocalVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
   
-  p2j-exp: 
+  p2j-ast-exp: 
     Ref(varId) -> <fail>
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 0 := <InputKind>
       
-  p2j-exp: 
-    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|"input")> r)
+  p2j-ast-exp: 
+    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName("input"))> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 1 := <InputKind>
       
-  p2j-exp: 
-    r@Ref(varId) -> ([], <p2j-ref-add-transient-val(|$[input.get_[varId]()])> r)
+  p2j-ast-exp: 
+    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|InvokeQExp("input", None(), $[get_[varId]], []))> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 2 := <InputKind>
 
-  p2j-ref-add-transient-val(|str):
-    ref -> $[[str].v]
+  p2j-ast-ref-add-transient-val(|ast):
+    ref -> Field(ast, "v")
     where
-      <p2j-ref-is-transient> ref
+      <p2j-ast-ref-is-transient> ref
     
-  p2j-ref-add-transient-val(|str):
-    ref -> str
+  p2j-ast-ref-add-transient-val(|ast):
+    ref -> ast
     where
-      <not(p2j-ref-is-transient)> ref
+      <not(p2j-ast-ref-is-transient)> ref
   
-  p2j-ref-is-transient = 
+  p2j-ast-ref-is-transient = 
       pie-ast-type
     ; (?DataTy(<id>) <+ ?NullableTy(DataTy(<id>)))
     ; pie-occ-prop(|"mods")
