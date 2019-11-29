@@ -579,13 +579,15 @@ rules // Early return and failure
   p2j-exp:
     Fail(exp) -> result
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; stmtStrs              := <concat> [
-        expStmtStrs,
-        [$[throw new ExecException([expStr].toString());]]
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; stmts              := <concat> [
+        expStmts,
+        [Throw(NewInstance(None(), [], "ExecException", [], None(), InvokeQExp(
+          expVal, None(), "toString", [])))]
+        // Note: meaning of this AST: throw new ExecException([expVal].toString());
       ]
-    ; resultExpStr          := <Snd> <try-p2j-exp> UnitLit()
-    ; result                := (stmtStrs, resultExpStr)
+    ; resultExp          := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; result             := (stmts, resultExp)
 
 rules // Literals
 
