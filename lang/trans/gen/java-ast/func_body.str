@@ -402,50 +402,59 @@ rules // Path operations
   p2j-exp:
     r@RequiresPath(exp, filterOpt, stamper) -> result
     with
-      (expStmtStrs, expStr)         := <p2j-exp> exp
-    ; (stamperStmtStrs, stamperStr) := <p2j-stamper> (filterOpt, stamper)
-    ; stmtStrs                      := <concat> [
-        expStmtStrs, 
-        stamperStmtStrs,
-        [$[execContext.require([expStr], [stamperStr]);]]
+      (expStmts, expVal)         := <p2j-ast-exp> exp
+    ; (stamperStmts, stamperVal) := <p2j-ast-stamper> (filterOpt, stamper)
+    ; stmts                      := <concat> [
+        expStmts,
+        stamperStmts,
+        [InvokeQExp(ExpressionName("execContext"), None(), "require", [expVal, stamperVal])]
+        // Note: meaning of this AST:
+        //       execContext.require([expVal], [stamperVal]);
       ]
-    ; resultExpStr                  := <Snd> <try-p2j-exp> UnitLit()
-    ; result                        := (stmtStrs, resultExpStr)
+    ; resultExp                  := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; result                     := (stmts, resultExp)
 
   p2j-exp:
     GeneratesPath(exp, stamper) -> result
     with
-      (expStmtStrs, expStr)         := <p2j-exp> exp
-    ; (stamperStmtStrs, stamperStr) := <p2j-stamper> (None(), stamper)
-    ; stmtStrs                      := <concat> [
-        expStmtStrs, 
-        stamperStmtStrs,
-        [$[execContext.provide([expStr], [stamperStr]);]]
+      (expStmts, expVal)         := <p2j-ast-exp> exp
+    ; (stamperStmts, stamperVal) := <p2j-ast-stamper> (None(), stamper)
+    ; stmts                      := <concat> [
+        expStmts,
+        stamperStmts,
+        [InvokeQExp(ExpressionName("execContext"), None(), "provide", [expVal, stamperVal])]
+        // Note: meaning of this AST:
+        //       execContext.provide([expVal], [stamperVal]);
       ]
-    ; resultExpStr                  := <Snd> <try-p2j-exp> UnitLit()
-    ; result                        := (stmtStrs, resultExpStr)
+    ; resultExp                  := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; result                     := (stmts, resultExp)
   
-  p2j-stamper:
-    (None(), Modified()) -> ([], "FileSystemStampers.modified()")
-  p2j-stamper:
-    (None(), Hash()    ) -> ([], "FileSystemStampers.hash()")
-  p2j-stamper:
+  // p2j-stamper: (filter|None(), stamper) -> (stmts, expression value)
+  p2j-ast-stamper:
+    (None(), Modified()) -> ([], InvokeQExp(ExpressionName("FileSystemStampers"), None(), "modified", []))
+    // Note: meaning of this AST: FileSystemStampers.modified()
+  p2j-ast-stamper:
+    (None(), Modified()) -> ([], InvokeQExp(ExpressionName("FileSystemStampers"), None(), "hash", []))
+    // Note: meaning of this AST: FileSystemStampers.hash()
+  p2j-ast-stamper:
     (filter, Modified()) -> result
     where
       <not(?None())> filter
     with
-      (stmtStrs, filterStr) := <p2j-filter> filter
-    ; expStr                := $[FileSystemStampers.modified([filterStr])]
-    ; result                := (stmtStrs, expStr)
+      (stmts, filterVal) := <p2j-ast-filter> filter
+    ; exp                := InvokeQExp(ExpressionName("FileSystemStampers"), None(), "modified", [filterVal])
+      // Note: meaning of this AST: FileSystemStampers.modified([filterVal])
+    ; result             := (stmts, exp)
       
-  p2j-stamper:
+  p2j-ast-stamper:
     (filter, Hash()) -> result
     where
       <not(?None())> filter
     with
-      (stmtStrs, filterStr) := <p2j-filter> filter
-    ; expStr                := $[FileSystemStampers.hash([filterStr])]
-    ; result                := (stmtStrs, expStr)
+      (stmts, filterVal) := <p2j-ast-filter> filter
+    ; exp                := InvokeQExp(ExpressionName("FileSystemStampers"), None(), "hash", [filterVal])
+      // Note: meaning of this AST: FileSystemStampers.hash([filterVal])
+    ; result             := (stmts, exp)
 
   p2j-exp:
     l@ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-list)> (l, exp, filterOpt)
@@ -490,25 +499,28 @@ rules // Path operations
     ; expStr              := $[walk(new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher]))]
     ; result              := (stmtStrs, expStr)
 
-  p2j-filter:
-    None() -> ([], "")
-  p2j-filter:
-    Regex(exp) -> <p2j-filter-common> ("RegexPathMatcher", exp)
-  p2j-filter:
-    Pattern(exp) -> <p2j-filter-common> ("PatternPathMatcher", exp)
-  p2j-filter:
-    Patterns(exp) -> <p2j-filter-common> ("PatternsPathMatcher", exp)
-  p2j-filter:
-    Extension(exp) -> <p2j-filter-common> ("ExtensionPathMatcher", exp)
-  p2j-filter:
-    Extensions(exp) -> <p2j-filter-common> ("ExtensionsPathMatcher", exp)
+  // p2j-ast-filter: Pie filter -> (stmts, Java AST expression value)
+  p2j-ast-filter:
+    None() -> <fail> // this should never be called, as None() filters are filtered out
+  p2j-ast-filter:
+    Regex(exp) -> <p2j-ast-filter-common> ("RegexPathMatcher", exp)
+  p2j-ast-filter:
+    Pattern(exp) -> <p2j-ast-filter-common> ("PatternPathMatcher", exp)
+  p2j-ast-filter:
+    Patterns(exp) -> <p2j-ast-filter-common> ("PatternsPathMatcher", exp)
+  p2j-ast-filter:
+    Extension(exp) -> <p2j-ast-filter-common> ("ExtensionPathMatcher", exp)
+  p2j-ast-filter:
+    Extensions(exp) -> <p2j-ast-filter-common> ("ExtensionsPathMatcher", exp)
 
-  p2j-filter-common:
+  // p2j-ast-filter-common: (Pie matcher, Pie exp) -> (stmts, Java AST expression value)
+  p2j-ast-filter-common:
     (matcher, exp) -> result
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[new [matcher]([expStr])]
-    ; result                := (expStmtStrs, resultExpStr)
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; resultExp          := NewInstance(None(), [], matcher, [], None(), [expVal])
+    // Note: meaning of this AST: new [matcher]([expVal])
+    ; result                := (expStmts, resultExp)
 
 
   p2j-exp:
