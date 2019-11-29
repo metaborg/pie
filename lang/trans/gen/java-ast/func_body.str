@@ -205,7 +205,7 @@ rules // Binding
     ; (assignments, varId) := <bind-tuples-to-assignments> (binder, expTy)
     ; stmts                := <concat> [
         expStmts,
-        LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(varId, exp)])),
+        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(varId, exp)]))],
         assignments
       ]
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
@@ -293,7 +293,7 @@ rules // Java foreign function calls
         <concat> expsStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
           callResultName, 
-          InvokeQExp(ExpressionName(javaClassId), None(), javaMethodId, [expsVals])
+          InvokeQExp(ExpressionName(javaClassId), None(), javaMethodId, expsVals)
         )]))]
         // Note: I am not sure what the constructor for the javaClassId should be. If this
         //       doesn't work, try changing it to something specific for classnames.
@@ -316,7 +316,7 @@ rules // Qualified function calls
         <concat> argExpsStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
           callResultName, 
-          InvokeQExp(ExpressionName(expVal), None(), funcId, [argExpsVals])
+          InvokeQExp(ExpressionName(expVal), None(), funcId, argExpsVals)
         )]))]
         // Note: meaning of this AST:
         //       final [ty] [callResultName] = [expVal].[funcId]([argExpsVals]);]]
