@@ -274,22 +274,28 @@ rules // References
 
 rules // Java foreign function calls
 
-  p2j-exp:
+  p2j-ast-exp:
     c@Call(funcId, exps) -> result
     where
       JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
-      javaClassId               := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
-    ; javaMethodId              := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
-    ; (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
-    ; callResultName            := <newname> "callResult"
-    ; tyStr                     := <p2j-type-sig> <pie-type> c
-    ; expsStr                   := <pie-concat-comma> expsStrs
-    ; stmtStrs                  := <concat> [
-        <concat> expsStmtsStrs,
-        [$[final [tyStr] [callResultName] = [javaClassId].[javaMethodId]([expsStr]);]]
+      javaClassId           := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+    ; javaMethodId          := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
+    ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+    ; callResultName        := <newname> "callResult"
+    ; ty                    := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                 := <concat> [
+        <concat> expsStmts,
+        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          callResultName, 
+          InvokeQExp(ExpressionName(javaClassId), None(), javaMethodId, [expsVals])
+        )]))]
+        // Note: I am not sure what the constructor for the javaClassId should be. If this
+        //       doesn't work, try changing it to something specific for classnames.
+        // Note: meaning of this AST:
+        //     final [ty] [callResultName] = [javaClassId].[javaMethodId]([expsVals]);
       ]
-    ; result                    := (stmtStrs, callResultName)
+    ; result                := (stmts, callResultName)
 
 rules // Qualified function calls
 
