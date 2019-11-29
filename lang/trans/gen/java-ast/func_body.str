@@ -324,48 +324,56 @@ rules // Qualified function calls
 
 rules // PIE function calls
   
-  p2j-exp:
-    c@Call(funcId, _) -> <p2j-exp-pie-call(|javaClassId)> c
+  p2j-ast-exp:
+    c@Call(funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     
-  p2j-exp: 
-    c@Call(funcId, _) -> <p2j-exp-pie-call(|javaClassId)> c 
+  p2j-ast-exp:
+    c@Call(funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
     where
       PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-sanitize-class-id> funcId
 
 
-  p2j-exp-pie-call(|javaClassId):
+  p2j-ast-exp-pie-call(|javaClassId):
    c@Call(funcId, exps) -> result
     with
-      (expStmtStrs, expStr) := <p2j-exp-pie-call-inputexp(|javaClassId)> exps
-    ; safeJavaClassId       := <string-replace(|".", "_")> javaClassId
-    ; callResultName        := <newname> "callResult"
-    ; tyStr                 := <p2j-type-sig> <pie-type> c
-    ; stmtStrs              := <concat> [
-        expStmtStrs,
-        [$[final [tyStr] [callResultName] = execContext.require(_[safeJavaClassId], [expStr]);]]
+      (expStmts, inputArg) := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> exps
+    ; safeJavaClassId      := <string-replace(|".", "_")> javaClassId
+    ; callResultName       := <newname> "callResult"
+    ; ty                   := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                := <concat> [
+        expStmts,
+        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          callResultName,
+          InvokeQExp(ExpressionName("execContext"), None(), "require", [
+            $[_[safeJavaClassId]],
+            inputArg
+          ])
+        )]))]
+        // Note: meaning of this AST:
+        //       final [ty] [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
       ]
-    ; result                := (stmtStrs, callResultName)
+    ; result                := (stmts, callResultName)
     ; rules(InjectValues :+= ($[_[safeJavaClassId]], $[[javaClassId]]))
 
 
-  p2j-exp-pie-call-inputexp(|javaClassId):
-    exps -> <try-p2j-exp> UnitLit()
+  p2j-ast-exp-pie-call-inputexp(|javaClassId):
+    exps -> <try-p2j-ast-exp> UnitLit()
     where
       0 := <length> exps
 
-  p2j-exp-pie-call-inputexp(|javaClassId):
+  p2j-ast-exp-pie-call-inputexp(|javaClassId):
     exps -> result
     where
       1 := <length> exps
     with
       [exp]  := exps
-    ; result := <try-p2j-exp> exp
+    ; result := <try-p2j-ast-exp> exp
     
   p2j-exp-pie-call-inputexp(|javaClassId):
     exps -> result
@@ -373,11 +381,12 @@ rules // PIE function calls
       length := <length> exps
     ; <gt> (length, 1)
     with
-      (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
-    ; stmtStrs                  := <concat> expsStmtsStrs
-    ; expsStr                   := <pie-concat-comma> expsStrs
-    ; expStr                    := $[new [javaClassId].Input([expsStr])]
-    ; result                    := (stmtStrs, expStr)
+      (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+    ; stmts                 := <concat> expsStmts
+    ; exp                   := NewInstance(None(), [], javaClassId, ["Input"], None(), expsVals)
+      // Note: meaning of this AST:
+      //       new [javaClassId].Input([expsVals])
+    ; result                := (stmts, exp)
 
 rules // Path operations
 
