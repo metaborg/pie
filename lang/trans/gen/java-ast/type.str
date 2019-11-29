@@ -18,8 +18,8 @@ imports
 rules
 
   p2j-ast-type-sig: UnitTy() -> ClassType("None", None())
-  p2j-ast-type-sig: BoolTy() -> BooleanType()
-  p2j-ast-type-sig: IntTy()  -> Int()
+  p2j-ast-type-sig: BoolTy() -> ClassType("Boolean", None())
+  p2j-ast-type-sig: IntTy()  -> ClassType("Integer", None())
   p2j-ast-type-sig: StrTy()  -> ClassType("String", None())
   p2j-ast-type-sig: PathTy() -> ClassType("FSPath", None())
   p2j-ast-type-sig: TopTy()  -> ClassType("Object", None())
