@@ -545,14 +545,26 @@ rules // Path operations
   p2j-exp:
     e@ExistsPath(exp) -> result
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; tyStr                 := <p2j-type-sig> <pie-type> e
-    ; existsResultName        := <newname> "existsResult"
-    ; stmtStrs              := <concat> [
-        expStmtStrs,
-        [$[final [tyStr] [existsResultName] = Files.exists([expStr].getJavaPath());]]
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; ty                 := <p2j-ast-type-sig> <pie-type> e
+    ; existsResultName   := <newname> "existsResult"
+    ; stmts              := <concat> [
+        expStmts,
+        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          existsResultName,
+          InvokeQExp(
+            InvokeQExp(ExpressionName("Files"), None(), "exists", [expVal]),
+            None(),
+            "getJavaPath",
+            []
+          )
+        )]))]
+        // Note: I am not sure what the constructor for "Util" should be. If this
+        //       doesn't work, try changing it to something specific for classnames.
+        // Note: meaning of this AST:
+        //       final [ty] [existsResultName] = Files.exists([expStr].getJavaPath());
       ]
-    ; result                := (stmtStrs, existsResultName)
+    ; result             := (stmts, existsResultName)
 
 rules // Early return and failure
 
