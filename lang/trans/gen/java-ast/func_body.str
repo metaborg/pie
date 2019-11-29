@@ -608,14 +608,16 @@ rules // Literals
       //  Note: meaning of this AST: Util.tuple([expsVals])
     ; result                := (stmts, exp)
     
-  p2j-exp:
+  p2j-ast-exp:
     ListLit(exps) -> result
     with
-      (expsStmtsStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
-    ; stmtStrs                  := <concat> expsStmtsStrs
-    ; expsStr                   := <pie-concat-comma> expsStrs
-    ; expStr                    := $[new ArrayList<>(Arrays.asList([expsStr]))]
-    ; result                    := (stmtStrs, expStr)
+      (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+    ; stmts                 := <concat> expsStmts
+    ; exp                   := NewInstance(None(), [], "ArrayList", [], Some(Diamond()), [
+        InvokeQExp(ExpressionName("Arrays"), None(), "asList", expsVals)
+      ])
+    //  Note: meaning of this AST: new ArrayList<>(Arrays.asList([expsVals]))
+    ; result                := (stmts, exp)
 
 rules // Interpolated string literal
 
