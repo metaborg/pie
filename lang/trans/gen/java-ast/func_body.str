@@ -599,14 +599,14 @@ rules // Literals
   p2j-ast-exp: NullLit()        -> ([], Null())
 
 
-  p2j-exp:
+  p2j-ast-exp:
     TupleLit(exps) -> result
     with
-      (expsStmtStrs, expsStrs) := <unzip> <map(try-p2j-exp)> exps
-    ; stmtStrs                 := <concat> expsStmtStrs
-    ; expsStr                  := <pie-concat-comma> expsStrs
-    ; expStr                   := $[Util.tuple([expsStr])]
-    ; result                   := (stmtStrs, expStr)
+      (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+    ; stmts                 := <concat> expsStmts
+    ; exp                   := InvokeQExp(ExpressionName("Util"), None(), "tuple", expsVals)
+      //  Note: meaning of this AST: Util.tuple([expsVals])
+    ; result                := (stmts, exp)
     
   p2j-exp:
     ListLit(exps) -> result
