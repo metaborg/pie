@@ -135,44 +135,96 @@ rules // Control flow
       ]]
     ; result                 := (stmts, resultName)
 
-  p2j-exp:
+  p2j-ast-exp:
     Add(lExp, rExp) -> result
     with
-      (lStmtStrs, lExpStr) := <try-p2j-exp> lExp
-    ; (rStmtStrs, rExpStr) := <try-p2j-exp> rExp
-    ; stmtStrs             := <concat> [lStmtStrs, rStmtStrs]
-    ; lType                := <pie-ast-type> lExp
-    ; rType                := <pie-ast-type> rExp
-    ; expStr               := <p2j-add(|lType, rType, lExpStr, rExpStr)> ""
-    ; result               := (stmtStrs, expStr)
+      (lStmts, lExpVal) := <try-p2j-ast-exp> lExp
+    ; (rStmts, rExpVal) := <try-p2j-ast-exp> rExp
+    ; stmts             := <concat> [lStmts, rStmts]
+    ; lType             := <pie-ast-type> lExp
+    ; rType             := <pie-ast-type> rExp
+    ; exp               := <p2j-ast-add(|lType, rType)> (lExpVal, rExpVal)
+    ; result            := (stmts, exp)
 
-  p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[[lExpStr] + [rExpStr]]
+  // p2j-ast-add(|lType, rType): (lExp, rExp) -> Java expression AST Node
+  // Helper function that converts the Add into the correct AST Node
+  // based on the types of the left and right side (lType and rType)
+  p2j-ast-add(|lType, rType):
+    (lExp, rExp) -> Add(lExp, rExp)
     where
       (IntTy(), IntTy()) := (lType, rType)
 
-  p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[[lExpStr] + [rExpStr]]
+  p2j-ast-add(|lType, rType):
+    (lExp, rExp) -> Add(lExp, rExp)
     where
       (StrTy(), _) := (lType, rType)
 
-  p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[[lExpStr].appendRelativePath([rExpStr])]
+  p2j-ast-add(|lType, rType):
+    (lExp, rExp) -> InvokeQExp(lExp, None(), "appendRelativePath", [rExp])
+    // Note: meaning of this AST: [lExp].appendRelativePath([rExp])
     where
       (PathTy(), PathTy()) := (lType, rType)
 
-  p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[[lExpStr].appendSegment([rExpStr])]
+  p2j-ast-add(|lType, rType):
+    (lExp, rExp) -> InvokeQExp(lExp, None(), "appendSegment", [rExp])
+    // Note: meaning of this AST: [lExp].appendSegment([rExp])
     where
       (PathTy(), StrTy()) := (lType, rType)
 
-  p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[Stream.concat(([lExpStr]).stream(), Stream.of([rExpStr])).collect(Collectors.toCollection(ArrayList::new))]
+  p2j-ast-add(|lType, rType):
+    (lExp, rExp) ->
+      InvokeQExp(
+        InvokeQExp(
+          ExpressionName("Stream")
+        , None()
+        , "concat"
+        , [ InvokeQExp(lExp, None(), "stream", [])
+          , InvokeQExp(
+              ExpressionName("Stream")
+            , None()
+            , "of"
+            , [rExp]
+            )
+          ]
+        )
+      , None()
+      , "collect"
+      , [ InvokeQExp(
+            ExpressionName("Collectors")
+          , None()
+          , "toCollection"
+          , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+          )
+        ]
+      )
+    // Note: meaning of this AST:
+    //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))]
     where
       (ListTy(a), a) := (lType, rType)
 
-  p2j-add(|lType, rType, lExpStr, rExpStr):
-    _ -> $[Stream.concat(([lExpStr]).stream(), ([rExpStr]).stream()).collect(Collectors.toCollection(ArrayList::new))]
+  p2j-ast-add(|lType, rType):
+    (lExp, rExp) ->
+      InvokeQExp(
+	    InvokeQExp(
+	      ExpressionName("Stream")
+	    , None()
+	    , "concat"
+	    , [ InvokeQExp(FromTerm(Var("lExpStr")), None(), "stream", [])
+	      , InvokeQExp(FromTerm(Var("rExpStr")), None(), "stream", [])
+	      ]
+	    )
+	  , None()
+	  , "collect"
+	  , [ InvokeQExp(
+	        ExpressionName("Collectors")
+	      , None()
+	      , "toCollection"
+	      , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+	      )
+	    ]
+	  )
+    // Note: meaning of this AST:
+    // Stream.concat(([lExp]).stream(), ([rExp]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where
       (ListTy(a), ListTy(a)) := (lType, rType)
 
