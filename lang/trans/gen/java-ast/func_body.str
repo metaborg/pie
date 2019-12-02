@@ -457,52 +457,99 @@ rules // Path operations
       // Note: meaning of this AST: FileSystemStampers.hash([filterVal])
     ; result             := (stmts, exp)
 
-  p2j-exp:
-    l@ListPath(exp, filterOpt) -> <p2j-dir(p2j-filter-list)> (l, exp, filterOpt)
-  p2j-exp:
-    w@WalkPath(exp, filterOpt) -> <p2j-dir(p2j-filter-walk)> (w, exp, filterOpt)
+  p2j-ast-exp:
+    l@ListPath(exp, filterOpt) ->
+      <p2j-ast-dir(p2j-ast-filter-create-param-list-for-list|"list")> (l, exp, filterOpt)
+  p2j-ast-exp:
+    w@WalkPath(exp, filterOpt) ->
+      <p2j-ast-dir(p2j-ast-filter-create-param-list-for-walk|"walk")> (w, exp, filterOpt)
 
-  p2j-dir(s):
+  // p2j-ast-dir(create-param-list | funcName):
+  //   (astNode, exp, filterOpt) -> (Java statements, Java expression value)
+  // Combined function for both ListPath and WalkPath.
+  // Input:
+  // - a strategy create-params-list which is passed on to p2j-ast-filter-to-params-list.
+  // - a function name to call (funcName)
+  // - operates on terms that are a Triple of:
+  //   + a Pie AST node (ListPath or WalkPath)
+  //   + the expression from that AST node (said expression represents a path)
+  //   + the filterOption from that AST node. This is also known as a matcher.
+  p2j-ast-dir(create-param-list | funcName):
     (astNode, exp, filterOpt) -> result
     with
-      (expStmtStrs, expStr) := <p2j-exp> exp
-    ; (funcStmts, funcCall)  := <s> filterOpt
-    ; tyStr                 := <p2j-type-sig> <pie-type> astNode
-    ; expVarName            := <newname> "dirResult"
-    ; stmtStrs              := <concat> [
-        expStmtStrs,
-        funcStmts,
-        [$[final [tyStr] [expVarName] = execContext.require([expStr]).[funcCall]
-        .map(FSResource::getPath)
-        .collect(Collectors.toCollection(ArrayList::new));]]
+      (expStmts, expVal)      := <try-p2j-ast-exp> exp
+    ; (matcherStmts, matcher) := <p2j-ast-filter> filterOpt
+    ; funcParamList           := <p2j-ast-filter-to-params-list(create-param-list)> (filterOpt, matcher)
+    ; ty                      := <p2j-ast-type-sig> <pie-type> astNode
+    ; expVarName              := <newname> "dirResult"
+    ; stmts                   := <concat> [
+        expStmts,
+        matcherStmts,
+        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+          expVarName,
+          InvokeQExp(
+            InvokeQExp(
+              InvokeQExp(
+                InvokeQExp(ExpressionName("execContext"), None(), "require", [expVal])
+                , None()
+                , funcName
+                , funcParamList
+                )
+            , None()
+            , "map"
+            , [MethodReferenceRType(ClassType([], "FSResource", None()), None(), "getPath")]
+            )
+          , None()
+          , "collect"
+          , [ InvokeQExp(
+                ExpressionName("Collectors")
+              , None()
+              , "toCollection"
+              , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+              )
+            ]
+          )
+        )]))]
+        // Note: meaning of this AST:
+        //   final [ty] [expVarName] = execContext.require([expVal]).[funcName]([funcParamList])
+        //   .map(FSResource::getPath)
+        //   .collect(Collectors.toCollection(ArrayList::new));
       ]
-    ; result                := (stmtStrs, expVarName)
+    ; result                  := (stmts, expVarName)
 
-  p2j-filter-list:
-    None() -> ([], $[list()])
-  p2j-filter-list:
-    matcherExp -> result
+  // p2j-ast-filter-to-params-list(create-param-list):
+  //   (matcherPie, matcherJava) -> parameter list
+  // creates a list of parameters for the call to the dir-function in p2j-ast-dir
+  // create-param-list should be one of the p2j-filter-create-param-list-for-X strategies
+  p2j-ast-filter-to-params-list(create-param-list):
+    (None(), _) -> []
+  p2j-ast-filter-to-params-list(create-param-list):
+    (matcherPie, matcherJava) -> <create-param-list> matcherJava
     where
-      <not(?None())> matcherExp
-    with
-      (stmtStrs, matcher) := <p2j-filter> matcherExp
-    ; expStr              := $[list(new PathResourceMatcher([matcher]))]
-    ; result              := (stmtStrs, expStr)
+      <not(?None())> matcherPie
   
-  p2j-filter-walk:
-    None() -> ([], $[walk()])
-  p2j-filter-walk:
-    matcherExp -> result
-    where
-      <not(?None())> matcherExp
-    with
-      (stmtStrs, matcher) := <p2j-filter> matcherExp
-    ; expStr              := $[walk(new PathResourceWalker(new NoHiddenPathMatcher()), new PathResourceMatcher([matcher]))]
-    ; result              := (stmtStrs, expStr)
+  // p2j-ast-filter-create-param-list-for-[funcName]: matcher -> param list
+  // Given a Java AST node for a matcher, create a list of parameters
+  // for the Pie API method funcName
+  p2j-ast-filter-create-param-list-for-list:
+    matcher -> [NewInstance(None(), [], "PathResourceMatcher", [], None(), matcher)]
+    // Note: meaning of this AST: new PathResourceMatcher([matcher])
+  p2j-ast-filter-create-param-list-for-walk:
+    matcher -> [
+      NewInstance(None(), [], "PathResourceWalker", [], None(), [
+        NewInstance(None(), [], "NoHiddenPathMatcher", [], None(), [])
+      ]),
+      NewInstance(None(), [], "PathResourceMatcher", [], None(), [matcher])
+    ]
+    // Note: meaning of these ASTs:
+    //   new PathResourceWalker(new NoHiddenPathMatcher())
+    //   new PathResourceMatcher([matcher])
 
   // p2j-ast-filter: Pie filter -> (stmts, Java AST expression value)
+  // Important: the return value for the term None() is non-sensical and should not be used.
+  // The rule is left here because some p2j-ast-dir will call it but discard the result if it is None()
   p2j-ast-filter:
-    None() -> <fail> // this should never be called, as None() filters are filtered out
+    None() -> () // Intentionally returns a malformed output, as this result should never be used
   p2j-ast-filter:
     Regex(exp) -> <p2j-ast-filter-common> ("RegexPathMatcher", exp)
   p2j-ast-filter:
