@@ -88,19 +88,23 @@ rules // Unary expressions
 
 rules // Binary expressions
 
-  p2j-binexp(|begin, middle, end): // start is a reserved word?
+  // p2j-ast-binexp(combine-vals):
+  //   (lExp, rExp) -> (Java statements, Java expression value AST node)
+  // a general function for handline a binexp.
+  // It takes a strategy combine-vals to combine the values of both sides
+  p2j-ast-binexp(combine-vals):
     (lExp, rExp) -> result
     with
-      (lStmtStrs, lExpStr) := <try-p2j-exp> lExp
-    ; (rStmtStrs, rExpStr) := <try-p2j-exp> rExp
-    ; stmtStrs             := <concat> [lStmtStrs, rStmtStrs]
-    ; expStr               := $[[begin][lExpStr][middle][rExpStr][end]]
-    ; result               := (stmtStrs, expStr)
+      (lStmts, lExpVal) := <try-p2j-ast-exp> lExp
+    ; (rStmts, rExpVal) := <try-p2j-ast-exp> rExp
+    ; stmts             := <concat> [lStmts, rStmts]
+    ; exp               := <combine-vals> (lExpVal, rExpVal)
+    ; result            := (stmts, exp)
   
-  p2j-exp: Eq(lExp, rExp) -> <p2j-binexp(|"", ".equals(", ")")> (lExp, rExp)
-  p2j-exp: Neq(lExp, rExp) -> <p2j-binexp(|"!", ".equals(", ")")> (lExp, rExp)
-  p2j-exp: Lor(lExp, rExp) -> <p2j-binexp(|"", "||", "")> (lExp, rExp)
-  p2j-exp: Land(lExp, rExp) -> <p2j-binexp(|"", "&&", "")> (lExp, rExp)
+  p2j-ast-exp: Eq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> InvokeQExp(e1, None(), "equals", [e2])\)> (lExp, rExp)
+  p2j-ast-exp: Neq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> Not(InvokeQExp(e1, None(), "equals", [e2]))\)> (lExp, rExp)
+  p2j-ast-exp: Lor(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> LazyOr(e1, e2)\)> (lExp, rExp)
+  p2j-ast-exp: Land(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> LazyAnd(e1, e2)\)> (lExp, rExp)
 
 rules // Control flow
 
