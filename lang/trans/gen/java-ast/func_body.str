@@ -624,10 +624,10 @@ rules // Interpolated string literal
   p2j-ast-exp:
     StrLit(parts) -> result
     with
-      (partsStmts, partStrs) := <unzip> <map(p2j-ast-strpart)> parts
-    ; stmts                  := <concat> partsStmts
-    ; exp                    := <reduce(p2j-ast-add-strings)> partStrs
-    ; result                 := (stmts, exp)
+      (partsStmts, partsExps) := <unzip> <map(p2j-ast-strpart)> parts
+    ; stmts                   := <concat> partsStmts
+    ; exp                     := <reduce(p2j-ast-add-strings)> partsExps
+    ; result                  := (stmts, exp)
 
   // Replace all escaped \$ with $. Note: "\\$" because the \ needs to be escaped in stratego.
   // todo: Check if simply replacing is fine, or if it is possible that it is actually a $,
