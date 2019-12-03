@@ -210,8 +210,8 @@ rules // Control flow
 	      ExpressionName("Stream")
 	    , None()
 	    , "concat"
-	    , [ InvokeQExp(FromTerm(Var("lExpStr")), None(), "stream", [])
-	      , InvokeQExp(FromTerm(Var("rExpStr")), None(), "stream", [])
+	    , [ InvokeQExp(lExp, None(), "stream", [])
+	      , InvokeQExp(rExp, None(), "stream", [])
 	      ]
 	    )
 	  , None()
