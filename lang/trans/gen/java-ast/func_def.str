@@ -97,7 +97,10 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     ; returnValue           := <p2j-pie-func-impl-returnvalue> expStr
     ; result                := (expStmtStrs, returnValue)
 
-  
+  // p2j-ast-pie-func-impl-returnvalue: Pie exp -> (Java Statements, Java expression)
+  // Converts a Pie expression to a Java expression for returning
+  // (Used because a Tuple may not be returned directly but 
+  // must be converted to the correct ouput type)
   p2j-ast-pie-func-impl-returnvalue:
     exp -> result
     where
