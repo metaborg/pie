@@ -1,4 +1,4 @@
-module gen/java-string/type
+module gen/java-ast/type
 
 imports
 
