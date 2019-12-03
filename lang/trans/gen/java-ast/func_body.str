@@ -1,4 +1,4 @@
-module gen/java-string/func_body
+module gen/java-ast/func_body
 
 imports
 
