@@ -232,25 +232,51 @@ rules // Control flow
   p2j-exp:
     e@ListComprehension(mapExp, binder, listExp) -> result
     with
-      (listStmtStrs, listExpStr) := <try-p2j-exp> listExp
-    ; listExpTy                  := <pie-ast-type> listExp
-    ; ListTy(listExpElemTy)      := listExpTy
-    ; (mapStmtStrs, mapExpStr)   := <try-p2j-exp> mapExp
-    ; (assignmentStrs, varId)    := <bind-tuples-to-assignments> (binder, listExpElemTy)
-    ; innerStmtStrs                   := <concat> [
-        assignmentStrs,
-        mapStmtStrs,
-        [$[return [mapExpStr];]]
+      (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
+    ; ListTy(listExpElemTy)   := <pie-ast-type> listExp
+    ; (mapStmts, mapExpVal)   := <try-p2j-ast-exp> mapExp
+    ; (assignments, varId)    := <bind-tuples-to-ast-assignments> (binder, listExpElemTy)
+    ; innerStmts              := <concat> [
+        assignments,
+        mapStmts,
+        [Return(mapExpVal)]
+        // Note: may need to be Return(Some(mapExpVal))
+        // Note: meaning of this AST: return [mapExpVal];
       ]
-    ; comprehensionTmpVarName     := <newname> "comprehensionResult"
-    ; tyStr                       := <p2j-type-sig> <pie-type> e
-    ; stmtStrs                    := <concat> [
-        listStmtStrs,
-        [$[final [tyStr] [comprehensionTmpVarName] = [listExpStr].stream().map(Util.throwingLambda([varId] -> {
-          [<pie-concat-nl> innerStmtStrs]
-        })).collect(Collectors.toCollection(ArrayList::new));]]
+    ; comprehensionTmpVarName := <newname> "comprehensionResult"
+    ; ty                      := <p2j-ast-type-sig> <pie-type> e
+    ; stmts                   := <concat> [
+        listStmts,
+        InvokeQExp(
+          InvokeQExp(
+            InvokeQExp(listExpVal, None(), "stream", [])
+          , None()
+          , "map"
+          , [ InvokeQExp(
+                ExpressionName("Util")
+              , None()
+              , "throwingLambda"
+              , [LambdaExpressionWithBlock(SingleParam("varId"), Block(innerStmts))
+                ]
+              )
+            ]
+          )
+        , None()
+        , "collect"
+        , [ InvokeQExp(
+              ExpressionName("Collectors")
+            , None()
+            , "toCollection"
+            , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+            )
+          ]
+        )
+        // Note: meaning of this AST:
+        //   final [ty] [comprehensionTmpVarName] = [listExpVal].stream().map(Util.throwingLambda([varId] -> {
+        //     [innerStmts]
+        //   })).collect(Collectors.toCollection(ArrayList::new));
       ]
-    ; result                     := (stmtStrs, comprehensionTmpVarName)
+    ; result                     := (stmts, comprehensionTmpVarName)
 
 rules // Binding
 
