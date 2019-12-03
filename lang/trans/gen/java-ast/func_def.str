@@ -10,6 +10,7 @@ imports
 
   signatures/java/expressions/-
   signatures/java/names/-
+  signatures/java/types/-
 
   gen/java-ast/type
   gen/java-ast/func_body
@@ -116,32 +117,42 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     where
       <pie-ast-type; not(?TupleTy(_))> exp
 
-  p2j-pie-func-impl-inputsig(|className):
-    Params(params) -> ("None", "")
+  // p2j-ast-pie-func-impl-inputsig(|className):
+  //   Params(params) -> (inputType, list of dataClasses)
+  // Takes a Pie Params constructor and returns the Java function input type
+  // for the class className (String) and a list of dataclasses
+  // (note: always 0 or 1 dataclass, it's a list to prevent having to match
+  // on None / Some)
+  // This also sets the dynamic rule InputKind
+  p2j-ast-pie-func-impl-inputsig(|className):
+    Params(params) -> (<p2j-ast-type-sig> UnitTy(), [])
     where
       0 := <length> params
     with 
       rules(InputKind := 0)
       
-  p2j-pie-func-impl-inputsig(|className):
-    p@Params(params) -> (tySig, "")
+  p2j-ast-pie-func-impl-inputsig(|className):
+    p@Params(params) -> (tySig, [])
     where
       1 := <length> params
     with
       [(_, ty)] := <pie-idtype-tuples> p
-    ; tySig     := <p2j-type-sig> ty
+    ; tySig     := <p2j-ast-type-sig> ty
     with 
       rules(InputKind := 1)
     
-  p2j-pie-func-impl-inputsig(|className):
-    p@Params(params) -> ($[[className].Input], $[[dataClassStr]["\n"]])
+  p2j-ast-pie-func-impl-inputsig(|className):
+    p@Params(params) -> result
     where
       length := <length> params
     ; <gt> (length, 1)
     with
       idTypeTuples := <pie-idtype-tuples> p
-    ; dataClassStr := <p2j-type-generate-dataclass(|"Input")> idTypeTuples
-    with 
+    ; dataClass    := <p2j-ast-type-generate-dataclass(|"Input")> idTypeTuples
+    ; inputType    := ClassOrInterfaceTypeMember(ClassType([], className, None()), [], "Input", None())
+      // Note: meaning of this AST: [className].Input
+    ; result       := (inputType, dataClass)
+    with
       rules(InputKind := 2)
 
     
