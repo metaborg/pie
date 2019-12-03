@@ -23,7 +23,7 @@ rules
   p2j-ast-type-sig: StrTy()  -> ClassType("String", None())
   p2j-ast-type-sig: PathTy() -> ClassType("FSPath", None())
   p2j-ast-type-sig: TopTy()  -> ClassType("Object", None())
-  p2j-ast-type-sig: NullTy()  -> ClassType("Void", None())
+  p2j-ast-type-sig: NullTy() -> ClassType("Void", None())
 
   p2j-ast-type-sig:
     DataTy(occ) -> ClassType(javaClassId, None())
