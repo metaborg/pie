@@ -155,27 +155,48 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     with
       rules(InputKind := 2)
 
-    
-  p2j-pie-func-impl-outputsig(|className):
-    ty -> (<p2j-type-sig> ty, "")
+  // p2j-ast-pie-func-impl-outputsig(|className):
+  //   Pie type -> (Java Type, list of Java (data)class declaration AST nodes)
+  // Converts a Pie type into the corresponding Java return type
+  // for the given class (className) and a list of dataclasses
+  // There is either 0 or 1 dataclass, but they are in a list
+  // to avoid having to match on None and Some
+  p2j-ast-pie-func-impl-outputsig(|className):
+    ty -> (<p2j-ast-type-sig> ty, [])
     where
       <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
       
-  p2j-pie-func-impl-outputsig(|className):
-    ty -> ($[[className].Output], $[[dataClassStr]["\n\n"]])
+  p2j-ast-pie-func-impl-outputsig(|className):
+    ty -> result
     where
       <?TupleTy(_)> ty
     with
-      idTypeTuples := <pie-idtype-tuples> ty
-    ; dataClassStr := <p2j-type-generate-dataclass(|"Output")> idTypeTuples
+      returnType   := ClassOrInterfaceTypeMember(
+          ClassType([], className, None())
+        , []
+        , "Output"
+        , None()
+      )
+      // Note: meaning of this AST: [className].Output
+    ; idTypeTuples := <pie-idtype-tuples> ty
+    ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
+    ; result       := (returnType, dataClass)
 
-  p2j-pie-func-impl-outputsig(|className):
-    ty -> ($[[className].Output?], $[[dataClassStr]["\n\n"]])
+  p2j-ast-pie-func-impl-outputsig(|className):
+    ty -> result
     where
       <?NullableTy(tty@TupleTy(_))> ty
     with
-      idTypeTuples := <pie-idtype-tuples> tty
-    ; dataClassStr := <p2j-type-generate-dataclass(|"Output")> idTypeTuples
+      returnType   := ClassOrInterfaceTypeMember(
+          ClassType([], className, None())
+        , []
+        , "Output"
+        , None()
+      )
+      // Note: meaning of this AST: [className].Output
+    ; idTypeTuples := <pie-idtype-tuples> tty
+    ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
+    ; result       := (returnType, dataClass)
 
     
   p2j-pie-func-key-body:
