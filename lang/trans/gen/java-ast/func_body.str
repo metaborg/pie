@@ -14,6 +14,7 @@ imports
   signatures/java/names/-
   signatures/java/classes/-
   signatures/java/literals/-
+  signatures/java/types/-
   
   statsem/pie
   
