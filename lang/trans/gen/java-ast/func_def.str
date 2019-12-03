@@ -198,13 +198,14 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
     ; result       := (returnType, dataClass)
 
-    
-  p2j-pie-func-key-body:
-    None() -> "return input;"
-    
-  p2j-pie-func-key-body:
-    PieKeyFunc(exp) -> result 
+  // p2j-ast-pie-func-key-body: PieKeyFunc(exp)? -> list of Java statament AST nodes
+  // generates a list of statements for the body of the key function
+  p2j-ast-pie-func-key-body:
+    None() -> Return(ExpressionName("input"))
+
+  p2j-ast-pie-func-key-body:
+    PieKeyFunc(exp) -> result
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; stmtStr               := <pie-concat-nl> expStmtStrs
-    ; result                := $[[stmtStr]["\n"]return [expStr];]
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; result             := <concat> [expStmts, [Return(expVal)]]
+      // Note: meaning of these statements: [expStmts]["\n"]return [expVal];
