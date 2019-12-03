@@ -1,4 +1,4 @@
-module gen/java/main
+module gen/java-ast/main
 
 imports
 
