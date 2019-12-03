@@ -169,23 +169,7 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
   p2j-ast-pie-func-impl-outputsig(|className):
     ty -> result
     where
-      <?TupleTy(_)> ty
-    with
-      returnType   := ClassOrInterfaceTypeMember(
-          ClassType([], className, None())
-        , []
-        , "Output"
-        , None()
-      )
-      // Note: meaning of this AST: [className].Output
-    ; idTypeTuples := <pie-idtype-tuples> ty
-    ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
-    ; result       := (returnType, dataClass)
-
-  p2j-ast-pie-func-impl-outputsig(|className):
-    ty -> result
-    where
-      <?NullableTy(tty@TupleTy(_))> ty
+      tty := <try(?NullableTy(<id>));?TupleTy(_)> ty
     with
       returnType   := ClassOrInterfaceTypeMember(
           ClassType([], className, None())
