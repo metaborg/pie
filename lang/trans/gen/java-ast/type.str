@@ -43,7 +43,7 @@ rules
 
 
   p2j-ast-type-sig: 
-    TupleTy(tys) -> ClassType($[Tuple[length]], tys)
+    TupleTy(tys) -> ClassType($[Tuple[length]], Some(tys))
     with
       length := <length> tys
 
