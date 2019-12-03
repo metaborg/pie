@@ -9,6 +9,9 @@ imports
   signatures/impl/-
 
   signatures/java/types/-
+  signatures/java/classes/-
+  signatures/java/expressions/-
+  signatures/java/literals/-
 
   statsem/pie
   
@@ -52,46 +55,114 @@ rules
   
 rules
 
+  // p2j-ast-type-generate-dataclass(|name):
+  //   list of (varId, Pie type) -> Java (data)class declaration AST node
   p2j-ast-type-generate-dataclass(|name):
-    idTypeTuples -> 
-$[public static final class [name] extends [tupleTy]<[tupleTypes]> implements Serializable {
-  public [name]([params]) {
-    super([callParams]);
-  }
-  
-  @Nullable
-  public static [name] fromTuple(@Nullable [tupleTy]<[tupleTypes]> tuple) {
-    if (tuple == null) {
-      return null;
-    }
-    return new [name]([tupleNumParams]);
-  }
-  [getters]
-}]
+    idPieTypeTuples -> result
     with
-      tupleTy           := $[Tuple[<length> idTypeTuples]]
-    ; tys               := <map(Snd)> idTypeTuples
-    ; typeStrs          := <map(p2j-ast-type-sig)> tys
-    ; idTypeStrTuples   := <zip> (<map(Fst)> idTypeTuples, typeStrs)
-    ; getterStrs        := <nmap(type-tuple-to-getter | 1)> idTypeStrTuples
-    ; getters           := <pie-concat-nl> getterStrs
-    ; paramStrs         := <map(type-tuple-to-param)> idTypeStrTuples
-    ; params            := <pie-concat-comma> paramStrs
-    ; callParamStrs     := <map(type-tuple-to-call-param)> idTypeStrTuples
-    ; callParams        := <pie-concat-comma> callParamStrs
-    ; tupleNumParamStrs := <nmap(type-tuple-to-tuple-field-get | 1)> idTypeStrTuples
-    ; tupleNumParams    := <pie-concat-comma> tupleNumParamStrs
-    ; tupleTypeStrs     := <map(type-tuple-to-type)> idTypeStrTuples
-    ; tupleTypes        := <pie-concat-comma> tupleTypeStrs
+      tupleTy        := $[Tuple[<length> idPieTypeTuples]]
+    ; tys            := <map(Snd)> idPieTypeTuples
+    ; types          := <map(p2j-ast-type-sig)> tys
+    ; idTypeTuples   := <zip> (<map(Fst)> idPieTypeTuples, types)
+    ; getters        := <nmap(type-tuple-to-ast-getter | 1)> idTypeTuples
+    ; params         := <create-ast-formal-params> idTypeTuples
+    ; callParams     := <map(type-tuple-to-ast-call-param)> idTypeTuples
+    ; tupleNumParams := <nmap(type-tuple-to-ast-tuple-field-get | 1)> idTypeTuples
+    ; tupleTypes     := <map(type-tuple-to-type)> idTypeTuples
+    ; result            := ClassDeclaration(
+        [Public(), Static(), Final()]
+      , name
+      , None()
+      , Some(SuperClass(ClassType(tupleTy, Some(tupleTypes))))
+      , Some([ClassType("Serializable", None())])
+      , <concat> [
+          [
+            ConstrDecl(
+              [Public()]
+            , None()
+            , name
+            , params
+            , None()
+            , Some(SuperConstrInv(None(), callParams))
+            , []
+            )
+          , MethodDecl(
+              [Public(), Static()]
+            , MethodHeader(
+                ClassType(name, None())
+              , "fromTuple"
+              , SingleParam(FormalParam(
+                  MarkerAnno(TypeName("Nullable"))
+                , ClassType(tupleTy, Some(tupleTypes))
+                , "tuple"
+                ))
+              , []
+              , None()
+              )
+            , Block([
+                If(Eq(ExpressionName("tuple"), Null()), Return(Null()))
+              , Return(NewInstance(None(), [], name, [], None(), tupleNumParams))
+              ])
+            )
+          ]
+        , getters
+        ]
+      )
+      // Note: meaning of this AST:
+      //   public static final class [name] extends [tupleTy]<[tupleTypes]> implements Serializable {
+      //     public [name]([params]) {
+      //       super([callParams]);
+      //     }
+      //
+      //     @Nullable
+      //     public static [name] fromTuple(@Nullable [tupleTy]<[tupleTypes]> tuple) {
+      //       if (tuple == null) {
+      //         return null;
+      //       }
+      //       return new [name]([tupleNumParams]);
+      //     }
+      //     [getters]
+      //   }
 
-  type-tuple-to-field: (varId, ty) -> $[public final [ty] [varId];]
+  // create-formal-params: list of (varId, Java type) -> params
+  // Converts a list of type tuples into the correct FormalParamaters constructor
+  // (NoParams, SingleParam or ParamList)
+  create-ast-formal-params: idTypeTuples -> NoParams()
+  where
+    0 := <length> idTypeTuples
+
+  create-ast-formal-params: idTypeTuples -> SingleParam(<type-tuple-to-ast-formal-param> idTypeTuple)
+  where
+    1 := <length> idTypeTuples
+  with
+    [idTypeTuple] := idTypeTuples
+
+  create-ast-formal-params: idTypeTuples -> result
+  where
+    <gt> (<length> idTypeTuples, 1)
+  with
+    rest   := <map(type-tuple-to-ast-formal-param)> <take(|<dec> <length> idTypeTuples)> idTypeTuples
+  ; last   := <type-tuple-to-ast-formal-param> <last> idTypeTuples
+  ; result := ParamList(rest, last)
+
+  type-tuple-to-ast-field: (varId, ty) -> FieldDecl([Public(), Final()], ty, [varId])
+    // Note: meaning of this AST: public final [ty] [varId];
   type-tuple-to-type: (varId, ty) -> ty
-  type-tuple-to-tuple-field-get(|number): _ -> $[tuple.component[number]()]
-  type-tuple-to-getter(|number): (varId, ty) -> 
-    $[
-    public final [ty] get_[varId]() {
-      return component[number]();
-    }]
-  type-tuple-to-param: (varId, ty) -> $[[ty] [varId]]
-  type-tuple-to-call-param: (varId, ty) -> varId
-  type-tuple-to-assignment: (varId, ty) -> $[this.[varId] = [varId];]
+  type-tuple-to-ast-tuple-field-get(|number):
+    _ -> InvokeQExp(ExpressionName("tuple"), None(), $[component[number]], [])
+    // Note: meaning of this AST: tuple.component[number]()
+  type-tuple-to-ast-getter(|number): (varId, ty) -> MethodDecl(
+      [Public(), Final()]
+    , MethodHeader(ty, $[get_[varId]], NoParams(), [], None())
+    , Block([Return(Invoke($[component[number]], []))])
+    )
+    // Note: meaning of this AST:
+    //   public final [ty] get_[varId]() {
+    //     return component[number]();
+    //   }
+  type-tuple-to-ast-formal-param: (varId, ty) -> FormalParam([], ty, varId)
+    // Note: meaning of this AST: [ty] [varId]
+  type-tuple-to-ast-call-param: (varId, ty) -> ExpressionName(varId)
+  type-tuple-to-ast-assignment:
+    (varId, ty) -> Assign(Field(This(), varId), ExpressionName(varId))
+    // Note: meaning of this AST: this.[varId] = [varId]
