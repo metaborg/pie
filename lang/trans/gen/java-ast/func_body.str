@@ -698,13 +698,13 @@ rules // Path operations
 
 rules // Early return and failure
 
-  p2j-exp:
+  p2j-ast-exp:
     Return(exp) -> result
     with
-      (expStmtStrs, expStr) := <p2j-pie-func-impl-returnvalue> exp
-    ; resultExpStr          := <Snd> <try-p2j-exp> UnitLit()
-    ; stmtStrs              := <concat> [expStmtStrs, [$[return [expStr];]]]
-    ; result                := (stmtStrs, resultExpStr)
+      (expStmts, expVal) := <p2j-ast-pie-func-impl-returnvalue> exp
+    ; resultExp          := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; stmts              := <concat> [expStmts, [Return(expVal)]]
+    ; result             := (stmts, resultExp)
 
   p2j-ast-exp:
     Fail(exp) -> result
