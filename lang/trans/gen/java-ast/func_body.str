@@ -269,7 +269,7 @@ rules // Binding
     ; result               := (stmts, resultExp)
   
   // bind-tuples-to-assignments:
-  // (Pie Binder (bind or TBind), ExpressionType) -> (varName, assignments)
+  // (Pie Binder (bind or TBind), Pie ExpressionType) -> (assignments, varName)
   bind-tuples-to-ast-assignments:
     (SingleBinder(bind), _) -> ([], <p2j-ast-bind> bind)
   
