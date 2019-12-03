@@ -7,7 +7,10 @@ imports
   signatures/-
   signatures/lex/-
   signatures/impl/-
-  
+
+  signatures/java/expressions/-
+  signatures/java/names/-
+
   gen/java-ast/type
   gen/java-ast/func_body
   gen/idtype-tuples
@@ -95,17 +98,18 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
     ; result                := (expStmtStrs, returnValue)
 
   
-  p2j-pie-func-impl-returnvalue:
+  p2j-ast-pie-func-impl-returnvalue:
     exp -> result
     where
       <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; resultExpStr          := $[Output.fromTuple([expStr])]
-    ; result                := (expStmtStrs, resultExpStr)
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; resultExp          := InvokeQExp(ExpressionName("Output"), None(), "fromTuple", [expVal])
+      // Note: meaning of this AST: Output.fromTuple([expVal])
+    ; result             := (expStmts, resultExp)
 
-  p2j-pie-func-impl-returnvalue:
-    exp -> <try-p2j-exp> exp
+  p2j-ast-pie-func-impl-returnvalue:
+    exp -> <try-p2j-ast-exp> exp
     where
       <pie-ast-type; not(?TupleTy(_))> exp
 
