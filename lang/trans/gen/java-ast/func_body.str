@@ -56,6 +56,8 @@ rules // Expression composition
     ; result                    := (resultStmts, blockResultVal)
     ; <debug(|"End Block (expression): ")> result
 
+  p2j-ast-exp: EmptyBlock() -> <p2j-ast-exp> UnitLit()
+
 rules // Unary expressions
   
   p2j-ast-exp:

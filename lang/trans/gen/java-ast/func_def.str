@@ -75,28 +75,29 @@ $[class [className] implements TaskDef<[inputName], [outputName]> {
 }
 ]
 
-  p2j-pie-func-impl-body():
-    Block(exps) -> result  
+  // p2j-ast-pie-func-impl-body(): Block(exps)|EmptyBlock()|<Exp> ->
+  //   (list of Java statements, Java return value AST node)
+  // converts the body of a Pie function to a list of Java statements
+  // and a return value
+  p2j-ast-pie-func-impl-body():
+    Block(exps) -> result
     with
-      numExps                   := <length> exps
-    ; restExps                  := <take(|<dec> numExps)> exps 
-    ; restStmtStrs              := <map(try-p2j-exp); map(Fst); concat> restExps
-    ; lastExp                   := <last> exps
-    ; (lastStmtStr, lastExpStr) := <p2j-pie-func-impl-returnvalue> lastExp
-    ; stmtStrs                  := <concat> [restStmtStrs, lastStmtStr]
-    ; result                    := (stmtStrs, lastExpStr)
+      numExps                := <length> exps
+    ; restExps               := <take(|<dec> numExps)> exps
+    ; restStmts              := <map(try-p2j-ast-exp); map(Fst); concat> restExps
+    ; lastExp                := <last> exps
+    ; (lastStmt, lastExpVal) := <p2j-ast-pie-func-impl-returnvalue> lastExp
+    ; stmts                  := <concat> [restStmts, lastStmt]
+    ; result                 := (stmts, lastExpVal)
 
-  p2j-pie-func-impl-body():
-    EmptyBlock() -> ([], <Snd> <p2j-type-sig> UnitLit())
-
-  p2j-pie-func-impl-body():
+  p2j-ast-pie-func-impl-body():
     exp -> result
     where
-      <not(?Block(_) <+ ?EmptyBlock())> exp
+      <not(?Block(_))> exp
     with
-      (expStmtStrs, expStr) := <try-p2j-exp> exp
-    ; returnValue           := <p2j-pie-func-impl-returnvalue> expStr
-    ; result                := (expStmtStrs, returnValue)
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; returnValue        := <p2j-ast-pie-func-impl-returnvalue> expVal
+    ; result             := (expStmts, returnValue)
 
   // p2j-ast-pie-func-impl-returnvalue: Pie exp -> (Java Statements, Java expression)
   // Converts a Pie expression to a Java expression for returning
