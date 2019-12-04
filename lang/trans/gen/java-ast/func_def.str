@@ -11,6 +11,8 @@ imports
   signatures/java/expressions/-
   signatures/java/names/-
   signatures/java/types/-
+  signatures/java/classes/-
+  signatures/java/interfaces/-
 
   gen/java-ast/type
   gen/java-ast/func_body
@@ -19,61 +21,134 @@ imports
 
 rules // PIE function definitions
 
-  p2j-def:
-    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body, optKeyBody)) -> str
+  // p2j-ast-def:
+  //   FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body, optKeyBody)) ->
+  //   Java class implementing TaskDef AST node
+  // Tranforms a Pie function into a Pie Task (i.e. a Java class implementing TaskDef)
+  // Adds to the dynamic strategy ModuleBindings
+  // Defines the dynamic rules InputKind and InjectValues
+  // InputKind is either 0, 1, or 2, it reflects the number of parameter for this function
+  // (2 is used for anything greater than 1)
+  // InjectValues are the values that will be injected
+  // into the constructor of the Java class
+  p2j-ast-def:
+    FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body, optKeyBody)) -> result
     with
       className   := <pie-sanitize-class-id> funcId
     with
     {| InputKind, InjectValues:
-      (inputName , inputDataClass)  := <p2j-pie-func-impl-inputsig(|className)> params
-    ; (outputName, outputDataClass) := <p2j-pie-func-impl-outputsig(|className)> type
-    ; (execStmts, execExp)          := <p2j-pie-func-impl-body> body
-    ; keyImpl                       := <p2j-pie-func-key-body> optKeyBody
-    ; injectTuples                  := <bagof-InjectValues; make-set>
-    ; fields                        := <map(type-tuple-to-field); pie-concat-nl> injectTuples
-    ; constructorParams             := <map(type-tuple-to-param); pie-concat-commanl> injectTuples
-    ; assignments                   := <map(type-tuple-to-assignment); pie-concat-nl> injectTuples
-    ; returnValue                   := <?UnitTy(); !$[None.instance] <+ !execExp> type
+      (inputType, inputDataClasses)   := <p2j-ast-pie-func-impl-inputsig(|className)> params
+    ; (outputType, outputDataClasses) := <p2j-ast-pie-func-impl-outputsig(|className)> type
+    ; (stmts, lastValue)              := <p2j-ast-pie-func-impl-body> body
+    ; keyImpl                         := <p2j-ast-pie-func-key-body> optKeyBody
+    ; injectTuples                    := <bagof-InjectValues; make-set>
+    ; fields                          := <map(type-tuple-to-ast-field)> injectTuples
+    ; constructorParams               := <create-ast-formal-params> injectTuples
+    ; assignments                     := <map(type-tuple-to-ast-assignment)> injectTuples
+    ; returnValue                     := <?UnitTy(); !<p2j-ast-exp> UnitLit() <+ !lastValue> type
    |}
     with
-      rules(ModuleBindings :+= $[bindTaskDef([className].class, "[className]");])
+      rules(ModuleBindings :+= Invoke(
+          "bindTaskDef"
+        , [TypeNameClassLiteral(TypeName(className), []), StrLit(className)]
+        )
+      )
+      // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
     with
-      str := 
-$[class [className] implements TaskDef<[inputName], [outputName]> {
-  [fields]
-  
-  @Inject
-  [className](
-    [constructorParams]
-  ) {
-    [assignments]
-  }
-  private static final String _id = "[className]";
-  
-  [inputDataClass]
-  
-  [outputDataClass]
-  
-  public String getId() {
-    return _id;
-  }
-  
-  @Override
-  public Serializable key([inputName] input) {
-    [keyImpl]
-  }
-  
-  @Override
-  public [outputName] exec(ExecContext execContext, [inputName] input) throws Exception {
-    try {
-      [<pie-concat-nl> execStmts]
-      return [returnValue];
-    } catch (Util.WrapperException e) {
-      throw e.getWrappedException();
-    }
-  }
-}
-]
+      result := ClassDeclaration(
+          []
+        , className
+        , None()
+        , None()
+        , [ClassType([], "TaskDef", Some(TypeArguments([inputType, outputType])))]
+        , <concat> [
+            [ FieldDecl(
+                [Private(), Static(), Final()]
+              , ClassType("String", None())
+              , VariableDeclInit("_id", StrLit(className))
+              )
+            ]
+          , fields
+          , [ ConstrDecl(
+                [MarkerAnno(TypeName("Inject"))]
+              , None()
+              , className
+              , constructorParams
+              , None()
+              , None()
+              , assignments
+              )
+            ]
+          , inputDataClasses
+          , outputDataClasses
+          , [ MethodDecl(
+                [Public()]
+              , MethodHeader(TypeName("String"), "getId", NoParams(), [], None())
+              , Block(Return(Field(This(), "_id")))
+              )
+            , MethodDecl(
+                [MarkerAnno(TypeName("Override")), Public()]
+              , MethodHeader(
+                  TypeName("Serializable")
+                , "key"
+                , SingleParam(FormalParam([], inputType, "input"))
+                , []
+                , None()
+                )
+              , Block(keyImpl)
+              )
+            , MethodDecl(
+                [MarkerAnno(TypeName("Override")), Public()]
+              , MethodHeader(
+                  outputType
+                , "exec"
+                , ParamList(
+                    FormalParam([], TypeName("ExecContext"), "execContext")
+                  , FormalParam([], inputType, "input")
+                  )
+                , []
+                , None()
+                )
+              , Block(<concat> [stmts, [Return(returnValue)]])
+              )
+            ]
+          ]
+        )
+    // Note: meaning of this AST:
+    //   class [className] implements TaskDef<[inputType], [outputType]> {
+    //     private static final String _id = "[className]";
+    //     [fields]
+    //     
+    //     @Inject
+    //     [className](
+    //       [constructorParams]
+    //     ) {
+    //       [assignments]
+    //     }
+    //     
+    //     [inputDataClasses]
+    //     
+    //     [outputDataClasses]
+    //     
+    //     public String getId() {
+    //       return this._id;
+    //     }
+    //     
+    //     @Override
+    //     public Serializable key([inputType] input) {
+    //       [keyImpl]
+    //     }
+    //     
+    //     @Override
+    //     public [outputType] exec(ExecContext execContext, [inputType] input) throws Exception {
+    //       try {
+    //         [stmts]
+    //         return [returnValue];
+    //       } catch (Util.WrapperException e) {
+    //         throw e.getWrappedException();
+    //       }
+    //     }
+    //   }
 
   // p2j-ast-pie-func-impl-body(): Block(exps)|EmptyBlock()|<Exp> ->
   //   (list of Java statements, Java return value AST node)
