@@ -287,11 +287,11 @@ rules // Binding
     e@ValDec(binder, exp) -> result
     with
       expTy                := <p2j-ast-type-sig> <pie-ast-type> exp
-    ; (expStmts, exp)      := <try-p2j-ast-exp> exp
+    ; (expStmts, expVal)   := <try-p2j-ast-exp> exp
     ; (assignments, varId) := <bind-tuples-to-ast-assignments> (binder, expTy)
     ; stmts                := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(varId, exp)]))],
+        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(varId, expVal)]))],
         assignments
       ]
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
