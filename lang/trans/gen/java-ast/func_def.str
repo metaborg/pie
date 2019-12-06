@@ -229,7 +229,7 @@ rules // PIE function definitions
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Input")> idTypeTuples
     ; inputType    := ClassOrInterfaceTypeMember(ClassType([], className, None()), [], "Input", None())
       // Note: meaning of this AST: [className].Input
-    ; result       := (inputType, dataClass)
+    ; result       := (inputType, [dataClass])
     with
       rules(InputKind := 2)
 
@@ -258,7 +258,7 @@ rules // PIE function definitions
       // Note: meaning of this AST: [className].Output
     ; idTypeTuples := <pie-idtype-tuples> tty
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
-    ; result       := (returnType, dataClass)
+    ; result       := (returnType, [dataClass])
 
   // p2j-ast-pie-func-key-body: PieKeyFunc(exp)? -> list of Java statament AST nodes
   // generates a list of statements for the body of the key function
