@@ -727,7 +727,7 @@ rules // Literals
   p2j-ast-exp: UnitLit()        -> ([], Field(ExpressionName("None"), "instance"))
   p2j-ast-exp: BoolLit(True())  -> ([], NewInstance(None(), [], "Boolean", [], None(), [True()]))
   p2j-ast-exp: BoolLit(False()) -> ([], NewInstance(None(), [], "Boolean", [], None(), [False()]))
-  p2j-ast-exp: IntLit(i)        -> ([], NewInstance(None(), [], "Integer", [], None(), [Deci(<int-to-string> i)]))
+  p2j-ast-exp: IntLit(i)        -> ([], NewInstance(None(), [], "Integer", [], None(), [Deci(<string-to-int> i)]))
   p2j-ast-exp: NullLit()        -> ([], Null())
 
 
