@@ -3,20 +3,194 @@ module gen/java-ast/main
 imports
 
   nabl2/api
+  
+  gen/util
+  gen/java-ast/func_def
+
+  signatures/java/packages/-
+  signatures/java/names/-
+  signatures/java/classes/-
 
   libspoofax/stratego/debug
 
 rules
 
   generate-java-file-ast:
-    (ast, _, _, file, _) -> (filename, result)
+    (pieAst, _, _, file, _) -> (filename, result)
     with
       filename := <guarantee-extension(|"java")> file
     ; mod      := <base-filename;remove-extension> file
-    ; result   := <p2j-ast(|mod, "mb.pie.example.helloworld.java")> ast
+    ; javaAst  := <p2j-ast(|mod, ["mb", "pie", "example", "helloworld", "java"])> pieAst
     ; <debug(|"Successfully transpiled file to Java: ")> file
+    ; result   := <p2j-ast-to-filestring(|mod)> javaAst
+    ; <debug(|"Successfully transformed Java AST to string: ")> file
 
 rules
 
+  p2j-ast-to-filestring(|mod):
+    ast -> 
+$[// This file was generated from Pie source file [mod].pie.
+[ast]
+// last cache update: 2019-12-06 15:41
+]
+
   p2j-ast(|mod, package):
-    Program(defs) -> "Hello World!\nConverting to Java using ASTs has not yet been implemented"
+    Program(defs) -> result
+    with
+    {| AstAnalysis, ModuleBindings:
+      <pie-set-ast-analysis> defs
+    ; classes      := <filter(p2j-ast-def)> defs
+    ; bindings     := <bagof-ModuleBindings>
+    |}
+    with
+      result := CompilationUnit(
+        Some(PackageDeclaration(
+          []
+        , package
+        ))
+      , [ SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("com"), "google"), "inject"), "Inject")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "api"), "ExecContext")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "api"), "ExecException")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "api"), "None")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "api"), "TaskDef")
+          )
+        , SingleTypeImport(
+            TypeName(
+              PackageOrTypeName(
+                PackageOrTypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "api"), "stamp")
+              , "resource"
+              )
+            , "FileSystemStampers"
+            )
+          )
+        , SingleTypeImport(
+            TypeName(
+              PackageOrTypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "taskdefs"), "guice")
+            , "TaskDefsModule"
+            )
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "util"), "Tuple2")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "util"), "Tuple3")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "util"), "Tuple4")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "util"), "Tuple5")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "pie"), "util"), "Util")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "resource"), "fs"), "FSResource")
+          )
+        , SingleTypeImport(
+            TypeName(
+              PackageOrTypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "resource"), "fs"), "match")
+            , "PathResourceMatcher"
+            )
+          )
+        , TypeImportOnDemand(
+            PackageOrTypeName(
+              PackageOrTypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "resource"), "fs"), "path")
+            , "match"
+            )
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "resource"), "fs"), "FSPath")
+          )
+        , SingleTypeImport(
+            TypeName(
+              PackageOrTypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("mb"), "resource"), "fs"), "walk")
+            , "PathResourceWalker"
+            )
+          )
+        , SingleTypeImport(
+            TypeName(
+              PackageOrTypeName(
+                PackageOrTypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("org"), "checkerframework"), "checker"), "nullness")
+              , "qual"
+              )
+            , "Nullable"
+            )
+          )
+        , SingleTypeImport(TypeName(PackageOrTypeName(PackageOrTypeName("java"), "io"), "Serializable"))
+        , SingleTypeImport(TypeName(PackageOrTypeName(PackageOrTypeName("java"), "util"), "ArrayList"))
+        , SingleTypeImport(TypeName(PackageOrTypeName(PackageOrTypeName("java"), "util"), "Arrays"))
+        , SingleTypeImport(TypeName(PackageOrTypeName(PackageOrTypeName("java"), "util"), "Objects"))
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("java"), "util"), "stream"), "Collectors")
+          )
+        , SingleTypeImport(
+            TypeName(PackageOrTypeName(PackageOrTypeName(PackageOrTypeName("java"), "util"), "stream"), "Stream")
+          )
+        ]
+      , <concat> [ 
+          classes
+        , [ ClassDeclaration(
+              []
+            , $[TaskDefsModule_[<pie-sanitize-class-id> mod]]
+            , None()
+            , Some(SuperClass(ClassType([], "TaskDefsModule", None())))
+            , None()
+            , [ MethodDecl(
+                  [MarkerAnno(TypeName("Override")), Protected()]
+                , MethodHeader(Void(), "bindTaskDefs", NoParams(), [], None())
+                , Block(bindings)
+                )
+              ]
+            )
+          ]
+        ]
+      )
+      // Note: meaning of this AST:
+      //   package [package];
+      //   
+      //   import com.google.inject.Inject;
+      //   import mb.pie.api.ExecContext;
+      //   import mb.pie.api.ExecException;
+      //   import mb.pie.api.None;
+      //   import mb.pie.api.TaskDef;
+      //   import mb.pie.api.stamp.resource.FileSystemStampers;
+      //   import mb.pie.taskdefs.guice.TaskDefsModule;
+      //   import mb.pie.util.Tuple2;
+      //   import mb.pie.util.Tuple3;
+      //   import mb.pie.util.Tuple4;
+      //   import mb.pie.util.Tuple5;
+      //   import mb.pie.util.Util;
+      //   import mb.resource.fs.FSResource;
+      //   import mb.resource.fs.match.PathResourceMatcher;
+      //   import mb.resource.fs.path.match.*;
+      //   import mb.resource.fs.FSPath;
+      //   import mb.resource.fs.walk.PathResourceWalker;
+      //   import org.checkerframework.checker.nullness.qual.Nullable;
+      //   
+      //   import java.io.Serializable;
+      //   import java.util.ArrayList;
+      //   import java.util.Arrays;
+      //   import java.util.Objects;
+      //   import java.util.stream.Collectors;
+      //   import java.util.stream.Stream;
+      //   
+      //   [classes]
+      //   
+      //   class TaskDefsModule_[<pie-sanitize-class-id> mod] extends TaskDefsModule {
+      //     @Override
+      //     protected void bindTaskDefs() {
+      //       [bindings]
+      //     }
+      //     
+      //     // last cache update: 2019-06-27 00:48
+      //   }
