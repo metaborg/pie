@@ -115,10 +115,10 @@ rules // Control flow
     If(condExp, branch) -> result
     with
       (condStmts, condExpVal) := <try-p2j-ast-exp> condExp
-    ; (branchStmts, _)     := <try-p2j-ast-exp> branch
-    ; stmts                := <concat> [condStmts, [If(condExpVal, Block(branchStmts))]]
-    ; exp                  := <Snd> <try-p2j-ast-exp> UnitLit()
-    ; result               := (stmts, exp)
+    ; (branchStmts, _)        := <try-p2j-ast-exp> branch
+    ; stmts                   := <concat> [condStmts, [If(condExpVal, Block(branchStmts))]]
+    ; exp                     := <Snd> <try-p2j-ast-exp> UnitLit()
+    ; result                  := (stmts, exp)
 
   p2j-ast-exp:
     e@IfElse(condExp, trueExp, falseExp) -> result
