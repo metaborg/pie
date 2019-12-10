@@ -401,13 +401,13 @@ rules // Qualified function calls
         expStmts, 
         <concat> argExpsStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          callResultName, 
-          InvokeQExp(ExpressionName(expVal), None(), funcId, argExpsVals)
+          Id(callResultName),
+          InvokeQExp(ExpressionName(Id(expVal)), None(), Id(funcId), argExpsVals)
         )]))]
         // Note: meaning of this AST:
         //       final [ty] [callResultName] = [expVal].[funcId]([argExpsVals]);]]
       ]
-    ; result                          := (stmts, callResultName)
+    ; result                      := (stmts, callResultName)
 
 rules // PIE function calls
   
