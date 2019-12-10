@@ -47,10 +47,10 @@ rules // Expression composition
     ; blockResultVal       := <newname> "blockResult"
     ; ty                   := <p2j-ast-type-sig> <pie-type> e
     ; resultStmts          := [
-      LocVarDeclStm(LocalVarDecl([Final()], ty, [blockResultVal])),
+      LocVarDeclStm(LocalVarDecl([Final()], ty, [Id(blockResultVal)])),
       Block(<concat> [
         [stmts],
-        Assign(blockResultVal, lastExp)
+        Assign(ExpressionName(Id(blockResultVal)), lastExp)
       ])
     ]
     ; result                    := (resultStmts, blockResultVal)
