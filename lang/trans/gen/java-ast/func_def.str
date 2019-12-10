@@ -49,31 +49,31 @@ rules // PIE function definitions
     ; returnValue                     := <?UnitTy(); !<p2j-ast-exp> UnitLit() <+ !lastValue> type
    |}
     with
-      rules(ModuleBindings :+= Invoke(
-          "bindTaskDef"
-        , [TypeNameClassLiteral(TypeName(className), []), StrLit(className)]
-        )
+      rules(ModuleBindings :+= ExpressionStatement(Invoke(
+          Id("bindTaskDef")
+        , [TypeNameClassLiteral(TypeName(Id(className)), []), StrLit($["[className]"])]
+        ))
       )
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
     with
       result := ClassDeclaration(
           []
-        , className
+        , Id(className)
         , None()
         , None()
-        , [ClassType([], "TaskDef", Some(TypeArguments([inputType, outputType])))]
+        , [ClassType([], Id("TaskDef"), Some(TypeArguments([inputType, outputType])))]
         , <concat> [
             [ FieldDecl(
                 [Private(), Static(), Final()]
-              , ClassType("String", None())
-              , VariableDeclInit("_id", StrLit(className))
+              , ClassType(Id("String"), None())
+              , VariableDeclInit(Id("_id"), StrLit(className))
               )
             ]
           , fields
           , [ ConstrDecl(
-                [MarkerAnno(TypeName("Inject"))]
+                [MarkerAnno(TypeName(Id("Inject")))]
               , None()
-              , className
+              , Id(className)
               , constructorParams
               , None()
               , None()
@@ -84,28 +84,28 @@ rules // PIE function definitions
           , outputDataClasses
           , [ MethodDecl(
                 [Public()]
-              , MethodHeader(TypeName("String"), "getId", NoParams(), [], None())
-              , Block(Return(Field(This(), "_id")))
+              , MethodHeader(ClassType(Id("String"), None()), Id("getId"), NoParams(), [], None())
+              , Block(Return(Field(This(), Id("_id"))))
               )
             , MethodDecl(
-                [MarkerAnno(TypeName("Override")), Public()]
+                [MarkerAnno(TypeName(Id("Override"))), Public()]
               , MethodHeader(
-                  TypeName("Serializable")
-                , "key"
-                , SingleParam(FormalParam([], inputType, "input"))
+                  ClassType(Id("Serializable"), None())
+                , Id("key")
+                , SingleParam(FormalParam([], inputType, Id("input")))
                 , []
                 , None()
                 )
               , Block(keyImpl)
               )
             , MethodDecl(
-                [MarkerAnno(TypeName("Override")), Public()]
+                [MarkerAnno(TypeName(Id("Override"))), Public()]
               , MethodHeader(
                   outputType
-                , "exec"
+                , Id("exec")
                 , ParamList(
-                    FormalParam([], TypeName("ExecContext"), "execContext")
-                  , FormalParam([], inputType, "input")
+                    FormalParam([], ClassType(Id("ExecContext"), None()), VariableDecl(Id("execContext")))
+                  , FormalParam([], inputType, VariableDecl(Id("input")))
                   )
                 , []
                 , None()
