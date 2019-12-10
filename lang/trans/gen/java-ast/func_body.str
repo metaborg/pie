@@ -438,9 +438,9 @@ rules // PIE function calls
     ; stmts                := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          callResultName,
-          InvokeQExp(ExpressionName("execContext"), None(), "require", [
-            $[_[safeJavaClassId]],
+          Id(callResultName),
+          InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [
+            Id($[_[safeJavaClassId]]),
             inputArg
           ])
         )]))]
@@ -475,7 +475,14 @@ rules // PIE function calls
     with
       (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; stmts                 := <concat> expsStmts
-    ; exp                   := NewInstance(None(), [], javaClassId, ["Input"], None(), expsVals)
+    ; exp                   := NewInstance(
+          None()
+        , []
+        , Id(javaClassId)
+        , [Id("Input")]
+        , None()
+        , expsVals
+        )
       // Note: meaning of this AST:
       //       new [javaClassId].Input([expsVals])
     ; result                := (stmts, exp)
