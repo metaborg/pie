@@ -719,8 +719,8 @@ rules // Early return and failure
       (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; stmts              := <concat> [
         expStmts,
-        [Throw(NewInstance(None(), [], "ExecException", [], None(), InvokeQExp(
-          expVal, None(), "toString", [])))]
+        [Throw(NewInstance(None(), [], Id("ExecException"), [], None(), InvokeQExp(
+          expVal, None(), Id("toString"), [])))]
         // Note: meaning of this AST: throw new ExecException([expVal].toString());
       ]
     ; resultExp          := <Snd> <try-p2j-ast-exp> UnitLit()
