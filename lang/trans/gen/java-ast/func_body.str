@@ -740,7 +740,7 @@ rules // Literals
     with
       (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; stmts                 := <concat> expsStmts
-    ; exp                   := InvokeQExp(ExpressionName("Util"), None(), "tuple", expsVals)
+    ; exp                   := InvokeQExp(ExpressionName(Id("Util")), None(), Id("tuple"), expsVals)
       //  Note: meaning of this AST: Util.tuple([expsVals])
     ; result                := (stmts, exp)
     
@@ -749,8 +749,8 @@ rules // Literals
     with
       (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; stmts                 := <concat> expsStmts
-    ; exp                   := NewInstance(None(), [], "ArrayList", [], Some(Diamond()), [
-        InvokeQExp(ExpressionName("Arrays"), None(), "asList", expsVals)
+    ; exp                   := NewInstance(None(), [], Id("ArrayList"), [], Some(Diamond()), [
+        InvokeQExp(ExpressionName(Id("Arrays")), None(), Id("asList"), expsVals)
       ])
     //  Note: meaning of this AST: new ArrayList<>(Arrays.asList([expsVals]))
     ; result                := (stmts, exp)
