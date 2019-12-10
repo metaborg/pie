@@ -323,7 +323,7 @@ rules // Binding
 rules // References
 
   p2j-ast-exp:
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(varId))> r)
+    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id(varId)))> r)
     where
       LocalVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
   
@@ -334,20 +334,22 @@ rules // References
     ; 0 := <InputKind>
       
   p2j-ast-exp: 
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName("input"))> r)
+    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id("input")))> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 1 := <InputKind>
       
   p2j-ast-exp: 
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|InvokeQExp("input", None(), $[get_[varId]], []))> r)
+    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|InvokeQExp(
+      ExpressionName(Id("input")), None(), Id($[get_[varId]]), [])
+    )> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 2 := <InputKind>
 
   // p2j-ast-ref-add-transient-val(|ast): Pie Ref -> Java reference
   p2j-ast-ref-add-transient-val(|ast):
-    ref -> Field(ast, "v")
+    ref -> Field(ast, Id("v"))
     where
       <p2j-ast-ref-is-transient> ref
     
