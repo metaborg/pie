@@ -440,7 +440,7 @@ rules // PIE function calls
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
           Id(callResultName),
           InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [
-            Id($[_[safeJavaClassId]]),
+            ExpressionName(Id($[_[safeJavaClassId]])),
             inputArg
           ])
         )]))]
