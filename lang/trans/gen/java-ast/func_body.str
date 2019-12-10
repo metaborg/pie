@@ -673,11 +673,9 @@ rules // Path operations
     ; stmts              := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          readResultName,
-          InvokeQExp(ExpressionName("Util"), None(), "readToString", [expVal])
+          Id(readResultName),
+          InvokeQExp(ExpressionName(Id("Util")), None(), Id("readToString"), [expVal])
         )]))]
-        // Note: I am not sure what the constructor for "Util" should be. If this
-        //       doesn't work, try changing it to something specific for classnames.
         // Note: meaning of this AST:
         //       final [ty] [readResultName] = Util.readToString([expVal]);
       ]
@@ -692,16 +690,14 @@ rules // Path operations
     ; stmts              := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          existsResultName,
+          Id(existsResultName),
           InvokeQExp(
-            InvokeQExp(ExpressionName("Files"), None(), "exists", [expVal]),
+            InvokeQExp(ExpressionName(Id("Files")), None(), Id("exists"), [expVal]),
             None(),
-            "getJavaPath",
+            Id("getJavaPath"),
             []
           )
         )]))]
-        // Note: I am not sure what the constructor for "Util" should be. If this
-        //       doesn't work, try changing it to something specific for classnames.
         // Note: meaning of this AST:
         //       final [ty] [existsResultName] = Files.exists([expStr].getJavaPath());
       ]
