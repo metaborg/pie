@@ -241,8 +241,6 @@ rules // Control flow
         assignments,
         mapStmts,
         [Return(mapExpVal)]
-        // Note: may need to be Return(Some(mapExpVal))
-        // Note: meaning of this AST: return [mapExpVal];
       ]
     ; comprehensionTmpVarName := <newname> "comprehensionResult"
     ; ty                      := <p2j-ast-type-sig> <pie-type> e
@@ -250,25 +248,25 @@ rules // Control flow
         listStmts,
         InvokeQExp(
           InvokeQExp(
-            InvokeQExp(listExpVal, None(), "stream", [])
+            InvokeQExp(listExpVal, None(), Id("stream"), [])
           , None()
-          , "map"
+          , Id("map")
           , [ InvokeQExp(
-                ExpressionName("Util")
+                ExpressionName(Id("Util"))
               , None()
-              , "throwingLambda"
-              , [LambdaExpressionWithBlock(SingleParam("varId"), Block(innerStmts))
+              , Id("throwingLambda")
+              , [LambdaExpressionWithBlock(SingleParam(Id("varId")), Block(innerStmts))
                 ]
               )
             ]
           )
         , None()
-        , "collect"
+        , Id("collect")
         , [ InvokeQExp(
-              ExpressionName("Collectors")
+              ExpressionName(Id("Collectors"))
             , None()
-            , "toCollection"
-            , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+            , Id("toCollection")
+            , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
             )
           ]
         )
