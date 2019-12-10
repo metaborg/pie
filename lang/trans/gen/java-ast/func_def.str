@@ -227,7 +227,7 @@ rules // PIE function definitions
     with
       idTypeTuples := <pie-idtype-tuples> p
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Input")> idTypeTuples
-    ; inputType    := ClassOrInterfaceTypeMember(ClassType([], className, None()), [], "Input", None())
+    ; inputType    := ClassOrInterfaceTypeMember(ClassType([], Id(className), None()), [], Id("Input"), None())
       // Note: meaning of this AST: [className].Input
     ; result       := (inputType, [dataClass])
     with
