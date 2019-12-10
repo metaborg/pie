@@ -1,0 +1,31 @@
+module signatures/java/literals/FloatingPointLiterals-sig
+
+signature
+  constructors
+    DeciFloat               : DeciFloatLiteral -> FloatLiteral
+    HexaFloat               : HexaFloatLiteral -> FloatLiteral
+    DeciDouble              : DeciDoubleLiteral -> FloatLiteral
+    HexaDouble              : HexaDoubleLiteral -> FloatLiteral
+    DeciFloatLiteral-Plhdr  : DeciFloatLiteral
+    HexaFloatLiteral-Plhdr  : HexaFloatLiteral
+    DeciDoubleLiteral-Plhdr : DeciDoubleLiteral
+    FloatLiteral-Plhdr      : FloatLiteral
+    HexaDoubleLiteral-Plhdr : HexaDoubleLiteral
+    DeciFloatLiteral-Plhdr  : COMPLETION-INSERTION -> DeciFloatLiteral
+    HexaFloatLiteral-Plhdr  : COMPLETION-INSERTION -> HexaFloatLiteral
+    DeciDoubleLiteral-Plhdr : COMPLETION-INSERTION -> DeciDoubleLiteral
+    FloatLiteral-Plhdr      : COMPLETION-INSERTION -> FloatLiteral
+    HexaDoubleLiteral-Plhdr : COMPLETION-INSERTION -> HexaDoubleLiteral
+                            : String -> DeciFloatLiteral
+                            : String -> DeciDoubleLiteral
+                            : String -> DeciFloatExponentPart
+                            : String -> SignedInteger
+                            : String -> Digits
+                            : String -> Digit
+                            : String -> DigitsAndUnderscores
+                            : String -> DigitsOrUnderscore
+                            : String -> Underscores
+                            : String -> HexaFloatLiteral
+                            : String -> HexaDoubleLiteral
+                            : String -> HexaSignificand
+                            : String -> BinaryExponent

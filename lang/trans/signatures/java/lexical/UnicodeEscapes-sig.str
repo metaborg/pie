@@ -1,0 +1,7 @@
+module signatures/java/lexical/UnicodeEscapes-sig
+
+signature
+  constructors
+    UnicodeEscape       : UnicodeEscape
+    UnicodeEscape-Plhdr : UnicodeEscape
+    UnicodeEscape-Plhdr : COMPLETION-INSERTION -> UnicodeEscape

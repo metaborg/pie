@@ -1,0 +1,649 @@
+module pp/java/expressions/MethodReference-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/expressions/MethodReference-sig
+
+
+imports
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/types/ParameterizedTypes-sig
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/names/Names-sig
+  signatures/java/expressions/UnaryOperators-sig
+
+
+imports
+  pp/java/types/ReferenceTypes-pp
+  pp/java/types/ParameterizedTypes-pp
+  pp/java/lexical/Identifiers-pp
+  pp/java/names/Names-pp
+  pp/java/expressions/UnaryOperators-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Expression
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Expression>
+    where <?"Expression"> sort
+
+  prettyprint-metaborg-java-Expression :
+    MethodReferenceRType(t1__, t2__, t3__) -> [ H(
+                                                  [SOpt(HS(), "0")]
+                                                , t1__'
+                                                )
+                                              ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-ReferenceType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("::")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t2__
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?MethodReferenceRType(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@MethodReferenceRType(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@MethodReferenceRType(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@MethodReferenceRType(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           case ?3 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    MethodReferenceExpr(t1__, t2__, t3__) -> [ H(
+                                                 [SOpt(HS(), "0")]
+                                               , t1__'
+                                               )
+                                             ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("::")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t2__
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?MethodReferenceExpr(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@MethodReferenceExpr(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@MethodReferenceExpr(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@MethodReferenceExpr(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           case ?3 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    MethodReferenceSuper(t1__, t2__) -> [ H(
+                                            [SOpt(HS(), "0")]
+                                          , t1__'
+                                          )
+                                        ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S("super::")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t1__
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?MethodReferenceSuper(_, _)
+
+  metaborg-java-get-indent :
+    (t@MethodReferenceSuper(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@MethodReferenceSuper(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@MethodReferenceSuper(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    MethodReferenceQSuper(t1__, t2__, t3__) -> [ H(
+                                                   [SOpt(HS(), "0")]
+                                                 , t1__'
+                                                 )
+                                               ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-TypeName)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".super::")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t2__
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?MethodReferenceQSuper(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@MethodReferenceQSuper(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@MethodReferenceQSuper(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@MethodReferenceQSuper(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           case ?3 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    MethodReferenceCType(t1__, t2__) -> [ H(
+                                            [SOpt(HS(), "0")]
+                                          , t1__'
+                                          )
+                                        ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-ClassType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("::")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t2__
+                                   , S(" ")
+                                   , S("new")
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?MethodReferenceCType(_, _)
+
+  metaborg-java-get-indent :
+    (t@MethodReferenceCType(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@MethodReferenceCType(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@MethodReferenceCType(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    MethodReferenceAType(t1__, t2__) -> [ H(
+                                            [SOpt(HS(), "0")]
+                                          , t1__'
+                                          )
+                                        ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-ArrayType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("::")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t2__
+                                   , S(" ")
+                                   , S("new")
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?MethodReferenceAType(_, _)
+
+  metaborg-java-get-indent :
+    (t@MethodReferenceAType(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@MethodReferenceAType(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@MethodReferenceAType(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-Expression =
+    fail
+
+  prettyprint-metaborg-java-Expression :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Expression> h
+
+  prettyprint-metaborg-java-ReferenceType :
+    ReferenceType-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$ReferenceType")]
+                               )
+                             ]
+
+  is-metaborg-java-ReferenceType =
+    ?ReferenceType-Plhdr()
+
+  prettyprint-metaborg-java-TypeName :
+    TypeName-Plhdr() -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [S("$TypeName")]
+                          )
+                        ]
+
+  is-metaborg-java-TypeName =
+    ?TypeName-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-ClassType :
+    ClassType-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$ClassType")]
+                           )
+                         ]
+
+  is-metaborg-java-ClassType =
+    ?ClassType-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Expression")]
+                            )
+                          ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr()
+
+  prettyprint-metaborg-java-ArrayType :
+    ArrayType-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$ArrayType")]
+                           )
+                         ]
+
+  is-metaborg-java-ArrayType =
+    ?ArrayType-Plhdr()
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$TypeArguments")]
+                               )
+                             ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Plhdr()
+
+  prettyprint-metaborg-java-ReferenceType :
+    ReferenceType-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$ReferenceType")]
+                                )
+                              ]
+
+  is-metaborg-java-ReferenceType =
+    ?ReferenceType-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeName :
+    TypeName-Plhdr(_) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$TypeName")]
+                           )
+                         ]
+
+  is-metaborg-java-TypeName =
+    ?TypeName-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassType :
+    ClassType-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$ClassType")]
+                            )
+                          ]
+
+  is-metaborg-java-ClassType =
+    ?ClassType-Plhdr(_)
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Expression")]
+                             )
+                           ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr(_)
+
+  prettyprint-metaborg-java-ArrayType :
+    ArrayType-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$ArrayType")]
+                            )
+                          ]
+
+  is-metaborg-java-ArrayType =
+    ?ArrayType-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$TypeArguments")]
+                                )
+                              ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Opt-Plhdr() -> [ H(
+                                     []
+                                   , [S("")]
+                                   )
+                                 ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Opt-Plhdr()

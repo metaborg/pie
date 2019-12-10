@@ -1,0 +1,101 @@
+module signatures/java/statements/Statements-sig
+
+imports
+  signatures/java/classes/FieldDeclarations-sig
+  signatures/java/classes/MethodDeclarations-sig
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/statements/Blocks-sig
+  signatures/java/names/Names-sig
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/expressions/Main-sig
+
+
+signature
+  constructors
+    Labeled                    : Id * Statement -> Statement
+    If                         : Expression * Statement -> Statement
+    IfElse                     : Expression * Statement * Statement -> Statement
+    While                      : Expression * Statement -> Statement
+    For                        : ForInit * Option(Expression) * ForUpdate * Statement -> Statement
+    ForEach                    : List(VariableModifier) * UnannType * VarDeclId * Expression * Statement -> Statement
+    ExprList                   : List(Expression) -> ForInit
+    VarDecls                   : List(VariableModifier) * UnannType * List(VarDecl) -> ForInit
+    ExprList                   : List(Expression) -> ForUpdate
+                               : Block -> Statement
+    Empty                      : Statement
+    ExpressionStatement        : Expression -> Statement
+    Assert                     : Expression -> Statement
+    Assert                     : Expression * Expression -> Statement
+    Switch                     : Expression * List(SwitchGroup) * List(SwitchLabel) -> Statement
+    SwitchGroup                : List(SwitchLabel) * List(BlockStatement) -> SwitchGroup
+    CaseExpr                   : Expression -> SwitchLabel
+    Default                    : SwitchLabel
+    DoWhile                    : Statement * Expression -> Statement
+    Break                      : Statement
+    Break                      : Id -> Statement
+    Continue                   : Statement
+    Continue                   : Id -> Statement
+    Return                     : Statement
+    Return                     : Expression -> Statement
+    Synchronized               : Expression * Block -> Statement
+    Throw                      : Expression -> Statement
+    Try                        : Block * List(CatchClause) -> Statement
+    TryFinally                 : Block * List(CatchClause) * Block -> Statement
+    Catch                      : CatchFormalParameter * Block -> CatchClause
+    CatchParam                 : List(VariableModifier) * CatchType * VarDeclId -> CatchFormalParameter
+    CatchType                  : UnannClassType * List(CatchTypeRest) -> CatchType
+    CatchTypeElem              : ClassType -> CatchTypeRest
+    TryWithResources           : List(Resource) * Block * List(CatchClause) -> Statement
+    TryWithResourcesSemiColon  : List(Resource) * Block * List(CatchClause) -> Statement
+    TryWithResources           : List(Resource) * Block * List(CatchClause) * Block -> Statement
+    TryWithResourcesSemiColon  : List(Resource) * Block * List(CatchClause) * Block -> Statement
+    Resource                   : List(VariableModifier) * UnannType * VarDeclId * Expression -> Resource
+    ForInit-Plhdr              : ForInit
+    VarDecl-Plhdr              : VarDecl
+    ForUpdate-Plhdr            : ForUpdate
+    ExpressionName-Plhdr       : ExpressionName
+    SwitchGroup-Plhdr          : SwitchGroup
+    BlockStatement-Plhdr       : BlockStatement
+    SwitchLabel-Plhdr          : SwitchLabel
+    Id-Plhdr                   : Id
+    CatchFormalParameter-Plhdr : CatchFormalParameter
+    CatchType-Plhdr            : CatchType
+    UnannClassType-Plhdr       : UnannClassType
+    CatchTypeRest-Plhdr        : CatchTypeRest
+    ClassType-Plhdr            : ClassType
+    Statement-Plhdr            : Statement
+    CatchClause-Plhdr          : CatchClause
+    Block-Plhdr                : Block
+    Resource-Plhdr             : Resource
+    VariableModifier-Plhdr     : VariableModifier
+    UnannType-Plhdr            : UnannType
+    VarDeclId-Plhdr            : VarDeclId
+    Expression-Plhdr           : Expression
+    ForInit-Plhdr              : COMPLETION-INSERTION -> ForInit
+    VarDecl-Plhdr              : COMPLETION-INSERTION -> VarDecl
+    ForUpdate-Plhdr            : COMPLETION-INSERTION -> ForUpdate
+    ExpressionName-Plhdr       : COMPLETION-INSERTION -> ExpressionName
+    SwitchGroup-Plhdr          : COMPLETION-INSERTION -> SwitchGroup
+    BlockStatement-Plhdr       : COMPLETION-INSERTION -> BlockStatement
+    SwitchLabel-Plhdr          : COMPLETION-INSERTION -> SwitchLabel
+    Id-Plhdr                   : COMPLETION-INSERTION -> Id
+    CatchFormalParameter-Plhdr : COMPLETION-INSERTION -> CatchFormalParameter
+    CatchType-Plhdr            : COMPLETION-INSERTION -> CatchType
+    UnannClassType-Plhdr       : COMPLETION-INSERTION -> UnannClassType
+    CatchTypeRest-Plhdr        : COMPLETION-INSERTION -> CatchTypeRest
+    ClassType-Plhdr            : COMPLETION-INSERTION -> ClassType
+    Statement-Plhdr            : COMPLETION-INSERTION -> Statement
+    CatchClause-Plhdr          : COMPLETION-INSERTION -> CatchClause
+    Block-Plhdr                : COMPLETION-INSERTION -> Block
+    Resource-Plhdr             : COMPLETION-INSERTION -> Resource
+    VariableModifier-Plhdr     : COMPLETION-INSERTION -> VariableModifier
+    UnannType-Plhdr            : COMPLETION-INSERTION -> UnannType
+    VarDeclId-Plhdr            : COMPLETION-INSERTION -> VarDeclId
+    Expression-Plhdr           : COMPLETION-INSERTION -> Expression
+    Expression-Opt-Plhdr       : Expression
+    SwitchGroup-Opt-Plhdr      : SwitchGroup
+    SwitchLabel-Opt-Plhdr      : SwitchLabel
+    CatchTypeRest-Opt-Plhdr    : CatchTypeRest
+    Resource-Opt-Plhdr         : Resource
+    CatchClause-Opt-Plhdr      : CatchClause
+    VariableModifier-Opt-Plhdr : VariableModifier

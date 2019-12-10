@@ -1,0 +1,35 @@
+module signatures/java/expressions/AssignmentOperators-sig
+
+imports
+  signatures/java/expressions/ArrayAccess-sig
+  signatures/java/expressions/FieldAccess-sig
+  signatures/java/names/Names-sig
+
+
+signature
+  constructors
+    Assign               : LHS * Expression -> Expression
+    AssignMul            : LHS * Expression -> Expression
+    AssignDiv            : LHS * Expression -> Expression
+    AssignMod            : LHS * Expression -> Expression
+    AssignAdd            : LHS * Expression -> Expression
+    AssignSub            : LHS * Expression -> Expression
+    AssignLeftShift      : LHS * Expression -> Expression
+    AssignRightShift     : LHS * Expression -> Expression
+    AssignURightShift    : LHS * Expression -> Expression
+    AssignAnd            : LHS * Expression -> Expression
+    AssignXor            : LHS * Expression -> Expression
+    AssignOr             : LHS * Expression -> Expression
+                         : ExpressionName -> LHS
+                         : FieldAccess -> LHS
+                         : ArrayAccess -> LHS
+    Expression-Plhdr     : Expression
+    ExpressionName-Plhdr : ExpressionName
+    FieldAccess-Plhdr    : FieldAccess
+    LHS-Plhdr            : LHS
+    ArrayAccess-Plhdr    : ArrayAccess
+    Expression-Plhdr     : COMPLETION-INSERTION -> Expression
+    ExpressionName-Plhdr : COMPLETION-INSERTION -> ExpressionName
+    FieldAccess-Plhdr    : COMPLETION-INSERTION -> FieldAccess
+    LHS-Plhdr            : COMPLETION-INSERTION -> LHS
+    ArrayAccess-Plhdr    : COMPLETION-INSERTION -> ArrayAccess

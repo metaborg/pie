@@ -1,0 +1,191 @@
+module pp/java/packages/TypeDeclarations-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/packages/TypeDeclarations-sig
+
+
+imports
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/interfaces/InterfaceDeclarations-sig
+
+
+imports
+  pp/java/classes/ClassDeclarations-pp
+  pp/java/interfaces/InterfaceDeclarations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-TypeDeclaration
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-TypeDeclaration>
+    where <?"TypeDeclaration"> sort
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-TypeDeclaration)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ClassDeclaration)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-TypeDeclaration)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-InterfaceDeclaration)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    SemiColon() -> [ H(
+                       [SOpt(HS(), "0")]
+                     , t1__'
+                     )
+                   ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S(";")]
+
+  is-metaborg-java-TypeDeclaration =
+    ?SemiColon()
+
+  metaborg-java-get-indent :
+    (t@SemiColon(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TypeDeclaration"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@SemiColon(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TypeDeclaration"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@SemiColon(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TypeDeclaration"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-TypeDeclaration =
+    fail
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    amb([h|hs]) -> <prettyprint-metaborg-java-TypeDeclaration> h
+
+  prettyprint-metaborg-java-ClassDeclaration :
+    ClassDeclaration-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$ClassDeclaration")]
+                                  )
+                                ]
+
+  is-metaborg-java-ClassDeclaration =
+    ?ClassDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-InterfaceDeclaration :
+    InterfaceDeclaration-Plhdr() -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$InterfaceDeclaration")]
+                                      )
+                                    ]
+
+  is-metaborg-java-InterfaceDeclaration =
+    ?InterfaceDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    TypeDeclaration-Plhdr() -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$TypeDeclaration")]
+                                 )
+                               ]
+
+  is-metaborg-java-TypeDeclaration =
+    ?TypeDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-ClassDeclaration :
+    ClassDeclaration-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$ClassDeclaration")]
+                                   )
+                                 ]
+
+  is-metaborg-java-ClassDeclaration =
+    ?ClassDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-InterfaceDeclaration :
+    InterfaceDeclaration-Plhdr(_) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , [S("$InterfaceDeclaration")]
+                                       )
+                                     ]
+
+  is-metaborg-java-InterfaceDeclaration =
+    ?InterfaceDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    TypeDeclaration-Plhdr(_) -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$TypeDeclaration")]
+                                  )
+                                ]
+
+  is-metaborg-java-TypeDeclaration =
+    ?TypeDeclaration-Plhdr(_)

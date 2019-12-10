@@ -1,0 +1,17 @@
+module signatures/java/packages/PackageDeclarations-sig
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+signature
+  constructors
+    PackageDeclaration       : List(Annotation) * List(Id) -> PackageDeclaration
+    PackageDeclaration-Plhdr : PackageDeclaration
+    Annotation-Plhdr         : Annotation
+    Id-Plhdr                 : Id
+    PackageDeclaration-Plhdr : COMPLETION-INSERTION -> PackageDeclaration
+    Annotation-Plhdr         : COMPLETION-INSERTION -> Annotation
+    Id-Plhdr                 : COMPLETION-INSERTION -> Id
+    Annotation-Opt-Plhdr     : Annotation

@@ -1,0 +1,49 @@
+module pp/java/classes/Main-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/classes/Main-sig
+
+
+imports
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/classes/FieldDeclarations-sig
+  signatures/java/classes/MethodDeclarations-sig
+  signatures/java/classes/EnumDeclarations-sig
+  signatures/java/classes/InstanceInitializers-sig
+  signatures/java/classes/StaticInitializers-sig
+  signatures/java/classes/ConstructorDeclarations-sig
+
+
+imports
+  pp/java/classes/ClassDeclarations-pp
+  pp/java/classes/FieldDeclarations-pp
+  pp/java/classes/MethodDeclarations-pp
+  pp/java/classes/EnumDeclarations-pp
+  pp/java/classes/InstanceInitializers-pp
+  pp/java/classes/StaticInitializers-pp
+  pp/java/classes/ConstructorDeclarations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail

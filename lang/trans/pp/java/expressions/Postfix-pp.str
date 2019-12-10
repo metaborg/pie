@@ -1,0 +1,215 @@
+module pp/java/expressions/Postfix-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/expressions/Postfix-sig
+
+
+imports
+  signatures/java/names/Names-sig
+
+
+imports
+  pp/java/names/Names-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Expression
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Expression>
+    where <?"Expression"> sort
+
+  prettyprint-metaborg-java-Expression :
+    PostIncr(t1__) -> [ H(
+                          [SOpt(HS(), "0")]
+                        , t1__'
+                        )
+                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("++")
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?PostIncr(_)
+
+  metaborg-java-get-indent :
+    (t@PostIncr(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PostIncr(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PostIncr(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    PostDecr(t1__) -> [ H(
+                          [SOpt(HS(), "0")]
+                        , t1__'
+                        )
+                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("--")
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?PostDecr(_)
+
+  metaborg-java-get-indent :
+    (t@PostDecr(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PostDecr(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PostDecr(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-Expression)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ExpressionName)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  is-metaborg-java-Expression =
+    fail
+
+  prettyprint-metaborg-java-Expression :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Expression> h
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Expression")]
+                            )
+                          ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr()
+
+  prettyprint-metaborg-java-ExpressionName :
+    ExpressionName-Plhdr() -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$ExpressionName")]
+                                )
+                              ]
+
+  is-metaborg-java-ExpressionName =
+    ?ExpressionName-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Expression")]
+                             )
+                           ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr(_)
+
+  prettyprint-metaborg-java-ExpressionName :
+    ExpressionName-Plhdr(_) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$ExpressionName")]
+                                 )
+                               ]
+
+  is-metaborg-java-ExpressionName =
+    ?ExpressionName-Plhdr(_)

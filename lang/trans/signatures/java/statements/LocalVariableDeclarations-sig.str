@@ -1,0 +1,26 @@
+module signatures/java/statements/LocalVariableDeclarations-sig
+
+imports
+  signatures/java/classes/FieldDeclarations-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+signature
+  constructors
+    LocVarDeclStm                           : LocalVariableDeclaration -> LocalVariableDeclarationStatement
+    LocalVarDecl                            : List(VariableModifier) * UnannType * List(VarDecl) -> LocalVariableDeclaration
+                                            : Annotation -> VariableModifier
+    Final                                   : VariableModifier
+    LocalVariableDeclarationStatement-Plhdr : LocalVariableDeclarationStatement
+    LocalVariableDeclaration-Plhdr          : LocalVariableDeclaration
+    UnannType-Plhdr                         : UnannType
+    VarDecl-Plhdr                           : VarDecl
+    Annotation-Plhdr                        : Annotation
+    VariableModifier-Plhdr                  : VariableModifier
+    LocalVariableDeclarationStatement-Plhdr : COMPLETION-INSERTION -> LocalVariableDeclarationStatement
+    LocalVariableDeclaration-Plhdr          : COMPLETION-INSERTION -> LocalVariableDeclaration
+    UnannType-Plhdr                         : COMPLETION-INSERTION -> UnannType
+    VarDecl-Plhdr                           : COMPLETION-INSERTION -> VarDecl
+    Annotation-Plhdr                        : COMPLETION-INSERTION -> Annotation
+    VariableModifier-Plhdr                  : COMPLETION-INSERTION -> VariableModifier
+    VariableModifier-Opt-Plhdr              : VariableModifier

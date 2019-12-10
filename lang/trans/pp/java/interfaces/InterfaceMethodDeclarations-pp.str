@@ -1,0 +1,487 @@
+module pp/java/interfaces/InterfaceMethodDeclarations-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/interfaces/InterfaceMethodDeclarations-sig
+
+
+imports
+  signatures/java/classes/MethodDeclarations-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+imports
+  pp/java/classes/MethodDeclarations-pp
+  pp/java/interfaces/Annotations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-InterfaceMethodDeclaration
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-InterfaceMethodModifier
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-InterfaceMethodDeclaration>
+    where <?"InterfaceMethodDeclaration"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-InterfaceMethodModifier>
+    where <?"InterfaceMethodModifier"> sort
+
+  prettyprint-metaborg-java-InterfaceMethodDeclaration :
+    AbstractMethodDec(t1__, t2__, t3__) -> [ H(
+                                               [SOpt(HS(), "0")]
+                                             , t1__'
+                                             )
+                                           ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-InterfaceMethodModifier|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-MethodHeader)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-MethodBody)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   ]
+
+  is-metaborg-java-InterfaceMethodDeclaration =
+    ?AbstractMethodDec(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@AbstractMethodDec(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodDeclaration"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@AbstractMethodDec(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodDeclaration"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@AbstractMethodDec(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodDeclaration"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-InterfaceMethodModifier)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-Annotation)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    Public() -> [ H(
+                    [SOpt(HS(), "0")]
+                  , t1__'
+                  )
+                ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("public")]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?Public()
+
+  metaborg-java-get-indent :
+    (t@Public(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Public(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Public(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    Abstract() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , t1__'
+                    )
+                  ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("abstract")]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?Abstract()
+
+  metaborg-java-get-indent :
+    (t@Abstract(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Abstract(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Abstract(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    Default() -> [ H(
+                     [SOpt(HS(), "0")]
+                   , t1__'
+                   )
+                 ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("default")]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?Default()
+
+  metaborg-java-get-indent :
+    (t@Default(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Default(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Default(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    Static() -> [ H(
+                    [SOpt(HS(), "0")]
+                  , t1__'
+                  )
+                ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("static")]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?Static()
+
+  metaborg-java-get-indent :
+    (t@Static(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Static(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Static(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    Strictfp() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , t1__'
+                    )
+                  ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("strictfp")]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?Strictfp()
+
+  metaborg-java-get-indent :
+    (t@Strictfp(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Strictfp(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Strictfp(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InterfaceMethodModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-InterfaceMethodDeclaration =
+    fail
+
+  is-metaborg-java-InterfaceMethodModifier =
+    fail
+
+  prettyprint-metaborg-java-InterfaceMethodDeclaration :
+    amb([h|hs]) -> <prettyprint-metaborg-java-InterfaceMethodDeclaration> h
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    amb([h|hs]) -> <prettyprint-metaborg-java-InterfaceMethodModifier> h
+
+  prettyprint-metaborg-java-InterfaceMethodDeclaration :
+    InterfaceMethodDeclaration-Plhdr() -> [ H(
+                                              [SOpt(HS(), "0")]
+                                            , [S("$InterfaceMethodDeclaration")]
+                                            )
+                                          ]
+
+  is-metaborg-java-InterfaceMethodDeclaration =
+    ?InterfaceMethodDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-MethodHeader :
+    MethodHeader-Plhdr() -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$MethodHeader")]
+                              )
+                            ]
+
+  is-metaborg-java-MethodHeader =
+    ?MethodHeader-Plhdr()
+
+  prettyprint-metaborg-java-MethodBody :
+    MethodBody-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$MethodBody")]
+                            )
+                          ]
+
+  is-metaborg-java-MethodBody =
+    ?MethodBody-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Annotation")]
+                            )
+                          ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr()
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    InterfaceMethodModifier-Plhdr() -> [ H(
+                                           [SOpt(HS(), "0")]
+                                         , [S("$InterfaceMethodModifier")]
+                                         )
+                                       ]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?InterfaceMethodModifier-Plhdr()
+
+  prettyprint-metaborg-java-InterfaceMethodDeclaration :
+    InterfaceMethodDeclaration-Plhdr(_) -> [ H(
+                                               [SOpt(HS(), "0")]
+                                             , [S("$InterfaceMethodDeclaration")]
+                                             )
+                                           ]
+
+  is-metaborg-java-InterfaceMethodDeclaration =
+    ?InterfaceMethodDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-MethodHeader :
+    MethodHeader-Plhdr(_) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$MethodHeader")]
+                               )
+                             ]
+
+  is-metaborg-java-MethodHeader =
+    ?MethodHeader-Plhdr(_)
+
+  prettyprint-metaborg-java-MethodBody :
+    MethodBody-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$MethodBody")]
+                             )
+                           ]
+
+  is-metaborg-java-MethodBody =
+    ?MethodBody-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Annotation")]
+                             )
+                           ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr(_)
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    InterfaceMethodModifier-Plhdr(_) -> [ H(
+                                            [SOpt(HS(), "0")]
+                                          , [S("$InterfaceMethodModifier")]
+                                          )
+                                        ]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?InterfaceMethodModifier-Plhdr(_)
+
+  prettyprint-metaborg-java-InterfaceMethodModifier :
+    InterfaceMethodModifier-Opt-Plhdr() -> [ H(
+                                               []
+                                             , [S("")]
+                                             )
+                                           ]
+
+  is-metaborg-java-InterfaceMethodModifier =
+    ?InterfaceMethodModifier-Opt-Plhdr()

@@ -1,9 +1,0 @@
-module java/statements/Main
-
-// Chapter 14. Blocks and Statements
-
-imports
-  java/statements/Blocks
-  java/statements/LocalVariableDeclarations
-  java/statements/Statements
-  

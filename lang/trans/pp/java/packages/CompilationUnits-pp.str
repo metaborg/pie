@@ -1,0 +1,273 @@
+module pp/java/packages/CompilationUnits-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/packages/CompilationUnits-sig
+
+
+imports
+  signatures/java/packages/PackageDeclarations-sig
+  signatures/java/packages/ImportDeclarations-sig
+  signatures/java/packages/TypeDeclarations-sig
+
+
+imports
+  pp/java/packages/PackageDeclarations-pp
+  pp/java/packages/ImportDeclarations-pp
+  pp/java/packages/TypeDeclarations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-CompilationUnit
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-CompilationUnit>
+    where <?"CompilationUnit"> sort
+
+  prettyprint-metaborg-java-CompilationUnit :
+    CompilationUnit(t1__, t2__, t3__) -> [ H(
+                                             [SOpt(HS(), "0")]
+                                           , t1__'
+                                           )
+                                         , H(
+                                             []
+                                           , [S("")]
+                                           )
+                                         , H(
+                                             [SOpt(HS(), "0")]
+                                           , t2__'
+                                           )
+                                         , H(
+                                             []
+                                           , [S("")]
+                                           )
+                                         , H(
+                                             [SOpt(HS(), "0")]
+                                           , t3__'
+                                           )
+                                         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-PackageDeclaration)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t1__
+                                   ]
+    with t2__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-V-list(prettyprint-metaborg-java-ImportDeclaration)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+    with t3__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-V-list(prettyprint-metaborg-java-TypeDeclaration)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   ]
+
+  is-metaborg-java-CompilationUnit =
+    ?CompilationUnit(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@CompilationUnit(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"CompilationUnit"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@CompilationUnit(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"CompilationUnit"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := "\n"
+           case ?3 :
+             separator := "\n"
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@CompilationUnit(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"CompilationUnit"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := "\n\n"
+           case ?3 :
+             ws := "\n\n"
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-CompilationUnit =
+    fail
+
+  prettyprint-metaborg-java-CompilationUnit :
+    amb([h|hs]) -> <prettyprint-metaborg-java-CompilationUnit> h
+
+  prettyprint-metaborg-java-CompilationUnit :
+    CompilationUnit-Plhdr() -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$CompilationUnit")]
+                                 )
+                               ]
+
+  is-metaborg-java-CompilationUnit =
+    ?CompilationUnit-Plhdr()
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    PackageDeclaration-Plhdr() -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$PackageDeclaration")]
+                                    )
+                                  ]
+
+  is-metaborg-java-PackageDeclaration =
+    ?PackageDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-ImportDeclaration :
+    ImportDeclaration-Plhdr() -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$ImportDeclaration")]
+                                   )
+                                 ]
+
+  is-metaborg-java-ImportDeclaration =
+    ?ImportDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    TypeDeclaration-Plhdr() -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$TypeDeclaration")]
+                                 )
+                               ]
+
+  is-metaborg-java-TypeDeclaration =
+    ?TypeDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-CompilationUnit :
+    CompilationUnit-Plhdr(_) -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$CompilationUnit")]
+                                  )
+                                ]
+
+  is-metaborg-java-CompilationUnit =
+    ?CompilationUnit-Plhdr(_)
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    PackageDeclaration-Plhdr(_) -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S("$PackageDeclaration")]
+                                     )
+                                   ]
+
+  is-metaborg-java-PackageDeclaration =
+    ?PackageDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-ImportDeclaration :
+    ImportDeclaration-Plhdr(_) -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$ImportDeclaration")]
+                                    )
+                                  ]
+
+  is-metaborg-java-ImportDeclaration =
+    ?ImportDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    TypeDeclaration-Plhdr(_) -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$TypeDeclaration")]
+                                  )
+                                ]
+
+  is-metaborg-java-TypeDeclaration =
+    ?TypeDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    PackageDeclaration-Opt-Plhdr() -> [ H(
+                                          []
+                                        , [S("")]
+                                        )
+                                      ]
+
+  is-metaborg-java-PackageDeclaration =
+    ?PackageDeclaration-Opt-Plhdr()
+
+  prettyprint-metaborg-java-ImportDeclaration :
+    ImportDeclaration-Opt-Plhdr() -> [ H(
+                                         []
+                                       , [S("")]
+                                       )
+                                     ]
+
+  is-metaborg-java-ImportDeclaration =
+    ?ImportDeclaration-Opt-Plhdr()
+
+  prettyprint-metaborg-java-TypeDeclaration :
+    TypeDeclaration-Opt-Plhdr() -> [ H(
+                                       []
+                                     , [S("")]
+                                     )
+                                   ]
+
+  is-metaborg-java-TypeDeclaration =
+    ?TypeDeclaration-Opt-Plhdr()

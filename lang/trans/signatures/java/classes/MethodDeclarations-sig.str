@@ -1,0 +1,90 @@
+module signatures/java/classes/MethodDeclarations-sig
+
+imports
+  signatures/java/classes/FieldDeclarations-sig
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/interfaces/Annotations-sig
+  signatures/java/statements/Blocks-sig
+
+
+signature
+  constructors
+    MethodDecl                 : List(MethodModifier) * MethodHeader * MethodBody -> MethodDeclaration
+    MethodHeader               : Result * Id * FormalParams * AnnotatedDimsEmpty * Option(Throws) -> MethodHeader
+    MethodHeaderTypeParameters : TypeParameters * List(Annotation) * Result * Id * FormalParams * Option(Throws) -> MethodHeader
+                               : UnannType -> Result
+    Void                       : Result
+    ThrowsDec                  : List(ExceptionType) -> Throws
+                               : ClassType -> ExceptionType
+                               : Annotation -> MethodModifier
+    Public                     : MethodModifier
+    Protected                  : MethodModifier
+    Private                    : MethodModifier
+    Abstract                   : MethodModifier
+    Static                     : MethodModifier
+    Final                      : MethodModifier
+    Synchronized               : MethodModifier
+    Native                     : MethodModifier
+    Strictfp                   : MethodModifier
+                               : Block -> MethodBody
+    NoMethodBody               : MethodBody
+    ReceiverParamQual          : List(Annotation) * UnannType * Id -> ReceiverParam
+    ReceiverParam              : List(Annotation) * UnannType -> ReceiverParam
+    NoParams                   : FormalParams
+                               : ReceiverParam -> FormalParams
+    SingleParam                : LastFormalParam -> FormalParams
+    ParamList                  : List(FormalParam) * LastFormalParam -> FormalParams
+    ReceiverParamList          : ReceiverParam * List(FormalParam) * LastFormalParam -> FormalParams
+                               : FormalParam -> LastFormalParam
+    VarArityParam              : List(VariableModifier) * UnannType * List(Annotation) * VarDeclId -> LastFormalParam
+    FormalParam                : List(VariableModifier) * UnannType * VarDeclId -> FormalParam
+                               : Annotation -> VariableModifier
+    Final                      : VariableModifier
+    MethodDeclaration-Plhdr    : MethodDeclaration
+    AnnotatedDimsEmpty-Plhdr   : AnnotatedDimsEmpty
+    MethodHeader-Plhdr         : MethodHeader
+    TypeParameters-Plhdr       : TypeParameters
+    Result-Plhdr               : Result
+    Throws-Plhdr               : Throws
+    ExceptionType-Plhdr        : ExceptionType
+    ClassType-Plhdr            : ClassType
+    MethodModifier-Plhdr       : MethodModifier
+    Block-Plhdr                : Block
+    MethodBody-Plhdr           : MethodBody
+    Id-Plhdr                   : Id
+    FormalParams-Plhdr         : FormalParams
+    ReceiverParam-Plhdr        : ReceiverParam
+    LastFormalParam-Plhdr      : LastFormalParam
+    FormalParam-Plhdr          : FormalParam
+    UnannType-Plhdr            : UnannType
+    VarDeclId-Plhdr            : VarDeclId
+    Annotation-Plhdr           : Annotation
+    VariableModifier-Plhdr     : VariableModifier
+    MethodDeclaration-Plhdr    : COMPLETION-INSERTION -> MethodDeclaration
+    AnnotatedDimsEmpty-Plhdr   : COMPLETION-INSERTION -> AnnotatedDimsEmpty
+    MethodHeader-Plhdr         : COMPLETION-INSERTION -> MethodHeader
+    TypeParameters-Plhdr       : COMPLETION-INSERTION -> TypeParameters
+    Result-Plhdr               : COMPLETION-INSERTION -> Result
+    Throws-Plhdr               : COMPLETION-INSERTION -> Throws
+    ExceptionType-Plhdr        : COMPLETION-INSERTION -> ExceptionType
+    ClassType-Plhdr            : COMPLETION-INSERTION -> ClassType
+    MethodModifier-Plhdr       : COMPLETION-INSERTION -> MethodModifier
+    Block-Plhdr                : COMPLETION-INSERTION -> Block
+    MethodBody-Plhdr           : COMPLETION-INSERTION -> MethodBody
+    Id-Plhdr                   : COMPLETION-INSERTION -> Id
+    FormalParams-Plhdr         : COMPLETION-INSERTION -> FormalParams
+    ReceiverParam-Plhdr        : COMPLETION-INSERTION -> ReceiverParam
+    LastFormalParam-Plhdr      : COMPLETION-INSERTION -> LastFormalParam
+    FormalParam-Plhdr          : COMPLETION-INSERTION -> FormalParam
+    UnannType-Plhdr            : COMPLETION-INSERTION -> UnannType
+    VarDeclId-Plhdr            : COMPLETION-INSERTION -> VarDeclId
+    Annotation-Plhdr           : COMPLETION-INSERTION -> Annotation
+    VariableModifier-Plhdr     : COMPLETION-INSERTION -> VariableModifier
+    MethodModifier-Opt-Plhdr   : MethodModifier
+    Throws-Opt-Plhdr           : Throws
+    FormalParams-Opt-Plhdr     : FormalParams
+    FormalParam-Opt-Plhdr      : FormalParam
+    Annotation-Opt-Plhdr       : Annotation
+    VariableModifier-Opt-Plhdr : VariableModifier

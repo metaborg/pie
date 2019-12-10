@@ -1,0 +1,300 @@
+module pp/java/statements/Blocks-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/statements/Blocks-sig
+
+
+imports
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/statements/LocalVariableDeclarations-sig
+  signatures/java/statements/Statements-sig
+
+
+imports
+  pp/java/classes/ClassDeclarations-pp
+  pp/java/statements/LocalVariableDeclarations-pp
+  pp/java/statements/Statements-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Block
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-BlockStatement
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Block>
+    where <?"Block"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-BlockStatement>
+    where <?"BlockStatement"> sort
+
+  prettyprint-metaborg-java-Block :
+    Block(t1__) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , t2__'
+                     )
+                   , t1__'
+                   , H(
+                       [SOpt(HS(), "0")]
+                     , t3__'
+                     )
+                   ]
+    with t2__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("{")]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-V-list(prettyprint-metaborg-java-BlockStatement)
+                                         <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                      ]
+    with t3__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("}")]
+
+  is-metaborg-java-Block =
+    ?Block(_)
+
+  metaborg-java-get-indent :
+    (t@Block(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Block"> sort
+    with switch !index
+           case ?1 :
+             indent := "  "
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Block(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Block"> sort
+    with switch !index
+           case ?1 :
+             separator := "\n"
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Block(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Block"> sort
+    with switch !index
+           case ?1 :
+             ws := "\n  "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-BlockStatement :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-BlockStatement)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-LocalVariableDeclarationStatement)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-BlockStatement :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-BlockStatement)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ClassDeclaration)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-BlockStatement :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-BlockStatement)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-Statement)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  is-metaborg-java-Block =
+    fail
+
+  is-metaborg-java-BlockStatement =
+    fail
+
+  prettyprint-metaborg-java-Block :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Block> h
+
+  prettyprint-metaborg-java-BlockStatement :
+    amb([h|hs]) -> <prettyprint-metaborg-java-BlockStatement> h
+
+  prettyprint-metaborg-java-Block :
+    Block-Plhdr() -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [S("$Block")]
+                       )
+                     ]
+
+  is-metaborg-java-Block =
+    ?Block-Plhdr()
+
+  prettyprint-metaborg-java-LocalVariableDeclarationStatement :
+    LocalVariableDeclarationStatement-Plhdr() -> [ H(
+                                                     [SOpt(HS(), "0")]
+                                                   , [S("$LocalVariableDeclarationStatement")]
+                                                   )
+                                                 ]
+
+  is-metaborg-java-LocalVariableDeclarationStatement =
+    ?LocalVariableDeclarationStatement-Plhdr()
+
+  prettyprint-metaborg-java-ClassDeclaration :
+    ClassDeclaration-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$ClassDeclaration")]
+                                  )
+                                ]
+
+  is-metaborg-java-ClassDeclaration =
+    ?ClassDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-BlockStatement :
+    BlockStatement-Plhdr() -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$BlockStatement")]
+                                )
+                              ]
+
+  is-metaborg-java-BlockStatement =
+    ?BlockStatement-Plhdr()
+
+  prettyprint-metaborg-java-Statement :
+    Statement-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$Statement")]
+                           )
+                         ]
+
+  is-metaborg-java-Statement =
+    ?Statement-Plhdr()
+
+  prettyprint-metaborg-java-Block :
+    Block-Plhdr(_) -> [ H(
+                          [SOpt(HS(), "0")]
+                        , [S("$Block")]
+                        )
+                      ]
+
+  is-metaborg-java-Block =
+    ?Block-Plhdr(_)
+
+  prettyprint-metaborg-java-LocalVariableDeclarationStatement :
+    LocalVariableDeclarationStatement-Plhdr(_) -> [ H(
+                                                      [SOpt(HS(), "0")]
+                                                    , [S("$LocalVariableDeclarationStatement")]
+                                                    )
+                                                  ]
+
+  is-metaborg-java-LocalVariableDeclarationStatement =
+    ?LocalVariableDeclarationStatement-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassDeclaration :
+    ClassDeclaration-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$ClassDeclaration")]
+                                   )
+                                 ]
+
+  is-metaborg-java-ClassDeclaration =
+    ?ClassDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-BlockStatement :
+    BlockStatement-Plhdr(_) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$BlockStatement")]
+                                 )
+                               ]
+
+  is-metaborg-java-BlockStatement =
+    ?BlockStatement-Plhdr(_)
+
+  prettyprint-metaborg-java-Statement :
+    Statement-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Statement")]
+                            )
+                          ]
+
+  is-metaborg-java-Statement =
+    ?Statement-Plhdr(_)
+
+  prettyprint-metaborg-java-BlockStatement :
+    BlockStatement-Opt-Plhdr() -> [ H(
+                                      []
+                                    , [S("")]
+                                    )
+                                  ]
+
+  is-metaborg-java-BlockStatement =
+    ?BlockStatement-Opt-Plhdr()

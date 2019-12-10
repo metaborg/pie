@@ -1,0 +1,84 @@
+module signatures/java/classes/FieldDeclarations-sig
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/types/PrimitiveTypes-sig
+  signatures/java/types/ParameterizedTypes-sig
+  signatures/java/interfaces/Annotations-sig
+  signatures/java/arrays/ArrayInitializers-sig
+  signatures/java/expressions/Main-sig
+
+
+signature
+  constructors
+    FieldDecl                  : List(FieldModifier) * UnannType * List(VarDecl) -> FieldDeclaration
+    VariableDecl               : Id -> VarDeclId
+    VariableDeclArray          : Id * List(AnnotatedDim) -> VarDeclId
+    VariableDeclInit           : VarDeclId * VariableInitializer -> VarDecl
+                               : VarDeclId -> VarDecl
+                               : Expression -> VariableInitializer
+                               : ArrayInitializer -> VariableInitializer
+                               : Annotation -> FieldModifier
+    Public                     : FieldModifier
+    Protected                  : FieldModifier
+    Private                    : FieldModifier
+    Static                     : FieldModifier
+    Final                      : FieldModifier
+    Transient                  : FieldModifier
+    Volatile                   : FieldModifier
+    FieldDeclaration-Plhdr     : FieldDeclaration
+    UnannType-Plhdr            : UnannType
+    Id-Plhdr                   : Id
+    AnnotatedDim-Plhdr         : AnnotatedDim
+    VarDecl-Plhdr              : VarDecl
+    VarDeclId-Plhdr            : VarDeclId
+    Expression-Plhdr           : Expression
+    VariableInitializer-Plhdr  : VariableInitializer
+    ArrayInitializer-Plhdr     : ArrayInitializer
+    Annotation-Plhdr           : Annotation
+    FieldModifier-Plhdr        : FieldModifier
+    FieldDeclaration-Plhdr     : COMPLETION-INSERTION -> FieldDeclaration
+    UnannType-Plhdr            : COMPLETION-INSERTION -> UnannType
+    Id-Plhdr                   : COMPLETION-INSERTION -> Id
+    AnnotatedDim-Plhdr         : COMPLETION-INSERTION -> AnnotatedDim
+    VarDecl-Plhdr              : COMPLETION-INSERTION -> VarDecl
+    VarDeclId-Plhdr            : COMPLETION-INSERTION -> VarDeclId
+    Expression-Plhdr           : COMPLETION-INSERTION -> Expression
+    VariableInitializer-Plhdr  : COMPLETION-INSERTION -> VariableInitializer
+    ArrayInitializer-Plhdr     : COMPLETION-INSERTION -> ArrayInitializer
+    Annotation-Plhdr           : COMPLETION-INSERTION -> Annotation
+    FieldModifier-Plhdr        : COMPLETION-INSERTION -> FieldModifier
+    FieldModifier-Opt-Plhdr    : FieldModifier
+                               : UnannPrimitiveType -> UnannType
+                               : UnannReferenceType -> UnannType
+    NumericType                : NumericType -> UnannPrimitiveType
+    BooleanType                : UnannPrimitiveType
+                               : UnannClassType -> UnannReferenceType
+                               : UnannArrayType -> UnannReferenceType
+    ClassType                  : Id * Option(TypeArguments) -> UnannClassType
+    ClassOrInterfaceTypeMember : UnannClassType * List(Annotation) * Id * Option(TypeArguments) -> UnannClassType
+    ArrayTypePrimitive         : UnannPrimitiveType * List(AnnotatedDim) -> UnannArrayType
+    ArrayTypeClassType         : UnannClassType * List(AnnotatedDim) -> UnannArrayType
+    UnannType-Plhdr            : UnannType
+    NumericType-Plhdr          : NumericType
+    UnannReferenceType-Plhdr   : UnannReferenceType
+    Annotation-Plhdr           : Annotation
+    Id-Plhdr                   : Id
+    TypeArguments-Plhdr        : TypeArguments
+    UnannPrimitiveType-Plhdr   : UnannPrimitiveType
+    UnannArrayType-Plhdr       : UnannArrayType
+    UnannClassType-Plhdr       : UnannClassType
+    AnnotatedDim-Plhdr         : AnnotatedDim
+    UnannType-Plhdr            : COMPLETION-INSERTION -> UnannType
+    NumericType-Plhdr          : COMPLETION-INSERTION -> NumericType
+    UnannReferenceType-Plhdr   : COMPLETION-INSERTION -> UnannReferenceType
+    Annotation-Plhdr           : COMPLETION-INSERTION -> Annotation
+    Id-Plhdr                   : COMPLETION-INSERTION -> Id
+    TypeArguments-Plhdr        : COMPLETION-INSERTION -> TypeArguments
+    UnannPrimitiveType-Plhdr   : COMPLETION-INSERTION -> UnannPrimitiveType
+    UnannArrayType-Plhdr       : COMPLETION-INSERTION -> UnannArrayType
+    UnannClassType-Plhdr       : COMPLETION-INSERTION -> UnannClassType
+    AnnotatedDim-Plhdr         : COMPLETION-INSERTION -> AnnotatedDim
+    Annotation-Opt-Plhdr       : Annotation
+    TypeArguments-Opt-Plhdr    : TypeArguments

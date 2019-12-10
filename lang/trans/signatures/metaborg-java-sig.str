@@ -1,0 +1,26 @@
+module signatures/metaborg-java-sig
+
+imports
+  signatures/java/arrays/Main-sig
+  signatures/java/classes/Main-sig
+  signatures/java/interfaces/Main-sig
+  signatures/java/lexical/Main-sig
+  signatures/java/literals/Main-sig
+  signatures/java/names/Names-sig
+  signatures/java/packages/Main-sig
+  signatures/java/statements/Main-sig
+  signatures/java/types/Main-sig
+  signatures/java/expressions/Main-sig
+  signatures/java/expressions/Disambiguation-sig
+
+
+signature
+  sorts
+    CompilationUnit
+
+  constructors
+                          : CompilationUnit -> Start
+    Start-Plhdr           : Start
+    CompilationUnit-Plhdr : CompilationUnit
+    Start-Plhdr           : COMPLETION-INSERTION -> Start
+    CompilationUnit-Plhdr : COMPLETION-INSERTION -> CompilationUnit

@@ -1,0 +1,816 @@
+module pp/java/expressions/ClassInstanceCreation-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/expressions/ClassInstanceCreation-sig
+
+
+imports
+  signatures/java/names/Names-sig
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/interfaces/Annotations-sig
+  signatures/java/types/ParameterizedTypes-sig
+  signatures/java/classes/ClassDeclarations-sig
+
+
+imports
+  pp/java/names/Names-pp
+  pp/java/lexical/Identifiers-pp
+  pp/java/interfaces/Annotations-pp
+  pp/java/types/ParameterizedTypes-pp
+  pp/java/classes/ClassDeclarations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Expression
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-UnqualifiedInstance
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-QualifiedId
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-TypeArgumentsOrDiamond
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Expression>
+    where <?"Expression"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-UnqualifiedInstance>
+    where <?"UnqualifiedInstance"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-QualifiedId>
+    where <?"QualifiedId"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-TypeArgumentsOrDiamond>
+    where <?"TypeArgumentsOrDiamond"> sort
+
+  prettyprint-metaborg-java-Expression :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-Expression)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-UnqualifiedInstance)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-Expression :
+    QualifiedInstance(t1__, t2__) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , t1__'
+                                       )
+                                     ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-UnqualifiedInstance)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?QualifiedInstance(_, _)
+
+  metaborg-java-get-indent :
+    (t@QualifiedInstance(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@QualifiedInstance(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@QualifiedInstance(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-UnqualifiedInstance :
+    NewInstance(t1__, t2__, t3__, t4__, t5__, t6__) -> [ H(
+                                                           [SOpt(HS(), "0")]
+                                                         , t1__'
+                                                         )
+                                                       ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S("new")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-QualifiedId)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t4__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArgumentsOrDiamond)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t5__
+                                   , S("(")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Expression|",")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t6__
+                                   , S(")")
+                                   ]
+
+  is-metaborg-java-UnqualifiedInstance =
+    ?NewInstance(_, _, _, _, _, _)
+
+  metaborg-java-get-indent :
+    ( t@NewInstance(t1__, t2__, t3__, t4__, t5__, t6__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"UnqualifiedInstance"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           case ?4 :
+             indent := ""
+           case ?5 :
+             indent := ""
+           case ?6 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@NewInstance(t1__, t2__, t3__, t4__, t5__, t6__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"UnqualifiedInstance"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := " "
+           case ?3 :
+             separator := ""
+           case ?4 :
+             separator := ""
+           case ?5 :
+             separator := ""
+           case ?6 :
+             separator := ","
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@NewInstance(t1__, t2__, t3__, t4__, t5__, t6__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"UnqualifiedInstance"> sort
+    with switch !index
+           case ?1 :
+             ws := " "
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           case ?4 :
+             ws := " "
+           case ?5 :
+             ws := " "
+           case ?6 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-UnqualifiedInstance :
+    NewInstance(
+      t1__
+    , t2__
+    , t3__
+    , t4__
+    , t5__
+    , t6__
+    , t7__
+    ) -> [ H(
+             [SOpt(HS(), "0")]
+           , t1__'
+           )
+         , t7__'
+         , H(
+             [SOpt(HS(), "0")]
+           , t8__'
+           )
+         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S("new")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-QualifiedId)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t4__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArgumentsOrDiamond)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t5__
+                                   , S("(")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Expression|",")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t6__
+                                   , S(")")
+                                   , S(" ")
+                                   , S("{")
+                                   ]
+    with t7__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-V-list(prettyprint-metaborg-java-ClassBodyDeclaration)
+                                         <+ pp-one-Z(prettyprint-completion-aux)> t7__
+                                      ]
+    with t8__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("}")]
+
+  is-metaborg-java-UnqualifiedInstance =
+    ?NewInstance(_, _, _, _, _, _, _)
+
+  metaborg-java-get-indent :
+    ( t@NewInstance(
+          t1__
+        , t2__
+        , t3__
+        , t4__
+        , t5__
+        , t6__
+        , t7__
+        )
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"UnqualifiedInstance"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           case ?4 :
+             indent := ""
+           case ?5 :
+             indent := ""
+           case ?6 :
+             indent := ""
+           case ?7 :
+             indent := "  "
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@NewInstance(
+          t1__
+        , t2__
+        , t3__
+        , t4__
+        , t5__
+        , t6__
+        , t7__
+        )
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"UnqualifiedInstance"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := " "
+           case ?3 :
+             separator := ""
+           case ?4 :
+             separator := ""
+           case ?5 :
+             separator := ""
+           case ?6 :
+             separator := ","
+           case ?7 :
+             separator := "\n"
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@NewInstance(
+          t1__
+        , t2__
+        , t3__
+        , t4__
+        , t5__
+        , t6__
+        , t7__
+        )
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"UnqualifiedInstance"> sort
+    with switch !index
+           case ?1 :
+             ws := " "
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           case ?4 :
+             ws := " "
+           case ?5 :
+             ws := " "
+           case ?6 :
+             ws := ""
+           case ?7 :
+             ws := "\n  "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-QualifiedId :
+    QualifiedId(t1__, t2__) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , t1__'
+                                 )
+                               ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-QualifiedId =
+    ?QualifiedId(_, _)
+
+  metaborg-java-get-indent :
+    (t@QualifiedId(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"QualifiedId"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@QualifiedId(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"QualifiedId"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@QualifiedId(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"QualifiedId"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-TypeArgumentsOrDiamond :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-TypeArgumentsOrDiamond)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-TypeArgumentsOrDiamond :
+    Diamond() -> [ H(
+                     [SOpt(HS(), "0")]
+                   , t1__'
+                   )
+                 ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("<>")]
+
+  is-metaborg-java-TypeArgumentsOrDiamond =
+    ?Diamond()
+
+  metaborg-java-get-indent :
+    (t@Diamond(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TypeArgumentsOrDiamond"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Diamond(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TypeArgumentsOrDiamond"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Diamond(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TypeArgumentsOrDiamond"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-Expression =
+    fail
+
+  is-metaborg-java-UnqualifiedInstance =
+    fail
+
+  is-metaborg-java-QualifiedId =
+    fail
+
+  is-metaborg-java-TypeArgumentsOrDiamond =
+    fail
+
+  prettyprint-metaborg-java-Expression :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Expression> h
+
+  prettyprint-metaborg-java-UnqualifiedInstance :
+    amb([h|hs]) -> <prettyprint-metaborg-java-UnqualifiedInstance> h
+
+  prettyprint-metaborg-java-QualifiedId :
+    amb([h|hs]) -> <prettyprint-metaborg-java-QualifiedId> h
+
+  prettyprint-metaborg-java-TypeArgumentsOrDiamond :
+    amb([h|hs]) -> <prettyprint-metaborg-java-TypeArgumentsOrDiamond> h
+
+  prettyprint-metaborg-java-UnqualifiedInstance :
+    UnqualifiedInstance-Plhdr() -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S("$UnqualifiedInstance")]
+                                     )
+                                   ]
+
+  is-metaborg-java-UnqualifiedInstance =
+    ?UnqualifiedInstance-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Expression")]
+                            )
+                          ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr()
+
+  prettyprint-metaborg-java-ClassBodyDeclaration :
+    ClassBodyDeclaration-Plhdr() -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$ClassBodyDeclaration")]
+                                      )
+                                    ]
+
+  is-metaborg-java-ClassBodyDeclaration =
+    ?ClassBodyDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-QualifiedId :
+    QualifiedId-Plhdr() -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$QualifiedId")]
+                             )
+                           ]
+
+  is-metaborg-java-QualifiedId =
+    ?QualifiedId-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Annotation")]
+                            )
+                          ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$TypeArguments")]
+                               )
+                             ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Plhdr()
+
+  prettyprint-metaborg-java-TypeArgumentsOrDiamond :
+    TypeArgumentsOrDiamond-Plhdr() -> [ H(
+                                          [SOpt(HS(), "0")]
+                                        , [S("$TypeArgumentsOrDiamond")]
+                                        )
+                                      ]
+
+  is-metaborg-java-TypeArgumentsOrDiamond =
+    ?TypeArgumentsOrDiamond-Plhdr()
+
+  prettyprint-metaborg-java-UnqualifiedInstance :
+    UnqualifiedInstance-Plhdr(_) -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$UnqualifiedInstance")]
+                                      )
+                                    ]
+
+  is-metaborg-java-UnqualifiedInstance =
+    ?UnqualifiedInstance-Plhdr(_)
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Expression")]
+                             )
+                           ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassBodyDeclaration :
+    ClassBodyDeclaration-Plhdr(_) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , [S("$ClassBodyDeclaration")]
+                                       )
+                                     ]
+
+  is-metaborg-java-ClassBodyDeclaration =
+    ?ClassBodyDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-QualifiedId :
+    QualifiedId-Plhdr(_) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$QualifiedId")]
+                              )
+                            ]
+
+  is-metaborg-java-QualifiedId =
+    ?QualifiedId-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Annotation")]
+                             )
+                           ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$TypeArguments")]
+                                )
+                              ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArgumentsOrDiamond :
+    TypeArgumentsOrDiamond-Plhdr(_) -> [ H(
+                                           [SOpt(HS(), "0")]
+                                         , [S("$TypeArgumentsOrDiamond")]
+                                         )
+                                       ]
+
+  is-metaborg-java-TypeArgumentsOrDiamond =
+    ?TypeArgumentsOrDiamond-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Opt-Plhdr() -> [ H(
+                                     []
+                                   , [S("")]
+                                   )
+                                 ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Opt-Plhdr()
+
+  prettyprint-metaborg-java-QualifiedId :
+    QualifiedId-Opt-Plhdr() -> [ H(
+                                   []
+                                 , [S("")]
+                                 )
+                               ]
+
+  is-metaborg-java-QualifiedId =
+    ?QualifiedId-Opt-Plhdr()
+
+  prettyprint-metaborg-java-TypeArgumentsOrDiamond :
+    TypeArgumentsOrDiamond-Opt-Plhdr() -> [ H(
+                                              []
+                                            , [S("")]
+                                            )
+                                          ]
+
+  is-metaborg-java-TypeArgumentsOrDiamond =
+    ?TypeArgumentsOrDiamond-Opt-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Opt-Plhdr() -> [ H(
+                                  []
+                                , [S("")]
+                                )
+                              ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Opt-Plhdr()
+
+  prettyprint-metaborg-java-ClassBodyDeclaration :
+    ClassBodyDeclaration-Opt-Plhdr() -> [ H(
+                                            []
+                                          , [S("")]
+                                          )
+                                        ]
+
+  is-metaborg-java-ClassBodyDeclaration =
+    ?ClassBodyDeclaration-Opt-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Opt-Plhdr() -> [ H(
+                                  []
+                                , [S("")]
+                                )
+                              ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Opt-Plhdr()

@@ -1,0 +1,44 @@
+module pp/java/lexical/Keywords-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/lexical/Keywords-sig
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Keyword
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Keyword>
+    where <?"Keyword"> sort
+
+  prettyprint-metaborg-java-Keyword =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-Keyword :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Keyword> h

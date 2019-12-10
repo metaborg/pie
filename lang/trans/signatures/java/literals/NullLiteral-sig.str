@@ -1,0 +1,7 @@
+module signatures/java/literals/NullLiteral-sig
+
+signature
+  constructors
+    Null              : NullLiteral
+    NullLiteral-Plhdr : NullLiteral
+    NullLiteral-Plhdr : COMPLETION-INSERTION -> NullLiteral

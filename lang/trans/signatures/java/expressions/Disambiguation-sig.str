@@ -1,0 +1,18 @@
+module signatures/java/expressions/Disambiguation-sig
+
+imports
+  signatures/java/expressions/ClassInstanceCreation-sig
+  signatures/java/expressions/Postfix-sig
+  signatures/java/expressions/UnaryOperators-sig
+  signatures/java/expressions/BinaryOperators-sig
+  signatures/java/expressions/ArrayAccess-sig
+  signatures/java/expressions/FieldAccess-sig
+  signatures/java/expressions/MethodInvocation-sig
+  signatures/java/expressions/AssignmentOperators-sig
+  signatures/java/expressions/LambdaExpressions-sig
+  signatures/java/names/Names-sig
+
+
+signature
+  constructors
+    

@@ -1,0 +1,45 @@
+module signatures/java/classes/EnumDeclarations-sig
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/interfaces/Annotations-sig
+  signatures/java/expressions/Main-sig
+
+
+signature
+  constructors
+    EnumDeclComma                  : List(ClassModifier) * Id * Option(SuperInterfaces) * List(EnumConstant) * Option(EnumBodyDeclarations) -> EnumDeclaration
+    EnumDecl                       : List(ClassModifier) * Id * Option(SuperInterfaces) * List(EnumConstant) * Option(EnumBodyDeclarations) -> EnumDeclaration
+    EnumConst                      : List(Annotation) * Id * Option(EnumConstantArgs) * List(ClassBodyDeclaration) -> EnumConstant
+    EnumConstNoBody                : List(Annotation) * Id * Option(EnumConstantArgs) -> EnumConstant
+    EnumConstArgs                  : List(Expression) -> EnumConstantArgs
+    EnumBodyDecs                   : List(ClassBodyDeclaration) -> EnumBodyDeclarations
+    EnumDeclaration-Plhdr          : EnumDeclaration
+    ClassModifier-Plhdr            : ClassModifier
+    SuperInterfaces-Plhdr          : SuperInterfaces
+    EnumConstant-Plhdr             : EnumConstant
+    Annotation-Plhdr               : Annotation
+    Id-Plhdr                       : Id
+    EnumConstantArgs-Plhdr         : EnumConstantArgs
+    Expression-Plhdr               : Expression
+    EnumBodyDeclarations-Plhdr     : EnumBodyDeclarations
+    ClassBodyDeclaration-Plhdr     : ClassBodyDeclaration
+    EnumDeclaration-Plhdr          : COMPLETION-INSERTION -> EnumDeclaration
+    ClassModifier-Plhdr            : COMPLETION-INSERTION -> ClassModifier
+    SuperInterfaces-Plhdr          : COMPLETION-INSERTION -> SuperInterfaces
+    EnumConstant-Plhdr             : COMPLETION-INSERTION -> EnumConstant
+    Annotation-Plhdr               : COMPLETION-INSERTION -> Annotation
+    Id-Plhdr                       : COMPLETION-INSERTION -> Id
+    EnumConstantArgs-Plhdr         : COMPLETION-INSERTION -> EnumConstantArgs
+    Expression-Plhdr               : COMPLETION-INSERTION -> Expression
+    EnumBodyDeclarations-Plhdr     : COMPLETION-INSERTION -> EnumBodyDeclarations
+    ClassBodyDeclaration-Plhdr     : COMPLETION-INSERTION -> ClassBodyDeclaration
+    ClassModifier-Opt-Plhdr        : ClassModifier
+    SuperInterfaces-Opt-Plhdr      : SuperInterfaces
+    EnumConstant-Opt-Plhdr         : EnumConstant
+    EnumBodyDeclarations-Opt-Plhdr : EnumBodyDeclarations
+    Annotation-Opt-Plhdr           : Annotation
+    EnumConstantArgs-Opt-Plhdr     : EnumConstantArgs
+    Expression-Opt-Plhdr           : Expression
+    ClassBodyDeclaration-Opt-Plhdr : ClassBodyDeclaration

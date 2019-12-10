@@ -1,0 +1,17 @@
+module signatures/java/types/Main-sig
+
+imports
+  signatures/java/types/PrimitiveTypes-sig
+  signatures/java/types/ReferenceTypes-sig
+
+
+signature
+  constructors
+                        : PrimitiveType -> Type
+                        : ReferenceType -> Type
+    PrimitiveType-Plhdr : PrimitiveType
+    Type-Plhdr          : Type
+    ReferenceType-Plhdr : ReferenceType
+    PrimitiveType-Plhdr : COMPLETION-INSERTION -> PrimitiveType
+    Type-Plhdr          : COMPLETION-INSERTION -> Type
+    ReferenceType-Plhdr : COMPLETION-INSERTION -> ReferenceType

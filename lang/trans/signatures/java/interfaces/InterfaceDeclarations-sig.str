@@ -1,0 +1,57 @@
+module signatures/java/interfaces/InterfaceDeclarations-sig
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/interfaces/Annotations-sig
+  signatures/java/interfaces/ConstantDeclarations-sig
+  signatures/java/interfaces/InterfaceMethodDeclarations-sig
+  signatures/java/interfaces/AnnotationTypes-sig
+
+
+signature
+  constructors
+    NormalInterface                      : List(InterfaceModifier) * Id * Option(TypeParameters) * Option(ExtendsInterfaces) * List(InterfaceMemberDeclaration) -> InterfaceDeclaration
+                                         : AnnotationTypeDeclaration -> InterfaceDeclaration
+                                         : Annotation -> InterfaceModifier
+    Public                               : InterfaceModifier
+    Protected                            : InterfaceModifier
+    Private                              : InterfaceModifier
+    Abstract                             : InterfaceModifier
+    Static                               : InterfaceModifier
+    Strictfp                             : InterfaceModifier
+    ExtendsInterfaces                    : List(ClassType) -> ExtendsInterfaces
+                                         : ConstantDeclaration -> InterfaceMemberDeclaration
+                                         : InterfaceMethodDeclaration -> InterfaceMemberDeclaration
+                                         : ClassDeclaration -> InterfaceMemberDeclaration
+                                         : InterfaceDeclaration -> InterfaceMemberDeclaration
+    SemiColon                            : InterfaceMemberDeclaration
+    Id-Plhdr                             : Id
+    TypeParameters-Plhdr                 : TypeParameters
+    AnnotationTypeDeclaration-Plhdr      : AnnotationTypeDeclaration
+    Annotation-Plhdr                     : Annotation
+    InterfaceModifier-Plhdr              : InterfaceModifier
+    ExtendsInterfaces-Plhdr              : ExtendsInterfaces
+    ClassType-Plhdr                      : ClassType
+    ConstantDeclaration-Plhdr            : ConstantDeclaration
+    InterfaceMethodDeclaration-Plhdr     : InterfaceMethodDeclaration
+    ClassDeclaration-Plhdr               : ClassDeclaration
+    InterfaceDeclaration-Plhdr           : InterfaceDeclaration
+    InterfaceMemberDeclaration-Plhdr     : InterfaceMemberDeclaration
+    Id-Plhdr                             : COMPLETION-INSERTION -> Id
+    TypeParameters-Plhdr                 : COMPLETION-INSERTION -> TypeParameters
+    AnnotationTypeDeclaration-Plhdr      : COMPLETION-INSERTION -> AnnotationTypeDeclaration
+    Annotation-Plhdr                     : COMPLETION-INSERTION -> Annotation
+    InterfaceModifier-Plhdr              : COMPLETION-INSERTION -> InterfaceModifier
+    ExtendsInterfaces-Plhdr              : COMPLETION-INSERTION -> ExtendsInterfaces
+    ClassType-Plhdr                      : COMPLETION-INSERTION -> ClassType
+    ConstantDeclaration-Plhdr            : COMPLETION-INSERTION -> ConstantDeclaration
+    InterfaceMethodDeclaration-Plhdr     : COMPLETION-INSERTION -> InterfaceMethodDeclaration
+    ClassDeclaration-Plhdr               : COMPLETION-INSERTION -> ClassDeclaration
+    InterfaceDeclaration-Plhdr           : COMPLETION-INSERTION -> InterfaceDeclaration
+    InterfaceMemberDeclaration-Plhdr     : COMPLETION-INSERTION -> InterfaceMemberDeclaration
+    InterfaceModifier-Opt-Plhdr          : InterfaceModifier
+    TypeParameters-Opt-Plhdr             : TypeParameters
+    ExtendsInterfaces-Opt-Plhdr          : ExtendsInterfaces
+    InterfaceMemberDeclaration-Opt-Plhdr : InterfaceMemberDeclaration

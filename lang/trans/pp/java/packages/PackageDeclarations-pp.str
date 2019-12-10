@@ -1,0 +1,189 @@
+module pp/java/packages/PackageDeclarations-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/packages/PackageDeclarations-sig
+
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+imports
+  pp/java/lexical/Identifiers-pp
+  pp/java/interfaces/Annotations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-PackageDeclaration
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-PackageDeclaration>
+    where <?"PackageDeclaration"> sort
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    PackageDeclaration(t1__, t2__) -> [ H(
+                                          [SOpt(HS(), "0")]
+                                        , t1__'
+                                        )
+                                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , S("package")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Id|".")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(";")
+                                   ]
+
+  is-metaborg-java-PackageDeclaration =
+    ?PackageDeclaration(_, _)
+
+  metaborg-java-get-indent :
+    (t@PackageDeclaration(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"PackageDeclaration"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PackageDeclaration(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"PackageDeclaration"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := "."
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PackageDeclaration(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"PackageDeclaration"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-PackageDeclaration =
+    fail
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    amb([h|hs]) -> <prettyprint-metaborg-java-PackageDeclaration> h
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    PackageDeclaration-Plhdr() -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$PackageDeclaration")]
+                                    )
+                                  ]
+
+  is-metaborg-java-PackageDeclaration =
+    ?PackageDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Annotation")]
+                            )
+                          ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-PackageDeclaration :
+    PackageDeclaration-Plhdr(_) -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S("$PackageDeclaration")]
+                                     )
+                                   ]
+
+  is-metaborg-java-PackageDeclaration =
+    ?PackageDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Annotation")]
+                             )
+                           ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Opt-Plhdr() -> [ H(
+                                  []
+                                , [S("")]
+                                )
+                              ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Opt-Plhdr()

@@ -1,0 +1,57 @@
+module signatures/java/interfaces/AnnotationTypes-sig
+
+imports
+  signatures/java/interfaces/InterfaceDeclarations-sig
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/classes/FieldDeclarations-sig
+  signatures/java/interfaces/ConstantDeclarations-sig
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+signature
+  constructors
+    AnnoDec                                   : List(InterfaceModifier) * Id * List(AnnotationTypeMemberDeclaration) -> AnnotationTypeDeclaration
+                                              : AnnotationTypeElementDeclaration -> AnnotationTypeMemberDeclaration
+                                              : ConstantDeclaration -> AnnotationTypeMemberDeclaration
+                                              : ClassDeclaration -> AnnotationTypeMemberDeclaration
+                                              : InterfaceDeclaration -> AnnotationTypeMemberDeclaration
+    SemiColon                                 : AnnotationTypeMemberDeclaration
+    AnnotationTypeElementDecl                 : List(AnnotationTypeElementModifier) * UnannType * Id * AnnotatedDimsEmpty * Option(DefaultValue) -> AnnotationTypeElementDeclaration
+                                              : Annotation -> AnnotationTypeElementModifier
+    Public                                    : AnnotationTypeElementModifier
+    Abstract                                  : AnnotationTypeElementModifier
+    DefaultVal                                : ElementValue -> DefaultValue
+    AnnotationTypeDeclaration-Plhdr           : AnnotationTypeDeclaration
+    InterfaceModifier-Plhdr                   : InterfaceModifier
+    ConstantDeclaration-Plhdr                 : ConstantDeclaration
+    ClassDeclaration-Plhdr                    : ClassDeclaration
+    InterfaceDeclaration-Plhdr                : InterfaceDeclaration
+    AnnotationTypeMemberDeclaration-Plhdr     : AnnotationTypeMemberDeclaration
+    AnnotationTypeElementDeclaration-Plhdr    : AnnotationTypeElementDeclaration
+    UnannType-Plhdr                           : UnannType
+    Id-Plhdr                                  : Id
+    AnnotatedDimsEmpty-Plhdr                  : AnnotatedDimsEmpty
+    Annotation-Plhdr                          : Annotation
+    AnnotationTypeElementModifier-Plhdr       : AnnotationTypeElementModifier
+    DefaultValue-Plhdr                        : DefaultValue
+    ElementValue-Plhdr                        : ElementValue
+    AnnotationTypeDeclaration-Plhdr           : COMPLETION-INSERTION -> AnnotationTypeDeclaration
+    InterfaceModifier-Plhdr                   : COMPLETION-INSERTION -> InterfaceModifier
+    ConstantDeclaration-Plhdr                 : COMPLETION-INSERTION -> ConstantDeclaration
+    ClassDeclaration-Plhdr                    : COMPLETION-INSERTION -> ClassDeclaration
+    InterfaceDeclaration-Plhdr                : COMPLETION-INSERTION -> InterfaceDeclaration
+    AnnotationTypeMemberDeclaration-Plhdr     : COMPLETION-INSERTION -> AnnotationTypeMemberDeclaration
+    AnnotationTypeElementDeclaration-Plhdr    : COMPLETION-INSERTION -> AnnotationTypeElementDeclaration
+    UnannType-Plhdr                           : COMPLETION-INSERTION -> UnannType
+    Id-Plhdr                                  : COMPLETION-INSERTION -> Id
+    AnnotatedDimsEmpty-Plhdr                  : COMPLETION-INSERTION -> AnnotatedDimsEmpty
+    Annotation-Plhdr                          : COMPLETION-INSERTION -> Annotation
+    AnnotationTypeElementModifier-Plhdr       : COMPLETION-INSERTION -> AnnotationTypeElementModifier
+    DefaultValue-Plhdr                        : COMPLETION-INSERTION -> DefaultValue
+    ElementValue-Plhdr                        : COMPLETION-INSERTION -> ElementValue
+    InterfaceModifier-Opt-Plhdr               : InterfaceModifier
+    AnnotationTypeMemberDeclaration-Opt-Plhdr : AnnotationTypeMemberDeclaration
+    AnnotationTypeElementModifier-Opt-Plhdr   : AnnotationTypeElementModifier
+    DefaultValue-Opt-Plhdr                    : DefaultValue

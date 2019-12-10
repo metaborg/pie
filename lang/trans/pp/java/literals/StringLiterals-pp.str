@@ -1,0 +1,192 @@
+module pp/java/literals/StringLiterals-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/literals/StringLiterals-sig
+
+
+imports
+  signatures/java/literals/EscapeSequences-sig
+  signatures/java/lexical/UnicodeEscapes-sig
+
+
+imports
+  pp/java/literals/EscapeSequences-pp
+  pp/java/lexical/UnicodeEscapes-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java-start-symbols =
+    prettyprint-metaborg-java-StringLiteral
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-StringLiteral
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-StringLiteral>
+    where <?"StringLiteral"> sort
+
+  prettyprint-metaborg-java-StringLiteral :
+    StringLiteral(t1__) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , t1__'
+                             )
+                           ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-StringLit)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-StringLiteral =
+    ?StringLiteral(_)
+
+  metaborg-java-get-indent :
+    (t@StringLiteral(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"StringLiteral"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@StringLiteral(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"StringLiteral"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@StringLiteral(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"StringLiteral"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-StringLiteral =
+    fail
+
+  prettyprint-metaborg-java-StringLiteral :
+    amb([h|hs]) -> <prettyprint-metaborg-java-StringLiteral> h
+
+  prettyprint-metaborg-java-StringLiteral :
+    StringLiteral-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$StringLiteral")]
+                               )
+                             ]
+
+  is-metaborg-java-StringLiteral =
+    ?StringLiteral-Plhdr()
+
+  prettyprint-metaborg-java-StringLit :
+    StringLit-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$StringLit")]
+                           )
+                         ]
+
+  is-metaborg-java-StringLit =
+    ?StringLit-Plhdr()
+
+  prettyprint-metaborg-java-StringLiteral :
+    StringLiteral-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$StringLiteral")]
+                                )
+                              ]
+
+  is-metaborg-java-StringLiteral =
+    ?StringLiteral-Plhdr(_)
+
+  prettyprint-metaborg-java-StringLit :
+    StringLit-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$StringLit")]
+                            )
+                          ]
+
+  is-metaborg-java-StringLit =
+    ?StringLit-Plhdr(_)
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-StringLit
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-StringPart
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-StringChars
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-StringLit>
+    where <?"StringLit"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-StringPart>
+    where <?"StringPart"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-StringChars>
+    where <?"StringChars"> sort
+
+  prettyprint-metaborg-java-StringLit =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-StringPart =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-StringChars =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-StringLit :
+    amb([h|hs]) -> <prettyprint-metaborg-java-StringLit> h
+
+  prettyprint-metaborg-java-StringPart :
+    amb([h|hs]) -> <prettyprint-metaborg-java-StringPart> h
+
+  prettyprint-metaborg-java-StringChars :
+    amb([h|hs]) -> <prettyprint-metaborg-java-StringChars> h

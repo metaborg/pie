@@ -1,0 +1,401 @@
+module pp/java/interfaces/ConstantDeclarations-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/interfaces/ConstantDeclarations-sig
+
+
+imports
+  signatures/java/classes/FieldDeclarations-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+imports
+  pp/java/classes/FieldDeclarations-pp
+  pp/java/interfaces/Annotations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ConstantDeclaration
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ConstantModifier
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ConstantDeclaration>
+    where <?"ConstantDeclaration"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ConstantModifier>
+    where <?"ConstantModifier"> sort
+
+  prettyprint-metaborg-java-ConstantDeclaration :
+    ConstantDecl(t1__, t2__, t3__) -> [ H(
+                                          [SOpt(HS(), "0")]
+                                        , t1__'
+                                        )
+                                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-ConstantModifier|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-UnannType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-VarDecl|", ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   ]
+
+  is-metaborg-java-ConstantDeclaration =
+    ?ConstantDecl(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@ConstantDecl(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ConstantDeclaration"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@ConstantDecl(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ConstantDeclaration"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ", "
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@ConstantDecl(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ConstantDeclaration"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ConstantModifier :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-ConstantModifier)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-Annotation)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-ConstantModifier :
+    Public() -> [ H(
+                    [SOpt(HS(), "0")]
+                  , t1__'
+                  )
+                ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("public")]
+
+  is-metaborg-java-ConstantModifier =
+    ?Public()
+
+  metaborg-java-get-indent :
+    (t@Public(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Public(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Public(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ConstantModifier :
+    Static() -> [ H(
+                    [SOpt(HS(), "0")]
+                  , t1__'
+                  )
+                ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("static")]
+
+  is-metaborg-java-ConstantModifier =
+    ?Static()
+
+  metaborg-java-get-indent :
+    (t@Static(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Static(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Static(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ConstantModifier :
+    Final() -> [ H(
+                   [SOpt(HS(), "0")]
+                 , t1__'
+                 )
+               ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("final")]
+
+  is-metaborg-java-ConstantModifier =
+    ?Final()
+
+  metaborg-java-get-indent :
+    (t@Final(), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Final(), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Final(), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ConstantModifier"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-ConstantDeclaration =
+    fail
+
+  is-metaborg-java-ConstantModifier =
+    fail
+
+  prettyprint-metaborg-java-ConstantDeclaration :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ConstantDeclaration> h
+
+  prettyprint-metaborg-java-ConstantModifier :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ConstantModifier> h
+
+  prettyprint-metaborg-java-ConstantDeclaration :
+    ConstantDeclaration-Plhdr() -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S("$ConstantDeclaration")]
+                                     )
+                                   ]
+
+  is-metaborg-java-ConstantDeclaration =
+    ?ConstantDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-UnannType :
+    UnannType-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$UnannType")]
+                           )
+                         ]
+
+  is-metaborg-java-UnannType =
+    ?UnannType-Plhdr()
+
+  prettyprint-metaborg-java-VarDecl :
+    VarDecl-Plhdr() -> [ H(
+                           [SOpt(HS(), "0")]
+                         , [S("$VarDecl")]
+                         )
+                       ]
+
+  is-metaborg-java-VarDecl =
+    ?VarDecl-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Annotation")]
+                            )
+                          ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr()
+
+  prettyprint-metaborg-java-ConstantModifier :
+    ConstantModifier-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$ConstantModifier")]
+                                  )
+                                ]
+
+  is-metaborg-java-ConstantModifier =
+    ?ConstantModifier-Plhdr()
+
+  prettyprint-metaborg-java-ConstantDeclaration :
+    ConstantDeclaration-Plhdr(_) -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$ConstantDeclaration")]
+                                      )
+                                    ]
+
+  is-metaborg-java-ConstantDeclaration =
+    ?ConstantDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-UnannType :
+    UnannType-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$UnannType")]
+                            )
+                          ]
+
+  is-metaborg-java-UnannType =
+    ?UnannType-Plhdr(_)
+
+  prettyprint-metaborg-java-VarDecl :
+    VarDecl-Plhdr(_) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [S("$VarDecl")]
+                          )
+                        ]
+
+  is-metaborg-java-VarDecl =
+    ?VarDecl-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Annotation")]
+                             )
+                           ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr(_)
+
+  prettyprint-metaborg-java-ConstantModifier :
+    ConstantModifier-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$ConstantModifier")]
+                                   )
+                                 ]
+
+  is-metaborg-java-ConstantModifier =
+    ?ConstantModifier-Plhdr(_)
+
+  prettyprint-metaborg-java-ConstantModifier :
+    ConstantModifier-Opt-Plhdr() -> [ H(
+                                        []
+                                      , [S("")]
+                                      )
+                                    ]
+
+  is-metaborg-java-ConstantModifier =
+    ?ConstantModifier-Opt-Plhdr()

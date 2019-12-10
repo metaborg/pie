@@ -1,0 +1,17 @@
+module signatures/java/literals/StringLiterals-sig
+
+imports
+  signatures/java/literals/EscapeSequences-sig
+  signatures/java/lexical/UnicodeEscapes-sig
+
+
+signature
+  constructors
+    StringLiteral       : StringLit -> StringLiteral
+    StringLiteral-Plhdr : StringLiteral
+    StringLit-Plhdr     : StringLit
+    StringLiteral-Plhdr : COMPLETION-INSERTION -> StringLiteral
+    StringLit-Plhdr     : COMPLETION-INSERTION -> StringLit
+                        : String -> StringLit
+                        : String -> StringPart
+                        : String -> StringChars

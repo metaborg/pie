@@ -1,0 +1,144 @@
+module pp/java/classes/InstanceInitializers-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/classes/InstanceInitializers-sig
+
+
+imports
+  signatures/java/statements/Blocks-sig
+
+
+imports
+  pp/java/statements/Blocks-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-InstanceInitializer
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-InstanceInitializer>
+    where <?"InstanceInitializer"> sort
+
+  prettyprint-metaborg-java-InstanceInitializer :
+    InstanceInit(t1__) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , t1__'
+                            )
+                          ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Block)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-InstanceInitializer =
+    ?InstanceInit(_)
+
+  metaborg-java-get-indent :
+    (t@InstanceInit(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"InstanceInitializer"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@InstanceInit(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"InstanceInitializer"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@InstanceInit(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"InstanceInitializer"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-InstanceInitializer =
+    fail
+
+  prettyprint-metaborg-java-InstanceInitializer :
+    amb([h|hs]) -> <prettyprint-metaborg-java-InstanceInitializer> h
+
+  prettyprint-metaborg-java-InstanceInitializer :
+    InstanceInitializer-Plhdr() -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S("$InstanceInitializer")]
+                                     )
+                                   ]
+
+  is-metaborg-java-InstanceInitializer =
+    ?InstanceInitializer-Plhdr()
+
+  prettyprint-metaborg-java-Block :
+    Block-Plhdr() -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [S("$Block")]
+                       )
+                     ]
+
+  is-metaborg-java-Block =
+    ?Block-Plhdr()
+
+  prettyprint-metaborg-java-InstanceInitializer :
+    InstanceInitializer-Plhdr(_) -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$InstanceInitializer")]
+                                      )
+                                    ]
+
+  is-metaborg-java-InstanceInitializer =
+    ?InstanceInitializer-Plhdr(_)
+
+  prettyprint-metaborg-java-Block :
+    Block-Plhdr(_) -> [ H(
+                          [SOpt(HS(), "0")]
+                        , [S("$Block")]
+                        )
+                      ]
+
+  is-metaborg-java-Block =
+    ?Block-Plhdr(_)

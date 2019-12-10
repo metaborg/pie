@@ -11,6 +11,8 @@ imports
   signatures/java/names/-
   signatures/java/classes/-
 
+  pp
+
   libspoofax/stratego/debug
 
 rules
@@ -30,7 +32,7 @@ rules
   p2j-ast-to-filestring(|mod):
     ast -> 
 $[// This file was generated from Pie source file [mod].pie.
-[ast]
+[<pp-java-string> ast]
 // last cache update: 2019-12-06 15:41
 ]
 

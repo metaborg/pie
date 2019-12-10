@@ -1,0 +1,15 @@
+module signatures/java/arrays/ArrayInitializers-sig
+
+imports
+  signatures/java/classes/FieldDeclarations-sig
+
+
+signature
+  constructors
+    ArrayInit                     : List(VariableInitializer) -> ArrayInitializer
+    ArrayInitComma                : List(VariableInitializer) -> ArrayInitializer
+    ArrayInitializer-Plhdr        : ArrayInitializer
+    VariableInitializer-Plhdr     : VariableInitializer
+    ArrayInitializer-Plhdr        : COMPLETION-INSERTION -> ArrayInitializer
+    VariableInitializer-Plhdr     : COMPLETION-INSERTION -> VariableInitializer
+    VariableInitializer-Opt-Plhdr : VariableInitializer

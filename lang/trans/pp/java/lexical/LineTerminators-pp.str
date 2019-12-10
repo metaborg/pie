@@ -1,0 +1,72 @@
+module pp/java/lexical/LineTerminators-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/lexical/LineTerminators-sig
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-LineTerminator
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-CarriageReturn
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-LineTerminator>
+    where <?"LineTerminator"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-CarriageReturn>
+    where <?"CarriageReturn"> sort
+
+  prettyprint-metaborg-java-LineTerminator =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-CarriageReturn =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-LineTerminator :
+    amb([h|hs]) -> <prettyprint-metaborg-java-LineTerminator> h
+
+  prettyprint-metaborg-java-CarriageReturn :
+    amb([h|hs]) -> <prettyprint-metaborg-java-CarriageReturn> h
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-EndOfFile
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-EndOfFile>
+    where <?"EndOfFile"> sort
+
+  prettyprint-metaborg-java-EndOfFile =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-EndOfFile :
+    amb([h|hs]) -> <prettyprint-metaborg-java-EndOfFile> h

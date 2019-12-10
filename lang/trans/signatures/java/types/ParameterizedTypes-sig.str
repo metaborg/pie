@@ -1,0 +1,26 @@
+module signatures/java/types/ParameterizedTypes-sig
+
+imports
+  signatures/java/types/ReferenceTypes-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+signature
+  constructors
+    TypeArguments        : List(TypeArgument) -> TypeArguments
+                         : ReferenceType -> TypeArgument
+    WildCard             : WildCard -> TypeArgument
+    WildCard             : List(Annotation) -> WildCard
+    WildCardExtends      : List(Annotation) * ReferenceType -> WildCard
+    WildCardSuper        : List(Annotation) * ReferenceType -> WildCard
+    TypeArguments-Plhdr  : TypeArguments
+    TypeArgument-Plhdr   : TypeArgument
+    WildCard-Plhdr       : WildCard
+    Annotation-Plhdr     : Annotation
+    ReferenceType-Plhdr  : ReferenceType
+    TypeArguments-Plhdr  : COMPLETION-INSERTION -> TypeArguments
+    TypeArgument-Plhdr   : COMPLETION-INSERTION -> TypeArgument
+    WildCard-Plhdr       : COMPLETION-INSERTION -> WildCard
+    Annotation-Plhdr     : COMPLETION-INSERTION -> Annotation
+    ReferenceType-Plhdr  : COMPLETION-INSERTION -> ReferenceType
+    Annotation-Opt-Plhdr : Annotation

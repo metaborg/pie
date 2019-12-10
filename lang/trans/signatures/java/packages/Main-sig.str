@@ -1,0 +1,11 @@
+module signatures/java/packages/Main-sig
+
+imports
+  signatures/java/packages/CompilationUnits-sig
+  signatures/java/packages/ImportDeclarations-sig
+  signatures/java/packages/PackageDeclarations-sig
+
+
+signature
+  constructors
+    

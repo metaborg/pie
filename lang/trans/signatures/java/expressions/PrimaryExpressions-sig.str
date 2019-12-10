@@ -1,0 +1,32 @@
+module signatures/java/expressions/PrimaryExpressions-sig
+
+imports
+  signatures/java/literals/Main-sig
+  signatures/java/names/Names-sig
+  signatures/java/types/PrimitiveTypes-sig
+
+
+signature
+  constructors
+                            : Literal -> Expression
+                            : ClassLiteral -> Expression
+    This                    : Expression
+    QThis                   : TypeName -> Expression
+    TypeNameClassLiteral    : TypeName * List(Dims) -> ClassLiteral
+    NumericTypeClassLiteral : NumericType * List(Dims) -> ClassLiteral
+    BooleanClassLiteral     : List(Dims) -> ClassLiteral
+    VoidClassLiteral        : ClassLiteral
+    Dimension               : Dims
+    Literal-Plhdr           : Literal
+    Expression-Plhdr        : Expression
+    TypeName-Plhdr          : TypeName
+    NumericType-Plhdr       : NumericType
+    ClassLiteral-Plhdr      : ClassLiteral
+    Dims-Plhdr              : Dims
+    Literal-Plhdr           : COMPLETION-INSERTION -> Literal
+    Expression-Plhdr        : COMPLETION-INSERTION -> Expression
+    TypeName-Plhdr          : COMPLETION-INSERTION -> TypeName
+    NumericType-Plhdr       : COMPLETION-INSERTION -> NumericType
+    ClassLiteral-Plhdr      : COMPLETION-INSERTION -> ClassLiteral
+    Dims-Plhdr              : COMPLETION-INSERTION -> Dims
+    Dims-Opt-Plhdr          : Dims

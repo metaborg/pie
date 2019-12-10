@@ -1,0 +1,187 @@
+module pp/java/expressions/ArrayAccess-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/expressions/ArrayAccess-sig
+
+
+imports
+  signatures/java/names/Names-sig
+  signatures/java/expressions/ArrayCreation-sig
+
+
+imports
+  pp/java/names/Names-pp
+  pp/java/expressions/ArrayCreation-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Expression
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ArrayAccess
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Expression>
+    where <?"Expression"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ArrayAccess>
+    where <?"ArrayAccess"> sort
+
+  prettyprint-metaborg-java-Expression :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-Expression)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ArrayAccess)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-ArrayAccess :
+    ArrayAccess(t1__, t2__) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , t1__'
+                                 )
+                               ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S("[")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S("]")
+                                   ]
+
+  is-metaborg-java-ArrayAccess =
+    ?ArrayAccess(_, _)
+
+  metaborg-java-get-indent :
+    (t@ArrayAccess(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ArrayAccess"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@ArrayAccess(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ArrayAccess"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@ArrayAccess(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ArrayAccess"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-Expression =
+    fail
+
+  is-metaborg-java-ArrayAccess =
+    fail
+
+  prettyprint-metaborg-java-Expression :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Expression> h
+
+  prettyprint-metaborg-java-ArrayAccess :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ArrayAccess> h
+
+  prettyprint-metaborg-java-ArrayAccess :
+    ArrayAccess-Plhdr() -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$ArrayAccess")]
+                             )
+                           ]
+
+  is-metaborg-java-ArrayAccess =
+    ?ArrayAccess-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Expression")]
+                            )
+                          ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr()
+
+  prettyprint-metaborg-java-ArrayAccess :
+    ArrayAccess-Plhdr(_) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$ArrayAccess")]
+                              )
+                            ]
+
+  is-metaborg-java-ArrayAccess =
+    ?ArrayAccess-Plhdr(_)
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Expression")]
+                             )
+                           ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr(_)

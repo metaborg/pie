@@ -1,0 +1,153 @@
+module pp/java/types/Main-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/types/Main-sig
+
+
+imports
+  signatures/java/types/PrimitiveTypes-sig
+  signatures/java/types/ReferenceTypes-sig
+
+
+imports
+  pp/java/types/PrimitiveTypes-pp
+  pp/java/types/ReferenceTypes-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java-start-symbols =
+    prettyprint-metaborg-java-Type
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Type
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Type>
+    where <?"Type"> sort
+
+  prettyprint-metaborg-java-Type :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-Type)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-PrimitiveType)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-Type :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-Type)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ReferenceType)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  is-metaborg-java-Type =
+    fail
+
+  prettyprint-metaborg-java-Type :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Type> h
+
+  prettyprint-metaborg-java-PrimitiveType :
+    PrimitiveType-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$PrimitiveType")]
+                               )
+                             ]
+
+  is-metaborg-java-PrimitiveType =
+    ?PrimitiveType-Plhdr()
+
+  prettyprint-metaborg-java-Type :
+    Type-Plhdr() -> [ H(
+                        [SOpt(HS(), "0")]
+                      , [S("$Type")]
+                      )
+                    ]
+
+  is-metaborg-java-Type =
+    ?Type-Plhdr()
+
+  prettyprint-metaborg-java-ReferenceType :
+    ReferenceType-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$ReferenceType")]
+                               )
+                             ]
+
+  is-metaborg-java-ReferenceType =
+    ?ReferenceType-Plhdr()
+
+  prettyprint-metaborg-java-PrimitiveType :
+    PrimitiveType-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$PrimitiveType")]
+                                )
+                              ]
+
+  is-metaborg-java-PrimitiveType =
+    ?PrimitiveType-Plhdr(_)
+
+  prettyprint-metaborg-java-Type :
+    Type-Plhdr(_) -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [S("$Type")]
+                       )
+                     ]
+
+  is-metaborg-java-Type =
+    ?Type-Plhdr(_)
+
+  prettyprint-metaborg-java-ReferenceType :
+    ReferenceType-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$ReferenceType")]
+                                )
+                              ]
+
+  is-metaborg-java-ReferenceType =
+    ?ReferenceType-Plhdr(_)

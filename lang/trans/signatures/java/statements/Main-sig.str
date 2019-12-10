@@ -1,0 +1,11 @@
+module signatures/java/statements/Main-sig
+
+imports
+  signatures/java/statements/Blocks-sig
+  signatures/java/statements/LocalVariableDeclarations-sig
+  signatures/java/statements/Statements-sig
+
+
+signature
+  constructors
+    

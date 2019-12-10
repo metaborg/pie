@@ -1,0 +1,864 @@
+module pp/java/types/ReferenceTypes-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/types/ReferenceTypes-sig
+
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/types/PrimitiveTypes-sig
+  signatures/java/types/ParameterizedTypes-sig
+  signatures/java/interfaces/Annotations-sig
+
+
+imports
+  pp/java/lexical/Identifiers-pp
+  pp/java/types/PrimitiveTypes-pp
+  pp/java/types/ParameterizedTypes-pp
+  pp/java/interfaces/Annotations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ReferenceType
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ClassType
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-TypeVariable
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ArrayType
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-AnnotatedDims
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-AnnotatedDimsEmpty
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-AnnotatedDim
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ReferenceType>
+    where <?"ReferenceType"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ClassType>
+    where <?"ClassType"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-TypeVariable>
+    where <?"TypeVariable"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ArrayType>
+    where <?"ArrayType"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-AnnotatedDims>
+    where <?"AnnotatedDims"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-AnnotatedDimsEmpty>
+    where <?"AnnotatedDimsEmpty"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-AnnotatedDim>
+    where <?"AnnotatedDim"> sort
+
+  prettyprint-metaborg-java-ReferenceType :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-ReferenceType)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ClassType)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-ReferenceType :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-ReferenceType)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-one-Z(prettyprint-metaborg-java-ArrayType)
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-ClassType :
+    ClassType(t1__, t2__, t3__) -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , t1__'
+                                     )
+                                   ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t3__
+                                   ]
+
+  is-metaborg-java-ClassType =
+    ?ClassType(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@ClassType(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ClassType"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@ClassType(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ClassType"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@ClassType(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ClassType"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ClassType :
+    ClassOrInterfaceTypeMember(t1__, t2__, t3__, t4__) -> [ H(
+                                                              [SOpt(HS(), "0")]
+                                                            , t1__'
+                                                            )
+                                                          ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-ClassType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t3__
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-TypeArguments)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t4__
+                                   ]
+
+  is-metaborg-java-ClassType =
+    ?ClassOrInterfaceTypeMember(_, _, _, _)
+
+  metaborg-java-get-indent :
+    ( t@ClassOrInterfaceTypeMember(t1__, t2__, t3__, t4__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ClassType"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           case ?4 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@ClassOrInterfaceTypeMember(t1__, t2__, t3__, t4__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ClassType"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := " "
+           case ?3 :
+             separator := ""
+           case ?4 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@ClassOrInterfaceTypeMember(t1__, t2__, t3__, t4__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ClassType"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           case ?3 :
+             ws := " "
+           case ?4 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-TypeVariable :
+    TypeVar(t1__, t2__) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , t1__'
+                             )
+                           ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-TypeVariable =
+    ?TypeVar(_, _)
+
+  metaborg-java-get-indent :
+    (t@TypeVar(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TypeVariable"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@TypeVar(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TypeVariable"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@TypeVar(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TypeVariable"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ArrayType :
+    ArrayTypePrimitive(t1__, t2__) -> [ H(
+                                          [SOpt(HS(), "0")]
+                                        , t1__'
+                                        )
+                                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-PrimitiveType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-AnnotatedDims)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-ArrayType =
+    ?ArrayTypePrimitive(_, _)
+
+  metaborg-java-get-indent :
+    (t@ArrayTypePrimitive(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ArrayType"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@ArrayTypePrimitive(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ArrayType"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@ArrayTypePrimitive(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ArrayType"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ArrayType :
+    ArrayTypeClassType(t1__, t2__) -> [ H(
+                                          [SOpt(HS(), "0")]
+                                        , t1__'
+                                        )
+                                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-ClassType)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-AnnotatedDims)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-ArrayType =
+    ?ArrayTypeClassType(_, _)
+
+  metaborg-java-get-indent :
+    (t@ArrayTypeClassType(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ArrayType"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@ArrayTypeClassType(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ArrayType"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@ArrayTypeClassType(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ArrayType"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-AnnotatedDims :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-AnnotatedDims)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-H-list(prettyprint-metaborg-java-AnnotatedDim|" ")
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-AnnotatedDimsEmpty :
+    t1__ -> [ H(
+                [SOpt(HS(), "0")]
+              , t1__'
+              )
+            ]
+    where not(is-metaborg-java-AnnotatedDimsEmpty)
+    where t1__' := <clean-layout-empty-symbols(
+                    | ""
+                    , FALSE()
+                    , FALSE()
+                    )
+                    ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                       <+ pp-H-list(prettyprint-metaborg-java-AnnotatedDim|" ")
+                                       <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                    ]
+
+  prettyprint-metaborg-java-AnnotatedDim :
+    AnnotateDim(t1__) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , t1__'
+                           )
+                         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , S("[]")
+                                   ]
+
+  is-metaborg-java-AnnotatedDim =
+    ?AnnotateDim(_)
+
+  metaborg-java-get-indent :
+    (t@AnnotateDim(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"AnnotatedDim"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@AnnotateDim(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"AnnotatedDim"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@AnnotateDim(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"AnnotatedDim"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-ReferenceType =
+    fail
+
+  is-metaborg-java-ClassType =
+    fail
+
+  is-metaborg-java-TypeVariable =
+    fail
+
+  is-metaborg-java-ArrayType =
+    fail
+
+  is-metaborg-java-AnnotatedDims =
+    fail
+
+  is-metaborg-java-AnnotatedDimsEmpty =
+    fail
+
+  is-metaborg-java-AnnotatedDim =
+    fail
+
+  prettyprint-metaborg-java-ReferenceType :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ReferenceType> h
+
+  prettyprint-metaborg-java-ClassType :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ClassType> h
+
+  prettyprint-metaborg-java-TypeVariable :
+    amb([h|hs]) -> <prettyprint-metaborg-java-TypeVariable> h
+
+  prettyprint-metaborg-java-ArrayType :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ArrayType> h
+
+  prettyprint-metaborg-java-AnnotatedDims :
+    amb([h|hs]) -> <prettyprint-metaborg-java-AnnotatedDims> h
+
+  prettyprint-metaborg-java-AnnotatedDimsEmpty :
+    amb([h|hs]) -> <prettyprint-metaborg-java-AnnotatedDimsEmpty> h
+
+  prettyprint-metaborg-java-AnnotatedDim :
+    amb([h|hs]) -> <prettyprint-metaborg-java-AnnotatedDim> h
+
+  prettyprint-metaborg-java-ReferenceType :
+    ReferenceType-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$ReferenceType")]
+                               )
+                             ]
+
+  is-metaborg-java-ReferenceType =
+    ?ReferenceType-Plhdr()
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$TypeArguments")]
+                               )
+                             ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Plhdr()
+
+  prettyprint-metaborg-java-TypeVariable :
+    TypeVariable-Plhdr() -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$TypeVariable")]
+                              )
+                            ]
+
+  is-metaborg-java-TypeVariable =
+    ?TypeVariable-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-PrimitiveType :
+    PrimitiveType-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$PrimitiveType")]
+                               )
+                             ]
+
+  is-metaborg-java-PrimitiveType =
+    ?PrimitiveType-Plhdr()
+
+  prettyprint-metaborg-java-ArrayType :
+    ArrayType-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$ArrayType")]
+                           )
+                         ]
+
+  is-metaborg-java-ArrayType =
+    ?ArrayType-Plhdr()
+
+  prettyprint-metaborg-java-ClassType :
+    ClassType-Plhdr() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$ClassType")]
+                           )
+                         ]
+
+  is-metaborg-java-ClassType =
+    ?ClassType-Plhdr()
+
+  prettyprint-metaborg-java-AnnotatedDims :
+    AnnotatedDims-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$AnnotatedDims")]
+                               )
+                             ]
+
+  is-metaborg-java-AnnotatedDims =
+    ?AnnotatedDims-Plhdr()
+
+  prettyprint-metaborg-java-AnnotatedDimsEmpty :
+    AnnotatedDimsEmpty-Plhdr() -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$AnnotatedDimsEmpty")]
+                                    )
+                                  ]
+
+  is-metaborg-java-AnnotatedDimsEmpty =
+    ?AnnotatedDimsEmpty-Plhdr()
+
+  prettyprint-metaborg-java-AnnotatedDim :
+    AnnotatedDim-Plhdr() -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$AnnotatedDim")]
+                              )
+                            ]
+
+  is-metaborg-java-AnnotatedDim =
+    ?AnnotatedDim-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Annotation")]
+                            )
+                          ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr()
+
+  prettyprint-metaborg-java-ReferenceType :
+    ReferenceType-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$ReferenceType")]
+                                )
+                              ]
+
+  is-metaborg-java-ReferenceType =
+    ?ReferenceType-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$TypeArguments")]
+                                )
+                              ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeVariable :
+    TypeVariable-Plhdr(_) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$TypeVariable")]
+                               )
+                             ]
+
+  is-metaborg-java-TypeVariable =
+    ?TypeVariable-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)
+
+  prettyprint-metaborg-java-PrimitiveType :
+    PrimitiveType-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$PrimitiveType")]
+                                )
+                              ]
+
+  is-metaborg-java-PrimitiveType =
+    ?PrimitiveType-Plhdr(_)
+
+  prettyprint-metaborg-java-ArrayType :
+    ArrayType-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$ArrayType")]
+                            )
+                          ]
+
+  is-metaborg-java-ArrayType =
+    ?ArrayType-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassType :
+    ClassType-Plhdr(_) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$ClassType")]
+                            )
+                          ]
+
+  is-metaborg-java-ClassType =
+    ?ClassType-Plhdr(_)
+
+  prettyprint-metaborg-java-AnnotatedDims :
+    AnnotatedDims-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$AnnotatedDims")]
+                                )
+                              ]
+
+  is-metaborg-java-AnnotatedDims =
+    ?AnnotatedDims-Plhdr(_)
+
+  prettyprint-metaborg-java-AnnotatedDimsEmpty :
+    AnnotatedDimsEmpty-Plhdr(_) -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S("$AnnotatedDimsEmpty")]
+                                     )
+                                   ]
+
+  is-metaborg-java-AnnotatedDimsEmpty =
+    ?AnnotatedDimsEmpty-Plhdr(_)
+
+  prettyprint-metaborg-java-AnnotatedDim :
+    AnnotatedDim-Plhdr(_) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$AnnotatedDim")]
+                               )
+                             ]
+
+  is-metaborg-java-AnnotatedDim =
+    ?AnnotatedDim-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Annotation")]
+                             )
+                           ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeArguments :
+    TypeArguments-Opt-Plhdr() -> [ H(
+                                     []
+                                   , [S("")]
+                                   )
+                                 ]
+
+  is-metaborg-java-TypeArguments =
+    ?TypeArguments-Opt-Plhdr()
+
+  prettyprint-metaborg-java-AnnotatedDim :
+    AnnotatedDim-Opt-Plhdr() -> [ H(
+                                    []
+                                  , [S("")]
+                                  )
+                                ]
+
+  is-metaborg-java-AnnotatedDim =
+    ?AnnotatedDim-Opt-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Opt-Plhdr() -> [ H(
+                                  []
+                                , [S("")]
+                                )
+                              ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Opt-Plhdr()

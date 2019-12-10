@@ -1,0 +1,457 @@
+module pp/java/expressions/LambdaExpressions-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/expressions/LambdaExpressions-sig
+
+
+imports
+  signatures/java/statements/Blocks-sig
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/classes/MethodDeclarations-sig
+
+
+imports
+  pp/java/statements/Blocks-pp
+  pp/java/lexical/Identifiers-pp
+  pp/java/classes/MethodDeclarations-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Expression
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-LambdaParameters
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Expression>
+    where <?"Expression"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-LambdaParameters>
+    where <?"LambdaParameters"> sort
+
+  prettyprint-metaborg-java-Expression :
+    LambdaExpression(t1__, t2__) -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , t1__'
+                                      )
+                                    ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-LambdaParameters)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , S("->")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Expression)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?LambdaExpression(_, _)
+
+  metaborg-java-get-indent :
+    (t@LambdaExpression(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@LambdaExpression(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@LambdaExpression(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-Expression :
+    LambdaExpressionWithBlock(t1__, t2__) -> [ H(
+                                                 [SOpt(HS(), "0")]
+                                               , t1__'
+                                               )
+                                             ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-LambdaParameters)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , S("->")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Block)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-Expression =
+    ?LambdaExpressionWithBlock(_, _)
+
+  metaborg-java-get-indent :
+    (t@LambdaExpressionWithBlock(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@LambdaExpressionWithBlock(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@LambdaExpressionWithBlock(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"Expression"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-LambdaParameters :
+    SingleParam(t1__) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , t1__'
+                           )
+                         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-LambdaParameters =
+    ?SingleParam(_)
+
+  metaborg-java-get-indent :
+    (t@SingleParam(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@SingleParam(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@SingleParam(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-LambdaParameters :
+    Params(t1__) -> [ H(
+                        [SOpt(HS(), "0")]
+                      , t1__'
+                      )
+                    ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S("(")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-FormalParams)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(")")
+                                   ]
+
+  is-metaborg-java-LambdaParameters =
+    ?Params(_)
+
+  metaborg-java-get-indent :
+    (t@Params(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@Params(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@Params(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-LambdaParameters :
+    InferredParams(t1__) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , t1__'
+                              )
+                            ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S("(")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Id|", ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(")")
+                                   ]
+
+  is-metaborg-java-LambdaParameters =
+    ?InferredParams(_)
+
+  metaborg-java-get-indent :
+    (t@InferredParams(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@InferredParams(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             separator := ", "
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@InferredParams(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"LambdaParameters"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-Expression =
+    fail
+
+  is-metaborg-java-LambdaParameters =
+    fail
+
+  prettyprint-metaborg-java-Expression :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Expression> h
+
+  prettyprint-metaborg-java-LambdaParameters :
+    amb([h|hs]) -> <prettyprint-metaborg-java-LambdaParameters> h
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Expression")]
+                            )
+                          ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr()
+
+  prettyprint-metaborg-java-Block :
+    Block-Plhdr() -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [S("$Block")]
+                       )
+                     ]
+
+  is-metaborg-java-Block =
+    ?Block-Plhdr()
+
+  prettyprint-metaborg-java-FormalParams :
+    FormalParams-Plhdr() -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$FormalParams")]
+                              )
+                            ]
+
+  is-metaborg-java-FormalParams =
+    ?FormalParams-Plhdr()
+
+  prettyprint-metaborg-java-LambdaParameters :
+    LambdaParameters-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$LambdaParameters")]
+                                  )
+                                ]
+
+  is-metaborg-java-LambdaParameters =
+    ?LambdaParameters-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Expression")]
+                             )
+                           ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr(_)
+
+  prettyprint-metaborg-java-Block :
+    Block-Plhdr(_) -> [ H(
+                          [SOpt(HS(), "0")]
+                        , [S("$Block")]
+                        )
+                      ]
+
+  is-metaborg-java-Block =
+    ?Block-Plhdr(_)
+
+  prettyprint-metaborg-java-FormalParams :
+    FormalParams-Plhdr(_) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$FormalParams")]
+                               )
+                             ]
+
+  is-metaborg-java-FormalParams =
+    ?FormalParams-Plhdr(_)
+
+  prettyprint-metaborg-java-LambdaParameters :
+    LambdaParameters-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$LambdaParameters")]
+                                   )
+                                 ]
+
+  is-metaborg-java-LambdaParameters =
+    ?LambdaParameters-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)

@@ -1,0 +1,16 @@
+module signatures/java/lexical/Comments-sig
+
+imports
+  signatures/java/lexical/LineTerminators-sig
+
+
+signature
+  constructors
+     : String -> EOLCommentChars
+     : String -> Comment
+     : String -> CommentPart
+     : String -> BlockCommentChars
+     : String -> Asterisk
+     : String -> EscEscChar
+     : String -> EscChar
+     : String -> UnicodeEscape

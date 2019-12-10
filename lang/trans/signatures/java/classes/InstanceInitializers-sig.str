@@ -1,0 +1,13 @@
+module signatures/java/classes/InstanceInitializers-sig
+
+imports
+  signatures/java/statements/Blocks-sig
+
+
+signature
+  constructors
+    InstanceInit              : Block -> InstanceInitializer
+    InstanceInitializer-Plhdr : InstanceInitializer
+    Block-Plhdr               : Block
+    InstanceInitializer-Plhdr : COMPLETION-INSERTION -> InstanceInitializer
+    Block-Plhdr               : COMPLETION-INSERTION -> Block

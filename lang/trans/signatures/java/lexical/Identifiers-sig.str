@@ -1,0 +1,14 @@
+module signatures/java/lexical/Identifiers-sig
+
+imports
+  signatures/java/lexical/Keywords-sig
+
+
+signature
+  constructors
+    Id       : ID -> Id
+    Id-Plhdr : Id
+    ID-Plhdr : ID
+    Id-Plhdr : COMPLETION-INSERTION -> Id
+    ID-Plhdr : COMPLETION-INSERTION -> ID
+             : String -> ID

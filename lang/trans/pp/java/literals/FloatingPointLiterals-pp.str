@@ -1,0 +1,530 @@
+module pp/java/literals/FloatingPointLiterals-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/literals/FloatingPointLiterals-sig
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java-start-symbols =
+    prettyprint-metaborg-java-FloatLiteral
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-FloatLiteral
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-FloatLiteral>
+    where <?"FloatLiteral"> sort
+
+  prettyprint-metaborg-java-FloatLiteral :
+    DeciFloat(t1__) -> [ H(
+                           [SOpt(HS(), "0")]
+                         , t1__'
+                         )
+                       ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-DeciFloatLiteral)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-FloatLiteral =
+    ?DeciFloat(_)
+
+  metaborg-java-get-indent :
+    (t@DeciFloat(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@DeciFloat(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@DeciFloat(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-FloatLiteral :
+    HexaFloat(t1__) -> [ H(
+                           [SOpt(HS(), "0")]
+                         , t1__'
+                         )
+                       ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-HexaFloatLiteral)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-FloatLiteral =
+    ?HexaFloat(_)
+
+  metaborg-java-get-indent :
+    (t@HexaFloat(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@HexaFloat(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@HexaFloat(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-FloatLiteral :
+    DeciDouble(t1__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , t1__'
+                          )
+                        ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-DeciDoubleLiteral)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-FloatLiteral =
+    ?DeciDouble(_)
+
+  metaborg-java-get-indent :
+    (t@DeciDouble(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@DeciDouble(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@DeciDouble(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-FloatLiteral :
+    HexaDouble(t1__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , t1__'
+                          )
+                        ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-HexaDoubleLiteral)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-FloatLiteral =
+    ?HexaDouble(_)
+
+  metaborg-java-get-indent :
+    (t@HexaDouble(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@HexaDouble(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@HexaDouble(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"FloatLiteral"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-FloatLiteral =
+    fail
+
+  prettyprint-metaborg-java-FloatLiteral :
+    amb([h|hs]) -> <prettyprint-metaborg-java-FloatLiteral> h
+
+  prettyprint-metaborg-java-DeciFloatLiteral :
+    DeciFloatLiteral-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$DeciFloatLiteral")]
+                                  )
+                                ]
+
+  is-metaborg-java-DeciFloatLiteral =
+    ?DeciFloatLiteral-Plhdr()
+
+  prettyprint-metaborg-java-HexaFloatLiteral :
+    HexaFloatLiteral-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$HexaFloatLiteral")]
+                                  )
+                                ]
+
+  is-metaborg-java-HexaFloatLiteral =
+    ?HexaFloatLiteral-Plhdr()
+
+  prettyprint-metaborg-java-DeciDoubleLiteral :
+    DeciDoubleLiteral-Plhdr() -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$DeciDoubleLiteral")]
+                                   )
+                                 ]
+
+  is-metaborg-java-DeciDoubleLiteral =
+    ?DeciDoubleLiteral-Plhdr()
+
+  prettyprint-metaborg-java-FloatLiteral :
+    FloatLiteral-Plhdr() -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$FloatLiteral")]
+                              )
+                            ]
+
+  is-metaborg-java-FloatLiteral =
+    ?FloatLiteral-Plhdr()
+
+  prettyprint-metaborg-java-HexaDoubleLiteral :
+    HexaDoubleLiteral-Plhdr() -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$HexaDoubleLiteral")]
+                                   )
+                                 ]
+
+  is-metaborg-java-HexaDoubleLiteral =
+    ?HexaDoubleLiteral-Plhdr()
+
+  prettyprint-metaborg-java-DeciFloatLiteral :
+    DeciFloatLiteral-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$DeciFloatLiteral")]
+                                   )
+                                 ]
+
+  is-metaborg-java-DeciFloatLiteral =
+    ?DeciFloatLiteral-Plhdr(_)
+
+  prettyprint-metaborg-java-HexaFloatLiteral :
+    HexaFloatLiteral-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$HexaFloatLiteral")]
+                                   )
+                                 ]
+
+  is-metaborg-java-HexaFloatLiteral =
+    ?HexaFloatLiteral-Plhdr(_)
+
+  prettyprint-metaborg-java-DeciDoubleLiteral :
+    DeciDoubleLiteral-Plhdr(_) -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$DeciDoubleLiteral")]
+                                    )
+                                  ]
+
+  is-metaborg-java-DeciDoubleLiteral =
+    ?DeciDoubleLiteral-Plhdr(_)
+
+  prettyprint-metaborg-java-FloatLiteral :
+    FloatLiteral-Plhdr(_) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$FloatLiteral")]
+                               )
+                             ]
+
+  is-metaborg-java-FloatLiteral =
+    ?FloatLiteral-Plhdr(_)
+
+  prettyprint-metaborg-java-HexaDoubleLiteral :
+    HexaDoubleLiteral-Plhdr(_) -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$HexaDoubleLiteral")]
+                                    )
+                                  ]
+
+  is-metaborg-java-HexaDoubleLiteral =
+    ?HexaDoubleLiteral-Plhdr(_)
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-DeciFloatLiteral
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-DeciDoubleLiteral
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-DeciFloatExponentPart
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-SignedInteger
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Digits
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Digit
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-DigitsAndUnderscores
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-DigitsOrUnderscore
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-Underscores
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-DeciFloatLiteral>
+    where <?"DeciFloatLiteral"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-DeciDoubleLiteral>
+    where <?"DeciDoubleLiteral"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-DeciFloatExponentPart>
+    where <?"DeciFloatExponentPart"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-SignedInteger>
+    where <?"SignedInteger"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Digits>
+    where <?"Digits"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Digit>
+    where <?"Digit"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-DigitsAndUnderscores>
+    where <?"DigitsAndUnderscores"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-DigitsOrUnderscore>
+    where <?"DigitsOrUnderscore"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-Underscores>
+    where <?"Underscores"> sort
+
+  prettyprint-metaborg-java-DeciFloatLiteral =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-DeciDoubleLiteral =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-DeciFloatExponentPart =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-SignedInteger =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-Digits =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-Digit =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-DigitsAndUnderscores =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-DigitsOrUnderscore =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-Underscores =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-DeciFloatLiteral :
+    amb([h|hs]) -> <prettyprint-metaborg-java-DeciFloatLiteral> h
+
+  prettyprint-metaborg-java-DeciDoubleLiteral :
+    amb([h|hs]) -> <prettyprint-metaborg-java-DeciDoubleLiteral> h
+
+  prettyprint-metaborg-java-DeciFloatExponentPart :
+    amb([h|hs]) -> <prettyprint-metaborg-java-DeciFloatExponentPart> h
+
+  prettyprint-metaborg-java-SignedInteger :
+    amb([h|hs]) -> <prettyprint-metaborg-java-SignedInteger> h
+
+  prettyprint-metaborg-java-Digits :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Digits> h
+
+  prettyprint-metaborg-java-Digit :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Digit> h
+
+  prettyprint-metaborg-java-DigitsAndUnderscores :
+    amb([h|hs]) -> <prettyprint-metaborg-java-DigitsAndUnderscores> h
+
+  prettyprint-metaborg-java-DigitsOrUnderscore :
+    amb([h|hs]) -> <prettyprint-metaborg-java-DigitsOrUnderscore> h
+
+  prettyprint-metaborg-java-Underscores :
+    amb([h|hs]) -> <prettyprint-metaborg-java-Underscores> h
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-HexaFloatLiteral
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-HexaDoubleLiteral
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-HexaSignificand
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-BinaryExponent
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-HexaFloatLiteral>
+    where <?"HexaFloatLiteral"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-HexaDoubleLiteral>
+    where <?"HexaDoubleLiteral"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-HexaSignificand>
+    where <?"HexaSignificand"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-BinaryExponent>
+    where <?"BinaryExponent"> sort
+
+  prettyprint-metaborg-java-HexaFloatLiteral =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-HexaDoubleLiteral =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-HexaSignificand =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-BinaryExponent =
+    ![S(<is-string>)]
+
+  prettyprint-metaborg-java-HexaFloatLiteral :
+    amb([h|hs]) -> <prettyprint-metaborg-java-HexaFloatLiteral> h
+
+  prettyprint-metaborg-java-HexaDoubleLiteral :
+    amb([h|hs]) -> <prettyprint-metaborg-java-HexaDoubleLiteral> h
+
+  prettyprint-metaborg-java-HexaSignificand :
+    amb([h|hs]) -> <prettyprint-metaborg-java-HexaSignificand> h
+
+  prettyprint-metaborg-java-BinaryExponent :
+    amb([h|hs]) -> <prettyprint-metaborg-java-BinaryExponent> h

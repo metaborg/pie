@@ -1,0 +1,940 @@
+module pp/java/classes/EnumDeclarations-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/classes/EnumDeclarations-sig
+
+
+imports
+  signatures/java/lexical/Identifiers-sig
+  signatures/java/classes/ClassDeclarations-sig
+  signatures/java/interfaces/Annotations-sig
+  signatures/java/expressions/Main-sig
+
+
+imports
+  pp/java/lexical/Identifiers-pp
+  pp/java/classes/ClassDeclarations-pp
+  pp/java/interfaces/Annotations-pp
+  pp/java/expressions/Main-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-EnumDeclaration
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-EnumConstant
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-EnumConstantArgs
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-EnumBodyDeclarations
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-EnumDeclaration>
+    where <?"EnumDeclaration"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-EnumConstant>
+    where <?"EnumConstant"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-EnumConstantArgs>
+    where <?"EnumConstantArgs"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-EnumBodyDeclarations>
+    where <?"EnumBodyDeclarations"> sort
+
+  prettyprint-metaborg-java-EnumDeclaration :
+    EnumDeclComma(t1__, t2__, t3__, t4__, t5__) -> [ H(
+                                                       [SOpt(HS(), "0")]
+                                                     , t1__'
+                                                     )
+                                                   , t4__'
+                                                   , t5__'
+                                                   , H(
+                                                       [SOpt(HS(), "0")]
+                                                     , t6__'
+                                                     )
+                                                   ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-ClassModifier|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , S("enum")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-SuperInterfaces)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t3__
+                                   , S(" ")
+                                   , S("{")
+                                   ]
+    with t4__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-H-list(prettyprint-metaborg-java-EnumConstant|", ")
+                                         <+ pp-one-Z(prettyprint-completion-aux)> t4__
+                                      , S(",")
+                                      ]
+    with t5__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-option(
+                                              check-nonterminal-isEmpty ; id
+                                              <+ pp-one-Z(prettyprint-metaborg-java-EnumBodyDeclarations)
+                                              <+ pp-one-Z(prettyprint-completion-aux)
+                                            )> t5__
+                                      ]
+    with t6__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("}")]
+
+  is-metaborg-java-EnumDeclaration =
+    ?EnumDeclComma(_, _, _, _, _)
+
+  metaborg-java-get-indent :
+    ( t@EnumDeclComma(t1__, t2__, t3__, t4__, t5__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"EnumDeclaration"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           case ?4 :
+             indent := "  "
+           case ?5 :
+             indent := "  "
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@EnumDeclComma(t1__, t2__, t3__, t4__, t5__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"EnumDeclaration"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           case ?4 :
+             separator := ", "
+           case ?5 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@EnumDeclComma(t1__, t2__, t3__, t4__, t5__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"EnumDeclaration"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           case ?4 :
+             ws := "\n  "
+           case ?5 :
+             ws := "\n  "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-EnumDeclaration :
+    EnumDecl(t1__, t2__, t3__, t4__, t5__) -> [ H(
+                                                  [SOpt(HS(), "0")]
+                                                , t1__'
+                                                )
+                                              , t4__'
+                                              , t5__'
+                                              , H(
+                                                  [SOpt(HS(), "0")]
+                                                , t6__'
+                                                )
+                                              ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-ClassModifier|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , S("enum")
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-SuperInterfaces)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t3__
+                                   , S(" ")
+                                   , S("{")
+                                   ]
+    with t4__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-H-list(prettyprint-metaborg-java-EnumConstant|", ")
+                                         <+ pp-one-Z(prettyprint-completion-aux)> t4__
+                                      ]
+    with t5__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-option(
+                                              check-nonterminal-isEmpty ; id
+                                              <+ pp-one-Z(prettyprint-metaborg-java-EnumBodyDeclarations)
+                                              <+ pp-one-Z(prettyprint-completion-aux)
+                                            )> t5__
+                                      ]
+    with t6__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("}")]
+
+  is-metaborg-java-EnumDeclaration =
+    ?EnumDecl(_, _, _, _, _)
+
+  metaborg-java-get-indent :
+    ( t@EnumDecl(t1__, t2__, t3__, t4__, t5__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"EnumDeclaration"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           case ?4 :
+             indent := "  "
+           case ?5 :
+             indent := "  "
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@EnumDecl(t1__, t2__, t3__, t4__, t5__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"EnumDeclaration"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           case ?4 :
+             separator := ", "
+           case ?5 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@EnumDecl(t1__, t2__, t3__, t4__, t5__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"EnumDeclaration"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           case ?4 :
+             ws := "\n  "
+           case ?5 :
+             ws := "\n  "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-EnumConstant :
+    EnumConst(t1__, t2__, t3__, t4__) -> [ H(
+                                             [SOpt(HS(), "0")]
+                                           , t1__'
+                                           )
+                                         , t4__'
+                                         , H(
+                                             [SOpt(HS(), "0")]
+                                           , t5__'
+                                           )
+                                         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-EnumConstantArgs)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t3__
+                                   , S("{")
+                                   ]
+    with t4__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list
+                   ; pp-indent(|"2")> [ <check-nonterminal-isEmpty ; id
+                                         <+ pp-V-list(prettyprint-metaborg-java-ClassBodyDeclaration)
+                                         <+ pp-one-Z(prettyprint-completion-aux)> t4__
+                                      ]
+    with t5__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S("}")]
+
+  is-metaborg-java-EnumConstant =
+    ?EnumConst(_, _, _, _)
+
+  metaborg-java-get-indent :
+    ( t@EnumConst(t1__, t2__, t3__, t4__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstant"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           case ?4 :
+             indent := "  "
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@EnumConst(t1__, t2__, t3__, t4__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstant"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           case ?4 :
+             separator := "\n"
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@EnumConst(t1__, t2__, t3__, t4__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstant"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           case ?4 :
+             ws := "\n  "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-EnumConstant :
+    EnumConstNoBody(t1__, t2__, t3__) -> [ H(
+                                             [SOpt(HS(), "0")]
+                                           , t1__'
+                                           )
+                                         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Annotation|" ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   , S(" ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-option(
+                                           check-nonterminal-isEmpty ; id
+                                           <+ pp-one-Z(prettyprint-metaborg-java-EnumConstantArgs)
+                                           <+ pp-one-Z(prettyprint-completion-aux)
+                                         )> t3__
+                                   ]
+
+  is-metaborg-java-EnumConstant =
+    ?EnumConstNoBody(_, _, _)
+
+  metaborg-java-get-indent :
+    ( t@EnumConstNoBody(t1__, t2__, t3__)
+    , index
+    ) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstant"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           case ?3 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    ( t@EnumConstNoBody(t1__, t2__, t3__)
+    , index
+    ) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstant"> sort
+    with switch !index
+           case ?1 :
+             separator := " "
+           case ?2 :
+             separator := ""
+           case ?3 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    ( t@EnumConstNoBody(t1__, t2__, t3__)
+    , index
+    ) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstant"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := " "
+           case ?3 :
+             ws := " "
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-EnumConstantArgs :
+    EnumConstArgs(t1__) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , t1__'
+                             )
+                           ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S("(")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-H-list(prettyprint-metaborg-java-Expression|", ")
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(")")
+                                   ]
+
+  is-metaborg-java-EnumConstantArgs =
+    ?EnumConstArgs(_)
+
+  metaborg-java-get-indent :
+    (t@EnumConstArgs(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstantArgs"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@EnumConstArgs(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstantArgs"> sort
+    with switch !index
+           case ?1 :
+             separator := ", "
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@EnumConstArgs(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"EnumConstantArgs"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-EnumBodyDeclarations :
+    EnumBodyDecs(t1__) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , t1__'
+                            )
+                          ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ S(";")
+                                   , S("  ")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-V-list(prettyprint-metaborg-java-ClassBodyDeclaration)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-EnumBodyDeclarations =
+    ?EnumBodyDecs(_)
+
+  metaborg-java-get-indent :
+    (t@EnumBodyDecs(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"EnumBodyDeclarations"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@EnumBodyDecs(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"EnumBodyDeclarations"> sort
+    with switch !index
+           case ?1 :
+             separator := "\n"
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@EnumBodyDecs(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"EnumBodyDeclarations"> sort
+    with switch !index
+           case ?1 :
+             ws := "  "
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-EnumDeclaration =
+    fail
+
+  is-metaborg-java-EnumConstant =
+    fail
+
+  is-metaborg-java-EnumConstantArgs =
+    fail
+
+  is-metaborg-java-EnumBodyDeclarations =
+    fail
+
+  prettyprint-metaborg-java-EnumDeclaration :
+    amb([h|hs]) -> <prettyprint-metaborg-java-EnumDeclaration> h
+
+  prettyprint-metaborg-java-EnumConstant :
+    amb([h|hs]) -> <prettyprint-metaborg-java-EnumConstant> h
+
+  prettyprint-metaborg-java-EnumConstantArgs :
+    amb([h|hs]) -> <prettyprint-metaborg-java-EnumConstantArgs> h
+
+  prettyprint-metaborg-java-EnumBodyDeclarations :
+    amb([h|hs]) -> <prettyprint-metaborg-java-EnumBodyDeclarations> h
+
+  prettyprint-metaborg-java-EnumDeclaration :
+    EnumDeclaration-Plhdr() -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$EnumDeclaration")]
+                                 )
+                               ]
+
+  is-metaborg-java-EnumDeclaration =
+    ?EnumDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-ClassModifier :
+    ClassModifier-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$ClassModifier")]
+                               )
+                             ]
+
+  is-metaborg-java-ClassModifier =
+    ?ClassModifier-Plhdr()
+
+  prettyprint-metaborg-java-SuperInterfaces :
+    SuperInterfaces-Plhdr() -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$SuperInterfaces")]
+                                 )
+                               ]
+
+  is-metaborg-java-SuperInterfaces =
+    ?SuperInterfaces-Plhdr()
+
+  prettyprint-metaborg-java-EnumConstant :
+    EnumConstant-Plhdr() -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$EnumConstant")]
+                              )
+                            ]
+
+  is-metaborg-java-EnumConstant =
+    ?EnumConstant-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Annotation")]
+                            )
+                          ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-EnumConstantArgs :
+    EnumConstantArgs-Plhdr() -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$EnumConstantArgs")]
+                                  )
+                                ]
+
+  is-metaborg-java-EnumConstantArgs =
+    ?EnumConstantArgs-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$Expression")]
+                            )
+                          ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr()
+
+  prettyprint-metaborg-java-EnumBodyDeclarations :
+    EnumBodyDeclarations-Plhdr() -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$EnumBodyDeclarations")]
+                                      )
+                                    ]
+
+  is-metaborg-java-EnumBodyDeclarations =
+    ?EnumBodyDeclarations-Plhdr()
+
+  prettyprint-metaborg-java-ClassBodyDeclaration :
+    ClassBodyDeclaration-Plhdr() -> [ H(
+                                        [SOpt(HS(), "0")]
+                                      , [S("$ClassBodyDeclaration")]
+                                      )
+                                    ]
+
+  is-metaborg-java-ClassBodyDeclaration =
+    ?ClassBodyDeclaration-Plhdr()
+
+  prettyprint-metaborg-java-EnumDeclaration :
+    EnumDeclaration-Plhdr(_) -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$EnumDeclaration")]
+                                  )
+                                ]
+
+  is-metaborg-java-EnumDeclaration =
+    ?EnumDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassModifier :
+    ClassModifier-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$ClassModifier")]
+                                )
+                              ]
+
+  is-metaborg-java-ClassModifier =
+    ?ClassModifier-Plhdr(_)
+
+  prettyprint-metaborg-java-SuperInterfaces :
+    SuperInterfaces-Plhdr(_) -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [S("$SuperInterfaces")]
+                                  )
+                                ]
+
+  is-metaborg-java-SuperInterfaces =
+    ?SuperInterfaces-Plhdr(_)
+
+  prettyprint-metaborg-java-EnumConstant :
+    EnumConstant-Plhdr(_) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$EnumConstant")]
+                               )
+                             ]
+
+  is-metaborg-java-EnumConstant =
+    ?EnumConstant-Plhdr(_)
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Annotation")]
+                             )
+                           ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)
+
+  prettyprint-metaborg-java-EnumConstantArgs :
+    EnumConstantArgs-Plhdr(_) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$EnumConstantArgs")]
+                                   )
+                                 ]
+
+  is-metaborg-java-EnumConstantArgs =
+    ?EnumConstantArgs-Plhdr(_)
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$Expression")]
+                             )
+                           ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Plhdr(_)
+
+  prettyprint-metaborg-java-EnumBodyDeclarations :
+    EnumBodyDeclarations-Plhdr(_) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , [S("$EnumBodyDeclarations")]
+                                       )
+                                     ]
+
+  is-metaborg-java-EnumBodyDeclarations =
+    ?EnumBodyDeclarations-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassBodyDeclaration :
+    ClassBodyDeclaration-Plhdr(_) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , [S("$ClassBodyDeclaration")]
+                                       )
+                                     ]
+
+  is-metaborg-java-ClassBodyDeclaration =
+    ?ClassBodyDeclaration-Plhdr(_)
+
+  prettyprint-metaborg-java-ClassModifier :
+    ClassModifier-Opt-Plhdr() -> [ H(
+                                     []
+                                   , [S("")]
+                                   )
+                                 ]
+
+  is-metaborg-java-ClassModifier =
+    ?ClassModifier-Opt-Plhdr()
+
+  prettyprint-metaborg-java-SuperInterfaces :
+    SuperInterfaces-Opt-Plhdr() -> [ H(
+                                       []
+                                     , [S("")]
+                                     )
+                                   ]
+
+  is-metaborg-java-SuperInterfaces =
+    ?SuperInterfaces-Opt-Plhdr()
+
+  prettyprint-metaborg-java-EnumConstant :
+    EnumConstant-Opt-Plhdr() -> [ H(
+                                    []
+                                  , [S("")]
+                                  )
+                                ]
+
+  is-metaborg-java-EnumConstant =
+    ?EnumConstant-Opt-Plhdr()
+
+  prettyprint-metaborg-java-EnumBodyDeclarations :
+    EnumBodyDeclarations-Opt-Plhdr() -> [ H(
+                                            []
+                                          , [S("")]
+                                          )
+                                        ]
+
+  is-metaborg-java-EnumBodyDeclarations =
+    ?EnumBodyDeclarations-Opt-Plhdr()
+
+  prettyprint-metaborg-java-Annotation :
+    Annotation-Opt-Plhdr() -> [ H(
+                                  []
+                                , [S("")]
+                                )
+                              ]
+
+  is-metaborg-java-Annotation =
+    ?Annotation-Opt-Plhdr()
+
+  prettyprint-metaborg-java-EnumConstantArgs :
+    EnumConstantArgs-Opt-Plhdr() -> [ H(
+                                        []
+                                      , [S("")]
+                                      )
+                                    ]
+
+  is-metaborg-java-EnumConstantArgs =
+    ?EnumConstantArgs-Opt-Plhdr()
+
+  prettyprint-metaborg-java-Expression :
+    Expression-Opt-Plhdr() -> [ H(
+                                  []
+                                , [S("")]
+                                )
+                              ]
+
+  is-metaborg-java-Expression =
+    ?Expression-Opt-Plhdr()
+
+  prettyprint-metaborg-java-ClassBodyDeclaration :
+    ClassBodyDeclaration-Opt-Plhdr() -> [ H(
+                                            []
+                                          , [S("")]
+                                          )
+                                        ]
+
+  is-metaborg-java-ClassBodyDeclaration =
+    ?ClassBodyDeclaration-Opt-Plhdr()

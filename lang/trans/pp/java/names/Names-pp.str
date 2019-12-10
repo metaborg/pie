@@ -1,0 +1,879 @@
+module pp/java/names/Names-pp
+
+imports
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/term/origin
+  libspoofax/term/annotation
+  libstratego-sglr
+  libstratego-sglr
+  signatures/java/names/Names-sig
+
+
+imports
+  signatures/java/lexical/Identifiers-sig
+
+
+imports
+  pp/java/lexical/Identifiers-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-metaborg-java
+
+  prettyprint-metaborg-java =
+    fail
+
+  prettyprint-metaborg-java(|sort) =
+    fail
+
+
+strategies
+  prettyprint-SDF-start-symbols =
+    prettyprint-metaborg-java-start-symbols
+
+  prettyprint-metaborg-java-start-symbols =
+    fail
+
+
+strategies
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-PackageName
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-TypeName
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-PackageOrTypeName
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-ExpressionName
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-AmbiguousName
+
+  prettyprint-metaborg-java =
+    prettyprint-metaborg-java-MethodName
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-PackageName>
+    where <?"PackageName"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-TypeName>
+    where <?"TypeName"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-PackageOrTypeName>
+    where <?"PackageOrTypeName"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-ExpressionName>
+    where <?"ExpressionName"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-AmbiguousName>
+    where <?"AmbiguousName"> sort
+
+  prettyprint-metaborg-java(|sort):
+    t -> <prettyprint-metaborg-java-MethodName>
+    where <?"MethodName"> sort
+
+  prettyprint-metaborg-java-PackageName :
+    PackageName(t1__) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , t1__'
+                           )
+                         ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-PackageName =
+    ?PackageName(_)
+
+  metaborg-java-get-indent :
+    (t@PackageName(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"PackageName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PackageName(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"PackageName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PackageName(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"PackageName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-PackageName :
+    PackageName(t1__, t2__) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , t1__'
+                                 )
+                               ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-PackageName)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-PackageName =
+    ?PackageName(_, _)
+
+  metaborg-java-get-indent :
+    (t@PackageName(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"PackageName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PackageName(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"PackageName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PackageName(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"PackageName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-TypeName :
+    TypeName(t1__) -> [ H(
+                          [SOpt(HS(), "0")]
+                        , t1__'
+                        )
+                      ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-TypeName =
+    ?TypeName(_)
+
+  metaborg-java-get-indent :
+    (t@TypeName(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TypeName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@TypeName(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TypeName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@TypeName(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TypeName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-TypeName :
+    TypeName(t1__, t2__) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , t1__'
+                              )
+                            ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-PackageOrTypeName)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-TypeName =
+    ?TypeName(_, _)
+
+  metaborg-java-get-indent :
+    (t@TypeName(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TypeName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@TypeName(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TypeName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@TypeName(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TypeName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-PackageOrTypeName :
+    PackageOrTypeName(t1__) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , t1__'
+                                 )
+                               ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-PackageOrTypeName =
+    ?PackageOrTypeName(_)
+
+  metaborg-java-get-indent :
+    (t@PackageOrTypeName(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"PackageOrTypeName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PackageOrTypeName(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"PackageOrTypeName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PackageOrTypeName(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"PackageOrTypeName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-PackageOrTypeName :
+    PackageOrTypeName(t1__, t2__) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , t1__'
+                                       )
+                                     ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-PackageOrTypeName)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-PackageOrTypeName =
+    ?PackageOrTypeName(_, _)
+
+  metaborg-java-get-indent :
+    (t@PackageOrTypeName(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"PackageOrTypeName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@PackageOrTypeName(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"PackageOrTypeName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@PackageOrTypeName(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"PackageOrTypeName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ExpressionName :
+    ExpressionName(t1__) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , t1__'
+                              )
+                            ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-ExpressionName =
+    ?ExpressionName(_)
+
+  metaborg-java-get-indent :
+    (t@ExpressionName(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ExpressionName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@ExpressionName(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ExpressionName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@ExpressionName(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ExpressionName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-ExpressionName :
+    ExpressionName(t1__, t2__) -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , t1__'
+                                    )
+                                  ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-AmbiguousName)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-ExpressionName =
+    ?ExpressionName(_, _)
+
+  metaborg-java-get-indent :
+    (t@ExpressionName(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"ExpressionName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@ExpressionName(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"ExpressionName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@ExpressionName(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"ExpressionName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-AmbiguousName :
+    AmbiguousName(t1__) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , t1__'
+                             )
+                           ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-AmbiguousName =
+    ?AmbiguousName(_)
+
+  metaborg-java-get-indent :
+    (t@AmbiguousName(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"AmbiguousName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@AmbiguousName(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"AmbiguousName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@AmbiguousName(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"AmbiguousName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-AmbiguousName :
+    AmbiguousName(t1__, t2__) -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , t1__'
+                                   )
+                                 ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-AmbiguousName)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   , S(".")
+                                   , <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t2__
+                                   ]
+
+  is-metaborg-java-AmbiguousName =
+    ?AmbiguousName(_, _)
+
+  metaborg-java-get-indent :
+    (t@AmbiguousName(t1__, t2__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"AmbiguousName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           case ?2 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@AmbiguousName(t1__, t2__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"AmbiguousName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           case ?2 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@AmbiguousName(t1__, t2__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"AmbiguousName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           case ?2 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  prettyprint-metaborg-java-MethodName :
+    MethodName(t1__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , t1__'
+                          )
+                        ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [ <check-nonterminal-isEmpty ; id
+                                      <+ pp-one-Z(prettyprint-metaborg-java-Id)
+                                      <+ pp-one-Z(prettyprint-completion-aux)> t1__
+                                   ]
+
+  is-metaborg-java-MethodName =
+    ?MethodName(_)
+
+  metaborg-java-get-indent :
+    (t@MethodName(t1__), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"MethodName"> sort
+    with switch !index
+           case ?1 :
+             indent := ""
+           otherwise :
+             indent := ""
+         end
+
+  metaborg-java-get-separator :
+    (t@MethodName(t1__), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"MethodName"> sort
+    with switch !index
+           case ?1 :
+             separator := ""
+           otherwise :
+             separator := ""
+         end
+
+  metaborg-java-get-leading-ws :
+    (t@MethodName(t1__), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"MethodName"> sort
+    with switch !index
+           case ?1 :
+             ws := ""
+           otherwise :
+             ws := ""
+         end
+
+  is-metaborg-java-PackageName =
+    fail
+
+  is-metaborg-java-TypeName =
+    fail
+
+  is-metaborg-java-PackageOrTypeName =
+    fail
+
+  is-metaborg-java-ExpressionName =
+    fail
+
+  is-metaborg-java-AmbiguousName =
+    fail
+
+  is-metaborg-java-MethodName =
+    fail
+
+  prettyprint-metaborg-java-PackageName :
+    amb([h|hs]) -> <prettyprint-metaborg-java-PackageName> h
+
+  prettyprint-metaborg-java-TypeName :
+    amb([h|hs]) -> <prettyprint-metaborg-java-TypeName> h
+
+  prettyprint-metaborg-java-PackageOrTypeName :
+    amb([h|hs]) -> <prettyprint-metaborg-java-PackageOrTypeName> h
+
+  prettyprint-metaborg-java-ExpressionName :
+    amb([h|hs]) -> <prettyprint-metaborg-java-ExpressionName> h
+
+  prettyprint-metaborg-java-AmbiguousName :
+    amb([h|hs]) -> <prettyprint-metaborg-java-AmbiguousName> h
+
+  prettyprint-metaborg-java-MethodName :
+    amb([h|hs]) -> <prettyprint-metaborg-java-MethodName> h
+
+  prettyprint-metaborg-java-PackageName :
+    PackageName-Plhdr() -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$PackageName")]
+                             )
+                           ]
+
+  is-metaborg-java-PackageName =
+    ?PackageName-Plhdr()
+
+  prettyprint-metaborg-java-TypeName :
+    TypeName-Plhdr() -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [S("$TypeName")]
+                          )
+                        ]
+
+  is-metaborg-java-TypeName =
+    ?TypeName-Plhdr()
+
+  prettyprint-metaborg-java-PackageOrTypeName :
+    PackageOrTypeName-Plhdr() -> [ H(
+                                     [SOpt(HS(), "0")]
+                                   , [S("$PackageOrTypeName")]
+                                   )
+                                 ]
+
+  is-metaborg-java-PackageOrTypeName =
+    ?PackageOrTypeName-Plhdr()
+
+  prettyprint-metaborg-java-ExpressionName :
+    ExpressionName-Plhdr() -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$ExpressionName")]
+                                )
+                              ]
+
+  is-metaborg-java-ExpressionName =
+    ?ExpressionName-Plhdr()
+
+  prettyprint-metaborg-java-AmbiguousName :
+    AmbiguousName-Plhdr() -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("$AmbiguousName")]
+                               )
+                             ]
+
+  is-metaborg-java-AmbiguousName =
+    ?AmbiguousName-Plhdr()
+
+  prettyprint-metaborg-java-MethodName :
+    MethodName-Plhdr() -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("$MethodName")]
+                            )
+                          ]
+
+  is-metaborg-java-MethodName =
+    ?MethodName-Plhdr()
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("$Id")]
+                    )
+                  ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr()
+
+  prettyprint-metaborg-java-PackageName :
+    PackageName-Plhdr(_) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("$PackageName")]
+                              )
+                            ]
+
+  is-metaborg-java-PackageName =
+    ?PackageName-Plhdr(_)
+
+  prettyprint-metaborg-java-TypeName :
+    TypeName-Plhdr(_) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("$TypeName")]
+                           )
+                         ]
+
+  is-metaborg-java-TypeName =
+    ?TypeName-Plhdr(_)
+
+  prettyprint-metaborg-java-PackageOrTypeName :
+    PackageOrTypeName-Plhdr(_) -> [ H(
+                                      [SOpt(HS(), "0")]
+                                    , [S("$PackageOrTypeName")]
+                                    )
+                                  ]
+
+  is-metaborg-java-PackageOrTypeName =
+    ?PackageOrTypeName-Plhdr(_)
+
+  prettyprint-metaborg-java-ExpressionName :
+    ExpressionName-Plhdr(_) -> [ H(
+                                   [SOpt(HS(), "0")]
+                                 , [S("$ExpressionName")]
+                                 )
+                               ]
+
+  is-metaborg-java-ExpressionName =
+    ?ExpressionName-Plhdr(_)
+
+  prettyprint-metaborg-java-AmbiguousName :
+    AmbiguousName-Plhdr(_) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S("$AmbiguousName")]
+                                )
+                              ]
+
+  is-metaborg-java-AmbiguousName =
+    ?AmbiguousName-Plhdr(_)
+
+  prettyprint-metaborg-java-MethodName :
+    MethodName-Plhdr(_) -> [ H(
+                               [SOpt(HS(), "0")]
+                             , [S("$MethodName")]
+                             )
+                           ]
+
+  is-metaborg-java-MethodName =
+    ?MethodName-Plhdr(_)
+
+  prettyprint-metaborg-java-Id :
+    Id-Plhdr(_) -> [ H(
+                       [SOpt(HS(), "0")]
+                     , [S("$Id")]
+                     )
+                   ]
+
+  is-metaborg-java-Id =
+    ?Id-Plhdr(_)
