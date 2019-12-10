@@ -72,7 +72,7 @@ rules // Unary expressions
     ; stmts              := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(tmpVarName),
+          VariableDecl(Id(tmpVarName)),
           InvokeQExp(ExpressionName("Objects"), None(), "requireNonNull", [expVal])
         )]))]
         // Note: meaning of this AST:
@@ -288,7 +288,7 @@ rules // Binding
     ; (assignments, varId) := <bind-tuples-to-ast-assignments> (binder, pieTy)
     ; stmts                := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(Id(varId), expVal)]))],
+        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(VariableDecl(Id(varId)), expVal)]))],
         assignments
       ]
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
@@ -316,7 +316,7 @@ rules // Binding
 
   bind-tuple-to-ast(|i, tmpVar):
     (varId, ty) -> LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(varId),
+          VariableDecl(Id(varId)),
           InvokeQExp(ExpressionName(Id(tmpVar)), None(), Id($[component[i]]), [])
     )]))
 
@@ -380,7 +380,7 @@ rules // Java foreign function calls
     ; stmts                 := <concat> [
         <concat> expsStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(callResultName),
+          VariableDecl(Id(callResultName)),
           InvokeQExp(ExpressionName(Id(javaClassId)), None(), Id(javaMethodId), expsVals)
         )]))]
         // Note: meaning of this AST:
@@ -401,7 +401,7 @@ rules // Qualified function calls
         expStmts, 
         <concat> argExpsStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(callResultName),
+          VariableDecl(Id(callResultName)),
           InvokeQExp(ExpressionName(Id(expVal)), None(), Id(funcId), argExpsVals)
         )]))]
         // Note: meaning of this AST:
@@ -438,7 +438,7 @@ rules // PIE function calls
     ; stmts                := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(callResultName),
+          VariableDecl(Id(callResultName)),
           InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [
             ExpressionName(Id($[_[safeJavaClassId]])),
             inputArg
@@ -579,7 +579,7 @@ rules // Path operations
         expStmts,
         matcherStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(expVarName),
+          VariableDecl(Id(expVarName)),
           InvokeQExp(
             InvokeQExp(
               InvokeQExp(
@@ -673,7 +673,7 @@ rules // Path operations
     ; stmts              := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(readResultName),
+          VariableDecl(Id(readResultName)),
           InvokeQExp(ExpressionName(Id("Util")), None(), Id("readToString"), [expVal])
         )]))]
         // Note: meaning of this AST:
@@ -690,7 +690,7 @@ rules // Path operations
     ; stmts              := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          Id(existsResultName),
+          VariableDecl(Id(existsResultName)),
           InvokeQExp(
             InvokeQExp(ExpressionName(Id("Files")), None(), Id("exists"), [expVal]),
             None(),
