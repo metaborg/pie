@@ -288,14 +288,14 @@ rules // Binding
     ; (assignments, varId) := <bind-tuples-to-ast-assignments> (binder, pieTy)
     ; stmts                := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(varId, expVal)]))],
+        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(Id(varId), expVal)]))],
         assignments
       ]
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result               := (stmts, resultExp)
   
   // bind-tuples-to-assignments:
-  // (Pie Binder (bind or TBind), Pie ExpressionType) -> (assignments, varName)
+  // (Pie Binder (Bind or TBind), Pie ExpressionType) -> (assignments, varName)
   bind-tuples-to-ast-assignments:
     (SingleBinder(bind), _) -> ([], <p2j-ast-bind> bind)
   
@@ -316,8 +316,8 @@ rules // Binding
 
   bind-tuple-to-ast(|i, tmpVar):
     (varId, ty) -> LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          varId,
-          InvokeQExp(tmpVar, None(), $[component[i]], [])
+          Id(varId),
+          InvokeQExp(ExpressionName(Id(tmpVar)), None(), Id($[component[i]]), [])
     )]))
 
 rules // References
