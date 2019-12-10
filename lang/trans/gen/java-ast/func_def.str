@@ -247,7 +247,7 @@ rules // PIE function definitions
   p2j-ast-pie-func-impl-outputsig(|className):
     ty -> result
     where
-      tty := <try(?NullableTy(<id>));?TupleTy(_)> ty
+      tty := <is-tuple-type> ty
     with
       returnType   := ClassOrInterfaceTypeMember(
           ClassType([], Id(className), None())
