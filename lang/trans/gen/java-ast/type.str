@@ -75,18 +75,18 @@ rules
     ; callParams     := <map(type-tuple-to-ast-call-param)> idTypeTuples
     ; tupleNumParams := <nmap(type-tuple-to-ast-tuple-field-get | 1)> idTypeTuples
     ; tupleTypes     := <map(type-tuple-to-type)> idTypeTuples
-    ; result            := ClassDeclaration(
+    ; result         := ClassDeclaration(
         [Public(), Static(), Final()]
-      , name
+      , Id(name)
       , None()
-      , Some(SuperClass(ClassType(tupleTy, Some(tupleTypes))))
-      , Some([ClassType("Serializable", None())])
+      , Some(SuperClass(ClassType(Id(tupleTy), Some(TypeArguments(tupleTypes)))))
+      , Some([ClassType(Id("Serializable"), None())])
       , <concat> [
           [
             ConstrDecl(
               [Public()]
             , None()
-            , name
+            , Id(name)
             , params
             , None()
             , Some(SuperConstrInv(None(), callParams))
@@ -95,19 +95,19 @@ rules
           , MethodDecl(
               [Public(), Static()]
             , MethodHeader(
-                ClassType(name, None())
-              , "fromTuple"
+                ClassType(Id(name), None())
+              , Id("fromTuple")
               , SingleParam(FormalParam(
-                  MarkerAnno(TypeName("Nullable"))
-                , ClassType(tupleTy, Some(tupleTypes))
-                , "tuple"
+                  MarkerAnno(TypeName(Id("Nullable")))
+                , ClassType(Id(tupleTy), Some(TypeArguments(tupleTypes)))
+                , Id("tuple")
                 ))
               , []
               , None()
               )
             , Block([
                 If(Eq(ExpressionName("tuple"), Null()), Return(Null()))
-              , Return(NewInstance(None(), [], name, [], None(), tupleNumParams))
+              , Return(NewInstance(None(), [], Id(name), [], None(), tupleNumParams))
               ])
             )
           ]
@@ -151,24 +151,32 @@ rules
   ; last   := <type-tuple-to-ast-formal-param> <last> idTypeTuples
   ; result := ParamList(rest, last)
 
-  type-tuple-to-ast-field: (varId, ty) -> FieldDecl([Public(), Final()], ty, [varId])
+  type-tuple-to-ast-field:
+    (varId, ty) -> FieldDecl([Public(), Final()], <java-classType-to-unnanType> ty, [varId])
     // Note: meaning of this AST: public final [ty] [varId];
   type-tuple-to-type: (varId, ty) -> ty
   type-tuple-to-ast-tuple-field-get(|number):
-    _ -> InvokeQExp(ExpressionName("tuple"), None(), $[component[number]], [])
+    _ -> InvokeQExp(ExpressionName(Id("tuple")), None(), Id($[component[number]]), [])
     // Note: meaning of this AST: tuple.component[number]()
   type-tuple-to-ast-getter(|number): (varId, ty) -> MethodDecl(
       [Public(), Final()]
-    , MethodHeader(ty, $[get_[varId]], NoParams(), [], None())
-    , Block([Return(Invoke($[component[number]], []))])
+    , MethodHeader(ty, Id($[get_[varId]]), NoParams(), [], None())
+    , Block([Return(Invoke(MethodName(Id($[component[number]])), []))])
     )
     // Note: meaning of this AST:
     //   public final [ty] get_[varId]() {
     //     return component[number]();
     //   }
-  type-tuple-to-ast-formal-param: (varId, ty) -> FormalParam([], ty, varId)
+  type-tuple-to-ast-formal-param:
+    (varId, ty) -> FormalParam([], <java-classType-to-unnanType> ty, Id(varId))
     // Note: meaning of this AST: [ty] [varId]
-  type-tuple-to-ast-call-param: (varId, ty) -> ExpressionName(varId)
+  type-tuple-to-ast-call-param: (varId, ty) -> ExpressionName(Id(varId))
   type-tuple-to-ast-assignment:
-    (varId, ty) -> Assign(Field(This(), varId), ExpressionName(varId))
+    (varId, ty) -> Assign(Field(This(), Id(varId)), ExpressionName(Id(varId)))
     // Note: meaning of this AST: this.[varId] = [varId]
+
+  // java-classType-to-unnanType: removes the list of annotations from a ClassType
+  java-classType-to-unnanType: ClassType(_, name, types) -> ClassType(name, types)
+  java-classType-to-unnanType: x -> x
+    where
+      <not(?ClassType(_, _, _))> x
