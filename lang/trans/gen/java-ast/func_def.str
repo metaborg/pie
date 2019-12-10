@@ -240,7 +240,7 @@ rules // PIE function definitions
   // There is either 0 or 1 dataclass, but they are in a list
   // to avoid having to match on None and Some
   p2j-ast-pie-func-impl-outputsig(|className):
-    ty -> (<p2j-ast-type-sig> ty, [])
+    ty -> (<java-classType-to-unnanType> <p2j-ast-type-sig> ty, [])
     where
       <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
       
@@ -250,15 +250,20 @@ rules // PIE function definitions
       tty := <try(?NullableTy(<id>));?TupleTy(_)> ty
     with
       returnType   := ClassOrInterfaceTypeMember(
-          ClassType([], className, None())
+          ClassType([], Id(className), None())
         , []
-        , "Output"
+        , Id("Output")
         , None()
       )
       // Note: meaning of this AST: [className].Output
     ; idTypeTuples := <pie-idtype-tuples> tty
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
     ; result       := (returnType, [dataClass])
+  
+  // is-tuple-type: matches a Tuple type
+  is-tuple-type: tty@TupleTy(_)             -> tty
+  is-tuple-type: NullableTy(tty@TupleTy(_)) -> tty
+  
 
   // p2j-ast-pie-func-key-body: PieKeyFunc(exp)? -> list of Java statament AST nodes
   // generates a list of statements for the body of the key function
