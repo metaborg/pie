@@ -102,8 +102,8 @@ rules // Binary expressions
     ; exp               := <combine-vals> (lExpVal, rExpVal)
     ; result            := (stmts, exp)
   
-  p2j-ast-exp: Eq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> InvokeQExp(e1, None(), "equals", [e2])\)> (lExp, rExp)
-  p2j-ast-exp: Neq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> Not(InvokeQExp(e1, None(), "equals", [e2]))\)> (lExp, rExp)
+  p2j-ast-exp: Eq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> InvokeQExp(e1, None(), Id("equals"), [e2])\)> (lExp, rExp)
+  p2j-ast-exp: Neq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> Not(InvokeQExp(e1, None(), Id("equals"), [e2]))\)> (lExp, rExp)
   p2j-ast-exp: Lor(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> LazyOr(e1, e2)\)> (lExp, rExp)
   p2j-ast-exp: Land(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> LazyAnd(e1, e2)\)> (lExp, rExp)
 
