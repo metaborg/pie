@@ -263,7 +263,7 @@ rules // PIE function definitions
   // p2j-ast-pie-func-key-body: PieKeyFunc(exp)? -> list of Java statament AST nodes
   // generates a list of statements for the body of the key function
   p2j-ast-pie-func-key-body:
-    None() -> Return(ExpressionName("input"))
+    None() -> Return(ExpressionName(Id("input")))
 
   p2j-ast-pie-func-key-body:
     PieKeyFunc(exp) -> result
