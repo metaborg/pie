@@ -497,7 +497,9 @@ rules // Path operations
     ; stmts                      := <concat> [
         expStmts,
         stamperStmts,
-        [InvokeQExp(ExpressionName("execContext"), None(), "require", [expVal, stamperVal])]
+        [ ExpressionStatement(
+          InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [expVal, stamperVal])
+        )]
         // Note: meaning of this AST:
         //       execContext.require([expVal], [stamperVal]);
       ]
@@ -512,7 +514,9 @@ rules // Path operations
     ; stmts                      := <concat> [
         expStmts,
         stamperStmts,
-        [InvokeQExp(ExpressionName("execContext"), None(), "provide", [expVal, stamperVal])]
+        [ ExpressionStatement(
+          InvokeQExp(ExpressionName(Id("execContext")), None(), Id("provide"), [expVal, stamperVal])
+        )]
         // Note: meaning of this AST:
         //       execContext.provide([expVal], [stamperVal]);
       ]
@@ -521,10 +525,10 @@ rules // Path operations
   
   // p2j-stamper: (filter|None(), stamper) -> (stmts, expression value)
   p2j-ast-stamper:
-    (None(), Modified()) -> ([], InvokeQExp(ExpressionName("FileSystemStampers"), None(), "modified", []))
+    (None(), Modified()) -> ([], InvokeQExp(ExpressionName(Id("FileSystemStampers")), None(), Id("modified"), []))
     // Note: meaning of this AST: FileSystemStampers.modified()
   p2j-ast-stamper:
-    (None(), Modified()) -> ([], InvokeQExp(ExpressionName("FileSystemStampers"), None(), "hash", []))
+    (None(), Modified()) -> ([], InvokeQExp(ExpressionName(Id("FileSystemStampers")), None(), Id("hash"), []))
     // Note: meaning of this AST: FileSystemStampers.hash()
   p2j-ast-stamper:
     (filter, Modified()) -> result
@@ -532,7 +536,7 @@ rules // Path operations
       <not(?None())> filter
     with
       (stmts, filterVal) := <p2j-ast-filter> filter
-    ; exp                := InvokeQExp(ExpressionName("FileSystemStampers"), None(), "modified", [filterVal])
+    ; exp                := InvokeQExp(ExpressionName(Id("FileSystemStampers")), None(), Id("modified"), [filterVal])
       // Note: meaning of this AST: FileSystemStampers.modified([filterVal])
     ; result             := (stmts, exp)
       
@@ -542,7 +546,7 @@ rules // Path operations
       <not(?None())> filter
     with
       (stmts, filterVal) := <p2j-ast-filter> filter
-    ; exp                := InvokeQExp(ExpressionName("FileSystemStampers"), None(), "hash", [filterVal])
+    ; exp                := InvokeQExp(ExpressionName(Id("FileSystemStampers")), None(), Id("hash"), [filterVal])
       // Note: meaning of this AST: FileSystemStampers.hash([filterVal])
     ; result             := (stmts, exp)
 
