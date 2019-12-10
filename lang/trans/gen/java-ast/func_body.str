@@ -125,13 +125,13 @@ rules // Control flow
     ; (trueStmts, trueExp)   := <try-p2j-ast-exp> trueExp
     ; (falseStmts, falseExp) := <try-p2j-ast-exp> falseExp
     ; resultName             := <newname> "ifResult"
-    ; trueBlockStmts         := <concat> [trueStmts, [Assign(resultName, trueExp)]]
-    ; falseBlockStmts        := <concat> [falseStmts, [Assign(resultName, falseExp)]]
+    ; trueBlockStmts         := <concat> [trueStmts, [Assign(ExpressionName(Id(resultName)), trueExp)]]
+    ; falseBlockStmts        := <concat> [falseStmts, [Assign(ExpressionName(Id(resultName)), falseExp)]]
     ; ty                     := <p2j-ast-type-sig> <pie-type> e
     ; stmts                  := <concat> [
       condStmts,
       [
-        LocVarDeclStm(LocalVarDecl([Final()], ty, [resultName])),
+        LocVarDeclStm(LocalVarDecl([Final()], ty, [Id(resultName)])),
         IfElse(condExp, Block(trueBlockStmts), Block(falseBlockStmts))
       ]]
     ; result                 := (stmts, resultName)
