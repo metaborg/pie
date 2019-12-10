@@ -161,13 +161,13 @@ rules // Control flow
       (StrTy(), _) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> InvokeQExp(lExp, None(), "appendRelativePath", [rExp])
+    (lExp, rExp) -> InvokeQExp(lExp, None(), Id("appendRelativePath"), [rExp])
     // Note: meaning of this AST: [lExp].appendRelativePath([rExp])
     where
       (PathTy(), PathTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> InvokeQExp(lExp, None(), "appendSegment", [rExp])
+    (lExp, rExp) -> InvokeQExp(lExp, None(), Id("appendSegment"), [rExp])
     // Note: meaning of this AST: [lExp].appendSegment([rExp])
     where
       (PathTy(), StrTy()) := (lType, rType)
@@ -176,30 +176,30 @@ rules // Control flow
     (lExp, rExp) ->
       InvokeQExp(
         InvokeQExp(
-          ExpressionName("Stream")
+          ExpressionName(Id("Stream"))
         , None()
-        , "concat"
-        , [ InvokeQExp(lExp, None(), "stream", [])
+        , Id("concat")
+        , [ InvokeQExp(lExp, None(), Id("stream"), [])
           , InvokeQExp(
-              ExpressionName("Stream")
+              ExpressionName(Id("Stream"))
             , None()
-            , "of"
+            , Id("of")
             , [rExp]
             )
           ]
         )
       , None()
-      , "collect"
+      , Id("collect")
       , [ InvokeQExp(
-            ExpressionName("Collectors")
+            ExpressionName(Id("Collectors"))
           , None()
-          , "toCollection"
-          , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+          , Id("toCollection")
+          , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
           )
         ]
       )
     // Note: meaning of this AST:
-    //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))]
+    //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))
     where
       (ListTy(a), a) := (lType, rType)
 
@@ -207,20 +207,20 @@ rules // Control flow
     (lExp, rExp) ->
       InvokeQExp(
 	    InvokeQExp(
-	      ExpressionName("Stream")
+	      ExpressionName(Id("Stream"))
 	    , None()
-	    , "concat"
-	    , [ InvokeQExp(lExp, None(), "stream", [])
-	      , InvokeQExp(rExp, None(), "stream", [])
+	    , Id("concat")
+	    , [ InvokeQExp(lExp, None(), Id("stream"), [])
+	      , InvokeQExp(rExp, None(), Id("stream"), [])
 	      ]
 	    )
 	  , None()
-	  , "collect"
+	  , Id("collect")
 	  , [ InvokeQExp(
-	        ExpressionName("Collectors")
+	        ExpressionName(Id("Collectors"))
 	      , None()
-	      , "toCollection"
-	      , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+	      , Id("toCollection")
+	      , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
 	      )
 	    ]
 	  )
