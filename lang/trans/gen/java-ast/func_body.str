@@ -72,13 +72,11 @@ rules // Unary expressions
     ; stmts              := <concat> [
         expStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          tmpVarName, 
+          Id(tmpVarName),
           InvokeQExp(ExpressionName("Objects"), None(), "requireNonNull", [expVal])
         )]))]
-        // Note: I am not sure what the constructor for "Objects" should be. If this
-        //       doesn't work, try changing it to something specific for classnames.
         // Note: meaning of this AST:
-        //       final [ty] [tmpVarName] = Objects.requireNonNull([expVal]);
+        //   final [ty] [tmpVarName] = Objects.requireNonNull([expVal]);
       ]
     ; result             := (stmts, tmpVarName)
 
