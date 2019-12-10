@@ -20,16 +20,16 @@ imports
 
 rules
 
-  p2j-ast-type-sig: UnitTy() -> ClassType("None", None())
-  p2j-ast-type-sig: BoolTy() -> ClassType("Boolean", None())
-  p2j-ast-type-sig: IntTy()  -> ClassType("Integer", None())
-  p2j-ast-type-sig: StrTy()  -> ClassType("String", None())
-  p2j-ast-type-sig: PathTy() -> ClassType("FSPath", None())
-  p2j-ast-type-sig: TopTy()  -> ClassType("Object", None())
-  p2j-ast-type-sig: NullTy() -> ClassType("Void", None())
+  p2j-ast-type-sig: UnitTy() -> ClassType([], Id("None"), None())
+  p2j-ast-type-sig: BoolTy() -> ClassType([], Id("Boolean"), None())
+  p2j-ast-type-sig: IntTy()  -> ClassType([], Id("Integer"), None())
+  p2j-ast-type-sig: StrTy()  -> ClassType([], Id("String"), None())
+  p2j-ast-type-sig: PathTy() -> ClassType([], Id("FSPath"), None())
+  p2j-ast-type-sig: TopTy()  -> ClassType([], Id("Object"), None())
+  p2j-ast-type-sig: NullTy() -> ClassType([], Id("Void"), None())
 
   p2j-ast-type-sig:
-    DataTy(occ) -> ClassType(javaClassId, None())
+    DataTy(occ) -> ClassType([], Id(javaClassId), None())
     where 
       JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
     ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
@@ -37,7 +37,11 @@ rules
       javaClassId := <pie-prop(|"Type", "javaClassId")> occ
 
   p2j-ast-type-sig:
-    DataTy(occ) -> ClassType("OutTransient", ClassType(javaClassId, None()))
+    DataTy(occ) -> ClassType(
+      [],
+      Id("OutTransient"),
+      Some(TypeArguments([ClassType([], Id(javaClassId), None())]))
+    )
     where 
       JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
     ; <pie-prop(|"Type", "mods"); collect-one(?Transient())> occ
@@ -46,12 +50,14 @@ rules
 
 
   p2j-ast-type-sig: 
-    TupleTy(tys) -> ClassType($[Tuple[length]], Some(tys))
+    TupleTy(pieTypes) -> ClassType([], Id($[Tuple[length]]), Some(TypeArguments(javaTypes)))
     with
-      length := <length> tys
+      length    := <length> pieTypes
+    ; javaTypes := <map(p2j-ast-type-sig)> pieTypes
 
-  p2j-ast-type-sig: ListTy(ty)     -> $[ArrayList<[<p2j-ast-type-sig> ty]>]
-  p2j-ast-type-sig: NullableTy(ty) -> $[[<p2j-ast-type-sig> ty]]
+  p2j-ast-type-sig:
+    ListTy(ty) -> ClassType([], Id("ArrayList"), ClassType([], Id(<p2j-ast-type-sig> ty), None()))
+  p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
   
 rules
 
