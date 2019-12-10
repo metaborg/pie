@@ -579,26 +579,26 @@ rules // Path operations
         expStmts,
         matcherStmts,
         [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          expVarName,
+          Id(expVarName),
           InvokeQExp(
             InvokeQExp(
               InvokeQExp(
-                InvokeQExp(ExpressionName("execContext"), None(), "require", [expVal])
+                InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [expVal])
                 , None()
                 , funcName
                 , funcParamList
                 )
             , None()
-            , "map"
-            , [MethodReferenceRType(ClassType([], "FSResource", None()), None(), "getPath")]
+            , Id("map")
+            , [MethodReferenceRType(ClassType([], Id("FSResource"), None()), None(), Id("getPath"))]
             )
           , None()
-          , "collect"
+          , Id("collect")
           , [ InvokeQExp(
-                ExpressionName("Collectors")
+                ExpressionName(Id("Collectors"))
               , None()
-              , "toCollection"
-              , [MethodReferenceCType(ClassType([], "ArrayList", None()), None())]
+              , Id("toCollection")
+              , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
               )
             ]
           )
@@ -625,14 +625,14 @@ rules // Path operations
   // Given a Java AST node for a matcher, create a list of parameters
   // for the Pie API method funcName
   p2j-ast-filter-create-param-list-for-list:
-    matcher -> [NewInstance(None(), [], "PathResourceMatcher", [], None(), matcher)]
+    matcher -> [NewInstance(None(), [], Id("PathResourceMatcher"), [], None(), matcher)]
     // Note: meaning of this AST: new PathResourceMatcher([matcher])
   p2j-ast-filter-create-param-list-for-walk:
     matcher -> [
       NewInstance(None(), [], "PathResourceWalker", [], None(), [
-        NewInstance(None(), [], "NoHiddenPathMatcher", [], None(), [])
+        NewInstance(None(), [], Id("NoHiddenPathMatcher"), [], None(), [])
       ]),
-      NewInstance(None(), [], "PathResourceMatcher", [], None(), [matcher])
+      NewInstance(None(), [], Id("PathResourceMatcher"), [], None(), [matcher])
     ]
     // Note: meaning of these ASTs:
     //   new PathResourceWalker(new NoHiddenPathMatcher())
@@ -659,7 +659,7 @@ rules // Path operations
     (matcher, exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
-    ; resultExp          := NewInstance(None(), [], matcher, [], None(), [expVal])
+    ; resultExp          := NewInstance(None(), [], Id(matcher), [], None(), [expVal])
     // Note: meaning of this AST: new [matcher]([expVal])
     ; result                := (expStmts, resultExp)
 
