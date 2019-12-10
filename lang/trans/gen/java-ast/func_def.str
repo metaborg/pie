@@ -186,14 +186,14 @@ rules // PIE function definitions
       <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
-    ; resultExp          := InvokeQExp(ExpressionName("Output"), None(), "fromTuple", [expVal])
+    ; resultExp          := InvokeQExp(ExpressionName(Id("Output")), None(), Id("fromTuple"), [expVal])
       // Note: meaning of this AST: Output.fromTuple([expVal])
     ; result             := (expStmts, resultExp)
 
   p2j-ast-pie-func-impl-returnvalue:
     exp -> <try-p2j-ast-exp> exp
     where
-      <pie-ast-type; not(?TupleTy(_))> exp
+      <pie-ast-type; not(?TupleTy(_)); not(NullableTy(?TupleTy(_)))> exp
 
   // p2j-ast-pie-func-impl-inputsig(|className):
   //   Params(params) -> (inputType, list of dataClasses)
