@@ -94,7 +94,7 @@ rules // PIE function definitions
               , MethodHeader(
                   ClassType(Id("Serializable"), None())
                 , Id("key")
-                , SingleParam(FormalParam([], <java-classType-to-unannType> inputType, Id("input")))
+                , SingleParam(FormalParam([], <java-classType-to-unannType> inputType, VariableDecl(Id("input"))))
                 , []
                 , None()
                 )
