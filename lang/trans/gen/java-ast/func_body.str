@@ -479,7 +479,7 @@ rules // PIE function calls
           None()
         , []
         , Id(javaClassId)
-        , [Id("Input")]
+        , [QualifiedId([], "Input")]
         , None()
         , expsVals
         )
