@@ -152,7 +152,7 @@ rules
   ; result := ParamList(rest, last)
 
   type-tuple-to-ast-field:
-    (varId, ty) -> FieldDecl([Public(), Final()], <java-classType-to-unnanType> ty, [varId])
+    (varId, ty) -> FieldDecl([Public(), Final()], <java-classType-to-unannType> ty, [varId])
     // Note: meaning of this AST: public final [ty] [varId];
   type-tuple-to-type: (varId, ty) -> ty
   type-tuple-to-ast-tuple-field-get(|number):
@@ -168,7 +168,7 @@ rules
     //     return component[number]();
     //   }
   type-tuple-to-ast-formal-param:
-    (varId, ty) -> FormalParam([], <java-classType-to-unnanType> ty, VariableDecl(Id(varId)))
+    (varId, ty) -> FormalParam([], <java-classType-to-unannType> ty, VariableDecl(Id(varId)))
     // Note: meaning of this AST: [ty] [varId]
   type-tuple-to-ast-call-param: (varId, ty) -> ExpressionName(Id(varId))
   type-tuple-to-ast-assignment:
@@ -176,7 +176,14 @@ rules
     // Note: meaning of this AST: this.[varId] = [varId]
 
   // java-classType-to-unnanType: removes the list of annotations from a ClassType
-  java-classType-to-unnanType: ClassType(_, name, types) -> ClassType(name, types)
-  java-classType-to-unnanType: x -> x
+  java-classType-to-unannType: ClassType(_, name, types) -> ClassType(name, types)
+  java-classType-to-unannType:
+    ClassOrInterfaceTypeMember(toplevelclass, annotations, name, types) -> ClassOrInterfaceTypeMember(
+      <java-classType-to-unannType> toplevelclass
+    , annotations
+    , name
+    , types
+    )
+  java-classType-to-unannType: x -> x
     where
-      <not(?ClassType(_, _, _))> x
+      <not(?ClassType(_, _, _)); not(?ClassOrInterfaceTypeMember(_, _, _, _))> x
