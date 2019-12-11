@@ -47,7 +47,7 @@ rules // Expression composition
     ; blockResultVal       := <newname> "blockResult"
     ; ty                   := <p2j-ast-type-sig> <pie-type> e
     ; resultStmts          := [
-      LocVarDeclStm(LocalVarDecl([Final()], ty, [Id(blockResultVal)])),
+      LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [Id(blockResultVal)])),
       Block(<concat> [
         [stmts],
         Assign(ExpressionName(Id(blockResultVal)), lastExp)
@@ -71,7 +71,7 @@ rules // Unary expressions
     ; ty                 := <p2j-ast-type-sig> <pie-type> n
     ; stmts              := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+        [LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDeclInit(
           VariableDecl(Id(tmpVarName)),
           InvokeQExp(ExpressionName("Objects"), None(), "requireNonNull", [expVal])
         )]))]
@@ -131,7 +131,7 @@ rules // Control flow
     ; stmts                  := <concat> [
       condStmts,
       [
-        LocVarDeclStm(LocalVarDecl([Final()], ty, [Id(resultName)])),
+        LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [Id(resultName)])),
         IfElse(condExp, Block(trueBlockStmts), Block(falseBlockStmts))
       ]]
     ; result                 := (stmts, resultName)
@@ -288,8 +288,13 @@ rules // Binding
     ; (assignments, varId) := <bind-tuples-to-ast-assignments> (binder, pieTy)
     ; stmts                := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], expTy, [VariableDeclInit(VariableDecl(Id(varId)), expVal)]))],
-        assignments
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> expTy
+          , [VariableDeclInit(VariableDecl(Id(varId)), expVal)]
+          ))
+        ]
+      , assignments
       ]
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result               := (stmts, resultExp)
@@ -315,10 +320,15 @@ rules // Binding
     ?[] + [s(|i,par) | nmap-par(s | <inc> i, par)]
 
   bind-tuple-to-ast(|i, tmpVar):
-    (varId, ty) -> LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          VariableDecl(Id(varId)),
-          InvokeQExp(ExpressionName(Id(tmpVar)), None(), Id($[component[i]]), [])
-    )]))
+    (varId, ty) -> LocVarDeclStm(LocalVarDecl(
+      [Final()]
+    , <java-classType-to-unannType> ty
+    , [ VariableDeclInit(
+          VariableDecl(Id(varId))
+        , InvokeQExp(ExpressionName(Id(tmpVar)), None(), Id($[component[i]]), [])
+        )
+      ]
+    ))
 
 rules // References
 
@@ -379,10 +389,16 @@ rules // Java foreign function calls
     ; ty                    := <p2j-ast-type-sig> <pie-type> c
     ; stmts                 := <concat> [
         <concat> expsStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDeclInit(
-          VariableDecl(Id(callResultName)),
-          InvokeQExp(ExpressionName(Id(javaClassId)), None(), Id(javaMethodId), expsVals)
-        )]))]
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(callResultName))
+              , InvokeQExp(ExpressionName(Id(javaClassId)), None(), Id(javaMethodId), expsVals)
+              )
+            ]
+          ))
+        ]
         // Note: meaning of this AST:
         //     final [ty] [callResultName] = [javaClassId].[javaMethodId]([expsVals]);
       ]
@@ -400,10 +416,16 @@ rules // Qualified function calls
     ; stmts                       := <concat> [
         expStmts, 
         <concat> argExpsStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          VariableDecl(Id(callResultName)),
-          InvokeQExp(ExpressionName(Id(expVal)), None(), Id(funcId), argExpsVals)
-        )]))]
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(callResultName))
+              , InvokeQExp(ExpressionName(Id(expVal)), None(), Id(funcId), argExpsVals)
+              )
+            ]
+          ))
+        ]
         // Note: meaning of this AST:
         //       final [ty] [callResultName] = [expVal].[funcId]([argExpsVals]);]]
       ]
@@ -437,13 +459,23 @@ rules // PIE function calls
     ; ty                   := <p2j-ast-type-sig> <pie-type> c
     ; stmts                := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          VariableDecl(Id(callResultName)),
-          InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [
-            ExpressionName(Id($[_[safeJavaClassId]])),
-            inputArg
-          ])
-        )]))]
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(callResultName))
+              , InvokeQExp(
+                  ExpressionName(Id("execContext"))
+                , None()
+                , Id("require")
+                , [ ExpressionName(Id($[_[safeJavaClassId]]))
+                  , inputArg
+                  ]
+                )
+              )
+            ]
+          ))
+        ]
         // Note: meaning of this AST:
         //       final [ty] [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
       ]
@@ -497,9 +529,13 @@ rules // Path operations
     ; stmts                      := <concat> [
         expStmts,
         stamperStmts,
-        [ ExpressionStatement(
-          InvokeQExp(ExpressionName(Id("execContext")), None(), Id("require"), [expVal, stamperVal])
-        )]
+        [ ExpressionStatement(InvokeQExp(
+            ExpressionName(Id("execContext"))
+          , None()
+          , Id("require")
+          , [expVal, stamperVal]
+          ))
+        ]
         // Note: meaning of this AST:
         //       execContext.require([expVal], [stamperVal]);
       ]
@@ -514,9 +550,13 @@ rules // Path operations
     ; stmts                      := <concat> [
         expStmts,
         stamperStmts,
-        [ ExpressionStatement(
-          InvokeQExp(ExpressionName(Id("execContext")), None(), Id("provide"), [expVal, stamperVal])
-        )]
+        [ ExpressionStatement(InvokeQExp(
+            ExpressionName(Id("execContext"))
+          , None()
+          , Id("provide")
+          , [expVal, stamperVal]
+          ))
+        ]
         // Note: meaning of this AST:
         //       execContext.provide([expVal], [stamperVal]);
       ]
@@ -578,7 +618,7 @@ rules // Path operations
     ; stmts                   := <concat> [
         expStmts,
         matcherStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+        [LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDeclInit(
           VariableDecl(Id(expVarName)),
           InvokeQExp(
             InvokeQExp(
@@ -672,10 +712,16 @@ rules // Path operations
     ; readResultName     := <newname> "readResult"
     ; stmts              := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          VariableDecl(Id(readResultName)),
-          InvokeQExp(ExpressionName(Id("Util")), None(), Id("readToString"), [expVal])
-        )]))]
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(readResultName))
+              , InvokeQExp(ExpressionName(Id("Util")), None(), Id("readToString"), [expVal])
+              )
+            ]
+          ))
+        ]
         // Note: meaning of this AST:
         //       final [ty] [readResultName] = Util.readToString([expVal]);
       ]
@@ -689,15 +735,21 @@ rules // Path operations
     ; existsResultName   := <newname> "existsResult"
     ; stmts              := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
-          VariableDecl(Id(existsResultName)),
-          InvokeQExp(
-            InvokeQExp(ExpressionName(Id("Files")), None(), Id("exists"), [expVal]),
-            None(),
-            Id("getJavaPath"),
-            []
-          )
-        )]))]
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(existsResultName))
+              , InvokeQExp(
+                  InvokeQExp(ExpressionName(Id("Files")), None(), Id("exists"), [expVal])
+                , None()
+                , Id("getJavaPath")
+                , []
+                )
+              )
+            ]
+          ))
+        ]
         // Note: meaning of this AST:
         //       final [ty] [existsResultName] = Files.exists([expStr].getJavaPath());
       ]
