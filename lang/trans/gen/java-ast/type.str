@@ -168,7 +168,7 @@ rules
     //     return component[number]();
     //   }
   type-tuple-to-ast-formal-param:
-    (varId, ty) -> FormalParam(<java-classType-to-unnanType> ty, Id(varId))
+    (varId, ty) -> FormalParam(<java-classType-to-unnanType> ty, VariableDecl(Id(varId)))
     // Note: meaning of this AST: [ty] [varId]
   type-tuple-to-ast-call-param: (varId, ty) -> ExpressionName(Id(varId))
   type-tuple-to-ast-assignment:
