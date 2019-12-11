@@ -103,7 +103,7 @@ rules // PIE function definitions
             , MethodDecl(
                 [MarkerAnno(TypeName(Id("Override"))), Public()]
               , MethodHeader(
-                  outputType
+                  <java-classType-to-unannType> outputType
                 , Id("exec")
                 , ParamList(
                     [ FormalParam([], ClassType(Id("ExecContext"), None()), VariableDecl(Id("execContext")))
