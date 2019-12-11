@@ -79,7 +79,7 @@ rules
         [Public(), Static(), Final()]
       , Id(name)
       , None()
-      , Some(SuperClass(ClassType(Id(tupleTy), Some(TypeArguments(tupleTypes)))))
+      , Some(SuperClass(ClassType([], Id(tupleTy), Some(TypeArguments(tupleTypes)))))
       , Some([ClassType(Id("Serializable"), None())])
       , <concat> [
           [
