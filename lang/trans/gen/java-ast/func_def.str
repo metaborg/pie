@@ -68,7 +68,7 @@ rules // PIE function definitions
             [ FieldDecl(
                 [Private(), Static(), Final()]
               , ClassType(Id("String"), None())
-              , VariableDeclInit(Id("_id"), StringLiteral($["[className]"]))
+              , [VariableDeclInit(VariableDecl(Id("_id")), StringLiteral($["[className]"]))]
               )
             ]
           , fields
