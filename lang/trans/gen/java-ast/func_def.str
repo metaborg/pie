@@ -51,7 +51,7 @@ rules // PIE function definitions
     with
       rules(ModuleBindings :+= ExpressionStatement(Invoke(
           Id("bindTaskDef")
-        , [TypeNameClassLiteral(TypeName(Id(className)), []), StrLit($["[className]"])]
+        , [TypeNameClassLiteral(TypeName(Id(className)), []), StringLiteral($["[className]"])]
         ))
       )
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
@@ -66,7 +66,7 @@ rules // PIE function definitions
             [ FieldDecl(
                 [Private(), Static(), Final()]
               , ClassType(Id("String"), None())
-              , VariableDeclInit(Id("_id"), StrLit(className))
+              , VariableDeclInit(Id("_id"), StringLiteral($["[className]"]))
               )
             ]
           , fields
@@ -104,7 +104,8 @@ rules // PIE function definitions
                   outputType
                 , Id("exec")
                 , ParamList(
-                    FormalParam([], ClassType(Id("ExecContext"), None()), VariableDecl(Id("execContext")))
+                    [ FormalParam([], ClassType(Id("ExecContext"), None()), VariableDecl(Id("execContext")))
+                    ]
                   , FormalParam([], inputType, VariableDecl(Id("input")))
                   )
                 , []
