@@ -379,7 +379,7 @@ rules // Java foreign function calls
     ; ty                    := <p2j-ast-type-sig> <pie-type> c
     ; stmts                 := <concat> [
         <concat> expsStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], ty, [VariableDeclInit(
+        [LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDeclInit(
           VariableDecl(Id(callResultName)),
           InvokeQExp(ExpressionName(Id(javaClassId)), None(), Id(javaMethodId), expsVals)
         )]))]
