@@ -243,7 +243,7 @@ rules // PIE function definitions
   // There is either 0 or 1 dataclass, but they are in a list
   // to avoid having to match on None and Some
   p2j-ast-pie-func-impl-outputsig(|className):
-    ty -> (<java-classType-to-unnanType> <p2j-ast-type-sig> ty, [])
+    ty -> (<p2j-ast-type-sig> ty, [])
     where
       <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
       
