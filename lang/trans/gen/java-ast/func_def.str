@@ -73,7 +73,7 @@ rules // PIE function definitions
             ]
           , fields
           , [ ConstrDecl(
-                [MarkerAnno(TypeName(Id("Inject")))]
+                [MarkerAnno(TypeName(Id("Inject"))), Public()]
               , None()
               , Id(className)
               , constructorParams
@@ -124,7 +124,7 @@ rules // PIE function definitions
     //     [fields]
     //     
     //     @Inject
-    //     [className](
+    //     public [className](
     //       [constructorParams]
     //     ) {
     //       [assignments]
