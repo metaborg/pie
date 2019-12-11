@@ -172,7 +172,7 @@ rules
     // Note: meaning of this AST: [ty] [varId]
   type-tuple-to-ast-call-param: (varId, ty) -> ExpressionName(Id(varId))
   type-tuple-to-ast-assignment:
-    (varId, ty) -> Assign(Field(This(), Id(varId)), ExpressionName(Id(varId)))
+    (varId, ty) -> ExpressionStatement(Assign(Field(This(), Id(varId)), ExpressionName(Id(varId))))
     // Note: meaning of this AST: this.[varId] = [varId]
 
   // java-classType-to-unnanType: removes the list of annotations from a ClassType
