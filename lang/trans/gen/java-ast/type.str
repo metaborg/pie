@@ -80,7 +80,7 @@ rules
       , Id(name)
       , None()
       , Some(SuperClass(ClassType([], Id(tupleTy), Some(TypeArguments(tupleTypes)))))
-      , Some([SuperInterface(ClassType(Id("Serializable"), None()))])
+      , Some(SuperInterface([ClassType([], Id("Serializable"), None())]))
       , <concat> [
           [
             ConstrDecl(
