@@ -28,7 +28,7 @@ imports
 rules 
 
   // tries to apply p2j-ast-exp, returns ""
-  try-p2j-ast-exp = pie-try-debug(p2j-ast-exp|"p2j-ast-exp") <+ !NewInstance(None(), [], "Object", [], None(), [])
+  try-p2j-ast-exp = pie-try-debug(p2j-ast-exp|"p2j-ast-exp") <+ !([], NewInstance(None(), [], "Object", [], None(), []))
   
 rules // Expression composition
 
