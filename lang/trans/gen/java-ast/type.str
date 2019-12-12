@@ -98,15 +98,15 @@ rules
                 ClassType(Id(name), None())
               , Id("fromTuple")
               , SingleParam(FormalParam(
-                  MarkerAnno(TypeName(Id("Nullable")))
+                  [MarkerAnno(TypeName(Id("Nullable")))]
                 , ClassType(Id(tupleTy), Some(TypeArguments(tupleTypes)))
-                , Id("tuple")
+                , VariableDecl(Id("tuple"))
                 ))
               , []
               , None()
               )
             , Block([
-                If(Eq(ExpressionName("tuple"), Null()), Return(Null()))
+                If(Eq(ExpressionName(Id("tuple")), Null()), Return(Null()))
               , Return(NewInstance(None(), [], Id(name), [], None(), tupleNumParams))
               ])
             )
@@ -160,7 +160,7 @@ rules
     // Note: meaning of this AST: tuple.component[number]()
   type-tuple-to-ast-getter(|number): (varId, ty) -> MethodDecl(
       [Public(), Final()]
-    , MethodHeader(ty, Id($[get_[varId]]), NoParams(), [], None())
+    , MethodHeader(<java-classType-to-unannType> ty, Id($[get_[varId]]), NoParams(), [], None())
     , Block([Return(Invoke(MethodName(Id($[component[number]])), []))])
     )
     // Note: meaning of this AST:
