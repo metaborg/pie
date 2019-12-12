@@ -56,7 +56,7 @@ rules
     ; javaTypes := <map(p2j-ast-type-sig)> pieTypes
 
   p2j-ast-type-sig:
-    ListTy(ty) -> ClassType([], Id("ArrayList"), ClassType([], Id(<p2j-ast-type-sig> ty), None()))
+    ListTy(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
   p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
   
 rules
