@@ -846,7 +846,7 @@ rules // Interpolated path literal
       (partsStmts, partsExps) := <unzip> <map(p2j-ast-pathpart)> parts
     ; stmts                   := <concat> partsStmts
     ; exp                     := NewInstance(None(), [], Id("FSPath"), [], None(), [
-        <fold-left(p2j-ast-add-strings)> [StringLiteral($["[prefix]"]) | parts]
+        <fold-left(p2j-ast-add-strings)> [StringLiteral($["[prefix]"]) | partsExps]
       ])
       // Note: meaning of this AST: new FSPath("[prefix][partsStr]")
     ; result                      := (stmts, exp)
