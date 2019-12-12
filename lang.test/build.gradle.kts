@@ -1,7 +1,7 @@
 plugins {
   id("org.metaborg.gradle.config.java-library")
   id("org.metaborg.gradle.config.junit-testing")
-  id("org.metaborg.spoofax.gradle.project") version "develop-SNAPSHOT"
+  id("org.metaborg.spoofax.gradle.project")
 }
 
 spoofax {

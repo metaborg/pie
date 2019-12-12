@@ -3,7 +3,6 @@
 
 gradlePipeline(
   upstreamProjects: [
-    '/metaborg/spoofax.gradle/develop',
     '/metaborg/spoofax-releng/master'
   ],
   slack: true,
