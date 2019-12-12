@@ -50,7 +50,7 @@ rules // PIE function definitions
    |}
     with
       rules(ModuleBindings :+= ExpressionStatement(Invoke(
-          Id("bindTaskDef")
+          MethodName(Id("bindTaskDef"))
         , [TypeNameClassLiteral(TypeName(Id(className)), []), StringLiteral($["[className]"])]
         ))
       )
