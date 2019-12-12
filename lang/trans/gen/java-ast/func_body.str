@@ -821,7 +821,7 @@ rules // Interpolated string literal
     with
       (partsStmts, partsExps) := <unzip> <map(p2j-ast-strpart)> parts
     ; stmts                   := <concat> partsStmts
-    ; exp                     := <reduce(p2j-ast-add-strings)> partsExps
+    ; exp                     := <fold-left(p2j-ast-add-strings)> partsExps
     ; result                  := (stmts, exp)
 
   // Replace all escaped \$ with $. Note: "\\$" because the \ needs to be escaped in stratego.
@@ -847,7 +847,7 @@ rules // Interpolated path literal
       (partsStmts, partsExps) := <unzip> <map(p2j-ast-pathpart)> parts
     ; stmts                   := <concat> partsStmts
     ; exp                     := NewInstance(None(), [], Id("FSPath"), [], None(), [
-        Add(StringLiteral($["[prefix]"]), <reduce(p2j-ast-add-strings)> parts)
+        <fold-left(p2j-ast-add-strings)> [StringLiteral($["[prefix]"]) | parts]
       ])
       // Note: meaning of this AST: new FSPath("[prefix][partsStr]")
     ; result                      := (stmts, exp)
