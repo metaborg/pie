@@ -11,7 +11,7 @@ language
 
   provider : target/metaborg/stratego.ctree
 
-  on save : generate-java-file
+  on save : generate-java-file-ast
 
 menus
 
