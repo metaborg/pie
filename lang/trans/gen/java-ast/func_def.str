@@ -13,6 +13,9 @@ imports
   signatures/java/types/-
   signatures/java/classes/-
   signatures/java/interfaces/-
+  signatures/java/lexical/-
+  signatures/java/statements/-
+  signatures/java/literals/-
 
   gen/java-ast/type
   gen/java-ast/func_body
