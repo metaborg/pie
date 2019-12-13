@@ -12,7 +12,7 @@ context-free syntax // PIE function body
 context-free syntax // Expression composition
 
   Block.Block      = <{<{Exp ";"}+>}>
-  Block.EmptyBlock = <{}>
+  Block.EmptyBlock = <{ }>
   Exp              = <<Block>>
   
   Exp = <(<Exp>)> {bracket, prefer} // Prefer bracket over tuple literal with 1 element
