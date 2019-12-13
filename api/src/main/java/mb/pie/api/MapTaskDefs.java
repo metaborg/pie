@@ -14,6 +14,13 @@ public class MapTaskDefs implements TaskDefs {
         this.taskDefs = new HashMap<>();
     }
 
+    public MapTaskDefs(TaskDef<?, ?>... taskDefs) {
+        this.taskDefs = new HashMap<>();
+        for(TaskDef<?, ?> taskDef : taskDefs) {
+            this.taskDefs.put(taskDef.getId(), taskDef);
+        }
+    }
+
     public MapTaskDefs(Iterable<TaskDef<?, ?>> taskDefs) {
         this.taskDefs = new HashMap<>();
         for(TaskDef<?, ?> taskDef : taskDefs) {
