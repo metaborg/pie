@@ -90,7 +90,7 @@ rules // PIE function definitions
           , [ MethodDecl(
                 [Public()]
               , MethodHeader(ClassType(Id("String"), None()), Id("getId"), NoParams(), [], None())
-              , Block([Return(Field(This(), Id("_id")))])
+              , Block([Return(Field(ExpressionName(Id(className)), Id("_id")))])
               )
             , MethodDecl(
                 [MarkerAnno(TypeName(Id("Override"))), Public()]
