@@ -22,7 +22,7 @@ rules
     with
       filename := <guarantee-extension(|"java")> file
     ; mod      := <base-filename;remove-extension> file
-    ; javaAst  := <p2j-ast(|mod, ["mb", "pie", "example", "helloworld", "java"])> pieAst
+    ; javaAst  := <p2j-ast(|mod, ["mb", "pie", "lang", "test"])> pieAst
     ; <debug(|"Successfully transpiled file to Java: ")> file
     ; result   := <p2j-ast-to-filestring(|mod)> javaAst
     ; <debug(|"Successfully transformed Java AST to string: ")> file
@@ -33,7 +33,7 @@ rules
     ast -> 
 $[// This file was generated from Pie source file [mod].pie.
 [<pp-java-string> ast]
-// last cache update: 2019-12-06 15:41
+// last cache update: 2019-12-16 12:57
 ]
 
   p2j-ast(|mod, package):
