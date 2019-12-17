@@ -18,6 +18,7 @@ imports
   
   gen/idtype-tuples
   gen/util
+  gen/java-ast/ast-util
 
 rules
 
@@ -175,16 +176,3 @@ rules
   type-tuple-to-ast-assignment:
     (varId, ty) -> ExpressionStatement(Assign(Field(This(), Id(varId)), ExpressionName(Id(varId))))
     // Note: meaning of this AST: this.[varId] = [varId]
-
-  // java-classType-to-unnanType: removes the list of annotations from a ClassType
-  java-classType-to-unannType: ClassType(_, name, types) -> ClassType(name, types)
-  java-classType-to-unannType:
-    ClassOrInterfaceTypeMember(toplevelclass, annotations, name, types) -> ClassOrInterfaceTypeMember(
-      <java-classType-to-unannType> toplevelclass
-    , annotations
-    , name
-    , types
-    )
-  java-classType-to-unannType: x -> x
-    where
-      <not(?ClassType(_, _, _)); not(?ClassOrInterfaceTypeMember(_, _, _, _))> x

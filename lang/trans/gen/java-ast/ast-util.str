@@ -5,6 +5,7 @@ imports
   signatures/java/names/-
   signatures/java/packages/-
   signatures/java/lexical/-
+  signatures/java/types/-
 
 rules
 
@@ -24,3 +25,16 @@ rules
   parse-import-parts: [part | rest] -> PackageOrTypeName(<parse-import-parts> rest, part)
 
   p2j-ast-wrap-string-with-id: str -> Id(str)
+
+  // java-classType-to-unnanType: removes the list of annotations from a ClassType
+  java-classType-to-unannType: ClassType(_, name, types) -> ClassType(name, types)
+  java-classType-to-unannType:
+    ClassOrInterfaceTypeMember(toplevelclass, annotations, name, types) -> ClassOrInterfaceTypeMember(
+      <java-classType-to-unannType> toplevelclass
+    , annotations
+    , name
+    , types
+    )
+  java-classType-to-unannType: x -> x
+    where
+      <not(?ClassType(_, _, _)); not(?ClassOrInterfaceTypeMember(_, _, _, _))> x
