@@ -10,6 +10,8 @@ imports
   signatures/java/packages/-
   signatures/java/names/-
   signatures/java/classes/-
+  signatures/java/lexical/-
+  signatures/java/types/-
 
   pp
 
