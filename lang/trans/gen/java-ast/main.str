@@ -77,31 +77,7 @@ $[// This file was generated from Pie source file [mod].pie.
       // Note: meaning of this AST:
       //   package [package];
       //   
-      //   import com.google.inject.Inject;
-      //   import mb.pie.api.ExecContext;
-      //   import mb.pie.api.ExecException;
-      //   import mb.pie.api.None;
-      //   import mb.pie.api.TaskDef;
-      //   import mb.pie.api.stamp.resource.FileSystemStampers;
-      //   import mb.pie.taskdefs.guice.TaskDefsModule;
-      //   import mb.pie.util.Tuple2;
-      //   import mb.pie.util.Tuple3;
-      //   import mb.pie.util.Tuple4;
-      //   import mb.pie.util.Tuple5;
-      //   import mb.pie.util.Util;
-      //   import mb.resource.fs.FSResource;
-      //   import mb.resource.fs.match.PathResourceMatcher;
-      //   import mb.resource.fs.path.match.*;
-      //   import mb.resource.fs.FSPath;
-      //   import mb.resource.fs.walk.PathResourceWalker;
-      //   import org.checkerframework.checker.nullness.qual.Nullable;
-      //   
-      //   import java.io.Serializable;
-      //   import java.util.ArrayList;
-      //   import java.util.Arrays;
-      //   import java.util.Objects;
-      //   import java.util.stream.Collectors;
-      //   import java.util.stream.Stream;
+      //   [imports]
       //   
       //   [classes]
       //   
@@ -110,6 +86,4 @@ $[// This file was generated from Pie source file [mod].pie.
       //     protected void bindTaskDefs() {
       //       [bindings]
       //     }
-      //     
-      //     // last cache update: 2019-06-27 00:48
       //   }
