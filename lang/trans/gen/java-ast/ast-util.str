@@ -9,11 +9,19 @@ imports
 
 rules
 
+  // add-import: str -> ast
+  //   type: String -> Java AST
+  // Convert the given import string into an import Java AST.
+  // Add that import Java AST to dynamic rule JavaImports
+  // returns the Java AST
   add-import: str -> ast
   with
     ast := <parse-import> str
   ; rules (JavaImports :+= ast)
 
+  // parse-import: str -> result
+  //   type: String -> Java AST
+  // Convert the given import string into an import Java AST.
   parse-import: str -> result
   where
     <is-string> str
