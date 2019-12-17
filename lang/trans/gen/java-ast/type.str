@@ -104,7 +104,7 @@ rules
             , []
             )
           , MethodDecl(
-              [Public(), Static()]
+              [MarkerAnno(TypeName(Id("Nullable"))), Public(), Static()]
             , MethodHeader(
                 ClassType(Id(name), None())
               , Id("fromTuple")
