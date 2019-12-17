@@ -27,6 +27,8 @@ rules
   p2j-ast-type-sig: IntTy()  -> ClassType([], Id("Integer"), None())
   p2j-ast-type-sig: StrTy()  -> ClassType([], Id("String"), None())
   p2j-ast-type-sig: PathTy() -> ClassType([], Id("FSPath"), None())
+  with
+    <add-import> "mb.resource.fs.FSPath"
   p2j-ast-type-sig: TopTy()  -> ClassType([], Id("Object"), None())
   p2j-ast-type-sig: NullTy() -> ClassType([], Id("Void"), None())
 
@@ -49,16 +51,19 @@ rules
     ; <pie-prop(|"Type", "mods"); collect-one(?Transient())> occ
     with  
       javaClassId := <pie-prop(|"Type", "javaClassId")> occ
-
+    ; <add-import> "mb.pie.api.OutTransient"
 
   p2j-ast-type-sig: 
     TupleTy(pieTypes) -> ClassType([], Id($[Tuple[length]]), Some(TypeArguments(javaTypes)))
     with
       length    := <length> pieTypes
     ; javaTypes := <map(p2j-ast-type-sig)> pieTypes
+    ; <add-import> $[mb.pie.util.Tuple[length]]
 
   p2j-ast-type-sig:
     ListTy(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
+    with
+      <add-import> "java.util.ArrayList"
   p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
   
 rules
@@ -68,9 +73,10 @@ rules
   p2j-ast-type-generate-dataclass(|name):
     idPieTypeTuples -> result
     with
-      <add-import> $[mb.pie.util.Tuple[<length> idPieTypeTuples]]
+      <add-import> "org.checkerframework.checker.nullness.qual.Nullable"
     ; <add-import> "java.io.Serializable"
-    ; <add-import> "org.checkerframework.checker.nullness.qual.Nullable"
+    ; <add-import> $[mb.pie.util.Tuple[<length> idPieTypeTuples]]
+    ; <add-import> $[mb.pie.util.Util]
     ; tupleTy        := $[Tuple[<length> idPieTypeTuples]]
     ; tys            := <map(Snd)> idPieTypeTuples
     ; types          := <map(p2j-ast-type-sig)> tys
