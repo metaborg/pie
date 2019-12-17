@@ -68,7 +68,10 @@ rules
   p2j-ast-type-generate-dataclass(|name):
     idPieTypeTuples -> result
     with
-      tupleTy        := $[Tuple[<length> idPieTypeTuples]]
+      <add-import> $[mb.pie.util.Tuple[<length> idPieTypeTuples]]
+    ; <add-import> "java.io.Serializable"
+    ; <add-import> "org.checkerframework.checker.nullness.qual.Nullable"
+    ; tupleTy        := $[Tuple[<length> idPieTypeTuples]]
     ; tys            := <map(Snd)> idPieTypeTuples
     ; types          := <map(p2j-ast-type-sig)> tys
     ; idTypeTuples   := <zip> (<map(Fst)> idPieTypeTuples, types)
