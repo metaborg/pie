@@ -22,6 +22,7 @@ imports
   gen/java-ast/func_def
   gen/java-ast/binder
   gen/java-ast/type
+  gen/java-ast/ast-util
   gen/idtype-tuples
   gen/util
   gen/debug
@@ -66,7 +67,8 @@ rules // Unary expressions
   p2j-ast-exp:
     n@ToNonNullable(exp) -> result
     with
-      (expStmts, expVal) := <try-p2j-ast-exp> exp
+      <add-import> "java.util.Objects"
+    ; (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; tmpVarName         := <newname> "exp"
     ; ty                 := <p2j-ast-type-sig> <pie-type> n
     ; stmts              := <concat> [
@@ -202,6 +204,10 @@ rules // Control flow
     //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))
     where
       (ListTy(a), a) := (lType, rType)
+    with
+      <add-import> "java.util.ArrayList"
+    ; <add-import> "java.util.stream.Collectors"
+    ; <add-import> "java.util.stream.Stream"
 
   p2j-ast-add(|lType, rType):
     (lExp, rExp) ->
@@ -228,12 +234,18 @@ rules // Control flow
     // Stream.concat(([lExp]).stream(), ([rExp]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where
       (ListTy(a), ListTy(a)) := (lType, rType)
-
+    with
+      <add-import> "java.util.ArrayList"
+    ; <add-import> "java.util.stream.Collectors"
+    ; <add-import> "java.util.stream.Stream"
 
   p2j-exp:
     e@ListComprehension(mapExp, binder, listExp) -> result
     with
-      (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
+      <add-import> "java.util.ArrayList"
+    ; <add-import> "java.util.stream.Collectors"
+    ; <add-import> "java.util.stream.Stream"
+    ; (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
     ; ListTy(listExpElemTy)   := <pie-ast-type> listExp
     ; (mapStmts, mapExpVal)   := <try-p2j-ast-exp> mapExp
     ; (assignments, varId)    := <bind-tuples-to-ast-assignments> (binder, listExpElemTy)
