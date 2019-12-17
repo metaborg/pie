@@ -113,5 +113,3 @@ $[// This file was generated from Pie source file [mod].pie.
       //     
       //     // last cache update: 2019-06-27 00:48
       //   }
-
-  p2j-ast-wrap-string-with-id: str -> Id(str)

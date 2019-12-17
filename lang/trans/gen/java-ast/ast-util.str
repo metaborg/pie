@@ -22,3 +22,5 @@ rules
   
   parse-import-parts: [part | []] -> Id(part)
   parse-import-parts: [part | rest] -> PackageOrTypeName(<parse-import-parts> rest, part)
+
+  p2j-ast-wrap-string-with-id: str -> Id(str)
