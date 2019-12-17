@@ -1,0 +1,24 @@
+module gen/java-ast/ast-util
+
+imports
+
+  signatures/java/names/-
+  signatures/java/packages/-
+  signatures/java/lexical/-
+
+rules
+
+  add-import: str -> ast
+  with
+    ast := <parse-import> str
+  ; rules (JavaImports :+= ast)
+
+  parse-import: str -> result
+  where
+    <is-string> str
+  with
+    parts := <string-tokenize(|".")> str
+  ; result := SingleTypeImport(TypeName(<parse-import-parts> <reverse> parts))
+  
+  parse-import-parts: [part | []] -> Id(part)
+  parse-import-parts: [part | rest] -> PackageOrTypeName(<parse-import-parts> rest, part)

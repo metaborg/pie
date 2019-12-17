@@ -5,6 +5,7 @@ imports
   nabl2/api
   
   gen/util
+  gen/java-ast/ast-util
   gen/java-ast/func_def
 
   signatures/java/packages/-
@@ -41,10 +42,12 @@ $[// This file was generated from Pie source file [mod].pie.
   p2j-ast(|mod, package):
     Program(defs) -> result
     with
-    {| AstAnalysis, ModuleBindings:
+    {| AstAnalysis, ModuleBindings, JavaImports:
       <pie-set-ast-analysis> defs
-    ; classes      := <filter(p2j-ast-def)> defs
-    ; bindings     := <bagof-ModuleBindings>
+    ; <add-import> "mb.pie.taskdefs.guice.TaskDefsModule"
+    ; classes  := <filter(p2j-ast-def)> defs
+    ; bindings := <bagof-ModuleBindings>
+    ; imports  := <uniq> <bagof-JavaImports>
     |}
     with
       result := CompilationUnit(
@@ -52,235 +55,7 @@ $[// This file was generated from Pie source file [mod].pie.
           []
         , <map(p2j-ast-wrap-string-with-id)> package
         ))
-      , [ SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("com")), Id("google"))
-              , Id("inject")
-              )
-            , Id("Inject")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("api")
-              )
-            , Id("ExecContext")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("api")
-              )
-            , Id("ExecException")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("api")
-              )
-            , Id("None")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("api")
-              )
-            , Id("TaskDef")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(
-                  PackageOrTypeName(
-                    PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-                  , Id("api")
-                  )
-                , Id("stamp")
-                )
-              , Id("resource")
-              )
-            , Id("FileSystemStampers")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(
-                  PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-                , Id("taskdefs")
-                )
-              , Id("guice")
-              )
-            , Id("TaskDefsModule")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("util")
-              )
-            , Id("Tuple2")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("util")
-              )
-            , Id("Tuple3")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("util")
-              )
-            , Id("Tuple4")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("util")
-              )
-            , Id("Tuple5")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("pie"))
-              , Id("util")
-              )
-            , Id("Util")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("resource"))
-              , Id("fs")
-              )
-            , Id("FSResource")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(
-                  PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("resource"))
-                , Id("fs")
-                )
-              , Id("match")
-              )
-            , Id("PathResourceMatcher")
-            )
-          )
-        , TypeImportOnDemand(
-            PackageOrTypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(
-                  PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("resource"))
-                , Id("fs")
-                )
-              , Id("path")
-              )
-            , Id("match")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("resource"))
-              , Id("fs")
-              )
-            , Id("FSPath")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(
-                  PackageOrTypeName(PackageOrTypeName(Id("mb")), Id("resource"))
-                , Id("fs")
-                )
-              , Id("walk")
-              )
-            , Id("PathResourceWalker")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(
-                  PackageOrTypeName(
-                    PackageOrTypeName(PackageOrTypeName(Id("org")), Id("checkerframework"))
-                  , Id("checker")
-                  )
-                , Id("nullness")
-                )
-              , Id("qual")
-              )
-            , Id("Nullable")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(PackageOrTypeName(Id("java")), Id("io"))
-            , Id("Serializable")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(PackageOrTypeName(Id("java")), Id("util"))
-            , Id("ArrayList")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(PackageOrTypeName(Id("java")), Id("util"))
-            , Id("Arrays")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(PackageOrTypeName(Id("java")), Id("util"))
-            , Id("Objects")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("java")), Id("util"))
-              , Id("stream")
-              )
-            , Id("Collectors")
-            )
-          )
-        , SingleTypeImport(
-            TypeName(
-              PackageOrTypeName(
-                PackageOrTypeName(PackageOrTypeName(Id("java")), Id("util"))
-              , Id("stream")
-              )
-            , Id("Stream")
-            )
-          )
-        ]
+      , imports
       , <concat> [ 
           classes
         , [ ClassDeclaration(

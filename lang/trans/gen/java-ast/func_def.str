@@ -19,6 +19,7 @@ imports
 
   gen/java-ast/type
   gen/java-ast/func_body
+  gen/java-ast/ast-util
   gen/idtype-tuples
   gen/util
 
@@ -58,6 +59,11 @@ rules // PIE function definitions
         ))
       )
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
+    ; <add-import> "com.google.inject.Inject"
+    ; <add-import> "mb.pie.api.ExecContext"
+    ; <add-import> "mb.pie.api.None"
+    ; <add-import> "mb.pie.api.TaskDef"
+    ; <add-import> "java.io.Serializable"
     with
       result := ClassDeclaration(
           []
