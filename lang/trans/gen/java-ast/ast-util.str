@@ -6,6 +6,7 @@ imports
   signatures/java/packages/-
   signatures/java/lexical/-
   signatures/java/types/-
+  signatures/java/classes/-
 
 rules
 
