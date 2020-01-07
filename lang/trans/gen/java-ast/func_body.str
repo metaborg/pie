@@ -694,10 +694,8 @@ rules // Path operations
     //   new PathResourceMatcher([matcher])
 
   // p2j-ast-filter: Pie filter -> (stmts, Java AST expression value)
-  // Important: the return value for the term None() is non-sensical and should not be used.
-  // The rule is left here because some p2j-ast-dir will call it but discard the result if it is None()
   p2j-ast-filter:
-    None() -> () // Intentionally returns a malformed output, as this result should never be used
+    None() -> ([], Null())
   p2j-ast-filter:
     Regex(exp) -> <p2j-ast-filter-common> ("RegexPathMatcher", exp)
   p2j-ast-filter:
