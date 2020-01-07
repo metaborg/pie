@@ -173,7 +173,7 @@ rules // PIE function definitions
     with
       numExps                := <length> exps
     ; restExps               := <take(|<dec> numExps)> exps
-    ; restStmts              := <map(try-p2j-ast-exp); map(Fst); concat> restExps
+    ; restStmts              := <map(try-p2j-ast-exp; Fst); concat> restExps
     ; lastExp                := <last> exps
     ; (lastStmt, lastExpVal) := <p2j-ast-pie-func-impl-returnvalue> lastExp
     ; stmts                  := <concat> [restStmts, lastStmt]
