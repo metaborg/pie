@@ -622,7 +622,10 @@ rules // Path operations
   p2j-ast-dir(create-param-list | funcName):
     (astNode, exp, filterOpt) -> result
     with
-      (expStmts, expVal)      := <try-p2j-ast-exp> exp
+      <add-import> "mb.resource.fs.FSResource"
+    ; <add-import> "java.util.stream.Collectors"
+    ; <add-import> "java.util.ArrayList"
+    ; (expStmts, expVal)      := <try-p2j-ast-exp> exp
     ; (matcherStmts, matcher) := <p2j-ast-filter> filterOpt
     ; funcParamList           := <p2j-ast-filter-to-params-list(create-param-list)> (filterOpt, matcher)
     ; ty                      := <p2j-ast-type-sig> <pie-type> astNode
@@ -818,7 +821,9 @@ rules // Literals
   p2j-ast-exp:
     ListLit(exps) -> result
     with
-      (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+      <add-import> "java.util.Arrays"
+    ; <add-import> "java.util.ArrayList"
+    ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; stmts                 := <concat> expsStmts
     ; exp                   := NewInstance(None(), [], Id("ArrayList"), [], Some(Diamond()), [
         InvokeQExp(ExpressionName(Id("Arrays")), None(), Id("asList"), expsVals)
