@@ -180,13 +180,9 @@ rules // PIE function definitions
     ; result                 := (stmts, lastExpVal)
 
   p2j-ast-pie-func-impl-body():
-    exp -> result
+    exp -> <p2j-ast-pie-func-impl-returnvalue> exp
     where
       <not(?Block(_))> exp
-    with
-      (expStmts, expVal) := <try-p2j-ast-exp> exp
-    ; returnValue        := <p2j-ast-pie-func-impl-returnvalue> expVal
-    ; result             := (expStmts, returnValue)
 
   // p2j-ast-pie-func-impl-returnvalue: Pie exp -> (Java Statements, Java expression)
   // Converts a Pie expression to a Java expression for returning
