@@ -14,7 +14,7 @@ class SimplePieLangTest {
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final String output = session.require(main.createTask(None.instance));
-            assertEquals(output, "Hello, world!");
+            assertEquals("Hello, world!", output);
         }
     }
 }
