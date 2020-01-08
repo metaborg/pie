@@ -1,2 +1,2 @@
-func main() -> unit = {
+func main_unitNoValue() -> unit = {
 }

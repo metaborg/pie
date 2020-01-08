@@ -1,3 +1,3 @@
-func main() -> (bool, string) = {
+func main_tupleBoolString() -> (bool, string) = {
   (false, "hey")
 }

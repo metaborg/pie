@@ -1,6 +1,6 @@
 // does not typecheck, probably due to incorrect type checking (should check
 // that BoolTy is a "subtype" of Nullable(BoolTy)
-func main() -> (int, string, bool?)* = {
+func main___error__listOfTupleWithNullable() -> (int, string, bool?)* = {
   [
     (5, "no", null),
     (7, "kittens", true),
