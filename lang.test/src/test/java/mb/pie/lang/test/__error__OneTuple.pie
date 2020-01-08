@@ -1,0 +1,6 @@
+// problem: can declare a return type of a tuple with a single element but
+// can't construct it within pie
+// Should disallow tuple with single element type?
+func main() -> (int) = {
+  (0)
+}

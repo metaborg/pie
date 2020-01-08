@@ -1,0 +1,3 @@
+func main() -> (string, path) = {
+  ("Folder with pictures", /c/home/bob/pictures)
+}

@@ -1,0 +1,3 @@
+func main() -> path = {
+  /foo/bar
+}

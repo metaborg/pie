@@ -8,13 +8,16 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SimplePieLangTest {
+import java.util.ArrayList;
+import java.util.Arrays;
+
+class ListStringOneTest {
     @Test void test() throws ExecException {
         final main main = new main();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
-            final String output = session.require(main.createTask(None.instance));
-            assertEquals("Hello, world!", output);
+            final ArrayList<String> output = session.require(main.createTask(None.instance));
+            assertEquals(new ArrayList<>(Arrays.asList("first")), output);
         }
     }
 }
