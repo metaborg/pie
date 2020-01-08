@@ -59,6 +59,7 @@ rules
       length    := <length> pieTypes
     ; javaTypes := <map(p2j-ast-type-sig)> pieTypes
     ; <add-import> $[mb.pie.util.Tuple[length]]
+    ; <add-import> "mb.pie.util.Util"
 
   p2j-ast-type-sig:
     ListTy(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
