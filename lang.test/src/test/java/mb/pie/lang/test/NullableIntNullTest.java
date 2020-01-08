@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class NullableIntNullTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_nullableIntNull main = new main_nullableIntNull();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final Integer output = session.require(main.createTask(None.instance));

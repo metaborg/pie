@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 class DataTyNullableForeignJavaTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_dataTyNullableForeignJava main = new main_dataTyNullableForeignJava();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final Foo output = session.require(main.createTask(None.instance));

@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 class BoolFalseTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_boolFalse main = new main_boolFalse();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final Boolean output = session.require(main.createTask(None.instance));

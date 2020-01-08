@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 class ListIntTwoTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_listIntTwo main = new main_listIntTwo();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final ArrayList<Integer> output = session.require(main.createTask(None.instance));

@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class UnitExplicitValueTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_unitExplicitValue main = new main_unitExplicitValue();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final None output = session.require(main.createTask(None.instance));

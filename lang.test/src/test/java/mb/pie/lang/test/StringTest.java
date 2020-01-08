@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StringTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_string main = new main_string();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final String output = session.require(main.createTask(None.instance));

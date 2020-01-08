@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 class IntTest {
     @Test void test() throws ExecException {
-        final main main = new main();
+        final main_int main = new main_int();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final Integer output = session.require(main.createTask(None.instance));
