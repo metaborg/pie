@@ -1,6 +1,8 @@
 package mb.pie.lang.test;
 
-public class Foo {
+import java.io.Serializable;
+
+public class Foo implements Serializable {
 	public boolean equals(Object other) {
 		return other instanceof Foo;
 	}
