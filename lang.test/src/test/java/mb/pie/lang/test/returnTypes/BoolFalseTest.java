@@ -1,4 +1,4 @@
-package mb.pie.lang.test;
+package mb.pie.lang.test.returnTypes;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.None;
@@ -11,13 +11,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class ListIntEmptyTest {
+class BoolFalseTest {
     @Test void test() throws ExecException {
-        final main_listIntEmpty main = new main_listIntEmpty();
+        final main_boolFalse main = new main_boolFalse();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
-            final ArrayList<Integer> output = session.require(main.createTask(None.instance));
-            assertEquals(new ArrayList<>(), output);
+            final Boolean output = session.require(main.createTask(None.instance));
+            assertEquals(new Boolean(false), output);
         }
     }
 }

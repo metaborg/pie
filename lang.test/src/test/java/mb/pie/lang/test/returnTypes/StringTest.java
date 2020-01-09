@@ -1,4 +1,4 @@
-package mb.pie.lang.test;
+package mb.pie.lang.test.returnTypes;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.None;
@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class NullableStringNullTest {
+class StringTest {
     @Test void test() throws ExecException {
-        final main_nullableStringNull main = new main_nullableStringNull();
+        final main_string main = new main_string();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
             final String output = session.require(main.createTask(None.instance));
-            assertEquals(null, output);
+            assertEquals("Hello, world!", output);
         }
     }
 }

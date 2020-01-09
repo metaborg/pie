@@ -1,4 +1,4 @@
-package mb.pie.lang.test;
+package mb.pie.lang.test.returnTypes;
 
 import java.io.Serializable;
 

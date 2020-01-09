@@ -1,4 +1,4 @@
-data Foo = foreign java mb.pie.lang.test.Foo {}
+data Foo = foreign java mb.pie.lang.test.returnTypes.Foo {}
 
 // returns a nullable because this test is only for the types, and there is no
 // literal for foreign data types (requires call to a foreign function)

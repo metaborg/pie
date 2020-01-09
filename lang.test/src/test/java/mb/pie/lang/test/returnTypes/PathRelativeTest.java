@@ -1,23 +1,21 @@
-package mb.pie.lang.test;
+package mb.pie.lang.test.returnTypes;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.None;
 import mb.pie.api.PieSession;
 import mb.pie.lang.test.util.PieRunner;
+import mb.resource.fs.FSPath;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-class ListStringTwoTest {
+class PathRelativeTest {
     @Test void test() throws ExecException {
-        final main_listStringTwo main = new main_listStringTwo();
+        final main_pathRelative main = new main_pathRelative();
         final PieRunner pieRunner = new PieRunner(main);
         try(PieSession session = pieRunner.newSession()) {
-            final ArrayList<String> output = session.require(main.createTask(None.instance));
-            assertEquals(new ArrayList<>(Arrays.asList("hello", "world")), output);
+            final FSPath output = session.require(main.createTask(None.instance));
+            assertEquals(new FSPath("./path/to/foo"), output);
         }
     }
 }
