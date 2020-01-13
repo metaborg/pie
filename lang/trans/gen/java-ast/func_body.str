@@ -294,7 +294,7 @@ rules // Binding
   p2j-ast-exp:
     e@ValDec(binder, exp) -> result
     with
-      pieTy                := <pie-ast-type> exp
+      pieTy                := <pie-ast-type> binder
     ; expTy                := <p2j-ast-type-sig> pieTy
     ; (expStmts, expVal)   := <try-p2j-ast-exp> exp
     ; (assignments, varId) := <bind-tuples-to-ast-assignments> (binder, pieTy)

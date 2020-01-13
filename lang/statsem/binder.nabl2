@@ -6,20 +6,21 @@ imports
 
 rules // Binders
 
-  Binder [[ SingleBinder(bind) ^ (s, ty_exp) ]] :=
-    Bind [[ bind ^ (s, ty_exp) ]].
+  Binder [[ SingleBinder(bind) ^ (s, ty_exp) : ty_dec ]] :=
+    Bind [[ bind ^ (s, ty_exp) : ty_dec ]].
 
-  Binder [[ t@TupleBinder(binds) ^ (s, ty_exp) ]] :=
+  Binder [[ t@TupleBinder(binds) ^ (s, ty_exp) : ty_dec ]] :=
     ty_exp == TupleTy(tys_exp) | error $[Type mismatch: expected tuple type, got [ty_exp]] @ t,
-    Binds [[ binds ^ (s, tys_exp) ]].
+    ty_dec == TupleTy(tys_dec) | error $[Type mismatch: expected tuple type, got [ty_dec]] @ t,
+    Binds [[ binds ^ (s, tys_exp) : tys_dec ]].
 
 
-  Bind [[ Bind(id_var) ^ (s, ty_exp) ]] :=
+  Bind [[ Bind(id_var) ^ (s, ty_exp) : ty_exp ]] :=
      Var{id_var} <- s,
      Var{id_var}.kind := LocalVarKind() !,
      Var{id_var} : ty_exp !.
 
-  Bind [[ TBind(id_var, ty_expected) ^ (s, ty_exp) ]] :=
+  Bind [[ TBind(id_var, ty_expected) ^ (s, ty_exp) : ty_expected_bound ]] :=
      Var{id_var} <- s,
      Var{id_var}.kind := LocalVarKind() !,
      [[ ty_expected ^ (s) : ty_expected_bound ]],
@@ -27,10 +28,12 @@ rules // Binders
      Var{id_var} : ty_expected_bound !.
 
 
-  Binds [[ t@[bind|binds] ^ (s, tys_exp) ]] :=
+  Binds [[ t@[bind|binds] ^ (s, tys_exp) : ty_decs ]] :=
     tys_exp == [ty|tys] | error $[Inconsistent number of bindings] @ t,
-    Bind [[ bind ^ (s, ty) ]],
-    Binds [[ binds ^ (s, tys) ]].
+    ty_decs == [ty_dec|ty_decs_rest] | error $[Inconsistent number of bindings] @ t,
+    Bind [[ bind ^ (s, ty) : ty_dec ]],
+    Binds [[ binds ^ (s, tys) : ty_decs_rest ]].
 
-  Binds [[ t@[] ^ (s, tys_exp) ]] :=
-    tys_exp == [] | error $[Inconsistent number of bindings] @ t.
+  Binds [[ t@[] ^ (s, tys_exp) : tys_dec ]] :=
+    tys_exp == [] | error $[Inconsistent number of bindings] @ t,
+    tys_dec == [] | error $[Inconsistent number of bindings] @ t.

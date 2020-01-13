@@ -85,7 +85,7 @@ rules // Control flow
     ty_list == ListTy(ty_list_inner) | error $[Type mismatch: expected list type, got [ty_list]] @ exp_list,
     new s_comprehension,
     s_comprehension -P-> s,
-    Binder [[ binder ^ (s_comprehension, ty_list_inner) ]],
+    Binder [[ binder ^ (s_comprehension, ty_list_inner) : ty_dec ]],
     [[ exp_map ^ (s_comprehension, ty_func_def) : ty_map ]],
     ty == ListTy(ty_map).
 
@@ -93,7 +93,7 @@ rules // Binding
 
   [[ ValDec(binder, exp) ^ (s, ty_func_def) : UnitTy() ]] :=
     [[ exp ^ (s, ty_func_def) : ty ]],
-    Binder [[ binder ^ (s, ty) ]].
+    Binder [[ binder ^ (s, ty) : ty_dec ]].
 
 rules // References
     
