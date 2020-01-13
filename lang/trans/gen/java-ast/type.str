@@ -13,6 +13,8 @@ imports
   signatures/java/expressions/-
   signatures/java/literals/-
   signatures/java/lexical/-
+  signatures/java/interfaces/-
+  signatures/java/statements/-
 
   statsem/pie
   
