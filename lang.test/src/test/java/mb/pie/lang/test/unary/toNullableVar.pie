@@ -1,0 +1,4 @@
+func main_toNullableVar() -> int? = {
+  val foo = 6;
+  foo?
+}

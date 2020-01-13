@@ -1,0 +1,4 @@
+func main_notVarTrue() -> bool = {
+  val bool = true;
+  !bool
+}

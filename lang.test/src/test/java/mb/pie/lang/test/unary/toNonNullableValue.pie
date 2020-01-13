@@ -1,0 +1,4 @@
+func main_toNonNullableValue() -> string = {
+  val str: string? = "test string";
+  str!
+}
