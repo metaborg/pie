@@ -61,6 +61,7 @@ rules // PIE function definitions
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
     ; <add-import> "com.google.inject.Inject"
     ; <add-import> "mb.pie.api.ExecContext"
+    ; <add-import> "mb.pie.api.ExecException"
     ; <add-import> "mb.pie.api.None"
     ; <add-import> "mb.pie.api.TaskDef"
     ; <add-import> "java.io.Serializable"
@@ -120,7 +121,7 @@ rules // PIE function definitions
                   , FormalParam([], <java-classType-to-unannType> inputType, VariableDecl(Id("input")))
                   )
                 , []
-                , None()
+                , Some(ThrowsDec([ClassType([], Id("ExecException"), None())]))
                 )
               , Block(<concat> [stmts, [Return(returnValue)]])
               )

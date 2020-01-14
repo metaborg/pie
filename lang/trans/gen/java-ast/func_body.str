@@ -68,17 +68,49 @@ rules // Unary expressions
     n@ToNonNullable(exp) -> result
     with
       <add-import> "java.util.Objects"
+    ; <add-import> "mb.pie.api.ExecException"
     ; (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; tmpVarName         := <newname> "exp"
     ; ty                 := <p2j-ast-type-sig> <pie-type> n
     ; stmts              := <concat> [
         expStmts,
-        [LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDeclInit(
-          VariableDecl(Id(tmpVarName)),
-          InvokeQExp(ExpressionName("Objects"), None(), "requireNonNull", [expVal])
-        )]))]
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [VariableDecl(Id(tmpVarName))]
+          ))
+        , Try(
+            Block(
+              [ ExpressionStatement(Assign(
+                  ExpressionName(Id(tmpVarName))
+                , InvokeQExp(ExpressionName("Objects"), None(), "requireNonNull", [expVal])
+                ))
+              ]
+            )
+          , [ Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("NullPointerException"), None()), [])
+                , VariableDecl(Id("ex"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Tried to cast a null value to NonNullable"])
+                    , ExpressionName(Id("ex"))
+                    ]))
+                  ]
+                )
+              )
+            ]
+          )
+        ]
         // Note: meaning of this AST:
-        //   final [ty] [tmpVarName] = Objects.requireNonNull([expVal]);
+        //   final [ty] [tmpVarName];
+        //   try {
+        //     [tmpVarName] = Objects.requireNonNull([expVal]);
+        //   } catch (NullpointerException ex) {
+        //     throw new ExecException("Tried to cast a null value to NonNullable", ex);
+        //   }
       ]
     ; result             := (stmts, tmpVarName)
 
