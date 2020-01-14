@@ -1,0 +1,2 @@
+func main_twoFuncUnused() -> unit = { }
+func helper_twoFuncUnused() -> unit = { }
