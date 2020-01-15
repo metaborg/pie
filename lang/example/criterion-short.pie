@@ -1,3 +1,5 @@
+package mb.pie.example.helloworld.java;
+
 func main(jmhArgs: string*) -> path** = {
   val jar = build();
   val pkg = "io.usethesource.criterion";

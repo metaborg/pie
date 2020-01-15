@@ -1,3 +1,5 @@
+package mb.pie.lang.test.unary;
+
 func main_toNullableVar() -> int? = {
   val foo = 6;
   foo?

@@ -1,3 +1,5 @@
+package mb.pie.lang.test.returnTypes;
+
 func main_listIntTwo() -> int* = {
   [1, 2]
 }

@@ -1,3 +1,5 @@
+package mb.pie.lang.test.returnTypes;
+
 data Foo = foreign java mb.pie.lang.test.returnTypes.Foo {}
 
 // returns a nullable because this test is only for the types, and there is no

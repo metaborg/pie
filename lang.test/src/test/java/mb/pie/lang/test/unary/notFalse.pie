@@ -1,3 +1,5 @@
+package mb.pie.lang.test.unary;
+
 func main_notFalse() -> bool = {
   !false
 }
