@@ -5,9 +5,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 
 /**
- * Definition of an executable task.
+ * Definition of an incremental task which takes objects of type {@code I} and produces objects of type {@code O} when
+ * executed.
+ *
  * <p>
- * Inputs of type I must adhere to the following properties:
+ * Inputs of type {@code I} must adhere to the following properties:
  * <ul>
  * <li>Implement {@link Serializable}</li>
  * <li>Implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
@@ -34,6 +36,9 @@ import java.io.Serializable;
  * <li>Implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
  * <p>
  * Failure to adhere to these properties will cause unsound incrementality.
+ *
+ * @param <I> Type of input objects. Must be {@link Serializable} and may NOT be {@code null}.
+ * @param <O> Type of output objects. Must be {@link Serializable} but may be {@code null}.
  */
 public interface TaskDef<I extends Serializable, O extends @Nullable Serializable> {
     /**
@@ -75,16 +80,23 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
 
 
     /**
-     * Creates a task instance for this task definition with given {@code input}.
+     * Creates a {@link Task task instance} for this task definition with given {@code input}.
      */
     default Task<O> createTask(I input) {
         return new Task<>(this, input);
     }
 
     /**
-     * Creates a serializable task instance for this task definition with given {@code input}.
+     * Creates a {@link STask serializable task instance} for this task definition with given {@code input}.
      */
-    default STask createSerializableTask(I input) {
-        return new STask(this.getId(), input);
+    default STask<O> createSerializableTask(I input) {
+        return new STask<>(this, input);
+    }
+
+    /**
+     * Creates a {@link STaskDef serializable task definition wrapper} for this task definition.
+     */
+    default STaskDef<I, O> createSerializableTaskDef() {
+        return new STaskDef<>(this);
     }
 }

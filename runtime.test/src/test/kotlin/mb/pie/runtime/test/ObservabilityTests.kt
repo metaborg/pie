@@ -808,11 +808,11 @@ class ObservabilityTestCtx(
     None.instance
   }
 
-  val callDef = taskDef<STask, Serializable?>("call") {
+  val callDef = taskDef<STask<*>, Serializable?>("call") {
     require(it)
   }
 
-  data class Call(val task1: STask, val task2: STask) : Serializable
+  data class Call(val task1: STask<*>, val task2: STask<*>) : Serializable
 
   val call2Def = taskDef<Call, None>("call2") { (task1, task2) ->
     require(task1)

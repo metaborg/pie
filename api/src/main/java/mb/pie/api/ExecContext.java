@@ -7,6 +7,7 @@ import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceRuntimeException;
+import mb.resource.WritableResource;
 import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
@@ -34,31 +35,6 @@ public interface ExecContext {
     //
     // Recording dependencies to tasks, and getting their up-to-date output.
     //
-
-
-    /**
-     * Requires given {@code task}, using the {@link #getDefaultOutputStamper() default output stamper}, returning the
-     * up-to-date output object of the task.
-     *
-     * @param <O>  Type of the output object.
-     * @param task Task to require.
-     * @return Up-to-date output object of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
-     */
-    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
-
-    /**
-     * Requires given {@code task}, using given {@code stamper}, returning the up-to-date output object of the task.
-     *
-     * @param <O>     Type of the output object.
-     * @param task    Task to require.
-     * @param stamper {@link OutputStamper Output stamper} to use.
-     * @return Up-to-date output object of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
-     */
-    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its {@code taskDef} and {@code input}, using the {@link #getDefaultOutputStamper() default
@@ -90,25 +66,80 @@ public interface ExecContext {
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
+     * Requires given {@code task}, using the {@link #getDefaultOutputStamper() default output stamper}, returning the
+     * up-to-date output object of the task.
+     *
+     * @param <O>  Type of the output object.
+     * @param task Task to require.
+     * @return Up-to-date output object of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
+
+    /**
+     * Requires given {@code task}, using given {@code stamper}, returning the up-to-date output object of the task.
+     *
+     * @param <O>     Type of the output object.
+     * @param task    Task to require.
+     * @param stamper {@link OutputStamper Output stamper} to use.
+     * @return Up-to-date output object of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException;
+
+    /**
+     * Requires task given by the {@link STaskDef serializable task definition} and {@code input} of the task, using the
+     * {@link #getDefaultOutputStamper() default output stamper}, returning the up-to-date output object of the task.
+     * <p>
+     * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
+     * lookup and cast of the task definition, which is less efficient.
+     *
+     * @param sTaskDef {@link STaskDef Serializable task definition} of the task to require.
+     * @param input    Input object of the task to require.
+     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input) throws ExecException, InterruptedException;
+
+    /**
+     * Requires task given by the {@link STaskDef serializable task definition} and {@code input} of the task, using
+     * given {@code stamper}, returning the up-to-date output object of the task.
+     * <p>
+     * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
+     * possible, as this methods performs a lookup and cast of the task definition, which is less efficient.
+     *
+     * @param sTaskDef {@link STaskDef Serializable task definition} of the task to require.
+     * @param input    Input object of the task to require.
+     * @param stamper  {@link OutputStamper Output stamper} to use.
+     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
+
+    /**
      * Requires task given by its {@link STask serializable task form}, using the {@link #getDefaultOutputStamper()
      * default output stamper}, returning the up-to-date output object of the task.
      * <p>
      * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
-     * lookup of the task definition, which is less efficient.
+     * lookup and cast of the task definition, which is less efficient.
      *
      * @param sTask {@link STask Serializable task form} of the task to require.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    @Nullable Serializable require(STask sTask) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(STask<O> sTask) throws ExecException, InterruptedException;
 
     /**
      * Requires task given by its {@link STask serializable task form}, using given {@code stamper}, returning the
      * up-to-date output object of the task.
      * <p>
      * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
-     * possible, as this methods performs a lookup of the task definition, which is less efficient.
+     * possible, as this methods performs a lookup and cast of the task definition, which is less efficient.
      *
      * @param sTask   {@link STask Serializable task form} of the task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
@@ -116,39 +147,19 @@ public interface ExecContext {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    @Nullable Serializable require(STask sTask, OutputStamper stamper) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
-     * Requires task given by the {@link TaskDef#getId() identifier of the task definition} and {@code input} of the
-     * task, using the {@link #getDefaultOutputStamper() default output stamper}, returning the up-to-date output object
-     * of the task.
-     * <p>
-     * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
-     * lookup of the task definition, which is less efficient.
+     * Returns output of given {@code provider}, which may in turn require the output of a task, or require and read a
+     * resource, using this execution context.
      *
-     * @param taskDefId {@link TaskDef#getId() identifier of the task definition} of the task to require.
-     * @param input     Input object of the task to require.
-     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @param <O>      Type of the output object.
+     * @param provider {@link Provider} to get output of.
+     * @return Up-to-date output object of {@code provider}.
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    @Nullable Serializable require(String taskDefId, Serializable input) throws ExecException, InterruptedException;
-
-    /**
-     * Requires task given by the {@link TaskDef#getId() identifier of the task definition} and {@code input} of the
-     * task, using given {@code stamper}, returning the up-to-date output object of the task.
-     * <p>
-     * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
-     * possible, as this methods performs a lookup of the task definition, which is less efficient.
-     *
-     * @param taskDefId {@link TaskDef#getId() identifier of the task definition} of the task to require.
-     * @param input     Input object of the task to require.
-     * @param stamper   {@link OutputStamper Output stamper} to use.
-     * @return Up-to-date output object of the task, which must be casted to the correct type.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
-     */
-    @Nullable Serializable require(String taskDefId, Serializable input, OutputStamper stamper) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Provider<O> provider) throws ExecException, IOException, InterruptedException;
 
     /**
      * Gets the default output stamper.
@@ -198,13 +209,31 @@ public interface ExecContext {
     Resource getResource(ResourceKey key);
 
     /**
+     * Gets readable resource for given key.
+     *
+     * @param key Key to get readable resource for.
+     * @return Readable resource for {@code key}.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a readable resource.
+     */
+    ReadableResource getReadableResource(ResourceKey key);
+
+    /**
+     * Gets writable resource for given key.
+     *
+     * @param key Key to get writable resource for.
+     * @return Writable resource for {@code key}.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a writable resource.
+     */
+    WritableResource getWritableResource(ResourceKey key);
+
+    /**
      * Gets a hierarchical resource for given path.
      *
      * @param path Path to get resource for.
      * @return Hierarchical resource for {@code path}.
      * @throws ResourceRuntimeException when given {@code path} cannot be resolved to a hierarchical resource.
      */
-    HierarchicalResource getResource(ResourcePath path);
+    HierarchicalResource getHierarchicalResource(ResourcePath path);
 
     /**
      * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
@@ -216,8 +245,8 @@ public interface ExecContext {
      * @throws IOException              When stamping the resource fails unexpectedly.
      * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
      */
-    default Resource require(ResourceKey key, ResourceStamper<Resource> stamper) throws IOException {
-        final Resource resource = getResource(key);
+    default ReadableResource require(ResourceKey key, ResourceStamper<ReadableResource> stamper) throws IOException {
+        final ReadableResource resource = getReadableResource(key);
         require(resource, stamper);
         return resource;
     }
@@ -233,7 +262,7 @@ public interface ExecContext {
      * @throws ResourceRuntimeException when given {@code path} cannot be resolved to a resource.
      */
     default HierarchicalResource require(ResourcePath path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
-        final HierarchicalResource resource = getResource(path);
+        final HierarchicalResource resource = getHierarchicalResource(path);
         require(resource, stamper);
         return resource;
     }
