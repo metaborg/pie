@@ -1,3 +1,5 @@
+package mb.pie.example.helloworld.java;
+
 func main4() -> unit = {
   assertEquals(5, inc(4));
   assertEquals(7, inc(inc(inc(4))));

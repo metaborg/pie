@@ -16,6 +16,12 @@ context-free start-symbols
 
 context-free syntax
 
-  Start.Program = <<{Def "\n"}*>>
+  Start.Program =
+  <<Package>
+  
+  <{Def "\n"}*>>
+  
+  Package.Package = <package <{ID "."}+>;>
+  
   Def = DataDef
   Def = FuncDef

@@ -1,3 +1,5 @@
+package mb.pie.lang.test.returnTypes;
+
 // TODO: fix type check error
 // does not typecheck, probably due to incorrect type checking (should check
 // that BoolTy is a "subtype" of Nullable(BoolTy)
