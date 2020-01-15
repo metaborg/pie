@@ -6,8 +6,8 @@ package mb.pie.lang.test.funcDef;
 //   registered with the task definition collection
 // No clue why this happens
 // Todo: figure out why this happens and fix it.
-//func main_twoFuncLinear() -> unit = {
-//  helper_twoFuncLinear()
-//}
-//
-//func helper_twoFuncLinear() -> unit = { }
+func main_twoFuncLinear() -> unit = {
+  helper_twoFuncLinear()
+}
+
+func helper_twoFuncLinear() -> unit = { }
