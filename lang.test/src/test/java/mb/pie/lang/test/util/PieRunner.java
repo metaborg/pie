@@ -1,15 +1,15 @@
 package mb.pie.lang.test.util;
 
-import mb.pie.api.MapTaskDefs;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
 import mb.pie.api.PieSession;
-import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 
-public class PieRunner {
+public import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
+
+class PieRunner {
     private final Pie pie;
 
     public PieRunner(TaskDefs taskDefs) {
