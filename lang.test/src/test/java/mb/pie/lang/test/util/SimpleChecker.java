@@ -10,14 +10,12 @@ import java.io.Serializable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
-
 public class SimpleChecker {
-    public static <I extends Serializable, O extends Serializable> void assertTaskoutputEquals(TaskDefsModule taskDefsModule, java.lang.Class<TaskDef<None, O>> taskClass, O expectedOutput) throws ExecException {
+    public static <O extends Serializable> void assertTaskOutputEquals(TaskDefsModule taskDefsModule, Class<? extends TaskDef<None, O>> taskClass, O expectedOutput) throws ExecException {
         assertTaskOutputEquals(taskDefsModule, taskClass, None.instance, expectedOutput);
     }
 
-    private static <I extends Serializable, O extends Serializable> void assertTaskOutputEquals(TaskDefsModule taskDefsModule, Class<TaskDef<I, O>> taskClass, I input, O expectedOutput) throws ExecException {
+    private static <I extends Serializable, O extends Serializable> void assertTaskOutputEquals(TaskDefsModule taskDefsModule, Class<? extends TaskDef<I, O>> taskClass, I input, O expectedOutput) throws ExecException {
         final Injector injector = Guice.createInjector(new GuiceTaskDefsModule(), taskDefsModule);
         final TaskDef<I, O> main = injector.getInstance(taskClass);
         final TaskDefs taskDefs = injector.getInstance(TaskDefs.class);
@@ -26,6 +24,5 @@ public class SimpleChecker {
             final O actualOutput = session.require(main.createTask(input));
             assertEquals(expectedOutput, actualOutput);
         }
-
     }
 }

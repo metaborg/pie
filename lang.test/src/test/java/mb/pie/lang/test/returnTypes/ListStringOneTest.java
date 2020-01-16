@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
+import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ListStringOneTest {
     @Test void test() throws ExecException {
-        assertTaskoutputEquals(new TaskDefsModule_listStringOne(), main_listStringOne.class, new ArrayList<>(Arrays.asList("first")));
+        assertTaskOutputEquals(new TaskDefsModule_listStringOne(), main_listStringOne.class, new ArrayList<>(Arrays.asList("first")));
     }
 }

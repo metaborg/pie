@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
+import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ToNullableTest {
     @Test void test() throws ExecException {
-        assertTaskoutputEquals(new TaskDefsModule_toNullable, main_toNullable.class, new ArrayList<>(Arrays.asList(6)));
+        assertTaskOutputEquals(new TaskDefsModule_toNullable(), main_toNullable.class, new ArrayList<Integer>(Arrays.asList(6)));
     }
 }

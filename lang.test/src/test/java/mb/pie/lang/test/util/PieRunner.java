@@ -7,9 +7,7 @@ import mb.pie.api.TaskDefs;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
 
-public import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
-
-class PieRunner {
+public class PieRunner {
     private final Pie pie;
 
     public PieRunner(TaskDefs taskDefs) {
