@@ -8,13 +8,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
+
 class __UPPER_NAME__Test {
     @Test void test() throws ExecException {
-        final main___LOWER_NAME__ main = new main___LOWER_NAME__();
-        final PieRunner pieRunner = new PieRunner(main);
-        try(PieSession session = pieRunner.newSession()) {
-            final Boolean output = session.require(main.createTask(None.instance));
-            assertEquals(new Boolean(true), output);
-        }
+        assertTaskoutputEquals(new TaskDefsModule___LOWER_NAME__(), main___LOWER_NAME__.class, new Boolean(true));
     }
 }

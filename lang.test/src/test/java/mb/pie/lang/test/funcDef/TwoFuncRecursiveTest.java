@@ -1,17 +1,14 @@
 package mb.pie.lang.test.funcDef;
 
-import com.google.inject.Guice;
 import mb.pie.api.ExecException;
 import mb.pie.api.None;
-import mb.pie.api.PieSession;
-import mb.pie.lang.test.util.PieRunner;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
 
 class TwoFuncRecursiveTest {
-    @Test void test() throws ExecException {
-        final main_twoFuncRecursive main = Guice.createInjector(new TaskDefsModule_twoFuncRecursive()).getProvider(main_twoFuncRecursive.class).get();;
-        // Don't call a recursive function
+    @Test @Timeout(5) void test() throws ExecException {
+        assertTaskoutputEquals(new TaskDefsModule_twoFuncRecursive(), main_twoFuncRecursive.class, None.instance);
     }
 }
