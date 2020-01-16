@@ -5,10 +5,10 @@ import mb.pie.util.Tuple2;
 import mb.resource.fs.FSPath;
 import org.junit.jupiter.api.Test;
 
-import static mb.pie.lang.test.util.SimpleChecker.assertTaskoutputEquals;
+import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class TupleStringPathTest {
     @Test void test() throws ExecException {
-        assertTaskoutputEquals(new TaskDefsModule_tupleStringPath(), main_tupleStringPath.class, new Tuple2("Folder with pictures", new FSPath("/c/home/bob/pictures")));
+        assertTaskOutputEquals(new TaskDefsModule_tupleStringPath(), main_tupleStringPath.class, new main_tupleStringPath.Output("Folder with pictures", new FSPath("/c/home/bob/pictures")));
     }
 }
