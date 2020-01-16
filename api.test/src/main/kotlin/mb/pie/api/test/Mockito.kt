@@ -6,8 +6,10 @@ import mb.pie.api.exec.ExecReason
 import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
+import mb.resource.ReadableResource
 import mb.resource.Resource
 import mb.resource.ResourceKey
+import mb.resource.WritableResource
 import mb.resource.fs.FSPath
 import mb.resource.hierarchical.HierarchicalResource
 import mb.resource.hierarchical.ResourcePath
@@ -65,14 +67,31 @@ class NoExecContext : ExecContext {
     return null as O
   }
 
+  override fun <O : Serializable?> require(provider: Provider<O>?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
   override fun getDefaultOutputStamper() = null!!
 
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
+
+
   override fun getResource(key: ResourceKey): Resource {
     @Suppress("CAST_NEVER_SUCCEEDS")
     return null as Resource
+  }
+
+  override fun getReadableResource(key: ResourceKey?): ReadableResource {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as ReadableResource
+  }
+
+  override fun getWritableResource(key: ResourceKey?): WritableResource {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as WritableResource
   }
 
   override fun getHierarchicalResource(path: ResourcePath?): HierarchicalResource {
@@ -86,6 +105,8 @@ class NoExecContext : ExecContext {
 
   override fun require(path: FSPath) = null!!
   override fun require(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) = null!!
+
+
   override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
   override fun provide(path: FSPath) {}
