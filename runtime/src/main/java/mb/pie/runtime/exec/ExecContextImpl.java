@@ -3,9 +3,11 @@ package mb.pie.runtime.exec;
 import mb.pie.api.ExecContext;
 import mb.pie.api.ExecException;
 import mb.pie.api.Logger;
+import mb.pie.api.Provider;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
+import mb.pie.api.STaskDef;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
@@ -21,6 +23,7 @@ import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
+import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -63,6 +66,16 @@ public class ExecContextImpl implements ExecContext {
 
 
     @Override
+    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException {
+        return require(new Task<>(taskDef, input), defaultStampers.output);
+    }
+
+    @Override
+    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException {
+        return require(new Task<>(taskDef, input), stamper);
+    }
+
+    @Override
     public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
         return require(task, defaultStampers.output);
     }
@@ -79,48 +92,32 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException {
-        return require(new Task<>(taskDef, input), defaultStampers.output);
+    public <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input) throws ExecException, InterruptedException {
+        return require(new Task<>(sTaskDef.toTaskDef(taskDefs), input), defaultStampers.output);
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException {
-        return require(new Task<>(taskDef, input), stamper);
+    public <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException {
+        return require(new Task<>(sTaskDef.toTaskDef(taskDefs), input), stamper);
     }
 
     @Override
-    public @Nullable Serializable require(STask sTask) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(STask<O> sTask) throws ExecException, InterruptedException {
         return require(sTask.toTask(taskDefs), defaultStampers.output);
     }
 
     @Override
-    public @Nullable Serializable require(STask sTask, OutputStamper stamper) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper) throws ExecException, InterruptedException {
         return require(sTask.toTask(taskDefs), stamper);
     }
 
     @Override
-    public @Nullable Serializable require(String taskDefId, Serializable input) throws ExecException, InterruptedException {
-        final TaskDef<?, ?> taskDef = getTaskDef(taskDefId);
-        return require(new Task<>(taskDef, input), defaultStampers.output);
-    }
-
-    @Override
-    public @Nullable Serializable require(String taskDefId, Serializable input, OutputStamper stamper) throws ExecException, InterruptedException {
-        final TaskDef<?, ?> taskDef = getTaskDef(taskDefId);
-        return require(new Task<>(taskDef, input), stamper);
+    public <O extends @Nullable Serializable> O require(Provider<O> provider) throws ExecException, InterruptedException, IOException {
+        return provider.get(this);
     }
 
     @Override public OutputStamper getDefaultOutputStamper() {
         return defaultStampers.output;
-    }
-
-    private TaskDef<?, ?> getTaskDef(String id) {
-        final @Nullable TaskDef<?, ?> taskDef = taskDefs.getTaskDef(id);
-        if(taskDef != null) {
-            return taskDef;
-        } else {
-            throw new RuntimeException("Cannot retrieve task with identifier '" + id + "', it cannot be found");
-        }
     }
 
 
@@ -144,7 +141,15 @@ public class ExecContextImpl implements ExecContext {
         return resourceService.getResource(key);
     }
 
-    @Override public HierarchicalResource getResource(ResourcePath path) {
+    @Override public ReadableResource getReadableResource(ResourceKey key) {
+        return resourceService.getReadableResource(key);
+    }
+
+    @Override public WritableResource getWritableResource(ResourceKey key) {
+        return resourceService.getWritableResource(key);
+    }
+
+    @Override public HierarchicalResource getHierarchicalResource(ResourcePath path) {
         return resourceService.getHierarchicalResource(path);
     }
 

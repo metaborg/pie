@@ -182,7 +182,7 @@ class BottomUpTests {
 
   @TestFactory
   fun testDifferentInputsFromAffectedFails() = builder.test {
-    val backendDef = taskDef<Triple<String, String, STask>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
+    val backendDef = taskDef<Triple<String, String, STask<*>>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
       require(frontendTask)
       println(text)
       None.instance

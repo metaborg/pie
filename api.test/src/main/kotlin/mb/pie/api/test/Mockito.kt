@@ -1,11 +1,15 @@
 package mb.pie.api.test
 
 import mb.pie.api.*
-import mb.pie.api.exec.*
+import mb.pie.api.exec.CancelToken
+import mb.pie.api.exec.ExecReason
+import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
+import mb.resource.ReadableResource
 import mb.resource.Resource
 import mb.resource.ResourceKey
+import mb.resource.WritableResource
 import mb.resource.fs.FSPath
 import mb.resource.hierarchical.HierarchicalResource
 import mb.resource.hierarchical.ResourcePath
@@ -23,16 +27,6 @@ fun anyER() = safeAny<ExecReason>(NoExecReason())
 
 
 class NoExecContext : ExecContext {
-  override fun <O : Serializable?> require(task: Task<O>): O {
-    @Suppress("UNCHECKED_CAST")
-    return null as O
-  }
-
-  override fun <O : Serializable?> require(task: Task<O>, stamper: OutputStamper): O {
-    @Suppress("UNCHECKED_CAST")
-    return null as O
-  }
-
   override fun <I : Serializable, O : Serializable?> require(taskDef: TaskDef<I, O>, input: I): O {
     @Suppress("UNCHECKED_CAST")
     return null as O
@@ -43,24 +37,39 @@ class NoExecContext : ExecContext {
     return null as O
   }
 
-  override fun require(task: STask): Serializable? {
+  override fun <O : Serializable?> require(task: Task<O>): O {
     @Suppress("UNCHECKED_CAST")
-    return null
+    return null as O
   }
 
-  override fun require(task: STask, stamper: OutputStamper): Serializable? {
+  override fun <O : Serializable?> require(task: Task<O>, stamper: OutputStamper): O {
     @Suppress("UNCHECKED_CAST")
-    return null
+    return null as O
   }
 
-  override fun require(taskDefId: String, input: Serializable): Serializable? {
+  override fun <I : Serializable, O : Serializable?> require(sTaskDef: STaskDef<I, O>, input: I): O {
     @Suppress("UNCHECKED_CAST")
-    return null
+    return null as O
   }
 
-  override fun require(taskDefId: String, input: Serializable, stamper: OutputStamper): Serializable? {
+  override fun <I : Serializable, O : Serializable?> require(sTaskDef: STaskDef<I, O>, input: I, stamper: OutputStamper): O {
     @Suppress("UNCHECKED_CAST")
-    return null
+    return null as O
+  }
+
+  override fun <O : Serializable?> require(task: STask<O>): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
+  override fun <O : Serializable?> require(task: STask<O>, stamper: OutputStamper): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
+  override fun <O : Serializable?> require(provider: Provider<O>?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
   }
 
   override fun getDefaultOutputStamper() = null!!
@@ -68,11 +77,24 @@ class NoExecContext : ExecContext {
 
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
+
+
   override fun getResource(key: ResourceKey): Resource {
     @Suppress("CAST_NEVER_SUCCEEDS")
     return null as Resource
   }
-  override fun getResource(path: ResourcePath?): HierarchicalResource {
+
+  override fun getReadableResource(key: ResourceKey?): ReadableResource {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as ReadableResource
+  }
+
+  override fun getWritableResource(key: ResourceKey?): WritableResource {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as WritableResource
+  }
+
+  override fun getHierarchicalResource(path: ResourcePath?): HierarchicalResource {
     @Suppress("CAST_NEVER_SUCCEEDS")
     return null as HierarchicalResource
   }
@@ -83,6 +105,8 @@ class NoExecContext : ExecContext {
 
   override fun require(path: FSPath) = null!!
   override fun require(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) = null!!
+
+
   override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
   override fun provide(path: FSPath) {}
