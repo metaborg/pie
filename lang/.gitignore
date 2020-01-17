@@ -1,0 +1,2 @@
+# ignore generated java files in examples
+example/*.java

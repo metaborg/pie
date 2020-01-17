@@ -1,4 +1,4 @@
-module gen/java/binder
+module gen/java-string/binder
 
 imports
 
@@ -6,7 +6,7 @@ imports
   signatures/lex/-
   signatures/impl/-
   
-  gen/java/type
+  gen/java-string/type
   gen/util
   gen/debug
 

@@ -9,6 +9,8 @@ imports
   pp/pie-pp
   pp/impl/-
   pp/lex/-
+  pp/metaborg-java-pp
+  pp/metaborg-java-parenthesize
 
 rules
 
@@ -34,8 +36,26 @@ rules
     ; box2text-string(|120)
     
   pp-partial-pie-string(|sort) =
-    parenthesize-pie
+    parenthesize-metaborg-java
     ; prettyprint-pie(|sort)
+    ; !V([], <id>)
+    ; box2text-string(|120)  
+     
+  pp-java-string =
+    parenthesize-metaborg-java
+    ; prettyprint-metaborg-java-start-symbols
+    ; !V([], <id>)
+    ; box2text-string(|120)
+      
+  pp-partial-java-string =
+    parenthesize-metaborg-java
+    ; prettyprint-metaborg-java
+    ; !V([], <id>)
+    ; box2text-string(|120)
+    
+  pp-partial-java-string(|sort) =
+    parenthesize-metaborg-java
+    ; prettyprint-metaborg-java(|sort)
     ; !V([], <id>)
     ; box2text-string(|120)  
       

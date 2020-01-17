@@ -3,5 +3,6 @@ module test
 language pie
 
 test parse [[
+package foo;
 
 ]] parse succeeds
