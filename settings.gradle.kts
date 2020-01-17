@@ -31,7 +31,7 @@ includeProject("lang")
 includeProject("lang.test")
 includeProject("lang.runtime.kotlin")
 includeProject("lang.runtime.java")
-includeProject("lang.javainstratego")
+//includeProject("lang.javainstratego") // Disabled: we're not building a concrete syntax parse table right now.
 includeProject("example/copyfile")
 includeProject("example/helloworld.java")
 includeProject("example/helloworld.kotlin")
