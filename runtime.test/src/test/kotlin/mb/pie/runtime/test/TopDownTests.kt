@@ -8,6 +8,7 @@ import mb.pie.runtime.layer.ValidationException
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestFactory
+import java.io.Serializable
 
 class TopDownTests {
   private val builder = DefaultRuntimeTestBuilder()
@@ -350,7 +351,7 @@ class TopDownTests {
 
   @TestFactory
   fun testCyclicDependencyTriggersValidationError() = builder.test {
-    val cyclicDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(STask("b1", None.instance)) as None }
+    val cyclicDef = taskDef<None, None>("b1", { _, _ -> "b1" }) { require(STask<Serializable?>("b1", None.instance)) as None }
     addTaskDef(cyclicDef)
 
     newSession().use { session ->

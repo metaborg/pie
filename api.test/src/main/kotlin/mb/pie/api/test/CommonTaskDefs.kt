@@ -24,7 +24,7 @@ val ApiTestCtx.writeResource
     None.instance
   }
 
-inline fun <reified O : Serializable?> ApiTestCtx.requireOutputFunc(): TaskDef<STask, O> {
+inline fun <reified O : Serializable?> ApiTestCtx.requireOutputFunc(): TaskDef<STask<*>, O> {
   return taskDef("require(${I::class}):${O::class}", { input, _ -> "require($input)" }) { task ->
     require(task) as O
   }
