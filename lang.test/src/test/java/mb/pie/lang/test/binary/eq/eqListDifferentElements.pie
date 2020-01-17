@@ -1,0 +1,5 @@
+package mb.pie.lang.test.binary.eq;
+
+func main_eqListDifferentElements() -> bool = {
+  [0, 1, 2] == [0, 2, 1]
+}
