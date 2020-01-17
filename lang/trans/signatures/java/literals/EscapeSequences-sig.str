@@ -1,7 +1,0 @@
-module signatures/java/literals/EscapeSequences-sig
-
-signature
-  constructors
-     : String -> EscapeSeq
-     : String -> OctalEscape
-     : String -> LastOcta

@@ -1,7 +1,0 @@
-module signatures/java/lexical/LineTerminators-sig
-
-signature
-  constructors
-     : String -> LineTerminator
-     : String -> CarriageReturn
-     : String -> EndOfFile
