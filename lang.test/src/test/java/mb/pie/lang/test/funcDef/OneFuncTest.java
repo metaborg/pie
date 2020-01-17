@@ -8,6 +8,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class OneFuncTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_oneFunc(), main_oneFunc.class, None.instance);
+        assertTaskOutputEquals(new TaskDefsModule_oneFuncTestGen(), main_oneFunc.class, None.instance);
     }
 }

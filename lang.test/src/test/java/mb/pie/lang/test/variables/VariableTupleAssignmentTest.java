@@ -11,6 +11,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class VariableTupleAssignmentTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_variableTupleAssignment(), main_variableTupleAssignment.class, new main_variableTupleAssignment.Output(new Integer(2), new ArrayList<>(Arrays.asList(new Boolean(true), new Boolean(false)))));
+        assertTaskOutputEquals(new TaskDefsModule_variableTupleAssignmentTestGen(), main_variableTupleAssignment.class, new main_variableTupleAssignment.Output(new Integer(2), new ArrayList<>(Arrays.asList(new Boolean(true), new Boolean(false)))));
     }
 }

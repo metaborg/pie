@@ -9,6 +9,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class TupleStringPathTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_tupleStringPath(), main_tupleStringPath.class, new main_tupleStringPath.Output("Folder with pictures", new FSPath("/c/home/bob/pictures")));
+        assertTaskOutputEquals(new TaskDefsModule_tupleStringPathTestGen(), main_tupleStringPath.class, new main_tupleStringPath.Output("Folder with pictures", new FSPath("/c/home/bob/pictures")));
     }
 }

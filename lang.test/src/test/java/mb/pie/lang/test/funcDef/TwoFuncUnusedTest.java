@@ -8,10 +8,10 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class TwoFuncUnusedTest {
     @Test void test_main() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_twoFuncUnused(), main_twoFuncUnused.class, None.instance);
+        assertTaskOutputEquals(new TaskDefsModule_twoFuncUnusedTestGen(), main_twoFuncUnused.class, None.instance);
     }
 
     @Test void test_helper() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_twoFuncUnused(), helper_twoFuncUnused.class, None.instance);
+        assertTaskOutputEquals(new TaskDefsModule_twoFuncUnusedTestGen(), helper_twoFuncUnused.class, None.instance);
     }
 }

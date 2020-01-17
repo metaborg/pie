@@ -7,6 +7,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ToNonNullableValueTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_toNonNullableValue(), main_toNonNullableValue.class, "test string");
+        assertTaskOutputEquals(new TaskDefsModule_toNonNullableValueTestGen(), main_toNonNullableValue.class, "test string");
     }
 }

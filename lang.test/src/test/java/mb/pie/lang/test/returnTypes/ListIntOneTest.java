@@ -10,6 +10,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ListIntOneTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_listIntOne(), main_listIntOne.class, new ArrayList<>(Arrays.asList(46)));
+        assertTaskOutputEquals(new TaskDefsModule_listIntOneTestGen(), main_listIntOne.class, new ArrayList<>(Arrays.asList(46)));
     }
 }

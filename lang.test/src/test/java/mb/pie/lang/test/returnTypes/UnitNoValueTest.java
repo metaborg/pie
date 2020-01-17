@@ -8,6 +8,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class UnitNoValueTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_unitNoValue(), main_unitNoValue.class, None.instance);
+        assertTaskOutputEquals(new TaskDefsModule_unitNoValueTestGen(), main_unitNoValue.class, None.instance);
     }
 }

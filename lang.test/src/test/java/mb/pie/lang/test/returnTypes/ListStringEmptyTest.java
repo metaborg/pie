@@ -9,6 +9,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ListStringEmptyTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_listStringEmpty(), main_listStringEmpty.class, new ArrayList<>());
+        assertTaskOutputEquals(new TaskDefsModule_listStringEmptyTestGen(), main_listStringEmpty.class, new ArrayList<>());
     }
 }

@@ -8,6 +8,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class VariableTupleDecompositionMixedTypeTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_variableTupleDecompositionMixedType(), main_variableTupleDecompositionMixedType.class, new main_variableTupleDecompositionMixedType.Output(new Boolean(true), "implicitly typed string"));
+        assertTaskOutputEquals(new TaskDefsModule_variableTupleDecompositionMixedTypeTestGen(), main_variableTupleDecompositionMixedType.class, new main_variableTupleDecompositionMixedType.Output(new Boolean(true), "implicitly typed string"));
     }
 }
