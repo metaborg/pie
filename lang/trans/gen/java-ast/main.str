@@ -3,7 +3,7 @@ module gen/java-ast/main
 imports
 
   nabl2/api
-  
+
   gen/util
   gen/java-ast/ast-util
   gen/java-ast/func_def
@@ -35,7 +35,7 @@ rules
 rules
 
   p2j-ast-to-filestring(|mod):
-    ast -> 
+    ast ->
 $[// This file was generated from Pie source file [mod].pie.
 [<pp-java-string> ast]
 // last cache update: 2020-01-09 13:52
@@ -58,7 +58,7 @@ $[// This file was generated from Pie source file [mod].pie.
         , <map(p2j-ast-wrap-string-with-id)> package
         ))
       , imports
-      , <concat> [ 
+      , <concat> [
           classes
         , [ ClassDeclaration(
               []
@@ -78,11 +78,11 @@ $[// This file was generated from Pie source file [mod].pie.
       )
       // Note: meaning of this AST:
       //   package [package];
-      //   
+      //
       //   [imports]
-      //   
+      //
       //   [classes]
-      //   
+      //
       //   class TaskDefsModule_[<pie-sanitize-class-id> mod] extends TaskDefsModule {
       //     @Override
       //     protected void bindTaskDefs() {

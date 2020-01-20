@@ -29,7 +29,7 @@ rules
   with
     parts := <string-tokenize(|".")> str
   ; result := SingleTypeImport(TypeName(<parse-import-parts> <reverse> parts))
-  
+
   parse-import-parts: [part | []] -> Id(part)
   parse-import-parts: [part | rest] -> PackageOrTypeName(<parse-import-parts> rest, part)
 
