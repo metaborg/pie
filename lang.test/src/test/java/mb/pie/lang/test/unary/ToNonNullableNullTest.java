@@ -10,7 +10,7 @@ class ToNonNullableNullTest {
     @Test()
     void test() throws ExecException {
         assertThrows(ExecException.class, () -> {
-            assertTaskOutputEquals(new TaskDefsModule_toNonNullableNull(), main_toNonNullableNull.class, new Integer(4));
+            assertTaskOutputEquals(new TaskDefsModule_toNonNullableNullTestGen(), main_toNonNullableNull.class, new Integer(4));
         });
     }
 }

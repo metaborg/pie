@@ -8,6 +8,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class TupleIntIntTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_tupleIntInt(), main_tupleIntInt.class, new main_tupleIntInt.Output(4, -90));
+        assertTaskOutputEquals(new TaskDefsModule_tupleIntIntTestGen(), main_tupleIntInt.class, new main_tupleIntInt.Output(4, -90));
     }
 }
