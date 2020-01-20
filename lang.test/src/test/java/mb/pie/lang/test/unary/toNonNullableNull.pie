@@ -1,9 +1,0 @@
-package mb.pie.lang.test.unary;
-
-// TODO: get type from variable declaration instead of from expression
-// error: gets type from expression (null) instead of vardec (int?) so foo gets
-// an incorrect type in the generated code.
-func main_toNonNullableNull() -> int = {
-  val foo: int? = null;
-  foo!
-}
