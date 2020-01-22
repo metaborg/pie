@@ -31,4 +31,8 @@ public class Sign {
         }
         return -1;
     }
+
+    @Override public String toString() {
+        return "Sign with value " + value;
+    }
 }

@@ -1,4 +1,4 @@
-package mb.pie.lang.test.binary.land;
+package mb.pie.lang.test.binary.add;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.None;
@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
-class __UPPER_NAME__Test {
+class addIntIntTestGenTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule___LOWER_NAME__TestGen(), main___LOWER_NAME__.class, None.instance);
+        assertTaskOutputEquals(new TaskDefsModule_addIntIntTestGenTestGen(), main_addIntIntTestGen.class, 9);
     }
 }

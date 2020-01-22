@@ -1,0 +1,5 @@
+package mb.pie.lang.test.binary.add;
+
+func main_addIntIntTestGen() -> int = {
+  5 + 4
+}
