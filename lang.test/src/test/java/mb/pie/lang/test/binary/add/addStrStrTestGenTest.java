@@ -12,6 +12,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class addStrStrTestGenTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_addStrStrTestGenTestGen(), main_addStrStrTestGen.class, "Hello there\nGeneral Kenobi");
+        assertTaskOutputEquals(new TaskDefsModule_addStrStrTestGen(), main_addStrStrTestGen.class, "Hello there\nGeneral Kenobi");
     }
 }

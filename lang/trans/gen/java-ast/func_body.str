@@ -175,39 +175,87 @@ rules // Control flow
     with
       (lStmts, lExpVal) := <try-p2j-ast-exp> lExp
     ; (rStmts, rExpVal) := <try-p2j-ast-exp> rExp
-    ; stmts             := <concat> [lStmts, rStmts]
     ; lType             := <pie-ast-type> lExp
     ; rType             := <pie-ast-type> rExp
-    ; exp               := <p2j-ast-add(|lType, rType)> (lExpVal, rExpVal)
+    ; (expStmts, exp)   := <p2j-ast-add(|lType, rType)> (lExpVal, rExpVal)
+    ; stmts             := <concat> [lStmts, rStmts, expStmts]
     ; result            := (stmts, exp)
 
-  // p2j-ast-add(|lType, rType): (lExp, rExp) -> Java expression AST Node
+  // p2j-ast-add(|lType, rType): (lExp, rExp) -> 
+  //   (List of Java AST statements, Java expression AST Node)
   // Helper function that converts the Add into the correct AST Node
   // based on the types of the left and right side (lType and rType)
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> Add(lExp, rExp)
+    (lExp, rExp) -> ([], Add(lExp, rExp))
     where
       (IntTy(), IntTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> Add(lExp, rExp)
+    (lExp, rExp) -> ([], Add(lExp, rExp))
     where
       (StrTy(), _) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> InvokeQExp(lExp, None(), Id("appendRelativePath"), [rExp])
-    // Note: meaning of this AST: [lExp].appendRelativePath([rExp])
+    (lExp, rExp) -> result
     where
       (PathTy(), PathTy()) := (lType, rType)
+    with
+      <add-import> "mb.resource.ResourceRuntimeException"
+    ; tmpResultName := <newname> "addResult"
+    ; stmts         := [
+        LocVarDeclStm(LocalVarDecl(
+          [Final()]
+        , ClassType(Id("FSPath"), None())
+        , [VariableDecl(Id(tmpResultName))]
+        ))
+      , Try(
+          Block(
+            [ ExpressionStatement(Assign(
+                ExpressionName(Id(tmpResultName))
+              , InvokeQExp(lExp, None(), Id("appendRelativePath"), [rExp])
+              ))
+            ]
+          )
+        , [ Catch(
+              CatchParam(
+                []
+              , CatchType(ClassType(Id("ResourceRuntimeException"), None()), [])
+              , VariableDecl(Id("e"))
+              )
+            , Block([Throw(
+                NewInstance(
+                  None()
+                , []
+                , Id("ExecException")
+                , []
+                , None()
+                , [ StringLiteral($["Could not append path: it is an absolute path"])
+                  , ExpressionName(Id("e"))
+                  ]
+                )
+              )])
+            )
+          ]
+        )
+      ]
+      // Note: meaning of this AST:
+      //   final FSPath [tmpResultName];
+      //   try {
+      //     [tmpResultName] = [lExp].appendRelativePath([rExp]);
+      //   } catch (ResourceRuntimeException e) {
+      //     throw new ExecException("Could not append path: it is an absolute path", e);
+      //   }
+    ; exp           := tmpResultName
+    ; result        := (stmts, exp)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> InvokeQExp(lExp, None(), Id("appendSegment"), [rExp])
+    (lExp, rExp) -> ([], InvokeQExp(lExp, None(), Id("appendSegment"), [rExp]))
     // Note: meaning of this AST: [lExp].appendSegment([rExp])
     where
       (PathTy(), StrTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) ->
+    (lExp, rExp) -> ([], 
       InvokeQExp(
         InvokeQExp(
           ExpressionName(Id("Stream"))
@@ -232,6 +280,7 @@ rules // Control flow
           )
         ]
       )
+    )
     // Note: meaning of this AST:
     //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))
     where
@@ -242,7 +291,7 @@ rules // Control flow
     ; <add-import> "java.util.stream.Stream"
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) ->
+    (lExp, rExp) -> ([], 
       InvokeQExp(
 	    InvokeQExp(
 	      ExpressionName(Id("Stream"))
@@ -262,6 +311,7 @@ rules // Control flow
 	      )
 	    ]
 	  )
+	)
     // Note: meaning of this AST:
     // Stream.concat(([lExp]).stream(), ([rExp]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where

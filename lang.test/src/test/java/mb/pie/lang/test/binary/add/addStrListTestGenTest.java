@@ -12,6 +12,6 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class addStrListTestGenTest {
     @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule_addStrListTestGenTestGen(), main_addStrListTestGen.class, "String + list: ArrayList([1, 2, 3])");
+        assertTaskOutputEquals(new TaskDefsModule_addStrListTestGen(), main_addStrListTestGen.class, "String + list: [1, 2, 3]");
     }
 }

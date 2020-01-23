@@ -14,6 +14,8 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 class addPathPathAbsoluteAbsoluteTestGenTest {
     @Test void test() throws ExecException {
         FSPath expected = new FSPath("/path/to/foo");
-        assertTaskOutputEquals(new TaskDefsModule_addPathPathAbsoluteAbsoluteTestGenTestGen(), main_addPathPathAbsoluteAbsoluteTestGen.class, expected);
+        assertThrows(ExecException.class, () -> {
+            assertTaskOutputEquals(new TaskDefsModule_addPathPathAbsoluteAbsoluteTestGen(), main_addPathPathAbsoluteAbsoluteTestGen.class, expected);
+        });
     }
 }

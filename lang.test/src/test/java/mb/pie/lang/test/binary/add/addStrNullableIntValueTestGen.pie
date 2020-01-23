@@ -2,5 +2,5 @@ package mb.pie.lang.test.binary.add;
 
 func main_addStrNullableIntValueTestGen() -> string = {
   val x: int? = 45;
-  "String + Nullable Int: " + val
+  "String + Nullable Int: " + x
 }

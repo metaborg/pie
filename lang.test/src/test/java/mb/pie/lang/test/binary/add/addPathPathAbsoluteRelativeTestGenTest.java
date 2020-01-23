@@ -13,7 +13,7 @@ import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class addPathPathAbsoluteRelativeTestGenTest {
     @Test void test() throws ExecException {
-        FSPath expected = new FSPath("/path/to/foo");
-        assertTaskOutputEquals(new TaskDefsModule_addPathPathAbsoluteRelativeTestGenTestGen(), main_addPathPathAbsoluteRelativeTestGen.class, expected);
+        FSPath expected = new FSPath("/path/to/./foo");
+        assertTaskOutputEquals(new TaskDefsModule_addPathPathAbsoluteRelativeTestGen(), main_addPathPathAbsoluteRelativeTestGen.class, expected);
     }
 }
