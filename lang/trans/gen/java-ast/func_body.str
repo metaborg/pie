@@ -249,7 +249,7 @@ rules // Control flow
     ; result        := (stmts, exp)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> ([], InvokeQExp(lExp, None(), Id("appendSegment"), [rExp]))
+    (lExp, rExp) -> ([], InvokeQExp(lExp, None(), Id("appendOrReplaceWithPath"), [rExp]))
     // Note: meaning of this AST: [lExp].appendSegment([rExp])
     where
       (PathTy(), StrTy()) := (lType, rType)
