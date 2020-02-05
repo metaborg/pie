@@ -8,6 +8,10 @@ pluginManagement {
     // Required by several Gradle plugins (Maven central).
     maven("https://artifacts.metaborg.org/content/repositories/central/") // Maven central mirror.
     mavenCentral() // Maven central as backup.
+    // Required by spoofax.gradle plugin.
+    maven("https://pluto-build.github.io/mvnrepository/")
+    maven("https://sugar-lang.github.io/mvnrepository/")
+    maven("http://nexus.usethesource.io/content/repositories/public/")
     // Get plugins from Gradle plugin portal.
     gradlePluginPortal()
   }
@@ -28,7 +32,10 @@ includeProject("store.lmdb")
 includeProject("taskdefs.guice")
 includeProject("dagger")
 includeProject("lang")
-includeProject("lang.runtime")
+includeProject("lang.test")
+includeProject("lang.runtime.kotlin")
+includeProject("lang.runtime.java")
+//includeProject("lang.javainstratego") // Disabled: we're not building a concrete syntax parse table right now.
 includeProject("example/copyfile")
 includeProject("example/helloworld.java")
 includeProject("example/helloworld.kotlin")

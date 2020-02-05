@@ -1,0 +1,10 @@
+module java/classes/InstanceInitializers
+
+// 8.6. Instance Initializers
+
+imports
+  java/statements/Blocks
+
+context-free syntax
+
+  InstanceInitializer.InstanceInit = Block

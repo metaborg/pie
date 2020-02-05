@@ -1,8 +1,8 @@
 [![GitHub license](https://img.shields.io/github/license/metaborg/pie)](https://github.com/metaborg/pie/blob/master/LICENSE)
 [![Jenkins](https://img.shields.io/jenkins/build/https/buildfarm.metaborg.org/job/metaborg/job/pie/job/master)](https://buildfarm.metaborg.org/job/metaborg/job/pie/job/master/lastBuild)
 [![Jenkins Tests](https://img.shields.io/jenkins/tests/https/buildfarm.metaborg.org/job/metaborg/job/pie/job/master)](https://buildfarm.metaborg.org/job/metaborg/job/pie/job/master/lastBuild/testReport/)
-![PIE API](https://img.shields.io/maven-metadata/v?label=pie.api&metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.api%2Fmaven-metadata.xml)
-![PIE Runtime](https://img.shields.io/maven-metadata/v?label=pie.runtime&metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.runtime%2Fmaven-metadata.xml)
+[![PIE API](https://img.shields.io/maven-metadata/v?label=pie.api&metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.api%2Fmaven-metadata.xml)](https://mvnrepository.com/artifact/org.metaborg/pie.api?repo=metaborg-releases)
+[![PIE Runtime](https://img.shields.io/maven-metadata/v?label=pie.runtime&metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.runtime%2Fmaven-metadata.xml)](https://mvnrepository.com/artifact/org.metaborg/pie.runtime?repo=metaborg-releases)
 
 # PIE: Pipelines for Interactive Environments
 

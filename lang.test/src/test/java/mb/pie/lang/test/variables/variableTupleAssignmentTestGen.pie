@@ -1,0 +1,6 @@
+package mb.pie.lang.test.variables;
+
+func main_variableTupleAssignment() -> (int, bool*) = {
+  val tuple = (2, [true, false]);
+  tuple
+}

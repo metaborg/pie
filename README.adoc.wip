@@ -1,0 +1,73 @@
+= PIE: Pipelines for Interactive Environments
+Gabriël Konat <g.d.p.konat@tudelft.nl>
+
+abstract:
+PIE is a language, API, and runtime for developing and incrementally executing interactive software development pipelines and build scripts.
+efficient
+precise through dynamic dependencies: correct and minimal
+expressive
+programs in lang are translated to Java code targeting the Java API
+runtime incrementally executes programs targeting the API.
+
+applications
+build scripts
+
+
+== Introduction
+
+Build systems check, compile, test, and deploy virtually every software project.
+Besides increasing software reliability, incremental build systems also speed up software development by enabling short feedback cycles.
+However, the reliable and long-term maintainable usage of incremental build systems requires precision, efficiency, and expressiveness.
+
+Current incremental build systems focus on efficiency and precision, but lack expressiveness.
+To support efficient incremental rebuilds, current build systems impose a strict separation of the configuration and build stages.
+That is, all build tasks and dependencies (i.e., the variability of the build) are declared in the configuration stage to create a build plan, which is then executed in the build stage.
+This model contradicts reality, where how to build an artifact depends on the execution of other build tasks.
+
+Common workarounds required in this model are over-approximation (`\*.h` in Make to depend on all C header files), under-approximation (`own.h` to depend only on your own header file), or additional staging (e.g., Makefile generation and recursive Make).
+However, these workarounds are not efficient nor precise: over-approximation is not minimal and under-approximation is unsound.
+Furthermore, additional staging is not expressive nor maintainable, as it introduces accidental complexity into build scripts.
+
+how to solve this?
+
+== Research
+
+pluto
+language
+change-driven build algorithm
+observability
+talk at IC
+
+
+== Status
+
+The PIE API has been quite stable for a while, so build scripts written against the API are expected to keep working in newer versions, but we do not guarantee this at this moment.
+PIE is a research project and still under development, so API changes may be necessary, although we will try to keep these to a minimum.
+Currently, an API-incompatible change will result in a new minor version (i.e., `0.5.1` to `0.6.0`), while API-compatible changes will result in a new patch version (i.e., `0.5.1` to `0.5.2`).
+
+While the PIE language is usable, it currently requires installing an Eclipse IDE/plugin, manual compilation to Java code, which then has to be copy pasted into an application for usage.
+Therefore, the PIE language is not ready yet for general consumption.
+Our aim is to turn PIE into a general build system such as Gradle, which can be easily executed from the command-line or an IDE, but we are not there yet.
+
+
+== Copyright and License
+
+Copyright © 2018-2019 Delft University of Technology
+
+The code and files in this project are licensed under the https://www.apache.org/licenses/LICENSE-2.0[Apache License, Version 2.0].
+You may use the files in this project in compliance with the license.
+
+
+== Quick Guide
+
+== Questions and Issues
+
+If you have a question, enhancement, feature request, or bug report, please search the https://github.com/metaborg/pie/issues[issue tracker] for a solution or workaround, or create a new issue.
+
+== In-Depth Guide
+
+
+
+
+== Developing PIE
+

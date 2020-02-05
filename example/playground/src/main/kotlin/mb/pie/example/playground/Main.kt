@@ -4,7 +4,6 @@ import mb.pie.api.*
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.api.MapTaskDefs
 import java.io.File
 import java.io.Serializable
 
@@ -25,7 +24,7 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
 
   data class Input(
     val sourceFile: File,
-    val sourceTask: STask,
+    val sourceTask: STask<*>,
     val destinationFile: File
   ) : Serializable
 
@@ -38,7 +37,6 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
       it.write(sourceText.toByteArray())
       it.flush()
     }
-    context.provide(destination)
     return destination
   }
 }

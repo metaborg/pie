@@ -1,0 +1,22 @@
+module java/expressions/FieldAccess
+
+// 15.11. Field Access Expressions
+
+imports
+  java/names/Names
+  java/lexical/Identifiers
+
+context-free syntax
+  
+  Expression = FieldAccess
+  
+  FieldAccess.Field       = <<Expression>.<Id>>
+  FieldAccess.SuperField  = <super.<Id>>
+  FieldAccess.QSuperField = <<TypeName>.super.<Id>>
+
+
+template options
+  
+  tokenize : "."
+  
+  

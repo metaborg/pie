@@ -1,0 +1,34 @@
+module java/interfaces/AnnotationTypes
+
+// 9.6. Annotation Types
+
+imports
+  java/interfaces/InterfaceDeclarations
+  java/lexical/Identifiers
+  java/types/ReferenceTypes
+  java/classes/FieldDeclarations
+  java/interfaces/ConstantDeclarations
+  java/classes/ClassDeclarations
+  java/interfaces/Annotations
+
+context-free syntax
+  
+  AnnotationTypeDeclaration.AnnoDec = <
+  <{InterfaceModifier " "}*> @interface <Id> {
+    <{AnnotationTypeMemberDeclaration "\n"}*>
+  }>
+  
+  AnnotationTypeMemberDeclaration = AnnotationTypeElementDeclaration
+  AnnotationTypeMemberDeclaration = ConstantDeclaration
+  AnnotationTypeMemberDeclaration = ClassDeclaration
+  AnnotationTypeMemberDeclaration = InterfaceDeclaration
+  AnnotationTypeMemberDeclaration.SemiColon = ";"
+  
+  AnnotationTypeElementDeclaration.AnnotationTypeElementDecl = <
+  <{AnnotationTypeElementModifier " "}*> <UnannType> <Id>() <AnnotatedDimsEmpty> <DefaultValue?>;>
+  
+  AnnotationTypeElementModifier          = Annotation
+  AnnotationTypeElementModifier.Public   = "public"
+  AnnotationTypeElementModifier.Abstract = "abstract"
+  
+  DefaultValue.DefaultVal = <default <ElementValue>>

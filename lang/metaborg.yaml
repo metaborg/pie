@@ -1,6 +1,6 @@
 ---
 pie:
-  version: 0.4.0-SNAPSHOT
+  version: develop-SNAPSHOT
 id: org.metaborg:pie.lang:${pie.version}
 name: pie
 dependencies:
@@ -12,6 +12,7 @@ dependencies:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
+  - org.metaborg:lang.java:1.1.0-SNAPSHOT
 pardonedLanguages:
 - EditorService
 - Stratego-Sugar

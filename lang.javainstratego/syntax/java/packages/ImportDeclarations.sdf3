@@ -1,0 +1,17 @@
+module java/packages/ImportDeclarations
+
+// 7.5. Import Declarations
+
+imports
+  java/names/Names
+  java/lexical/Identifiers
+
+context-free syntax
+  
+  ImportDeclaration.SingleTypeImport     = <import <TypeName>;>
+  ImportDeclaration.TypeImportOnDemand   = <import <PackageOrTypeName>.*;>
+  ImportDeclaration.SingleStaticImport   = <import static <TypeName>.<Id>;>
+  ImportDeclaration.StaticImportOnDemand = <import static <TypeName>.*;>  
+
+template options
+  tokenize : ".;" 

@@ -64,7 +64,7 @@ class FileCopier : TaskDef<FileCopier.Input, File> {
      * We need to pass this task as an input to this task, so that we can require it, to prevent a hidden dependency error.
      * Tasks can be passed to other tasks using the [STask] or [TaskKey] type.
      */
-    val sourceTask: STask,
+    val sourceTask: STask<*>,
     /**
      * Path of the destination we want to copy the source file to.
      */

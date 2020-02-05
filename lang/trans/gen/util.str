@@ -81,3 +81,24 @@ rules
 rules
 
   pie-sanitize-class-id = string-replace(|"-", "_")
+  
+rules
+
+  error(|message) = debug(|message); fail
+
+rules
+
+  // fold-left(s): list -> result of folding
+  // types:
+  //   argument: List(a)
+  //   s: (a, a) -> a
+  // fold a list from the left.
+  // Also works on lists with only one element (simply returns that element)
+  fold-left(s):
+    [] -> <fail>
+  
+  fold-left(s):
+    [x | []] -> x
+  
+  fold-left(s):
+    [x | [y | rest]] -> <fold-left(s)> [<s> (x, y) | rest]
