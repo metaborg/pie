@@ -17,8 +17,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 public class SessionBaseImpl implements SessionBase {
     protected final TaskDefs taskDefs;
@@ -44,7 +44,7 @@ public class SessionBaseImpl implements SessionBase {
     }
 
     @Override
-    public void deleteUnobservedTasks(Function<Task<?>, Boolean> shouldDeleteTask, BiFunction<Task<?>, Resource, Boolean> shouldDeleteProvidedResource) throws IOException {
+    public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException {
         try(StoreWriteTxn txn = store.writeTxn()) {
             // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
             final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
@@ -55,7 +55,7 @@ public class SessionBaseImpl implements SessionBase {
                     continue;
                 }
                 final Task<?> task = key.toTask(taskDefs, txn);
-                if(!shouldDeleteTask.apply(task)) {
+                if(!shouldDeleteTask.test(task)) {
                     // Do not delete tasks that the caller of this function does not want to delete.
                     continue;
                 }
@@ -64,7 +64,7 @@ public class SessionBaseImpl implements SessionBase {
                     // Delete provided resources.
                     for(ResourceProvideDep dep : deletedData.resourceProvides) {
                         final Resource resource = resourceService.getResource(dep.key);
-                        if(shouldDeleteProvidedResource.apply(task, resource)) {
+                        if(shouldDeleteProvidedResource.test(task, resource)) {
                             if(resource instanceof HierarchicalResource) {
                                 ((HierarchicalResource)resource).delete();
                             }

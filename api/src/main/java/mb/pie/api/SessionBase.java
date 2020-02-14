@@ -3,8 +3,8 @@ package mb.pie.api;
 import mb.resource.Resource;
 
 import java.io.IOException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * A session is a temporary context in which PIE builds can be executed. Within a session, a task with the same {@link
@@ -59,5 +59,5 @@ public interface SessionBase {
      *                                     will not be deleted.
      * @throws IOException when deleting a resource fails unexpectedly.
      */
-    void deleteUnobservedTasks(Function<Task<?>, Boolean> shouldDeleteTask, BiFunction<Task<?>, Resource, Boolean> shouldDeleteProvidedResource) throws IOException;
+    void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException;
 }

@@ -533,8 +533,8 @@ class ObservabilityTests {
   fun testGCTwiceNoExceptions() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
-        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
-        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        session.deleteUnobservedTasks({ true }, { _, _ -> true })
+        session.deleteUnobservedTasks({ true }, { _, _ -> true })
       }
     }
   }
@@ -543,7 +543,7 @@ class ObservabilityTests {
   fun testGCDeletesCorrect() = builder.test {
     this.GCSetup().run {
       newSession().use { session ->
-        session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
+        session.deleteUnobservedTasks({ true }, { _, _ -> true })
         session.store.readTxn().use { txn ->
           assertNull(txn.input(aTask.key()))
           assertNull(txn.input(bTask.key()))
