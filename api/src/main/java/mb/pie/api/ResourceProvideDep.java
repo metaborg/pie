@@ -50,7 +50,7 @@ public class ResourceProvideDep implements ResourceDep, Serializable {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ResourceProvideDep that = (ResourceProvideDep) o;
+        final ResourceProvideDep that = (ResourceProvideDep)o;
         if(!key.equals(that.key)) return false;
         return stamp.equals(that.stamp);
     }

@@ -2,7 +2,7 @@ package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.None
-import mb.pie.api.STask
+import mb.pie.api.Supplier
 import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.test.anyC
 import mb.pie.api.test.anyER
@@ -182,7 +182,7 @@ class BottomUpTests {
 
   @TestFactory
   fun testDifferentInputsFromAffectedFails() = builder.test {
-    val backendDef = taskDef<Triple<String, String, STask<*>>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
+    val backendDef = taskDef<Triple<String, String, Supplier<*>>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
       require(frontendTask)
       println(text)
       None.instance
@@ -199,7 +199,7 @@ class BottomUpTests {
     val mainDef = taskDef<FSResource, None>("main") { path ->
       val frontendTask = frontendDef.createTask(path)
       val (name, text) = require(frontendTask)
-      require(backendDef.createTask(Triple(name, text, frontendTask.toSerializableTask())))
+      require(backendDef.createTask(Triple(name, text, frontendTask.toSupplier())))
     }
     addTaskDef(mainDef)
 

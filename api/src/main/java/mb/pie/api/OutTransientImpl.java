@@ -26,7 +26,7 @@ public class OutTransientImpl<T extends @Nullable Object> implements OutTransien
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final OutTransientImpl<?> that = (OutTransientImpl<?>) o;
+        final OutTransientImpl<?> that = (OutTransientImpl<?>)o;
         if(consistent != that.consistent) return false;
         return Objects.equals(value, that.value);
     }

@@ -322,7 +322,7 @@ class TopDownTests {
     addTaskDef(indirectionDef)
 
     val combineIncorrect = taskDef<Pair<String, FSResource>, String>("combineIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
-      require(indirectionDef.createTask(writeResource.createSerializableTask(Pair(text, path))))
+      require(indirectionDef.createTask(writeResource.createSupplier(Pair(text, path))))
       require(readResource.createTask(path))
     }
     addTaskDef(combineIncorrect)
@@ -335,7 +335,7 @@ class TopDownTests {
     }
 
     val combineStillIncorrect = taskDef<Pair<String, FSResource>, String>("combineStillIncorrect", { input, _ -> "combine($input)" }) { (text, path) ->
-      require(indirectionDef.createTask(writeResource.createSerializableTask(Pair(text, path))))
+      require(indirectionDef.createTask(writeResource.createSupplier(Pair(text, path))))
       require(writeResource.createTask(Pair(text, path)))
       require(readResource.createTask(path))
     }

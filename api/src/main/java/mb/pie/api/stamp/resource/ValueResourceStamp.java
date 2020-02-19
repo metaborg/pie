@@ -24,7 +24,7 @@ public class ValueResourceStamp<R extends Resource> implements ResourceStamp<R> 
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ValueResourceStamp<?> that = (ValueResourceStamp<?>) o;
+        final ValueResourceStamp<?> that = (ValueResourceStamp<?>)o;
         if(!Objects.equals(value, that.value)) return false;
         return stamper.equals(that.stamper);
     }

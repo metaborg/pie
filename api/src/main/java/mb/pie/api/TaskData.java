@@ -40,7 +40,7 @@ public final class TaskData {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final TaskData taskData = (TaskData) o;
+        final TaskData taskData = (TaskData)o;
         if(!input.equals(taskData.input)) return false;
         if(!Objects.equals(output, taskData.output)) return false;
         if(!taskObservability.equals(taskData.taskObservability)) return false;

@@ -2,12 +2,13 @@ package mb.pie.runtime.exec;
 
 import mb.pie.api.ExecContext;
 import mb.pie.api.ExecException;
+import mb.pie.api.Function;
 import mb.pie.api.Logger;
-import mb.pie.api.Provider;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
 import mb.pie.api.STaskDef;
+import mb.pie.api.Supplier;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
@@ -112,8 +113,13 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(Provider<O> provider) throws ExecException, InterruptedException, IOException {
-        return provider.get(this);
+    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws ExecException, InterruptedException, IOException {
+        return supplier.get(this);
+    }
+
+    @Override
+    public <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) throws ExecException, InterruptedException {
+        return function.apply(this, input);
     }
 
     @Override public OutputStamper getDefaultOutputStamper() {

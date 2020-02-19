@@ -4,7 +4,7 @@ import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.None
 import mb.pie.api.Observability
-import mb.pie.api.STask
+import mb.pie.api.Supplier
 import mb.pie.api.test.anyC
 import mb.pie.api.test.anyER
 import mb.resource.fs.FSResource
@@ -349,7 +349,7 @@ class ObservabilityTests {
     val resource = resource("/file")
     write("Hello, world!", resource)
     val readTask = readDef.createTask(resource)
-    val readSTask = readTask.toSerializableTask()
+    val readSTask = readTask.toSupplier()
     val readKey = readTask.key()
     val callTask = callDef.createTask(readSTask)
     val callKey = callTask.key()
@@ -376,7 +376,7 @@ class ObservabilityTests {
     val resource = resource("/file")
     write("Hello, world!", resource)
     val readTask = readDef.createTask(resource)
-    val readSTask = readTask.toSerializableTask()
+    val readSTask = readTask.toSupplier()
     val readKey = readTask.key()
     val callTask = callDef.createTask(readSTask)
     val callKey = callTask.key()
@@ -402,7 +402,7 @@ class ObservabilityTests {
   fun testBottomUpSkipsUnobservedProvider() = builder.test {
     val resource = resource("/file")
     val writeTask = writeDef.createTask(ObservabilityTestCtx.Write(resource, "Hello, world!"))
-    val writeSTask = writeTask.toSerializableTask()
+    val writeSTask = writeTask.toSupplier()
     val writeKey = writeTask.key()
     val callTask = callDef.createTask(writeSTask)
     val callKey = callTask.key()
@@ -429,17 +429,17 @@ class ObservabilityTests {
     val resource1 = resource("/file1")
     write("Hello, world 1!", resource1)
     val read1Task = readDef.createTask(resource1)
-    val read1STask = read1Task.toSerializableTask()
+    val read1STask = read1Task.toSupplier()
     val read1Key = read1Task.key()
 
     val resource2 = resource("/file2")
     write("Hello, world 2!", resource2)
     val read2Task = readDef.createTask(resource2)
-    val read2STask = read2Task.toSerializableTask()
+    val read2STask = read2Task.toSupplier()
     val read2Key = read2Task.key()
 
     val callRead2Task = callDef.createTask(read2STask)
-    val callRead2STask = callRead2Task.toSerializableTask()
+    val callRead2STask = callRead2Task.toSupplier()
     val callRead2Key = callRead2Task.key()
 
     val callMainTask = call2IfContainsGalaxyDef.createTask(ObservabilityTestCtx.Call(read1STask, callRead2STask))
@@ -808,11 +808,11 @@ class ObservabilityTestCtx(
     None.instance
   }
 
-  val callDef = taskDef<STask<*>, Serializable?>("call") {
+  val callDef = taskDef<Supplier<*>, Serializable?>("call") {
     require(it)
   }
 
-  data class Call(val task1: STask<*>, val task2: STask<*>) : Serializable
+  data class Call(val task1: Supplier<*>, val task2: Supplier<*>) : Serializable
 
   val call2Def = taskDef<Call, None>("call2") { (task1, task2) ->
     require(task1)
@@ -848,18 +848,18 @@ class ObservabilityTestCtx(
 
     val iTask = writeDef.createTask(Write(file0, "Hello, world 0!"))
     val jTask = readDef.createTask(file1)
-    val dTask = call2Def.createTask(Call(iTask.toSerializableTask(), jTask.toSerializableTask()))
+    val dTask = call2Def.createTask(Call(iTask.toSupplier(), jTask.toSupplier()))
     val eTask = writeDef.createTask(Write(file2, "Hello, world 2!"))
-    val aTask = call2Def.createTask(Call(dTask.toSerializableTask(), eTask.toSerializableTask()))
+    val aTask = call2Def.createTask(Call(dTask.toSupplier(), eTask.toSupplier()))
 
     val kTask = noopTask
     val lTask = writeDef.createTask(Write(file3, "Hello, world 3!"))
-    val fTask = call2Def.createTask(Call(kTask.toSerializableTask(), lTask.toSerializableTask()))
-    val bTask = call2Def.createTask(Call(eTask.toSerializableTask(), fTask.toSerializableTask()))
+    val fTask = call2Def.createTask(Call(kTask.toSupplier(), lTask.toSupplier()))
+    val bTask = call2Def.createTask(Call(eTask.toSupplier(), fTask.toSupplier()))
 
     val gTask = readDef.createTask(file4)
     val hTask = writeDef.createTask(Write(file5, "Hello, world 5!"))
-    val cTask = call2Def.createTask(Call(gTask.toSerializableTask(), hTask.toSerializableTask()))
+    val cTask = call2Def.createTask(Call(gTask.toSupplier(), hTask.toSupplier()))
 
     init {
       write("Hello, world 1!", file1)

@@ -20,7 +20,7 @@ import java.io.Serializable;
  * @see Task
  * @see STaskDef
  */
-public class STask<O extends @Nullable Serializable> implements Serializable, Provider<O> {
+public class STask<O extends @Nullable Serializable> implements Supplier<O>, Serializable {
     public final String id;
     public final Serializable input;
 
