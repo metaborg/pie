@@ -20,7 +20,7 @@ import java.util.Deque;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-public class SessionBaseImpl implements SessionBase {
+public abstract class SessionBaseImpl implements SessionBase {
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
     protected final Store store;

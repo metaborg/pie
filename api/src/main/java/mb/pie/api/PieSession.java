@@ -2,9 +2,7 @@ package mb.pie.api;
 
 import mb.pie.api.exec.CancelToken;
 import mb.resource.ResourceKey;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -70,61 +68,6 @@ public interface PieSession extends SessionBase, AutoCloseable {
      *                               returned object to query task results or to execute new tasks.
      */
     SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
-
-
-    /**
-     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
-     * {@link Observability#ExplicitObserved explicitly observed}, indicating that it (and its transitive dependencies)
-     * should be kept up-to-date in bottom-up builds.
-     *
-     * @param task Task to make up-to-date.
-     * @return Up-to-date output of {@code task}.
-     * @throws ExecException         When an executing task throws an exception.
-     * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy}. Use the object returned by
-     *                               {@link #updateAffectedBy} instead to query task results or to execute new tasks.
-     */
-    <O extends Serializable> O require(Task<O> task) throws ExecException;
-
-    /**
-     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
-     * output. Also marks the task as {@link Observability#ExplicitObserved explicitly observed}, indicating that it
-     * (and its transitive dependencies) should be kept up-to-date in bottom-up builds.
-     *
-     * @param task   Task to make up-to-date.
-     * @param cancel Cancel checker to use.
-     * @return Up-to-date output of {@code task}.
-     * @throws ExecException         When an executing task throws an exception.
-     * @throws InterruptedException  When execution is cancelled.
-     * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy}. Use the object returned by
-     *                               {@link #updateAffectedBy} instead to query task results or to execute new tasks.
-     */
-    <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
-
-    /**
-     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output, without marking it as
-     * {@link Observability#ExplicitObserved explicitly observed}.
-     *
-     * @param task Task to make up-to-date.
-     * @return Up-to-date output of {@code task}.
-     * @throws ExecException         When an executing task throws an exception.
-     * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy}. Use the object returned by
-     *                               {@link #updateAffectedBy} instead to query task results or to execute new tasks.
-     */
-    <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException;
-
-    /**
-     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
-     * output, without marking it as {@link Observability#ExplicitObserved explicitly observed}.
-     *
-     * @param task   Task to make up-to-date.
-     * @param cancel Cancel checker to use.
-     * @return Up-to-date output of {@code task}.
-     * @throws ExecException         When an executing task throws an exception.
-     * @throws InterruptedException  When execution is cancelled.
-     * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy}. Use the object returned by
-     *                               {@link #updateAffectedBy} instead to query task results or to execute new tasks.
-     */
-    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 
 
     @Override void close();
