@@ -1,0 +1,8 @@
+package mb.pie.lang.test.foreignFunc.constructor;
+
+data Foo = foreign java mb.pie.lang.test.foreignFunc.constructor.Foo {}
+func newFoo() -> Foo = foreign java constructor mb.pie.lang.test.foreignFunc.constructor.Foo
+
+func main_nullary() -> Foo = {
+  newFoo()
+}

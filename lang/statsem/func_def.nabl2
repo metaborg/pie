@@ -40,6 +40,10 @@ rules // Function implementations
     occ_func_outer.javaClassId  := id_class_java !,
     occ_func_outer.javaMethodId := id_method_java !.
 
+  [[ JavaForeignConstructorImpl(id_class_java) ^ (s, _, occ_func_outer) ]] :=
+    occ_func_outer.kind         := JavaForeignConstructorKind() !,
+    occ_func_outer.javaClassId  := id_class_java !.
+
   [[ PieForeignFuncImpl(id_class_java) ^ (s, _, occ_func_outer) ]] :=
     occ_func_outer.kind        := PieForeignFuncKind() !,
     occ_func_outer.javaClassId := id_class_java !.

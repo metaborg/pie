@@ -23,6 +23,7 @@ signature
     JavaTypeKind : TypeKind
     
     JavaForeignFuncKind   : FuncKind
+    JavaForeignConstructorKind : FuncKind
     PieForeignFuncKind : FuncKind
     PieFuncKind     : FuncKind
     
