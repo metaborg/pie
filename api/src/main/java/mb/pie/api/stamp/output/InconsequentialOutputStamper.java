@@ -7,7 +7,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 
 /**
- * Output stamper that always produces the same the  stamp[inconsequential stamp][InconsequentialStamp], effectively ignoring the output.
+ * Output stamper that always produces the same the  stamp[inconsequential stamp][InconsequentialStamp], effectively
+ * ignoring the output.
  */
 public class InconsequentialOutputStamper implements OutputStamper {
     public final static InconsequentialOutputStamper instance = new InconsequentialOutputStamper();

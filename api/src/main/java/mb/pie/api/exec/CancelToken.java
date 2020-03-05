@@ -7,8 +7,7 @@ public interface CancelToken {
     /**
      * Gets whether the operation has been canceled.
      *
-     * @return {@code true} when cancellation has been requested;
-     * otherwise, {@code false}.
+     * @return {@code true} when cancellation has been requested; otherwise, {@code false}.
      */
     boolean isCanceled();
 
@@ -18,7 +17,7 @@ public interface CancelToken {
      * @throws InterruptedException When cancellation has been requested.
      */
     default void throwIfCanceled() throws InterruptedException {
-        if (isCanceled())
+        if(isCanceled())
             throw new InterruptedException("The operation has been canceled.");
     }
 }

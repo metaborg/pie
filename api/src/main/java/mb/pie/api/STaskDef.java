@@ -21,7 +21,7 @@ import java.util.Objects;
  * @see TaskDef
  * @see STask
  */
-public class STaskDef<I extends Serializable, O extends @Nullable Serializable> implements Serializable {
+public class STaskDef<I extends Serializable, O extends @Nullable Serializable> implements Function<I, O>, Serializable {
     public final String id;
 
     public STaskDef(TaskDef<I, O> taskDef) {
@@ -48,6 +48,10 @@ public class STaskDef<I extends Serializable, O extends @Nullable Serializable> 
                 "Cannot get task definition for id " + id + "; task definition with that id does not exist");
         }
         return taskDef;
+    }
+
+    @Override public O apply(ExecContext context, I input) throws ExecException, InterruptedException {
+        return context.require(this, input);
     }
 
     @Override public boolean equals(Object o) {

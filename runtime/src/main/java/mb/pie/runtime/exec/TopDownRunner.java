@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public class TopDownSession implements RequireTask {
+public class TopDownRunner implements RequireTask {
     private final Store store;
     private final Layer layer;
     private final ExecutorLogger executorLogger;
@@ -20,7 +20,7 @@ public class TopDownSession implements RequireTask {
 
     private final HashMap<TaskKey, TaskData> visited;
 
-    public TopDownSession(
+    public TopDownRunner(
         Store store,
         Layer layer,
         ExecutorLogger executorLogger,
@@ -62,7 +62,7 @@ public class TopDownSession implements RequireTask {
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, cancel);
             TaskData data = status.data;
-            @SuppressWarnings({"unchecked", "ConstantConditions"}) final O output = (O) data.output;
+            @SuppressWarnings({"unchecked"}) final O output = (O) data.output;
             if(!status.executed) {
                 if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
@@ -91,7 +91,6 @@ public class TopDownSession implements RequireTask {
                 }
             }
             executorLogger.requireTopDownEnd(key, task, output);
-            //noinspection ConstantConditions
             return output;
         } finally {
             layer.requireTopDownEnd(key);

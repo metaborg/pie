@@ -26,11 +26,11 @@ public class ValueOutputStamp<V extends @Nullable Serializable> implements Outpu
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ValueOutputStamp<?> that = (ValueOutputStamp<?>) o;
+        final ValueOutputStamp<?> that = (ValueOutputStamp<?>)o;
         if(value instanceof OutTransientEquatable<?, ?> && that.value instanceof OutTransientEquatable<?, ?>) {
             // TODO: should OutTransientEquatable not have a special equality implementation that compares the equatable value?
-            final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>) value).getEquatableValue();
-            final @Nullable Serializable thatEq = ((OutTransientEquatable<?, ?>) that.value).getEquatableValue();
+            final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>)value).getEquatableValue();
+            final @Nullable Serializable thatEq = ((OutTransientEquatable<?, ?>)that.value).getEquatableValue();
             if(!Objects.equals(valueEq, thatEq)) {
                 return false;
             }
@@ -47,7 +47,7 @@ public class ValueOutputStamp<V extends @Nullable Serializable> implements Outpu
             result = 0;
         } else if(value instanceof OutTransientEquatable<?, ?>) {
             // TODO: should OutTransientEquatable not have a special hashCode implementation that hashes the equatable @Nullable value?
-            final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>) value).getEquatableValue();
+            final @Nullable Serializable valueEq = ((OutTransientEquatable<?, ?>)value).getEquatableValue();
             //noinspection ConstantConditions
             result = valueEq != null ? valueEq.hashCode() : 0;
         } else {

@@ -20,7 +20,7 @@ public class InconsistentResourceRequire implements ExecReason {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final InconsistentResourceRequire that = (InconsistentResourceRequire) o;
+        final InconsistentResourceRequire that = (InconsistentResourceRequire)o;
         if(!dep.equals(that.dep)) return false;
         return newStamp.equals(that.newStamp);
     }

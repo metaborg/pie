@@ -13,24 +13,24 @@ public interface Pie extends AutoCloseable {
      * Creates a new session for incrementally executing tasks.
      * <p>
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
-     * started after external changes have occurred. See {@link PieSession} for a list of external changes.
+     * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
      *
      * @return A new session.
-     * @see PieSession
+     * @see MixedSession
      */
-    PieSession newSession();
+    MixedSession newSession();
 
     /**
      * Creates a new session for incrementally executing tasks, with additional task definitions.
      * <p>
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
-     * started after external changes have occurred. See {@link PieSession} for a list of external changes.
+     * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
      *
      * @param addTaskDefs Additional {@link TaskDef task definitions} that are available to the created session.
      * @return A new session.
-     * @see PieSession
+     * @see MixedSession
      */
-    PieSession newSession(TaskDefs addTaskDefs);
+    MixedSession newSession(TaskDefs addTaskDefs);
 
 
     /**

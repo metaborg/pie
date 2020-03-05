@@ -1,6 +1,8 @@
 package mb.pie.api.test
 
-import mb.pie.api.*
+import mb.pie.api.None
+import mb.pie.api.Supplier
+import mb.pie.api.TaskDef
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.resource.fs.FSResource
 import java.io.Serializable
@@ -24,7 +26,7 @@ val ApiTestCtx.writeResource
     None.instance
   }
 
-inline fun <reified O : Serializable?> ApiTestCtx.requireOutputFunc(): TaskDef<STask<*>, O> {
+inline fun <reified O : Serializable?> ApiTestCtx.requireOutputFunc(): TaskDef<Supplier<*>, O> {
   return taskDef("require(${I::class}):${O::class}", { input, _ -> "require($input)" }) { task ->
     require(task) as O
   }

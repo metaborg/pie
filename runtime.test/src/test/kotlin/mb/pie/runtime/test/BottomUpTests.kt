@@ -2,7 +2,7 @@ package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.None
-import mb.pie.api.STask
+import mb.pie.api.Supplier
 import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.test.anyC
 import mb.pie.api.test.anyER
@@ -62,7 +62,7 @@ class BottomUpTests {
       Assertions.assertEquals(1, readObserved)
       Assertions.assertEquals("hello world!", lowerOutput)
       Assertions.assertEquals(1, lowerObserved)
-      val topDownSession = session.topDownSession
+      val topDownSession = session.topDownRunner
       inOrder(topDownSession) {
         verify(topDownSession).exec(eq(combKey), eq(combTask), eq(NoData()), any(), anyC())
         verify(topDownSession).exec(eq(readKey), eq(readTask), eq(NoData()), any(), anyC())
@@ -96,7 +96,7 @@ class BottomUpTests {
       // [lowerRevTask] has been required, and has thus been observed once.
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), anyC())
         verify(bottomUpSession).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -117,7 +117,7 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerObserved)
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
       verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
@@ -137,7 +137,7 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerObserved)
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), anyC())
       }
@@ -182,7 +182,7 @@ class BottomUpTests {
 
   @TestFactory
   fun testDifferentInputsFromAffectedFails() = builder.test {
-    val backendDef = taskDef<Triple<String, String, STask<*>>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
+    val backendDef = taskDef<Triple<String, String, Supplier<*>>, None>("backend", { (name, _, _) -> name }) { (_, text, frontendTask) ->
       require(frontendTask)
       println(text)
       None.instance
@@ -199,7 +199,7 @@ class BottomUpTests {
     val mainDef = taskDef<FSResource, None>("main") { path ->
       val frontendTask = frontendDef.createTask(path)
       val (name, text) = require(frontendTask)
-      require(backendDef.createTask(Triple(name, text, frontendTask.toSerializableTask())))
+      require(backendDef.createTask(Triple(name, text, frontendTask.toSupplier())))
     }
     addTaskDef(mainDef)
 
@@ -264,7 +264,7 @@ class BottomUpTests {
     write("Hello, world!!!!!", file)
     newSession().use { session ->
       session.updateAffectedBy(hashSetOf(file.key))
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), anyC())
       verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), anyC())
     }

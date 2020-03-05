@@ -1,10 +1,13 @@
 package mb.pie.api;
 
+import mb.pie.api.exec.CancelToken;
 import mb.resource.Resource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.io.Serializable;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * A session is a temporary context in which PIE builds can be executed. Within a session, a task with the same {@link
@@ -23,7 +26,54 @@ import java.util.function.Function;
  * </li>
  * </ul>
  */
-public interface SessionBase {
+public interface Session {
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
+     * {@link Observability#ExplicitObserved explicitly observed}, indicating that it (and its transitive dependencies)
+     * should be kept up-to-date in bottom-up builds.
+     *
+     * @param task Task to make up-to-date.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException When an executing task throws an exception.
+     */
+    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException;
+
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
+     * output. Also marks the task as {@link Observability#ExplicitObserved explicitly observed}, indicating that it
+     * (and its transitive dependencies) should be kept up-to-date in bottom-up builds.
+     *
+     * @param task   Task to make up-to-date.
+     * @param cancel Cancel checker to use.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output, without marking it as
+     * {@link Observability#ExplicitObserved explicitly observed}.
+     *
+     * @param task Task to make up-to-date.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException When an executing task throws an exception.
+     */
+    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException;
+
+    /**
+     * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
+     * output, without marking it as {@link Observability#ExplicitObserved explicitly observed}.
+     *
+     * @param task   Task to make up-to-date.
+     * @param cancel Cancel checker to use.
+     * @return Up-to-date output of {@code task}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+
+
     /**
      * Explicitly unobserves {@code task}, settings its observability status to {@link Observability#ImplicitObserved
      * implicitly observed} if it was {@link Observability#ExplicitObserved explicitly observed} but still observed by
@@ -59,5 +109,5 @@ public interface SessionBase {
      *                                     will not be deleted.
      * @throws IOException when deleting a resource fails unexpectedly.
      */
-    void deleteUnobservedTasks(Function<Task<?>, Boolean> shouldDeleteTask, BiFunction<Task<?>, Resource, Boolean> shouldDeleteProvidedResource) throws IOException;
+    void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException;
 }

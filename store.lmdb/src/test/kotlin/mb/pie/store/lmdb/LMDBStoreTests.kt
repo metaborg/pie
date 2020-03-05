@@ -27,7 +27,7 @@ class LMDBStoreTests {
 
     newSession().use { session ->
       session.require(task)
-      verify(session.topDownSession, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+      verify(session.topDownRunner, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
     }
   }
 }

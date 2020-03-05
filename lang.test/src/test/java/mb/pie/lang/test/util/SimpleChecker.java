@@ -20,7 +20,7 @@ public class SimpleChecker {
         final TaskDef<I, O> main = injector.getInstance(taskClass);
         final TaskDefs taskDefs = injector.getInstance(TaskDefs.class);
         final PieRunner pieRunner = new PieRunner(taskDefs);
-        try(PieSession session = pieRunner.newSession()) {
+        try(MixedSession session = pieRunner.newSession()) {
             final O actualOutput = session.require(main.createTask(input));
             assertEquals(expectedOutput, actualOutput);
         }

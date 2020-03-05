@@ -1,10 +1,10 @@
 package mb.pie.runtime;
 
 import mb.pie.api.*;
-import mb.pie.runtime.exec.BottomUpSession;
+import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
-import mb.pie.runtime.exec.TopDownSession;
+import mb.pie.runtime.exec.TopDownRunner;
 import mb.pie.runtime.taskdefs.CompositeTaskDefs;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -54,15 +54,15 @@ public class PieImpl implements Pie {
     }
 
 
-    @Override public PieSession newSession() {
+    @Override public MixedSession newSession() {
         return createSession(this.taskDefs);
     }
 
-    @Override public PieSession newSession(TaskDefs addTaskDefs) {
+    @Override public MixedSession newSession(TaskDefs addTaskDefs) {
         return createSession(new CompositeTaskDefs(this.taskDefs, addTaskDefs));
     }
 
-    protected PieSession createSession(TaskDefs taskDefs) {
+    protected MixedSession createSession(TaskDefs taskDefs) {
         final Layer layer = layerFactory.apply(taskDefs, logger);
         final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
@@ -71,12 +71,12 @@ public class PieImpl implements Pie {
                 callbacks, visited);
         final RequireShared requireShared =
             new RequireShared(taskDefs, resourceService, store, executorLogger, visited);
-        final TopDownSession topDownSession =
-            new TopDownSession(store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited);
-        final BottomUpSession bottomUpSession =
-            new BottomUpSession(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
+        final TopDownRunner topDownRunner =
+            new TopDownRunner(store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited);
+        final BottomUpRunner bottomUpRunner =
+            new BottomUpRunner(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
                 requireShared, callbacks, visited);
-        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, store, callbacks);
+        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, callbacks);
     }
 
 

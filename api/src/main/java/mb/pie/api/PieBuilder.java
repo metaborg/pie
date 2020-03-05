@@ -3,9 +3,7 @@ package mb.pie.api;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
-import mb.resource.ResourceRegistry;
 import mb.resource.ResourceService;
-import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 
 import java.util.function.BiFunction;
