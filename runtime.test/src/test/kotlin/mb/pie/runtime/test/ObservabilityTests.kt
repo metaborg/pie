@@ -363,7 +363,7 @@ class ObservabilityTests {
     newSession().use { session ->
       session.updateAffectedBy(setOf(resource.key))
       // Both tasks are executed because they are observable.
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), anyC())
         verify(bottomUpSession).exec(eq(callKey), eq(callTask), anyER(), anyC())
@@ -392,7 +392,7 @@ class ObservabilityTests {
     newSession().use { session ->
       session.updateAffectedBy(setOf(resource.key))
       // Both tasks are NOT executed because they are unobservable.
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
     }
@@ -418,7 +418,7 @@ class ObservabilityTests {
     newSession().use { session ->
       session.updateAffectedBy(setOf(resource.key))
       // Both tasks are NOT executed because they are unobservable.
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession, never()).exec(eq(writeKey), eq(writeTask), anyER(), anyC())
       verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), anyC())
     }
@@ -461,7 +461,7 @@ class ObservabilityTests {
     write("Hello, galaxy 2!", resource2)
     newSession().use { session ->
       session.updateAffectedBy(setOf(resource1.key, resource2.key))
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         // `read2Task` is not scheduled nor executed yet, despite its resource being changed, because it is unobserved. Consequently, `callRead2Task` will also not be scheduled yet.
         // `read1Task` gets executed because it is observed and its resource changed.
@@ -502,7 +502,7 @@ class ObservabilityTests {
     write("Hello, galaxy 1!", resource1)
     newSession().use { session ->
       session.updateAffectedBy(setOf(resource1.key, resource2.key))
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         // `read2Task` is not scheduled or executed because its resource did not change. Consequently, `callRead2Task` is also not scheduled.
         // `read1Task` gets executed because it is observed and its resource changed.
@@ -605,7 +605,7 @@ class ObservabilityTests {
       write("Hello, galaxy 5!", file5)
       newSession().use { session ->
         session.updateAffectedBy(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet())
-        val bottomUpSession = session.bottomUpSession
+        val bottomUpSession = session.bottomUpRunner
         verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
         verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
         verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())
@@ -637,7 +637,7 @@ class ObservabilityTests {
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
         // Then build and confirm that the exact same tasks are executed.
         session.updateAffectedBy(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet())
-        val bottomUpSession = session.bottomUpSession
+        val bottomUpSession = session.bottomUpRunner
         verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), anyC())
         verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), anyC())
         verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), anyC())

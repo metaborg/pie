@@ -5,10 +5,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 
 /**
- * Second stage of {@link PieSession}, after running a bottom-up build with resource changes. This second stage is used
- * to get outputs of existing tasks or to execute new tasks.
+ * Second stage of {@link MixedSession}, after running a bottom-up build with resource changes. This second stage is used
+ * to get outputs of existing tasks or to execute new tasks using top-down builds..
  */
-public interface SessionAfterBottomUp extends SessionBase {
+public interface TopDownSession extends Session {
     /**
      * Gets the up-to-date output of an existing {@code task}. This method throws an exception when used on tasks that
      * have not been executed before (i.e, a new task or different input). For new tasks, use {@link #require} or {@link

@@ -1,10 +1,10 @@
 package mb.pie.example.helloworld.java;
 
 import mb.pie.api.ExecContext;
+import mb.pie.api.MixedSession;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
-import mb.pie.api.PieSession;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
@@ -84,7 +84,7 @@ public class Main {
             // Now we create concrete task instances from the task definitions.
             final Task<None> writeHelloWorldTask = writeHelloWorld.createTask(file);
             // We create a new session to perform an incremental build.
-            try(final PieSession session = pie.newSession()) {
+            try(final MixedSession session = pie.newSession()) {
                 // We incrementally execute the hello world task by requiring it in a top-down fashion.
                 // The first incremental execution will execute the task, since it is new.  When no changes to the written-to file are made, the task is
                 // not executed since nothing has changed. When the written-to file is changed or deleted, the task is executed to re-generate the file.

@@ -2,7 +2,7 @@ package mb.pie.runtime;
 
 import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
-import mb.pie.api.SessionBase;
+import mb.pie.api.Session;
 import mb.pie.api.Store;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
@@ -20,13 +20,13 @@ import java.util.Deque;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-public abstract class SessionBaseImpl implements SessionBase {
+public abstract class SessionImpl implements Session {
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
     protected final Store store;
 
 
-    public SessionBaseImpl(TaskDefs taskDefs, ResourceService resourceService, Store store) {
+    public SessionImpl(TaskDefs taskDefs, ResourceService resourceService, Store store) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;

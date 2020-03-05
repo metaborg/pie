@@ -29,7 +29,7 @@ import java.util.Set;
  * execution which traverses the entire dependency graph rooted at a given task.
  * <p>
  * When mixing a bottom-up build with top-down builds, a single {@link #updateAffectedBy bottom-up build} must be
- * executed first, which then returns a new session object which can be used to get task outputs or to execute new
+ * executed first, which then returns a new session object of type {@link TopDownSession} which can be used to get task outputs or to execute new
  * tasks.
  * <p>
  * Outputs of required tasks are observed by the observers {@link Pie#setCallback set} in the {@link Pie} object this
@@ -38,9 +38,9 @@ import java.util.Set;
  * When using a {@link CancelToken cancel checker}, execution is cancelled between task executions by throwing an {@link
  * InterruptedException}.
  *
- * @see SessionBase for information on when a new session should be started.
+ * @see Session for information on when a new session should be started.
  */
-public interface PieSession extends SessionBase, AutoCloseable {
+public interface MixedSession extends Session, AutoCloseable {
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion. Only {@link
      * Observability#ExplicitObserved explicitly observed} or {@link Observability#ImplicitObserved implicitly observed}
@@ -52,7 +52,7 @@ public interface PieSession extends SessionBase, AutoCloseable {
      *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
      *                               returned object to query task results or to execute new tasks.
      */
-    SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException;
+    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException;
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
@@ -67,7 +67,7 @@ public interface PieSession extends SessionBase, AutoCloseable {
      *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
      *                               returned object to query task results or to execute new tasks.
      */
-    SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
+    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
 
 
     @Override void close();

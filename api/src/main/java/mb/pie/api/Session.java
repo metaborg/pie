@@ -26,7 +26,7 @@ import java.util.function.Predicate;
  * </li>
  * </ul>
  */
-public interface SessionBase {
+public interface Session {
     /**
      * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output. Also marks the task as
      * {@link Observability#ExplicitObserved explicitly observed}, indicating that it (and its transitive dependencies)

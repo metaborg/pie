@@ -8,8 +8,7 @@ import mb.pie.api.ExecException;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
-import mb.pie.api.PieSession;
-import mb.pie.api.STask;
+import mb.pie.api.MixedSession;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
@@ -92,7 +91,7 @@ public class GuiceTaskDefsTest {
         final PieBuilder pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
         pieBuilder.withLogger(StreamLogger.verbose());
-        try(final Pie pie = pieBuilder.build(); final PieSession session = pie.newSession()) {
+        try(final Pie pie = pieBuilder.build(); final MixedSession session = pie.newSession()) {
             final String returnedString = session.require(
                 returnResultString.createTask(returnInjectedString.createSupplier(None.instance)));
             assertEquals(string, returnedString);

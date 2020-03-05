@@ -6,9 +6,9 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import mb.pie.api.LambdaTaskDef;
 import mb.pie.api.Logger;
+import mb.pie.api.MixedSession;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
-import mb.pie.api.PieSession;
 import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
@@ -75,7 +75,7 @@ class PieComponentTest {
         assertTrue(pieComponent.getTaskDefs().contains(pieComponent.getModifyString()));
         assertSame(pieComponent.getPie(), pieComponent.getPie());
 
-        try(final Pie pie = pieComponent.getPie(); final PieSession session = pie.newSession()) {
+        try(final Pie pie = pieComponent.getPie(); final MixedSession session = pie.newSession()) {
             final String str1 = session.require(pieComponent.getCreateString().createTask(None.instance));
             assertEquals("Hello, world!", str1);
             final String str2 = session.require(pieComponent.getModifyString().createTask(str1));

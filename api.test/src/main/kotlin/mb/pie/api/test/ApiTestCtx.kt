@@ -19,7 +19,7 @@ open class ApiTestCtx(
 
   open val pie: Pie get() = pieImpl
 
-  open fun newSession(): PieSession = pie.newSession()
+  open fun newSession(): MixedSession = pie.newSession()
 
 
   fun <I : Serializable, O : Serializable?> taskDef(id: String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {

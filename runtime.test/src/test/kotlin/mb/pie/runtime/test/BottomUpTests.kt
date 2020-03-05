@@ -62,7 +62,7 @@ class BottomUpTests {
       Assertions.assertEquals(1, readObserved)
       Assertions.assertEquals("hello world!", lowerOutput)
       Assertions.assertEquals(1, lowerObserved)
-      val topDownSession = session.topDownSession
+      val topDownSession = session.topDownRunner
       inOrder(topDownSession) {
         verify(topDownSession).exec(eq(combKey), eq(combTask), eq(NoData()), any(), anyC())
         verify(topDownSession).exec(eq(readKey), eq(readTask), eq(NoData()), any(), anyC())
@@ -96,7 +96,7 @@ class BottomUpTests {
       // [lowerRevTask] has been required, and has thus been observed once.
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), anyC())
         verify(bottomUpSession).exec(eq(combKey), eq(combTask), anyER(), anyC())
@@ -117,7 +117,7 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerObserved)
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), anyC())
       verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), anyC())
       verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), anyC())
@@ -137,7 +137,7 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerObserved)
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
         verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), anyC())
       }
@@ -264,7 +264,7 @@ class BottomUpTests {
     write("Hello, world!!!!!", file)
     newSession().use { session ->
       session.updateAffectedBy(hashSetOf(file.key))
-      val bottomUpSession = session.bottomUpSession
+      val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), anyC())
       verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), anyC())
     }

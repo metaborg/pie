@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public class BottomUpSession implements RequireTask {
+public class BottomUpRunner implements RequireTask {
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
     private final Store store;
@@ -28,7 +28,7 @@ public class BottomUpSession implements RequireTask {
     private final HashMap<TaskKey, TaskData> visited;
     private final DistinctTaskKeyPriorityQueue queue;
 
-    public BottomUpSession(
+    public BottomUpRunner(
         TaskDefs taskDefs,
         ResourceService resourceService,
         Store store,
