@@ -17,4 +17,22 @@ public class MappedFunctionOutput<T extends Serializable, R extends @Nullable Se
         final R result = function.apply(context, input);
         return after.apply(result);
     }
+
+    @Override public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        final MappedFunctionOutput<?, ?, ?> mappedFunctionOutput = (MappedFunctionOutput<?, ?, ?>)o;
+        if(!function.equals(mappedFunctionOutput.function)) return false;
+        return after.equals(mappedFunctionOutput.after);
+    }
+
+    @Override public int hashCode() {
+        int result = function.hashCode();
+        result = 31 * result + after.hashCode();
+        return result;
+    }
+
+    @Override public String toString() {
+        return "MappedFunctionOutput(" + function + ", " + after + ")";
+    }
 }

@@ -18,4 +18,22 @@ public class MappedSupplier<T extends @Nullable Serializable, R extends @Nullabl
     @Override public R get(ExecContext context) throws ExecException, IOException, InterruptedException {
         return func.apply(supplier.get(context));
     }
+
+    @Override public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        final MappedSupplier<?, ?> mappedSupplier = (MappedSupplier<?, ?>)o;
+        if(!supplier.equals(mappedSupplier.supplier)) return false;
+        return func.equals(mappedSupplier.func);
+    }
+
+    @Override public int hashCode() {
+        int result = supplier.hashCode();
+        result = 31 * result + func.hashCode();
+        return result;
+    }
+
+    @Override public String toString() {
+        return "MappedSupplier(" + supplier + ", " + func + ")";
+    }
 }

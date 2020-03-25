@@ -68,7 +68,6 @@ public class STask<O extends @Nullable Serializable> implements Supplier<O>, Ser
         final STask sTask = (STask)o;
         if(!id.equals(sTask.id)) return false;
         return input.equals(sTask.input);
-
     }
 
     @Override public int hashCode() {
