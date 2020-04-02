@@ -2,6 +2,7 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -17,26 +18,51 @@ public interface Function<T extends Serializable, R extends @Nullable Serializab
     R apply(ExecContext context, T input) throws ExecException, InterruptedException;
 
     /**
-     * Creates a new function for which given {@code before} is executed on the input before applying this function. The
-     * given function must be {@link Serializable serializable}, otherwise the returned function cannot be serialized.
+     * Creates a new function for which given {@link Function incremental function} is executed on the input before
+     * applying this function.
      *
-     * @param before Function to apply to the input before applying of this function.
+     * @param before Incremental function to apply to the input before applying of this incremental function.
      * @param <B>    New type of input.
      * @return Transformed function.
      */
-    default <B extends @Nullable Serializable> Function<B, R> mapInput(java.util.function.Function<? super B, ? extends T> before) {
+    default <B extends @Nullable Serializable> Function<B, R> mapInput(Function<? super B, ? extends T> before) {
         return new MappedFunctionInput<>(this, before);
     }
 
     /**
-     * Creates a new function for which given {@code after} is executed on the output of applying this function. The
-     * given function must be {@link Serializable serializable}, otherwise the returned function cannot be serialized.
+     * Creates a new function for which given {@link Function incremental function} is executed on the output of
+     * applying this function.
      *
-     * @param after Function to apply to result of this function.
+     * @param after Incremental function to apply to result of this incremental function.
+     * @param <A>   New type of output.
+     * @return Transformed function.
+     */
+    default <A extends @Nullable Serializable> Function<T, A> mapOutput(Function<? super R, ? extends A> after) {
+        return new MappedFunctionOutput<>(this, after);
+    }
+
+    /**
+     * Creates a new function for which given {@link java.util.function.Function function} is executed on the input
+     * before applying this function. Given function must be {@link Serializable}.
+     *
+     * @param before Function to apply to the input before applying of this incremental function. Must be {@link
+     *               Serializable}
+     * @param <B>    New type of input.
+     * @return Transformed function.
+     */
+    default <B extends @Nullable Serializable> Function<B, R> mapInput(java.util.function.Function<? super B, ? extends T> before) {
+        return new MappedFunctionInput<>(this, new NonIncrFunction<>(before));
+    }
+
+    /**
+     * Creates a new function for which given {@link java.util.function.Function function} is executed on the output of
+     * applying this function. Given function must be {@link Serializable}.
+     *
+     * @param after Function to apply to result of this incremental function. Must be {@link Serializable}
      * @param <A>   New type of output.
      * @return Transformed function.
      */
     default <A extends @Nullable Serializable> Function<T, A> mapOutput(java.util.function.Function<? super R, ? extends A> after) {
-        return new MappedFunctionOutput<>(this, after);
+        return new MappedFunctionOutput<>(this, new NonIncrFunction<>(after));
     }
 }

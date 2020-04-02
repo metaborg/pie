@@ -4,9 +4,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.function.Function;
 
-public class MappedSupplier<T extends @Nullable Serializable, R extends @Nullable Serializable> implements Supplier<R> {
+public class MappedSupplier<T extends Serializable, R extends @Nullable Serializable> implements Supplier<R> {
     private final Supplier<T> supplier;
     private final Function<? super T, ? extends R> func;
 
@@ -16,7 +15,7 @@ public class MappedSupplier<T extends @Nullable Serializable, R extends @Nullabl
     }
 
     @Override public R get(ExecContext context) throws ExecException, IOException, InterruptedException {
-        return func.apply(supplier.get(context));
+        return func.apply(context, supplier.get(context));
     }
 
     @Override public boolean equals(Object o) {
