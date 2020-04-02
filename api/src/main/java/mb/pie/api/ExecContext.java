@@ -170,9 +170,10 @@ public interface ExecContext {
      * @param function {@link Function} to get output of.
      * @param input    Input to apply function to.
      * @return Up-to-date output object of {@code function}.
-     * @throws Exception When an executing task throws an exception.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) throws Exception;
+    <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) throws ExecException, InterruptedException;
 
     /**
      * Gets the default output stamper.
