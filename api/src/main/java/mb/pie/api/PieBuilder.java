@@ -10,16 +10,16 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Builder for {@link Pie} entry point.
+ * Builder for a {@link Pie} entry point.
  */
 public interface PieBuilder {
     PieBuilder withTaskDefs(TaskDefs taskDefs);
 
     PieBuilder withResourceService(ResourceService resourceService);
 
-    PieBuilder withStore(Function<Logger, Store> storeFunc);
+    PieBuilder withStoreFactory(Function<Logger, Store> storeFunc);
 
-    PieBuilder withShare(Function<Logger, Share> shareFunc);
+    PieBuilder withShareFactory(Function<Logger, Share> shareFunc);
 
     PieBuilder withDefaultOutputStamper(OutputStamper outputStamper);
 
@@ -31,11 +31,11 @@ public interface PieBuilder {
 
     PieBuilder withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
-    PieBuilder withLayer(BiFunction<TaskDefs, Logger, Layer> layerFunc);
+    PieBuilder withLayerFactory(BiFunction<TaskDefs, Logger, Layer> layerFunc);
 
     PieBuilder withLogger(Logger logger);
 
-    PieBuilder withExecutorLogger(Function<Logger, ExecutorLogger> execLoggerFunc);
+    PieBuilder withExecutorLoggerFactory(Function<Logger, ExecutorLogger> execLoggerFunc);
 
 
     Pie build();

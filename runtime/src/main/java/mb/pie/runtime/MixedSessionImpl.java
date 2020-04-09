@@ -2,11 +2,10 @@ package mb.pie.runtime;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
-import mb.pie.api.TopDownSession;
 import mb.pie.api.Store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
-import mb.pie.api.TaskKey;
+import mb.pie.api.TopDownSession;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.BottomUpRunner;
@@ -17,8 +16,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 public class MixedSessionImpl extends SessionImpl implements MixedSession {
     protected final TopDownRunner topDownRunner;
@@ -27,7 +24,6 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
     protected final Store store;
-    protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
 
     private boolean updateAffectedByExecuted = false;
     private boolean requireExecuted = false;
@@ -37,8 +33,8 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         TopDownRunner topDownRunner,
         BottomUpRunner bottomUpRunner,
         TaskDefs taskDefs,
-        ResourceService resourceService, Store store,
-        ConcurrentHashMap<TaskKey, Consumer<Serializable>> callbacks
+        ResourceService resourceService,
+        Store store
     ) {
         super(taskDefs, resourceService, store);
         this.topDownRunner = topDownRunner;
@@ -46,7 +42,6 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
-        this.callbacks = callbacks;
     }
 
     @Override public void close() {
@@ -89,7 +84,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
 
 
     @Override
-    public <O extends Serializable> O require(Task<O> task) throws ExecException {
+    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException {
         try {
             return require(task, NullCancelableToken.instance);
         } catch(InterruptedException e) {
@@ -105,7 +100,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     }
 
     @Override
-    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
         try {
             return requireWithoutObserving(task, NullCancelableToken.instance);
         } catch(InterruptedException e) {
