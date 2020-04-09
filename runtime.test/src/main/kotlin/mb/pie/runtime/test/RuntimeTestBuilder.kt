@@ -8,10 +8,7 @@ import mb.pie.api.stamp.resource.HashResourceStamper
 import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.resource.ModifiedResourceStamper
 import mb.pie.api.test.ApiTestBuilder
-import mb.pie.runtime.DefaultStampers
-import mb.pie.runtime.PieBuilderImpl
-import mb.pie.runtime.PieImpl
-import mb.pie.runtime.MixedSessionImpl
+import mb.pie.runtime.*
 import mb.pie.runtime.exec.BottomUpRunner
 import mb.pie.runtime.exec.RequireShared
 import mb.pie.runtime.exec.TaskExecutor
@@ -24,12 +21,9 @@ import mb.pie.runtime.store.InMemoryStore
 import mb.resource.ReadableResource
 import mb.resource.ResourceService
 import mb.resource.hierarchical.HierarchicalResource
-import java.io.Serializable
 import java.nio.file.FileSystem
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
-import java.util.function.Consumer
 import java.util.function.Function
 
 open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
@@ -40,8 +34,8 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
   pieBuilderFactory = { TestPieBuilderImpl(shouldSpy) },
   loggerFactory = { StreamLogger.onlyErrors() },
   executorLoggerFactory = { l -> LoggerExecutorLogger(l) },
-  defaultResourceStampers = if(multipleResourceStampers) mutableListOf(ModifiedResourceStamper(), HashResourceStamper()) else mutableListOf<ResourceStamper<ReadableResource>>(ModifiedResourceStamper()),
-  defaultHierarchicalStampers = if(multipleResourceStampers) mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()) else mutableListOf<ResourceStamper<HierarchicalResource>>(ModifiedMatchResourceStamper()),
+  defaultResourceStampers = if (multipleResourceStampers) mutableListOf(ModifiedResourceStamper(), HashResourceStamper()) else mutableListOf<ResourceStamper<ReadableResource>>(ModifiedResourceStamper()),
+  defaultHierarchicalStampers = if (multipleResourceStampers) mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()) else mutableListOf<ResourceStamper<HierarchicalResource>>(ModifiedMatchResourceStamper()),
   testContextFactory = testContextFactory
 ) {
   init {
@@ -53,11 +47,22 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
 
 open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl() {
   override fun build(): PieImpl {
-    val store = store.apply(logger)
-    val share = share.apply(logger)
+    val store = storeFactory.apply(logger)
+    val share = shareFactory.apply(logger)
     val defaultStampers = DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
       defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper)
-    return TestPieImpl(shouldSpy, taskDefs, resourceService, store, share, defaultStampers, layer, logger, executorLoggerFactory)
+    return TestPieImpl(
+      shouldSpy,
+      taskDefs ?: error("Task definitions have not been set. Call PieBuilder#withTaskDefs to set task definitions"),
+      resourceService,
+      store,
+      share,
+      defaultStampers,
+      layerFactory,
+      logger,
+      executorLoggerFactory,
+      MapCallbacks()
+    )
   }
 }
 
@@ -70,11 +75,12 @@ open class TestPieImpl(
   defaultStampers: DefaultStampers,
   layerFactory: BiFunction<TaskDefs, Logger, Layer>,
   logger: Logger,
-  executorLoggerFactory: Function<Logger, ExecutorLogger>
-) : PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, logger, executorLoggerFactory) {
+  executorLoggerFactory: Function<Logger, ExecutorLogger>,
+  callbacks: Callbacks
+) : PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, logger, executorLoggerFactory, callbacks) {
   val store: Store get() = super.store // Make store available for testing.
 
-  override fun createSession(taskDefs: TaskDefs): MixedSession {
+  override fun newSession(): MixedSession {
     val layer = layerFactory.apply(taskDefs, logger)
     val executorLogger = executorLoggerFactory.apply(logger)
     val visited = HashMap<TaskKey, TaskData>()
@@ -84,18 +90,18 @@ open class TestPieImpl(
     val requireShared = RequireShared(taskDefs, resourceService, super.store, executorLogger, visited)
 
     var topDownSession = TopDownRunner(super.store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited)
-    if(shouldSpy) {
+    if (shouldSpy) {
       topDownSession = spy(topDownSession)
     }
 
     var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, logger, executorLogger, taskExecutor,
       requireShared, callbacks, visited)
-    if(shouldSpy) {
+    if (shouldSpy) {
       bottomUpSession = spy(bottomUpSession)
     }
 
-    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, callbacks)
-    if(shouldSpy) {
+    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store)
+    if (shouldSpy) {
       session = spy(session)
     }
 
@@ -108,9 +114,8 @@ open class TestMixedSessionImpl(
   bottomUpRunner: BottomUpRunner,
   taskDefs: TaskDefs,
   resourceService: ResourceService,
-  store: Store,
-  callbacks: ConcurrentHashMap<TaskKey, Consumer<Serializable?>>
-) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, callbacks) {
+  store: Store
+) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store) {
   // Make store available for testing.
   val store: Store get() = super.store
 

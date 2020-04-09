@@ -1,12 +1,6 @@
 package mb.pie.example.copyfile
 
-import mb.pie.api.ExecContext
-import mb.pie.api.MapTaskDefs
-import mb.pie.api.None
-import mb.pie.api.STask
-import mb.pie.api.Supplier
-import mb.pie.api.TaskDef
-import mb.pie.api.TaskKey
+import mb.pie.api.*
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger

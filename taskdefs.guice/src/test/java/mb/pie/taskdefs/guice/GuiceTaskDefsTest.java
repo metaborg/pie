@@ -5,10 +5,10 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import mb.pie.api.ExecContext;
 import mb.pie.api.ExecException;
+import mb.pie.api.MixedSession;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
-import mb.pie.api.MixedSession;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
@@ -17,7 +17,6 @@ import mb.pie.runtime.logger.StreamLogger;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
-
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;

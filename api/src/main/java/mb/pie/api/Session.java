@@ -49,7 +49,7 @@ public interface Session {
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    <O extends Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output, without marking it as

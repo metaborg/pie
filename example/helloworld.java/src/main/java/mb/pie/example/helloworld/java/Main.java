@@ -1,6 +1,7 @@
 package mb.pie.example.helloworld.java;
 
 import mb.pie.api.ExecContext;
+import mb.pie.api.MapTaskDefs;
 import mb.pie.api.MixedSession;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
@@ -9,7 +10,6 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
-import mb.pie.api.MapTaskDefs;
 import mb.pie.store.lmdb.LMDBStore;
 
 import java.io.BufferedOutputStream;
@@ -19,28 +19,29 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 
 /**
- * This example demonstrates how to write a PIE build script in Kotlin with the PIE API, and how to incrementally execute that build script
- * with the PIE runtime.
+ * This example demonstrates how to write a PIE build script in Kotlin with the PIE API, and how to incrementally
+ * execute that build script with the PIE runtime.
  * <p>
  * The goal of the build script is to write "Hello, world!" to a file.
  */
 public class Main {
     /**
-     * The {@link WriteHelloWorld} {@link TaskDef task definition} takes as input a {@link File path} to a file, and then writes
-     * "Hello, world!" to it. This task does not return a value, so we use {@link None} as output type.
+     * The {@link WriteHelloWorld} {@link TaskDef task definition} takes as input a {@link File path} to a file, and
+     * then writes "Hello, world!" to it. This task does not return a value, so we use {@link None} as output type.
      */
     public static class WriteHelloWorld implements TaskDef<File, None> {
         /**
-         * The {@link TaskDef#getId} method must be overridden to provide a unique identifier for this task definition. In this case, we use
-         * reflection to create a unique identifier.
+         * The {@link TaskDef#getId} method must be overridden to provide a unique identifier for this task definition.
+         * In this case, we use reflection to create a unique identifier.
          */
         @Override public String getId() {
             return getClass().getSimpleName();
         }
 
         /**
-         * The {@link TaskDef#exec} method must be overridden to implement the logic of this task definition. This function is executed with an
-         * {@link ExecContext execution context} object, which is used to tell PIE about dynamic task or file dependencies.
+         * The {@link TaskDef#exec} method must be overridden to implement the logic of this task definition. This
+         * function is executed with an {@link ExecContext execution context} object, which is used to tell PIE about
+         * dynamic task or file dependencies.
          */
         @Override public None exec(ExecContext context, File input) throws Exception {
             // We write "Hello, world!" to the file.

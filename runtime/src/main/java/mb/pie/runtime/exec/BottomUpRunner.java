@@ -1,8 +1,26 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecException;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.InconsistentResourceProvide;
+import mb.pie.api.InconsistentResourceRequire;
+import mb.pie.api.InconsistentTaskReq;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.Observability;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.Task;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
+import mb.pie.runtime.Callbacks;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -10,7 +28,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -23,7 +40,7 @@ public class BottomUpRunner implements RequireTask {
     private final ExecutorLogger executorLogger;
     private final TaskExecutor taskExecutor;
     private final RequireShared requireShared;
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
+    private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
     private final DistinctTaskKeyPriorityQueue queue;
@@ -37,7 +54,7 @@ public class BottomUpRunner implements RequireTask {
         ExecutorLogger executorLogger,
         TaskExecutor taskExecutor,
         RequireShared requireShared,
-        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks,
+        Callbacks callbacks,
         HashMap<TaskKey, TaskData> visited
     ) {
         this.taskDefs = taskDefs;
@@ -153,9 +170,8 @@ public class BottomUpRunner implements RequireTask {
         try {
             // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
             final TaskData data = getData(key, task, cancel);
-            @SuppressWarnings({"unchecked", "ConstantConditions"}) final O output = (O) data.output;
+            @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
             executorLogger.requireTopDownEnd(key, task, output);
-            //noinspection ConstantConditions
             return output;
         } finally {
             layer.requireTopDownEnd(key);

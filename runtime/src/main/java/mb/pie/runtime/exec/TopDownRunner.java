@@ -1,13 +1,28 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecException;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.InconsistentResourceProvide;
+import mb.pie.api.InconsistentResourceRequire;
+import mb.pie.api.InconsistentTaskReq;
+import mb.pie.api.Layer;
+import mb.pie.api.Observability;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.Task;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
+import mb.pie.runtime.Callbacks;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class TopDownRunner implements RequireTask {
@@ -16,7 +31,7 @@ public class TopDownRunner implements RequireTask {
     private final ExecutorLogger executorLogger;
     private final TaskExecutor taskExecutor;
     private final RequireShared requireShared;
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
+    private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
 
@@ -26,7 +41,7 @@ public class TopDownRunner implements RequireTask {
         ExecutorLogger executorLogger,
         TaskExecutor taskExecutor,
         RequireShared requireShared,
-        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks,
+        Callbacks callbacks,
         HashMap<TaskKey, TaskData> visited
     ) {
         this.store = store;
@@ -62,7 +77,7 @@ public class TopDownRunner implements RequireTask {
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, cancel);
             TaskData data = status.data;
-            @SuppressWarnings({"unchecked"}) final O output = (O) data.output;
+            @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
             if(!status.executed) {
                 if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
