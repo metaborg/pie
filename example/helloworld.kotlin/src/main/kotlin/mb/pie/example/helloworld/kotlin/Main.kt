@@ -6,8 +6,12 @@ import mb.pie.api.None
 import mb.pie.api.TaskDef
 import mb.pie.runtime.PieBuilderImpl
 import mb.pie.runtime.logger.StreamLogger
-import mb.pie.store.lmdb.LMDBStore
-import java.io.File
+import mb.pie.runtime.store.InMemoryStore
+import mb.pie.runtime.store.SerializingStore
+import mb.resource.ResourceKeyString
+import mb.resource.fs.FSResource
+import mb.resource.hierarchical.ResourcePath
+import java.util.function.Supplier
 
 /**
  * This example demonstrates how to write a PIE build script in Kotlin with the PIE API, and how to incrementally execute that build script
@@ -17,10 +21,10 @@ import java.io.File
  */
 
 /**
- * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][File] to a file, and then writes "Hello, world!" to it. This
+ * The [WriteHelloWorld] [task definition][TaskDef] takes as input a [path][ResourcePath] to a file, and then writes "Hello, world!" to it. This
  * task does not return a value, so we use [None] as output type.
  */
-class WriteHelloWorld : TaskDef<File, None> {
+class WriteHelloWorld : TaskDef<ResourcePath, None> {
   /**
    * The [id] property must be overridden to provide a unique identifier for this task definition. In this case, we use reflection to create
    * a unique identifier.
@@ -31,14 +35,15 @@ class WriteHelloWorld : TaskDef<File, None> {
    * The [exec] method must be overridden to implement the logic of this task definition. This function is executed with an
    * [execution context][ExecContext] object as receiver, which is used to tell PIE about dynamic task or file dependencies.
    */
-  override fun exec(context: ExecContext, input: File): None {
+  override fun exec(context: ExecContext, input: ResourcePath): None {
     // We write "Hello, world!" to the file.
-    input.outputStream().buffered().use {
+    val file = context.getWritableResource(input)
+    file.openWrite().buffered().use {
       it.write("Hello, world!".toByteArray())
     }
     // Since we have written to or created a file, we need to tell PIE about this dynamic dependency, by calling `provide`, which is
     // defined in `ExecContext`.
-    context.provide(input)
+    context.provide(file)
     // Since this task does not generate a value, and we use the `None` type to indicate that, we need to return the singleton instance of `None`.
     return None.instance
   }
@@ -49,7 +54,8 @@ class WriteHelloWorld : TaskDef<File, None> {
  */
 fun main(args: Array<String>) {
   // We expect one optional argument: the file to write hello world to.
-  val file = File(args.getOrElse(0) { "build/run/helloworld.txt" })
+  val file = FSResource(args.getOrElse(0) { "build/run/helloworld.txt" })
+  file.createParents()
 
   // Now we instantiate the task definitions.
   val writeHelloWorld = WriteHelloWorld()
@@ -62,14 +68,14 @@ fun main(args: Array<String>) {
   val pieBuilder = PieBuilderImpl()
   // We pass in the TaskDefs object we created.
   pieBuilder.withTaskDefs(taskDefs)
-  // For storing build results and the dependency graph, we will use the LMDB embedded database, stored at target/lmdb.
-  LMDBStore.withLMDBStore(pieBuilder, File("build/run/lmdb"))
+  // For storing build results and the dependency graph, we will serialize the in-memory store on exit at build/store.
+  pieBuilder.withStoreFactory { _, resourceService -> SerializingStore(resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), Supplier { InMemoryStore() }) }
   // For example purposes, we use verbose logging which will output to stdout.
   pieBuilder.withLogger(StreamLogger.verbose())
   // Then we build the PIE runtime.
   pieBuilder.build().use { pie ->
     // Now we create concrete task instances from the task definitions.
-    val writeHelloWorldTask = writeHelloWorld.createTask(file)
+    val writeHelloWorldTask = writeHelloWorld.createTask(file.path)
     // We create a new session to perform an incremental build.
     pie.newSession().use { session ->
       // We incrementally execute the hello world task by requiring it in a top-down fashion.
@@ -78,7 +84,7 @@ fun main(args: Array<String>) {
       session.require(writeHelloWorldTask)
 
       // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
-      println("File contents: ${file.readText()}")
+      println("File contents: ${file.readString()}")
     }
   }
   // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a
