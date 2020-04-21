@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class UnitExplicitValueTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_unitExplicitValueTestGen(), main_unitExplicitValue.class, None.instance);
     }
 }

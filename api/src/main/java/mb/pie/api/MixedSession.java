@@ -3,6 +3,7 @@ package mb.pie.api;
 import mb.pie.api.exec.CancelToken;
 import mb.resource.ResourceKey;
 
+import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -68,7 +69,4 @@ public interface MixedSession extends Session, AutoCloseable {
      *                               returned object to query task results or to execute new tasks.
      */
     TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
-
-
-    @Override void close();
 }

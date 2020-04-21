@@ -5,7 +5,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.Objects;
 
-public final class Output {
+public final class Output implements Serializable {
     public final @Nullable Serializable output;
 
     public Output(@Nullable Serializable output) {

@@ -15,19 +15,24 @@ public class ResourceStringSupplier implements Supplier<String> {
     private final @Nullable ResourceStamper<ReadableResource> stamper;
     private final Charset charset;
 
-    public ResourceStringSupplier(ResourceKey key) {
-        this(key, null);
+    public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper, Charset charset) {
+        this.key = key;
+        this.stamper = stamper;
+        this.charset = charset;
     }
 
     public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper) {
         this(key, stamper, StandardCharsets.UTF_8);
     }
 
-    public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper, Charset charset) {
-        this.key = key;
-        this.stamper = stamper;
-        this.charset = charset;
+    public ResourceStringSupplier(ResourceKey key, Charset charset) {
+        this(key, null, charset);
     }
+
+    public ResourceStringSupplier(ResourceKey key) {
+        this(key, (ResourceStamper<ReadableResource>)null);
+    }
+
 
     @Override public String get(ExecContext context) throws IOException {
         return context.require(key, stamper != null ? stamper : context.getDefaultRequireReadableResourceStamper()).readString(charset);

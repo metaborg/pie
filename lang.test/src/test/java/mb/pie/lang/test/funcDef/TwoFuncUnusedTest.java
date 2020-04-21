@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class TwoFuncUnusedTest {
-    @Test void test_main() throws ExecException {
+    @Test void test_main() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_twoFuncUnusedTestGen(), main_twoFuncUnused.class, None.instance);
     }
 
-    @Test void test_helper() throws ExecException {
+    @Test void test_helper() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_twoFuncUnusedTestGen(), helper_twoFuncUnused.class, None.instance);
     }
 }

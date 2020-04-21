@@ -1,5 +1,7 @@
 package mb.pie.api;
 
+import java.io.IOException;
+
 /**
  * Internal storage for tasks, outputs, and dependency information.
  */
@@ -18,7 +20,7 @@ public interface Store extends AutoCloseable {
     /**
      * Force synchronization of in-memory data to persistent storage.
      */
-    void sync();
+    void sync() throws IOException;
 
-    @Override void close();
+    @Override void close() throws IOException;
 }

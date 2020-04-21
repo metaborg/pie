@@ -14,6 +14,7 @@ import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Set;
 
@@ -44,7 +45,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         this.store = store;
     }
 
-    @Override public void close() {
+    @Override public void close() throws IOException {
         store.sync();
     }
 

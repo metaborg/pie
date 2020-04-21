@@ -9,7 +9,7 @@ import java.util.Arrays;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ToNullableTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_toNullableTestGen(), main_toNullable.class, new ArrayList<Integer>(Arrays.asList(6)));
     }
 }
