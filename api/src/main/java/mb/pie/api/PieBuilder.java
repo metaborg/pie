@@ -17,7 +17,7 @@ public interface PieBuilder {
 
     PieBuilder withResourceService(ResourceService resourceService);
 
-    PieBuilder withStoreFactory(Function<Logger, Store> storeFunc);
+    PieBuilder withStoreFactory(BiFunction<Logger, ResourceService, Store> storeFunc);
 
     PieBuilder withShareFactory(Function<Logger, Share> shareFunc);
 

@@ -34,7 +34,7 @@ import java.util.function.Function;
     abstract ResourceService resourceService();
 
     @BindsOptionalOf
-    abstract Function<Logger, Store> storeFunc();
+    abstract BiFunction<Logger, ResourceService, Store> storeFunc();
 
     @BindsOptionalOf
     abstract Function<Logger, Share> shareFunc();

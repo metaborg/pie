@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class PathRelativeTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_pathRelativeTestGen(), main_pathRelative.class, new FSPath("./path/to/foo"));
     }
 }

@@ -69,6 +69,11 @@ public interface MixedSession extends Session, AutoCloseable {
      */
     TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
 
-
+    
+    /**
+     * Closes the session, {@link Store#sync() synchronizing the storage to persistent storage, if any}.
+     *
+     * @throws RuntimeException when closing fails.
+     */
     @Override void close();
 }

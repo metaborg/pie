@@ -10,7 +10,7 @@ import java.util.Arrays;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class VariableTupleAssignmentTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_variableTupleAssignmentTestGen(), main_variableTupleAssignment.class, new main_variableTupleAssignment.Output(new Integer(2), new ArrayList<>(Arrays.asList(new Boolean(true), new Boolean(false)))));
     }
 }

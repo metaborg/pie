@@ -32,7 +32,7 @@ import java.util.function.Function;
 public class PieBuilderImpl implements PieBuilder {
     protected @Nullable TaskDefs taskDefs;
     protected ResourceService resourceService = new DefaultResourceService(new FSResourceRegistry(), new URLResourceRegistry(), new TextResourceRegistry(), new ClassLoaderResourceRegistry(PieBuilderImpl.class.getClassLoader()));
-    protected Function<Logger, Store> storeFactory = (logger) -> new InMemoryStore();
+    protected BiFunction<Logger, ResourceService, Store> storeFactory = (logger, resourceService) -> new InMemoryStore();
     protected Function<Logger, Share> shareFactory = (logger) -> new NonSharingShare();
     protected OutputStamper defaultOutputStamper = OutputStampers.equals();
     protected ResourceStamper<ReadableResource> defaultRequireReadableStamper = ResourceStampers.modifiedFile();
@@ -57,7 +57,7 @@ public class PieBuilderImpl implements PieBuilder {
     }
 
     @Override
-    public PieBuilderImpl withStoreFactory(Function<Logger, Store> store) {
+    public PieBuilderImpl withStoreFactory(BiFunction<Logger, ResourceService, Store> store) {
         this.storeFactory = store;
         return this;
     }
@@ -131,7 +131,7 @@ public class PieBuilderImpl implements PieBuilder {
         return new PieImpl(
             taskDefs,
             resourceService,
-            storeFactory.apply(logger),
+            storeFactory.apply(logger, resourceService),
             shareFactory.apply(logger),
             defaultStampers,
             layerFactory,

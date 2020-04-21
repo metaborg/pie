@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class NotVarFalseTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_notVarFalseTestGen(), main_notVarFalse.class, new Boolean(true));
     }
 }

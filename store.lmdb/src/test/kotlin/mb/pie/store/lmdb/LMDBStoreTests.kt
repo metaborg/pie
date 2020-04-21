@@ -35,6 +35,6 @@ class LMDBStoreTests {
 class LMDBStoreTestBuilder(shouldSpy: Boolean = true) : DefaultRuntimeTestBuilder(shouldSpy) {
   init {
     storeFactories.clear()
-    storeFactories.add { l -> LMDBStore(l, File("build/test/lmdbstore")) }
+    storeFactories.add { l, _ -> LMDBStore(l, File("build/test/lmdbstore")) }
   }
 }

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class VariableTupleDecompositionMixedTypeTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_variableTupleDecompositionMixedTypeTestGen(), main_variableTupleDecompositionMixedType.class, new main_variableTupleDecompositionMixedType.Output(new Boolean(true), "implicitly typed string"));
     }
 }

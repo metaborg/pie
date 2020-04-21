@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class UnitNoValueTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_unitNoValueTestGen(), main_unitNoValue.class, None.instance);
     }
 }

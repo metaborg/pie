@@ -1,14 +1,28 @@
 package mb.pie.runtime.test
 
-import com.nhaarman.mockitokotlin2.spy
-import mb.pie.api.*
+import com.nhaarman.mockitokotlin2.*
+import mb.pie.api.ExecutorLogger
+import mb.pie.api.Layer
+import mb.pie.api.Logger
+import mb.pie.api.MapTaskDefs
+import mb.pie.api.Pie
+import mb.pie.api.Share
+import mb.pie.api.Store
+import mb.pie.api.TaskData
+import mb.pie.api.TaskDefs
+import mb.pie.api.TaskKey
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.resource.HashMatchResourceStamper
 import mb.pie.api.stamp.resource.HashResourceStamper
 import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.resource.ModifiedResourceStamper
 import mb.pie.api.test.ApiTestBuilder
-import mb.pie.runtime.*
+import mb.pie.runtime.Callbacks
+import mb.pie.runtime.DefaultStampers
+import mb.pie.runtime.MapCallbacks
+import mb.pie.runtime.MixedSessionImpl
+import mb.pie.runtime.PieBuilderImpl
+import mb.pie.runtime.PieImpl
 import mb.pie.runtime.exec.BottomUpRunner
 import mb.pie.runtime.exec.RequireShared
 import mb.pie.runtime.exec.TaskExecutor
@@ -34,20 +48,20 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
   pieBuilderFactory = { TestPieBuilderImpl(shouldSpy) },
   loggerFactory = { StreamLogger.onlyErrors() },
   executorLoggerFactory = { l -> LoggerExecutorLogger(l) },
-  defaultResourceStampers = if (multipleResourceStampers) mutableListOf(ModifiedResourceStamper(), HashResourceStamper()) else mutableListOf<ResourceStamper<ReadableResource>>(ModifiedResourceStamper()),
-  defaultHierarchicalStampers = if (multipleResourceStampers) mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()) else mutableListOf<ResourceStamper<HierarchicalResource>>(ModifiedMatchResourceStamper()),
+  defaultResourceStampers = if(multipleResourceStampers) mutableListOf(ModifiedResourceStamper(), HashResourceStamper()) else mutableListOf<ResourceStamper<ReadableResource>>(ModifiedResourceStamper()),
+  defaultHierarchicalStampers = if(multipleResourceStampers) mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()) else mutableListOf<ResourceStamper<HierarchicalResource>>(ModifiedMatchResourceStamper()),
   testContextFactory = testContextFactory
 ) {
   init {
-    storeFactories.add { _ -> InMemoryStore() }
+    storeFactories.add { _, _ -> InMemoryStore() }
     shareFactories.add { _ -> NonSharingShare() }
     layerFactories.add { td, l -> ValidationLayer(td, l) }
   }
 }
 
 open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl() {
-  override fun build(): PieImpl {
-    val store = storeFactory.apply(logger)
+  override fun build(): TestPieImpl {
+    val store = storeFactory.apply(logger, resourceService)
     val share = shareFactory.apply(logger)
     val defaultStampers = DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
       defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper)
@@ -80,7 +94,7 @@ open class TestPieImpl(
 ) : PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, logger, executorLoggerFactory, callbacks) {
   val store: Store get() = super.store // Make store available for testing.
 
-  override fun newSession(): MixedSession {
+  override fun newSession(): TestMixedSessionImpl {
     val layer = layerFactory.apply(taskDefs, logger)
     val executorLogger = executorLoggerFactory.apply(logger)
     val visited = HashMap<TaskKey, TaskData>()
@@ -90,18 +104,18 @@ open class TestPieImpl(
     val requireShared = RequireShared(taskDefs, resourceService, super.store, executorLogger, visited)
 
     var topDownSession = TopDownRunner(super.store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited)
-    if (shouldSpy) {
+    if(shouldSpy) {
       topDownSession = spy(topDownSession)
     }
 
     var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, logger, executorLogger, taskExecutor,
       requireShared, callbacks, visited)
-    if (shouldSpy) {
+    if(shouldSpy) {
       bottomUpSession = spy(bottomUpSession)
     }
 
     var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store)
-    if (shouldSpy) {
+    if(shouldSpy) {
       session = spy(session)
     }
 

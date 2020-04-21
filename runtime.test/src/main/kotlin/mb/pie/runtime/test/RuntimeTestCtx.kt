@@ -12,7 +12,7 @@ open class RuntimeTestCtx(
 ) : ApiTestCtx(fileSystem, testPieImpl) {
   override val pie: TestPieImpl get() = testPieImpl
 
-  override fun newSession(): TestMixedSessionImpl = pie.newSession() as TestMixedSessionImpl
+  override fun newSession(): TestMixedSessionImpl = pie.newSession()
 
   fun addTaskDef(taskDef: TaskDef<*, *>) {
     taskDefs.add(taskDef)

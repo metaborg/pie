@@ -2,11 +2,20 @@ package mb.pie.api.test
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import mb.pie.api.*
+import mb.pie.api.ExecutorLogger
+import mb.pie.api.Layer
+import mb.pie.api.Logger
+import mb.pie.api.MapTaskDefs
+import mb.pie.api.Pie
+import mb.pie.api.PieBuilder
+import mb.pie.api.Share
+import mb.pie.api.Store
+import mb.pie.api.TaskDefs
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
 import mb.resource.ReadableResource
+import mb.resource.ResourceService
 import mb.resource.hierarchical.HierarchicalResource
 import org.junit.jupiter.api.DynamicTest
 import java.nio.file.FileSystem
@@ -23,7 +32,7 @@ abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
   var filesystemFactory: () -> FileSystem = { Jimfs.newFileSystem(Configuration.unix()) }
 
   var taskDefsFactory: () -> MapTaskDefs = { MapTaskDefs() }
-  val storeFactories: MutableList<(Logger) -> Store> = mutableListOf()
+  val storeFactories: MutableList<(Logger, ResourceService) -> Store> = mutableListOf()
   val shareFactories: MutableList<(Logger) -> Share> = mutableListOf()
   val defaultOutputStampers: MutableList<OutputStamper> = mutableListOf(EqualsOutputStamper())
   val defaultRequireReadableStampers: MutableList<ResourceStamper<ReadableResource>> = defaultResourceStampers
