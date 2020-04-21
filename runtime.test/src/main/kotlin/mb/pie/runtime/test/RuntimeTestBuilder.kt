@@ -5,7 +5,6 @@ import mb.pie.api.ExecutorLogger
 import mb.pie.api.Layer
 import mb.pie.api.Logger
 import mb.pie.api.MapTaskDefs
-import mb.pie.api.MixedSession
 import mb.pie.api.Pie
 import mb.pie.api.Share
 import mb.pie.api.Store
@@ -54,7 +53,7 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
   testContextFactory = testContextFactory
 ) {
   init {
-    storeFactories.add { _ -> InMemoryStore() }
+    storeFactories.add { _, _ -> InMemoryStore() }
     shareFactories.add { _ -> NonSharingShare() }
     layerFactories.add { td, l -> ValidationLayer(td, l) }
   }
@@ -62,7 +61,7 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
 
 open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl() {
   override fun build(): TestPieImpl {
-    val store = storeFactory.apply(logger)
+    val store = storeFactory.apply(logger, resourceService)
     val share = shareFactory.apply(logger)
     val defaultStampers = DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
       defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper)

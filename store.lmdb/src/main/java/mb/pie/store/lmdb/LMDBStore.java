@@ -18,7 +18,7 @@ public class LMDBStore implements Store {
      * database size and [maxReaders] determining the maximum concurrent readers.
      */
     public static PieBuilder withLMDBStore(PieBuilder pieBuilder, File envDir, long maxDbSize, int maxReaders) {
-        pieBuilder.withStoreFactory((logger) -> new LMDBStore(logger, envDir, maxDbSize, maxReaders));
+        pieBuilder.withStoreFactory((logger, resourceService) -> new LMDBStore(logger, envDir, maxDbSize, maxReaders));
         return pieBuilder;
     }
 

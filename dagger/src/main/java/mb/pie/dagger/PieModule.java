@@ -2,7 +2,16 @@ package mb.pie.dagger;
 
 import dagger.Module;
 import dagger.Provides;
-import mb.pie.api.*;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.MapTaskDefs;
+import mb.pie.api.Pie;
+import mb.pie.api.PieBuilder;
+import mb.pie.api.Share;
+import mb.pie.api.Store;
+import mb.pie.api.TaskDef;
+import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -29,7 +38,7 @@ public class PieModule {
     Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
         Optional<ResourceService> resourceService,
-        Optional<Function<Logger, Store>> storeFunc,
+        Optional<BiFunction<Logger, ResourceService, Store>> storeFunc,
         Optional<Function<Logger, Share>> shareFunc,
         Optional<OutputStamper> defaultOutputStamper,
         @Named("require") Optional<ResourceStamper<ReadableResource>> defaultRequireReadableResourceStamper,

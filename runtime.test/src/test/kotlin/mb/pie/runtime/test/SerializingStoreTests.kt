@@ -23,7 +23,7 @@ class SerializingStoreTests {
     // Manually create PIE instance, as we need to control the serialization/deserialization of the InMemoryStore.
     val fileSystem = Jimfs.newFileSystem(Configuration.unix())
     val pieBuilder = TestPieBuilderImpl(true)
-    pieBuilder.withStoreFactory { SerializingStore(FSResource(fileSystem.getPath("store")), Supplier { InMemoryStore() }) }
+    pieBuilder.withStoreFactory { _, _ -> SerializingStore(FSResource(fileSystem.getPath("store")), Supplier { InMemoryStore() }) }
     val taskDefs = MapTaskDefs()
     pieBuilder.withTaskDefs(taskDefs)
 
