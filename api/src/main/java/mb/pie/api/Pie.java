@@ -110,4 +110,12 @@ public interface Pie extends AutoCloseable {
      * @return {@link PieChildBuilder Builder} for creating a child {@link Pie} instance
      */
     PieChildBuilder createChildBuilder();
+
+
+    /**
+     * Closes the PIE entry point, {@link Store#close() closing the storage}.
+     *
+     * @throws RuntimeException when closing fails.
+     */
+    void close();
 }

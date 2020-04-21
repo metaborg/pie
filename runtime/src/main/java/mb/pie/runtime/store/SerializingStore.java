@@ -47,26 +47,28 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
         return store.writeTxn();
     }
 
-    @Override public void sync() throws IOException {
+    @Override public void sync() {
         store.sync();
         if(serializeOnSync) {
             serialize();
         }
     }
 
-    @Override public void close() throws IOException {
+    @Override public void close() {
         store.close();
         serialize();
     }
 
 
-    private void serialize() throws IOException {
+    private void serialize() {
         try(
             final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(resource.openWrite());
             final ObjectOutputStream objectOutputStream = new ObjectOutputStream(bufferedOutputStream)
         ) {
             objectOutputStream.writeObject(store);
             objectOutputStream.flush();
+        } catch(IOException e) {
+            throw new RuntimeException("Serializing store '" + store + "' failed unexpectedly", e);
         }
     }
 

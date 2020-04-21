@@ -62,7 +62,7 @@ public class PieImpl implements Pie {
         this.callbacks = callbacks;
     }
 
-    @Override public void close() throws IOException {
+    @Override public void close() {
         store.close();
     }
 
