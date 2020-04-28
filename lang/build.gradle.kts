@@ -3,5 +3,5 @@ plugins {
 }
 
 spoofax {
-  createPublication = false // Disable publications until PIE DSL generates Java code and depends on a stable Spoofax.
+  metaborgVersion = "2.5.8"
 }
