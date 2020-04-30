@@ -1,0 +1,6 @@
+package mb.pie.lang.test.string;
+
+func main_variableOnly() -> string = {
+  val str = "abc";
+  "$str"
+}
