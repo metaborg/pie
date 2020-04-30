@@ -950,7 +950,12 @@ rules // Literals
 rules // Interpolated string literal
 
   p2j-ast-exp:
-    StrLit(parts) -> result
+    StrLit([]) -> result
+    with
+      result := ([], StringLiteral($[""]))
+
+  p2j-ast-exp:
+    StrLit(parts@[first|rest]) -> result
     with
       (partsStmts, partsExps) := <unzip> <map(p2j-ast-strpart)> parts
     ; stmts                   := <concat> partsStmts
