@@ -972,7 +972,16 @@ rules // Interpolated string literal
     StrInterpRef(refExp) -> <try-p2j-ast-exp> refExp
 
   p2j-ast-strpart:
-    StrInterpExp(exp) -> <try-p2j-ast-exp> exp
+    StrInterpExp(exp) -> result
+    with
+      (stmts, expVal) := <try-p2j-ast-exp> exp
+    ; resultVal       := InvokeQExp(
+        ExpressionName(Id("String"))
+      , None()
+      , Id("valueOf")
+      , [ expVal ]
+      )
+    ; result          := (stmts, resultVal)
 
   p2j-ast-add-strings:
     (e1, e2) -> Add(e1, e2)
