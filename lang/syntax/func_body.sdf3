@@ -104,9 +104,13 @@ syntax // Interpolated string literal
 lexical syntax
 
   StrChars = StrChar+
-  StrChar = ~[\"\$\n\r]
+  StrChar = ~[\"\$\n\r\\]
   StrChar = "\\\""
   StrChar = "\\$"
+  StrChar = "\\n"
+  StrChar = "\\r"
+  StrChar = "\\\\"
+  StrChar = "\\" ~[\"\$\n\r\\]
 
 lexical restrictions
 
