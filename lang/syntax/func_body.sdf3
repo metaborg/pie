@@ -105,16 +105,11 @@ lexical syntax
 
   StrChars = StrChar+
   StrChar = ~[\"\$\n\r\\]
-  StrChar = "\\\""
-  StrChar = "\\$"
-  StrChar = "\\n"
-  StrChar = "\\r"
-  StrChar = "\\\\"
-  StrChar = "\\" ~[\"\$\n\r\\]
+  StrChar = "\\" ~[\n\r]
 
 lexical restrictions
 
-  StrChars -/- ~[\"\$\n\r]
+  StrChars -/- ~[\"\$\n\r\\]
 
 syntax // Interpolated path literal
 
