@@ -30,7 +30,7 @@ public class HashMatchResourceStamper implements ResourceStamper<HierarchicalRes
     @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final HashMatchResourceStamper that = (HashMatchResourceStamper) o;
+        final HashMatchResourceStamper that = (HashMatchResourceStamper)o;
         return Objects.equals(matcher, that.matcher);
     }
 

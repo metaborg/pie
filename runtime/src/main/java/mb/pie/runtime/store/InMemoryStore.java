@@ -1,9 +1,27 @@
 package mb.pie.runtime.store;
 
-import mb.pie.api.*;
+import mb.pie.api.Observability;
+import mb.pie.api.Output;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
+import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
+import mb.resource.WritableResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
+public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serializable {
     private final ConcurrentHashMap<TaskKey, Serializable> taskInputs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TaskKey, Output> taskOutputs = new ConcurrentHashMap<>();
 
@@ -242,6 +260,45 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn {
         requireesOf.clear();
         resourceProvides.clear();
         providerOf.clear();
+    }
+
+
+    public void serialize(ObjectOutputStream objectOutputStream) throws IOException {
+        objectOutputStream.writeObject(this);
+        objectOutputStream.flush();
+    }
+
+    public void serializeToBytes(OutputStream outputStream) throws IOException {
+        try(
+            final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)
+        ) {
+            serialize(objectOutputStream);
+            outputStream.flush();
+        }
+    }
+
+    public void serializeToResource(WritableResource resource) throws IOException {
+        try(final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(resource.openWrite())) {
+            serializeToBytes(bufferedOutputStream);
+            bufferedOutputStream.flush();
+        }
+    }
+
+
+    public static InMemoryStore deserialize(ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException, ClassCastException {
+        return (InMemoryStore)objectInputStream.readObject();
+    }
+
+    public static InMemoryStore deserializeFromBytes(InputStream inputStream) throws IOException, ClassNotFoundException, ClassCastException {
+        try(final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)) {
+            return deserialize(objectInputStream);
+        }
+    }
+
+    public static InMemoryStore deserializeFromResource(ReadableResource resource) throws IOException, ClassNotFoundException, ClassCastException {
+        try(final BufferedInputStream bufferedInputStream = new BufferedInputStream(resource.openRead())) {
+            return deserializeFromBytes(bufferedInputStream);
+        }
     }
 
 

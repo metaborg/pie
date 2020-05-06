@@ -1,8 +1,8 @@
 package mb.pie.lang.test.util;
 
+import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
-import mb.pie.api.PieSession;
 import mb.pie.api.TaskDefs;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.logger.StreamLogger;
@@ -17,7 +17,7 @@ public class PieRunner {
         this.pie = pieBuilder.build();
     }
 
-    public PieSession newSession() {
+    public MixedSession newSession() {
         return pie.newSession();
     }
 }

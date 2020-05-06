@@ -33,11 +33,12 @@ public class Task<O extends @Nullable Serializable> {
     }
 
     /**
-     * Creates a {@link STask serializable task} for this task.
+     * Creates an {@link Supplier incremental supplier} for this task. A supplier is {@link Serializable} and as such
+     * can be used as an input or output of a task.
      *
-     * @return {@link STask Serializable task} for this task.
+     * @return {@link Supplier} for this task.
      */
-    public STask<O> toSerializableTask() {
+    public Supplier<O> toSupplier() {
         return new STask<>(taskDef, input);
     }
 

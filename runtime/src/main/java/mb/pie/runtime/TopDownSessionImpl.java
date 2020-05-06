@@ -2,7 +2,7 @@ package mb.pie.runtime;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.Output;
-import mb.pie.api.SessionAfterBottomUp;
+import mb.pie.api.TopDownSession;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.Task;
@@ -10,20 +10,20 @@ import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
-import mb.pie.runtime.exec.TopDownSession;
+import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 
-public class SessionAfterBottomUpImpl extends SessionBaseImpl implements SessionAfterBottomUp {
-    private final TopDownSession topDownSession;
+public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
+    private final TopDownRunner topDownRunner;
     private final Store store;
 
 
-    public SessionAfterBottomUpImpl(TopDownSession topDownSession, TaskDefs taskDefs, ResourceService resourceService, Store store) {
+    public TopDownSessionImpl(TopDownRunner topDownRunner, TaskDefs taskDefs, ResourceService resourceService, Store store) {
         super(taskDefs, resourceService, store);
-        this.topDownSession = topDownSession;
+        this.topDownRunner = topDownRunner;
         this.store = store;
     }
 
@@ -61,7 +61,7 @@ public class SessionAfterBottomUpImpl extends SessionBaseImpl implements Session
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return topDownSession.requireInitial(task, true, cancel);
+        return topDownRunner.requireInitial(task, true, cancel);
     }
 
     @Override
@@ -76,6 +76,6 @@ public class SessionAfterBottomUpImpl extends SessionBaseImpl implements Session
 
     @Override
     public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return topDownSession.requireInitial(task, false, cancel);
+        return topDownRunner.requireInitial(task, false, cancel);
     }
 }

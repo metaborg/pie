@@ -9,7 +9,7 @@ import java.util.Arrays;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ListIntTwoTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_listIntTwoTestGen(), main_listIntTwo.class, new ArrayList<>(Arrays.asList(1, 2)));
     }
 }

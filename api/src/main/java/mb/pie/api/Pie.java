@@ -11,26 +11,14 @@ import java.util.function.Consumer;
 public interface Pie extends AutoCloseable {
     /**
      * Creates a new session for incrementally executing tasks.
-     * <p>
+     *
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
-     * started after external changes have occurred. See {@link PieSession} for a list of external changes.
+     * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
      *
      * @return A new session.
-     * @see PieSession
+     * @see MixedSession
      */
-    PieSession newSession();
-
-    /**
-     * Creates a new session for incrementally executing tasks, with additional task definitions.
-     * <p>
-     * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
-     * started after external changes have occurred. See {@link PieSession} for a list of external changes.
-     *
-     * @param addTaskDefs Additional {@link TaskDef task definitions} that are available to the created session.
-     * @return A new session.
-     * @see PieSession
-     */
-    PieSession newSession(TaskDefs addTaskDefs);
+    MixedSession newSession();
 
 
     /**
@@ -113,4 +101,21 @@ public interface Pie extends AutoCloseable {
      * Removes all data from the store.
      */
     void dropStore();
+
+
+    /**
+     * Creates a {@link PieChildBuilder builder} for creating a child {@link Pie} instance, with this {@link Pie}
+     * instance as its parent.
+     *
+     * @return {@link PieChildBuilder Builder} for creating a child {@link Pie} instance
+     */
+    PieChildBuilder createChildBuilder();
+
+
+    /**
+     * Closes the PIE entry point, {@link Store#close() closing the storage}.
+     *
+     * @throws RuntimeException when closing fails.
+     */
+    void close();
 }

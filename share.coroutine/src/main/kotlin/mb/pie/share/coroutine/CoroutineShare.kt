@@ -9,7 +9,7 @@ import java.util.function.Supplier
  * Sets the share of this builder to the [CoroutineShare].
  */
 fun PieBuilder.withCoroutineShare(): PieBuilder {
-  this.withShare { CoroutineShare() }
+  this.withShareFactory { CoroutineShare() }
   return this
 }
 

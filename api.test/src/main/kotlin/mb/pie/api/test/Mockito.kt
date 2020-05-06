@@ -1,6 +1,13 @@
 package mb.pie.api.test
 
-import mb.pie.api.*
+import mb.pie.api.ExecContext
+import mb.pie.api.Function
+import mb.pie.api.Logger
+import mb.pie.api.STask
+import mb.pie.api.STaskDef
+import mb.pie.api.Supplier
+import mb.pie.api.Task
+import mb.pie.api.TaskDef
 import mb.pie.api.exec.CancelToken
 import mb.pie.api.exec.ExecReason
 import mb.pie.api.exec.NullCancelableToken
@@ -67,7 +74,12 @@ class NoExecContext : ExecContext {
     return null as O
   }
 
-  override fun <O : Serializable?> require(provider: Provider<O>?): O {
+  override fun <O : Serializable?> require(supplier: Supplier<O>?): O {
+    @Suppress("UNCHECKED_CAST")
+    return null as O
+  }
+
+  override fun <I : Serializable?, O : Serializable?> require(function: Function<I, O>?, input: I): O {
     @Suppress("UNCHECKED_CAST")
     return null as O
   }

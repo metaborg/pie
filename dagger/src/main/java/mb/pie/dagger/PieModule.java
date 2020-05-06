@@ -2,12 +2,20 @@ package mb.pie.dagger;
 
 import dagger.Module;
 import dagger.Provides;
-import mb.pie.api.*;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.MapTaskDefs;
+import mb.pie.api.Pie;
+import mb.pie.api.PieBuilder;
+import mb.pie.api.Share;
+import mb.pie.api.Store;
+import mb.pie.api.TaskDef;
+import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
-import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 
 import javax.inject.Named;
@@ -26,10 +34,11 @@ public class PieModule {
         this.builderSupplier = builderSupplier;
     }
 
-    @Provides @Singleton Pie providePie(
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType") @Provides @Singleton
+    Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
         Optional<ResourceService> resourceService,
-        Optional<Function<Logger, Store>> storeFunc,
+        Optional<BiFunction<Logger, ResourceService, Store>> storeFunc,
         Optional<Function<Logger, Share>> shareFunc,
         Optional<OutputStamper> defaultOutputStamper,
         @Named("require") Optional<ResourceStamper<ReadableResource>> defaultRequireReadableResourceStamper,
@@ -43,16 +52,16 @@ public class PieModule {
         final PieBuilder builder = builderSupplier.get();
         builder.withTaskDefs(new MapTaskDefs(taskDefs));
         resourceService.ifPresent(builder::withResourceService);
-        storeFunc.ifPresent(builder::withStore);
-        shareFunc.ifPresent(builder::withShare);
+        storeFunc.ifPresent(builder::withStoreFactory);
+        shareFunc.ifPresent(builder::withShareFactory);
         defaultOutputStamper.ifPresent(builder::withDefaultOutputStamper);
         defaultRequireReadableResourceStamper.ifPresent(builder::withDefaultRequireReadableResourceStamper);
         defaultProvideReadableResourceStamper.ifPresent(builder::withDefaultProvideReadableResourceStamper);
         defaultRequireHierarchicalResourceStamper.ifPresent(builder::withDefaultRequireHierarchicalResourceStamper);
         defaultProvideHierarchicalResourceStamper.ifPresent(builder::withDefaultProvideHierarchicalResourceStamper);
-        layerFunc.ifPresent(builder::withLayer);
+        layerFunc.ifPresent(builder::withLayerFactory);
         logger.ifPresent(builder::withLogger);
-        executorLoggerFunc.ifPresent(builder::withExecutorLogger);
+        executorLoggerFunc.ifPresent(builder::withExecutorLoggerFactory);
         return builder.build();
     }
 }

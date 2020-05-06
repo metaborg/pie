@@ -1,17 +1,29 @@
 package mb.pie.runtime;
 
-import mb.pie.api.*;
-import mb.pie.runtime.exec.BottomUpSession;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.MixedSession;
+import mb.pie.api.Pie;
+import mb.pie.api.PieChildBuilder;
+import mb.pie.api.Share;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.Task;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
+import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
-import mb.pie.runtime.exec.TopDownSession;
-import mb.pie.runtime.taskdefs.CompositeTaskDefs;
+import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -25,8 +37,7 @@ public class PieImpl implements Pie {
     protected final BiFunction<TaskDefs, Logger, Layer> layerFactory;
     protected final Logger logger;
     protected final Function<Logger, ExecutorLogger> executorLoggerFactory;
-
-    protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks = new ConcurrentHashMap<>();
+    protected final Callbacks callbacks;
 
 
     public PieImpl(
@@ -37,7 +48,8 @@ public class PieImpl implements Pie {
         DefaultStampers defaultStampers,
         BiFunction<TaskDefs, Logger, Layer> layerFactory,
         Logger logger,
-        Function<Logger, ExecutorLogger> executorLoggerFactory
+        Function<Logger, ExecutorLogger> executorLoggerFactory,
+        Callbacks callbacks
     ) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
@@ -47,6 +59,7 @@ public class PieImpl implements Pie {
         this.layerFactory = layerFactory;
         this.logger = logger;
         this.executorLoggerFactory = executorLoggerFactory;
+        this.callbacks = callbacks;
     }
 
     @Override public void close() {
@@ -54,15 +67,7 @@ public class PieImpl implements Pie {
     }
 
 
-    @Override public PieSession newSession() {
-        return createSession(this.taskDefs);
-    }
-
-    @Override public PieSession newSession(TaskDefs addTaskDefs) {
-        return createSession(new CompositeTaskDefs(this.taskDefs, addTaskDefs));
-    }
-
-    protected PieSession createSession(TaskDefs taskDefs) {
+    @Override public MixedSession newSession() {
         final Layer layer = layerFactory.apply(taskDefs, logger);
         final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
@@ -71,12 +76,12 @@ public class PieImpl implements Pie {
                 callbacks, visited);
         final RequireShared requireShared =
             new RequireShared(taskDefs, resourceService, store, executorLogger, visited);
-        final TopDownSession topDownSession =
-            new TopDownSession(store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited);
-        final BottomUpSession bottomUpSession =
-            new BottomUpSession(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
+        final TopDownRunner topDownRunner =
+            new TopDownRunner(store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited);
+        final BottomUpRunner bottomUpRunner =
+            new BottomUpRunner(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
                 requireShared, callbacks, visited);
-        return new PieSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, store, callbacks);
+        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store);
     }
 
 
@@ -103,17 +108,15 @@ public class PieImpl implements Pie {
 
 
     @Override public <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function) {
-        @SuppressWarnings("unchecked") final Consumer<@Nullable Serializable> generalizedObserver =
-            (Consumer<@Nullable Serializable>) function;
-        callbacks.put(task.key(), generalizedObserver);
+        callbacks.set(task, function);
     }
 
     @Override public void setCallback(TaskKey key, Consumer<@Nullable Serializable> function) {
-        callbacks.put(key, function);
+        callbacks.set(key, function);
     }
 
     @Override public void removeCallback(Task<?> task) {
-        callbacks.remove(task.key());
+        callbacks.remove(task);
     }
 
     @Override public void removeCallback(TaskKey key) {
@@ -132,8 +135,12 @@ public class PieImpl implements Pie {
     }
 
 
+    @Override public PieChildBuilder createChildBuilder() {
+        return new PieChildBuilderImpl(this);
+    }
+
+
     @Override public String toString() {
-        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs,
-            logger) + ")";
+        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, logger) + ")";
     }
 }

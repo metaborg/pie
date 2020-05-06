@@ -20,7 +20,7 @@ import java.io.Serializable;
  * @see Task
  * @see STaskDef
  */
-public class STask<O extends @Nullable Serializable> implements Serializable, Provider<O> {
+public class STask<O extends @Nullable Serializable> implements Supplier<O>, Serializable {
     public final String id;
     public final Serializable input;
 
@@ -68,7 +68,6 @@ public class STask<O extends @Nullable Serializable> implements Serializable, Pr
         final STask sTask = (STask)o;
         if(!id.equals(sTask.id)) return false;
         return input.equals(sTask.input);
-
     }
 
     @Override public int hashCode() {

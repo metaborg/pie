@@ -34,7 +34,7 @@ public class HashWalkResourceStamper implements ResourceStamper<HierarchicalReso
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final HashWalkResourceStamper that = (HashWalkResourceStamper) o;
+        final HashWalkResourceStamper that = (HashWalkResourceStamper)o;
         if(!Objects.equals(walker, that.walker)) return false;
         return Objects.equals(matcher, that.matcher);
     }

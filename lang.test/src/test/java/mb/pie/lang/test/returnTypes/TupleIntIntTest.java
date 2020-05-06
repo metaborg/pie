@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class TupleIntIntTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_tupleIntIntTestGen(), main_tupleIntInt.class, new main_tupleIntInt.Output(4, -90));
     }
 }

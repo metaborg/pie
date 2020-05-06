@@ -27,7 +27,7 @@ public class ModifiedMatchResourceStamper implements ResourceStamper<Hierarchica
     @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ModifiedMatchResourceStamper that = (ModifiedMatchResourceStamper) o;
+        final ModifiedMatchResourceStamper that = (ModifiedMatchResourceStamper)o;
         return Objects.equals(matcher, that.matcher);
     }
 

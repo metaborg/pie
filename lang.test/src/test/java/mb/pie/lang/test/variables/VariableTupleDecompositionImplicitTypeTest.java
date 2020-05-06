@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class VariableTupleDecompositionImplicitTypeTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_variableTupleDecompositionImplicitTypeTestGen(), main_variableTupleDecompositionImplicitType.class, new main_variableTupleDecompositionImplicitType.Output("swapped values", new Boolean(true)));
     }
 }

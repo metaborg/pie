@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class ListIntEmptyTest {
-    @Test void test() throws ExecException {
+    @Test void test() throws Exception {
         assertTaskOutputEquals(new TaskDefsModule_listIntEmptyTestGen(), main_listIntEmpty.class, new ArrayList<>());
     }
 }

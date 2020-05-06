@@ -7,11 +7,11 @@ import mb.resource.ResourceKey;
 import java.io.IOException;
 import java.util.Objects;
 
-public class ResourceBytesProvider implements Provider<byte[]> {
+public class ResourceBytesSupplier implements Supplier<byte[]> {
     private final ResourceKey key;
     private final ResourceStamper<ReadableResource> stamper;
 
-    public ResourceBytesProvider(ResourceKey key, ResourceStamper<ReadableResource> stamper) {
+    public ResourceBytesSupplier(ResourceKey key, ResourceStamper<ReadableResource> stamper) {
         this.key = key;
         this.stamper = stamper;
     }
@@ -23,7 +23,7 @@ public class ResourceBytesProvider implements Provider<byte[]> {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ResourceBytesProvider that = (ResourceBytesProvider)o;
+        final ResourceBytesSupplier that = (ResourceBytesSupplier)o;
         return key.equals(that.key) &&
             stamper.equals(that.stamper);
     }

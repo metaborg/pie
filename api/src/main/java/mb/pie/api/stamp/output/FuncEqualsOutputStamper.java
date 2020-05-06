@@ -8,8 +8,8 @@ import java.io.Serializable;
 import java.util.function.Function;
 
 /**
- * Output stamper that first applies given [func] to an output, copies the result of that into a stamp, and compares these stamps by equality.
- * Given [function][func] must be [Serializable].
+ * Output stamper that first applies given [func] to an output, copies the result of that into a stamp, and compares
+ * these stamps by equality. Given [function][func] must be [Serializable].
  */
 public class FuncEqualsOutputStamper implements OutputStamper {
     private final Function<@Nullable Serializable, @Nullable Serializable> func;
@@ -28,7 +28,7 @@ public class FuncEqualsOutputStamper implements OutputStamper {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final FuncEqualsOutputStamper that = (FuncEqualsOutputStamper) o;
+        final FuncEqualsOutputStamper that = (FuncEqualsOutputStamper)o;
         return func.equals(that.func);
     }
 

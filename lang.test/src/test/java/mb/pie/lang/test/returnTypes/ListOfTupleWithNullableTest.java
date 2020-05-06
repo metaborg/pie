@@ -1,7 +1,7 @@
 package mb.pie.lang.test.returnTypes;
 
 class ListOfTupleWithNullableTest{
-//    @Test void test() throws ExecException {
+//    @Test void test() throws Exception {
 //        final main___error__listOfTupleWithNullable main = new main___error__listOfTupleWithNullable();
 //        final PieRunner pieRunner = new PieRunner(main);
 //        try(PieSession session = pieRunner.newSession()) {

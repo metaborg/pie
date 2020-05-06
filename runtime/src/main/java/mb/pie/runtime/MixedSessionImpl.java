@@ -1,52 +1,47 @@
 package mb.pie.runtime;
 
 import mb.pie.api.ExecException;
-import mb.pie.api.PieSession;
-import mb.pie.api.SessionAfterBottomUp;
+import mb.pie.api.MixedSession;
 import mb.pie.api.Store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
-import mb.pie.api.TaskKey;
+import mb.pie.api.TopDownSession;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
-import mb.pie.runtime.exec.BottomUpSession;
-import mb.pie.runtime.exec.TopDownSession;
+import mb.pie.runtime.exec.BottomUpRunner;
+import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
-public class PieSessionImpl extends SessionBaseImpl implements PieSession {
-    protected final TopDownSession topDownSession;
-    protected final BottomUpSession bottomUpSession;
+public class MixedSessionImpl extends SessionImpl implements MixedSession {
+    protected final TopDownRunner topDownRunner;
+    protected final BottomUpRunner bottomUpRunner;
 
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
     protected final Store store;
-    protected final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
 
     private boolean updateAffectedByExecuted = false;
     private boolean requireExecuted = false;
 
 
-    public PieSessionImpl(
-        TopDownSession topDownSession,
-        BottomUpSession bottomUpSession,
+    public MixedSessionImpl(
+        TopDownRunner topDownRunner,
+        BottomUpRunner bottomUpRunner,
         TaskDefs taskDefs,
-        ResourceService resourceService, Store store,
-        ConcurrentHashMap<TaskKey, Consumer<Serializable>> callbacks
+        ResourceService resourceService,
+        Store store
     ) {
         super(taskDefs, resourceService, store);
-        this.topDownSession = topDownSession;
-        this.bottomUpSession = bottomUpSession;
+        this.topDownRunner = topDownRunner;
+        this.bottomUpRunner = bottomUpRunner;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
-        this.callbacks = callbacks;
     }
 
     @Override public void close() {
@@ -55,7 +50,7 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
 
 
     @Override
-    public SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
+    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
         try {
             return updateAffectedBy(changedResources, NullCancelableToken.instance);
         } catch(InterruptedException e) {
@@ -65,11 +60,11 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     }
 
     @Override
-    public SessionAfterBottomUp updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
         checkUpdateAffectedBy();
         if(changedResources.isEmpty())
             return createSessionAfterBottomUp();
-        bottomUpSession.requireInitial(changedResources, cancel);
+        bottomUpRunner.requireInitial(changedResources, cancel);
         return createSessionAfterBottomUp();
     }
 
@@ -83,13 +78,13 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
         updateAffectedByExecuted = true;
     }
 
-    private SessionAfterBottomUp createSessionAfterBottomUp() {
-        return new SessionAfterBottomUpImpl(topDownSession, taskDefs, resourceService, store);
+    private TopDownSession createSessionAfterBottomUp() {
+        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store);
     }
 
 
     @Override
-    public <O extends Serializable> O require(Task<O> task) throws ExecException {
+    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException {
         try {
             return require(task, NullCancelableToken.instance);
         } catch(InterruptedException e) {
@@ -101,11 +96,11 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("require");
-        return topDownSession.requireInitial(task, true, cancel);
+        return topDownRunner.requireInitial(task, true, cancel);
     }
 
     @Override
-    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
         try {
             return requireWithoutObserving(task, NullCancelableToken.instance);
         } catch(InterruptedException e) {
@@ -117,7 +112,7 @@ public class PieSessionImpl extends SessionBaseImpl implements PieSession {
     @Override
     public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("requireWithoutObserving");
-        return topDownSession.requireInitial(task, false, cancel);
+        return topDownRunner.requireInitial(task, false, cancel);
     }
 
     private void checkRequire(String name) {

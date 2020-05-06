@@ -10,24 +10,29 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public class ResourceStringProvider implements Provider<String> {
+public class ResourceStringSupplier implements Supplier<String> {
     private final ResourceKey key;
     private final @Nullable ResourceStamper<ReadableResource> stamper;
     private final Charset charset;
 
-    public ResourceStringProvider(ResourceKey key) {
-        this(key, null);
-    }
-
-    public ResourceStringProvider(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper) {
-        this(key, stamper, StandardCharsets.UTF_8);
-    }
-
-    public ResourceStringProvider(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper, Charset charset) {
+    public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper, Charset charset) {
         this.key = key;
         this.stamper = stamper;
         this.charset = charset;
     }
+
+    public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper) {
+        this(key, stamper, StandardCharsets.UTF_8);
+    }
+
+    public ResourceStringSupplier(ResourceKey key, Charset charset) {
+        this(key, null, charset);
+    }
+
+    public ResourceStringSupplier(ResourceKey key) {
+        this(key, (ResourceStamper<ReadableResource>)null);
+    }
+
 
     @Override public String get(ExecContext context) throws IOException {
         return context.require(key, stamper != null ? stamper : context.getDefaultRequireReadableResourceStamper()).readString(charset);
@@ -36,7 +41,7 @@ public class ResourceStringProvider implements Provider<String> {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ResourceStringProvider that = (ResourceStringProvider)o;
+        final ResourceStringSupplier that = (ResourceStringSupplier)o;
         return key.equals(that.key) &&
             Objects.equals(stamper, that.stamper) &&
             charset.equals(that.charset);
