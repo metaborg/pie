@@ -5,7 +5,6 @@ plugins {
 }
 
 spoofax {
-  metaborgVersion = "2.5.8"
   addCompileLanguageProjectDep(":pie.lang")
 }
 
