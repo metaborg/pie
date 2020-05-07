@@ -969,7 +969,17 @@ rules // Interpolated string literal
     Str(chars) -> ([], StringLiteral($["[<string-replace(|"\\$", "$")> chars]"]))
 
   p2j-ast-strpart:
-    StrInterpRef(refExp) -> <try-p2j-ast-exp> refExp
+    StrInterpRef(refExp) -> result
+    with
+      (stmts, expVal) := <try-p2j-ast-exp> refExp
+    ; resultVal       := InvokeQExp(
+        ExpressionName(Id("String"))
+      , None()
+      , Id("valueOf")
+      , [ expVal ]
+      )
+    ; result          := (stmts, resultVal)
+
 
   p2j-ast-strpart:
     StrInterpExp(exp) -> result

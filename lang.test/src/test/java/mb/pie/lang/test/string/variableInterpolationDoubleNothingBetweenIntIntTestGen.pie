@@ -1,0 +1,7 @@
+package mb.pie.lang.test.string;
+
+func main_variableInterpolationDoubleNothingBetweenIntInt() -> string = {
+  val piApproximate = 10;
+  val luckyNumber = 64;
+  "$piApproximate$luckyNumber"
+}
