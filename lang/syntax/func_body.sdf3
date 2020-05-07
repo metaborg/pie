@@ -109,7 +109,7 @@ lexical syntax
 
 lexical restrictions
 
-  StrChars -/- ~[\"\$\n\r\\]
+  StrChars -/- ~[\"\$]
 
 syntax // Interpolated path literal
 
