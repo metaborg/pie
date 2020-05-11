@@ -506,7 +506,7 @@ rules // Qualified function calls
           , <java-classType-to-unannType> ty
           , [ VariableDeclInit(
                 VariableDecl(Id(callResultName))
-              , InvokeQExp(ExpressionName(Id(expVal)), None(), Id(funcId), argExpsVals)
+              , InvokeQExp(expVal, None(), Id(funcId), argExpsVals)
               )
             ]
           ))
