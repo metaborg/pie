@@ -8,13 +8,8 @@ imports
   gen/java-ast/ast-util
   gen/java-ast/func_def
 
-  signatures/pie-sig
-  signatures/java/packages/-
-  signatures/java/names/-
-  signatures/java/classes/-
-  signatures/java/lexical/-
-  signatures/java/types/-
-  signatures/java/interfaces/-
+  src-gen/signatures/-
+  signatures/-
 
   pp
 

@@ -4,18 +4,9 @@ imports
 
   libspoofax/stratego/debug
   nabl2/api
-
+  
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-
-  signatures/java/expressions/-
-  signatures/java/statements/-
-  signatures/java/names/-
-  signatures/java/classes/-
-  signatures/java/literals/-
-  signatures/java/types/-
-  signatures/java/lexical/-
 
   statsem/pie
 

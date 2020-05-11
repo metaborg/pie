@@ -2,11 +2,7 @@ module gen/java-ast/ast-util
 
 imports
 
-  signatures/java/names/-
-  signatures/java/packages/-
-  signatures/java/lexical/-
-  signatures/java/types/-
-  signatures/java/classes/-
+  signatures/-
 
 rules
 

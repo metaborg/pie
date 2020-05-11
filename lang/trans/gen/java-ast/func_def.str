@@ -4,18 +4,8 @@ imports
 
   libspoofax/stratego/debug
 
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-
-  signatures/java/expressions/-
-  signatures/java/names/-
-  signatures/java/types/-
-  signatures/java/classes/-
-  signatures/java/interfaces/-
-  signatures/java/lexical/-
-  signatures/java/statements/-
-  signatures/java/literals/-
 
   gen/java-ast/type
   gen/java-ast/func_body
