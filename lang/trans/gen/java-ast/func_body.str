@@ -146,18 +146,18 @@ rules // Control flow
   p2j-ast-exp:
     e@IfElse(condExp, trueExp, falseExp) -> result
     with
-      (condStmts, condExp)   := <try-p2j-ast-exp> condExp
-    ; (trueStmts, trueExp)   := <try-p2j-ast-exp> trueExp
-    ; (falseStmts, falseExp) := <try-p2j-ast-exp> falseExp
+      (condStmts, condVal)   := <try-p2j-ast-exp> condExp
+    ; (trueStmts, trueVal)   := <try-p2j-ast-exp> trueExp
+    ; (falseStmts, falseVal) := <try-p2j-ast-exp> falseExp
     ; resultName             := <newname> "ifResult"
-    ; trueBlockStmts         := <concat> [trueStmts, [Assign(ExpressionName(Id(resultName)), trueExp)]]
-    ; falseBlockStmts        := <concat> [falseStmts, [Assign(ExpressionName(Id(resultName)), falseExp)]]
+    ; trueBlockStmts         := <concat> [trueStmts, [ExpressionStatement(Assign(ExpressionName(Id(resultName)), trueVal))]]
+    ; falseBlockStmts        := <concat> [falseStmts, [ExpressionStatement(Assign(ExpressionName(Id(resultName)), falseVal))]]
     ; ty                     := <p2j-ast-type-sig> <pie-type> e
     ; stmts                  := <concat> [
       condStmts,
       [
-        LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [Id(resultName)])),
-        IfElse(condExp, Block(trueBlockStmts), Block(falseBlockStmts))
+        LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDecl(Id(resultName))])),
+        IfElse(condVal, Block(trueBlockStmts), Block(falseBlockStmts))
       ]]
     ; result                 := (stmts, resultName)
 
