@@ -35,15 +35,15 @@ rules // Expression composition
     ; restExps             := <take(|<dec> numExps)> exps
     ; restStmts            := <map(try-p2j-ast-exp); map(Fst); concat> restExps
     ; lastExp              := <last> exps
-    ; (lastStmts, lastExp) := <try-p2j-ast-exp> lastExp
+    ; (lastStmts, lastVal) := <try-p2j-ast-exp> lastExp
     ; stmts                := <concat> [restStmts, lastStmts]
     ; blockResultVal       := <newname> "blockResult"
     ; ty                   := <p2j-ast-type-sig> <pie-type> e
     ; resultStmts          := [
-      LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [Id(blockResultVal)])),
+      LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDecl(Id(blockResultVal))])),
       Block(<concat> [
-        [stmts],
-        Assign(ExpressionName(Id(blockResultVal)), lastExp)
+        stmts,
+        [ ExpressionStatement(Assign(ExpressionName(Id(blockResultVal)), lastVal)) ]
       ])
     ]
     ; result                    := (resultStmts, blockResultVal)
