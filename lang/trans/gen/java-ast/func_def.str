@@ -49,7 +49,7 @@ rules // PIE function definitions
         ))
       )
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
-    ; <add-import> "com.google.inject.Inject"
+    ; <add-import> "javax.inject.Inject"
     ; <add-import> "mb.pie.api.ExecContext"
     ; <add-import> "mb.pie.api.ExecException"
     ; <add-import> "mb.pie.api.None"

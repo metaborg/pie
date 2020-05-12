@@ -1,0 +1,13 @@
+package mb.pie.lang.test.returnTypes.__error__listOfTupleWithNullable;
+
+// TODO: fix type check error
+// does not typecheck, probably due to incorrect type checking (should check
+// that BoolTy is a "subtype" of Nullable(BoolTy)
+//func main___error__listOfTupleWithNullable() -> (int, string, bool?)* = {
+//  [
+//    (5, "no", null),
+//    (7, "kittens", true),
+//    (-50, "TTL 01:30:57.825", false),
+//    (830, "Compilation completed: 0 errors, 0 warnings.", true)
+//  ]
+//}

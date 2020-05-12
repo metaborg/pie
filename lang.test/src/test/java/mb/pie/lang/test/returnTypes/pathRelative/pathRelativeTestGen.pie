@@ -1,0 +1,5 @@
+package mb.pie.lang.test.returnTypes.pathRelative;
+
+func main_pathRelative() -> path = {
+  ./path/to/foo
+}

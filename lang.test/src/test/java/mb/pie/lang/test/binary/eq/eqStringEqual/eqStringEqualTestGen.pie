@@ -1,0 +1,5 @@
+package mb.pie.lang.test.binary.eq.eqStringEqual;
+
+func main_eqStringEqual() -> bool = {
+  "testString" == "testString"
+}

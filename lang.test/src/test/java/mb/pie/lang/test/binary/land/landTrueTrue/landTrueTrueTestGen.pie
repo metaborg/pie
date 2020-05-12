@@ -1,0 +1,5 @@
+package mb.pie.lang.test.binary.land.landTrueTrue;
+
+func main_landTrueTrue() -> bool = {
+  true && true
+}

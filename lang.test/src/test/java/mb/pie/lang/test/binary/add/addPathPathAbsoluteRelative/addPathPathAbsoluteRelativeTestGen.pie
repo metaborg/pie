@@ -1,0 +1,5 @@
+package mb.pie.lang.test.binary.add.addPathPathAbsoluteRelative;
+
+func main_addPathPathAbsoluteRelative() -> path = {
+  /path/to + ./foo
+}

@@ -1,5 +1,0 @@
-package mb.pie.lang.test.binary.neq;
-
-func main_neqTupleEqual() -> bool = {
-  (3, "bob") != (3, "bob")
-}

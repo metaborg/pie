@@ -1,8 +1,0 @@
-package mb.pie.lang.test.foreignFunc.constructor;
-
-data Foo = foreign java mb.pie.lang.test.foreignFunc.constructor.Foo {}
-func newFoo(bool, string) -> Foo = foreign java constructor mb.pie.lang.test.foreignFunc.constructor.Foo
-
-func main_twoParam() -> Foo = {
-  newFoo(true, "hello world!")
-}

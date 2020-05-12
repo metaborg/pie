@@ -1,0 +1,5 @@
+package mb.pie.lang.test.returnTypes.listStringEmpty;
+
+func main_listStringEmpty() -> string* = {
+  []
+}

@@ -1,0 +1,6 @@
+package mb.pie.lang.test.variables.variableTupleDecompositionImplicitType;
+
+func main_variableTupleDecompositionImplicitType() -> (string, bool) = {
+  val (bool, str) = (true, "swapped values");
+  (str, bool)
+}

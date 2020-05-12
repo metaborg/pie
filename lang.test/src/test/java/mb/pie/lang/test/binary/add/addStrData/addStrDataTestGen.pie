@@ -1,0 +1,8 @@
+package mb.pie.lang.test.binary.add.addStrData;
+
+data Sign = foreign java mb.pie.lang.test.binary.Sign {}
+func createSign(value: int) -> Sign = foreign java mb.pie.lang.test.binary.Sign#createSign
+
+func main_addStrData() -> string = {
+    "String + Sign (foreign data type): " + createSign(7)
+}

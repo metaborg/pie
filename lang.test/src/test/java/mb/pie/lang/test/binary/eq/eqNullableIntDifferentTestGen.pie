@@ -1,7 +1,0 @@
-package mb.pie.lang.test.binary.eq;
-
-func main_eqNullableIntDifferent() -> bool = {
-  val x: int? = 7;
-  val y: int? = null;
-  x == y
-}

@@ -1,0 +1,5 @@
+package mb.pie.lang.test.binary.add.addListElem;
+
+func main_addListElem() -> int* = {
+  [1, 2] + 3
+}
