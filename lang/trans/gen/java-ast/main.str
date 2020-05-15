@@ -18,14 +18,16 @@ imports
 rules
 
   generate-java-file-ast:
-    (pieAst, _, _, file, _) -> (filename, result)
+    (pieAst, _, _, file, _) -> result
     with
-      filename := <guarantee-extension(|"java")> file
-    ; mod      := <base-filename;remove-extension> file
-    ; javaAst  := <p2j-ast(|mod)> pieAst
-    ; <debug(|"Successfully transpiled file to Java: ")> file
-    ; result   := <p2j-ast-to-filestring(|mod)> javaAst
-    ; <debug(|"Successfully transformed Java AST to string: ")> file
+      fileName         := <base-filename;remove-extension> file
+    ; dirName          := <dirname> file
+    ; namesAndClasses  := <p2j-ast> pieAst
+    ; (names, classes) := <unzip> namesAndClasses
+    ; files            := <map(p2j-ast-to-filestring(|fileName))> classes
+    ; fullNames        := <map(\name -> $[[dirName]/[name].java]\)> names
+    ; result           := (fullNames, files)
+    ; <debug(|$[Successfully transformed Java ASTs to files: [fileName] -> ])> <concat-strings> <separate-by(|"; ")> names
 
 rules
 
@@ -36,27 +38,36 @@ $[// This file was generated from Pie source file [mod].pie.
 // last cache update: 2020-01-09 13:52
 ]
 
-  p2j-ast(|mod):
+  /**
+   * p2j-ast:
+   *   Program(Package(package), defs) -> list of (filename, java ast) pairs
+   *   type: Pie Program constructor -> (String, java ast)[]
+   * transforms a Pie Program to a list of Java filenames + CompilationUnits
+   */
+  p2j-ast:
     Program(Package(package), defs) -> result
     with
     {| AstAnalysis, ModuleBindings, JavaImports:
       <pie-set-ast-analysis> defs
     ; classes  := <filter(p2j-ast-def)> defs
-    ; bindings := <bagof-ModuleBindings>
-    ; imports  := <uniq> <bagof-JavaImports>
+    ; result    := <map(java-class-to-file(|package))> classes
     |}
+    
+  java-class-to-file(|package): (name, class) -> result
     with
-      result := CompilationUnit(
+      imports         := <uniq> <bagof-JavaImports>
+    ; compilationUnit := CompilationUnit(
         Some(PackageDeclaration(
           []
         , <map(p2j-ast-wrap-string-with-id)> package
         ))
       , imports
-      , classes
+      , [ class ]
       )
       // Note: meaning of this AST:
       //   package [package];
       //   
       //   [imports]
       //   
-      //   [classes]
+      //   [class]
+    ; result := (name, compilationUnit)
