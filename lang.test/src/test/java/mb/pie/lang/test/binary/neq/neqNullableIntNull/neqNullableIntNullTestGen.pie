@@ -1,0 +1,7 @@
+package mb.pie.lang.test.binary.neq.neqNullableIntNull;
+
+func main_neqNullableIntNull() -> bool = {
+    val x: int? = null;
+    val y: int = -4;
+    x != y
+}
