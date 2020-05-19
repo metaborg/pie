@@ -4,12 +4,10 @@ plugins {
   id("org.metaborg.spoofax.gradle.project")
 }
 
-spoofax {
-  addCompileLanguageProjectDep(":pie.lang")
-}
-
 dependencies {
   api(platform(project(":pie.depconstraints")))
+
+  compileLanguage(project(":pie.lang"))
 
   testImplementation("org.metaborg:resource")
   testImplementation(project(":pie.runtime"))
