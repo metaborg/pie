@@ -452,7 +452,7 @@ rules // References
 
   // p2j-ast-ref-add-transient-val(|ast): Pie Ref -> Java reference
   p2j-ast-ref-add-transient-val(|ast):
-    ref -> Field(ast, Id("v"))
+    ref -> InvokeQExp(ast, None(), Id("getValue"), [])
     where
       <p2j-ast-ref-is-transient> ref
 
