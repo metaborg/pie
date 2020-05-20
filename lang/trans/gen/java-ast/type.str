@@ -59,6 +59,11 @@ rules
     with
       <add-import> "java.util.ArrayList"
   p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
+  
+  p2j-ast-type-sig:
+    SupplierTy(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
+    with
+      <add-import> "mb.pie.api.Supplier"
 
 rules
 

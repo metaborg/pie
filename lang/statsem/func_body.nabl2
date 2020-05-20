@@ -126,6 +126,22 @@ rules // References
     Map2T [[ args ^ (s, ty_func_def) : tys_in ]], 
     tys_in <? tys_in_expected | error $[Type mismatch: expected [tys_in_expected], got [tys_in]] @ id_func.
 
+  [[ CreateSupplier(exp) ^ (s, ty_func_def) : SupplierTy(ty) ]] :=
+    [[ exp ^ (s, ty_func_def) : ty ]].
+
+  [[ TaskSupplier(id_func, args) ^ (s, ty_func_def) : SupplierTy(ty_out) ]] :=
+    Map2T [[ args ^ (s, ty_func_def) : tys_in ]],
+    Func{id_func} -> s,
+    Func{id_func} |-> f,
+    f : FuncTy(tys_in_expected, ty_out),
+    f.kind := kind,
+    kind <? PieFuncKind(),
+    Map2T [[ args ^ (s, ty_func_def) : tys_in ]], 
+    tys_in <? tys_in_expected | error $[Type mismatch: expected [tys_in_expected], got [tys_in]] @ id_func.
+  
+  [[ SupplierGet(exp) ^ (s, ty_func_def) : ty ]] :=
+    [[ exp ^ (s, ty_func_def) : SupplierTy(ty) ]].
+
 rules // Path operations
 
   [[ RequiresPath(exp, filter, stamper) ^ (s, ty_func_def) : UnitTy() ]] :=

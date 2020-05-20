@@ -50,6 +50,7 @@ signature
 rules // Init
 
   init ^ (s_root) :=
+    PieForeignFuncKind() <! PieFuncKind(), // to check if a function is a pie task
     new s_root,
     // Create definitions in type namespace for primitive types
     Type{StrTy() } <- s_root, new s_str , s_str  -P-> s_root, Type{StrTy() } =I=> s_str,

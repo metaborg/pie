@@ -1,0 +1,5 @@
+package mb.pie.lang.test.supplier.createAndGet.nested;
+
+func main_nested() -> bool = {
+  supplier(supplier(true)).get<>().get<>()
+}

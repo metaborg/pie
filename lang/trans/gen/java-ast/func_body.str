@@ -673,6 +673,168 @@ rules // PIE function calls
       //       new [javaClassId].Input([expsVals])
     ; result                := (stmts, exp)
 
+  p2j-ast-exp: CreateSupplier(arg) -> result
+    with
+      <add-import> "mb.pie.api.Supplier"
+    ; (argStmts, argVal) := <p2j-ast-exp> arg
+    ; ty                 := <p2j-ast-type-sig> <pie-type> arg
+    ; supplierName       := <newname> "supplier"
+    ; contextName        := <newname> "context"
+    ; stmts              := <concat> [
+        argStmts,
+        [ LocVarDeclStm(
+            LocalVarDecl(
+              [Final()]
+            , ClassType(
+                Id("Supplier")
+              , Some(TypeArguments([ty]))
+              )
+            , [ VariableDeclInit(
+                  VariableDecl(Id(supplierName))
+                , CastReference(
+                    ClassType(
+                      []
+                    , Id("Supplier")
+                    , Some(TypeArguments([ty]))
+                    )
+                  , []
+                  , LambdaExpression(SingleParam(Id(contextName)), argVal)
+                  )
+                )
+              ]
+            )
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [supplierName] = (Supplier<[ty]>) [contextName] -> [argVal];
+      ]
+    ; result             := (stmts, supplierName)
+
+
+  p2j-ast-exp: t@TaskSupplier(funcId, args) -> result
+    with
+      <add-import> "javax.inject.Provider"
+    ; javaClassId          := <p2j-ast-pieFuncId-to-javaClassId> funcId
+    ; safeJavaClassId      := <string-replace(|".", "_")> javaClassId
+    ; (argStmts, inputArg) := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> args
+    ; callResultName       := <newname> "callResult"
+    ; ty                   := <p2j-ast-type-sig> <pie-type> t
+    ; stmts                := <concat> [
+        argStmts,
+        [ LocVarDeclStm(
+            LocalVarDecl(
+              [Final()]
+            , <java-classType-to-unannType> ty
+            , [ VariableDeclInit(
+                  VariableDecl(Id(callResultName))
+                , InvokeQExp(
+                    InvokeQExp(
+                      ExpressionName(Id($[_[safeJavaClassId]]))
+                    , None()
+                    , Id("get")
+                    , []
+                    )
+                  , None()
+                  , Id("createSupplier")
+                  , [ inputArg ]
+                  )
+                )
+              ]
+            )
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName] = [javaClassName].createSupplier([inputArg]);
+      ]
+    ; result               := (stmts, callResultName)
+    ; rules(InjectValues :+= (
+        $[_[safeJavaClassId]],
+        ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
+      ))
+    
+  
+  p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
+    where
+      PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+      
+  p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
+    where
+      PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId := <pie-sanitize-class-id> funcId
+
+  p2j-ast-exp: SupplierGet(exp) -> result
+    with
+      <add-import> "java.io.IOException"
+    ; (expStmts, expVal) := <p2j-ast-exp> exp
+    ; SupplierTy(pieTy)  := <pie-type> exp
+    ; ty                 := <p2j-ast-type-sig> pieTy
+    ; callResultName     := <newname> "callResult"
+    ; stmts              := <concat> [
+        expStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [VariableDecl(Id(callResultName))]
+          ))
+        , Try(
+            Block(
+              [ ExpressionStatement(Assign(
+                  ExpressionName(Id(callResultName))
+                , InvokeQExp(
+                    expVal
+                  , None()
+                  , Id("get")
+                  , [ ExpressionName(Id("execContext")) ]
+                  )
+                ))
+              ]
+            )
+          , [ Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("IOException"), None()), [])
+                , VariableDecl(Id("ex"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Unexpected IOException while calling Supplier.get()"])
+                    , ExpressionName(Id("ex"))
+                    ]))
+                  ]
+                )
+              )
+            , Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("InterruptedException"), None()), [])
+                , VariableDecl(Id("ex"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Call to Supplier.get() was interrupted"])
+                    , ExpressionName(Id("ex"))
+                    ]))
+                  ]
+                )
+              )
+            ]
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName];
+        //   try {
+        //     [callResultName] = [expVal].get();
+        //   } catch (IOException ex) {
+        //     throw new ExecException("Unexpected IOException while calling Supplier.get()", ex);
+        //   } catch (InterruptedException ex) {
+        //     throw new ExecException("Call to Supplier.get() was inerrupted", ex);
+        //   }
+      ]
+    ; result               := (stmts, callResultName)
+
 rules // Path operations
 
   p2j-exp:

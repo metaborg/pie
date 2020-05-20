@@ -1,0 +1,5 @@
+package mb.pie.lang.test.supplier.inputSupplier.inputFromTest;
+
+func main_inputFromTest(supp: supplier<int>) -> int = {
+  supp.get<>() + 1
+}
