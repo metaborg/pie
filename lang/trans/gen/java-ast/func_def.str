@@ -112,7 +112,7 @@ rules // PIE function definitions
                   , FormalParam([], <java-classType-to-unannType> inputType, VariableDecl(Id("input")))
                   )
                 , []
-                , Some(ThrowsDec([ClassType([], Id("ExecException"), None())]))
+                , Some(ThrowsDec([ClassType([], Id("Exception"), None())]))
                 )
               , Block(<concat> [stmts, [Return(returnValue)]])
               )
