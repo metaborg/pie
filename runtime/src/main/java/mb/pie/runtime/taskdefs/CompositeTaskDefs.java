@@ -17,6 +17,7 @@ public class CompositeTaskDefs implements TaskDefs {
     }
 
     @Override public @Nullable TaskDef<?, ?> getTaskDef(String id) {
+        // Check parent first, such that child task definitions cannot override those from the parent.
         final @Nullable TaskDef<?, ?> taskDef = parentTaskDefs.getTaskDef(id);
         if(taskDef != null) {
             return taskDef;

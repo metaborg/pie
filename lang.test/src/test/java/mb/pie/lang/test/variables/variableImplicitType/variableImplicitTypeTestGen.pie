@@ -1,0 +1,7 @@
+module test.variables.variableImplicitType;
+package mb.pie.lang.test.variables.variableImplicitType;
+
+func main_variableImplicitType() -> int = {
+  val num = 8;
+  num
+}

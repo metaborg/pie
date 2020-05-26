@@ -2,9 +2,7 @@ module gen/idtype-tuples
 
 imports
 
-  signatures/-
-  signatures/lex/-
-  signatures/impl/-
+  src-gen/signatures/-
 
 rules // Params to idtype tuples
 

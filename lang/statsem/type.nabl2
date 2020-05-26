@@ -40,6 +40,8 @@ rules // Composite types
     ListTy(TopTy())  <! ListTy(NullableTy(ty_bound)),
     ListTy(TopTy())  <! NullableTy(ListTy(NullableTy(ty_bound))).
 
+  [[ SupplierTy(ty) ^ (s) : SupplierTy(ty) ]].
+
 rules // Builtin types
 
   [[ FuncTy(tys_in, ty_out) ^ (s) : FuncTy(tys_in_bound, ty_out_bound) ]] :=

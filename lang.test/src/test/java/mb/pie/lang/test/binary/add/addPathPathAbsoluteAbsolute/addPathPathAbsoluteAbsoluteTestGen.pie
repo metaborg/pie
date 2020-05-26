@@ -1,0 +1,6 @@
+module test.binary.add.addPathPathAbsoluteAbsolute;
+package mb.pie.lang.test.binary.add.addPathPathAbsoluteAbsolute;
+
+func main_addPathPathAbsoluteAbsolute() -> path = {
+  /path/to + /foo
+}

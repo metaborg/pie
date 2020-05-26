@@ -1,0 +1,9 @@
+module mb.pie.lang.test.imports.subModule.main;
+package mb.pie.lang.test.imports.subModule.importPartialModulePath;
+
+import mb.pie.lang.test.imports.subModule.a;
+
+func main_importPartialModulePath() -> unit = {
+  a.b.c.helper_function();
+  unit
+}

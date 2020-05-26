@@ -1,0 +1,9 @@
+module mb.pie.lang.test.imports.subModule.main;
+package mb.pie.lang.test.imports.subModule.importPartialModulePathForeignPie;
+
+import mb.pie.lang.test.imports.subModule.a;
+
+func main_importPartialModulePathForeignPie() -> unit = {
+  a.b.c.foreign_pie();
+  unit
+}

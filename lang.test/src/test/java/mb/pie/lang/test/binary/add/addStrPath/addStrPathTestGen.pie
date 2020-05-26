@@ -1,0 +1,6 @@
+module test.binary.add.addStrPath;
+package mb.pie.lang.test.binary.add.addStrPath;
+
+func main_addStrPath() -> string = {
+  "String + path: " + /path/to/file
+}

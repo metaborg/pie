@@ -1,17 +1,13 @@
-package mb.pie.lang.test.binary.land;
+package mb.pie.lang.test.todo;
 
-import mb.pie.api.ExecException;
 import mb.pie.api.None;
-import mb.pie.api.PieSession;
-import mb.pie.lang.test.util.PieRunner;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;
 
 class __UPPER_NAME__Test {
-    @Test void test() throws ExecException {
-        assertTaskOutputEquals(new TaskDefsModule___LOWER_NAME__TestGen(), main___LOWER_NAME__.class, None.instance);
+    @Test
+    void test() throws Exception {
+        assertTaskOutputEquals(Dagger___LOWER_NAME__Component.class, None.instance);
     }
 }

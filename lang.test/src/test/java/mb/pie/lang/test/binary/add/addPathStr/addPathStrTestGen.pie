@@ -1,0 +1,6 @@
+module test.binary.add.addPathStr;
+package mb.pie.lang.test.binary.add.addPathStr;
+
+func main_addPathStr() -> path = {
+  /path/to + "foo/bar"
+}

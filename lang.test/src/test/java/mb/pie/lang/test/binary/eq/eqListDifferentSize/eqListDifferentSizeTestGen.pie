@@ -1,0 +1,6 @@
+module test.binary.eq.eqListDifferentSize;
+package mb.pie.lang.test.binary.eq.eqListDifferentSize;
+
+func main_eqListDifferentSize() -> bool = {
+  [0, 1] == [0, 1, 2]
+}

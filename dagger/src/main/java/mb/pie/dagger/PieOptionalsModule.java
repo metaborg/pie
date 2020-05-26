@@ -15,7 +15,6 @@ import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
-import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 
 import javax.inject.Named;
@@ -26,17 +25,22 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Module public abstract class PieOptionalsModule {
-    @Provides @Singleton @ElementsIntoSet static Set<TaskDef<?, ?>> provideTaskDefs() {
+    @Provides @Singleton @ElementsIntoSet
+    static Set<TaskDef<?, ?>> provideTaskDefs() {
         return new HashSet<>();
     }
 
-    @BindsOptionalOf abstract ResourceService resourceService();
+    @BindsOptionalOf
+    abstract ResourceService resourceService();
 
-    @BindsOptionalOf abstract Function<Logger, Store> storeFunc();
+    @BindsOptionalOf
+    abstract BiFunction<Logger, ResourceService, Store> storeFunc();
 
-    @BindsOptionalOf abstract Function<Logger, Share> shareFunc();
+    @BindsOptionalOf
+    abstract Function<Logger, Share> shareFunc();
 
-    @BindsOptionalOf abstract OutputStamper defaultOutputStamper();
+    @BindsOptionalOf
+    abstract OutputStamper defaultOutputStamper();
 
     @BindsOptionalOf @Named("require")
     abstract ResourceStamper<ReadableResource> defaultRequireReadableResourceStamper();
@@ -50,9 +54,12 @@ import java.util.function.Function;
     @BindsOptionalOf @Named("provide")
     abstract ResourceStamper<HierarchicalResource> defaultProvideHierarchicalResourceStamper();
 
-    @BindsOptionalOf abstract BiFunction<TaskDefs, Logger, Layer> layerFunc();
+    @BindsOptionalOf
+    abstract BiFunction<TaskDefs, Logger, Layer> layerFunc();
 
-    @BindsOptionalOf abstract Logger logger();
+    @BindsOptionalOf
+    abstract Logger logger();
 
-    @BindsOptionalOf abstract Function<Logger, ExecutorLogger> execLoggerFunc();
+    @BindsOptionalOf
+    abstract Function<Logger, ExecutorLogger> execLoggerFunc();
 }

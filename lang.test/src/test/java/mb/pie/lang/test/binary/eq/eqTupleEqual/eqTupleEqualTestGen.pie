@@ -1,0 +1,6 @@
+module test.binary.eq.eqTupleEqual;
+package mb.pie.lang.test.binary.eq.eqTupleEqual;
+
+func main_eqTupleEqual() -> bool = {
+  (3, "bob") == (3, "bob")
+}

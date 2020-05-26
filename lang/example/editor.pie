@@ -1,3 +1,7 @@
+module example.editor;
+
+package mb.pie.example.helloworld.java;
+
 func update-editor(text: string) -> Msg* = {
   val syntaxDef = ./syntax/Java8.sdf;
   val parseTable = compile-parse-table(syntaxDef);

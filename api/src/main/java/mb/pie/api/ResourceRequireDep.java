@@ -3,7 +3,6 @@ package mb.pie.api;
 import mb.pie.api.stamp.ResourceStamp;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceRegistry;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -51,7 +50,7 @@ public class ResourceRequireDep implements ResourceDep, Serializable {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ResourceRequireDep that = (ResourceRequireDep) o;
+        final ResourceRequireDep that = (ResourceRequireDep)o;
         if(!key.equals(that.key)) return false;
         return stamp.equals(that.stamp);
     }

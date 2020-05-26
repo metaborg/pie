@@ -1,0 +1,8 @@
+module test.binary.eq.eqNullableIntNull;
+package mb.pie.lang.test.binary.eq.eqNullableIntNull;
+
+func main_eqNullableIntNull() -> bool = {
+    val x: int? = null;
+    val y: int = 15;
+    x == y
+}

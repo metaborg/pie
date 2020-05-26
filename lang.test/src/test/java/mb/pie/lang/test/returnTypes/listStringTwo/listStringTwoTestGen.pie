@@ -1,0 +1,6 @@
+module test.returnTypes.listStringTwo;
+package mb.pie.lang.test.returnTypes.listStringTwo;
+
+func main_listStringTwo() -> string* = {
+  ["hello", "world"]
+}

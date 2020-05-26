@@ -1,0 +1,6 @@
+module test.binary.neq.neqBoolEqual;
+package mb.pie.lang.test.binary.neq.neqBoolEqual;
+
+func main_neqBoolEqual() -> bool = {
+  true != true
+}

@@ -1,6 +1,10 @@
 package mb.pie.api.test
 
-import mb.pie.api.*
+import mb.pie.api.ExecContext
+import mb.pie.api.LambdaTaskDef
+import mb.pie.api.MixedSession
+import mb.pie.api.Pie
+import mb.pie.api.TaskDef
 import java.io.Serializable
 import java.nio.file.FileSystem
 
@@ -8,10 +12,6 @@ open class ApiTestCtx(
   fileSystem: FileSystem,
   private val pieImpl: Pie
 ) : TestCtx(fileSystem), AutoCloseable {
-  init {
-    pieImpl.dropStore()
-  }
-
   override fun close() {
     pie.close()
   }
@@ -19,7 +19,7 @@ open class ApiTestCtx(
 
   open val pie: Pie get() = pieImpl
 
-  open fun newSession(): PieSession = pie.newSession()
+  open fun newSession(): MixedSession = pie.newSession()
 
 
   fun <I : Serializable, O : Serializable?> taskDef(id: String, execFunc: ExecContext.(I) -> O): TaskDef<I, O> {

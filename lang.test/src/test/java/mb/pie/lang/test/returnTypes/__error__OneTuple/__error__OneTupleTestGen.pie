@@ -1,0 +1,9 @@
+module test.returnTypes.__error__OneTuple;
+package mb.pie.lang.test.returnTypes.__error__OneTuple;
+
+// problem: can declare a return type of a tuple with a single element but
+// can't construct it within pie
+// Should disallow tuple with single element type?
+//func main___error__OneTuple() -> (int) = {
+//  (0)
+//}

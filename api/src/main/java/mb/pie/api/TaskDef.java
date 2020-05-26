@@ -87,16 +87,18 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
     }
 
     /**
-     * Creates a {@link STask serializable task instance} for this task definition with given {@code input}.
+     * Creates an {@link Supplier incremental supplier} for this task definition with given {@code input}. An
+     * incremental supplier is {@link Serializable} and as such can be used as an input or output of a task.
      */
-    default STask<O> createSerializableTask(I input) {
+    default Supplier<O> createSupplier(I input) {
         return new STask<>(this, input);
     }
 
     /**
-     * Creates a {@link STaskDef serializable task definition wrapper} for this task definition.
+     * Creates an {@link Function incremental function} for this task definition. An incremental function is {@link
+     * Serializable} and as such can be used as an input or output of a task.
      */
-    default STaskDef<I, O> createSerializableTaskDef() {
+    default Function<I, O> createFunction() {
         return new STaskDef<>(this);
     }
 }

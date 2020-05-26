@@ -1,0 +1,6 @@
+module test.returnTypes.unitExplicitValue;
+package mb.pie.lang.test.returnTypes.unitExplicitValue;
+
+func main_unitExplicitValue() -> unit = {
+  unit
+}

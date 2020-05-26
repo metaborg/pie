@@ -1,0 +1,6 @@
+module test.binary.land.landFalseFalse;
+package mb.pie.lang.test.binary.land.landFalseFalse;
+
+func main_landFalseFalse() -> bool = {
+  false && false
+}

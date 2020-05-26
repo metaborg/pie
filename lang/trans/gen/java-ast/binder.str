@@ -2,9 +2,7 @@ module gen/java-ast/binder
 
 imports
 
-  signatures/-
-  signatures/lex/-
-  signatures/impl/-
+  src-gen/signatures/-
 
   gen/util
   gen/debug

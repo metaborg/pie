@@ -1,0 +1,6 @@
+module test.binary.neq.neqListEqual;
+package mb.pie.lang.test.binary.neq.neqListEqual;
+
+func main_neqListEqual() -> bool = {
+  [2, 1] != [2, 1]
+}

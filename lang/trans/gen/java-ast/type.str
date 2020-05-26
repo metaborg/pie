@@ -4,17 +4,8 @@ imports
 
   libspoofax/stratego/debug
 
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-
-  signatures/java/types/-
-  signatures/java/classes/-
-  signatures/java/expressions/-
-  signatures/java/literals/-
-  signatures/java/lexical/-
-  signatures/java/interfaces/-
-  signatures/java/statements/-
 
   statsem/pie
 
@@ -68,6 +59,11 @@ rules
     with
       <add-import> "java.util.ArrayList"
   p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
+  
+  p2j-ast-type-sig:
+    SupplierTy(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
+    with
+      <add-import> "mb.pie.api.Supplier"
 
 rules
 

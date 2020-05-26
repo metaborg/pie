@@ -20,7 +20,7 @@ public class InconsistentTaskReq implements ExecReason {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final InconsistentTaskReq that = (InconsistentTaskReq) o;
+        final InconsistentTaskReq that = (InconsistentTaskReq)o;
         if(!dep.equals(that.dep)) return false;
         return newStamp.equals(that.newStamp);
     }

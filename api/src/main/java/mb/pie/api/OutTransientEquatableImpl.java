@@ -33,7 +33,7 @@ public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Ser
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final OutTransientEquatableImpl<?, ?> that = (OutTransientEquatableImpl<?, ?>) o;
+        final OutTransientEquatableImpl<?, ?> that = (OutTransientEquatableImpl<?, ?>)o;
         if(consistent != that.consistent) return false;
         if(!Objects.equals(value, that.value)) return false;
         return Objects.equals(equatable, that.equatable);

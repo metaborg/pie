@@ -8,7 +8,6 @@ application {
 
 dependencies {
   compile(project(":pie.runtime"))
-  compile(project(":pie.store.lmdb"))
 }
 
 metaborg {

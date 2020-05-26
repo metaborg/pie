@@ -1,0 +1,6 @@
+module test.binary.neq.neqTupleEqual;
+package mb.pie.lang.test.binary.neq.neqTupleEqual;
+
+func main_neqTupleEqual() -> bool = {
+  (3, "bob") != (3, "bob")
+}

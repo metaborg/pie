@@ -1,0 +1,13 @@
+module test.supplier.fromTaskAndGet.foreignTask;
+package mb.pie.lang.test.supplier.fromTaskAndGet.foreignTask;
+
+func foreignTask(b: bool) -> string = foreign mb.pie.lang.test.supplier.fromTaskAndGet.foreignTask.foreignTask
+
+func main_foreignTask(b: bool) -> string = {
+  foreignTask.supplier(b).get<>()
+}
+
+// used to generate foreignTask
+// func foreignTask(b: bool) -> string = {
+//   "Not($b) = ${!b}"
+// }

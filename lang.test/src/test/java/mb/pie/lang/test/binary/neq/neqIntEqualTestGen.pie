@@ -1,5 +1,0 @@
-package mb.pie.lang.test.binary.neq;
-
-func main_neqIntEqual() -> bool = {
-  0 != -0
-}

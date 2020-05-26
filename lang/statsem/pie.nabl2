@@ -15,22 +15,23 @@ signature
     well-formedness P*.I*
 
   constructors
-  
+
     FuncTy : list(Type) * Type -> Type
     TopTy  : Type
     NullTy : Type
-    
+
     JavaTypeKind : TypeKind
-    
+
     JavaForeignFuncKind   : FuncKind
+    JavaForeignConstructorKind : FuncKind
     PieForeignFuncKind : FuncKind
     PieFuncKind     : FuncKind
-    
+
     LocalVarKind : VarKind
     InputVarKind : VarKind
 
   functions
-  
+
     addType : (Type * Type) -> Type {
       (IntTy()  , IntTy()  ) -> IntTy(),
       (StrTy()  , _        ) -> StrTy(),
@@ -42,13 +43,15 @@ signature
 
     typeToOcc : (Type * Occurrence * Occurrence) -> Occurrence {
       (DataTy(occ), occ_def_str, occ_def_path) -> occ,
+    //  (f@FuncTy(tys_in, ty_out), occ_def_str, occ_def_path) -> f,
       (StrTy()    , occ_def_str, occ_def_path) -> occ_def_str,
       (PathTy()   , occ_def_str, occ_def_path) -> occ_def_path
     }
-    
+
 rules // Init
 
   init ^ (s_root) :=
+    PieForeignFuncKind() <! PieFuncKind(), // to check if a function is a pie task
     new s_root,
     // Create definitions in type namespace for primitive types
     Type{StrTy() } <- s_root, new s_str , s_str  -P-> s_root, Type{StrTy() } =I=> s_str,
@@ -62,12 +65,46 @@ rules // Init
 
 rules // Program
 
-  [[ Program(package, defs) ^ (s_root) ]] :=
-    Map1 [[ defs ^ (s_root) ]],
-    distinct/name D(s_root)/Type | error "Duplicate types" @NAMES,
-    distinct/name D(s_root)/Func | error "Duplicate functions" @NAMES.
+  [[ Program(Module(moduleList), package, imports, defs) ^ (s_root) ]] :=
+    new s_file,
+    s_file -P-> s_root,
+    modDecl == QualifiedModuleDeclaration{"modDecl"},
+    modDecl <- s_file,
+    modDecl.moduleList := moduleList !,
+    modules [[ moduleList ^ (s_root, s_file) ]],
+    Map1(import)[[ imports ^ (s_root, s_file) ]],
+    Map1 [[ defs ^ (s_file) ]],
+    distinct/name D(s_file)/Type | error "Duplicate types" @NAMES,
+    distinct/name D(s_file)/Func | error "Duplicate functions" @NAMES,
+    distinct/name D(s_file)/Mod  | error "Duplicate imports" @NAMES.
 
 rules // None
 
   [[ None() ^ (s) ]] := true.
-  
+
+rules // Module scope generation
+
+  modules [[ [first|rest] ^ (s, s_file) ]] :=
+    new s_sub_module,
+    Mod{first} <- s,
+    Mod{first} =I=> s_sub_module,
+    modules [[ rest ^ (s_sub_module, s_file) ]].
+
+  modules [[ [] ^ (s, s_file) ]] :=
+    s -I-> s_file. // s can import things from the file
+
+rules // Import resolution & declaration
+
+  import [[ Import(importList) ^ (s_root, s_file) ]] :=
+    import [[ importList ^ (s_root, s_file) ]].
+
+  import [[ [first|full_rest@[second|rest]] ^ (s_cur, s_file) ]] :=
+    new s_next,
+    Mod{first} -> s_cur,
+    Mod{first} <=I= s_next,
+    import [[ full_rest ^ (s_next, s_file) ]].
+
+  import [[ [last|[]] ^ (s, s_file) ]] :=
+    s_file -P-> s.
+
+  import [[ [] ^ (s, s_file) ]] := false | error "Tried to resolve an empty qualified call".

@@ -1,8 +1,21 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecException;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Layer;
+import mb.pie.api.Logger;
+import mb.pie.api.Observability;
+import mb.pie.api.Share;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.Task;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
+import mb.pie.runtime.Callbacks;
 import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.resource.ResourceService;
@@ -11,7 +24,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -24,7 +36,7 @@ public class TaskExecutor {
     private final Layer layer;
     private final Logger logger;
     private final ExecutorLogger executorLogger;
-    private final ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks;
+    private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
 
@@ -37,7 +49,7 @@ public class TaskExecutor {
         Layer layer,
         Logger logger,
         ExecutorLogger executorLogger,
-        ConcurrentHashMap<TaskKey, Consumer<@Nullable Serializable>> callbacks,
+        Callbacks callbacks,
         HashMap<TaskKey, TaskData> visited
     ) {
         this.taskDefs = taskDefs;
@@ -79,9 +91,9 @@ public class TaskExecutor {
             } catch(RuntimeException e) {
                 final Throwable cause = e.getCause();
                 if(cause instanceof InterruptedException) {
-                    throw (InterruptedException) cause;
+                    throw (InterruptedException)cause;
                 } else if(cause instanceof ExecException) {
-                    throw (ExecException) cause;
+                    throw (ExecException)cause;
                 } else {
                     throw e;
                 }

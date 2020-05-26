@@ -5,7 +5,8 @@ import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Resource dependency that can be checked for consistency, given the collection of resource systems to resolve resource keys into resources.
+ * Resource dependency that can be checked for consistency, given the collection of resource systems to resolve resource
+ * keys into resources.
  */
 public interface ResourceDep {
     /**

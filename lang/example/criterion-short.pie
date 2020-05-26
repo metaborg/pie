@@ -1,3 +1,5 @@
+module example.criterion-short;
+
 package mb.pie.example.helloworld.java;
 
 func main(jmhArgs: string*) -> path** = {

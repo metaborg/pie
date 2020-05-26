@@ -1,9 +1,0 @@
-package mb.pie.lang.test.funcDef;
-
-func main_twoFuncRecursive() -> unit = {
-  helper_twoFuncRecursive()
-}
-
-func helper_twoFuncRecursive() -> unit = {
-  main_twoFuncRecursive()
-}

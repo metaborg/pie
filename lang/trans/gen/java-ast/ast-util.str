@@ -2,11 +2,7 @@ module gen/java-ast/ast-util
 
 imports
 
-  signatures/java/names/-
-  signatures/java/packages/-
-  signatures/java/lexical/-
-  signatures/java/types/-
-  signatures/java/classes/-
+  signatures/-
 
 rules
 
@@ -47,3 +43,38 @@ rules
   java-classType-to-unannType: x -> x
     where
       <not(?ClassType(_, _, _)); not(?ClassOrInterfaceTypeMember(_, _, _, _))> x
+
+  // java-qualifiedClass-to-expressionName: ids -> ast
+  //   Type: list of ids -> ast
+  // Converts a list of ids representing a qualified java class to a Java AST
+  // representation of that qualified class name
+  // Example:
+  // ["mb", "pie", "lang", "Foo"] ->
+  // ExpressionName(
+  //   AmbiguousName(
+  //     AmbiguousName(
+  //       AmbiguousName(Id("mb"))
+  //     , Id("pie")
+  //     )
+  //   , Id("lang")
+  //   )
+  // , Id("Foo")
+  // )
+  java-qualifiedClass-to-expressionName:
+    name -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
+    where
+      [fst | rest] := <reverse> name
+  
+  java-qualifiedClass-to-expressionName-after-reverse: [name|[]] -> AmbiguousName(Id(name))
+  java-qualifiedClass-to-expressionName-after-reverse: 
+    [name|rest] -> AmbiguousName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(name))
+
+  // concat-strings-separator(|sep): list -> string
+  //   Type: list of strings -> string
+  //   sep: string
+  // concatenates a list of strings with a separator
+  // Example: <concat-strings-separator(|"_")> ["mb", "pie", "lang", "Foo"] -> "mb_pie_lang_Foo"
+  concat-strings-separator(|sep): [] -> ""
+  concat-strings-separator(|sep): [last | []] -> last
+  concat-strings-separator(|sep): [first | rest] -> $[[first][sep][<concat-strings-separator(|sep)> rest]]
+  

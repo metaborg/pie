@@ -1,9 +1,0 @@
-package mb.pie.lang.test.binary.neq;
-
-// Note: Sign only compares the sign of the numbers to determine Equality
-data Sign = foreign java mb.pie.lang.test.binary.Sign {}
-func createSign(value: int) -> Sign = foreign java mb.pie.lang.test.binary.Sign#createSign
-
-func main_neqDataEqual() -> bool = {
-  createSign(-5) != createSign(-6)
-}

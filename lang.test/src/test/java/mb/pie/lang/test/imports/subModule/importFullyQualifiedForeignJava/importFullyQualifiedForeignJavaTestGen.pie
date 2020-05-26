@@ -1,0 +1,7 @@
+module mb.pie.lang.test.imports.subModule.main;
+package mb.pie.lang.test.imports.subModule.importFullyQualifiedForeignJava;
+
+func main_importFullyQualifiedForeignJava() -> unit = {
+  mb.pie.lang.test.imports.subModule.a.b.c.helper_foreign_java();
+  unit
+}

@@ -1,0 +1,6 @@
+module test.supplier.createAndGet.typeString;
+package mb.pie.lang.test.supplier.createAndGet.typeString;
+
+func main_typeString() -> string = {
+  supplier("Hello world!").get<>()
+}

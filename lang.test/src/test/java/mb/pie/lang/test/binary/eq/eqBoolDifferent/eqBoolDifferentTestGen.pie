@@ -1,0 +1,6 @@
+module test.binary.eq.eqBoolDifferent;
+package mb.pie.lang.test.binary.eq.eqBoolDifferent;
+
+func main_eqBoolDifferent() -> bool = {
+  false == true
+}

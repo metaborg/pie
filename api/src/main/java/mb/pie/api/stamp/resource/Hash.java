@@ -55,11 +55,11 @@ public class Hash {
 
 
     private void updateNonExistent() {
-        digest.update((byte) 0);
+        digest.update((byte)0);
     }
 
     private void updateResource(ReadableResource file) throws IOException {
-        digest.update((byte) 1);
+        digest.update((byte)1);
         digest.update(file.readBytes());
     }
 

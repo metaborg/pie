@@ -27,7 +27,7 @@ class LMDBStoreTests {
 
     newSession().use { session ->
       session.require(task)
-      verify(session.topDownSession, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+      verify(session.topDownRunner, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
     }
   }
 }
@@ -35,6 +35,6 @@ class LMDBStoreTests {
 class LMDBStoreTestBuilder(shouldSpy: Boolean = true) : DefaultRuntimeTestBuilder(shouldSpy) {
   init {
     storeFactories.clear()
-    storeFactories.add { l -> LMDBStore(l, File("build/test/lmdbstore")) }
+    storeFactories.add { l, _ -> LMDBStore(l, File("build/test/lmdbstore")) }
   }
 }

@@ -1,3 +1,7 @@
+module example.parse;
+
+package mb.pie.example.helloworld.java;
+
 func normalize(file: path, includeDirs: path*) -> path = {
   requires file;
   [requires dir with extension "sdf" | dir <- includeDirs];

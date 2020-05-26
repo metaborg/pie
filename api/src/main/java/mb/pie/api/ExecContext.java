@@ -150,16 +150,30 @@ public interface ExecContext {
     <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper) throws ExecException, InterruptedException;
 
     /**
-     * Returns output of given {@code provider}, which may in turn require the output of a task, or require and read a
-     * resource, using this execution context.
+     * Returns output of given {@link Supplier incremental supplier}, which may in turn require the output of a task, or
+     * require and read a resource, using this execution context.
      *
      * @param <O>      Type of the output object.
-     * @param provider {@link Provider} to get output of.
-     * @return Up-to-date output object of {@code provider}.
+     * @param supplier {@link Supplier} to get output of.
+     * @return Up-to-date output object of {@code supplier}.
      * @throws ExecException        When an executing task throws an exception.
      * @throws InterruptedException When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Provider<O> provider) throws ExecException, IOException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws ExecException, IOException, InterruptedException;
+
+    /**
+     * Returns output of given {@link Function incremental function} applied to given {@code input}, which may in turn
+     * require other tasks and resources using this execution context.
+     *
+     * @param <I>      Type of the input object.
+     * @param <O>      Type of the output object.
+     * @param function {@link Function} to get output of.
+     * @param input    Input to apply function to.
+     * @return Up-to-date output object of {@code function}.
+     * @throws ExecException        When an executing task throws an exception.
+     * @throws InterruptedException When execution is cancelled.
+     */
+    <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) throws ExecException, InterruptedException;
 
     /**
      * Gets the default output stamper.

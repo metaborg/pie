@@ -1,0 +1,6 @@
+module test.binary.add.addPathPathRelativeRelative;
+package mb.pie.lang.test.binary.add.addPathPathRelativeRelative;
+
+func main_addPathPathRelativeRelative() -> path = {
+  ./path/to + ./foo
+}

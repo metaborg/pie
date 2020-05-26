@@ -1,0 +1,6 @@
+module test.binary.neq.neqListEqualEmpty;
+package mb.pie.lang.test.binary.neq.neqListEqualEmpty;
+
+func main_neqListEqualEmpty() -> bool = {
+  [] != []
+}

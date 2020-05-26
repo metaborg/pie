@@ -24,7 +24,7 @@ class TransformFile : TaskDef<TransformFile.Input, File> {
 
   data class Input(
     val sourceFile: File,
-    val sourceTask: STask<*>,
+    val sourceTask: Supplier<*>,
     val destinationFile: File
   ) : Serializable
 
@@ -61,7 +61,7 @@ fun main(args: Array<String>) {
   pieBuilder.build().use { pie ->
     val fileCreatorTask = createFile.createTask(sourceFile)
     val transformFileTask = transformFile.createTask(
-      TransformFile.Input(sourceFile, fileCreatorTask.toSerializableTask(), destinationFile))
+      TransformFile.Input(sourceFile, fileCreatorTask.toSupplier(), destinationFile))
     val output = pie.newSession().require(transformFileTask)
     println("Transformed '$sourceFile' ('${sourceFile.readText()}') to '$output' ('${output.readText()}')")
   }

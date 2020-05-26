@@ -17,11 +17,18 @@ context-free start-symbols
 context-free syntax
 
   Start.Program =
-  <<Package>
+  <<Module>
+  <Package>
+  
+  <{Import "\n"}*>
   
   <{Def "\n"}*>>
   
+  Module.Module = <module <{ID "."}+>;>
+  
   Package.Package = <package <{ID "."}+>;>
+  
+  Import.Import = <import <{ID "."}+>;>
   
   Def = DataDef
   Def = FuncDef

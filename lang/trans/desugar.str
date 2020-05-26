@@ -2,9 +2,7 @@ module desugar
 
 imports
 
-  signatures/-
-  signatures/lex/-
-  signatures/impl/-
+  src-gen/signatures/-
 
 strategies
 

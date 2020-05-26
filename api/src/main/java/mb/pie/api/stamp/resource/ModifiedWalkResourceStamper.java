@@ -31,7 +31,7 @@ public class ModifiedWalkResourceStamper implements ResourceStamper<Hierarchical
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final ModifiedWalkResourceStamper that = (ModifiedWalkResourceStamper) o;
+        final ModifiedWalkResourceStamper that = (ModifiedWalkResourceStamper)o;
         if(!Objects.equals(walker, that.walker)) return false;
         return Objects.equals(matcher, that.matcher);
     }

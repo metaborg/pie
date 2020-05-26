@@ -32,7 +32,7 @@ public class TaskKey implements Serializable {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final TaskKey taskKey = (TaskKey) o;
+        final TaskKey taskKey = (TaskKey)o;
         if(!id.equals(taskKey.id)) return false;
         return key.equals(taskKey.key);
     }

@@ -4,18 +4,8 @@ imports
 
   libspoofax/stratego/debug
 
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-
-  signatures/java/expressions/-
-  signatures/java/names/-
-  signatures/java/types/-
-  signatures/java/classes/-
-  signatures/java/interfaces/-
-  signatures/java/lexical/-
-  signatures/java/statements/-
-  signatures/java/literals/-
 
   gen/java-ast/type
   gen/java-ast/func_body
@@ -27,7 +17,7 @@ rules // PIE function definitions
 
   // p2j-ast-def:
   //   FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body, optKeyBody)) ->
-  //   Java class implementing TaskDef AST node
+  //   (name: String, Java class implementing TaskDef: AST node)
   // Tranforms a Pie function into a Pie Task (i.e. a Java class implementing TaskDef)
   // Adds to the dynamic strategy ModuleBindings
   // Defines the dynamic rules InputKind and InjectValues
@@ -59,15 +49,16 @@ rules // PIE function definitions
         ))
       )
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
-    ; <add-import> "com.google.inject.Inject"
+    ; <add-import> "javax.inject.Inject"
     ; <add-import> "mb.pie.api.ExecContext"
     ; <add-import> "mb.pie.api.ExecException"
     ; <add-import> "mb.pie.api.None"
     ; <add-import> "mb.pie.api.TaskDef"
     ; <add-import> "java.io.Serializable"
     with
-      result := ClassDeclaration(
-          []
+      result := (className,
+        ClassDeclaration(
+          [ Public() ]
         , Id(className)
         , None()
         , None()
@@ -121,15 +112,16 @@ rules // PIE function definitions
                   , FormalParam([], <java-classType-to-unannType> inputType, VariableDecl(Id("input")))
                   )
                 , []
-                , Some(ThrowsDec([ClassType([], Id("ExecException"), None())]))
+                , Some(ThrowsDec([ClassType([], Id("Exception"), None())]))
                 )
               , Block(<concat> [stmts, [Return(returnValue)]])
               )
             ]
           ]
         )
+      )
     // Note: meaning of this AST:
-    //   class [className] implements TaskDef<[inputType], [outputType]> {
+    //   public class [className] implements TaskDef<[inputType], [outputType]> {
     //     private static final String _id = "[className]";
     //     [fields]
     //
