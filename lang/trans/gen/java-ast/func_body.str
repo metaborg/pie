@@ -948,10 +948,10 @@ rules // PIE function calls
               [ ExpressionStatement(Assign(
                   ExpressionName(Id(callResultName))
                 , InvokeQExp(
-                    expVal
+                    ExpressionName(Id("execContext"))
                   , None()
-                  , Id("get")
-                  , [ ExpressionName(Id("execContext")) ]
+                  , Id("require")
+                  , [ expVal ]
                   )
                 ))
               ]
@@ -964,7 +964,7 @@ rules // PIE function calls
                 )
               , Block(
                   [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Unexpected IOException while calling Supplier.get()"])
+                      StringLiteral($["Unexpected IOException while getting value from supplier"])
                     , ExpressionName(Id("ex"))
                     ]))
                   ]
@@ -978,7 +978,7 @@ rules // PIE function calls
                 )
               , Block(
                   [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Call to Supplier.get() was interrupted"])
+                      StringLiteral($["Getting value from supplier was interrupted"])
                     , ExpressionName(Id("ex"))
                     ]))
                   ]
@@ -990,11 +990,11 @@ rules // PIE function calls
         // Note: meaning of this AST:
         //   final [ty] [callResultName];
         //   try {
-        //     [callResultName] = [expVal].get();
+        //     [callResultName] = execContext.require([expVal]);
         //   } catch (IOException ex) {
-        //     throw new ExecException("Unexpected IOException while calling Supplier.get()", ex);
+        //     throw new ExecException("Unexpected IOException while getting value from supplier", ex);
         //   } catch (InterruptedException ex) {
-        //     throw new ExecException("Call to Supplier.get() was inerrupted", ex);
+        //     throw new ExecException("Getting value from supplier was interrupted", ex);
         //   }
       ]
     ; result               := (stmts, callResultName)
