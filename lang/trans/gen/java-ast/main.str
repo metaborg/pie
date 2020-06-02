@@ -30,7 +30,7 @@ rules
     with
       fileName         := <base-filename;remove-extension> file
     ; fileNamePrefix   := <generate-classname> (fileName, pieAst)
-    ; dirName          := <dirname> file
+    ; dirName          := <output-dir> (file, pieAst)
     ; namesAndClasses  := <p2j-ast> pieAst
     ; (names, classes) := <unzip> namesAndClasses
     ; files            := <map(p2j-ast-to-filestring(|fileName))> classes
@@ -43,6 +43,26 @@ rules
   generate-classname:
     (fileName, Program(Module(mod), imps, defs)) ->
       $[[<concat-strings-separator(|"_")> mod]_[fileName]]
+
+  /**
+   * output-dir:
+   *   (file, Program(Module(mod), _, _)) -> result
+   *   type: (String, Pie Program AST node) -> String
+   * get the output directory for the given Pie file
+   */
+  output-dir:
+    (file, Program(Module(mod), _, _)) -> result
+    with
+    // Note: this strategy assumes files of the form "path/to/file.pie"
+      relativeTargetDir    := <config-get-output-dir>
+    ; ['.' | ['/' | rest]] := <explode-string> relativeTargetDir
+    ; '/'                  := <last> rest // assert that last character is a /
+    ; rootPackageDir       := <implode-string> rest
+    ; packageStr           := <concat-strings> <separate-by(|"/")> mod
+    ; result               := $[[rootPackageDir][packageStr]]
+
+  config-get-output-dir = <read-text-file> <file-exists> "pie/config.txt"
+  config-get-output-dir = !"./build/generated/sources/"
 
   p2j-ast-to-filestring(|pieFile):
     ast ->
