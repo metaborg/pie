@@ -1,5 +1,4 @@
-module mb.pie.lang.test.imports.subModule.main;
-package mb.pie.lang.test.imports.subModule.importFullModulePathForeignPie;
+module mb.pie.lang.test.imports.subModule.importFullModulePathForeignPie;
 
 import mb.pie.lang.test.imports.subModule.a.b.c;
 

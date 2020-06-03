@@ -1,5 +1,4 @@
-module test.binary.eq.eqPathDifferent;
-package mb.pie.lang.test.binary.eq.eqPathDifferent;
+module mb.pie.lang.test.binary.eq.eqPathDifferent;
 
 func main_eqPathDifferent() -> bool = {
   ./foo == /foo

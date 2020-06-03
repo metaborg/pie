@@ -1,5 +1,4 @@
-module test.returnTypes.listStringOne;
-package mb.pie.lang.test.returnTypes.listStringOne;
+module mb.pie.lang.test.returnTypes.listStringOne;
 
 func main_listStringOne() -> string* = {
   ["first"]

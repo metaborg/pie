@@ -1,6 +1,4 @@
-module example.criterion-short;
-
-package mb.pie.example.helloworld.java;
+module mb.pie.example.criterion-short;
 
 func main(jmhArgs: string*) -> path** = {
   val jar = build();

@@ -1,5 +1,4 @@
-module mb.pie.lang.test.imports.subModule.main;
-package mb.pie.lang.test.imports.subModule.importFullyQualified;
+module mb.pie.lang.test.imports.subModule.importFullyQualified;
 
 func main_importFullyQualified() -> unit = {
   mb.pie.lang.test.imports.subModule.a.b.c.helper_function();

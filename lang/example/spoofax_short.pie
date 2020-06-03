@@ -1,6 +1,4 @@
-module example.spoofax_short;
-
-package mb.pie.example.helloworld.java;
+module mb.pie.example.spoofax_short;
 
 // 1) Language specification and workspace management
 data LangSpec = foreign java class {

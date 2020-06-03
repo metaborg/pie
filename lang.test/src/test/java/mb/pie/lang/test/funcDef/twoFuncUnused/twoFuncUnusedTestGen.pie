@@ -1,5 +1,4 @@
-module test.funcDef.twoFuncUnused;
-package mb.pie.lang.test.funcDef.twoFuncUnused;
+module mb.pie.lang.test.funcDef.twoFuncUnused;
 
 func main_twoFuncUnused() -> unit = { }
 func helper_twoFuncUnused() -> unit = { }

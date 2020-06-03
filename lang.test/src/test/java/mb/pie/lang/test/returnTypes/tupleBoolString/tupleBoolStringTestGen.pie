@@ -1,5 +1,4 @@
-module test.returnTypes.tupleBoolString;
-package mb.pie.lang.test.returnTypes.tupleBoolString;
+module mb.pie.lang.test.returnTypes.tupleBoolString;
 
 func main_tupleBoolString() -> (bool, string) = {
   (false, "hey")

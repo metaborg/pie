@@ -1,6 +1,4 @@
-module example.helloWorld;
-
-package mb.pie.example.helloworld.java;
+module mb.pie.example.helloWorld;
 
 func main3() -> unit = {
   hello(./hello.txt)

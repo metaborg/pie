@@ -65,7 +65,7 @@ rules // Init
 
 rules // Program
 
-  [[ Program(Module(moduleList), package, imports, defs) ^ (s_root) ]] :=
+  [[ Program(Module(moduleList), imports, defs) ^ (s_root) ]] :=
     new s_file,
     s_file -P-> s_root,
     modDecl == QualifiedModuleDeclaration{"modDecl"},

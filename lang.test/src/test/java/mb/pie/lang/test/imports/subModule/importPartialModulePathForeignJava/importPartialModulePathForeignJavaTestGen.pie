@@ -1,5 +1,4 @@
-module mb.pie.lang.test.imports.subModule.main;
-package mb.pie.lang.test.imports.subModule.importPartialModulePathForeignJava;
+module mb.pie.lang.test.imports.subModule.importPartialModulePathForeignJava;
 
 import mb.pie.lang.test.imports.subModule.a;
 

@@ -1,5 +1,4 @@
-module test.binary.neq.neqNullableIntNull;
-package mb.pie.lang.test.binary.neq.neqNullableIntNull;
+module mb.pie.lang.test.binary.neq.neqNullableIntNull;
 
 func main_neqNullableIntNull() -> bool = {
     val x: int? = null;

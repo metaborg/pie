@@ -1,5 +1,4 @@
-module test.variables.variableTupleDecompositionExplicitType;
-package mb.pie.lang.test.variables.variableTupleDecompositionExplicitType;
+module mb.pie.lang.test.variables.variableTupleDecompositionExplicitType;
 
 func main_variableTupleDecompositionExplicitType() -> (string, int) = {
   val (num: int, str: string, ignored: bool) = (-11, "out of ideas for string values", false);

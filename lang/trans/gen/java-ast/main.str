@@ -41,7 +41,7 @@ rules
 rules
 
   generate-classname:
-    (fileName, Program(Module(mod), package, imps, defs)) ->
+    (fileName, Program(Module(mod), imps, defs)) ->
       $[[<concat-strings-separator(|"_")> mod]_[fileName]]
 
   p2j-ast-to-filestring(|pieFile):
@@ -59,27 +59,27 @@ $[// This file was generated from Pie source file [pieFile].
    * transforms a Pie Program to a list of Java filenames + CompilationUnits
    */
   p2j-ast:
-    p@Program(Module(mod), Package(package), imps, defs) -> result
+    p@Program(Module(mod), imps, defs) -> result
     with
     {| AstAnalysis, ModuleBindings, JavaImports:
       <pie-set-ast-analysis> defs
     ; classes  := <filter(p2j-ast-def)> defs
-    ; result    := <map(java-class-to-file(|package))> classes
+    ; result    := <map(java-class-to-file(|mod))> classes
     |}
 
-  java-class-to-file(|package): (name, class) -> result
+  java-class-to-file(|mod): (name, class) -> result
     with
       imports         := <uniq> <bagof-JavaImports>
     ; compilationUnit := CompilationUnit(
         Some(PackageDeclaration(
           []
-        , <map(p2j-ast-wrap-string-with-id)> package
+        , <map(p2j-ast-wrap-string-with-id)> mod
         ))
       , imports
       , [ class ]
       )
       // Note: meaning of this AST:
-      //   package [package];
+      //   package [mod];
       //
       //   [imports]
       //

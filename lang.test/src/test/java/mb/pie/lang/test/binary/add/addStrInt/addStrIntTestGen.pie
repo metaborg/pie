@@ -1,5 +1,4 @@
-module test.binary.add.addStrInt;
-package mb.pie.lang.test.binary.add.addStrInt;
+module mb.pie.lang.test.binary.add.addStrInt;
 
 func main_addStrInt() -> string = {
   "String + int: " + 67

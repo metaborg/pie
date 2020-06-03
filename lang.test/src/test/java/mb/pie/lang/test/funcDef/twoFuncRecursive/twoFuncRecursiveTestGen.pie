@@ -1,5 +1,4 @@
-module test.funcDef.twoFuncRecursive;
-package mb.pie.lang.test.funcDef.twoFuncRecursive;
+module mb.pie.lang.test.funcDef.twoFuncRecursive;
 
 func main_twoFuncRecursive() -> unit = {
   helper_twoFuncRecursive()

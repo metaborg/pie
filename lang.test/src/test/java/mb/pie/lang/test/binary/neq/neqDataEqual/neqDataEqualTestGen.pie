@@ -1,5 +1,4 @@
-module test.binary.neq.neqDataEqual;
-package mb.pie.lang.test.binary.neq.neqDataEqual;
+module mb.pie.lang.test.binary.neq.neqDataEqual;
 
 // Note: Sign only compares the sign of the numbers to determine equality
 data Sign = foreign java mb.pie.lang.test.binary.Sign {}

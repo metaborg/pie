@@ -1,5 +1,4 @@
-module test.binary.eq.eqListEqual;
-package mb.pie.lang.test.binary.eq.eqListEqual;
+module mb.pie.lang.test.binary.eq.eqListEqual;
 
 func main_eqListEqual() -> bool = {
   [2, 1] == [2, 1]

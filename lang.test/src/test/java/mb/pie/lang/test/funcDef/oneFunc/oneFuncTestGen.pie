@@ -1,4 +1,3 @@
-module test.funcDef.oneFunc;
-package mb.pie.lang.test.funcDef.oneFunc;
+module mb.pie.lang.test.funcDef.oneFunc;
 
 func main_oneFunc() -> unit = { }

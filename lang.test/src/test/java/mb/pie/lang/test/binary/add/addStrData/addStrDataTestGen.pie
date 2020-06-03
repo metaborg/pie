@@ -1,5 +1,4 @@
-module test.binary.add.addStrData;
-package mb.pie.lang.test.binary.add.addStrData;
+module mb.pie.lang.test.binary.add.addStrData;
 
 data Sign = foreign java mb.pie.lang.test.binary.Sign {}
 func createSign(value: int) -> Sign = foreign java mb.pie.lang.test.binary.Sign#createSign

@@ -1,5 +1,4 @@
-module test.binary.neq.neqBoolDifferent;
-package mb.pie.lang.test.binary.neq.neqBoolDifferent;
+module mb.pie.lang.test.binary.neq.neqBoolDifferent;
 
 func main_neqBoolDifferent() -> bool = {
   true != false

@@ -1,5 +1,4 @@
-module test.returnTypes.__error__listOfTupleWithNullable;
-package mb.pie.lang.test.returnTypes.__error__listOfTupleWithNullable;
+module mb.pie.lang.test.returnTypes.__error__listOfTupleWithNullable;
 
 // TODO: fix type check error
 // does not typecheck, probably due to incorrect type checking (should check

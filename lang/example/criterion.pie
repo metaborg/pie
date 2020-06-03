@@ -1,6 +1,4 @@
-module example.criterion;
-
-package mb.pie.example.helloworld.java;
+module mb.pie.example.criterion;
 
 func main_benchmarking(dummy: string*) -> path** = {
   val benchmarkJar = build();

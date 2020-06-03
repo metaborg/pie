@@ -1,5 +1,4 @@
-module test.supplier.createAndGet.typeInt;
-package mb.pie.lang.test.supplier.createAndGet.typeInt;
+module mb.pie.lang.test.supplier.createAndGet.typeInt;
 
 func main_typeInt() -> int = {
   supplier(87).get<>()

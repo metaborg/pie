@@ -1,6 +1,4 @@
-module example.parse;
-
-package mb.pie.example.helloworld.java;
+module mb.pie.example.parse;
 
 func normalize(file: path, includeDirs: path*) -> path = {
   requires file;

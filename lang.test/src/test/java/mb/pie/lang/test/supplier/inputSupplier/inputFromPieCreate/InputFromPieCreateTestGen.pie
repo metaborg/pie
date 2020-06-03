@@ -1,5 +1,4 @@
-module test.supplier.inputSupplier.inputFromPieCreate;
-package mb.pie.lang.test.supplier.inputSupplier.inputFromPieCreate;
+module mb.pie.lang.test.supplier.inputSupplier.inputFromPieCreate;
 
 func main_inputFromPieCreate() -> string = {
   helper_inputFromPieCreate(supplier("a string"))

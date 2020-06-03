@@ -1,4 +1,3 @@
-module test.funcDef.emptyFile;
-package mb.pie.lang.test.funcDef;
+module mb.pie.lang.test.funcDef.emptyFile;
 
 // A file without function definitions

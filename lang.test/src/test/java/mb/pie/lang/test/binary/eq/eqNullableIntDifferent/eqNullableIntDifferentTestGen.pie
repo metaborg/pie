@@ -1,5 +1,4 @@
-module test.binary.eq.eqNullableIntDifferent;
-package mb.pie.lang.test.binary.eq.eqNullableIntDifferent;
+module mb.pie.lang.test.binary.eq.eqNullableIntDifferent;
 
 func main_eqNullableIntDifferent() -> bool = {
   val x: int? = 7;

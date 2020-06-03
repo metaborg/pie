@@ -1,5 +1,4 @@
-module test.returnTypes.boolTrue;
-package mb.pie.lang.test.returnTypes.boolTrue;
+module mb.pie.lang.test.returnTypes.boolTrue;
 
 func main_boolTrue() -> bool = {
   true

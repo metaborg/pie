@@ -1,5 +1,4 @@
-module test.supplier.inputSupplier.inputFromPiePassAlong;
-package mb.pie.lang.test.supplier.inputSupplier.inputFromPiePassAlong;
+module mb.pie.lang.test.supplier.inputSupplier.inputFromPiePassAlong;
 
 func main_inputFromPiePassAlong(supp: supplier<string>) -> string = {
   helper_inputFromPiePassAlong(supp)

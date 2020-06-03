@@ -1,5 +1,4 @@
-module test.binary.neq.neqStringEqual;
-package mb.pie.lang.test.binary.neq.neqStringEqual;
+module mb.pie.lang.test.binary.neq.neqStringEqual;
 
 func main_neqStringEqual() -> bool = {
   "testString" != "testString"

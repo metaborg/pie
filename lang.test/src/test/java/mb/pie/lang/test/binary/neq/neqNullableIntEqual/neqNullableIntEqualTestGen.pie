@@ -1,5 +1,4 @@
-module test.binary.neq.neqNullableIntEqual;
-package mb.pie.lang.test.binary.neq.neqNullableIntEqual;
+module mb.pie.lang.test.binary.neq.neqNullableIntEqual;
 
 func main_neqNullableIntEqual() -> bool = {
     val x: int? = 8;

@@ -1,5 +1,4 @@
-module test.returnTypes._int;
-package mb.pie.lang.test.returnTypes._int;
+module mb.pie.lang.test.returnTypes._int;
 
 func main__int() -> int = {
   6
