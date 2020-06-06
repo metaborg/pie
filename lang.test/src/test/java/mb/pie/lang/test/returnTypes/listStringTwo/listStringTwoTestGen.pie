@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.listStringTwo;
+module mb.pie.lang.test.returnTypes.listStringTwo
 
 func main_listStringTwo() -> string* = {
   ["hello", "world"]

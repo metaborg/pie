@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrNullableIntValue;
+module mb.pie.lang.test.binary.add.addStrNullableIntValue
 
 func main_addStrNullableIntValue() -> string = {
   val x: int? = 45;

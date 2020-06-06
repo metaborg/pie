@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.eq.eqPathEqual;
+module mb.pie.lang.test.binary.eq.eqPathEqual
 
 func main_eqPathEqual() -> bool = {
   ./foo == ./foo/

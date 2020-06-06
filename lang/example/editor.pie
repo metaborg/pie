@@ -1,4 +1,4 @@
-module mb.pie.example.editor;
+module mb.pie.example.editor
 
 func update-editor(text: string) -> Msg* = {
   val syntaxDef = ./syntax/Java8.sdf;

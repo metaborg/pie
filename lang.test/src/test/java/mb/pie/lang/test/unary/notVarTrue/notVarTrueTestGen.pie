@@ -1,4 +1,4 @@
-module mb.pie.lang.test.unary.notVarTrue;
+module mb.pie.lang.test.unary.notVarTrue
 
 func main_notVarTrue() -> bool = {
   val bool = true;

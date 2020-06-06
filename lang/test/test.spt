@@ -3,6 +3,6 @@ module test
 language pie
 
 test parse [[
-module foo;
+module foo
 
 ]] parse succeeds

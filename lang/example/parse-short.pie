@@ -1,4 +1,4 @@
-module mb.pie.example.parse-short;
+module mb.pie.example.parse-short
 
 func normalize(file: path, includeDirs: path*) -> path = {
   requires file; [requires dir with extension "sdf" | dir <- includeDirs];

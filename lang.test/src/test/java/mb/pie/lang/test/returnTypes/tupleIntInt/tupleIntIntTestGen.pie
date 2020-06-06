@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.tupleIntInt;
+module mb.pie.lang.test.returnTypes.tupleIntInt
 
 func main_tupleIntInt() -> (int, int) = {
   (4, -90)

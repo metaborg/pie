@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.unitNoValue;
+module mb.pie.lang.test.returnTypes.unitNoValue
 
 func main_unitNoValue() -> unit = {
 }

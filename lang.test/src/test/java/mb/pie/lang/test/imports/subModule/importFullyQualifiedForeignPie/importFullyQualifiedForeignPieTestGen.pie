@@ -1,4 +1,4 @@
-module mb.pie.lang.test.imports.subModule.importFullyQualifiedForeignPie;
+module mb.pie.lang.test.imports.subModule.importFullyQualifiedForeignPie
 
 func main_importFullyQualifiedForeignPie() -> unit = {
   mb.pie.lang.test.imports.subModule.a.b.c.foreign_pie();

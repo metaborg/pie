@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqStringDifferent;
+module mb.pie.lang.test.binary.neq.neqStringDifferent
 
 func main_neqStringDifferent() -> bool = {
   "capitalized?" != "Capitalized?"

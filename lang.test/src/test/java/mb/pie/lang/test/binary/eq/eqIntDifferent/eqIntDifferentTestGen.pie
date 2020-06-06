@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.eq.eqIntDifferent;
+module mb.pie.lang.test.binary.eq.eqIntDifferent
 
 func main_eqIntDifferent() -> bool = {
   128 == -128

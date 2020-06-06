@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqIntDifferent;
+module mb.pie.lang.test.binary.neq.neqIntDifferent
 
 func main_neqIntDifferent() -> bool = {
   128 != -128

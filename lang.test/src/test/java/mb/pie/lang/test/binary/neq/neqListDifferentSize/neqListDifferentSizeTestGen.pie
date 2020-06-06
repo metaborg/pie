@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqListDifferentSize;
+module mb.pie.lang.test.binary.neq.neqListDifferentSize
 
 func main_neqListDifferentSize() -> bool = {
   [0, 1] != [0, 1, 2]

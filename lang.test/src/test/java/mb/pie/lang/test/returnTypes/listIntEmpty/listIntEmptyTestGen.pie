@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.listIntEmpty;
+module mb.pie.lang.test.returnTypes.listIntEmpty
 
 func main_listIntEmpty() -> int* = {
   []

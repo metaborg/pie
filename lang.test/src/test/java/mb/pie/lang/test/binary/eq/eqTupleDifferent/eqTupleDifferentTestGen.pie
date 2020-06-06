@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.eq.eqTupleDifferent;
+module mb.pie.lang.test.binary.eq.eqTupleDifferent
 
 func main_eqTupleDifferent() -> bool = {
   (1, "string") == (1, "String")

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addListList;
+module mb.pie.lang.test.binary.add.addListList
 
 func main_addListList() -> int* = {
   [1, 2] + [3, 4]

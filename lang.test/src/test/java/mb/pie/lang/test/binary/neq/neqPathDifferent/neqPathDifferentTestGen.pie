@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqPathDifferent;
+module mb.pie.lang.test.binary.neq.neqPathDifferent
 
 func main_neqPathDifferent() -> bool = {
   ./foo != /foo

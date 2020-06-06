@@ -1,4 +1,4 @@
-module mb.pie.lang.test.unary.notTrue;
+module mb.pie.lang.test.unary.notTrue
 
 func main_notTrue() -> bool = {
   !true

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqIntEqual;
+module mb.pie.lang.test.binary.neq.neqIntEqual
 
 func main_neqIntEqual() -> bool = {
   0 != -0

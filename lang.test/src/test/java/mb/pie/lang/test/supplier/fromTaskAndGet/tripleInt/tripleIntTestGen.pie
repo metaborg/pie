@@ -1,4 +1,4 @@
-module mb.pie.lang.test.supplier.fromTaskAndGet.tripleInt;
+module mb.pie.lang.test.supplier.fromTaskAndGet.tripleInt
 
 func main_tripleInt(x: int) -> int = {
   helper_tripleInt.supplier(x).get<>()

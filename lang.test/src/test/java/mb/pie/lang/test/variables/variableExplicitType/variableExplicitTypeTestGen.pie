@@ -1,4 +1,4 @@
-module mb.pie.lang.test.variables.variableExplicitType;
+module mb.pie.lang.test.variables.variableExplicitType
 
 func main_variableExplicitType() -> string = {
   val str: string = "Greg ate a fish";

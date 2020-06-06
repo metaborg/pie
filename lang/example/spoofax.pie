@@ -1,4 +1,4 @@
-module mb.pie.example.spoofax;
+module mb.pie.example.spoofax
 
 /// Interface that Spoofax expects from a language
 data Message = foreign java mb.spoofax.api.message.Message {}
