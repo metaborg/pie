@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.pathAbsolute
+module mb:pie:lang:test:returnTypes:pathAbsolute
 
 func main_pathAbsolute() -> path = {
   /foo/bar

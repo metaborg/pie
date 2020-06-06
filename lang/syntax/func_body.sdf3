@@ -54,7 +54,7 @@ context-free syntax // References
   
   Exp.Call  = <<FUNCID>(<{Exp ", "}*>)>       {left}
   Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)> {left}
-  Exp.ImportCall = <<{ID "."}+>.<FUNCID>(<{Exp ", "}*>)> {left, prefer} // prefer this over QCall
+  Exp.ImportCall = <<{MODID ":"}+>:<FUNCID>(<{Exp ", "}*>)> {left}
 
   Exp.CreateSupplier = <supplier (<Exp>)>
   Exp.TaskSupplier   = <<FUNCID>.supplier(<{Exp ", "}*>)>

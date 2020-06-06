@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqTupleDifferent
+module mb:pie:lang:test:binary:neq:neqTupleDifferent
 
 func main_neqTupleDifferent() -> bool = {
   (1, "string") != (1, "String")

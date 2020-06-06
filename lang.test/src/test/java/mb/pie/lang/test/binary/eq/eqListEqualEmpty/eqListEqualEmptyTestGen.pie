@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.eq.eqListEqualEmpty
+module mb:pie:lang:test:binary:eq:eqListEqualEmpty
 
 func main_eqListEqualEmpty() -> bool = {
   [] == []

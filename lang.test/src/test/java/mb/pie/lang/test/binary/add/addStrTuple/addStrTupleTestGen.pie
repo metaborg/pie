@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrTuple
+module mb:pie:lang:test:binary:add:addStrTuple
 
 func main_addStrTuple() -> string = {
   "String + Tuple: " + (1, true)

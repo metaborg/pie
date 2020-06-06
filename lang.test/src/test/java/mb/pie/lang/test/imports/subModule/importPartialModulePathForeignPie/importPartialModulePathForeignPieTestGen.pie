@@ -1,8 +1,8 @@
-module mb.pie.lang.test.imports.subModule.importPartialModulePathForeignPie
+module mb:pie:lang:test:imports:subModule:importPartialModulePathForeignPie
 
-import mb.pie.lang.test.imports.subModule.a
+import mb:pie:lang:test:imports:subModule:a
 
 func main_importPartialModulePathForeignPie() -> unit = {
-  a.b.c.foreign_pie();
+  a:b:c:foreign_pie();
   unit
 }

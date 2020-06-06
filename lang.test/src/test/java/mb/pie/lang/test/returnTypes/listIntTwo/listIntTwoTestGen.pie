@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.listIntTwo
+module mb:pie:lang:test:returnTypes:listIntTwo
 
 func main_listIntTwo() -> int* = {
   [1, 2]

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.eq.eqStringDifferent
+module mb:pie:lang:test:binary:eq:eqStringDifferent
 
 func main_eqStringDifferent() -> bool = {
   "capitalized?" == "Capitalized?"

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.string
+module mb:pie:lang:test:returnTypes:string
 
 func main_string() -> string = {
   "Hello, world!"

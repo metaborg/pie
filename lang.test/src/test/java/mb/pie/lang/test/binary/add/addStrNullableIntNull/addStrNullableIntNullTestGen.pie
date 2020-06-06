@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrNullableIntNull
+module mb:pie:lang:test:binary:add:addStrNullableIntNull
 
 func main_addStrNullableIntNull() -> string = {
   val x: int? = null;

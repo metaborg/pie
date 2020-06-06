@@ -1,4 +1,4 @@
-module mb.pie.lang.test.funcDef.twoFuncLinear
+module mb:pie:lang:test:funcDef:twoFuncLinear
 
 func main_twoFuncLinear() -> unit = {
   helper_twoFuncLinear()

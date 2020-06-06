@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrBool
+module mb:pie:lang:test:binary:add:addStrBool
 
 func main_addStrBool() -> string = {
   "String + bool: " + true

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.__error__OneTuple
+module mb:pie:lang:test:returnTypes:__error__OneTuple
 
 // problem: can declare a return type of a tuple with a single element but
 // can't construct it within pie

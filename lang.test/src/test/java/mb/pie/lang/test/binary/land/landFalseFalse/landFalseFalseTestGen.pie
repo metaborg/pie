@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.land.landFalseFalse
+module mb:pie:lang:test:binary:land:landFalseFalse
 
 func main_landFalseFalse() -> bool = {
   false && false

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.tupleStringPath
+module mb:pie:lang:test:returnTypes:tupleStringPath
 
 func main_tupleStringPath() -> (string, path) = {
   ("Folder with pictures", /c/home/bob/pictures)

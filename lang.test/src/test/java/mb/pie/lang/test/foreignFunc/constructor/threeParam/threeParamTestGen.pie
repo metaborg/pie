@@ -1,4 +1,4 @@
-module mb.pie.lang.test.foreignFunc.constructor.threeParam
+module mb:pie:lang:test:foreignFunc:constructor:threeParam
 
 data Foo = foreign java mb.pie.lang.test.foreignFunc.constructor.Foo {}
 func newFoo(string, int, int) -> Foo = foreign java constructor mb.pie.lang.test.foreignFunc.constructor.Foo

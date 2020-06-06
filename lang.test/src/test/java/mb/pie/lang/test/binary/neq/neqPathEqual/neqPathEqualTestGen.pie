@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqPathEqual
+module mb:pie:lang:test:binary:neq:neqPathEqual
 
 func main_neqPathEqual() -> bool = {
   ./foo != ./foo/

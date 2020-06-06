@@ -1,4 +1,4 @@
-module mb.pie.lang.test.variables.variableTupleDecompositionMixedType
+module mb:pie:lang:test:variables:variableTupleDecompositionMixedType
 
 func main_variableTupleDecompositionMixedType() -> (bool, string) = {
   val (num: int, str, bool: bool) = (-129, "implicitly typed string", true);

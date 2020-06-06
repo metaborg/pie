@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrUnit
+module mb:pie:lang:test:binary:add:addStrUnit
 
 func main_addStrUnit() -> string = {
   "String + unit: " + unit

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrPath
+module mb:pie:lang:test:binary:add:addStrPath
 
 func main_addStrPath() -> string = {
   "String + path: " + /path/to/file

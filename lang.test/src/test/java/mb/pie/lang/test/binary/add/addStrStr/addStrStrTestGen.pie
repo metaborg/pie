@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrStr
+module mb:pie:lang:test:binary:add:addStrStr
 
 func main_addStrStr() -> string = {
   "Hello there\n" + "General Kenobi"

@@ -1,4 +1,4 @@
-module mb.pie.lang.test.imports.subModule.a.b.c
+module mb:pie:lang:test:imports:subModule:a:b:c
 
 func helper_function() -> unit = {}
 func foreign_pie() -> unit = foreign mb.pie.lang.test.imports.subModule.a.b.c.ForeignPie

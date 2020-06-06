@@ -1,4 +1,4 @@
-module mb.pie.lang.test.returnTypes.listIntOne
+module mb:pie:lang:test:returnTypes:listIntOne
 
 func main_listIntOne() -> int* = {
   [46]

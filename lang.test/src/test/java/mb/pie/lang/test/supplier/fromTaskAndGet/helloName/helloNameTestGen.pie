@@ -1,4 +1,4 @@
-module mb.pie.lang.test.supplier.fromTaskAndGet.helloName
+module mb:pie:lang:test:supplier:fromTaskAndGet:helloName
 
 func main_helloName(str: string) -> string = {
   helper_helloName.supplier(str).get<>()

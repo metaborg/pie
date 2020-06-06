@@ -1,4 +1,4 @@
-module mb.pie.example.monster-test
+module mb:pie:example:monster-test
 
 func main4() -> unit = {
   assertEquals(5, inc(4));

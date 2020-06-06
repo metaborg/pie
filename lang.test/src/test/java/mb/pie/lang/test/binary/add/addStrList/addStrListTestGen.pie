@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.add.addStrList
+module mb:pie:lang:test:binary:add:addStrList
 
 func main_addStrList() -> string = {
   "String + list: " + [1, 2, 3]

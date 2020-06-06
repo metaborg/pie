@@ -1,8 +1,8 @@
-module mb.pie.lang.test.imports.subModule.importPartialModulePathForeignJava
+module mb:pie:lang:test:imports:subModule:importPartialModulePathForeignJava
 
-import mb.pie.lang.test.imports.subModule.a
+import mb:pie:lang:test:imports:subModule:a
 
 func main_importPartialModulePathForeignJava() -> unit = {
-  a.b.c.helper_foreign_java();
+  a:b:c:helper_foreign_java();
   unit
 }

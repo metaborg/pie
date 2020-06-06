@@ -1,4 +1,4 @@
-module mb.pie.example.helloWorld
+module mb:pie:example:helloWorld
 
 func main3() -> unit = {
   hello(./hello.txt)

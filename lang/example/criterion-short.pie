@@ -1,4 +1,4 @@
-module mb.pie.example.criterion-short
+module mb:pie:example:criterion-short
 
 func main(jmhArgs: string*) -> path** = {
   val jar = build();

@@ -23,9 +23,9 @@ context-free syntax
 
   <{Def "\n"}*>>
 
-  Module.Module = <module <{ID "."}+>>
+  Module.Module = <module <{MODID ":"}+>>
 
-  Import.Import = <import <{ID "."}+>>
+  Import.Import = <import <{MODID ":"}+>>
 
   Def = DataDef
   Def = FuncDef

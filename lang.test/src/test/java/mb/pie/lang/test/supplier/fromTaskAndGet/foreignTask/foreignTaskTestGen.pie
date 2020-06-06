@@ -1,4 +1,4 @@
-module mb.pie.lang.test.supplier.fromTaskAndGet.foreignTask
+module mb:pie:lang:test:supplier:fromTaskAndGet:foreignTask
 
 func foreignTask(b: bool) -> string = foreign mb.pie.lang.test.supplier.fromTaskAndGet.foreignTask.foreignTask
 

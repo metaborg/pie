@@ -1,4 +1,4 @@
-module mb.pie.lang.test.binary.neq.neqNullableIntDifferent
+module mb:pie:lang:test:binary:neq:neqNullableIntDifferent
 
 func main_neqNullableIntDifferent() -> bool = {
   val x: int? = 7;
