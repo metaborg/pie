@@ -4,10 +4,6 @@ plugins {
   id("org.metaborg.spoofax.gradle.project")
 }
 
-spoofax {
-  addCompileLanguageProjectDep(":pie.lang")
-}
-
 val daggerVersion = "2.25.2"
 
 dependencies {
@@ -15,6 +11,8 @@ dependencies {
   api("com.google.dagger:dagger:$daggerVersion")
 
   annotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
+
+  compileLanguage(project(":pie.lang"))
 
   compileOnly("org.checkerframework:checker-qual-android")
 
