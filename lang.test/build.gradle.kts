@@ -4,19 +4,20 @@ plugins {
   id("org.metaborg.spoofax.gradle.project")
 }
 
-val daggerVersion = "2.25.2"
 
 dependencies {
   api(platform(project(":pie.depconstraints")))
-  api("com.google.dagger:dagger:$daggerVersion")
+  annotationProcessor(platform(project(":pie.depconstraints")))
+  testAnnotationProcessor(platform(project(":pie.depconstraints")))
 
-  annotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
+  api("com.google.dagger:dagger")
+  annotationProcessor("com.google.dagger:dagger-compiler")
 
   compileLanguage(project(":pie.lang"))
 
   compileOnly("org.checkerframework:checker-qual-android")
 
-  testAnnotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
+  testAnnotationProcessor("com.google.dagger:dagger-compiler")
 
   testCompileOnly("org.checkerframework:checker-qual-android")
 
