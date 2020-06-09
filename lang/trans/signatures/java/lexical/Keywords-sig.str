@@ -1,5 +1,0 @@
-module signatures/java/lexical/Keywords-sig
-
-signature
-  constructors
-     : String -> Keyword

@@ -1,9 +1,0 @@
-module signatures/java/arrays/Main-sig
-
-imports
-  signatures/java/arrays/ArrayInitializers-sig
-
-
-signature
-  constructors
-    
