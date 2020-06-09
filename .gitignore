@@ -22,8 +22,3 @@ hs_err_pid*
 # Spoofax
 **/src-gen
 **/target
-
-# Generated test files
-lang.test/src/test/java/mb/pie/lang/test/simple.java
-
-
