@@ -1,0 +1,9 @@
+module mb:pie:lang:test:supplier:fromTaskAndGet:helloName
+
+func main_helloName(str: string) -> string = {
+  helper_helloName.supplier(str).get<>()
+}
+
+func helper_helloName(str: string) -> string = {
+  "Hello $str!"
+}

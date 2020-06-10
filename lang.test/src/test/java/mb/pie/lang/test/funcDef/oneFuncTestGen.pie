@@ -1,3 +1,0 @@
-package mb.pie.lang.test.funcDef;
-
-func main_oneFunc() -> unit = { }

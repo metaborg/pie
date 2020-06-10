@@ -4,20 +4,11 @@ imports
 
   libspoofax/stratego/debug
 
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-
-  signatures/java/types/-
-  signatures/java/classes/-
-  signatures/java/expressions/-
-  signatures/java/literals/-
-  signatures/java/lexical/-
-  signatures/java/interfaces/-
-  signatures/java/statements/-
 
   statsem/pie
-  
+
   gen/idtype-tuples
   gen/util
   gen/java-ast/ast-util
@@ -36,10 +27,10 @@ rules
 
   p2j-ast-type-sig:
     DataTy(occ) -> ClassType([], Id(javaClassId), None())
-    where 
+    where
       JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
     ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
-    with  
+    with
       javaClassId := <pie-prop(|"Type", "javaClassId")> occ
 
   p2j-ast-type-sig:
@@ -48,14 +39,14 @@ rules
       Id("OutTransient"),
       Some(TypeArguments([ClassType([], Id(javaClassId), None())]))
     )
-    where 
+    where
       JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
     ; <pie-prop(|"Type", "mods"); collect-one(?Transient())> occ
-    with  
+    with
       javaClassId := <pie-prop(|"Type", "javaClassId")> occ
     ; <add-import> "mb.pie.api.OutTransient"
 
-  p2j-ast-type-sig: 
+  p2j-ast-type-sig:
     TupleTy(pieTypes) -> ClassType([], Id($[Tuple[length]]), Some(TypeArguments(javaTypes)))
     with
       length    := <length> pieTypes
@@ -69,6 +60,11 @@ rules
       <add-import> "java.util.ArrayList"
   p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
   
+  p2j-ast-type-sig:
+    SupplierTy(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
+    with
+      <add-import> "mb.pie.api.Supplier"
+
 rules
 
   // p2j-ast-type-generate-dataclass(|name):

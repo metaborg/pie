@@ -74,4 +74,8 @@ public class Tuple5<T1 extends Serializable, T2 extends Serializable, T3 extends
     public int hashCode() {
         return Objects.hash(f1, f2, f3, f4, f5);
     }
+
+    @Override public String toString() {
+        return "(" + f1 + ", " + f2 + ", " + f3 + ", " + f4 + ", " + f5 + ")";
+    }
 }

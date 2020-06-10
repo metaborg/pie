@@ -4,21 +4,12 @@ imports
 
   libspoofax/stratego/debug
   nabl2/api
-
+  
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-  
-  signatures/java/expressions/-
-  signatures/java/statements/-
-  signatures/java/names/-
-  signatures/java/classes/-
-  signatures/java/literals/-
-  signatures/java/types/-
-  signatures/java/lexical/-
-  
+
   statsem/pie
-  
+
   gen/java-ast/func_def
   gen/java-ast/binder
   gen/java-ast/type
@@ -27,11 +18,11 @@ imports
   gen/util
   gen/debug
 
-rules 
+rules
 
   // tries to apply p2j-ast-exp, returns ""
   try-p2j-ast-exp = pie-try-debug(p2j-ast-exp|"p2j-ast-exp") <+ !([], NewInstance(None(), [], "Object", [], None(), []))
-  
+
 rules // Expression composition
 
   // p2j-ast-exp: Pie to Java AST expressions
@@ -41,18 +32,18 @@ rules // Expression composition
     e@Block(exps) -> result
     with
       numExps              := <length> exps
-    ; restExps             := <take(|<dec> numExps)> exps 
+    ; restExps             := <take(|<dec> numExps)> exps
     ; restStmts            := <map(try-p2j-ast-exp); map(Fst); concat> restExps
     ; lastExp              := <last> exps
-    ; (lastStmts, lastExp) := <try-p2j-ast-exp> lastExp
+    ; (lastStmts, lastVal) := <try-p2j-ast-exp> lastExp
     ; stmts                := <concat> [restStmts, lastStmts]
     ; blockResultVal       := <newname> "blockResult"
     ; ty                   := <p2j-ast-type-sig> <pie-type> e
     ; resultStmts          := [
-      LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [Id(blockResultVal)])),
+      LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDecl(Id(blockResultVal))])),
       Block(<concat> [
-        [stmts],
-        Assign(ExpressionName(Id(blockResultVal)), lastExp)
+        stmts,
+        [ ExpressionStatement(Assign(ExpressionName(Id(blockResultVal)), lastVal)) ]
       ])
     ]
     ; result                    := (resultStmts, blockResultVal)
@@ -60,10 +51,10 @@ rules // Expression composition
   p2j-ast-exp: EmptyBlock() -> <p2j-ast-exp> UnitLit()
 
 rules // Unary expressions
-  
+
   p2j-ast-exp:
     ToNullable(exp) -> <try-p2j-ast-exp> exp // non-primitive Java types are always nullable
-  
+
   p2j-ast-exp:
     n@ToNonNullable(exp) -> result
     with
@@ -135,9 +126,17 @@ rules // Binary expressions
     ; stmts             := <concat> [lStmts, rStmts]
     ; exp               := <combine-vals> (lExpVal, rExpVal)
     ; result            := (stmts, exp)
-  
-  p2j-ast-exp: Eq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> InvokeQExp(e1, None(), Id("equals"), [e2])\)> (lExp, rExp)
-  p2j-ast-exp: Neq(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> Not(InvokeQExp(e1, None(), Id("equals"), [e2]))\)> (lExp, rExp)
+
+  p2j-ast-exp: Eq(lExp, rExp) -> <p2j-ast-binexp(
+      \(e1, e2) -> InvokeQExp(ExpressionName(Id("Objects")), None(), Id("equals"), [e1, e2])\
+    )> (lExp, rExp)
+    with
+      <add-import> "java.util.Objects"
+  p2j-ast-exp: Neq(lExp, rExp) -> <p2j-ast-binexp(
+      \(e1, e2) -> Not(InvokeQExp(ExpressionName(Id("Objects")), None(), Id("equals"), [e1, e2]))\
+    )> (lExp, rExp)
+    with
+      <add-import> "java.util.Objects"
   p2j-ast-exp: Lor(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> LazyOr(e1, e2)\)> (lExp, rExp)
   p2j-ast-exp: Land(lExp, rExp) -> <p2j-ast-binexp(\(e1, e2) -> LazyAnd(e1, e2)\)> (lExp, rExp)
 
@@ -155,18 +154,18 @@ rules // Control flow
   p2j-ast-exp:
     e@IfElse(condExp, trueExp, falseExp) -> result
     with
-      (condStmts, condExp)   := <try-p2j-ast-exp> condExp
-    ; (trueStmts, trueExp)   := <try-p2j-ast-exp> trueExp
-    ; (falseStmts, falseExp) := <try-p2j-ast-exp> falseExp
+      (condStmts, condVal)   := <try-p2j-ast-exp> condExp
+    ; (trueStmts, trueVal)   := <try-p2j-ast-exp> trueExp
+    ; (falseStmts, falseVal) := <try-p2j-ast-exp> falseExp
     ; resultName             := <newname> "ifResult"
-    ; trueBlockStmts         := <concat> [trueStmts, [Assign(ExpressionName(Id(resultName)), trueExp)]]
-    ; falseBlockStmts        := <concat> [falseStmts, [Assign(ExpressionName(Id(resultName)), falseExp)]]
+    ; trueBlockStmts         := <concat> [trueStmts, [ExpressionStatement(Assign(ExpressionName(Id(resultName)), trueVal))]]
+    ; falseBlockStmts        := <concat> [falseStmts, [ExpressionStatement(Assign(ExpressionName(Id(resultName)), falseVal))]]
     ; ty                     := <p2j-ast-type-sig> <pie-type> e
     ; stmts                  := <concat> [
       condStmts,
       [
-        LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [Id(resultName)])),
-        IfElse(condExp, Block(trueBlockStmts), Block(falseBlockStmts))
+        LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDecl(Id(resultName))])),
+        IfElse(condVal, Block(trueBlockStmts), Block(falseBlockStmts))
       ]]
     ; result                 := (stmts, resultName)
 
@@ -175,39 +174,87 @@ rules // Control flow
     with
       (lStmts, lExpVal) := <try-p2j-ast-exp> lExp
     ; (rStmts, rExpVal) := <try-p2j-ast-exp> rExp
-    ; stmts             := <concat> [lStmts, rStmts]
     ; lType             := <pie-ast-type> lExp
     ; rType             := <pie-ast-type> rExp
-    ; exp               := <p2j-ast-add(|lType, rType)> (lExpVal, rExpVal)
+    ; (expStmts, exp)   := <p2j-ast-add(|lType, rType)> (lExpVal, rExpVal)
+    ; stmts             := <concat> [lStmts, rStmts, expStmts]
     ; result            := (stmts, exp)
 
-  // p2j-ast-add(|lType, rType): (lExp, rExp) -> Java expression AST Node
+  // p2j-ast-add(|lType, rType): (lExp, rExp) -> 
+  //   (List of Java AST statements, Java expression AST Node)
   // Helper function that converts the Add into the correct AST Node
   // based on the types of the left and right side (lType and rType)
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> Add(lExp, rExp)
+    (lExp, rExp) -> ([], Add(lExp, rExp))
     where
       (IntTy(), IntTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> Add(lExp, rExp)
+    (lExp, rExp) -> ([], Add(lExp, rExp))
     where
       (StrTy(), _) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> InvokeQExp(lExp, None(), Id("appendRelativePath"), [rExp])
-    // Note: meaning of this AST: [lExp].appendRelativePath([rExp])
+    (lExp, rExp) -> result
     where
       (PathTy(), PathTy()) := (lType, rType)
+    with
+      <add-import> "mb.resource.ResourceRuntimeException"
+    ; tmpResultName := <newname> "addResult"
+    ; stmts         := [
+        LocVarDeclStm(LocalVarDecl(
+          [Final()]
+        , ClassType(Id("FSPath"), None())
+        , [VariableDecl(Id(tmpResultName))]
+        ))
+      , Try(
+          Block(
+            [ ExpressionStatement(Assign(
+                ExpressionName(Id(tmpResultName))
+              , InvokeQExp(lExp, None(), Id("appendRelativePath"), [rExp])
+              ))
+            ]
+          )
+        , [ Catch(
+              CatchParam(
+                []
+              , CatchType(ClassType(Id("ResourceRuntimeException"), None()), [])
+              , VariableDecl(Id("e"))
+              )
+            , Block([Throw(
+                NewInstance(
+                  None()
+                , []
+                , Id("ExecException")
+                , []
+                , None()
+                , [ StringLiteral($["Could not append path: it is an absolute path"])
+                  , ExpressionName(Id("e"))
+                  ]
+                )
+              )])
+            )
+          ]
+        )
+      ]
+      // Note: meaning of this AST:
+      //   final FSPath [tmpResultName];
+      //   try {
+      //     [tmpResultName] = [lExp].appendRelativePath([rExp]);
+      //   } catch (ResourceRuntimeException e) {
+      //     throw new ExecException("Could not append path: it is an absolute path", e);
+      //   }
+    ; exp           := tmpResultName
+    ; result        := (stmts, exp)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> InvokeQExp(lExp, None(), Id("appendSegment"), [rExp])
+    (lExp, rExp) -> ([], InvokeQExp(lExp, None(), Id("appendOrReplaceWithPath"), [rExp]))
     // Note: meaning of this AST: [lExp].appendSegment([rExp])
     where
       (PathTy(), StrTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) ->
+    (lExp, rExp) -> ([], 
       InvokeQExp(
         InvokeQExp(
           ExpressionName(Id("Stream"))
@@ -232,6 +279,7 @@ rules // Control flow
           )
         ]
       )
+    )
     // Note: meaning of this AST:
     //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))
     where
@@ -242,7 +290,7 @@ rules // Control flow
     ; <add-import> "java.util.stream.Stream"
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) ->
+    (lExp, rExp) -> ([], 
       InvokeQExp(
 	    InvokeQExp(
 	      ExpressionName(Id("Stream"))
@@ -262,6 +310,7 @@ rules // Control flow
 	      )
 	    ]
 	  )
+	)
     // Note: meaning of this AST:
     // Stream.concat(([lExp]).stream(), ([rExp]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where
@@ -342,12 +391,12 @@ rules // Binding
       ]
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result               := (stmts, resultExp)
-  
+
   // bind-tuples-to-assignments:
   // (Pie Binder (Bind or TBind), Pie ExpressionType) -> (assignments, varName)
   bind-tuples-to-ast-assignments:
     (SingleBinder(bind), _) -> ([], <p2j-ast-bind> bind)
-  
+
   bind-tuples-to-ast-assignments:
     (TupleBinder(binds), expTy) -> result
     with
@@ -380,20 +429,20 @@ rules // References
     r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id(varId)))> r)
     where
       LocalVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
-  
-  p2j-ast-exp: 
+
+  p2j-ast-exp:
     Ref(varId) -> <fail>
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 0 := <InputKind>
-      
-  p2j-ast-exp: 
+
+  p2j-ast-exp:
     r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id("input")))> r)
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 1 := <InputKind>
-      
-  p2j-ast-exp: 
+
+  p2j-ast-exp:
     r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|InvokeQExp(
       ExpressionName(Id("input")), None(), Id($[get_[varId]]), [])
     )> r)
@@ -403,17 +452,17 @@ rules // References
 
   // p2j-ast-ref-add-transient-val(|ast): Pie Ref -> Java reference
   p2j-ast-ref-add-transient-val(|ast):
-    ref -> Field(ast, Id("v"))
+    ref -> InvokeQExp(ast, None(), Id("getValue"), [])
     where
       <p2j-ast-ref-is-transient> ref
-    
+
   p2j-ast-ref-add-transient-val(|ast):
     ref -> ast
     where
       <not(p2j-ast-ref-is-transient)> ref
-  
+
   // succeeds if the current term is transient
-  p2j-ast-ref-is-transient = 
+  p2j-ast-ref-is-transient =
       pie-ast-type
     ; (?DataTy(<id>) <+ ?NullableTy(DataTy(<id>)))
     ; pie-occ-prop(|"mods")
@@ -448,6 +497,32 @@ rules // Java foreign function calls
       ]
     ; result                := (stmts, callResultName)
 
+  p2j-ast-exp:
+    c@Call(funcId, exps) -> result
+    where
+      JavaForeignConstructorKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId           := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+    ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+    ; callResultName        := <newname> "constructorResult"
+    ; ty                    := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                 := <concat> [
+        <concat> expsStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(callResultName))
+              , NewInstance(None(), [], Id(javaClassId), [], None(), expsVals)
+              )
+            ]
+          ))
+        ]
+        // Note: meaning of this AST:
+        //     final [ty] [callResultName] = new [javaClassId].([expsVals]);
+      ]
+    ; result                := (stmts, callResultName)
+
 rules // Qualified function calls
 
   p2j-ast-exp:
@@ -458,14 +533,14 @@ rules // Qualified function calls
     ; callResultName              := <newname> "callResult"
     ; ty                          := <p2j-ast-type-sig> <pie-type> c
     ; stmts                       := <concat> [
-        expStmts, 
+        expStmts,
         <concat> argExpsStmts,
         [ LocVarDeclStm(LocalVarDecl(
             [Final()]
           , <java-classType-to-unannType> ty
           , [ VariableDeclInit(
                 VariableDecl(Id(callResultName))
-              , InvokeQExp(ExpressionName(Id(expVal)), None(), Id(funcId), argExpsVals)
+              , InvokeQExp(expVal, None(), Id(funcId), argExpsVals)
               )
             ]
           ))
@@ -475,15 +550,187 @@ rules // Qualified function calls
       ]
     ; result                      := (stmts, callResultName)
 
+  p2j-ast-exp:
+    c@ImportCall(moduleList, funcId, argExps) -> result
+    where
+      JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId                 := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+    ; expressionNameJavaClassId   := <java-qualifiedClass-to-expressionName> <string-tokenize(|['.'])> javaClassId
+    ; javaMethodId                := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
+    ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
+    ; callResultName              := <newname> "callResult"
+    ; ty                          := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                       := <concat> [
+        <concat> argExpsStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(callResultName))
+              , InvokeQExp(expressionNameJavaClassId, None(), Id(javaMethodId), argExpsVals)
+              )
+            ]
+          ))
+        ]
+        // Note: meaning of this AST:
+        //       final [ty] [callResultName] = [javaClassId].[javaMethodId]([argExpsVals]);
+      ]
+    ; result                      := (stmts, callResultName)
+
+  p2j-ast-exp:
+    c@ImportCall(moduleList, funcId, argExps) -> result
+    where
+      PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      <add-import> "mb.pie.api.ExecException"
+    ; <add-import> "javax.inject.Provider"
+    ; javaClassId              := <p2j-ast-pieFuncId-to-javaClassId> funcId
+    ; (expStmts, inputArg)     := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> argExps
+    ; safeJavaClassId          := <string-replace(|".", "_")> javaClassId
+    ; callResultName           := <newname> "callResult"
+    ; ty                       := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                    := <concat> [
+        expStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDecl(Id(callResultName)) ]
+          ))
+        , Try(
+            Block(
+              [ ExpressionStatement(Assign(
+                  ExpressionName(Id(callResultName))
+                , InvokeQExp(
+                    ExpressionName(Id("execContext"))
+                  , None()
+                  , Id("require")
+                  , [ InvokeQExp(
+                        ExpressionName(Id($[_[safeJavaClassId]]))
+                      , None()
+                      , Id("get")
+                      , []
+                      )
+                    , inputArg
+                    ]
+                  )
+                ))
+              ]
+            )
+          , [ Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("InterruptedException"), None()), [])
+                , VariableDecl(Id("e"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Call to _[safeJavaClassId] was interrupted"])
+                    , ExpressionName(Id("e"))
+                    ]))
+                  ]
+                )
+              )
+            ]
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName];
+        //   try {
+        //     [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
+        //   } catch (InterruptedException e) {
+        //     throw new ExecException("Call to _[safeJavaClassId] was interrupted", e);
+        //   }
+      ]
+    ; result                   := (stmts, callResultName)
+    ; rules(InjectValues :+= (
+        $[_[safeJavaClassId]],
+        ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
+      ))
+
+  p2j-ast-exp:
+    c@ImportCall(moduleList, funcId, argExps) -> result
+    where
+      PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      <add-import> "mb.pie.api.ExecException"
+    ; <add-import> "javax.inject.Provider"
+    ; javaClassId              := <pie-sanitize-class-id> funcId
+    ; (expStmts, inputArg)     := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> argExps
+    ; safeJavaClassId          := <string-replace(|".", "_")> javaClassId
+    ; callResultName           := <newname> "callResult"
+    ; ty                       := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                    := <concat> [
+        expStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDecl(Id(callResultName)) ]
+          ))
+        , Try(
+            Block(
+              [ ExpressionStatement(Assign(
+                  ExpressionName(Id(callResultName))
+                , InvokeQExp(
+                    ExpressionName(Id("execContext"))
+                  , None()
+                  , Id("require")
+                  , [ InvokeQExp(
+                        ExpressionName(Id($[_[safeJavaClassId]]))
+                      , None()
+                      , Id("get")
+                      , []
+                      )
+                    , inputArg
+                    ]
+                  )
+                ))
+              ]
+            )
+          , [ Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("InterruptedException"), None()), [])
+                , VariableDecl(Id("e"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Call to _[safeJavaClassId] was interrupted"])
+                    , ExpressionName(Id("e"))
+                    ]))
+                  ]
+                )
+              )
+            ]
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName];
+        //   try {
+        //     [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
+        //   } catch (InterruptedException e) {
+        //     throw new ExecException("Call to _[safeJavaClassId] was interrupted", e);
+        //   }
+      ]
+    ; result                   := (stmts, callResultName)
+    ; fullyQualifiedModuleList := <pie-ast-ref-prop(|"Func", "qualifiedModule")> funcId
+    // todo: pie-ast-ref-prop gives incorrect results if there are two functions with the same name?
+    ; encompassingClassName    := <concat-strings-separator(|".")> fullyQualifiedModuleList
+    ; <add-import> $[[encompassingClassName].[javaClassId]]
+    ; rules(InjectValues :+= (
+        $[_[safeJavaClassId]],
+        ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
+      ))
+
 rules // PIE function calls
-  
+
   p2j-ast-exp:
     c@Call(funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
-    
+
   p2j-ast-exp:
     c@Call(funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
     where
@@ -562,7 +809,7 @@ rules // PIE function calls
       ))
 
   // p2j-ast-exp-pie-call-inputexp(|javaClassId): exps -> (stmts, input ast node)
-  // Converts a list of Pie expressions to a list of statements and an AST node that 
+  // Converts a list of Pie expressions to a list of statements and an AST node that
   // can be used as input for a Pie task. Will be either Unit, an arbitrary AST node
   // or an Input AST node for the provided JavaClass (from JavaClassId)
   p2j-ast-exp-pie-call-inputexp(|javaClassId):
@@ -577,7 +824,7 @@ rules // PIE function calls
     with
       [exp]  := exps
     ; result := <try-p2j-ast-exp> exp
-    
+
   p2j-ast-exp-pie-call-inputexp(|javaClassId):
     exps -> result
     where
@@ -597,6 +844,160 @@ rules // PIE function calls
       // Note: meaning of this AST:
       //       new [javaClassId].Input([expsVals])
     ; result                := (stmts, exp)
+
+  p2j-ast-exp: CreateSupplier(arg) -> result
+    with
+      <add-import> "mb.pie.api.Supplier"
+    ; <add-import> "mb.pie.api.ValueSupplier"
+    ; (argStmts, argVal) := <p2j-ast-exp> arg
+    ; ty                 := <p2j-ast-type-sig> <pie-type> arg
+    ; supplierName       := <newname> "supplier"
+    ; stmts              := <concat> [
+        argStmts,
+        [ LocVarDeclStm(
+            LocalVarDecl(
+              [Final()]
+            , ClassType(
+                Id("Supplier")
+              , Some(TypeArguments([ty]))
+              )
+            , [ VariableDeclInit(
+                  VariableDecl(Id(supplierName))
+                , NewInstance(None(), [], "ValueSupplier", [], None(), [argVal])
+                )
+              ]
+            )
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [supplierName] = new ValueSupplier([argVal]);
+      ]
+    ; result             := (stmts, supplierName)
+
+
+  p2j-ast-exp: t@TaskSupplier(funcId, args) -> result
+    with
+      <add-import> "javax.inject.Provider"
+    ; javaClassId          := <p2j-ast-pieFuncId-to-javaClassId> funcId
+    ; safeJavaClassId      := <string-replace(|".", "_")> javaClassId
+    ; (argStmts, inputArg) := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> args
+    ; callResultName       := <newname> "callResult"
+    ; ty                   := <p2j-ast-type-sig> <pie-type> t
+    ; stmts                := <concat> [
+        argStmts,
+        [ LocVarDeclStm(
+            LocalVarDecl(
+              [Final()]
+            , <java-classType-to-unannType> ty
+            , [ VariableDeclInit(
+                  VariableDecl(Id(callResultName))
+                , InvokeQExp(
+                    InvokeQExp(
+                      ExpressionName(Id($[_[safeJavaClassId]]))
+                    , None()
+                    , Id("get")
+                    , []
+                    )
+                  , None()
+                  , Id("createSupplier")
+                  , [ inputArg ]
+                  )
+                )
+              ]
+            )
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName] = [javaClassName].createSupplier([inputArg]);
+      ]
+    ; result               := (stmts, callResultName)
+    ; rules(InjectValues :+= (
+        $[_[safeJavaClassId]],
+        ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
+      ))
+    
+  
+  p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
+    where
+      PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+      
+  p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
+    where
+      PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId := <pie-sanitize-class-id> funcId
+
+  p2j-ast-exp: SupplierGet(exp) -> result
+    with
+      <add-import> "java.io.IOException"
+    ; (expStmts, expVal) := <p2j-ast-exp> exp
+    ; SupplierTy(pieTy)  := <pie-type> exp
+    ; ty                 := <p2j-ast-type-sig> pieTy
+    ; callResultName     := <newname> "callResult"
+    ; stmts              := <concat> [
+        expStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [VariableDecl(Id(callResultName))]
+          ))
+        , Try(
+            Block(
+              [ ExpressionStatement(Assign(
+                  ExpressionName(Id(callResultName))
+                , InvokeQExp(
+                    ExpressionName(Id("execContext"))
+                  , None()
+                  , Id("require")
+                  , [ expVal ]
+                  )
+                ))
+              ]
+            )
+          , [ Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("IOException"), None()), [])
+                , VariableDecl(Id("ex"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Unexpected IOException while getting value from supplier"])
+                    , ExpressionName(Id("ex"))
+                    ]))
+                  ]
+                )
+              )
+            , Catch(
+                CatchParam(
+                  []
+                , CatchType(ClassType(Id("InterruptedException"), None()), [])
+                , VariableDecl(Id("ex"))
+                )
+              , Block(
+                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
+                      StringLiteral($["Getting value from supplier was interrupted"])
+                    , ExpressionName(Id("ex"))
+                    ]))
+                  ]
+                )
+              )
+            ]
+          )
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName];
+        //   try {
+        //     [callResultName] = execContext.require([expVal]);
+        //   } catch (IOException ex) {
+        //     throw new ExecException("Unexpected IOException while getting value from supplier", ex);
+        //   } catch (InterruptedException ex) {
+        //     throw new ExecException("Getting value from supplier was interrupted", ex);
+        //   }
+      ]
+    ; result               := (stmts, callResultName)
 
 rules // Path operations
 
@@ -641,7 +1042,7 @@ rules // Path operations
       ]
     ; resultExp                  := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result                     := (stmts, resultExp)
-  
+
   // p2j-stamper: (filter|None(), stamper) -> (stmts, expression value)
   p2j-ast-stamper:
     (None(), Modified()) -> ([], InvokeQExp(ExpressionName(Id("FileSystemStampers")), None(), Id("modified"), []))
@@ -658,7 +1059,7 @@ rules // Path operations
     ; exp                := InvokeQExp(ExpressionName(Id("FileSystemStampers")), None(), Id("modified"), [filterVal])
       // Note: meaning of this AST: FileSystemStampers.modified([filterVal])
     ; result             := (stmts, exp)
-      
+
   p2j-ast-stamper:
     (filter, Hash()) -> result
     where
@@ -742,7 +1143,7 @@ rules // Path operations
     (matcherPie, matcherJava) -> <create-param-list> matcherJava
     where
       <not(?None())> matcherPie
-  
+
   // p2j-ast-filter-create-param-list-for-[funcName]: matcher -> param list
   // Given a Java AST node for a matcher, create a list of parameters
   // for the Pie API method funcName
@@ -877,12 +1278,13 @@ rules // Literals
   p2j-ast-exp:
     TupleLit(exps) -> result
     with
-      (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+      <add-import> "mb.pie.util.Util"
+    ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; stmts                 := <concat> expsStmts
     ; exp                   := InvokeQExp(ExpressionName(Id("Util")), None(), Id("tuple"), expsVals)
       //  Note: meaning of this AST: Util.tuple([expsVals])
     ; result                := (stmts, exp)
-    
+
   p2j-ast-exp:
     ListLit(exps) -> result
     with
@@ -914,7 +1316,7 @@ rules // Interpolated string literal
 
   p2j-ast-strpart:
     StrInterpRef(refExp) -> <try-p2j-ast-exp> refExp
-      
+
   p2j-ast-strpart:
     StrInterpExp(exp) -> <try-p2j-ast-exp> exp
 
@@ -926,7 +1328,8 @@ rules // Interpolated path literal
   p2j-ast-exp:
     e@PathLit(prefix, parts) -> result
     with
-      (partsStmts, partsExps) := <unzip> <map(p2j-ast-pathpart)> parts
+      <add-import> "mb.resource.fs.FSPath"
+    ; (partsStmts, partsExps) := <unzip> <map(p2j-ast-pathpart)> parts
     ; stmts                   := <concat> partsStmts
     ; exp                     := NewInstance(None(), [], Id("FSPath"), [], None(), [
         <fold-left(p2j-ast-add-strings)> [StringLiteral($["[prefix]"]) | partsExps]

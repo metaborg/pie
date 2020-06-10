@@ -1,7 +1,7 @@
 module pie
 
 imports
-  
+
   lex/literal
   lex/layout
   lex/comment
@@ -11,17 +11,21 @@ imports
   func_body
 
 context-free start-symbols
-  
+
   Start
 
 context-free syntax
 
   Start.Program =
-  <<Package>
-  
+  <<Module>
+
+  <{Import "\n"}*>
+
   <{Def "\n"}*>>
-  
-  Package.Package = <package <{ID "."}+>;>
-  
+
+  Module.Module = <module <{MODID ":"}+>>
+
+  Import.Import = <import <{MODID ":"}+>>
+
   Def = DataDef
   Def = FuncDef

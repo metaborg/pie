@@ -1,0 +1,9 @@
+module mb:pie:lang:test:supplier:inputSupplier:inputFromPiePassAlong
+
+func main_inputFromPiePassAlong(supp: supplier<string>) -> string = {
+  helper_inputFromPiePassAlong(supp)
+}
+
+func helper_inputFromPiePassAlong(supp: supplier<string>) -> string = {
+  "value: '${supp.get<>()}'"
+}

@@ -1,0 +1,9 @@
+module mb:pie:lang:test:supplier:inputSupplier:inputFromPieCreate
+
+func main_inputFromPieCreate() -> string = {
+  helper_inputFromPieCreate(supplier("a string"))
+}
+
+func helper_inputFromPieCreate(supp: supplier<string>) -> string = {
+  "value: '${supp.get<>()}'"
+}

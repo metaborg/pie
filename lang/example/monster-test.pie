@@ -1,4 +1,4 @@
-package mb.pie.example.helloworld.java;
+module mb:pie:example:monster-test
 
 func main4() -> unit = {
   assertEquals(5, inc(4));
@@ -13,7 +13,7 @@ func inc(in: int) -> int = {
 }
 
 func assertEquals(expected: int, actual: int) -> unit = {
-  if (expected != actual) 
+  if (expected != actual)
     fail "Expected $expected, got ${actual + 0}";
   unit
 }

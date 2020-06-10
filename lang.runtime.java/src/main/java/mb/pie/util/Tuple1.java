@@ -30,4 +30,8 @@ public class Tuple1<T1 extends Serializable> implements Serializable {
     public int hashCode() {
         return Objects.hash(f1);
     }
+
+    @Override public String toString() {
+        return "(" + f1 + ")";
+    }
 }

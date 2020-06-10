@@ -4,18 +4,8 @@ imports
 
   libspoofax/stratego/debug
 
+  src-gen/signatures/-
   signatures/-
-  signatures/lex/-
-  signatures/impl/-
-
-  signatures/java/expressions/-
-  signatures/java/names/-
-  signatures/java/types/-
-  signatures/java/classes/-
-  signatures/java/interfaces/-
-  signatures/java/lexical/-
-  signatures/java/statements/-
-  signatures/java/literals/-
 
   gen/java-ast/type
   gen/java-ast/func_body
@@ -27,7 +17,7 @@ rules // PIE function definitions
 
   // p2j-ast-def:
   //   FuncDef(FuncHead(funcId, params, type), PieFuncImpl(body, optKeyBody)) ->
-  //   Java class implementing TaskDef AST node
+  //   (name: String, Java class implementing TaskDef: AST node)
   // Tranforms a Pie function into a Pie Task (i.e. a Java class implementing TaskDef)
   // Adds to the dynamic strategy ModuleBindings
   // Defines the dynamic rules InputKind and InjectValues
@@ -59,15 +49,16 @@ rules // PIE function definitions
         ))
       )
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
-    ; <add-import> "com.google.inject.Inject"
+    ; <add-import> "javax.inject.Inject"
     ; <add-import> "mb.pie.api.ExecContext"
     ; <add-import> "mb.pie.api.ExecException"
     ; <add-import> "mb.pie.api.None"
     ; <add-import> "mb.pie.api.TaskDef"
     ; <add-import> "java.io.Serializable"
     with
-      result := ClassDeclaration(
-          []
+      result := (className,
+        ClassDeclaration(
+          [ Public() ]
         , Id(className)
         , None()
         , None()
@@ -121,38 +112,39 @@ rules // PIE function definitions
                   , FormalParam([], <java-classType-to-unannType> inputType, VariableDecl(Id("input")))
                   )
                 , []
-                , Some(ThrowsDec([ClassType([], Id("ExecException"), None())]))
+                , Some(ThrowsDec([ClassType([], Id("Exception"), None())]))
                 )
               , Block(<concat> [stmts, [Return(returnValue)]])
               )
             ]
           ]
         )
+      )
     // Note: meaning of this AST:
-    //   class [className] implements TaskDef<[inputType], [outputType]> {
+    //   public class [className] implements TaskDef<[inputType], [outputType]> {
     //     private static final String _id = "[className]";
     //     [fields]
-    //     
+    //
     //     @Inject
     //     public [className](
     //       [constructorParams]
     //     ) {
     //       [assignments]
     //     }
-    //     
+    //
     //     [inputDataClasses]
-    //     
+    //
     //     [outputDataClasses]
-    //     
+    //
     //     public String getId() {
     //       return this._id;
     //     }
-    //     
+    //
     //     @Override
     //     public Serializable key([inputType] input) {
     //       [keyImpl]
     //     }
-    //     
+    //
     //     @Override
     //     public [outputType] exec(ExecContext execContext, [inputType] input) throws Exception {
     //       try {
@@ -187,7 +179,7 @@ rules // PIE function definitions
 
   // p2j-ast-pie-func-impl-returnvalue: Pie exp -> (Java Statements, Java expression)
   // Converts a Pie expression to a Java expression for returning
-  // (Used because a Tuple may not be returned directly but 
+  // (Used because a Tuple may not be returned directly but
   // must be converted to the correct ouput type)
   p2j-ast-pie-func-impl-returnvalue:
     exp -> result
@@ -215,9 +207,9 @@ rules // PIE function definitions
     Params(params) -> (<p2j-ast-type-sig> UnitTy(), [])
     where
       0 := <length> params
-    with 
+    with
       rules(InputKind := 0)
-      
+
   p2j-ast-pie-func-impl-inputsig(|className):
     p@Params(params) -> (tySig, [])
     where
@@ -225,9 +217,9 @@ rules // PIE function definitions
     with
       [(_, ty)] := <pie-idtype-tuples> p
     ; tySig     := <p2j-ast-type-sig> ty
-    with 
+    with
       rules(InputKind := 1)
-    
+
   p2j-ast-pie-func-impl-inputsig(|className):
     p@Params(params) -> result
     where
@@ -252,7 +244,7 @@ rules // PIE function definitions
     ty -> (<p2j-ast-type-sig> ty, [])
     where
       <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
-      
+
   p2j-ast-pie-func-impl-outputsig(|className):
     ty -> result
     where
@@ -268,11 +260,11 @@ rules // PIE function definitions
     ; idTypeTuples := <pie-idtype-tuples> tty
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Output")> idTypeTuples
     ; result       := (returnType, [dataClass])
-  
+
   // is-tuple-type: matches a Tuple type
   is-tuple-type: tty@TupleTy(_)             -> tty
   is-tuple-type: NullableTy(tty@TupleTy(_)) -> tty
-  
+
 
   // p2j-ast-pie-func-key-body: PieKeyFunc(exp)? -> list of Java statament AST nodes
   // generates a list of statements for the body of the key function

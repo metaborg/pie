@@ -1,0 +1,5 @@
+module mb:pie:lang:test:binary:neq:neqListDifferentElements
+
+func main_neqListDifferentElements() -> bool = {
+  [0, 1, 2] != [0, 2, 1]
+}
