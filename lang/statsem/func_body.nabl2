@@ -25,7 +25,7 @@ rules // Unary expressions
   [[ ToNullable(exp) ^ (s, ty_func_def) : NullableTy(ty) ]] :=
     [[ exp ^ (s, ty_func_def) : ty ]],
     ty != NullableTy(_) | error $[Type mismatch: expected non-nullable type, got [ty]] @ exp.
-    
+
   [[ ToNonNullable(exp) ^ (s, ty_func_def) : ty_inner ]] :=
     [[ exp ^ (s, ty_func_def) : ty ]],
     ty == NullableTy(ty_inner) | error $[Type mismatch: expected nullable type, got [ty]] @ exp.
@@ -36,8 +36,8 @@ rules // Unary expressions
 
 rules // Binary expressions
 
-  // TODO: should use LUB to work both ways. However, that requires separating nullability into a property 
-  // of a type (by creating a tuple for each type), because otherwise LUB could always result into the top 
+  // TODO: should use LUB to work both ways. However, that requires separating nullability into a property
+  // of a type (by creating a tuple for each type), because otherwise LUB could always result into the top
   // type TopTy(), instead of failing.
   [[ t@Eq(exp_l, exp_r) ^ (s, ty_func_def) : BoolTy() ]] :=
     [[ exp_l ^ (s, ty_func_def) : ty_l ]],
@@ -96,7 +96,7 @@ rules // Binding
     Binder [[ binder ^ (s, ty) : ty_dec ]].
 
 rules // References
-    
+
   [[ Ref(id_var) ^ (s, _) : ty ]] :=
     Var{id_var} -> s,
     Var{id_var} |-> v,
@@ -116,15 +116,49 @@ rules // References
     Type{StrTy()} -> s , Type{StrTy() } |-> occ_def_str,
     Type{PathTy()} -> s, Type{PathTy()} |-> occ_def_path,
     [[ exp ^ (s, ty_func_def) : ty_data ]],
-    occ is typeToOcc of (ty_data, occ_def_str, occ_def_path) | error $[Type mismatch: expected callable type, got [ty_data]] @ exp, 
+    occ is typeToOcc of (ty_data, occ_def_str, occ_def_path) | error $[Type mismatch: expected callable type, got [ty_data]] @ exp,
     occ ?=I=> s_assoc,
     new s_imp,
     s_imp -I-> s_assoc,
     Func{id_func} -> s_imp,
     Func{id_func} |-> f,
     f : FuncTy(tys_in_expected, ty_out),
-    Map2T [[ args ^ (s, ty_func_def) : tys_in ]], 
+    Map2T [[ args ^ (s, ty_func_def) : tys_in ]],
     tys_in <? tys_in_expected | error $[Type mismatch: expected [tys_in_expected], got [tys_in]] @ id_func.
+
+  [[ ImportCall(moduleList, id_func, args) ^ (s, ty_func_def) : ty_out ]] :=
+    Map2T [[ args ^ (s, ty_func_def) : tys_in ]],
+    Func{id_func} -> s_func,
+    Func{id_func} |-> f,
+    f : FuncTy(tys_in_expected, ty_out),
+    tys_in <? tys_in_expected | error $[Type mismatch: expected [tys_in_expected], got [tys_in]] @ id_func,
+    importCallModules [[ moduleList ^ (s, s_func) ]].
+
+  importCallModules [[ [module|rest] ^ (s_cur, s_func) ]] :=
+    new s_next,
+    Mod{module} -> s_cur,
+    Mod{module} <=I= s_next,
+    importCallModules [[ rest ^ (s_next, s_func) ]].
+
+  importCallModules [[ [] ^ (s, s_func) ]] :=
+    new s_func,
+    s_func -P-> s.
+
+  [[ CreateSupplier(exp) ^ (s, ty_func_def) : SupplierTy(ty) ]] :=
+    [[ exp ^ (s, ty_func_def) : ty ]].
+
+  [[ TaskSupplier(id_func, args) ^ (s, ty_func_def) : SupplierTy(ty_out) ]] :=
+    Map2T [[ args ^ (s, ty_func_def) : tys_in ]],
+    Func{id_func} -> s,
+    Func{id_func} |-> f,
+    f : FuncTy(tys_in_expected, ty_out),
+    f.kind := kind,
+    kind <? PieFuncKind(),
+    Map2T [[ args ^ (s, ty_func_def) : tys_in ]],
+    tys_in <? tys_in_expected | error $[Type mismatch: expected [tys_in_expected], got [tys_in]] @ id_func.
+
+  [[ SupplierGet(exp) ^ (s, ty_func_def) : ty ]] :=
+    [[ exp ^ (s, ty_func_def) : SupplierTy(ty) ]].
 
 rules // Path operations
 
@@ -141,12 +175,12 @@ rules // Path operations
 
   [[ Modified() ^ (_, _) ]] := true.
   [[ Hash()     ^ (_, _) ]] := true.
-  
+
 
   [[ ListPath(exp, filter) ^ (s, ty_func_def) : ListTy(PathTy()) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
     ty_exp <? PathTy() | error $[Type mismatch: expected path type, got [ty_exp]] @ exp,
-    [[ filter ^ (s, ty_func_def) ]].    
+    [[ filter ^ (s, ty_func_def) ]].
 
   [[ WalkPath(exp, filter) ^ (s, ty_func_def) : ListTy(PathTy()) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
@@ -157,19 +191,19 @@ rules // Path operations
   [[ Regex(exp) ^ (s, ty_func_def) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
     ty_exp <? StrTy() | error $[Type mismatch: expected string type, got [ty_exp]] @ exp.
-    
+
   [[ Pattern(exp) ^ (s, ty_func_def) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
     ty_exp <? StrTy() | error $[Type mismatch: expected string type, got [ty_exp]] @ exp.
-    
+
   [[ Patterns(exp) ^ (s, ty_func_def) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
     ty_exp <? ListTy(StrTy()) | error $[Type mismatch: expected string* type, got [ty_exp]] @ exp.
-    
+
   [[ Extension(exp) ^ (s, ty_func_def) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
     ty_exp <? StrTy() | error $[Type mismatch: expected string type, got [ty_exp]] @ exp.
-    
+
   [[ Extensions(exp) ^ (s, ty_func_def) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
     ty_exp <? ListTy(StrTy()) | error $[Type mismatch: expected string* type, got [ty_exp]] @ exp.
@@ -177,11 +211,11 @@ rules // Path operations
 
   [[ ReadPath(exp) ^ (s, ty_func_def) : NullableTy(StrTy()) ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
-    ty_exp <? PathTy() | error $[Type mismatch: expected path type, got [ty_exp]] @ exp.  
+    ty_exp <? PathTy() | error $[Type mismatch: expected path type, got [ty_exp]] @ exp.
 
   [[ ExistsPath(exp) ^ (s, ty_func_def) : BoolTy() ]] :=
     [[ exp ^ (s, ty_func_def) : ty_exp ]],
-    ty_exp <? PathTy() | error $[Type mismatch: expected path type, got [ty_exp]] @ exp.  
+    ty_exp <? PathTy() | error $[Type mismatch: expected path type, got [ty_exp]] @ exp.
 
 rules // Early return and failure
 
@@ -211,7 +245,7 @@ rules // Literals
     // TODO: this should calculate the LUB of the expression types.
     [[ exp ^ (s, ty_func_def) : ty ]],
     CompareTypes [[ exps ^ (s, ty_func_def, ty) ]].
-    
+
   CompareTypes [[ [exp|exps] ^ (s, ty_func_def, ty_expected) ]] :=
     [[ exp ^ (s, ty_func_def) : ty ]],
     ty <? ty_expected | error $[Type mismatch: expected [ty_expected], got [ty]] @ exp,
@@ -223,7 +257,7 @@ rules // Interpolated string literal
 
   [[ StrLit(elems) ^ (s, ty_func_def) : StrTy() ]] :=
     Map2 [[ elems ^ (s, ty_func_def) ]].
-    
+
   [[ Str(_) ^ (s, ty_func_def) ]] := true.
   [[ StrInterpRef(exp_ref) ^ (s, ty_func_def) ]] :=
     [[ exp_ref ^ (s, ty_func_def) : _ ]].
@@ -234,7 +268,7 @@ rules // Interpolated path literal
 
   [[ PathLit(_, elems) ^ (s, ty_func_def) : PathTy() ]] :=
     Map2 [[ elems ^ (s, ty_func_def) ]].
-    
+
   [[ Path(_) ^ (s, ty_func_def) ]] := true.
   [[ PathInterpRef(exp_ref) ^ (s, ty_func_def) ]] :=
     [[ exp_ref ^ (s, ty_func_def) : _ ]].

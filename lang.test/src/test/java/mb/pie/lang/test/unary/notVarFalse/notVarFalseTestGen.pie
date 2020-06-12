@@ -1,0 +1,6 @@
+module mb:pie:lang:test:unary:notVarFalse
+
+func main_notVarFalse() -> bool = {
+  val bool = false;
+  !bool
+}

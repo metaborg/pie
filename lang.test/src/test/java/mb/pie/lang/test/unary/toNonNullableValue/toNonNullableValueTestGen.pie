@@ -1,0 +1,6 @@
+module mb:pie:lang:test:unary:toNonNullableValue
+
+func main_toNonNullableValue() -> string = {
+  val str: string? = "test string";
+  str!
+}

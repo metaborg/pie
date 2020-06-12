@@ -1,0 +1,5 @@
+module mb:pie:lang:test:returnTypes:nullableStringNull
+
+func main_nullableStringNull() -> string? = {
+  null
+}

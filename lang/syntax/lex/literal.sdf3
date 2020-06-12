@@ -9,6 +9,7 @@ lexical syntax // Identifier
   PIEQTYPEID  = QID
   JAVAQTYPEID = QID
   
+  MODID      = ID
   FUNCID     = ID
   JAVAFUNCID = ID
 

@@ -1,0 +1,5 @@
+module mb:pie:lang:test:binary:eq:eqIntEqual
+
+func main_eqIntEqual() -> bool = {
+  0 == -0
+}

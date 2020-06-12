@@ -1,0 +1,5 @@
+module mb:pie:lang:test:returnTypes:boolFalse
+
+func main_boolFalse() -> bool = {
+  false
+}

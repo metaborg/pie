@@ -40,12 +40,21 @@ rules // Function implementations
     occ_func_outer.javaClassId  := id_class_java !,
     occ_func_outer.javaMethodId := id_method_java !.
 
+  [[ JavaForeignConstructorImpl(id_class_java) ^ (s, _, occ_func_outer) ]] :=
+    occ_func_outer.kind         := JavaForeignConstructorKind() !,
+    occ_func_outer.javaClassId  := id_class_java !.
+
   [[ PieForeignFuncImpl(id_class_java) ^ (s, _, occ_func_outer) ]] :=
     occ_func_outer.kind        := PieForeignFuncKind() !,
     occ_func_outer.javaClassId := id_class_java !.
 
   [[ PieFuncImpl(body, key) ^ (s, ty_func_def, occ_func_outer) ]] :=
     occ_func_outer.kind := PieFuncKind() !,
+    modDecl == QualifiedModuleDeclaration{"modDecl"},
+    modDecl -> s,
+    modDecl |-> resolvedModDecl,
+    resolvedModDecl.moduleList := moduleList,
+    occ_func_outer.qualifiedModule := moduleList !,
     [[ body ^ (s, ty_func_def) : ty_body ]],
     ty_func_def == FuncTy(_, ty_ret_expected),
     ty_body <? ty_ret_expected | error $[Type mismatch: expected [ty_ret_expected], got [ty_body]] @ body,
