@@ -41,4 +41,8 @@ public class Tuple2<T1 extends Serializable, T2 extends Serializable> implements
     public int hashCode() {
         return Objects.hash(f1, f2);
     }
+
+    @Override public String toString() {
+        return "(" + f1 + ", " + f2 + ")";
+    }
 }

@@ -1,0 +1,9 @@
+module mb:pie:lang:test:imports:subModule:a:b:c
+
+func helper_function() -> unit = {}
+func foreign_pie() -> unit = foreign mb.pie.lang.test.imports.subModule.a.b.c.ForeignPie
+func helper_foreign_java() -> unit = foreign java mb.pie.lang.test.imports.subModule.a.b.c.ForeignJava#getNone
+func helper_foreign_constructor() -> int = foreign java constructor java.lang.Integer
+
+// used to generate foreign pie task
+// func ForeignPie() -> unit = {}

@@ -1,0 +1,7 @@
+module mb:pie:lang:test:funcDef:twoFuncLinear
+
+func main_twoFuncLinear() -> unit = {
+  helper_twoFuncLinear()
+}
+
+func helper_twoFuncLinear() -> unit = { }

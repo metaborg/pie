@@ -1,0 +1,5 @@
+module mb:pie:lang:test:binary:add:addStrInt
+
+func main_addStrInt() -> string = {
+  "String + int: " + 67
+}

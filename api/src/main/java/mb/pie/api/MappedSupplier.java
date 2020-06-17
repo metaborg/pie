@@ -14,7 +14,7 @@ public class MappedSupplier<T extends Serializable, R extends @Nullable Serializ
         this.func = func;
     }
 
-    @Override public R get(ExecContext context) throws ExecException, IOException, InterruptedException {
+    @Override public R get(ExecContext context) throws IOException {
         return func.apply(context, supplier.get(context));
     }
 

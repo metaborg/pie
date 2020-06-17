@@ -1,3 +1,5 @@
+module mb:pie:example:helloWorld
+
 func main3() -> unit = {
   hello(./hello.txt)
 }
@@ -7,5 +9,5 @@ func hello(file: path) -> unit = {
   generates file
 }
 
-func writeString(file: path, text: string) -> unit = 
+func writeString(file: path, text: string) -> unit =
   foreign java mb.pie.util.Util#writeString

@@ -50,13 +50,8 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
 
 
     @Override
-    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException {
-        try {
-            return updateAffectedBy(changedResources, NullCancelableToken.instance);
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
+    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException, InterruptedException {
+        return updateAffectedBy(changedResources, NullCancelableToken.instance);
     }
 
     @Override
@@ -64,7 +59,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         checkUpdateAffectedBy();
         if(changedResources.isEmpty())
             return createSessionAfterBottomUp();
-        bottomUpRunner.requireInitial(changedResources, cancel);
+        handleException(() -> bottomUpRunner.requireInitial(changedResources, cancel));
         return createSessionAfterBottomUp();
     }
 
@@ -84,36 +79,27 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
 
 
     @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException {
-        try {
-            return require(task, NullCancelableToken.instance);
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
+    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+        return require(task, NullCancelableToken.instance);
     }
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("require");
-        return topDownRunner.requireInitial(task, true, cancel);
+        return handleException(() -> topDownRunner.requireInitial(task, true, cancel));
     }
 
     @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
-        try {
-            return requireWithoutObserving(task, NullCancelableToken.instance);
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
+        return requireWithoutObserving(task, NullCancelableToken.instance);
     }
 
     @Override
     public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("requireWithoutObserving");
-        return topDownRunner.requireInitial(task, false, cancel);
+        return handleException(() -> topDownRunner.requireInitial(task, false, cancel));
     }
+
 
     private void checkRequire(String name) {
         if(updateAffectedByExecuted) {

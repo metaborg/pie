@@ -34,9 +34,11 @@ public interface Session {
      *
      * @param task Task to make up-to-date.
      * @return Up-to-date output of {@code task}.
-     * @throws ExecException When an executing task throws an exception.
+     * @throws ExecException        When a task throws an {@link Exception}.
+     * @throws InterruptedException When execution is cancelled.
+     * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException;
+    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
@@ -46,8 +48,9 @@ public interface Session {
      * @param task   Task to make up-to-date.
      * @param cancel Cancel checker to use.
      * @return Up-to-date output of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
+     * @throws ExecException        When a task throws an {@link Exception}.
      * @throws InterruptedException When execution is cancelled.
+     * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
     <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 
@@ -57,9 +60,11 @@ public interface Session {
      *
      * @param task Task to make up-to-date.
      * @return Up-to-date output of {@code task}.
-     * @throws ExecException When an executing task throws an exception.
+     * @throws ExecException        When a task throws an {@link Exception}.
+     * @throws InterruptedException When execution is cancelled.
+     * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
-    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException;
+    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
@@ -68,8 +73,9 @@ public interface Session {
      * @param task   Task to make up-to-date.
      * @param cancel Cancel checker to use.
      * @return Up-to-date output of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
+     * @throws ExecException        When a task throws an {@link Exception}.
      * @throws InterruptedException When execution is cancelled.
+     * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
     <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 

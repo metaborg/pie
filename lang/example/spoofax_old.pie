@@ -1,3 +1,5 @@
+module mb:pie:example:spoofax_old
+
 /// Interface that Spoofax expects from a language
 data Message = foreign java mb.spoofax.api.message.Msg {}
 data PathMessage : Message = foreign java mb.spoofax.api.message.PathMsg {}
@@ -50,13 +52,13 @@ data LangSpecConfig = foreign java mb.spoofax.runtime.cfg.LangSpecConfig {
   func extensions() -> string*
   func firstExtension() -> string // HACK: there may be 0..* extensions
   func name() -> string?
-  
+
   func syntaxParseFiles() -> path*
   func syntaxParseMainFile() -> path?
-  func syntaxParseStartSymbolId() -> string? 
+  func syntaxParseStartSymbolId() -> string?
   func syntaxSignatureFiles() -> path*
   func syntaxStyleFile() -> path?
-  
+
   func natsNaBL2Files() -> path*
   func natsStrategoConfig() -> StrategoConfig?
   func natsStrategoStrategyId() -> string?
@@ -82,7 +84,7 @@ data WorkspaceConfig = foreign java mb.spoofax.runtime.cfg.WorkspaceConfig {
 func langSpecConfigForPath(path: path, root: path) -> LangSpecConfig? = {
   val workspace = createWorkspaceConfig(root);
   if(workspace == null) { return null };
-  val extension = path.extension(); 
+  val extension = path.extension();
   if(extension == null) { return null };
   workspace!.langSpecConfigForExt(extension!)
 }
@@ -90,12 +92,12 @@ func spxCoreConfigForPath(workspace: WorkspaceConfig, path: path) -> SpxCoreConf
   val extension = path.extension();
   if(extension == null) return null;
   workspace.spxCoreConfigForExt(extension!)
-} 
+}
 func generateWorkspaceConfig(text: string, file: path, workspaceRoot: path, cfgLangConfig: SpxCoreConfig) -> WorkspaceConfig? = foreign mb.spoofax.pie.config.ParseWorkspaceCfg
 func createWorkspaceConfig(workspaceRoot: path) -> WorkspaceConfig? = {
   // Manually create a config for the configuration language. This is required to bootstrap the language workbench.
   val cfgLang = createSpxCoreConfig(/Users/gohla/metaborg/repo/pie/spoofax-pie/lang/cfg/langspec, false, ["cfg"]);
-  val workspaceFile = workspaceRoot.resolve("root/workspace.cfg"); 
+  val workspaceFile = workspaceRoot.resolve("root/workspace.cfg");
   if(!exists workspaceFile) return null;
   val text = (read workspaceFile)!; // Can assume not null because workspaceFile exists
   val workspaceConfig = generateWorkspaceConfig(text, workspaceFile, workspaceRoot, cfgLang);
@@ -116,7 +118,7 @@ func processProject(project: path, root: path) -> ((path, Token*?, Message*, Sty
   val noSpxCoreResults: (path, Token*?, Message*, Styling?)* = [];
   if(workspaceConfig == null) return (noLangSpecResults, noSpxCoreResults);
   val workspace = workspaceConfig!;
-  
+
   val langSpecResults = [processLangSpecInProject(project, langSpec, root) | langSpec <- workspace.langSpecConfigs()];
   val spxCoreResults = [processFileWithSpxCore(file, project, workspace) | file <- walk project with extensions (workspace.spxCoreExtensions())];
   (langSpecResults, spxCoreResults)
@@ -124,7 +126,7 @@ func processProject(project: path, root: path) -> ((path, Token*?, Message*, Sty
 func processLangSpecInProject(project: path, langSpec: LangSpecConfig, root: path) -> (path, Token*?, Message*, Styling?, FinalSolverSolution?)* = {
   [processFile(file, project, root) | file <- walk project with extensions (langSpec.extensions())]
 //  val partialSolutions = filterNullPartialSolutions([extractPartialSolution(result) | result <- results]);
-//  val solutions = 
+//  val solutions =
 //    if(langSpec.natsRootScopePerFile())
 //      [solve([partialSolution], project, langSpec.firstExtension(), root) | partialSolution <- partialSolutions]
 //    else
@@ -140,10 +142,10 @@ func processEditor(text: string, file: path, project: path, root: path) -> (Toke
   val workspaceConfig = createWorkspaceConfig(root);
   if(workspaceConfig == null) return null;
   val workspace = workspaceConfig!;
-  
+
   val extension = file.extension();
   if(extension == null) return null;
-  
+
   val langSpecConfig = workspace.langSpecConfigForExt(extension!);
   if(langSpecConfig != null) {
     val langSpec = langSpecConfig!;
@@ -175,7 +177,7 @@ func processEditor(text: string, file: path, project: path, root: path) -> (Toke
 
 
 /// Processing of programs of language specifications
-func shouldProcessFile(file: path) -> bool = foreign java mb.spoofax.pie#shouldProcessFile 
+func shouldProcessFile(file: path) -> bool = foreign java mb.spoofax.pie#shouldProcessFile
 func processFile(file: path, project: path, root: path) -> (path, Token*?, Message*, Styling?, FinalSolverSolution?) = {
   if(!shouldProcessFile(file)) {
     return emptyFileResult(file)
@@ -202,7 +204,7 @@ func emptyFileResult(file: path) -> (path, Token*?, Message*, Styling?, FinalSol
 
 func processString(text: string, file: path, project: path, root: path) -> (Token*?, Message*, Styling?, FinalSolverSolution?) = {
   val langSpecExt = file.extension();
-  if(langSpecExt != null) { 
+  if(langSpecExt != null) {
     val (ast, tokenStream, messages) = parse(text, file, langSpecExt!, root);
     val styling : Styling? = if(tokenStream == null) null else style(tokenStream!, langSpecExt!, root);
     val solution: FinalSolverSolution? = if(ast == null) null else solveFile(ast!, file, project, langSpecExt!, root);
@@ -246,7 +248,7 @@ func style(tokenStream: Token*, langSpecExt: string, root: path) -> Styling? = {
 }
 
 /// Constraint solving
-//func createConstraintGenerator(langSpecExt: string, root: path) -> ConstraintGenerator? = { 
+//func createConstraintGenerator(langSpecExt: string, root: path) -> ConstraintGenerator? = {
 //  nabl2-constraint-generator(langSpecExt, root)
 //}
 func solveFile(ast: Ast, file: path, project: path, langSpecExt: string, root: path) -> FinalSolverSolution? = {

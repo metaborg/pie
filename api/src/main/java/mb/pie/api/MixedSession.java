@@ -47,12 +47,14 @@ public interface MixedSession extends Session, AutoCloseable {
      * tasks are considered.
      *
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
-     * @throws ExecException         When an executing task throws an exception.
+     * @throws ExecException         When a task throws an {@link Exception}.
+     * @throws InterruptedException  When execution is cancelled.
+     * @throws RuntimeException      When a task throws a {@link RuntimeException}.
      * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy} or {@link #require}. Only
      *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
      *                               returned object to query task results or to execute new tasks.
      */
-    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException;
+    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException, InterruptedException;
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
@@ -61,15 +63,16 @@ public interface MixedSession extends Session, AutoCloseable {
      *
      * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
      * @param cancel           Cancel checker to use.
-     * @throws ExecException         When an executing task throws an exception.
+     * @throws ExecException         When a task throws an {@link Exception}.
      * @throws InterruptedException  When execution is cancelled.
+     * @throws RuntimeException      When a task throws a {@link RuntimeException}.
      * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy} or {@link #require}. Only
      *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
      *                               returned object to query task results or to execute new tasks.
      */
     TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
 
-    
+
     /**
      * Closes the session, {@link Store#sync() synchronizing the storage to persistent storage, if any}.
      *

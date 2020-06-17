@@ -1,0 +1,9 @@
+module mb:pie:lang:test:supplier:fromTaskAndGet:tripleInt
+
+func main_tripleInt(x: int) -> int = {
+  helper_tripleInt.supplier(x).get<>()
+}
+
+func helper_tripleInt(x: int) -> int = {
+  x + x + x
+}

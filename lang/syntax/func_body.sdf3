@@ -54,6 +54,11 @@ context-free syntax // References
   
   Exp.Call  = <<FUNCID>(<{Exp ", "}*>)>       {left}
   Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)> {left}
+  Exp.ImportCall = <<{MODID ":"}+>:<FUNCID>(<{Exp ", "}*>)> {left}
+
+  Exp.CreateSupplier = <supplier (<Exp>)>
+  Exp.TaskSupplier   = <<FUNCID>.supplier(<{Exp ", "}*>)>
+  Exp.SupplierGet    = <<Exp>.get\<\>()>
 
 context-free syntax // Paths
 
@@ -162,6 +167,8 @@ context-free priorities // Expression priorities
   } > { left:
     Exp.Call
     Exp.QCall
+    Exp.CreateSupplier
+    Exp.TaskSupplier
   } > { non-assoc:
     Filter.Regex
     Filter.Pattern
@@ -190,3 +197,4 @@ lexical syntax // Reject keywords
   FUNCID = "generates" {reject}
   FUNCID = "list"      {reject}
   FUNCID = "walk"      {reject}
+  FUNCID = "supplier"  {reject}

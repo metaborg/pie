@@ -2,7 +2,6 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 public class MappedFunctionInput<B extends Serializable, T extends Serializable, R extends @Nullable Serializable> implements Function<B, R> {
@@ -14,7 +13,7 @@ public class MappedFunctionInput<B extends Serializable, T extends Serializable,
         this.before = before;
     }
 
-    @Override public R apply(ExecContext context, B input) throws ExecException, InterruptedException {
+    @Override public R apply(ExecContext context, B input) {
         final T newInput = before.apply(context, input);
         return function.apply(context, newInput);
     }

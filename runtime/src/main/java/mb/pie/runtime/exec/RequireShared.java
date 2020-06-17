@@ -1,6 +1,18 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecutorLogger;
+import mb.pie.api.InconsistentResourceProvide;
+import mb.pie.api.InconsistentResourceRequire;
+import mb.pie.api.InconsistentTaskReq;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.Task;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.api.exec.CancelToken;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -95,7 +107,7 @@ public class RequireShared {
     /**
      * Check if a task require dependency is totally consistent.
      */
-    @Nullable InconsistentTaskReq checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+    @Nullable InconsistentTaskReq checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, boolean modifyObservability, CancelToken cancel) {
         final TaskKey calleeKey = taskRequireDep.callee;
         final Task<?> calleeTask;
         try(final StoreReadTxn txn = store.readTxn()) {
