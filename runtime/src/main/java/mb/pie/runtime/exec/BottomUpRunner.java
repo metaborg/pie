@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.ExecException;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
@@ -72,7 +71,7 @@ public class BottomUpRunner implements RequireTask {
     }
 
 
-    public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+    public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) {
         executorLogger.requireBottomUpInitialStart(changedResources);
         scheduleAffectedByResources(changedResources.stream());
         execScheduled(cancel);
@@ -83,7 +82,7 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
      */
-    private void execScheduled(CancelToken cancel) throws ExecException, InterruptedException {
+    private void execScheduled(CancelToken cancel) {
         logger.trace("Executing scheduled tasks: " + queue);
         while(queue.isNotEmpty()) {
             cancel.throwIfCanceled();
@@ -100,7 +99,7 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Executes given task, and schedules new tasks based on given task's output.
      */
-    private TaskData execAndSchedule(TaskKey key, Task<?> task, CancelToken cancel) throws ExecException, InterruptedException {
+    private TaskData execAndSchedule(TaskKey key, Task<?> task, CancelToken cancel) {
         final TaskData data = exec(key, task, new AffectedExecReason(), cancel);
         scheduleAffectedCallersOf(key, data.output);
         scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key));
@@ -162,7 +161,7 @@ public class BottomUpRunner implements RequireTask {
      * Require the result of a task.
      */
     @Override
-    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) {
         cancel.throwIfCanceled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
@@ -181,7 +180,7 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private TaskData getData(TaskKey key, Task<?> task, CancelToken cancel) throws ExecException, InterruptedException {
+    private TaskData getData(TaskKey key, Task<?> task, CancelToken cancel) {
         // Check if task was already visited this execution.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -250,7 +249,7 @@ public class BottomUpRunner implements RequireTask {
         }
     }
 
-    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, CancelToken cancel) throws ExecException, InterruptedException {
+    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, CancelToken cancel) {
         // Input consistency.
         {
             final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);
@@ -321,7 +320,7 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
      */
-    private @Nullable TaskData requireScheduledNow(TaskKey key, CancelToken cancel) throws ExecException, InterruptedException {
+    private @Nullable TaskData requireScheduledNow(TaskKey key, CancelToken cancel) {
         logger.trace("Executing scheduled (and its dependencies) task NOW: " + key);
         while(queue.isNotEmpty()) {
             cancel.throwIfCanceled();
@@ -343,7 +342,7 @@ public class BottomUpRunner implements RequireTask {
     }
 
 
-    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, CancelToken cancel) throws ExecException, InterruptedException {
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, CancelToken cancel) {
         return taskExecutor.exec(key, task, reason, this, true, cancel);
     }
 }

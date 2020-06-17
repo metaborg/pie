@@ -58,7 +58,7 @@ public class STask<O extends @Nullable Serializable> implements Supplier<O>, Ser
         return new Task<>(taskDef, input);
     }
 
-    @Override public O get(ExecContext context) throws ExecException, InterruptedException {
+    @Override public O get(ExecContext context) {
         return context.require(this);
     }
 

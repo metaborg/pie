@@ -2,12 +2,12 @@ package mb.pie.runtime;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.Output;
-import mb.pie.api.TopDownSession;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.TopDownSession;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.TopDownRunner;
@@ -42,40 +42,29 @@ public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
             if(output == null) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', it has no output object. Call require to execute this new task");
             }
-            @SuppressWarnings({"ConstantConditions", "unchecked"}) final O out = (O)output.output;
-            //noinspection ConstantConditions
+            @SuppressWarnings({"unchecked"}) final O out = (O)output.output;
             return out;
         }
     }
 
 
     @Override
-    public <O extends Serializable> O require(Task<O> task) throws ExecException {
-        try {
-            return require(task, NullCancelableToken.instance);
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
+    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+        return require(task, NullCancelableToken.instance);
     }
 
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return topDownRunner.requireInitial(task, true, cancel);
+        return handleException(() -> topDownRunner.requireInitial(task, true, cancel));
     }
 
     @Override
-    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException {
-        try {
-            return requireWithoutObserving(task, NullCancelableToken.instance);
-        } catch(InterruptedException e) {
-            // Unexpected: NullCancelled is used, which does not check for interruptions.
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
+    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
+        return requireWithoutObserving(task, NullCancelableToken.instance);
     }
 
     @Override
     public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return topDownRunner.requireInitial(task, false, cancel);
+        return handleException(() -> topDownRunner.requireInitial(task, false, cancel));
     }
 }

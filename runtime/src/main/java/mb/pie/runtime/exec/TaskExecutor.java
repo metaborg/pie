@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.ExecException;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
@@ -13,8 +12,11 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CancelToken;
+import mb.pie.api.exec.CanceledException;
 import mb.pie.api.exec.ExecReason;
+import mb.pie.api.exec.UncheckedInterruptedException;
 import mb.pie.runtime.Callbacks;
 import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
@@ -72,7 +74,7 @@ public class TaskExecutor {
         RequireTask requireTask,
         boolean modifyObservability,
         CancelToken cancel
-    ) throws ExecException, InterruptedException {
+    ) {
         cancel.throwIfCanceled();
         executorLogger.executeStart(key, task, reason);
         final TaskData data;
@@ -80,24 +82,7 @@ public class TaskExecutor {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
             data = execInternal(key, task, requireTask, modifyObservability, cancel);
         } else {
-            try {
-                data = share.share(key, () -> {
-                    try {
-                        return execInternal(key, task, requireTask, modifyObservability, cancel);
-                    } catch(InterruptedException | ExecException e) {
-                        throw new RuntimeException(e);
-                    }
-                }, () -> visited.get(key));
-            } catch(RuntimeException e) {
-                final Throwable cause = e.getCause();
-                if(cause instanceof InterruptedException) {
-                    throw (InterruptedException)cause;
-                } else if(cause instanceof ExecException) {
-                    throw (ExecException)cause;
-                } else {
-                    throw e;
-                }
-            }
+            data = share.share(key, () -> execInternal(key, task, requireTask, modifyObservability, cancel), () -> visited.get(key));
         }
         executorLogger.executeEnd(key, task, reason, data);
         return data;
@@ -109,7 +94,7 @@ public class TaskExecutor {
         RequireTask requireTask,
         boolean modifyObservability,
         CancelToken cancel
-    ) throws ExecException, InterruptedException {
+    ) {
         cancel.throwIfCanceled();
 
         // Store previous data for observability comparison.
@@ -129,14 +114,16 @@ public class TaskExecutor {
         final @Nullable Serializable output;
         try {
             output = task.exec(context);
-        } catch(InterruptedException | RuntimeException | ExecException e) {
-            // Propagate interrupted exceptions, these must be handled by the caller.
-            // Propagate runtime exceptions, because we cannot recover from runtime exceptions here, but the caller may.
-            // Propagate exec exceptions, no need to wrap them.
+        } catch(RuntimeException e) {
+            // Propagate runtime exceptions, no need to wrap them.
             throw e;
+        } catch(InterruptedException e) {
+            // Turn InterruptedExceptions into UncheckedInterruptedException.
+            throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
-            // Wrap regular exceptions into an ExecException which is propagated up, and must be handled by the user.
-            throw new ExecException("Executing task " + task.desc(100) + " failed unexpectedly", e);
+            // Wrap regular exceptions into an RuntimeExecException which is propagated up to the entry point, where it
+            // will be turned into an ExecException that must be handled by the caller.
+            throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
         }
         Stats.addExecution();
 

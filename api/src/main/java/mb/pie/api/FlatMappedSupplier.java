@@ -5,23 +5,23 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 
-public class MappedSupplier<T extends Serializable, R extends @Nullable Serializable> implements Supplier<R> {
+public class FlatMappedSupplier<T extends Serializable, R extends @Nullable Serializable> implements Supplier<R> {
     private final Supplier<T> supplier;
-    private final Function<? super T, ? extends R> func;
+    private final Function<? super T, Supplier<R>> func;
 
-    public MappedSupplier(Supplier<T> supplier, Function<? super T, ? extends R> func) {
+    public FlatMappedSupplier(Supplier<T> supplier, Function<? super T, Supplier<R>> func) {
         this.supplier = supplier;
         this.func = func;
     }
 
     @Override public R get(ExecContext context) throws IOException {
-        return func.apply(context, supplier.get(context));
+        return func.apply(context, supplier.get(context)).get(context);
     }
 
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final MappedSupplier<?, ?> mappedSupplier = (MappedSupplier<?, ?>)o;
+        final FlatMappedSupplier<?, ?> mappedSupplier = (FlatMappedSupplier<?, ?>)o;
         if(!supplier.equals(mappedSupplier.supplier)) return false;
         return func.equals(mappedSupplier.func);
     }

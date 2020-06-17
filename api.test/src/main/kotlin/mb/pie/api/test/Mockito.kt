@@ -123,8 +123,11 @@ class NoExecContext : ExecContext {
 
   override fun provide(path: FSPath) {}
   override fun provide(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) {}
+
   override fun getDefaultProvideHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
+
+  override fun cancelToken(): CancelToken = null!!
   override fun logger(): Logger = null!!
 }
 

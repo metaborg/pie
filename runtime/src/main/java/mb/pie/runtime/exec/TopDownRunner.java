@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.ExecException;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
@@ -54,7 +53,7 @@ public class TopDownRunner implements RequireTask {
         this.visited = visited;
     }
 
-    public <O extends @Nullable Serializable> O requireInitial(Task<O> task, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O requireInitial(Task<O> task, boolean modifyObservability, CancelToken cancel) {
         final TaskKey key = task.key();
         executorLogger.requireTopDownInitialStart(key, task);
         final O output = require(key, task, modifyObservability, cancel);
@@ -69,7 +68,7 @@ public class TopDownRunner implements RequireTask {
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) {
         cancel.throwIfCanceled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
@@ -125,7 +124,7 @@ public class TopDownRunner implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<?> task, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+    private DataAndExecutionStatus executeOrGetExisting(TaskKey key, Task<?> task, boolean modifyObservability, CancelToken cancel) {
         // Check if task was already visited this execution.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -190,7 +189,7 @@ public class TopDownRunner implements RequireTask {
         return new DataAndExecutionStatus(storedData, false);
     }
 
-    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, boolean modifyObservability, CancelToken cancel) throws ExecException, InterruptedException {
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, boolean modifyObservability, CancelToken cancel) {
         return taskExecutor.exec(key, task, reason, this, modifyObservability, cancel);
     }
 }

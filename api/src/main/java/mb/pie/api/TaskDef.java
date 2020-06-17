@@ -54,8 +54,7 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
      * @param context Execution context for requiring tasks, and requiring/providing resources.
      * @param input   Input object.
      * @return Output object.
-     * @throws Exception            When execution of the task fails unexpectedly.
-     * @throws InterruptedException When execution of the task is cancelled or otherwise interrupted.
+     * @throws Exception When execution of the task fails unexpectedly.
      */
     O exec(ExecContext context, I input) throws Exception;
 

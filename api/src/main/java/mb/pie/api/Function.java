@@ -2,7 +2,6 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -15,7 +14,7 @@ import java.io.Serializable;
  * @param <R> Type of the output of the function.
  */
 public interface Function<T extends Serializable, R extends @Nullable Serializable> extends Serializable {
-    R apply(ExecContext context, T input) throws ExecException, InterruptedException;
+    R apply(ExecContext context, T input);
 
     /**
      * Creates a new function for which given {@link Function incremental function} is executed on the input before
