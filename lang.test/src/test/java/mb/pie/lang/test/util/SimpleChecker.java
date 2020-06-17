@@ -37,6 +37,8 @@ public class SimpleChecker {
             throw new RuntimeException("Expected method to be accessible", e);
         } catch(InvocationTargetException e) {
             throw new RuntimeException("Unexpected exception", e);
+        } catch(InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }

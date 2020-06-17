@@ -28,6 +28,6 @@ public class ValueSupplier<T extends @Nullable Serializable> implements Supplier
     }
 
     @Override public String toString() {
-        return "ValueSupplier(" + Objects.toString(value) + ')';
+        return "ValueSupplier(" + value + ')';
     }
 }

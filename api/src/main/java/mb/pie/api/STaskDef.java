@@ -50,7 +50,7 @@ public class STaskDef<I extends Serializable, O extends @Nullable Serializable> 
         return taskDef;
     }
 
-    @Override public O apply(ExecContext context, I input) throws ExecException, InterruptedException {
+    @Override public O apply(ExecContext context, I input) {
         return context.require(this, input);
     }
 

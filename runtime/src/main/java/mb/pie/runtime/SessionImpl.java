@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.pie.api.ExecException;
 import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.Session;
@@ -9,16 +10,21 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.UncheckedExecException;
+import mb.pie.api.exec.CanceledException;
+import mb.pie.api.exec.UncheckedInterruptedException;
 import mb.resource.Resource;
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public abstract class SessionImpl implements Session {
     protected final TaskDefs taskDefs;
@@ -81,6 +87,30 @@ public abstract class SessionImpl implements Session {
                         .forEach((d) -> tasksToDelete.push(d.callee));
                 }
             }
+        }
+    }
+
+    protected <T extends Serializable> T handleException(Supplier<T> supplier) throws ExecException, InterruptedException {
+        try {
+            return supplier.get();
+        } catch(CanceledException e) {
+            throw e.toInterruptedException();
+        } catch(UncheckedInterruptedException e) {
+            throw e.interruptedException;
+        } catch(UncheckedExecException e) {
+            throw e.toChecked();
+        }
+    }
+
+    protected void handleException(Runnable runnable) throws ExecException, InterruptedException {
+        try {
+            runnable.run();
+        } catch(CanceledException e) {
+            throw e.toInterruptedException();
+        } catch(UncheckedInterruptedException e) {
+            throw e.interruptedException;
+        } catch(UncheckedExecException e) {
+            throw e.toChecked();
         }
     }
 }

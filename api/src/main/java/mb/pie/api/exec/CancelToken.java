@@ -14,10 +14,11 @@ public interface CancelToken {
     /**
      * Throws an InterruptedException when the operation has been canceled.
      *
-     * @throws InterruptedException When cancellation has been requested.
+     * @throws CanceledException When cancellation has been requested.
      */
-    default void throwIfCanceled() throws InterruptedException {
-        if(isCanceled())
-            throw new InterruptedException("The operation has been canceled.");
+    default void throwIfCanceled() {
+        if(isCanceled()) {
+            throw new CanceledException();
+        }
     }
 }

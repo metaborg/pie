@@ -1,6 +1,5 @@
 package mb.pie.api;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -11,7 +10,7 @@ public class NonIncrSupplier<T extends Serializable> implements Supplier<T> {
         this.nonIncrSupplier = nonIncrSupplier;
     }
 
-    @Override public T get(ExecContext context) throws ExecException, IOException, InterruptedException {
+    @Override public T get(ExecContext context) {
         return nonIncrSupplier.get();
     }
 

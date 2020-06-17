@@ -1,5 +1,7 @@
 package mb.pie.api;
 
+import mb.pie.api.exec.CancelToken;
+import mb.pie.api.exec.CanceledException;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.resource.HashResourceStamper;
@@ -45,10 +47,10 @@ public interface ExecContext {
      * @param taskDef Task definition of the task to require.
      * @param input   Input object of the task to require.
      * @return Up-to-date output object of the task.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException;
+    <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input);
 
     /**
      * Requires task given by its {@code taskDef} and {@code input}, using given {@code stamper}, returning the
@@ -60,10 +62,10 @@ public interface ExecContext {
      * @param input   Input object of the task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of the task.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
+    <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper);
 
     /**
      * Requires given {@code task}, using the {@link #getDefaultOutputStamper() default output stamper}, returning the
@@ -72,10 +74,10 @@ public interface ExecContext {
      * @param <O>  Type of the output object.
      * @param task Task to require.
      * @return Up-to-date output object of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task);
 
     /**
      * Requires given {@code task}, using given {@code stamper}, returning the up-to-date output object of the task.
@@ -84,10 +86,10 @@ public interface ExecContext {
      * @param task    Task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of {@code task}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper);
 
     /**
      * Requires task given by the {@link STaskDef serializable task definition} and {@code input} of the task, using the
@@ -99,10 +101,10 @@ public interface ExecContext {
      * @param sTaskDef {@link STaskDef Serializable task definition} of the task to require.
      * @param input    Input object of the task to require.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input) throws ExecException, InterruptedException;
+    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input);
 
     /**
      * Requires task given by the {@link STaskDef serializable task definition} and {@code input} of the task, using
@@ -115,10 +117,10 @@ public interface ExecContext {
      * @param input    Input object of the task to require.
      * @param stamper  {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException;
+    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper);
 
     /**
      * Requires task given by its {@link STask serializable task form}, using the {@link #getDefaultOutputStamper()
@@ -129,10 +131,10 @@ public interface ExecContext {
      *
      * @param sTask {@link STask Serializable task form} of the task to require.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(STask<O> sTask) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(STask<O> sTask);
 
     /**
      * Requires task given by its {@link STask serializable task form}, using given {@code stamper}, returning the
@@ -144,10 +146,10 @@ public interface ExecContext {
      * @param sTask   {@link STask Serializable task form} of the task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper) throws ExecException, InterruptedException;
+    <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper);
 
     /**
      * Returns output of given {@link Supplier incremental supplier}, which may in turn require the output of a task, or
@@ -156,10 +158,11 @@ public interface ExecContext {
      * @param <O>      Type of the output object.
      * @param supplier {@link Supplier} to get output of.
      * @return Up-to-date output object of {@code supplier}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws IOException          When requiring and reading a resource fails.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws ExecException, IOException, InterruptedException;
+    <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws IOException;
 
     /**
      * Returns output of given {@link Function incremental function} applied to given {@code input}, which may in turn
@@ -170,10 +173,10 @@ public interface ExecContext {
      * @param function {@link Function} to get output of.
      * @param input    Input to apply function to.
      * @return Up-to-date output object of {@code function}.
-     * @throws ExecException        When an executing task throws an exception.
-     * @throws InterruptedException When execution is cancelled.
+     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws CanceledException    When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) throws ExecException, InterruptedException;
+    <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input);
 
     /**
      * Gets the default output stamper.
@@ -541,6 +544,13 @@ public interface ExecContext {
     // Other.
     //
 
+
+    /**
+     * Gets the cancel token.
+     *
+     * @return Cancel token.
+     */
+    CancelToken cancelToken();
 
     /**
      * Gets the logger.

@@ -4,7 +4,7 @@ imports
 
   libspoofax/stratego/debug
   nabl2/api
-  
+
   src-gen/signatures/-
   signatures/-
 
@@ -180,7 +180,7 @@ rules // Control flow
     ; stmts             := <concat> [lStmts, rStmts, expStmts]
     ; result            := (stmts, exp)
 
-  // p2j-ast-add(|lType, rType): (lExp, rExp) -> 
+  // p2j-ast-add(|lType, rType): (lExp, rExp) ->
   //   (List of Java AST statements, Java expression AST Node)
   // Helper function that converts the Add into the correct AST Node
   // based on the types of the left and right side (lType and rType)
@@ -254,7 +254,7 @@ rules // Control flow
       (PathTy(), StrTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> ([], 
+    (lExp, rExp) -> ([],
       InvokeQExp(
         InvokeQExp(
           ExpressionName(Id("Stream"))
@@ -290,7 +290,7 @@ rules // Control flow
     ; <add-import> "java.util.stream.Stream"
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> ([], 
+    (lExp, rExp) -> ([],
       InvokeQExp(
 	    InvokeQExp(
 	      ExpressionName(Id("Stream"))
@@ -597,50 +597,26 @@ rules // Qualified function calls
           , <java-classType-to-unannType> ty
           , [ VariableDecl(Id(callResultName)) ]
           ))
-        , Try(
-            Block(
-              [ ExpressionStatement(Assign(
-                  ExpressionName(Id(callResultName))
-                , InvokeQExp(
-                    ExpressionName(Id("execContext"))
-                  , None()
-                  , Id("require")
-                  , [ InvokeQExp(
-                        ExpressionName(Id($[_[safeJavaClassId]]))
-                      , None()
-                      , Id("get")
-                      , []
-                      )
-                    , inputArg
-                    ]
-                  )
-                ))
+        , ExpressionStatement(Assign(
+            ExpressionName(Id(callResultName))
+          , InvokeQExp(
+              ExpressionName(Id("execContext"))
+            , None()
+            , Id("require")
+            , [ InvokeQExp(
+                  ExpressionName(Id($[_[safeJavaClassId]]))
+                , None()
+                , Id("get")
+                , []
+                )
+              , inputArg
               ]
             )
-          , [ Catch(
-                CatchParam(
-                  []
-                , CatchType(ClassType(Id("InterruptedException"), None()), [])
-                , VariableDecl(Id("e"))
-                )
-              , Block(
-                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Call to _[safeJavaClassId] was interrupted"])
-                    , ExpressionName(Id("e"))
-                    ]))
-                  ]
-                )
-              )
-            ]
-          )
+          ))
         ]
         // Note: meaning of this AST:
         //   final [ty] [callResultName];
-        //   try {
-        //     [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
-        //   } catch (InterruptedException e) {
-        //     throw new ExecException("Call to _[safeJavaClassId] was interrupted", e);
-        //   }
+        //   [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
       ]
     ; result                   := (stmts, callResultName)
     ; rules(InjectValues :+= (
@@ -667,50 +643,26 @@ rules // Qualified function calls
           , <java-classType-to-unannType> ty
           , [ VariableDecl(Id(callResultName)) ]
           ))
-        , Try(
-            Block(
-              [ ExpressionStatement(Assign(
-                  ExpressionName(Id(callResultName))
-                , InvokeQExp(
-                    ExpressionName(Id("execContext"))
-                  , None()
-                  , Id("require")
-                  , [ InvokeQExp(
-                        ExpressionName(Id($[_[safeJavaClassId]]))
-                      , None()
-                      , Id("get")
-                      , []
-                      )
-                    , inputArg
-                    ]
-                  )
-                ))
+        , ExpressionStatement(Assign(
+            ExpressionName(Id(callResultName))
+          , InvokeQExp(
+              ExpressionName(Id("execContext"))
+            , None()
+            , Id("require")
+            , [ InvokeQExp(
+                  ExpressionName(Id($[_[safeJavaClassId]]))
+                , None()
+                , Id("get")
+                , []
+                )
+              , inputArg
               ]
             )
-          , [ Catch(
-                CatchParam(
-                  []
-                , CatchType(ClassType(Id("InterruptedException"), None()), [])
-                , VariableDecl(Id("e"))
-                )
-              , Block(
-                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Call to _[safeJavaClassId] was interrupted"])
-                    , ExpressionName(Id("e"))
-                    ]))
-                  ]
-                )
-              )
-            ]
-          )
+          ))
         ]
         // Note: meaning of this AST:
         //   final [ty] [callResultName];
-        //   try {
-        //     [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
-        //   } catch (InterruptedException e) {
-        //     throw new ExecException("Call to _[safeJavaClassId] was interrupted", e);
-        //   }
+        //   [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
       ]
     ; result                   := (stmts, callResultName)
     ; fullyQualifiedModuleList := <pie-ast-ref-prop(|"Func", "qualifiedModule")> funcId
@@ -757,50 +709,26 @@ rules // PIE function calls
           , <java-classType-to-unannType> ty
           , [ VariableDecl(Id(callResultName)) ]
           ))
-        , Try(
-            Block(
-              [ ExpressionStatement(Assign(
-                  ExpressionName(Id(callResultName))
-                , InvokeQExp(
-                    ExpressionName(Id("execContext"))
-                  , None()
-                  , Id("require")
-                  , [ InvokeQExp(
-                        ExpressionName(Id($[_[safeJavaClassId]]))
-                      , None()
-                      , Id("get")
-                      , []
-                      )
-                    , inputArg
-                    ]
-                  )
-                ))
+        , ExpressionStatement(Assign(
+            ExpressionName(Id(callResultName))
+          , InvokeQExp(
+              ExpressionName(Id("execContext"))
+            , None()
+            , Id("require")
+            , [ InvokeQExp(
+                  ExpressionName(Id($[_[safeJavaClassId]]))
+                , None()
+                , Id("get")
+                , []
+                )
+              , inputArg
               ]
             )
-          , [ Catch(
-                CatchParam(
-                  []
-                , CatchType(ClassType(Id("InterruptedException"), None()), [])
-                , VariableDecl(Id("e"))
-                )
-              , Block(
-                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Call to _[safeJavaClassId] was interrupted"])
-                    , ExpressionName(Id("e"))
-                    ]))
-                  ]
-                )
-              )
-            ]
-          )
+          ))
         ]
         // Note: meaning of this AST:
         //   final [ty] [callResultName];
-        //   try {
-        //     [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
-        //   } catch (InterruptedException e) {
-        //     throw new ExecException("Call to _[safeJavaClassId] was interrupted", e);
-        //   }
+        //   [callResultName] = execContext.require(_[safeJavaClassId], [inputArg]);
       ]
     ; result                := (stmts, callResultName)
     ; rules(InjectValues :+= (
@@ -915,14 +843,14 @@ rules // PIE function calls
         $[_[safeJavaClassId]],
         ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
       ))
-    
-  
+
+
   p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
-      
+
   p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
     where
       PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
@@ -970,20 +898,6 @@ rules // PIE function calls
                   ]
                 )
               )
-            , Catch(
-                CatchParam(
-                  []
-                , CatchType(ClassType(Id("InterruptedException"), None()), [])
-                , VariableDecl(Id("ex"))
-                )
-              , Block(
-                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Getting value from supplier was interrupted"])
-                    , ExpressionName(Id("ex"))
-                    ]))
-                  ]
-                )
-              )
             ]
           )
         ]
@@ -993,8 +907,6 @@ rules // PIE function calls
         //     [callResultName] = execContext.require([expVal]);
         //   } catch (IOException ex) {
         //     throw new ExecException("Unexpected IOException while getting value from supplier", ex);
-        //   } catch (InterruptedException ex) {
-        //     throw new ExecException("Getting value from supplier was interrupted", ex);
         //   }
       ]
     ; result               := (stmts, callResultName)

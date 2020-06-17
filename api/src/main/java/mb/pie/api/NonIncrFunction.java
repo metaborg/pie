@@ -12,7 +12,7 @@ public class NonIncrFunction<T extends Serializable, R extends @Nullable Seriali
         this.nonIncrFunction = nonIncrFunction;
     }
 
-    @Override public R apply(ExecContext context, T input) throws ExecException, InterruptedException {
+    @Override public R apply(ExecContext context, T input) {
         return nonIncrFunction.apply(input);
     }
 

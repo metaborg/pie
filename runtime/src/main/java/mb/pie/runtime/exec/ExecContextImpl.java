@@ -1,7 +1,6 @@
 package mb.pie.runtime.exec;
 
 import mb.pie.api.ExecContext;
-import mb.pie.api.ExecException;
 import mb.pie.api.Function;
 import mb.pie.api.Logger;
 import mb.pie.api.ResourceProvideDep;
@@ -67,22 +66,22 @@ public class ExecContextImpl implements ExecContext {
 
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input) {
         return require(new Task<>(taskDef, input), defaultStampers.output);
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper) {
         return require(new Task<>(taskDef, input), stamper);
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(Task<O> task) {
         return require(task, defaultStampers.output);
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) {
         cancel.throwIfCanceled();
         final TaskKey key = task.key();
         final O output = requireTask.require(key, task, modifyObservability, cancel);
@@ -93,32 +92,32 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input) {
         return require(new Task<>(sTaskDef.toTaskDef(taskDefs), input), defaultStampers.output);
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper) {
         return require(new Task<>(sTaskDef.toTaskDef(taskDefs), input), stamper);
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(STask<O> sTask) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(STask<O> sTask) {
         return require(sTask.toTask(taskDefs), defaultStampers.output);
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper) throws ExecException, InterruptedException {
+    public <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper) {
         return require(sTask.toTask(taskDefs), stamper);
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws ExecException, InterruptedException, IOException {
+    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws IOException {
         return supplier.get(this);
     }
 
     @Override
-    public <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) throws ExecException, InterruptedException {
+    public <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input) {
         return function.apply(this, input);
     }
 
@@ -176,6 +175,10 @@ public class ExecContextImpl implements ExecContext {
         return defaultStampers.provideHierarchicalResource;
     }
 
+
+    @Override public CancelToken cancelToken() {
+        return cancel;
+    }
 
     @Override public Logger logger() {
         return logger;
