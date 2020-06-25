@@ -132,17 +132,7 @@ rules // References
     Func{id_func} |-> f,
     f : FuncTy(tys_in_expected, ty_out),
     tys_in <? tys_in_expected | error $[Type mismatch: expected [tys_in_expected], got [tys_in]] @ id_func,
-    importCallModules [[ moduleList ^ (s, s_func) ]].
-
-  importCallModules [[ [module|rest] ^ (s_cur, s_func) ]] :=
-    new s_next,
-    Mod{module} -> s_cur,
-    Mod{module} <=I= s_next,
-    importCallModules [[ rest ^ (s_next, s_func) ]].
-
-  importCallModules [[ [] ^ (s, s_func) ]] :=
-    new s_func,
-    s_func -P-> s.
+    importFrom [[ moduleList ^ (s, s_func) ]].
 
   [[ CreateSupplier(exp) ^ (s, ty_func_def) : SupplierTy(ty) ]] :=
     [[ exp ^ (s, ty_func_def) : ty ]].

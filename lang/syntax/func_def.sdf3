@@ -11,7 +11,7 @@ context-free syntax // Function head
   FuncHead.FuncHead = [[FUNCID]([Params]) -> [Type]]
 
   Param.Param   = <<Type>>
-  Param.NParam  = <<ID> : <Type>>
+  Param.NParam  = <<ID> : <Type>> {prefer} // prefer this over a Param(ImportTy(...))
   Params.Params = <<{Param ", "}*>>
 
 context-free syntax // Function definition

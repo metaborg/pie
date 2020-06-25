@@ -108,3 +108,13 @@ rules // Import resolution & declaration
     s_file -P-> s.
 
   import [[ [] ^ (s, s_file) ]] := false | error "Tried to resolve an empty qualified call".
+
+  importFrom [[ [module|rest] ^ (s_cur, s_start) ]] :=
+    new s_next,
+    Mod{module} -> s_cur,
+    Mod{module} <=I= s_next,
+    importFrom [[ rest ^ (s_next, s_start) ]].
+
+  importFrom [[ [] ^ (s, s_start) ]] :=
+    new s_start,
+    s_start -P-> s.
