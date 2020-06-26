@@ -3,6 +3,7 @@ package mb.pie.runtime;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
+import mb.pie.api.Pie;
 import mb.pie.api.PieChildBuilder;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
@@ -13,6 +14,9 @@ import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -28,6 +32,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     protected BiFunction<TaskDefs, Logger, Layer> layerFactory;
     protected Logger logger;
     protected Function<Logger, ExecutorLogger> executorLoggerFactory;
+    protected List<Pie> secondaryParents;
 
 
     public PieChildBuilderImpl(PieImpl parent) {
@@ -41,6 +46,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.layerFactory = parent.layerFactory;
         this.logger = parent.logger;
         this.executorLoggerFactory = parent.executorLoggerFactory;
+        this.secondaryParents = new ArrayList<>();
         // Following fields need special handling at build-time.
         this.taskDefs = null;
     }
@@ -106,13 +112,22 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         return this;
     }
 
+    @Override
+    public PieChildBuilderImpl withSecondaryParents(Pie... secondaryParents) {
+        this.secondaryParents = Arrays.asList(secondaryParents);
+        return this;
+    }
+
 
     @Override public PieImpl build() {
+        final TaskDefs parentsTaskDefs = secondaryParents.stream()
+            .map(Pie::getTaskDefs)
+            .reduce(parent.taskDefs, CompositeTaskDefs::new);
         final TaskDefs taskDefs;
         if(this.taskDefs != null) {
-            taskDefs = new CompositeTaskDefs(parent.taskDefs, this.taskDefs);
+            taskDefs = new CompositeTaskDefs(parentsTaskDefs, this.taskDefs);
         } else {
-            taskDefs = parent.taskDefs;
+            taskDefs = parentsTaskDefs;
         }
         final DefaultStampers defaultStampers = new DefaultStampers(
             defaultOutputStamper,
@@ -121,6 +136,14 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             defaultRequireHierarchicalStamper,
             defaultProvideHierarchicalStamper
         );
+        final ResourceService resourceService;
+        if (secondaryParents.isEmpty()) {
+            resourceService = this.resourceService;
+        } else {
+            resourceService = this.resourceService.createChild(secondaryParents.stream()
+                .map(Pie::getResourceService)
+                .toArray(ResourceService[]::new));
+        }
         return new PieImpl(
             taskDefs,
             resourceService,
