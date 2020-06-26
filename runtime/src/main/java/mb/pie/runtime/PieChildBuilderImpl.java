@@ -113,8 +113,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         return this;
     }
 
-    @Override
-    public PieChildBuilderImpl withSecondaryParents(Pie... secondaryParents) {
+    @Override public PieChildBuilderImpl withSecondaryParents(Pie... secondaryParents) {
         this.secondaryParents = Arrays.asList(secondaryParents);
         return this;
     }
@@ -138,7 +137,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             defaultProvideHierarchicalStamper
         );
         final ResourceService resourceService;
-        if (secondaryParents.isEmpty()) {
+        if(secondaryParents.isEmpty()) {
             resourceService = this.resourceService;
         } else {
             resourceService = this.resourceService.createChild(secondaryParents.stream()
