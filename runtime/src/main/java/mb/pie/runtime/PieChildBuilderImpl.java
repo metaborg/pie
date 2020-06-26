@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
@@ -144,6 +145,9 @@ public class PieChildBuilderImpl implements PieChildBuilder {
                 .map(Pie::getResourceService)
                 .toArray(ResourceService[]::new));
         }
+        final Callbacks parentsCallbacks = secondaryParents.stream()
+            .map(Pie::getCallbacks)
+            .reduce(parent.callbacks, CompositeCallbacks::new);
         return new PieImpl(
             taskDefs,
             resourceService,
@@ -153,7 +157,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             layerFactory,
             logger,
             executorLoggerFactory,
-            new CompositeCallbacks(new MapCallbacks(), parent.callbacks)
+            new CompositeCallbacks(new MapCallbacks(), parentsCallbacks)
         );
     }
 }
