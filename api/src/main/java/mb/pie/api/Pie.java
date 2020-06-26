@@ -122,5 +122,7 @@ public interface Pie extends AutoCloseable {
 
     TaskDefs getTaskDefs();
 
+    Callbacks getCallbacks();
+
     ResourceService getResourceService();
 }

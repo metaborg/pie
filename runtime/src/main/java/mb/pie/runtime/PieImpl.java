@@ -1,19 +1,6 @@
 package mb.pie.runtime;
 
-import mb.pie.api.ExecutorLogger;
-import mb.pie.api.Layer;
-import mb.pie.api.Logger;
-import mb.pie.api.MixedSession;
-import mb.pie.api.Pie;
-import mb.pie.api.PieChildBuilder;
-import mb.pie.api.Share;
-import mb.pie.api.Store;
-import mb.pie.api.StoreReadTxn;
-import mb.pie.api.StoreWriteTxn;
-import mb.pie.api.Task;
-import mb.pie.api.TaskData;
-import mb.pie.api.TaskDefs;
-import mb.pie.api.TaskKey;
+import mb.pie.api.*;
 import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
@@ -21,7 +8,6 @@ import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.function.BiFunction;
@@ -139,13 +125,15 @@ public class PieImpl implements Pie {
     }
 
 
-    @Override
-    public TaskDefs getTaskDefs() {
+    @Override public TaskDefs getTaskDefs() {
         return taskDefs;
     }
 
-    @Override
-    public ResourceService getResourceService() {
+    @Override public Callbacks getCallbacks() {
+        return callbacks;
+    }
+
+    @Override public ResourceService getResourceService() {
         return resourceService;
     }
 
