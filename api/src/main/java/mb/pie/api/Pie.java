@@ -1,5 +1,6 @@
 package mb.pie.api;
 
+import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -118,4 +119,8 @@ public interface Pie extends AutoCloseable {
      * @throws RuntimeException when closing fails.
      */
     void close();
+
+    TaskDefs getTaskDefs();
+
+    ResourceService getResourceService();
 }
