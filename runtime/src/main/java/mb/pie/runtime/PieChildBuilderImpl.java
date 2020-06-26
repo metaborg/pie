@@ -15,8 +15,8 @@ import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -47,7 +47,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.layerFactory = parent.layerFactory;
         this.logger = parent.logger;
         this.executorLoggerFactory = parent.executorLoggerFactory;
-        this.secondaryParents = new ArrayList<>();
+        this.secondaryParents = Collections.emptyList();
         // Following fields need special handling at build-time.
         this.taskDefs = null;
     }
