@@ -55,6 +55,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.share = parent.share;
         // Following fields need special handling at build-time.
         this.taskDefs = null;
+        this.resourceService = null;
     }
 
 
