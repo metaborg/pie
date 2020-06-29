@@ -16,7 +16,7 @@ import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.api.exec.UncheckedInterruptedException;
-import mb.pie.api.Callbacks;
+import mb.pie.runtime.Callbacks;
 import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.resource.ResourceService;

@@ -1,10 +1,8 @@
 package mb.pie.runtime;
 
-import mb.pie.api.Callbacks;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
-import mb.pie.api.Pie;
 import mb.pie.api.PieChildBuilder;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
@@ -122,7 +120,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
 
     @Override public PieImpl build() {
         final TaskDefs parentsTaskDefs = ancestors.stream()
-            .map(Pie::getTaskDefs)
+            .map(PieImpl::getTaskDefs)
             .reduce(CompositeTaskDefs::new)
             .get(); // Safe, because constructor enforces that there is at least one ancestor
         final TaskDefs taskDefs;
@@ -142,18 +140,18 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         if(this.resourceService != null) {
             // Dont instantiate
             resourceService = this.resourceService.createChild(ancestors.stream()
-                .map(Pie::getResourceService)
+                .map(PieImpl::getResourceService)
                 .toArray(ResourceService[]::new));
         } else if (ancestors.size() == 1) {
             resourceService = ancestors.get(0).resourceService;
         } else {
             resourceService = ancestors.get(0).resourceService.createChild(ancestors.stream()
                 .skip(1) // Skip root
-                .map(Pie::getResourceService)
+                .map(PieImpl::getResourceService)
                 .toArray(ResourceService[]::new));
         }
         final Callbacks parentsCallbacks = ancestors.stream()
-            .map(Pie::getCallbacks)
+            .map(PieImpl::getCallbacks)
             .reduce(CompositeCallbacks::new)
             .get(); // Safe, because constructor enforces that there is at least one ancestor
         return new PieImpl(
