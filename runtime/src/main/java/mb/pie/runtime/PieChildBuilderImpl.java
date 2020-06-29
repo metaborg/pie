@@ -6,6 +6,8 @@ import mb.pie.api.Layer;
 import mb.pie.api.Logger;
 import mb.pie.api.Pie;
 import mb.pie.api.PieChildBuilder;
+import mb.pie.api.Share;
+import mb.pie.api.Store;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
@@ -15,16 +17,16 @@ import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class PieChildBuilderImpl implements PieChildBuilder {
-    private final PieImpl parent;
+    private final List<PieImpl> ancestors;
     protected @Nullable TaskDefs taskDefs;
-    protected ResourceService resourceService;
+    protected @Nullable ResourceService resourceService;
     protected OutputStamper defaultOutputStamper;
     protected ResourceStamper<ReadableResource> defaultRequireReadableStamper;
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper;
@@ -33,12 +35,16 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     protected BiFunction<TaskDefs, Logger, Layer> layerFactory;
     protected Logger logger;
     protected Function<Logger, ExecutorLogger> executorLoggerFactory;
-    protected List<Pie> secondaryParents;
+
+    // Field that can not be mutated by builder methods
+    private final Store store;
+    private final Share share;
 
 
-    public PieChildBuilderImpl(PieImpl parent) {
-        this.parent = parent;
-        this.resourceService = parent.resourceService;
+    public PieChildBuilderImpl(PieImpl parent, PieImpl... ancestors) {
+        this.ancestors = new ArrayList<>();
+        this.ancestors.add(parent);
+        this.ancestors.addAll(Arrays.asList(ancestors));
         this.defaultOutputStamper = parent.defaultStampers.output;
         this.defaultRequireReadableStamper = parent.defaultStampers.requireReadableResource;
         this.defaultProvideReadableStamper = parent.defaultStampers.provideReadableResource;
@@ -47,7 +53,8 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.layerFactory = parent.layerFactory;
         this.logger = parent.logger;
         this.executorLoggerFactory = parent.executorLoggerFactory;
-        this.secondaryParents = Collections.emptyList();
+        this.store = parent.store;
+        this.share = parent.share;
         // Following fields need special handling at build-time.
         this.taskDefs = null;
     }
@@ -113,16 +120,11 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         return this;
     }
 
-    @Override public PieChildBuilderImpl withSecondaryParents(Pie... secondaryParents) {
-        this.secondaryParents = Arrays.asList(secondaryParents);
-        return this;
-    }
-
-
     @Override public PieImpl build() {
-        final TaskDefs parentsTaskDefs = secondaryParents.stream()
+        final TaskDefs parentsTaskDefs = ancestors.stream()
             .map(Pie::getTaskDefs)
-            .reduce(parent.taskDefs, CompositeTaskDefs::new);
+            .reduce(CompositeTaskDefs::new)
+            .get(); // Safe, because constructor enforces that there is at least one ancestor
         final TaskDefs taskDefs;
         if(this.taskDefs != null) {
             taskDefs = new CompositeTaskDefs(parentsTaskDefs, this.taskDefs);
@@ -137,21 +139,28 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             defaultProvideHierarchicalStamper
         );
         final ResourceService resourceService;
-        if(secondaryParents.isEmpty()) {
-            resourceService = this.resourceService;
+        if(this.resourceService != null) {
+            // Dont instantiate
+            resourceService = this.resourceService.createChild(ancestors.stream()
+                .map(Pie::getResourceService)
+                .toArray(ResourceService[]::new));
+        } else if (ancestors.size() == 1) {
+            resourceService = ancestors.get(0).resourceService;
         } else {
-            resourceService = this.resourceService.createChild(secondaryParents.stream()
+            resourceService = ancestors.get(0).resourceService.createChild(ancestors.stream()
+                .skip(1) // Skip root
                 .map(Pie::getResourceService)
                 .toArray(ResourceService[]::new));
         }
-        final Callbacks parentsCallbacks = secondaryParents.stream()
+        final Callbacks parentsCallbacks = ancestors.stream()
             .map(Pie::getCallbacks)
-            .reduce(parent.callbacks, CompositeCallbacks::new);
+            .reduce(CompositeCallbacks::new)
+            .get(); // Safe, because constructor enforces that there is at least one ancestor
         return new PieImpl(
             taskDefs,
             resourceService,
-            parent.store,
-            parent.share,
+            store,
+            share,
             defaultStampers,
             layerFactory,
             logger,

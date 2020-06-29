@@ -33,8 +33,6 @@ public interface PieChildBuilder {
 
     PieChildBuilder withExecutorLoggerFactory(Function<Logger, ExecutorLogger> execLoggerFunc);
 
-    PieChildBuilder withSecondaryParents(Pie... secondaryParents);
-
 
     Pie build();
 }
