@@ -149,19 +149,6 @@ public class PieImpl implements Pie {
         childBuilder.addCallBacks(callbacks);
     }
 
-
-    public TaskDefs getTaskDefs() {
-        return taskDefs;
-    }
-
-    public Callbacks getCallbacks() {
-        return callbacks;
-    }
-
-    public ResourceService getResourceService() {
-        return resourceService;
-    }
-
     @Override public String toString() {
         return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, logger) + ")";
     }
