@@ -17,7 +17,7 @@ import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.runtime.Callbacks;
+import mb.pie.api.Callbacks;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
