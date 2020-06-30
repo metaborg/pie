@@ -109,7 +109,7 @@ public interface Pie extends AutoCloseable {
      *
      * @return {@link PieChildBuilder Builder} for creating a child {@link Pie} instance
      */
-    PieChildBuilder createChildBuilder();
+    PieChildBuilder createChildBuilder(Pie... ancestors);
 
 
     /**

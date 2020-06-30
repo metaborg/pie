@@ -134,8 +134,12 @@ public class PieImpl implements Pie {
     }
 
 
-    @Override public PieChildBuilder createChildBuilder() {
-        return new PieChildBuilderImpl(this);
+    @Override public PieChildBuilder createChildBuilder(Pie... ancestors) {
+        PieChildBuilderImpl builder = new PieChildBuilderImpl(this);
+        for (Pie ancestor : ancestors) {
+            ancestor.addToChildBuilder(builder);
+        }
+        return builder;
     }
 
     @Override
