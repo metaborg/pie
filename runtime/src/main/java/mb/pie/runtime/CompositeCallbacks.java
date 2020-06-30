@@ -5,15 +5,19 @@ import mb.pie.api.TaskKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class CompositeCallbacks implements Callbacks {
     private final Callbacks childCallbacks;
-    private final Callbacks parentCallbacks;
+    private final List<Callbacks> parentCallbacks;
 
-    public CompositeCallbacks(Callbacks childCallbacks, Callbacks parentCallbacks) {
+    public CompositeCallbacks(Callbacks childCallbacks, Collection<Callbacks> parentCallbacks) {
         this.childCallbacks = childCallbacks;
-        this.parentCallbacks = parentCallbacks;
+        this.parentCallbacks = new ArrayList<>(parentCallbacks);
     }
 
     @Override
@@ -22,7 +26,12 @@ public class CompositeCallbacks implements Callbacks {
         if(callback != null) {
             return callback;
         }
-        return parentCallbacks.get(key);
+        return parentCallbacks
+            .stream()
+            .map(callbacks -> callbacks.get(key))
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
     }
 
     @Override

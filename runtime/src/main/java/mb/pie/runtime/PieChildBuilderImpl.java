@@ -4,9 +4,8 @@ import mb.pie.api.Callbacks;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
+import mb.pie.api.MapTaskDefs;
 import mb.pie.api.PieChildBuilder;
-import mb.pie.api.Share;
-import mb.pie.api.Store;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
@@ -14,6 +13,7 @@ import mb.pie.runtime.taskdefs.CompositeTaskDefs;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,9 +23,11 @@ import java.util.function.Function;
 
 public class PieChildBuilderImpl implements PieChildBuilder {
     private final PieImpl parent;
-    protected List<TaskDefs> taskDefs;
-    protected List<ResourceService> resourceServices;
-    protected List<Callbacks> callbacks;
+    protected @Nullable TaskDefs taskDefs;
+    protected @Nullable ResourceService resourceService;
+    protected List<TaskDefs> ancestorTaskDefs;
+    protected List<ResourceService> ancestorResourceServices;
+    protected List<Callbacks> ancestorCallbacks;
     protected OutputStamper defaultOutputStamper;
     protected ResourceStamper<ReadableResource> defaultRequireReadableStamper;
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper;
@@ -46,30 +48,21 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.logger = parent.logger;
         this.executorLoggerFactory = parent.executorLoggerFactory;
         // Following fields need special handling at build-time.
-        this.taskDefs = new ArrayList<>(Collections.singleton(parent.taskDefs));
-        this.resourceServices = new ArrayList<>(Collections.singleton(parent.resourceService));
-        this.callbacks = new ArrayList<>(Collections.singleton(parent.callbacks));
+        this.ancestorTaskDefs = new ArrayList<>(Collections.singleton(parent.taskDefs));
+        this.ancestorResourceServices = new ArrayList<>(Collections.singleton(parent.resourceService));
+        this.ancestorCallbacks = new ArrayList<>(Collections.singleton(parent.callbacks));
     }
 
 
     @Override
     public PieChildBuilderImpl withTaskDefs(TaskDefs taskDefs) {
-        this.taskDefs.clear();
-        this.taskDefs.add(taskDefs);
+        this.taskDefs = taskDefs;
         return this;
     }
 
     @Override
     public PieChildBuilderImpl withResourceService(ResourceService resourceService) {
-        this.resourceServices.clear();
-        this.resourceServices.add(resourceService);
-        return this;
-    }
-
-    @Override
-    public PieChildBuilder withCallbacks(Callbacks callbacks) {
-        this.callbacks.clear();
-        this.callbacks.add(callbacks);
+        this.resourceService = resourceService;
         return this;
     }
 
@@ -123,27 +116,29 @@ public class PieChildBuilderImpl implements PieChildBuilder {
 
     @Override
     public PieChildBuilder addTaskDefs(TaskDefs taskDefs) {
-        this.taskDefs.add(taskDefs);
+        this.ancestorTaskDefs.add(taskDefs);
         return this;
     }
 
     @Override
     public PieChildBuilder addResourceService(ResourceService resourceService) {
-        this.resourceServices.add(resourceService);
+        this.ancestorResourceServices.add(resourceService);
         return this;
     }
 
     @Override
     public PieChildBuilder addCallBacks(Callbacks callbacks) {
-        this.callbacks.add(callbacks);
+        this.ancestorCallbacks.add(callbacks);
         return this;
     }
 
     @Override public PieImpl build() {
-        final TaskDefs taskDefs = this.taskDefs
-            .stream()
-            .reduce(CompositeTaskDefs::new)
-            .get(); // Safe, because constructor enforces that there is at least one taskDefs instance
+        final TaskDefs taskDefs;
+        if (this.taskDefs != null) {
+            taskDefs = new CompositeTaskDefs(ancestorTaskDefs, this.taskDefs);
+        } else {
+            taskDefs = new CompositeTaskDefs(ancestorTaskDefs, new MapTaskDefs());
+        }
         final DefaultStampers defaultStampers = new DefaultStampers(
             defaultOutputStamper,
             defaultRequireReadableStamper,
@@ -152,18 +147,18 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             defaultProvideHierarchicalStamper
         );
         final ResourceService resourceService;
-        if (resourceServices.size() == 1) {
-            // Dont create child, but just reuse resourceService form parent
-            resourceService = resourceServices.get(0);
+        if (this.resourceService != null) {
+            resourceService = this.resourceService.createChild(ancestorResourceServices.toArray(new ResourceService[0]));
+        } else if (ancestorResourceServices.size() == 1) {
+            // Dont create child, but just reuse resourceService from parent
+            resourceService = ancestorResourceServices.get(0);
         } else {
-            // Class contract guarantees resourceServices.size() > 1
-            resourceService = resourceServices.get(0).createChild(resourceServices.stream()
+            // Class contract guarantees ancestorResourceServices.size() > 1
+            resourceService = ancestorResourceServices.get(0)
+                .createChild(ancestorResourceServices.stream()
                 .skip(1) // Skip root
                 .toArray(ResourceService[]::new));
         }
-        final Callbacks parentsCallbacks = callbacks.stream()
-            .reduce(CompositeCallbacks::new)
-            .get(); // Safe, because constructor enforces that there is at least one callbacks instance
         return new PieImpl(
             taskDefs,
             resourceService,
@@ -173,7 +168,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             layerFactory,
             logger,
             executorLoggerFactory,
-            new CompositeCallbacks(new MapCallbacks(), parentsCallbacks)
+            new CompositeCallbacks(new MapCallbacks(), ancestorCallbacks)
         );
     }
 }

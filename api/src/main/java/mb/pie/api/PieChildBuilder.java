@@ -17,8 +17,6 @@ public interface PieChildBuilder {
 
     PieChildBuilder withResourceService(ResourceService resourceService);
 
-    PieChildBuilder withCallbacks(Callbacks callbacks);
-
     PieChildBuilder withDefaultOutputStamper(OutputStamper outputStamper);
 
     PieChildBuilder withDefaultRequireReadableResourceStamper(ResourceStamper<ReadableResource> stamper);
