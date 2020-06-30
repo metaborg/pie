@@ -17,6 +17,8 @@ public interface PieChildBuilder {
 
     PieChildBuilder withResourceService(ResourceService resourceService);
 
+    PieChildBuilder withCallbacks(Callbacks callbacks);
+
     PieChildBuilder withDefaultOutputStamper(OutputStamper outputStamper);
 
     PieChildBuilder withDefaultRequireReadableResourceStamper(ResourceStamper<ReadableResource> stamper);
@@ -32,6 +34,12 @@ public interface PieChildBuilder {
     PieChildBuilder withLogger(Logger logger);
 
     PieChildBuilder withExecutorLoggerFactory(Function<Logger, ExecutorLogger> execLoggerFunc);
+
+    PieChildBuilder addTaskDefs(TaskDefs taskDefs);
+
+    PieChildBuilder addResourceService(ResourceService resourceService);
+
+    PieChildBuilder addCallBacks(Callbacks callbacks);
 
 
     Pie build();
