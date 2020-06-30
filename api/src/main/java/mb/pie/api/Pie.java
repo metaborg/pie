@@ -113,6 +113,14 @@ public interface Pie extends AutoCloseable {
 
 
     /**
+     * Registers itself as an ancestor of the {@link Pie} instance that will be created by the {@code childBuilder}. The
+     *
+     * @param childBuilder {@link PieChildBuilder child builder} to register {@code this} as ancestor for.
+     */
+    void addToChildBuilder(PieChildBuilder childBuilder);
+
+
+    /**
      * Closes the PIE entry point, {@link Store#close() closing the storage}.
      *
      * @throws RuntimeException when closing fails.

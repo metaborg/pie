@@ -138,6 +138,13 @@ public class PieImpl implements Pie {
         return new PieChildBuilderImpl(this);
     }
 
+    @Override
+    public void addToChildBuilder(PieChildBuilder childBuilder) {
+        childBuilder.addTaskDefs(taskDefs);
+        childBuilder.addResourceService(resourceService);
+        childBuilder.addCallBacks(callbacks);
+    }
+
 
     public TaskDefs getTaskDefs() {
         return taskDefs;
