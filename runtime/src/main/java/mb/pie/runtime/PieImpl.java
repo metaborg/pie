@@ -66,6 +66,7 @@ public class PieImpl implements Pie {
         store.close();
     }
 
+
     @Override public MixedSession newSession() {
         final Layer layer = layerFactory.apply(taskDefs, logger);
         final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);

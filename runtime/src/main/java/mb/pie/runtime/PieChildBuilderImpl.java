@@ -134,7 +134,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
 
     @Override public PieImpl build() {
         final TaskDefs taskDefs;
-        if (this.taskDefs != null) {
+        if(this.taskDefs != null) {
             taskDefs = new CompositeTaskDefs(ancestorTaskDefs, this.taskDefs);
         } else {
             taskDefs = new CompositeTaskDefs(ancestorTaskDefs, new MapTaskDefs());
@@ -147,17 +147,17 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             defaultProvideHierarchicalStamper
         );
         final ResourceService resourceService;
-        if (this.resourceService != null) {
+        if(this.resourceService != null) {
             resourceService = this.resourceService.createChild(ancestorResourceServices.toArray(new ResourceService[0]));
-        } else if (ancestorResourceServices.size() == 1) {
+        } else if(ancestorResourceServices.size() == 1) {
             // Dont create child, but just reuse resourceService from parent
             resourceService = ancestorResourceServices.get(0);
         } else {
             // Class contract guarantees ancestorResourceServices.size() > 1
             resourceService = ancestorResourceServices.get(0)
                 .createChild(ancestorResourceServices.stream()
-                .skip(1) // Skip root
-                .toArray(ResourceService[]::new));
+                    .skip(1) // Skip root
+                    .toArray(ResourceService[]::new));
         }
         return new PieImpl(
             taskDefs,
