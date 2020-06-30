@@ -139,11 +139,11 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         );
         final ResourceService resourceService;
         if(this.resourceService != null) {
-            // Dont instantiate
             resourceService = this.resourceService.createChild(ancestors.stream()
                 .map(PieImpl::getResourceService)
                 .toArray(ResourceService[]::new));
         } else if (ancestors.size() == 1) {
+            // Dont instantiate, but just reuse resourceService form parent
             resourceService = ancestors.get(0).resourceService;
         } else {
             resourceService = ancestors.get(0).resourceService.createChild(ancestors.stream()
