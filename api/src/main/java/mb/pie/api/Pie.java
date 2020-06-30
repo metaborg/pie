@@ -114,7 +114,7 @@ public interface Pie extends AutoCloseable {
 
 
     /**
-     * Registers itself as an ancestor of the {@link Pie} instance that will be created by the {@code childBuilder}. The
+     * Registers itself as an ancestor of the {@link Pie} instance that will be created by the {@code childBuilder}.
      *
      * @param childBuilder {@link PieChildBuilder child builder} to register {@code this} as ancestor for.
      */

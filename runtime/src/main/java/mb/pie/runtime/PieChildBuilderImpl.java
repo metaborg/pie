@@ -48,6 +48,8 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.logger = parent.logger;
         this.executorLoggerFactory = parent.executorLoggerFactory;
         // Following fields need special handling at build-time.
+        this.taskDefs = null;
+        this.resourceService = null;
         this.ancestorTaskDefs = new ArrayList<>(Collections.singleton(parent.taskDefs));
         this.ancestorResourceServices = new ArrayList<>(Collections.singleton(parent.resourceService));
         this.ancestorCallbacks = new ArrayList<>(Collections.singleton(parent.callbacks));
