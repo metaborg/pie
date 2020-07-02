@@ -29,7 +29,7 @@ public class CompositeTaskDefs implements TaskDefs {
             .map(taskDefs -> taskDefs.getTaskDef(id))
             .filter(Objects::nonNull)
             .findFirst()
-            .orElseGet(() -> (TaskDef) childTaskDefs.getTaskDef(id));
+            .orElseGet(() -> (TaskDef) childTaskDefs.getTaskDef(id)); // Cast to remove type error due to incompatible capture type variables
     }
 
     @Override public boolean exists(String id) {
