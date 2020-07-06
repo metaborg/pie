@@ -17,7 +17,7 @@ import mb.pie.api.stamp.resource.HashResourceStamper
 import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.resource.ModifiedResourceStamper
 import mb.pie.api.test.ApiTestBuilder
-import mb.pie.runtime.Callbacks
+import mb.pie.api.Callbacks
 import mb.pie.runtime.DefaultStampers
 import mb.pie.runtime.MapCallbacks
 import mb.pie.runtime.MixedSessionImpl

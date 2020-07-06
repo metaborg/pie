@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
@@ -21,7 +22,6 @@ import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.function.BiFunction;
@@ -135,10 +135,20 @@ public class PieImpl implements Pie {
     }
 
 
-    @Override public PieChildBuilder createChildBuilder() {
-        return new PieChildBuilderImpl(this);
+    @Override public PieChildBuilder createChildBuilder(Pie... ancestors) {
+        PieChildBuilderImpl builder = new PieChildBuilderImpl(this);
+        for (Pie ancestor : ancestors) {
+            ancestor.addToChildBuilder(builder);
+        }
+        return builder;
     }
 
+    @Override
+    public void addToChildBuilder(PieChildBuilder childBuilder) {
+        childBuilder.addTaskDefs(taskDefs);
+        childBuilder.addResourceService(resourceService);
+        childBuilder.addCallBacks(callbacks);
+    }
 
     @Override public String toString() {
         return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, logger) + ")";

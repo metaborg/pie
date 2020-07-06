@@ -1,8 +1,10 @@
 package mb.pie.runtime;
 
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
+import mb.pie.api.MapTaskDefs;
 import mb.pie.api.PieChildBuilder;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
@@ -13,13 +15,19 @@ import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class PieChildBuilderImpl implements PieChildBuilder {
     private final PieImpl parent;
     protected @Nullable TaskDefs taskDefs;
-    protected ResourceService resourceService;
+    protected @Nullable ResourceService resourceService;
+    protected List<TaskDefs> ancestorTaskDefs;
+    protected List<ResourceService> ancestorResourceServices;
+    protected List<Callbacks> ancestorCallbacks;
     protected OutputStamper defaultOutputStamper;
     protected ResourceStamper<ReadableResource> defaultRequireReadableStamper;
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper;
@@ -29,10 +37,8 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     protected Logger logger;
     protected Function<Logger, ExecutorLogger> executorLoggerFactory;
 
-
     public PieChildBuilderImpl(PieImpl parent) {
         this.parent = parent;
-        this.resourceService = parent.resourceService;
         this.defaultOutputStamper = parent.defaultStampers.output;
         this.defaultRequireReadableStamper = parent.defaultStampers.requireReadableResource;
         this.defaultProvideReadableStamper = parent.defaultStampers.provideReadableResource;
@@ -43,6 +49,10 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.executorLoggerFactory = parent.executorLoggerFactory;
         // Following fields need special handling at build-time.
         this.taskDefs = null;
+        this.resourceService = null;
+        this.ancestorTaskDefs = new ArrayList<>(Collections.singleton(parent.taskDefs));
+        this.ancestorResourceServices = new ArrayList<>(Collections.singleton(parent.resourceService));
+        this.ancestorCallbacks = new ArrayList<>(Collections.singleton(parent.callbacks));
     }
 
 
@@ -106,13 +116,30 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         return this;
     }
 
+    @Override
+    public PieChildBuilder addTaskDefs(TaskDefs taskDefs) {
+        this.ancestorTaskDefs.add(taskDefs);
+        return this;
+    }
+
+    @Override
+    public PieChildBuilder addResourceService(ResourceService resourceService) {
+        this.ancestorResourceServices.add(resourceService);
+        return this;
+    }
+
+    @Override
+    public PieChildBuilder addCallBacks(Callbacks callbacks) {
+        this.ancestorCallbacks.add(callbacks);
+        return this;
+    }
 
     @Override public PieImpl build() {
         final TaskDefs taskDefs;
         if(this.taskDefs != null) {
-            taskDefs = new CompositeTaskDefs(parent.taskDefs, this.taskDefs);
+            taskDefs = new CompositeTaskDefs(ancestorTaskDefs, this.taskDefs);
         } else {
-            taskDefs = parent.taskDefs;
+            taskDefs = new CompositeTaskDefs(ancestorTaskDefs, new MapTaskDefs());
         }
         final DefaultStampers defaultStampers = new DefaultStampers(
             defaultOutputStamper,
@@ -121,6 +148,19 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             defaultRequireHierarchicalStamper,
             defaultProvideHierarchicalStamper
         );
+        final ResourceService resourceService;
+        if(this.resourceService != null) {
+            resourceService = this.resourceService.createChild(ancestorResourceServices.toArray(new ResourceService[0]));
+        } else if(ancestorResourceServices.size() == 1) {
+            // Don't create child, but just reuse resourceService from parent
+            resourceService = ancestorResourceServices.get(0);
+        } else {
+            // Class contract guarantees ancestorResourceServices.size() > 1
+            resourceService = ancestorResourceServices.get(0)
+                .createChild(ancestorResourceServices.stream()
+                    .skip(1) // Skip root
+                    .toArray(ResourceService[]::new));
+        }
         return new PieImpl(
             taskDefs,
             resourceService,
@@ -130,7 +170,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             layerFactory,
             logger,
             executorLoggerFactory,
-            new CompositeCallbacks(new MapCallbacks(), parent.callbacks)
+            new CompositeCallbacks(new MapCallbacks(), ancestorCallbacks)
         );
     }
 }
