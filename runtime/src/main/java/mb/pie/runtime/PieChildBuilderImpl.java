@@ -152,7 +152,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         if(this.resourceService != null) {
             resourceService = this.resourceService.createChild(ancestorResourceServices.toArray(new ResourceService[0]));
         } else if(ancestorResourceServices.size() == 1) {
-            // Dont create child, but just reuse resourceService from parent
+            // Don't create child, but just reuse resourceService from parent
             resourceService = ancestorResourceServices.get(0);
         } else {
             // Class contract guarantees ancestorResourceServices.size() > 1
