@@ -33,6 +33,12 @@ public interface PieChildBuilder {
 
     PieChildBuilder withExecutorLoggerFactory(Function<Logger, ExecutorLogger> execLoggerFunc);
 
+    PieChildBuilder addTaskDefs(TaskDefs taskDefs);
+
+    PieChildBuilder addResourceService(ResourceService resourceService);
+
+    PieChildBuilder addCallBacks(Callbacks callbacks);
+
 
     Pie build();
 }
