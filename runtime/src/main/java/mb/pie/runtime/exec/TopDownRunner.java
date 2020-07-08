@@ -103,6 +103,8 @@ public class TopDownRunner implements RequireTask {
                     callback.accept(output);
                     executorLogger.invokeCallbackEnd(callback, key, output);
                 }
+
+                executorLogger.upToDate(key, task);
             }
             executorLogger.requireTopDownEnd(key, task, output);
             return output;

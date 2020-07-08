@@ -75,21 +75,20 @@ public class TaskExecutor {
         CancelToken cancel
     ) {
         cancel.throwIfCanceled();
-        executorLogger.executeStart(key, task, reason);
         final TaskData data;
         if(share instanceof NonSharingShare) {
             // PERF HACK: circumvent share if it is a NonSharingShare for performance.
-            data = execInternal(key, task, requireTask, modifyObservability, cancel);
+            data = execInternal(key, task, reason, requireTask, modifyObservability, cancel);
         } else {
-            data = share.share(key, () -> execInternal(key, task, requireTask, modifyObservability, cancel), () -> visited.get(key));
+            data = share.share(key, () -> execInternal(key, task, reason, requireTask, modifyObservability, cancel), () -> visited.get(key));
         }
-        executorLogger.executeEnd(key, task, reason, data);
         return data;
     }
 
     private TaskData execInternal(
         TaskKey key,
         Task<?> task,
+        ExecReason reason,
         RequireTask requireTask,
         boolean modifyObservability,
         CancelToken cancel
@@ -112,14 +111,18 @@ public class TaskExecutor {
             new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, logger);
         final @Nullable Serializable output;
         try {
+            executorLogger.executeStart(key, task, reason);
             output = task.exec(context);
         } catch(RuntimeException e) {
+            executorLogger.executeEndFailed(key, task, reason, e);
             // Propagate runtime exceptions, no need to wrap them.
             throw e;
         } catch(InterruptedException e) {
+            executorLogger.executeEndInterrupted(key, task, reason, e);
             // Turn InterruptedExceptions into UncheckedInterruptedException.
             throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
+            executorLogger.executeEndFailed(key, task, reason, e);
             // Wrap regular exceptions into an RuntimeExecException which is propagated up to the entry point, where it
             // will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
@@ -139,6 +142,7 @@ public class TaskExecutor {
         final TaskData data =
             new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires,
                 deps.resourceProvides);
+        executorLogger.executeEndSuccess(key, task, reason, data);
 
         // Validate, write data, and detach removed dependencies.
         try(final StoreWriteTxn txn = store.writeTxn()) {
