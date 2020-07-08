@@ -20,9 +20,11 @@ public interface ExecutorLogger {
 
     void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output);
 
+
     void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources);
 
     void requireBottomUpInitialEnd();
+
 
     void checkVisitedStart(TaskKey key);
 
@@ -44,9 +46,17 @@ public interface ExecutorLogger {
 
     void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable ExecReason reason);
 
+
+    void upToDate(TaskKey key, Task<?> task);
+
     void executeStart(TaskKey key, Task<?> task, ExecReason reason);
 
-    void executeEnd(TaskKey key, Task<?> task, ExecReason reason, TaskData data);
+    void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data);
+
+    void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e);
+
+    void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e);
+
 
     void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 

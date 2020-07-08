@@ -245,6 +245,9 @@ public class BottomUpRunner implements RequireTask {
                 callback.accept(output);
                 executorLogger.invokeCallbackEnd(callback, key, output);
             }
+
+            executorLogger.upToDate(key, task);
+
             return storedData;
         }
     }
@@ -313,6 +316,8 @@ public class BottomUpRunner implements RequireTask {
             callback.accept(storedData.output);
             executorLogger.invokeCallbackEnd(callback, key, storedData.output);
         }
+
+        executorLogger.upToDate(key, task);
 
         return storedData;
     }
