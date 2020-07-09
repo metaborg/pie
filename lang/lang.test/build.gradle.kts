@@ -4,16 +4,17 @@ plugins {
   id("org.metaborg.spoofax.gradle.project")
 }
 
+fun compositeBuild(name: String) = "$group:$name"
 
 dependencies {
-  api(platform(project(":pie.depconstraints")))
-  annotationProcessor(platform(project(":pie.depconstraints")))
-  testAnnotationProcessor(platform(project(":pie.depconstraints")))
+  api(platform(compositeBuild("pie.depconstraints")))
+  annotationProcessor(platform(compositeBuild("pie.depconstraints")))
+  testAnnotationProcessor(platform(compositeBuild("pie.depconstraints")))
 
   api("com.google.dagger:dagger")
   annotationProcessor("com.google.dagger:dagger-compiler")
 
-  compileLanguage(project(":pie.lang"))
+  compileLanguage(compositeBuild("pie.lang"))
 
   compileOnly("org.checkerframework:checker-qual-android")
 
@@ -22,7 +23,7 @@ dependencies {
   testCompileOnly("org.checkerframework:checker-qual-android")
 
   testImplementation("org.metaborg:resource")
-  testImplementation(project(":pie.runtime"))
+  testImplementation(compositeBuild("pie.runtime"))
+  testImplementation(compositeBuild("pie.dagger"))
   testImplementation(project(":pie.lang.runtime.java"))
-  testImplementation(project(":pie.dagger"))
 }

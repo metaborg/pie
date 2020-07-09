@@ -10,7 +10,6 @@ dependencies {
   compile(platform(project(":pie.depconstraints")))
 
   compile(project(":pie.runtime"))
-  compile(project(":pie.lang.runtime.java"))
   compile(project(":pie.taskdefs.guice"))
 
   compileOnly("org.checkerframework:checker-qual-android")
