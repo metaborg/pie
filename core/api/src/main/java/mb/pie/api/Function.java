@@ -64,4 +64,15 @@ public interface Function<T extends Serializable, R extends @Nullable Serializab
     default <A extends @Nullable Serializable> Function<T, A> mapOutput(java.util.function.Function<? super R, ? extends A> after) {
         return new MappedFunctionOutput<>(this, new NonIncrFunction<>(after));
     }
+
+    /**
+     * Creates an {@link Supplier incremental supplier} for this function with given {@code input}. An
+     * incremental supplier is {@link Serializable} and as such can be used as an input or output of a task.
+     *
+     * @param input The input for on top of which this function will be executed.
+     * @return {@link Supplier} based on a function.
+     */
+    default Supplier<R> createSupplier(T input) {
+        return new FunctionBasedSupplier<>(this, input);
+    }
 }
