@@ -9,6 +9,7 @@ import mb.resource.ReadableResource;
 import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceRuntimeException;
+import mb.resource.ResourceService;
 import mb.resource.WritableResource;
 import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
@@ -190,6 +191,12 @@ public interface ExecContext {
     // Recording dependencies to resources.
     //
 
+    /**
+     * Gets the resource service
+     *
+     * @return Resource service.
+     */
+    ResourceService getResourceService();
 
     /**
      * Marks given {@code resource} as required (read), using given {@code stamper}, creating a required resource
@@ -223,7 +230,9 @@ public interface ExecContext {
      * @return Resource for {@code key}.
      * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
      */
-    Resource getResource(ResourceKey key);
+    default Resource getResource(ResourceKey key) {
+        return getResourceService().getResource(key);
+    }
 
     /**
      * Gets readable resource for given key.
@@ -232,7 +241,9 @@ public interface ExecContext {
      * @return Readable resource for {@code key}.
      * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a readable resource.
      */
-    ReadableResource getReadableResource(ResourceKey key);
+    default ReadableResource getReadableResource(ResourceKey key) {
+        return getResourceService().getReadableResource(key);
+    }
 
     /**
      * Gets writable resource for given key.
@@ -241,7 +252,9 @@ public interface ExecContext {
      * @return Writable resource for {@code key}.
      * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a writable resource.
      */
-    WritableResource getWritableResource(ResourceKey key);
+    default WritableResource getWritableResource(ResourceKey key) {
+        return getResourceService().getWritableResource(key);
+    }
 
     /**
      * Gets a hierarchical resource for given path.
@@ -250,7 +263,9 @@ public interface ExecContext {
      * @return Hierarchical resource for {@code path}.
      * @throws ResourceRuntimeException when given {@code path} cannot be resolved to a hierarchical resource.
      */
-    HierarchicalResource getHierarchicalResource(ResourcePath path);
+    default HierarchicalResource getHierarchicalResource(ResourcePath path) {
+        return getResourceService().getHierarchicalResource(path);
+    }
 
     /**
      * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
@@ -543,7 +558,6 @@ public interface ExecContext {
     //
     // Other.
     //
-
 
     /**
      * Gets the cancel token.

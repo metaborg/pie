@@ -16,6 +16,7 @@ import mb.pie.api.stamp.ResourceStamper
 import mb.resource.ReadableResource
 import mb.resource.Resource
 import mb.resource.ResourceKey
+import mb.resource.ResourceService
 import mb.resource.WritableResource
 import mb.resource.fs.FSPath
 import mb.resource.hierarchical.HierarchicalResource
@@ -90,6 +91,11 @@ class NoExecContext : ExecContext {
   override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
   override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
 
+
+  override fun getResourceService(): ResourceService {
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    return null as ResourceService
+  }
 
   override fun getResource(key: ResourceKey): Resource {
     @Suppress("CAST_NEVER_SUCCEEDS")

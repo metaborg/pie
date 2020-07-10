@@ -126,6 +126,10 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
+    @Override public ResourceService getResourceService() {
+        return resourceService;
+    }
+
     @Override
     public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
@@ -140,22 +144,6 @@ public class ExecContextImpl implements ExecContext {
             (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
         Stats.addFileGen();
-    }
-
-    @Override public Resource getResource(ResourceKey key) {
-        return resourceService.getResource(key);
-    }
-
-    @Override public ReadableResource getReadableResource(ResourceKey key) {
-        return resourceService.getReadableResource(key);
-    }
-
-    @Override public WritableResource getWritableResource(ResourceKey key) {
-        return resourceService.getWritableResource(key);
-    }
-
-    @Override public HierarchicalResource getHierarchicalResource(ResourcePath path) {
-        return resourceService.getHierarchicalResource(path);
     }
 
 
