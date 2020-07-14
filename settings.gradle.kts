@@ -1,4 +1,4 @@
-rootProject.name = "pie"
+rootProject.name = "pie.root"
 
 pluginManagement {
   repositories {
@@ -10,26 +10,9 @@ if(org.gradle.util.VersionNumber.parse(gradle.gradleVersion).major < 6) {
   enableFeaturePreview("GRADLE_METADATA")
 }
 
-fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
-  include(id)
-  project(":$id").projectDir = file(path)
+// Only include composite builds when this is the root project (it has no parent). Otherwise, the parent project
+// (devenv) will include these composite builds, as IntelliJ does not support nested composite builds.
+if(gradle.parent == null) {
+  includeBuild("core")
+  includeBuild("lang")
 }
-
-includeProject("depconstraints")
-includeProject("api")
-includeProject("api.test")
-includeProject("runtime")
-includeProject("runtime.test")
-includeProject("share.coroutine")
-includeProject("store.lmdb")
-includeProject("taskdefs.guice")
-includeProject("dagger")
-includeProject("lang")
-includeProject("lang.test")
-includeProject("lang.runtime.kotlin")
-includeProject("lang.runtime.java")
-//includeProject("lang.javainstratego") // Disabled: we're not building a concrete syntax parse table right now.
-includeProject("example/copyfile")
-includeProject("example/helloworld.java")
-includeProject("example/helloworld.kotlin")
-includeProject("example/playground")
