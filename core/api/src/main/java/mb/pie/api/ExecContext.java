@@ -49,7 +49,7 @@ public interface ExecContext {
      * @param input   Input object of the task to require.
      * @return Up-to-date output object of the task.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input);
 
@@ -64,7 +64,7 @@ public interface ExecContext {
      * @param stamper {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of the task.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper);
 
@@ -76,7 +76,7 @@ public interface ExecContext {
      * @param task Task to require.
      * @return Up-to-date output object of {@code task}.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <O extends @Nullable Serializable> O require(Task<O> task);
 
@@ -88,7 +88,7 @@ public interface ExecContext {
      * @param stamper {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of {@code task}.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper);
 
@@ -103,7 +103,7 @@ public interface ExecContext {
      * @param input    Input object of the task to require.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input);
 
@@ -119,7 +119,7 @@ public interface ExecContext {
      * @param stamper  {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper);
 
@@ -133,7 +133,7 @@ public interface ExecContext {
      * @param sTask {@link STask Serializable task form} of the task to require.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <O extends @Nullable Serializable> O require(STask<O> sTask);
 
@@ -148,7 +148,7 @@ public interface ExecContext {
      * @param stamper {@link OutputStamper Output stamper} to use.
      * @return Up-to-date output object of the task, which must be casted to the correct type.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper);
 
@@ -159,9 +159,9 @@ public interface ExecContext {
      * @param <O>      Type of the output object.
      * @param supplier {@link Supplier} to get output of.
      * @return Up-to-date output object of {@code supplier}.
-     * @throws IOException          When requiring and reading a resource fails.
+     * @throws IOException            When requiring and reading a resource fails.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws IOException;
 
@@ -175,7 +175,7 @@ public interface ExecContext {
      * @param input    Input to apply function to.
      * @return Up-to-date output object of {@code function}.
      * @throws UncheckedExecException When an executing task throws an exception.
-     * @throws CanceledException    When execution is cancelled.
+     * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input);
 
@@ -268,6 +268,19 @@ public interface ExecContext {
     }
 
     /**
+     * Marks resource with given {@code key} as required (read), using the {@link #getDefaultRequireReadableResourceStamper
+     * default require resource stamper for readable resources}, creating a required resource dependency.
+     *
+     * @param key Key of the resource to mark as required.
+     * @return resource for given key.
+     * @throws IOException              When stamping the resource fails unexpectedly.
+     * @throws ResourceRuntimeException when given {@code key} cannot be resolved to a resource.
+     */
+    default ReadableResource require(ResourceKey key) throws IOException {
+        return require(key, getDefaultRequireReadableResourceStamper());
+    }
+
+    /**
      * Marks resource with given {@code key} as required (read), using given {@code stamper}, creating a required
      * resource dependency.
      *
@@ -281,6 +294,20 @@ public interface ExecContext {
         final ReadableResource resource = getReadableResource(key);
         require(resource, stamper);
         return resource;
+    }
+
+    /**
+     * Marks hierarchical resource with given {@code path} as required (read), using the {@link
+     * #getDefaultRequireHierarchicalResourceStamper default require resource stamper for hierarchical resources},
+     * creating a required resource dependency.
+     *
+     * @param path Path of the hierarchical resource to mark as required.
+     * @return hierarchical resource for given key.
+     * @throws IOException              When stamping the resource fails unexpectedly.
+     * @throws ResourceRuntimeException when given {@code path} cannot be resolved to a resource.
+     */
+    default HierarchicalResource require(ResourcePath path) throws IOException {
+        return require(path, getDefaultRequireHierarchicalResourceStamper());
     }
 
     /**

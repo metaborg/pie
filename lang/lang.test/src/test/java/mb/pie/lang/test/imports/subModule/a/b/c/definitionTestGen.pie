@@ -1,5 +1,11 @@
 module mb:pie:lang:test:imports:subModule:a:b:c
 
+data Foo = foreign java mb.pie.lang.test.imports.subModule.a.b.c.Foo {
+  func getFive() -> int
+}
+func createFoo() -> Foo = foreign java constructor mb.pie.lang.test.imports.subModule.a.b.c.Foo
+func helper_takeFoo(foo: Foo) -> bool = false
+
 func helper_function() -> unit = {}
 func foreign_pie() -> unit = foreign mb.pie.lang.test.imports.subModule.a.b.c.ForeignPie
 func helper_foreign_java() -> unit = foreign java mb.pie.lang.test.imports.subModule.a.b.c.ForeignJava#getNone

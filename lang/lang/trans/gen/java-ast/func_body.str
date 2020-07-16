@@ -4,7 +4,7 @@ imports
 
   libspoofax/stratego/debug
   nabl2/api
-  
+
   src-gen/signatures/-
   signatures/-
 
@@ -180,7 +180,7 @@ rules // Control flow
     ; stmts             := <concat> [lStmts, rStmts, expStmts]
     ; result            := (stmts, exp)
 
-  // p2j-ast-add(|lType, rType): (lExp, rExp) -> 
+  // p2j-ast-add(|lType, rType): (lExp, rExp) ->
   //   (List of Java AST statements, Java expression AST Node)
   // Helper function that converts the Add into the correct AST Node
   // based on the types of the left and right side (lType and rType)
@@ -254,7 +254,7 @@ rules // Control flow
       (PathTy(), StrTy()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> ([], 
+    (lExp, rExp) -> ([],
       InvokeQExp(
         InvokeQExp(
           ExpressionName(Id("Stream"))
@@ -290,7 +290,7 @@ rules // Control flow
     ; <add-import> "java.util.stream.Stream"
 
   p2j-ast-add(|lType, rType):
-    (lExp, rExp) -> ([], 
+    (lExp, rExp) -> ([],
       InvokeQExp(
 	    InvokeQExp(
 	      ExpressionName(Id("Stream"))
@@ -579,6 +579,32 @@ rules // Qualified function calls
     ; result                      := (stmts, callResultName)
 
   p2j-ast-exp:
+    c@ImportCall(moduleList, funcId, exps) -> result
+    where
+      JavaForeignConstructorKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
+    with
+      javaClassId           := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
+    ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
+    ; callResultName        := <newname> "constructorResult"
+    ; ty                    := <p2j-ast-type-sig> <pie-type> c
+    ; stmts                 := <concat> [
+        <concat> expsStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(callResultName))
+              , NewInstance(None(), [], Id(javaClassId), [], None(), expsVals)
+              )
+            ]
+          ))
+        ]
+        // Note: meaning of this AST:
+        //     final [ty] [callResultName] = new [javaClassId].([expsVals]);
+      ]
+    ; result                := (stmts, callResultName)
+
+  p2j-ast-exp:
     c@ImportCall(moduleList, funcId, argExps) -> result
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
@@ -843,14 +869,14 @@ rules // PIE function calls
         $[_[safeJavaClassId]],
         ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
       ))
-    
-  
+
+
   p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
-      
+
   p2j-ast-pieFuncId-to-javaClassId: funcId -> javaClassId
     where
       PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
