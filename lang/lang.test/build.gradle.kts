@@ -32,3 +32,11 @@ dependencies {
   testImplementation(compositeBuild("pie.dagger"))
   testImplementation(project(":pie.lang.runtime.java"))
 }
+
+sourceSets {
+  test {
+    java {
+      srcDir("build/generated/sources/")
+    }
+  }
+}
