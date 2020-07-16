@@ -1,0 +1,9 @@
+module mb:pie:lang:test:imports:subModule:importPartialModulePathData
+
+import mb:pie:lang:test:imports:subModule:a
+
+func main_importPartialModulePathData() -> unit = {
+  val foo: a:b:c:Foo = a:b:c:createFoo();
+  a:b:c:helper_takeFoo(foo);
+  unit
+}
