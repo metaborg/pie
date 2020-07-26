@@ -1,0 +1,4 @@
+module mb:pie:lang:test:returnTypes:unitNoValue
+
+func main_unitNoValue() -> unit = {
+}

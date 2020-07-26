@@ -1,0 +1,8 @@
+module test
+
+language pie
+
+test parse [[
+module foo
+
+]] parse succeeds

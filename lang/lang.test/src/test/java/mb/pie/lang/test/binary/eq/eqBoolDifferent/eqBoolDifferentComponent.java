@@ -1,0 +1,13 @@
+package mb.pie.lang.test.binary.eq.eqBoolDifferent;
+
+import dagger.Component;
+import mb.pie.dagger.PieComponent;
+import mb.pie.dagger.PieModule;
+
+import javax.inject.Singleton;
+
+@Singleton
+@Component(modules = {PieModule.class, PieTestModule.class})
+public interface eqBoolDifferentComponent extends PieComponent {
+    main_eqBoolDifferent get();
+}

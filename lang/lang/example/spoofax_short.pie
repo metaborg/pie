@@ -1,0 +1,69 @@
+module mb:pie:example:spoofax_short
+
+// 1) Language specification and workspace management
+data LangSpec = foreign java class {
+  func syntax() -> path
+  func startSymbol() -> string
+  func styling() -> path
+}
+data Workspace = foreign java class {
+  func extensions() -> string*
+  func langSpec(path) -> LangSpec
+}
+func createWorkspace(string, path) -> Workspace = foreign java class#method
+func getWorkspace(root: path) -> Workspace = {
+  val text = (read root + "/workspace.cfg")!;
+  createWorkspace(text, root)
+}
+
+// 2) Creating parse tables and parsing
+data ParseTable = foreign java class {}
+data Ast = foreign java class {}
+data Token = foreign java class {}
+data Msg = foreign java class {}
+func sdf2table(path) -> ParseTable = foreign java class#method
+func jsglrParse(string, string, ParseTable) -> (Ast?, Token*?, Msg*) = foreign java class#method
+func parse(text: string, langSpec: LangSpec) -> (Ast?, Token*?, Msg*) = {
+  val mainFile = langSpec.syntax();
+  requires mainFile;
+  val startSymbol = langSpec.startSymbol();
+  val table = sdf2table(mainFile);
+  jsglrParse(text, startSymbol, table)
+}
+
+// 3) Syntax-based styling
+data SyntaxStyler = foreign java class {}
+data Styling = foreign java class {}
+func esv2styler(path) -> SyntaxStyler = foreign java class#method
+func esvStyle(Token*, SyntaxStyler) -> Styling = foreign java class#method
+func style(tokens: Token*, langSpec: LangSpec) -> Styling = {
+  val mainFile = langSpec.styling();
+  requires mainFile;
+  val styler = esv2styler(mainFile);
+  esvStyle(tokens, styler)
+}
+
+// 4) Combine parsing and styling to process strings and files
+func processString(text: string, langSpec: LangSpec) -> (Msg*, Styling?) = {
+  val (ast, tokens, msgs) = parse(text, langSpec);
+  val styling = if(tokens == null) null else (style(tokens!, langSpec))?;
+  (msgs, styling)
+}
+func processFile(file: path, langSpec: LangSpec) -> (Msg*, Styling?) = processString((read file)!, langSpec)
+
+// 5) Keep files of an Eclipse project up-to-date
+func updateProject(root: path, project: path) -> (path, Msg*, Styling?)* = {
+  val workspace = getWorkspace(root);
+  val relevantFiles = walk project with extensions (workspace.extensions());
+  [updateFile(file, workspace) | file <- relevantFiles]
+}
+func updateFile(file: path, workspace: Workspace) -> (path, Msg*, Styling?) = {
+  val langSpec = workspace.langSpec(file);
+  val (msgs, styling) = processFile(file, langSpec); (file, msgs, styling)
+}
+
+// 6) Keep an Eclipse editor up-to-date
+func updateEditor(text: string, file: path, root: path) -> (Msg*, Styling?) = {
+  val workspace = getWorkspace(root); val langSpec = workspace.langSpec(file);
+  processString(text, langSpec)
+}

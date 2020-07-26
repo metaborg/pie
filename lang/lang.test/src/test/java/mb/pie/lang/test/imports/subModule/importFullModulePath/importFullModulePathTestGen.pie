@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importFullModulePath
+
+import mb:pie:lang:test:imports:subModule:a:b:c
+
+func main_importFullModulePath() -> unit = {
+  c:helper_function();
+  unit
+}

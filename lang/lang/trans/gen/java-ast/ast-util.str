@@ -1,0 +1,80 @@
+module gen/java-ast/ast-util
+
+imports
+
+  signatures/-
+
+rules
+
+  // add-import: str -> ast
+  //   type: String -> Java AST
+  // Convert the given import string into an import Java AST.
+  // Add that import Java AST to dynamic rule JavaImports
+  // returns the Java AST
+  add-import: str -> ast
+  with
+    ast := <parse-import> str
+  ; rules (JavaImports :+= ast)
+
+  // parse-import: str -> result
+  //   type: String -> Java AST
+  // Convert the given import string into an import Java AST.
+  parse-import: str -> result
+  where
+    <is-string> str
+  with
+    parts := <string-tokenize(|".")> str
+  ; result := SingleTypeImport(TypeName(<parse-import-parts> <reverse> parts))
+
+  parse-import-parts: [part | []] -> Id(part)
+  parse-import-parts: [part | rest] -> PackageOrTypeName(<parse-import-parts> rest, part)
+
+  p2j-ast-wrap-string-with-id: str -> Id(str)
+
+  // java-classType-to-unnanType: removes the list of annotations from a ClassType
+  java-classType-to-unannType: ClassType(_, name, types) -> ClassType(name, types)
+  java-classType-to-unannType:
+    ClassOrInterfaceTypeMember(toplevelclass, annotations, name, types) -> ClassOrInterfaceTypeMember(
+      <java-classType-to-unannType> toplevelclass
+    , annotations
+    , name
+    , types
+    )
+  java-classType-to-unannType: x -> x
+    where
+      <not(?ClassType(_, _, _)); not(?ClassOrInterfaceTypeMember(_, _, _, _))> x
+
+  // java-qualifiedClass-to-expressionName: ids -> ast
+  //   Type: list of ids -> ast
+  // Converts a list of ids representing a qualified java class to a Java AST
+  // representation of that qualified class name
+  // Example:
+  // ["mb", "pie", "lang", "Foo"] ->
+  // ExpressionName(
+  //   AmbiguousName(
+  //     AmbiguousName(
+  //       AmbiguousName(Id("mb"))
+  //     , Id("pie")
+  //     )
+  //   , Id("lang")
+  //   )
+  // , Id("Foo")
+  // )
+  java-qualifiedClass-to-expressionName:
+    name -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
+    where
+      [fst | rest] := <reverse> name
+  
+  java-qualifiedClass-to-expressionName-after-reverse: [name|[]] -> AmbiguousName(Id(name))
+  java-qualifiedClass-to-expressionName-after-reverse: 
+    [name|rest] -> AmbiguousName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(name))
+
+  // concat-strings-separator(|sep): list -> string
+  //   Type: list of strings -> string
+  //   sep: string
+  // concatenates a list of strings with a separator
+  // Example: <concat-strings-separator(|"_")> ["mb", "pie", "lang", "Foo"] -> "mb_pie_lang_Foo"
+  concat-strings-separator(|sep): [] -> ""
+  concat-strings-separator(|sep): [last | []] -> last
+  concat-strings-separator(|sep): [first | rest] -> $[[first][sep][<concat-strings-separator(|sep)> rest]]
+  

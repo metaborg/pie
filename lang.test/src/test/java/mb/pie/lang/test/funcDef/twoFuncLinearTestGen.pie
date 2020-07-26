@@ -1,7 +1,0 @@
-package mb.pie.lang.test.funcDef;
-
-func main_twoFuncLinear() -> unit = {
-  helper_twoFuncLinear()
-}
-
-func helper_twoFuncLinear() -> unit = { }

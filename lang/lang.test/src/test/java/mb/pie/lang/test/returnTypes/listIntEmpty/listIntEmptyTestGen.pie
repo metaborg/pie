@@ -1,0 +1,5 @@
+module mb:pie:lang:test:returnTypes:listIntEmpty
+
+func main_listIntEmpty() -> int* = {
+  []
+}

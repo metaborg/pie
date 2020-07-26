@@ -1,5 +1,0 @@
-package mb.pie.lang.test.binary.eq;
-
-func main_eqListDifferentSize() -> bool = {
-  [0, 1] == [0, 1, 2]
-}

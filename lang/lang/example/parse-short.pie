@@ -1,0 +1,31 @@
+module mb:pie:example:parse-short
+
+func normalize(file: path, includeDirs: path*) -> path = {
+  requires file; [requires dir with extension "sdf" | dir <- includeDirs];
+  val normFile = file.replaceExtension("norm");
+  val depFile = file.replaceExtension("dep");
+  exec(["sdf2normalized"] + "$file" + ["-I$dir" | dir <- includeDirs] +
+    "-o$normFile" + "-d$depFile");
+  [requires dep by hash | dep <- extract-deps(depFile)];
+  generates normFile; normFile
+}
+func extract-deps(depFile: path) -> path* = foreign class
+func generate-table(normFiles: path*, outputFile: path) -> path = {
+  [requires file by hash | file <- normFiles];
+  exec(["sdf2table"] + ["$file" | file <- normFiles] + "-o$outputFile");
+  generates outputFile; outputFile
+}
+func exec(arguments: string*) -> (string, string) = foreign java class#func
+
+data Ast = foreign java class {} data Token = foreign java class {} data Msg = foreign java class {}
+data ParseTable = foreign java class {} data Styling = foreign java class {}
+func table2object(text: string) -> ParseTable = foreign java class#func
+func parse(text: string, table: ParseTable) -> (Ast, Token*, Msg*) = foreign class
+func style(tokenStream: Token*) -> Styling = foreign class
+func update-editor(text: string) -> (Styling, Msg*) = {
+  val sdfFiles = [./lexical.sdf, ./contextfree.sdf];
+  val normFiles = [normalize(file, [./include]) | file <- sdfFiles];
+  val parseTableFile = generate-table(normFiles, ./parse.tbl);
+  val (ast, tokenStream, msgs) = parse(text, table2object((read parseTableFile)!));
+  (style(tokenStream), msgs)
+}

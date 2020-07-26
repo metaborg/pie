@@ -1,0 +1,199 @@
+module func_body
+
+imports
+
+  lex/literal
+  type
+
+context-free syntax // PIE function body
+
+  PieFuncBody = Exp
+
+context-free syntax // Expression composition
+
+  Block.Block      = <{<{Exp ";"}+>}>
+  Block.EmptyBlock = <{ }>
+  Exp              = <<Block>>
+  
+  Exp = <(<Exp>)> {bracket, prefer} // Prefer bracket over tuple literal with 1 element
+
+context-free syntax // Unary expressions
+  
+  Exp.ToNullable    = <<Exp>?> {right}
+  Exp.ToNonNullable = <<Exp>!> {right}
+  Exp.Not           = <!<Exp>> {right}
+
+context-free syntax // Binary expressions
+
+  Exp.Eq   = <<Exp> == <Exp>> {left}
+  Exp.Neq  = <<Exp> != <Exp>> {left}
+  Exp.Lor  = <<Exp> || <Exp>> {left}
+  Exp.Land = <<Exp> && <Exp>> {left}
+  Exp.Add  = <<Exp> + <Exp>>  {left}
+
+context-free syntax // Control flow
+
+  Exp.If     = <if(<Exp>) <Exp>>            {left}
+  Exp.IfElse = <if(<Exp>) <Exp> else <Exp>> {left}
+
+  Exp.ListComprehension = <[<Exp> | <Binder> \<- <Exp>]> {left}
+
+context-free syntax // Binding
+
+  Binder.SingleBinder = <<Bind>>
+  Binder.TupleBinder  = <(<{Bind ", "}*>)>
+  Bind.Bind           = <<ID>>
+  Bind.TBind          = <<ID> : <Type>>
+
+  Exp.ValDec = <val <Binder> = <Exp>> {non-assoc}
+
+context-free syntax // References
+
+  Ref.Ref = <<ID>> {avoid}
+  Exp     = Ref
+  
+  Exp.Call  = <<FUNCID>(<{Exp ", "}*>)>       {left}
+  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)> {left}
+  Exp.ImportCall = <<{MODID ":"}+>:<FUNCID>(<{Exp ", "}*>)> {left}
+
+  Exp.CreateSupplier = <supplier (<Exp>)>
+  Exp.TaskSupplier   = <<FUNCID>.supplier(<{Exp ", "}*>)>
+  Exp.SupplierGet    = <<Exp>.get\<\>()>
+
+context-free syntax // Paths
+
+  StamperPart.StamperPart = <by <StampKind>>
+  StampKind.Modified      = <modified>
+  StampKind.Hash          = <hash>  
+  Exp.RequiresPath        = <requires <Exp> <FilterPart?> <StamperPart?>> {non-assoc}
+  Exp.GeneratesPath       = <generates <Exp> <StamperPart?>>              {non-assoc}
+  
+  Exp.ListPath = <list <Exp> <FilterPart?>> {non-assoc}
+  Exp.WalkPath = <walk <Exp> <FilterPart?>> {non-assoc}
+  
+  FilterPart.FilterPart = <with <Filter>>
+  Filter.Regex          = <regex <Exp>>      {non-assoc}
+  Filter.Pattern        = <pattern <Exp>>    {non-assoc}
+  Filter.Patterns       = <patterns <Exp>>   {non-assoc, prefer} // Prefer over pattern to avoid additional s from being used for something else
+  Filter.Extension      = <extension <Exp>>  {non-assoc}
+  Filter.Extensions     = <extensions <Exp>> {non-assoc, prefer} // Prefer over extension to avoid additional s from being used for something else
+  
+  Exp.ReadPath   = <read <Exp>>   {non-assoc}
+  Exp.ExistsPath = <exists <Exp>> {non-assoc}
+
+context-free syntax // Early return and failure
+  
+  Exp.Return = <return <Exp>> {non-assoc}
+  Exp.Fail   = <fail <Exp>>   {non-assoc}
+
+context-free syntax // Literals
+
+  Exp.UnitLit  = <unit>
+  Exp.BoolLit  = <<Bool>>
+  Bool.True    = <true>
+  Bool.False   = <false>
+  Exp.IntLit   = <<INT>>
+  Exp.NullLit  = <null>
+  
+  Exp.TupleLit = <(<{Exp ","}+>)> {left}
+  Exp.ListLit  = <[<{Exp ","}*>]> {left}
+
+syntax // Interpolated string literal
+
+  Exp-CF.StrLit = "\"" StrPart-CF* "\""
+  
+  StrPart-CF.Str          = StrChars-LEX
+  StrPart-CF.StrInterpRef = "$" Ref-CF
+  StrPart-CF.StrInterpExp =  "${" Exp-CF "}"
+  
+lexical syntax
+
+  StrChars = StrChar+
+  StrChar = ~[\"\$\n\r\\]
+  StrChar = "\\" ~[\n\r]
+
+lexical restrictions
+
+  StrChars -/- ~[\"\$]
+
+syntax // Interpolated path literal
+
+  Exp-CF.PathLit = PathStart-LEX PathPart-CF*
+  
+  PathPart-CF.Path          = PathChars-LEX
+  PathPart-CF.PathInterpRef = "$" Ref-CF
+  PathPart-CF.PathInterpExp =  "${" Exp-CF "}"
+  
+lexical syntax
+
+  PathStart = "/"
+  PathStart = "./"
+  
+  PathChars = PathChar+
+  PathChar  = ~[\n\r\$\,\;\]\)\ ]
+  PathChar  = "\\ "
+  PathChar  = "\\$"
+
+lexical restrictions
+
+  PathChars -/- ~[\n\r\$\,\;\]\)\ ]
+
+context-free priorities // Expression priorities
+
+  { right:
+    Exp.Not
+  } > { right:
+    Exp.ToNullable
+    Exp.ToNonNullable
+  } > { left:
+    Exp.Add
+  } > { left: 
+    Exp.Eq
+    Exp.Neq
+  } > { left:
+    Exp.Land
+  } > { left:
+    Exp.Lor
+  } > { non-assoc: 
+    Exp.ListPath
+    Exp.WalkPath
+  } > { non-assoc: 
+    Exp.RequiresPath
+    Exp.GeneratesPath
+  } > { non-assoc: 
+    Exp.ReadPath
+    Exp.ExistsPath
+  } > { left:
+    Exp.Call
+    Exp.QCall
+    Exp.CreateSupplier
+    Exp.TaskSupplier
+  } > { non-assoc:
+    Filter.Regex
+    Filter.Pattern
+    Filter.Patterns
+    Filter.Extension
+    Filter.Extensions
+  } > { left:
+    Exp.TupleLit
+    Exp.ListLit
+  } > { left:
+    Exp.ListComprehension
+  } > { non-assoc:
+    Exp.ValDec
+  } > { non-assoc:
+    Exp.Return
+    Exp.Fail
+  } > { left:
+    Exp.If
+    Exp.IfElse
+  }
+
+lexical syntax // Reject keywords
+
+  FUNCID = "return"    {reject}
+  FUNCID = "requires"  {reject}
+  FUNCID = "generates" {reject}
+  FUNCID = "list"      {reject}
+  FUNCID = "walk"      {reject}
+  FUNCID = "supplier"  {reject}

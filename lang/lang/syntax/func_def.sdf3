@@ -1,0 +1,25 @@
+module func_def
+
+imports
+
+  lex/literal
+  type
+  func_body
+
+context-free syntax // Function head
+
+  FuncHead.FuncHead = [[FUNCID]([Params]) -> [Type]]
+
+  Param.Param   = <<Type>>
+  Param.NParam  = <<ID> : <Type>>
+  Params.Params = <<{Param ", "}*>>
+
+context-free syntax // Function definition
+
+  FuncDef.FuncDef              = <func <FuncHead> = <FuncImpl>>
+  FuncImpl.PieForeignFuncImpl  = <foreign <PIEQTYPEID>>
+  FuncImpl.JavaForeignFuncImpl = <foreign java <JAVAQTYPEID>#<JAVAFUNCID>>
+  FuncImpl.JavaForeignConstructorImpl = <foreign java constructor <JAVAQTYPEID>>
+  FuncImpl.PieFuncImpl         = <<PieFuncBody><PieKeyFunc?>>
+  
+  PieKeyFunc.PieKeyFunc = <@ <PieFuncBody>>

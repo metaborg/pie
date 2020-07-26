@@ -1,0 +1,22 @@
+module type
+
+imports
+
+  lex/literal
+
+context-free syntax
+
+  BaseType.UnitTy     = <unit>
+  BaseType.BoolTy     = <bool>
+  BaseType.IntTy      = <int>
+  BaseType.StrTy      = <string>
+  BaseType.PathTy     = <path>
+  BaseType.DataTy     = <<TYPEID>> {avoid}
+  BaseType.TupleTy    = <(<{Type ", "}+>)>
+  BaseType.ListTy     = <<Type>*>
+  BaseType.SupplierTy = <supplier\<<Type>\>>
+
+  TypeMod.NullableTy = <<BaseType>?>
+
+  Type = BaseType
+  Type = TypeMod

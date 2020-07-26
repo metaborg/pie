@@ -1,0 +1,24 @@
+package mb.pie.lang.test.supplier.inputSupplier.inputFromPieCreate;
+
+import dagger.Module;
+import dagger.Provides;
+import dagger.multibindings.ElementsIntoSet;
+import mb.pie.api.TaskDef;
+
+import javax.inject.Singleton;
+import java.util.HashSet;
+import java.util.Set;
+
+@Module
+abstract class PieTestModule {
+    @Provides @Singleton @ElementsIntoSet
+    public static Set<TaskDef<?, ?>> provideTaskDefs(
+        main_inputFromPieCreate inputFromPieCreate,
+        helper_inputFromPieCreate helper
+    ) {
+        final HashSet<TaskDef<?, ?>> taskDefs = new HashSet<>(1, 1);
+        taskDefs.add(inputFromPieCreate);
+        taskDefs.add(helper);
+        return taskDefs;
+    }
+}

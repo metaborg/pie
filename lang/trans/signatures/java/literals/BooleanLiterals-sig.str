@@ -1,8 +1,0 @@
-module signatures/java/literals/BooleanLiterals-sig
-
-signature
-  constructors
-    True              : BoolLiteral
-    False             : BoolLiteral
-    BoolLiteral-Plhdr : BoolLiteral
-    BoolLiteral-Plhdr : COMPLETION-INSERTION -> BoolLiteral
