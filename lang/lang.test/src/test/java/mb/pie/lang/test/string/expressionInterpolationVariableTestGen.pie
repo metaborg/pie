@@ -1,6 +1,0 @@
-package mb.pie.lang.test.string;
-
-func main_expressionInterpolationVariable() -> string = {
-  val name = "Bob, destroyer of worlds";
-  "Hello ${name}."
-}

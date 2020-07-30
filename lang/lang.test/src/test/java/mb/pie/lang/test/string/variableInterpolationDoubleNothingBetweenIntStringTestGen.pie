@@ -1,7 +1,0 @@
-package mb.pie.lang.test.string;
-
-func main_variableInterpolationDoubleNothingBetweenIntString() -> string = {
-  val randomNumber = 4;
-  val e = "2.71828";
-  "$randomNumber$e"
-}

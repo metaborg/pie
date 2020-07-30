@@ -1,7 +1,0 @@
-package mb.pie.lang.test.string;
-
-func main_variableInterpolationNothingBetween() -> string = {
-  val animal1 = "snake";
-  val animal2 = "weasel";
-  "Oh no, it is the horrible $animal1$animal2!"
-}

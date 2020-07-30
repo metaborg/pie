@@ -1,5 +1,0 @@
-package mb.pie.lang.test.string;
-
-func main_expressionInterpolationTuple() -> string = {
-  "${(1, 2, 1 + 2)}"
-}

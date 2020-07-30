@@ -1,0 +1,7 @@
+module mb:pie:lang:test:string:variableInterpolationOnly
+
+func main_variableInterpolationOnly() -> string = {
+  val word1 = "home";
+  val word2 = "owner";
+  "$word1$word2"
+}

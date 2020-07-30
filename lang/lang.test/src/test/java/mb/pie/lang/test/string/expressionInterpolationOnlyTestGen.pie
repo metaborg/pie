@@ -1,5 +1,0 @@
-package mb.pie.lang.test.string;
-
-func main_expressionInterpolationOnly() -> string = {
-  "${31 + 11}"
-}

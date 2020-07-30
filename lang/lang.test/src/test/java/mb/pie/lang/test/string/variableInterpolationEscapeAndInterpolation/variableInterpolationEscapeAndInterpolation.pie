@@ -1,0 +1,6 @@
+module mb:pie:lang:test:string:variableInterpolationEscapeAndInterpolation
+
+func main_variableInterpolationEscapeAndInterpolation() -> string = {
+  val foo = "a string";
+  "\$foo"
+}
