@@ -12,6 +12,7 @@ context-free syntax
   BaseType.StrTy      = <string>
   BaseType.PathTy     = <path>
   BaseType.DataTy     = <<TYPEID>> {avoid}
+  BaseType.ImportTy   = <<{MODID ":"}+>:<TYPEID>>
   BaseType.TupleTy    = <(<{Type ", "}+>)>
   BaseType.ListTy     = <<Type>*>
   BaseType.SupplierTy = <supplier\<<Type>\>>

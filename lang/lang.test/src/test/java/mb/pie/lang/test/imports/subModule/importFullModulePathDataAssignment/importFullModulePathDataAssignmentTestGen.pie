@@ -1,0 +1,13 @@
+module mb:pie:lang:test:imports:subModule:importFullModulePathDataAssignment
+
+import mb:pie:lang:test:imports:subModule:a:b:c
+
+func main_importFullModulePathDataAssignment() -> unit = {
+  val foo: c:Foo = c:createFoo();
+  c:helper_takeFoo(helper_id(foo));
+  unit
+}
+
+func helper_id(foo: c:Foo) -> c:Foo = {
+  foo
+}

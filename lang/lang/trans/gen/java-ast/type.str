@@ -33,6 +33,14 @@ rules
     with
       javaClassId := <pie-prop(|"Type", "javaClassId")> occ
 
+    p2j-ast-type-sig:
+    ImportTy(_, occ) -> ClassType([], Id(javaClassId), None())
+    where
+      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
+    ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
+    with
+      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+
   p2j-ast-type-sig:
     DataTy(occ) -> ClassType(
       [],

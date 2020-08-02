@@ -13,6 +13,7 @@ import java.io.Serializable;
  *
  * @param <T> Type of object to supply.
  */
+@FunctionalInterface
 public interface Supplier<T extends @Nullable Serializable> extends Serializable {
     T get(ExecContext context) throws IOException;
 
