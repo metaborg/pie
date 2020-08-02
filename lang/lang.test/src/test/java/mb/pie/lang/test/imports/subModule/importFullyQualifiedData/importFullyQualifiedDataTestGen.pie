@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importFullyQualifiedData
+
+func main_importFullyQualifiedData() -> unit = {
+  val foo: mb:pie:lang:test:imports:subModule:a:b:c:Foo =
+    mb:pie:lang:test:imports:subModule:a:b:c:createFoo();
+  mb:pie:lang:test:imports:subModule:a:b:c:helper_takeFoo(foo);
+  unit
+}
