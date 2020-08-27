@@ -8,8 +8,10 @@ import mb.pie.api.Pie;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.ResourcePath;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -49,12 +51,50 @@ class CompileTest {
     }
 
     @Test void testCompileTask() throws Exception {
-        final FSResource mainJavaFile = createSource(projectDir, "package test; public class Main { public static void main(String [] args) { System.out.println(HelloWorld.helloWorld()); } }", "test/Main.java");
-        final FSResource helloWorldJavaFile = createSource(projectDir, "package test; public class HelloWorld { public static String helloWorld() { return \"Hello, world!\"; } }", "test/HelloWorld.java");
-        final ArrayList<ResourcePath> sourceFiles = createList(mainJavaFile.getPath());
+        final FSResource mainJavaFile = createSource(projectDir, "" +
+                "package test; " +
+                "" +
+                "import test.data.ImmutableHelloWorld; " +
+                "import mb.log.api.Logger; " +
+                "import mb.log.slf4j.SLF4JLoggerFactory; " +
+                "" +
+                "public class Main { " +
+                "  public static void main(String[] args) { " +
+                "    final SLF4JLoggerFactory loggerFactory = new SLF4JLoggerFactory(); " +
+                "    final Logger logger = loggerFactory.create(\"main\"); " +
+                "    logger.info(ImmutableHelloWorld.builder().build().helloWorld()); " +
+                "  } " +
+                "} ",
+            "test/Main.java");
+        final FSResource helloWorldJavaFile = createSource(projectDir, "" +
+                "package test.data; " +
+                "" +
+                "import org.immutables.value.Value; " +
+                "" +
+                "@Value.Immutable " +
+                "public interface HelloWorld { " +
+                "  @Value.Default default String helloWorld() { " +
+                "    return \"Hello, world!\"; " +
+                "  } " +
+                "} ",
+            "test/data/HelloWorld.java");
+        final ArrayList<ResourcePath> sourceFiles = createList(mainJavaFile.getPath(), helloWorldJavaFile.getPath());
         final ArrayList<ResourcePath> sourcePath = createList(projectDir.getPath());
-        final ArrayList<ResourcePath> classPath = createList();
-        final ArrayList<ResourcePath> annotationProcessorPath = createList();
+
+        final @Nullable String classPathProperty = System.getProperty("classPath");
+        assertNotNull(classPathProperty);
+        final ArrayList<File> classPath = createList();
+        for(String classPathPart : classPathProperty.split(File.pathSeparator)) {
+            classPath.add(new File(classPathPart));
+        }
+
+        final @Nullable String annotationProcessorPathProperty = System.getProperty("annotationProcessorPath");
+        assertNotNull(annotationProcessorPathProperty);
+        final ArrayList<File> annotationProcessorPath = createList();
+        for(String annotationProcessorPathPart : annotationProcessorPathProperty.split(File.pathSeparator)) {
+            annotationProcessorPath.add(new File(annotationProcessorPathPart));
+        }
+        classPath.addAll(annotationProcessorPath);
 
         try(MixedSession session = pie.newSession()) {
             session.require(compileJava.createTask(new CompileJava.Input(
@@ -69,9 +109,15 @@ class CompileTest {
             )));
         }
 
+        final FSResource immutableHelloWorldJavaFile = sourceFileOutputDir.appendRelativePath("test/data/ImmutableHelloWorld.java");
+        assertTrue(immutableHelloWorldJavaFile.exists());
+        assertTrue(immutableHelloWorldJavaFile.readString().contains("ImmutableHelloWorld"));
+
         final FSResource mainClassFile = classFileOutputDir.appendRelativePath("test/Main.class");
         assertTrue(mainClassFile.exists());
-        final FSResource helloWorldClassFile = classFileOutputDir.appendRelativePath("test/HelloWorld.class");
+        final FSResource helloWorldClassFile = classFileOutputDir.appendRelativePath("test/data/HelloWorld.class");
         assertTrue(helloWorldClassFile.exists());
+        final FSResource immutableHelloWorldClassFile = classFileOutputDir.appendRelativePath("test/data/ImmutableHelloWorld.class");
+        assertTrue(immutableHelloWorldClassFile.exists());
     }
 }

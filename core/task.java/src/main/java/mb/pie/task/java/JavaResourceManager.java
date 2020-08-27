@@ -32,8 +32,6 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
     private final ResourceService resourceService;
 
     private final ArrayList<HierarchicalResource> sourcePath;
-    private final ArrayList<HierarchicalResource> classPath;
-    private final ArrayList<HierarchicalResource> annotationProcessorPath;
     private final HierarchicalResource sourceFileOutputDir;
     private final HierarchicalResource classFileOutputDir;
 
@@ -41,16 +39,12 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         StandardJavaFileManager fileManager,
         ResourceService resourceService,
         ArrayList<HierarchicalResource> sourcePath,
-        ArrayList<HierarchicalResource> classPath,
-        ArrayList<HierarchicalResource> annotationProcessorPath,
         HierarchicalResource sourceFileOutputDir,
         HierarchicalResource classFileOutputDir
     ) {
         super(fileManager);
         this.resourceService = resourceService;
         this.sourcePath = sourcePath;
-        this.classPath = classPath;
-        this.annotationProcessorPath = annotationProcessorPath;
         this.sourceFileOutputDir = sourceFileOutputDir;
         this.classFileOutputDir = classFileOutputDir;
     }
@@ -60,9 +54,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
             switch((StandardLocation)location) {
                 case CLASS_OUTPUT:
                 case SOURCE_OUTPUT:
-                case CLASS_PATH:
                 case SOURCE_PATH:
-                case ANNOTATION_PROCESSOR_PATH:
                     return true;
                 default:
                     return super.hasLocation(location);
@@ -103,9 +95,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
             switch((StandardLocation)location) {
                 case CLASS_OUTPUT:
                 case SOURCE_OUTPUT:
-                case CLASS_PATH:
                 case SOURCE_PATH:
-                case ANNOTATION_PROCESSOR_PATH:
                     final @Nullable List<HierarchicalResource> baseResources = getResources(location);
                     if(baseResources == null) break;
                     for(HierarchicalResource baseResource : baseResources) {
@@ -188,12 +178,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                     return Collections.singletonList(classFileOutputDir);
                 case SOURCE_OUTPUT:
                     return Collections.singletonList(sourceFileOutputDir);
-                case CLASS_PATH:
-                    return !classPath.isEmpty() ? classPath : null;
                 case SOURCE_PATH:
                     return !sourcePath.isEmpty() ? sourcePath : null;
-                case ANNOTATION_PROCESSOR_PATH:
-                    return !annotationProcessorPath.isEmpty() ? annotationProcessorPath : null;
                 default:
                     return null;
             }

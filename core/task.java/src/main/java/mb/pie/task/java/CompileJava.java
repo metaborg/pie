@@ -14,18 +14,21 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.ToolProvider;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class CompileJava implements TaskDef<CompileJava.Input, None> {
     public static class Input implements Serializable {
         private final ArrayList<ResourcePath> sourceFiles;
 
         private final ArrayList<ResourcePath> sourcePath;
-        private final ArrayList<ResourcePath> classPath;
-        private final ArrayList<ResourcePath> annotationProcessorPath;
+        // Using File for classPath and annotationProcessorPath, as handling this with ResourcePath takes too much effort at the moment.
+        private final ArrayList<File> classPath;
+        private final ArrayList<File> annotationProcessorPath;
 
         private final @Nullable String sourceRelease;
         private final @Nullable String targetRelease;
@@ -36,8 +39,8 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
         public Input(
             ArrayList<ResourcePath> sourceFiles,
             ArrayList<ResourcePath> sourcePath,
-            ArrayList<ResourcePath> classPath,
-            ArrayList<ResourcePath> annotationProcessorPath,
+            ArrayList<File> classPath,
+            ArrayList<File> annotationProcessorPath,
             @Nullable String sourceRelease,
             @Nullable String targetRelease,
             ResourcePath sourceFileOutputDir,
@@ -101,14 +104,6 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
             final HierarchicalResource resource = context.require(sourcePathPart, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("java"))));
             sourcePath.add(resource);
         }
-        final ArrayList<HierarchicalResource> classPath = new ArrayList<>();
-        for(ResourcePath classPathPart : input.classPath) {
-            classPath.add(requireClassPath(context, classPathPart));
-        }
-        final ArrayList<HierarchicalResource> annotationProcessorPath = new ArrayList<>();
-        for(ResourcePath annotationProcessorPathPart : input.annotationProcessorPath) {
-            annotationProcessorPath.add(requireClassPath(context, annotationProcessorPathPart));
-        }
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDir);
         final HierarchicalResource classFileOutputDir = context.getHierarchicalResource(input.classFileOutputDir);
 
@@ -117,12 +112,15 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
             compiler.getStandardFileManager(null, null, null),
             context.getResourceService(),
             sourcePath,
-            classPath,
-            annotationProcessorPath,
             sourceFileOutputDir,
             classFileOutputDir
         );
-        final CompilationTask compilationTask = compiler.getTask(null, resourceManager, null, null, null, compilationUnits);
+        final ArrayList<String> options = new ArrayList<>();
+        options.add("-classpath");
+        options.add(input.classPath.stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
+        options.add("-processorpath");
+        options.add(input.annotationProcessorPath.stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
+        final CompilationTask compilationTask = compiler.getTask(null, resourceManager, null, options, null, compilationUnits);
 
         context.provide(sourceFileOutputDir, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("java"))));
         context.provide(classFileOutputDir, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("class"))));
@@ -132,18 +130,5 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
             throw new RuntimeException("Java compilation failed");
         }
         return None.instance;
-    }
-
-
-    private HierarchicalResource requireClassPath(ExecContext context, ResourcePath path) throws IOException {
-        final HierarchicalResource resource = context.getHierarchicalResource(path);
-        if(resource.isDirectory()) {
-            context.require(resource, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("class"))));
-        } else if(resource.isFile()) {
-            context.require(resource, ResourceStampers.modifiedFile());
-        } else {
-            context.require(resource, ResourceStampers.exists());
-        }
-        return resource;
     }
 }
