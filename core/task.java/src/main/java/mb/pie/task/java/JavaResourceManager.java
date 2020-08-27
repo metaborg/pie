@@ -1,9 +1,9 @@
 package mb.pie.task.java;
 
-import mb.resource.ResourceKey;
 import mb.resource.ResourceKeyString;
 import mb.resource.ResourceRuntimeException;
 import mb.resource.ResourceService;
+import mb.resource.hierarchical.FilenameExtensionUtil;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import mb.resource.hierarchical.match.PathResourceMatcher;
@@ -106,20 +106,20 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 case CLASS_PATH:
                 case SOURCE_PATH:
                 case ANNOTATION_PROCESSOR_PATH:
-                    // TODO: relativize path and use that, so that the package is included in the binary name
-                    final ResourcePath path = resourceService.getResourcePath(ResourceKeyString.parse(file.getName()));
-                    final @Nullable String leaf = path.removeLeafExtension().getLeaf();
-                    if(leaf != null) {
-                        return relativePathToQualifiedName(leaf);
-                    } else {
-                        return null;
+                    final @Nullable List<HierarchicalResource> baseResources = getResources(location);
+                    if(baseResources == null) break;
+                    for(HierarchicalResource baseResource : baseResources) {
+                        final ResourcePath basePath = baseResource.getPath();
+                        final ResourcePath path = resourceService.getResourcePath(ResourceKeyString.parse(file.getName()));
+                        if(!path.startsWith(basePath)) continue;
+                        return relativePathToQualifiedName(FilenameExtensionUtil.removeExtension(basePath.relativizeToString(path)));
                     }
+                    return null;
                 default:
-                    return super.inferBinaryName(location, file);
+                    break;
             }
-        } else {
-            return super.inferBinaryName(location, file);
         }
+        return super.inferBinaryName(location, file);
     }
 
     @Override
