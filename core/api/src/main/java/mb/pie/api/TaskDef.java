@@ -89,7 +89,7 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
      * Creates an {@link Supplier incremental supplier} for this task definition with given {@code input}. An
      * incremental supplier is {@link Serializable} and as such can be used as an input or output of a task.
      */
-    default Supplier<O> createSupplier(I input) {
+    default STask<O> createSupplier(I input) {
         return new STask<>(this, input);
     }
 

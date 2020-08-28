@@ -2,6 +2,7 @@ package mb.pie.task.java;
 
 import mb.pie.api.ExecContext;
 import mb.pie.api.None;
+import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.pie.api.stamp.resource.ResourceStampers;
 import mb.resource.hierarchical.HierarchicalResource;
@@ -15,7 +16,6 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.ToolProvider;
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -36,6 +36,8 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
         private final ResourcePath sourceFileOutputDir;
         private final ResourcePath classFileOutputDir;
 
+        private final ArrayList<Supplier<?>> originTasks;
+
         public Input(
             ArrayList<ResourcePath> sourceFiles,
             ArrayList<ResourcePath> sourcePath,
@@ -44,7 +46,8 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
             @Nullable String sourceRelease,
             @Nullable String targetRelease,
             ResourcePath sourceFileOutputDir,
-            ResourcePath classFileOutputDir
+            ResourcePath classFileOutputDir,
+            ArrayList<Supplier<?>> originTasks
         ) {
             this.sourceFiles = sourceFiles;
             this.sourcePath = sourcePath;
@@ -54,6 +57,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
             this.targetRelease = targetRelease;
             this.sourceFileOutputDir = sourceFileOutputDir;
             this.classFileOutputDir = classFileOutputDir;
+            this.originTasks = originTasks;
         }
 
         @Override public boolean equals(@Nullable Object o) {
@@ -67,11 +71,12 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
                 Objects.equals(sourceRelease, input.sourceRelease) &&
                 Objects.equals(targetRelease, input.targetRelease) &&
                 sourceFileOutputDir.equals(input.sourceFileOutputDir) &&
-                classFileOutputDir.equals(input.classFileOutputDir);
+                classFileOutputDir.equals(input.classFileOutputDir) &&
+                originTasks.equals(input.originTasks);
         }
 
         @Override public int hashCode() {
-            return Objects.hash(sourceFiles, sourcePath, classPath, annotationProcessorPath, sourceRelease, targetRelease, sourceFileOutputDir, classFileOutputDir);
+            return Objects.hash(sourceFiles, sourcePath, classPath, annotationProcessorPath, sourceRelease, targetRelease, sourceFileOutputDir, classFileOutputDir, originTasks);
         }
 
         @Override public String toString() {
@@ -84,6 +89,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
                 ", targetRelease='" + targetRelease + '\'' +
                 ", sourceFileOutputDir=" + sourceFileOutputDir +
                 ", classFileOutputDir=" + classFileOutputDir +
+                ", originTasks=" + originTasks +
                 '}';
         }
     }
@@ -94,6 +100,10 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
     }
 
     @Override public None exec(ExecContext context, Input input) throws Exception {
+        for(final Supplier<?> originTask : input.originTasks) {
+            context.require(originTask);
+        }
+
         final ArrayList<JavaResource> compilationUnits = new ArrayList<>();
         for(ResourcePath sourceFilePath : input.sourceFiles) {
             final HierarchicalResource sourceFile = context.require(sourceFilePath, ResourceStampers.<HierarchicalResource>modifiedFile());
@@ -129,6 +139,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, None> {
             // TODO: properly handle errors
             throw new RuntimeException("Java compilation failed");
         }
+
         return None.instance;
     }
 }
