@@ -10,11 +10,6 @@ import mb.pie.api.Task;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.ResourcePath;
-import mb.resource.hierarchical.match.AnyResourceMatcher;
-import mb.resource.hierarchical.match.DirectoryResourceMatcher;
-import mb.resource.hierarchical.match.PathResourceMatcher;
-import mb.resource.hierarchical.match.path.ExtensionPathMatcher;
-import mb.resource.hierarchical.walk.TrueResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -142,7 +137,7 @@ class CompileAndJarTest {
             final FSResource jarFile = libsDir.appendRelativePath("lib.jar").createFile(true);
             session.require(createJar.createTask(new CreateJar.Input(
                 null,
-                createList(new CreateJar.ArchiveDirectory(classFileOutputDir.getPath(), new TrueResourceWalker(), new AnyResourceMatcher(new DirectoryResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("class"))))),
+                createList(CreateJar.ArchiveDirectory.ofClassFilesInDirectory(classFileOutputDir.getPath())),
                 jarFile.getPath(),
                 createList(compileJavaTask.toSupplier())
             )));
