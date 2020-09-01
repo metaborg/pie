@@ -139,7 +139,7 @@ public class CreateJar implements TaskDef<CreateJar.Input, ResourceKey> {
                     try(final Stream<? extends HierarchicalResource> stream = root.walk(archiveDirectory.walker, archiveDirectory.matcher)) {
                         stream.forEach(resource -> {
                             // Files.walk returns absolute paths, so we need to relativize them.
-                            final String relativePath = root.getPath().relativizeToString(resource.getPath());
+                            final String relativePath = root.getPath().relativize(resource.getPath());
                             if(relativePath.endsWith("META-INF/MANIFEST.MF") || relativePath.isEmpty()) {
                                 // Skip 'META-INF/MANIFEST.MF' files, since this is file added by passing the manifest into
                                 // JarOutputStream's constructor. Adding this file again here would create a duplicate file,

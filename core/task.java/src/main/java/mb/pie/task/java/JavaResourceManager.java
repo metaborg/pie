@@ -102,7 +102,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                         final ResourcePath basePath = baseResource.getPath();
                         final ResourcePath path = resourceService.getResourcePath(ResourceKeyString.parse(file.getName()));
                         if(!path.startsWith(basePath)) continue;
-                        return relativePathToQualifiedName(FilenameExtensionUtil.removeExtension(basePath.relativizeToString(path)));
+                        return relativePathToQualifiedName(FilenameExtensionUtil.removeExtension(basePath.relativize(path)));
                     }
                     return null;
                 default:
