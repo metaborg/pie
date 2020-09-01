@@ -38,7 +38,7 @@ public class Task<O extends @Nullable Serializable> {
      *
      * @return {@link Supplier} for this task.
      */
-    public Supplier<O> toSupplier() {
+    public STask<O> toSupplier() {
         return new STask<>(taskDef, input);
     }
 
