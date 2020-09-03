@@ -1,0 +1,92 @@
+module test
+
+language pie
+
+fixture [[
+  module example:strings
+  
+  func fixture() -> string = {
+    val hello = "Hello";
+    val name = "world";
+    [[...]]
+  }
+]]
+
+// literal strings
+test no string [[]] parse fails
+test empty [[""]]
+test single double quote [["]] parse fails
+test single letter [["P"]]
+test single letter missing start quote [[I"]] parse fails
+test single letter missing end quote [["E]] parse fails
+test single character [["."]]
+test single character missing start quote [[%"]] parse fails
+test single character missing end quote [["&]] parse fails
+test single space [[" "]]
+test literal [["I opened the door."]]
+
+// escapes
+test escaped quote in start + middle [["\"Hello,\" the man outside said. He was soaked."]]
+test escaped quote in middle + end [["He came in, leaving a trail of droplet on the tiled floor. \"There appears to be a slight drizzle.\""]]
+test escaped quote mismatched [["And even worse, the author forgot the starting quote\" he exclaimed."]]
+test escaped quote [["\""]]
+test quote [["""]] parse fails
+test escaped quote double [["\"\""]]
+test escaped dollar sign [["\$"]]
+test dollar sign [["$"]] parse fails
+test escaped dollar sign double [["\$\$"]]
+test escaped backslash [["\\"]]
+test backslash [["\"]] parse fails
+test escaped backslash double [["\\\\"]]
+test triple backslash [["\\\"]] parse fails
+test escaped many [["\$\"\\\\\$\"\"\\"]]
+test escaped mixed [["The great \\\$ said \"U wot m8?\""]]
+
+// interpolated reference
+test interpolated reference only [["[[$hello]]"]] resolve #1
+test interpolated reference first [["$hello bob"]]
+test interpolated reference middle [["This $object seems pretty neat."]]
+test interpolated reference last [["My name is $name"]]
+test interpolated reference multiple [["$hello $name"]]
+test interpolated reference consequtive [["$name$name"]]
+test interpolated reference backslash ref [["\\$hello"]]
+test interpolated reference dollar ref [["\$$hello"]]
+test interpolated reference backslash ref [["\\$hello"]]
+test interpolated reference backslash dollar ref [["\\\$$hello"]]
+test interpolated reference double backslash ref [["\\\\$hello"]]
+test interpolated reference double dollar [["$$hello"]] parse fails
+test interpolated reference backslash dollar ref [["\\$$hello"]] parse fails
+test interpolated reference dollar quote [["$\""]] parse fails
+test interpolated reference dollar backslash [["$\\"]] parse fails
+
+// interpolated expression
+test interpolated expression only [["${[[fixture()]]}"]] resolve #1
+test interpolated expression first [["${12 + 21} = 12 + 21"]]
+test interpolated expression middle [["abc${"def"}ghi"]]
+test interpolated expression last [["x + y = ${x + y}"]]
+test interpolated expression multiple [["${x + y} == ${y + x}"]]
+test interpolated expression consequtive [["${4}${5}"]]
+test interpolated expression followed by characters [["${hello}world!"]]
+test interpolated expression nested [["${"$hello ${world}!"}"]]
+test interpolated expression backslash exp [["\\${hello}"]]
+test interpolated expression dollar exp [["\$${world}"]]
+test interpolated expression backslash exp [["\\${9}"]]
+test interpolated expression backslash dollar exp [["\\\$${"backslash: \\"}"]]
+test interpolated expression double  backslash exp [["\\\\${-4}"]]
+test interpolated expression double dollar [["$${8}"]] parse fails
+test interpolated expression backslash dollar exp [["\\$${hello}"]] parse fails
+test interpolated expression missing dollar [["{8}"]]
+test interpolated expression missing curly bracket left [["$8}"]] parse fails
+test interpolated expression missing curly bracket right [["${8"]] parse fails
+
+// analysis
+test interpolated ref captures everything [["$hello-world"]] analysis fails
+test interpolated exp does not capture after closing bracket [["${hello}-world"]] analysis succeeds
+test resolve interpolated ref [[
+  val [[foo]] = 5;
+  "The value is [[$foo]]"
+]] resolve #2 to #1
+test resolve interpolated exp [[
+  val [[bar]] = -5;
+  "The value is ${[[bar]] + 1}"
+]] resolve #2 to #1
