@@ -1,0 +1,5 @@
+module mb:pie:lang:test:controlFlow:listComprehension:intsLitToInts
+
+func main_intsLitToInts() -> int* = {
+  [x + 2 | x <- [1, 2, 3]]
+}
