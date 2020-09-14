@@ -1,0 +1,5 @@
+module mb:pie:lang:test:string:expressionInterpolationNothingBetween
+
+func main_expressionInterpolationNothingBetween() -> string = {
+  "${-1 + 5}${1 + 1}"
+}

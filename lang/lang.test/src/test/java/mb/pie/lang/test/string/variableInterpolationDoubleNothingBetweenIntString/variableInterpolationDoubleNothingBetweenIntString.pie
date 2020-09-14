@@ -1,0 +1,7 @@
+module mb:pie:lang:test:string:variableInterpolationDoubleNothingBetweenIntString
+
+func main_variableInterpolationDoubleNothingBetweenIntString() -> string = {
+  val randomNumber = 4;
+  val e = "2.71828";
+  "$randomNumber$e"
+}

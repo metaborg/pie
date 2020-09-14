@@ -21,6 +21,7 @@ debug:
   typesmart: false
 language:
   sdf:
+    jsglr-version: v2
     pretty-print: pie
     sdf2table: java
     placeholder:

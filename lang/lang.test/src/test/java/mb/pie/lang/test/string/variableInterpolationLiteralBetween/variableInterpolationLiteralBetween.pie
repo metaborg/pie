@@ -1,0 +1,7 @@
+module mb:pie:lang:test:string:variableInterpolationLiteralBetween
+
+func main_variableInterpolationLiteralBetween() -> string = {
+  val name = "Bob";
+  val place = "somewhere over the rainbow";
+  "Hello $name, I am from $place."
+}
