@@ -1,0 +1,6 @@
+module mb:pie:lang:test:string:variableInterpolationVariableUsedTwice
+
+func main_variableInterpolationVariableUsedTwice() -> string = {
+  val a = "na";
+  "Ba$a$a"
+}

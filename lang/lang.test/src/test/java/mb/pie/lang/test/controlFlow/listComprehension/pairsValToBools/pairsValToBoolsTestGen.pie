@@ -1,0 +1,6 @@
+module mb:pie:lang:test:controlFlow:listComprehension:pairsValToBools
+
+func main_pairsValToBools() -> bool* = {
+  val pairs = [("1", 1), ("2", 3), ("l", 8), ("-4", -4)];
+  ["$num" == str | (str, num) <- pairs]
+}

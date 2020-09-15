@@ -1,0 +1,5 @@
+module mb:pie:lang:test:string:expressionInterpolationTuple
+
+func main_expressionInterpolationTuple() -> string = {
+  "${(1, 2, 1 + 2)}"
+}

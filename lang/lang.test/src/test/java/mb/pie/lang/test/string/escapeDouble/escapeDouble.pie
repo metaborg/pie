@@ -1,0 +1,5 @@
+module mb:pie:lang:test:string:escapeDouble
+
+func main_escapeDouble() -> string = {
+  "\$\$"
+}

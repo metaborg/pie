@@ -1,0 +1,6 @@
+module mb:pie:lang:test:controlFlow:listComprehension:emptyValToPathsTypeHint
+
+func main_emptyValToPathsTypeHint() -> path* = {
+  val list: path* = [];
+  [elem | elem: path <- list]
+}

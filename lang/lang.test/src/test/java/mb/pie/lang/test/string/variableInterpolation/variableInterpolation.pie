@@ -1,0 +1,6 @@
+module mb:pie:lang:test:string:variableInterpolation
+
+func main_variableInterpolation() -> string = {
+  val str = "world";
+  "hello $str!"
+}

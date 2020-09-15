@@ -320,53 +320,56 @@ rules // Control flow
     ; <add-import> "java.util.stream.Collectors"
     ; <add-import> "java.util.stream.Stream"
 
-  p2j-exp:
+  p2j-ast-exp:
     e@ListComprehension(mapExp, binder, listExp) -> result
     with
       <add-import> "java.util.ArrayList"
-    ; <add-import> "java.util.stream.Collectors"
-    ; <add-import> "java.util.stream.Stream"
     ; (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
-    ; ListTy(listExpElemTy)   := <pie-ast-type> listExp
+    ; ListTy(pieElemTy)       := <pie-type> listExp
+    ; elemTy                  := <p2j-ast-type-sig> pieElemTy
     ; (mapStmts, mapExpVal)   := <try-p2j-ast-exp> mapExp
-    ; (assignments, varId)    := <bind-tuples-to-ast-assignments> (binder, listExpElemTy)
+    ; (assignments, varId)    := <bind-tuples-to-ast-assignments> (binder, pieElemTy)
+    ; comprehensionTmpVarName := <newname> "comprehensionResult"
     ; innerStmts              := <concat> [
         assignments,
         mapStmts,
-        [Return(mapExpVal)]
+        [ ExpressionStatement(
+            InvokeQExp(
+              ExpressionName(
+                Id(comprehensionTmpVarName))
+              , None()
+              , Id("add")
+              , [ mapExpVal ]
+            )
+          )
+        ]
       ]
-    ; comprehensionTmpVarName := <newname> "comprehensionResult"
     ; ty                      := <p2j-ast-type-sig> <pie-type> e
     ; stmts                   := <concat> [
         listStmts,
-        InvokeQExp(
-          InvokeQExp(
-            InvokeQExp(listExpVal, None(), Id("stream"), [])
-          , None()
-          , Id("map")
-          , [ InvokeQExp(
-                ExpressionName(Id("Util"))
-              , None()
-              , Id("throwingLambda")
-              , [LambdaExpressionWithBlock(SingleParam(Id("varId")), Block(innerStmts))
-                ]
+        [ 
+          LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(comprehensionTmpVarName))
+              , NewInstance(None(), [], Id("ArrayList"), [], Some(Diamond()), [])
               )
             ]
+          ))
+        , ForEach(
+            []
+          , <java-classType-to-unannType> elemTy
+          , VariableDecl(Id(varId))
+          , listExpVal
+          , Block(innerStmts)
           )
-        , None()
-        , Id("collect")
-        , [ InvokeQExp(
-              ExpressionName(Id("Collectors"))
-            , None()
-            , Id("toCollection")
-            , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
-            )
-          ]
-        )
+        ]
         // Note: meaning of this AST:
-        //   final [ty] [comprehensionTmpVarName] = [listExpVal].stream().map(Util.throwingLambda([varId] -> {
+        //   final [ty] [comprehensionTmpVarName] = new ArrayList<>();
+        //   for ([elemTy] [elemName] : [listExpVal]) {
         //     [innerStmts]
-        //   })).collect(Collectors.toCollection(ArrayList::new));
+        //   }
       ]
     ; result                     := (stmts, comprehensionTmpVarName)
 
@@ -1239,7 +1242,12 @@ rules // Literals
 rules // Interpolated string literal
 
   p2j-ast-exp:
-    StrLit(parts) -> result
+    StrLit([]) -> result
+    with
+      result := ([], StringLiteral($[""]))
+
+  p2j-ast-exp:
+    StrLit(parts@[first|rest]) -> result
     with
       (partsStmts, partsExps) := <unzip> <map(p2j-ast-strpart)> parts
     ; stmts                   := <concat> partsStmts
@@ -1253,10 +1261,29 @@ rules // Interpolated string literal
     Str(chars) -> ([], StringLiteral($["[<string-replace(|"\\$", "$")> chars]"]))
 
   p2j-ast-strpart:
-    StrInterpRef(refExp) -> <try-p2j-ast-exp> refExp
+    StrInterpRef(refExp) -> result
+    with
+      (stmts, expVal) := <try-p2j-ast-exp> refExp
+    ; resultVal       := InvokeQExp(
+        ExpressionName(Id("String"))
+      , None()
+      , Id("valueOf")
+      , [ expVal ]
+      )
+    ; result          := (stmts, resultVal)
+
 
   p2j-ast-strpart:
-    StrInterpExp(exp) -> <try-p2j-ast-exp> exp
+    StrInterpExp(exp) -> result
+    with
+      (stmts, expVal) := <try-p2j-ast-exp> exp
+    ; resultVal       := InvokeQExp(
+        ExpressionName(Id("String"))
+      , None()
+      , Id("valueOf")
+      , [ expVal ]
+      )
+    ; result          := (stmts, resultVal)
 
   p2j-ast-add-strings:
     (e1, e2) -> Add(e1, e2)

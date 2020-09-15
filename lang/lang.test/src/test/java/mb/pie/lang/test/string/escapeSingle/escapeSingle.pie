@@ -1,0 +1,5 @@
+module mb:pie:lang:test:string:escapeSingle
+
+func main_escapeSingle() -> string = {
+  "\$"
+}

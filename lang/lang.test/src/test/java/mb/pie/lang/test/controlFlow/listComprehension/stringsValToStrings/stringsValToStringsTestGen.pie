@@ -1,0 +1,6 @@
+module mb:pie:lang:test:controlFlow:listComprehension:stringsValToStrings
+
+func main_stringsValToStrings() -> string* = {
+  val strs = ["Hello", "World"];
+  ["$str name" | str <- strs]
+}
