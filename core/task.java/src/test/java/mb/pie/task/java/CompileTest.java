@@ -19,19 +19,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CompileAndJarTest {
+class CompileTest {
     private final FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix());
     private final FSResource rootDirectory = new FSResource(fileSystem.getPath("/"));
     private final CompileJava compileJava = new CompileJava();
-    private final CreateJar createJar = new CreateJar();
-    private final MapTaskDefs taskDefs = new MapTaskDefs(compileJava, createJar);
+    private final MapTaskDefs taskDefs = new MapTaskDefs(compileJava);
     private final Pie pie = new PieBuilderImpl().withTaskDefs(taskDefs).build();
 
     private final FSResource sourceDir = createDir(rootDirectory, "src/main/java");
@@ -40,7 +35,7 @@ class CompileAndJarTest {
     private final FSResource classFileOutputDir = createDir(buildDir, "classes/java/main");
     private final FSResource libsDir = createDir(buildDir, "libs");
 
-    CompileAndJarTest() throws IOException {}
+    CompileTest() throws IOException {}
 
     private FSResource createDir(FSResource parent, String relativePath) throws IOException {
         return parent.appendRelativePath(relativePath).createDirectory(true);
@@ -133,30 +128,6 @@ class CompileAndJarTest {
             assertTrue(immutableHelloWorldBuilderClassFile.exists());
             final FSResource immutableHelloWorld1ClassFile = classFileOutputDir.appendRelativePath("test/data/ImmutableHelloWorld$1.class");
             assertTrue(immutableHelloWorld1ClassFile.exists());
-
-            final FSResource jarFile = libsDir.appendRelativePath("lib.jar").createFile(true);
-            session.require(createJar.createTask(new CreateJar.Input(
-                null,
-                createList(CreateJar.ArchiveDirectory.ofClassFilesInDirectory(classFileOutputDir.getPath())),
-                jarFile.getPath(),
-                createList(compileJavaTask.toSupplier())
-            )));
-            assertTrue(jarFile.exists());
-            final HashSet<String> entryNames = new HashSet<>();
-            try(final JarInputStream jarInputStream = new JarInputStream(jarFile.openReadBuffered())) {
-                assertEquals("1.0", jarInputStream.getManifest().getMainAttributes().getValue(Attributes.Name.MANIFEST_VERSION));
-                @Nullable JarEntry entry;
-                while((entry = jarInputStream.getNextJarEntry()) != null) {
-                    entryNames.add(entry.getName());
-                }
-            }
-            assertTrue(entryNames.contains("test/"));
-            assertTrue(entryNames.contains("test/Main.class"));
-            assertTrue(entryNames.contains("test/data/"));
-            assertTrue(entryNames.contains("test/data/HelloWorld.class"));
-            assertTrue(entryNames.contains("test/data/ImmutableHelloWorld.class"));
-            assertTrue(entryNames.contains("test/data/ImmutableHelloWorld$Builder.class"));
-            assertTrue(entryNames.contains("test/data/ImmutableHelloWorld$1.class"));
         }
     }
 }
