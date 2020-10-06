@@ -3,7 +3,7 @@ plugins {
   `maven-publish`
 }
 
-val resourceVersion = "0.8.0"
+val resourceVersion = "0.8.1"
 
 val checkerframeworkVersion = "3.6.0"
 
