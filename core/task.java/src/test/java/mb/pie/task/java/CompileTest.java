@@ -126,8 +126,6 @@ class CompileTest {
             assertTrue(immutableHelloWorldClassFile.exists());
             final FSResource immutableHelloWorldBuilderClassFile = classFileOutputDir.appendRelativePath("test/data/ImmutableHelloWorld$Builder.class");
             assertTrue(immutableHelloWorldBuilderClassFile.exists());
-            final FSResource immutableHelloWorld1ClassFile = classFileOutputDir.appendRelativePath("test/data/ImmutableHelloWorld$1.class");
-            assertTrue(immutableHelloWorld1ClassFile.exists());
         }
     }
 }
