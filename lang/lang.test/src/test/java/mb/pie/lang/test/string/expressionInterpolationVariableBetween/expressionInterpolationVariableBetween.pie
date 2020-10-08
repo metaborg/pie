@@ -1,0 +1,6 @@
+module mb:pie:lang:test:string:expressionInterpolationVariableBetween
+
+func main_expressionInterpolationVariableBetween() -> string = {
+  val relation = " = ";
+  "${13 + 14}$relation${10 + 17}"
+}

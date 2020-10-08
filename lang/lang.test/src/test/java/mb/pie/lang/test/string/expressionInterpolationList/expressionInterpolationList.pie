@@ -1,0 +1,6 @@
+module mb:pie:lang:test:string:expressionInterpolationList
+
+func main_expressionInterpolationList() -> (int*, string) = {
+  val list = [1, 2, 3];
+  (list, "list: ${list}")
+}

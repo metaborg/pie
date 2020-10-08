@@ -1,0 +1,5 @@
+module mb:pie:lang:test:string:expressionInterpolationOnly
+
+func main_expressionInterpolationOnly() -> string = {
+  "${31 + 11}"
+}

@@ -59,6 +59,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 default:
                     return super.hasLocation(location);
             }
+        } else if(location.getName().contains("MODULE")) { // Java 9+ support
+            return super.hasLocation(location);
         } else {
             try {
                 getNonStandardResource(location);
@@ -183,6 +185,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 default:
                     return null;
             }
+        } else if(location.getName().contains("MODULE")) { // Java 9+ support
+            return null;
         } else {
             return Collections.singletonList(getNonStandardResource(location));
         }
@@ -198,6 +202,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 default:
                     return null;
             }
+        } else if(location.getName().contains("MODULE")) { // Java 9+ support
+            return null;
         } else {
             return getNonStandardResource(location);
         }

@@ -1,0 +1,7 @@
+module mb:pie:lang:test:string:variableInterpolationVariableUsedTwiceOtherBetween
+
+func main_variableInterpolationVariableUsedTwiceOtherBetween() -> string = {
+  val sequence = 12345;
+  val reverseBetween = 432;
+  "$sequence$reverseBetween$sequence"
+}
