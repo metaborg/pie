@@ -1,7 +1,6 @@
 package mb.pie.task.archive;
 
 import mb.pie.api.ExecContext;
-import mb.pie.api.None;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.resource.ResourceKey;
@@ -12,7 +11,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class UnarchiveFromJar implements TaskDef<UnarchiveFromJar.Input, None> {
+public class UnarchiveFromJar implements TaskDef<UnarchiveFromJar.Input, ResourcePath> {
     public static class Input implements Serializable {
         private final ResourceKey inputJarFile;
         private final ResourcePath outputDirectory;
@@ -48,15 +47,11 @@ public class UnarchiveFromJar implements TaskDef<UnarchiveFromJar.Input, None> {
             this(inputJarFile, outputDirectory, true, true, null);
         }
 
-        @Override public boolean equals(@Nullable Object o) {
+        @Override public boolean equals(Object o) {
             if(this == o) return true;
             if(o == null || getClass() != o.getClass()) return false;
             final Input input = (Input)o;
-            return unarchiveManifest == input.unarchiveManifest &&
-                verifySignaturesIfSigned == input.verifySignaturesIfSigned &&
-                inputJarFile.equals(input.inputJarFile) &&
-                outputDirectory.equals(input.outputDirectory) &&
-                Objects.equals(originTask, input.originTask);
+            return unarchiveManifest == input.unarchiveManifest && verifySignaturesIfSigned == input.verifySignaturesIfSigned && inputJarFile.equals(input.inputJarFile) && outputDirectory.equals(input.outputDirectory) && Objects.equals(originTask, input.originTask);
         }
 
         @Override public int hashCode() {
@@ -79,13 +74,13 @@ public class UnarchiveFromJar implements TaskDef<UnarchiveFromJar.Input, None> {
         return getClass().getName();
     }
 
-    @Override public None exec(ExecContext context, Input input) throws IOException {
+    @Override public ResourcePath exec(ExecContext context, Input input) throws IOException {
         if(input.originTask != null) {
             context.require(input.originTask);
         }
 
         UnarchiveCommon.unarchiveJar(context, input.inputJarFile, input.outputDirectory, input.unarchiveManifest, input.verifySignaturesIfSigned);
 
-        return None.instance;
+        return input.outputDirectory;
     }
 }

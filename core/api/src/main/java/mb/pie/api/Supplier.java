@@ -2,7 +2,6 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -15,7 +14,7 @@ import java.io.Serializable;
  */
 @FunctionalInterface
 public interface Supplier<T extends @Nullable Serializable> extends Serializable {
-    T get(ExecContext context) throws IOException;
+    T get(ExecContext context);
 
     /**
      * Creates a new supplier for which given {@link Function incremental function} is executed on the result of this

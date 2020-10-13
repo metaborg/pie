@@ -20,6 +20,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 /**
@@ -154,27 +155,28 @@ public interface ExecContext {
 
     /**
      * Returns output of given {@link Supplier incremental supplier}, which may in turn require the output of a task, or
-     * require and read a resource, using this execution context.
+     * require/provide and read/write resources, using this execution context.
      *
      * @param <O>      Type of the output object.
      * @param supplier {@link Supplier} to get output of.
      * @return Up-to-date output object of {@code supplier}.
-     * @throws IOException            When requiring and reading a resource fails.
-     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws UncheckedExecException When the supplier requires a task that throws an exception.
+     * @throws UncheckedIOException   When the supplier requires/provides and reads/writes a resource, but fails to do so.
      * @throws CanceledException      When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws IOException;
+    <O extends @Nullable Serializable> O require(Supplier<O> supplier);
 
     /**
      * Returns output of given {@link Function incremental function} applied to given {@code input}, which may in turn
-     * require other tasks and resources using this execution context.
+     * require the output of a task, or require/provide and read/write resources, using this execution context.
      *
      * @param <I>      Type of the input object.
      * @param <O>      Type of the output object.
      * @param function {@link Function} to get output of.
      * @param input    Input to apply function to.
      * @return Up-to-date output object of {@code function}.
-     * @throws UncheckedExecException When an executing task throws an exception.
+     * @throws UncheckedExecException When the function requires a task that throws an exception.
+     * @throws UncheckedIOException   When the function requires/provides and reads/writes a resource, but fails to do so.
      * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input);

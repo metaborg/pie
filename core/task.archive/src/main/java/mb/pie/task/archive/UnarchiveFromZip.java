@@ -1,7 +1,6 @@
 package mb.pie.task.archive;
 
 import mb.pie.api.ExecContext;
-import mb.pie.api.None;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.resource.ResourceKey;
@@ -12,7 +11,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class UnarchiveFromZip implements TaskDef<UnarchiveFromZip.Input, None> {
+public class UnarchiveFromZip implements TaskDef<UnarchiveFromZip.Input, ResourcePath> {
     public static class Input implements Serializable {
         private final ResourceKey inputZipFile;
         private final ResourcePath outputDirectory;
@@ -51,13 +50,13 @@ public class UnarchiveFromZip implements TaskDef<UnarchiveFromZip.Input, None> {
         return getClass().getName();
     }
 
-    @Override public None exec(ExecContext context, Input input) throws IOException {
+    @Override public ResourcePath exec(ExecContext context, Input input) throws IOException {
         if(input.originTask != null) {
             context.require(input.originTask);
         }
 
         UnarchiveCommon.unarchiveZip(context, input.inputZipFile, input.outputDirectory);
 
-        return None.instance;
+        return input.outputDirectory;
     }
 }

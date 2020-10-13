@@ -2,6 +2,7 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -13,7 +14,7 @@ import java.io.Serializable;
  * @param <T> Type of the input to the function.
  * @param <R> Type of the output of the function.
  */
-public interface Function<T extends Serializable, R extends @Nullable Serializable> extends Serializable {
+public interface Function<T extends Serializable, R extends Serializable> extends Serializable {
     R apply(ExecContext context, T input);
 
     /**
@@ -66,8 +67,8 @@ public interface Function<T extends Serializable, R extends @Nullable Serializab
     }
 
     /**
-     * Creates an {@link Supplier incremental supplier} for this function with given {@code input}. An
-     * incremental supplier is {@link Serializable} and as such can be used as an input or output of a task.
+     * Creates an {@link Supplier incremental supplier} for this function with given {@code input}. An incremental
+     * supplier is {@link Serializable} and as such can be used as an input or output of a task.
      *
      * @param input The input for on top of which this function will be executed.
      * @return {@link Supplier} based on a function.

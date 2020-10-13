@@ -2,8 +2,8 @@ package mb.pie.task.archive;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
-import mb.pie.api.None;
 import mb.pie.api.Task;
+import mb.resource.ResourceKey;
 import mb.resource.fs.FSResource;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ public class JarTest extends TestBase {
 
         try(MixedSession session = pie.newSession()) {
             final FSResource jarFile = rootDirectory.appendRelativePath("library.jar");
-            final Task<None> jarTask = archiveToJar.createTask(new ArchiveToJar.Input(
+            final Task<ResourceKey> jarTask = archiveToJar.createTask(new ArchiveToJar.Input(
                 manifestFile.getPath(),
                 createList(ArchiveDirectory.ofClassFilesInDirectory(classesDir.getPath())),
                 jarFile.getPath(),

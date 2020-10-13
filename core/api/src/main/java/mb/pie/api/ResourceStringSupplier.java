@@ -6,6 +6,7 @@ import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -34,8 +35,12 @@ public class ResourceStringSupplier implements Supplier<String> {
     }
 
 
-    @Override public String get(ExecContext context) throws IOException {
-        return context.require(key, stamper != null ? stamper : context.getDefaultRequireReadableResourceStamper()).readString(charset);
+    @Override public String get(ExecContext context) {
+        try {
+            return context.require(key, stamper != null ? stamper : context.getDefaultRequireReadableResourceStamper()).readString(charset);
+        } catch(IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override public boolean equals(Object o) {
