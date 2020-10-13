@@ -21,11 +21,8 @@ import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.DefaultStampers;
 import mb.resource.ReadableResource;
 import mb.resource.Resource;
-import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
-import mb.resource.hierarchical.ResourcePath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -112,7 +109,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws IOException {
+    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) {
         return supplier.get(this);
     }
 

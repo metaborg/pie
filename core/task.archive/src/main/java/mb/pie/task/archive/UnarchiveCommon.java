@@ -63,7 +63,7 @@ public class UnarchiveCommon {
         );
         final @Nullable Manifest manifest = manifestRef.get();
         if(unarchiveManifest && manifest != null) {
-            final HierarchicalResource manifestFile = context.getHierarchicalResource(outputDirectory.appendRelativePath(JarFile.MANIFEST_NAME));
+            final HierarchicalResource manifestFile = context.getHierarchicalResource(outputDirectory.appendRelativePath(JarFile.MANIFEST_NAME).getNormalized());
             try(final BufferedOutputStream outputStream = manifestFile.ensureFileExists().openWriteBuffered()) {
                 manifest.write(outputStream);
                 outputStream.flush();

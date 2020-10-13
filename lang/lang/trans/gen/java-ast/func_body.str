@@ -347,7 +347,7 @@ rules // Control flow
     ; ty                      := <p2j-ast-type-sig> <pie-type> e
     ; stmts                   := <concat> [
         listStmts,
-        [ 
+        [
           LocVarDeclStm(LocalVarDecl(
             [Final()]
           , <java-classType-to-unannType> ty
@@ -900,43 +900,19 @@ rules // PIE function calls
           , <java-classType-to-unannType> ty
           , [VariableDecl(Id(callResultName))]
           ))
-        , Try(
-            Block(
-              [ ExpressionStatement(Assign(
-                  ExpressionName(Id(callResultName))
-                , InvokeQExp(
-                    ExpressionName(Id("execContext"))
-                  , None()
-                  , Id("require")
-                  , [ expVal ]
-                  )
-                ))
-              ]
+        , ExpressionStatement(Assign(
+            ExpressionName(Id(callResultName))
+          , InvokeQExp(
+              ExpressionName(Id("execContext"))
+            , None()
+            , Id("require")
+            , [ expVal ]
             )
-          , [ Catch(
-                CatchParam(
-                  []
-                , CatchType(ClassType(Id("IOException"), None()), [])
-                , VariableDecl(Id("ex"))
-                )
-              , Block(
-                  [ Throw(NewInstance(None(), [], Id("ExecException"), [], None(), [
-                      StringLiteral($["Unexpected IOException while getting value from supplier"])
-                    , ExpressionName(Id("ex"))
-                    ]))
-                  ]
-                )
-              )
-            ]
-          )
+          ))
         ]
         // Note: meaning of this AST:
         //   final [ty] [callResultName];
-        //   try {
-        //     [callResultName] = execContext.require([expVal]);
-        //   } catch (IOException ex) {
-        //     throw new ExecException("Unexpected IOException while getting value from supplier", ex);
-        //   }
+        //   [callResultName] = execContext.require([expVal]);
       ]
     ; result               := (stmts, callResultName)
 

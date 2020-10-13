@@ -1,7 +1,6 @@
 package mb.pie.task.archive;
 
 import mb.pie.api.ExecContext;
-import mb.pie.api.None;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.resource.ResourceKey;
@@ -12,7 +11,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class ArchiveToZip implements TaskDef<ArchiveToZip.Input, None> {
+public class ArchiveToZip implements TaskDef<ArchiveToZip.Input, ResourceKey> {
     public static class Input implements Serializable {
         private final ArrayList<ArchiveDirectory> archiveDirectories;
         private final ResourceKey outputZipFile;
@@ -55,13 +54,13 @@ public class ArchiveToZip implements TaskDef<ArchiveToZip.Input, None> {
         return getClass().getName();
     }
 
-    @Override public None exec(ExecContext context, Input input) throws IOException {
+    @Override public ResourceKey exec(ExecContext context, Input input) throws IOException {
         for(final Supplier<?> originTask : input.originTasks) {
             context.require(originTask);
         }
 
         ArchiveCommon.archiveToZip(context, input.outputZipFile, input.archiveDirectories);
 
-        return None.instance;
+        return input.outputZipFile;
     }
 }

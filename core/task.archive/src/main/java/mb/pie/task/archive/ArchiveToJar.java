@@ -1,7 +1,6 @@
 package mb.pie.task.archive;
 
 import mb.pie.api.ExecContext;
-import mb.pie.api.None;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.resource.ResourceKey;
@@ -15,7 +14,7 @@ import java.util.Objects;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-public class ArchiveToJar implements TaskDef<ArchiveToJar.Input, None> {
+public class ArchiveToJar implements TaskDef<ArchiveToJar.Input, ResourceKey> {
     public static class Input implements Serializable {
         private final @Nullable ResourceKey manifestFile;
         private final ArrayList<ArchiveDirectory> archiveDirectories;
@@ -63,7 +62,7 @@ public class ArchiveToJar implements TaskDef<ArchiveToJar.Input, None> {
         return getClass().getName();
     }
 
-    @Override public None exec(ExecContext context, Input input) throws IOException {
+    @Override public ResourceKey exec(ExecContext context, Input input) throws IOException {
         for(final Supplier<?> originTask : input.originTasks) {
             context.require(originTask);
         }
@@ -80,6 +79,6 @@ public class ArchiveToJar implements TaskDef<ArchiveToJar.Input, None> {
 
         ArchiveCommon.archiveToJar(context, input.outputJarFile, input.archiveDirectories, manifest);
 
-        return None.instance;
+        return input.outputJarFile;
     }
 }

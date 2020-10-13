@@ -2,7 +2,6 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 public class FlatMappedSupplier<T extends Serializable, R extends @Nullable Serializable> implements Supplier<R> {
@@ -14,7 +13,7 @@ public class FlatMappedSupplier<T extends Serializable, R extends @Nullable Seri
         this.func = func;
     }
 
-    @Override public R get(ExecContext context) throws IOException {
+    @Override public R get(ExecContext context) {
         return func.apply(context, supplier.get(context)).get(context);
     }
 

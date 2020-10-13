@@ -2,8 +2,8 @@ package mb.pie.task.archive;
 
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
-import mb.pie.api.None;
 import mb.pie.api.Task;
+import mb.resource.ResourceKey;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.match.PathResourceMatcher;
 import mb.resource.hierarchical.match.TrueResourceMatcher;
@@ -55,7 +55,7 @@ class ZipTest extends TestBase {
     @Test public void testArchiveUnarchiveAll() throws IOException, ExecException, InterruptedException {
         try(MixedSession session = pie.newSession()) {
             final FSResource zipFile = rootDirectory.appendRelativePath("archive.zip");
-            final Task<None> zipTask = archiveToZip.createTask(new ArchiveToZip.Input(
+            final Task<ResourceKey> zipTask = archiveToZip.createTask(new ArchiveToZip.Input(
                 createList(
                     ArchiveDirectory.ofDirectory(archiveDir1.getPath()),
                     ArchiveDirectory.ofDirectory(archiveDir2.getPath())
@@ -105,7 +105,7 @@ class ZipTest extends TestBase {
     @Test public void testArchiveUnarchiveSome() throws IOException, ExecException, InterruptedException {
         try(MixedSession session = pie.newSession()) {
             final FSResource zipFile = rootDirectory.appendRelativePath("archive.zip");
-            final Task<None> zipTask = archiveToZip.createTask(new ArchiveToZip.Input(
+            final Task<ResourceKey> zipTask = archiveToZip.createTask(new ArchiveToZip.Input(
                 createList(
                     new ArchiveDirectory(archiveDir1.getPath(), new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("txt"))),
                     new ArchiveDirectory(archiveDir2.getPath(), new PathResourceWalker(new PatternPathMatcher(new AntPattern(archiveFile4Sdir))), new TrueResourceMatcher()),
