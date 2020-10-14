@@ -41,6 +41,8 @@ public class ValidationLayer implements Layer {
 
         public boolean throwErrors = true;
         public boolean throwWarnings = false;
+
+        public int shortStringLength = 1024;
     }
 
     private final ValidationOptions options;
@@ -73,9 +75,9 @@ public class ValidationLayer implements Layer {
             final StringBuilder sb = new StringBuilder();
             sb.append("Cyclic dependency. Cause:\n");
             sb.append("requirement of task\n");
-            sb.append("  " + currentTask + "\n");
+            sb.append("  " + currentTask.toShortString(options.shortStringLength) + "\n");
             sb.append("from requirements\n");
-            sb.append("  " + stack.stream().map(TaskKey::toString).collect(Collectors.joining(" -> ")));
+            sb.append("  " + stack.stream().map((k) -> k.toShortString(options.shortStringLength)).collect(Collectors.joining(" -> ")));
             error(sb.toString());
         }
         stack.add(currentTask);
@@ -97,7 +99,7 @@ public class ValidationLayer implements Layer {
             final StringBuilder sb = new StringBuilder();
             sb.append("Visited task with same key was required with different input in same session. Cause:\n");
             sb.append("task with key\n");
-            sb.append("  " + currentTaskKey + "\n");
+            sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
             sb.append("was already visited with input\n");
             sb.append("  " + visitedData.input + "\n");
             sb.append("while now required with input\n");
@@ -117,9 +119,9 @@ public class ValidationLayer implements Layer {
                 sb.append("resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("was provided by task\n");
-                sb.append("  " + currentTaskKey + "\n");
+                sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
                 sb.append("and task\n");
-                sb.append("  " + provider);
+                sb.append("  " + provider.toShortString(options.shortStringLength));
                 error(sb.toString());
             }
         }
@@ -138,11 +140,11 @@ public class ValidationLayer implements Layer {
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Hidden dependency. Cause:\n");
                 sb.append("task\n");
-                sb.append("  " + currentTaskKey + "\n");
+                sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
                 sb.append("requires resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("provided by task\n");
-                sb.append("  " + provider + "\n");
+                sb.append("  " + provider.toShortString(options.shortStringLength) + "\n");
                 sb.append("without a (transitive) task requirement on it");
                 error(sb.toString());
             }
@@ -161,9 +163,9 @@ public class ValidationLayer implements Layer {
                     sb.append("resource\n");
                     sb.append("  " + resource + "\n");
                     sb.append("was provided by task\n");
-                    sb.append("  " + currentTaskKey + "\n");
+                    sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
                     sb.append("after being previously required by task\n");
-                    sb.append("  " + requiree);
+                    sb.append("  " + requiree.toShortString(options.shortStringLength));
                     error(sb.toString());
                 }
             }
@@ -179,7 +181,7 @@ public class ValidationLayer implements Layer {
         if(!errors.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
             sb.append("Task key:\n");
-            sb.append("  " + key + "\n");
+            sb.append("  " + key.toShortString(options.shortStringLength) + "\n");
             sb.append("failed one or more validation checks:\n");
             sb.append("\n");
             boolean first = true;
@@ -199,7 +201,7 @@ public class ValidationLayer implements Layer {
             sb.append("Input:\n");
             sb.append("  " + input + "\n");
             sb.append("of task with key\n");
-            sb.append("  " + key);
+            sb.append("  " + key.toShortString(options.shortStringLength));
             sb.append("failed one or more validation checks:\n");
             sb.append("\n");
             boolean first = true;
@@ -225,7 +227,7 @@ public class ValidationLayer implements Layer {
             sb.append("Output:\n");
             sb.append("  " + output + "\n");
             sb.append("of task with key\n");
-            sb.append("  " + key);
+            sb.append("  " + key.toShortString(options.shortStringLength));
             sb.append("failed one or more validation checks:\n");
             sb.append("\n");
             boolean first = true;
