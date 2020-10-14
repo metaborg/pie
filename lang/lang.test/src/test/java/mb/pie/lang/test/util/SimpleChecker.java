@@ -1,6 +1,9 @@
 package mb.pie.lang.test.util;
 
-import mb.pie.api.*;
+import mb.pie.api.ExecException;
+import mb.pie.api.MixedSession;
+import mb.pie.api.None;
+import mb.pie.api.TaskDef;
 import mb.pie.dagger.PieComponent;
 import mb.pie.dagger.PieModule;
 import mb.pie.runtime.PieBuilderImpl;
@@ -17,21 +20,35 @@ public class SimpleChecker {
     }
 
     public static <I extends Serializable, O extends Serializable> O assertTaskOutputEquals(
-        Class<? extends PieComponent> componentClass, I input, O expectedOutput) throws ExecException {
+        Class<? extends PieComponent> componentClass,
+        I input,
+        O expectedOutput
+    ) throws ExecException {
+        final O output = requireTask(componentClass, input);
+        assertEquals(expectedOutput, output);
+        return output;
+    }
+
+
+    public static <I extends Serializable, O extends Serializable> O requireTask(
+        Class<? extends PieComponent> componentClass
+    ) throws ExecException {
+        return requireTask(componentClass, None.instance);
+    }
+
+    public static <I extends Serializable, O extends Serializable> O requireTask(
+        Class<? extends PieComponent> componentClass,
+        I input
+    ) throws ExecException {
         try {
             Object builder = componentClass.getMethod("builder").invoke(null);
             builder.getClass().getMethod("pieModule", PieModule.class).invoke(builder, new PieModule(PieBuilderImpl::new));
             PieComponent component = (PieComponent)builder.getClass().getMethod("build").invoke(builder);
-
-            Pie pie = component.getPie();
-            try(MixedSession session = pie.newSession()) {
-                @SuppressWarnings("unchecked") final TaskDef<I, O> main =
-                    (TaskDef<I, O>)component.getClass().getMethod("get").invoke(component);
-                final O actualOutput = session.require(main.createTask(input));
-                assertEquals(expectedOutput, actualOutput);
-                return actualOutput;
+            try(MixedSession session = component.getPie().newSession()) {
+                @SuppressWarnings("unchecked") final TaskDef<I, O> main = (TaskDef<I, O>)component.getClass().getMethod("get").invoke(component);
+                return session.require(main.createTask(input));
             }
-        } catch (NoSuchMethodException e) {
+        } catch(NoSuchMethodException e) {
             throw new RuntimeException("Expected method to exist", e);
         } catch(IllegalAccessException e) {
             throw new RuntimeException("Expected method to be accessible", e);
