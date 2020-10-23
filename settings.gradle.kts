@@ -15,4 +15,5 @@ if(org.gradle.util.VersionNumber.parse(gradle.gradleVersion).major < 6) {
 if(gradle.parent == null) {
   includeBuild("core")
   includeBuild("lang")
+  includeBuild("bench")
 }
