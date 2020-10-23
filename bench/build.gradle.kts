@@ -15,7 +15,7 @@ application {
 fun compositeBuild(name: String) = "$group:$name:$version"
 
 val jmhVersion = "1.26"
-val spoofax3Version = "0.5.0"
+val spoofax3Version = "0.5.1"
 
 dependencies {
   implementation(platform(compositeBuild("pie.depconstraints")))
