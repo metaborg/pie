@@ -11,7 +11,7 @@ PIE is an API and runtime for developing interactive software development pipeli
 
 ## Copyright and License
 
-Copyright © 2018-2019 Delft University of Technology
+Copyright © 2018-2020 Delft University of Technology
 
 The code and files in this project are licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 You may use the files in this project in compliance with the license.
@@ -96,33 +96,18 @@ or add the following to your Maven `pom.xml` file:
 </dependency>
 ```
 
-The latest stable version is listed at the top of this file.
-The development version in the `develop` branch is published on every commit with version `develop-SNAPSHOT` which you can depend on as follows:
-
-```gradle
-implementation 'org.metaborg:pie.runtime:develop-SNAPSHOT'
-```
-
-```gradle.kts
-implementation("org.metaborg:pie.runtime:develop-SNAPSHOT")
-```
-
-```maven-pom
-<dependency>
-  <groupId>org.metaborg</groupId>
-  <artifactId>pie.runtime</artifactId>
-  <version>develop-SNAPSHOT</version>
-</dependency>
-```
+The latest version is listed at the top of this file.
 
 ### Components
 
 PIE consists of several components:
 
-* [pie.api](api): The PIE API for developing reusable interactive pipelines or incremental build scripts
-* [pie.runtime](runtime): The PIE runtime for incrementally executing pipelines developed with the API
-* [pie.taskdefs.guice](taskdefs.guice): Guice dependency injection support for task definitions
-* [pie.dagger](dagger): Dagger dependency injection support
+* [pie.api](core/api): The PIE API for developing reusable interactive pipelines or incremental build scripts
+* [pie.runtime](core/runtime): The PIE runtime for incrementally executing pipelines developed with the API
+* [pie.taskdefs.guice](core/taskdefs.guice): Guice dependency injection support for task definitions
+* [pie.dagger](core/dagger): Dagger dependency injection support
+* [task.java](core/task.java): Java compilation tasks
+* [task.archive](core/task.archive): ZIP/Jar archiving and unarchiving tasks
 
 ## Developer's guide
 
