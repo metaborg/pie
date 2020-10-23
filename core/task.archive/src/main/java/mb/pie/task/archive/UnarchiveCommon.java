@@ -79,6 +79,9 @@ public class UnarchiveCommon {
         ResourcePath outputDirectory,
         Function<ReadableResource, ZipInputStream> inputStreamFunction
     ) throws IOException {
+        // Normalize output directory to ensure that unpacked files have the output directory as prefix.
+        outputDirectory = outputDirectory.getNormalized();
+
         try(final ZipInputStream archiveInputStream = inputStreamFunction.apply(context.require(archiveFile))) {
             ZipEntry entry;
             while((entry = archiveInputStream.getNextEntry()) != null) {
