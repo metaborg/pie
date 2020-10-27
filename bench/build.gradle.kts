@@ -20,7 +20,7 @@ tasks.getByName<JavaExec>("run") {
 fun compositeBuild(name: String) = "$group:$name:$version"
 
 val jmhVersion = "1.26"
-val spoofax3Version = "0.5.1"
+val spoofax3Version = "0.5.2"
 
 dependencies {
   implementation(platform(compositeBuild("pie.depconstraints")))
