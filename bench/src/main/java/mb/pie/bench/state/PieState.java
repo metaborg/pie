@@ -57,7 +57,7 @@ public class PieState {
         return setupTrial(new NullTaskDefs(), ancestors);
     }
 
-    public void tearDownInvocation() {
+    public void dropStore() {
         pie.dropStore();
         pie.dropCallbacks();
     }

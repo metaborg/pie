@@ -10,6 +10,8 @@ import mb.log.noop.NoopLoggerFactory;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
+import mb.pie.bench.util.ChangeMaker;
+import mb.pie.bench.util.PieMetricsProfiler;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.task.archive.UnarchiveCommon;
 import mb.resource.classloader.ClassLoaderResource;
@@ -38,12 +40,14 @@ import mb.spoofax.core.platform.ResourceRegistriesModule;
 import mb.statix.DaggerStatixComponent;
 import mb.str.DaggerStrategoComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.units.qual.C;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 @State(Scope.Thread)
 public class Spoofax3CompilerState {
@@ -97,8 +101,11 @@ public class Spoofax3CompilerState {
     // Invocation hot-path (during measurement)
 
     @SuppressWarnings("ConstantConditions")
-    public Result<KeyedMessages, CompilerException> require(MixedSession session, Task<Result<KeyedMessages, CompilerException>> task) throws Exception {
+    public Result<KeyedMessages, CompilerException> require(MixedSession session, Task<Result<KeyedMessages, CompilerException>> task, String name) throws Exception {
+        PieMetricsProfiler.getInstance().start();
         final Result<KeyedMessages, CompilerException> result = session.require(task);
+        PieMetricsProfiler.getInstance().stop(name);
+
         if(result.isErr()) {
             final CompilerException e = result.getErr();
             System.out.println(e.getMessage() + ". " + e.getSubMessage());
@@ -109,6 +116,15 @@ public class Spoofax3CompilerState {
             throw e;
         }
         return result;
+    }
+
+    public ArrayList<Change> getChanges() {
+        return language.getChanges();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public ChangeMaker getChangeMaker() {
+        return new ChangeMaker(temporaryDirectory);
     }
 
 
@@ -145,7 +161,7 @@ public class Spoofax3CompilerState {
 
     @Param("calc") public LanguageKind language;
 
-    public static enum LanguageKind {
+    public enum LanguageKind {
         calc {
             @Override
             public void unarchiveToTempDirectory(HierarchicalResource temporaryDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException {
@@ -175,10 +191,29 @@ public class Spoofax3CompilerState {
                 inputBuilder.withStrategoRuntime();
                 return inputBuilder.build(new Properties(), shared, spoofax3LanguageProject);
             }
+
+            @Override public ArrayList<Change> getChanges() {
+                final ArrayList<Change> changes = new ArrayList<>();
+                changes.add(changeMaker -> {
+                    changeMaker.replaceFirst("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
+                    return "remove_str_false_rule";
+                });
+                changes.add(changeMaker -> {
+                    changeMaker.replaceFirst("src/main/sdf3/start.sdf3", "Exp.False = <false>", "");
+                    return "remove_sdf3_false_rule";
+                });
+                return changes;
+            }
         };
 
         public abstract void unarchiveToTempDirectory(HierarchicalResource tempDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException;
 
         public abstract Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDirectory);
+
+        public abstract ArrayList<Change> getChanges();
+    }
+
+    @FunctionalInterface public interface Change {
+        String applyChange(ChangeMaker changeMaker) throws IOException;
     }
 }

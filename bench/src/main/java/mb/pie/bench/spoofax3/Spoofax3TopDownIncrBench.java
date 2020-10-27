@@ -7,6 +7,8 @@ import mb.pie.api.Task;
 import mb.pie.bench.state.PieState;
 import mb.pie.bench.state.Spoofax3CompilerState;
 import mb.pie.bench.state.TemporaryDirectoryState;
+import mb.pie.bench.util.ChangeMaker;
+import mb.pie.bench.util.GarbageCollection;
 import mb.spoofax.compiler.spoofax3.language.CompilerException;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -20,6 +22,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,10 +30,10 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Benchmark)
 // Development/debugging settings
-@Warmup(iterations = 0)
-@Measurement(iterations = 1)
+@Warmup(iterations = 1)
+@Measurement(iterations = 2)
 @Fork(value = 0)
-public class Spoofax3TopDownFullBench {
+public class Spoofax3TopDownIncrBench {
     private TemporaryDirectoryState temporaryDirectoryState;
     private Spoofax3CompilerState spoofax3CompilerState;
     private PieState pieState;
@@ -51,16 +54,40 @@ public class Spoofax3TopDownFullBench {
     }
 
     @Benchmark
-    public Object run() throws Exception {
+    public void run(Blackhole blackhole) throws Exception {
+        // Initial
         try(final MixedSession session = pieState.newSession()) {
-            return spoofax3CompilerState.require(session, task);
+            blackhole.consume(spoofax3CompilerState.require(session, task, "initial"));
+        }
+        // Changes
+        int i = 0;
+        final ChangeMaker changeMaker = spoofax3CompilerState.getChangeMaker();
+        for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {
+            // Apply change
+            final String id = change.applyChange(changeMaker);
+            // Run garbage collection to make memory usage deterministic.
+            GarbageCollection.run();
+            // Measure incremental
+            try(final MixedSession session = pieState.newSession()) {
+                blackhole.consume(spoofax3CompilerState.require(session, task, "incr:" + i + ":" + id));
+            }
+            // Delete generated files and PIE storage
+            spoofax3CompilerState.deleteGeneratedFiles();
+            pieState.dropStore();
+            // Run garbage collection to make memory usage deterministic.
+            GarbageCollection.run();
+            // Measure full
+            try(final MixedSession session = pieState.newSession()) {
+                blackhole.consume(spoofax3CompilerState.require(session, task, "full:" + i + ":" + id));
+            }
+            ++i;
         }
     }
 
     @TearDown(Level.Invocation)
     public void tearDownInvocation() throws Exception {
-        pieState.tearDownInvocation();
         spoofax3CompilerState.deleteGeneratedFiles();
+        pieState.dropStore();
     }
 
 
