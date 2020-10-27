@@ -1,6 +1,9 @@
 package mb.pie.task.archive;
 
 import mb.pie.api.ExecContext;
+import mb.pie.task.archive.Common.ExecContextProvider;
+import mb.pie.task.archive.Common.NoopProvider;
+import mb.pie.task.archive.Common.Provider;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.hierarchical.HierarchicalResource;
@@ -24,8 +27,22 @@ public class UnarchiveCommon {
         ResourceKey zipFile,
         ResourcePath outputDirectory
     ) throws IOException {
+        unarchiveZip(context.require(zipFile), context.getHierarchicalResource(outputDirectory), new ExecContextProvider(context));
+    }
+
+    public static void unarchiveZip(
+        ReadableResource zipFile,
+        HierarchicalResource outputDirectory
+    ) throws IOException {
+        unarchiveZip(zipFile, outputDirectory, new NoopProvider());
+    }
+
+    private static void unarchiveZip(
+        ReadableResource zipFile,
+        HierarchicalResource outputDirectory,
+        Provider provider
+    ) throws IOException {
         unarchive(
-            context,
             zipFile,
             outputDirectory,
             (resource) -> {
@@ -34,9 +51,11 @@ public class UnarchiveCommon {
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
                 }
-            }
+            },
+            provider
         );
     }
+
 
     public static @Nullable Manifest unarchiveJar(
         ExecContext context,
@@ -45,10 +64,28 @@ public class UnarchiveCommon {
         boolean unarchiveManifest,
         boolean verifySignaturesIfSigned
     ) throws IOException {
+        return unarchiveJar(context.require(jarFile), context.getHierarchicalResource(outputDirectory), unarchiveManifest, verifySignaturesIfSigned, new ExecContextProvider(context));
+    }
+
+    public static @Nullable Manifest unarchiveJar(
+        ReadableResource jarFile,
+        HierarchicalResource outputDirectory,
+        boolean unarchiveManifest,
+        boolean verifySignaturesIfSigned
+    ) throws IOException {
+        return unarchiveJar(jarFile, outputDirectory, unarchiveManifest, verifySignaturesIfSigned, new NoopProvider());
+    }
+
+    private static @Nullable Manifest unarchiveJar(
+        ReadableResource jarFile,
+        HierarchicalResource outputDirectory,
+        boolean unarchiveManifest,
+        boolean verifySignaturesIfSigned,
+        Provider provider
+    ) throws IOException {
         // Use an atomic reference to allow writing in closure.
         final AtomicReference<@Nullable Manifest> manifestRef = new AtomicReference<>();
         unarchive(
-            context,
             jarFile,
             outputDirectory,
             (resource) -> {
@@ -59,30 +96,32 @@ public class UnarchiveCommon {
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
                 }
-            }
+            },
+            provider
         );
         final @Nullable Manifest manifest = manifestRef.get();
         if(unarchiveManifest && manifest != null) {
-            final HierarchicalResource manifestFile = context.getHierarchicalResource(outputDirectory.appendRelativePath(JarFile.MANIFEST_NAME).getNormalized());
+            final HierarchicalResource manifestFile = outputDirectory.appendRelativePath(JarFile.MANIFEST_NAME).getNormalized();
             try(final BufferedOutputStream outputStream = manifestFile.ensureFileExists().openWriteBuffered()) {
                 manifest.write(outputStream);
                 outputStream.flush();
             }
-            context.provide(manifestFile);
+            provider.provide(manifestFile);
         }
         return manifest;
     }
 
+
     private static void unarchive(
-        ExecContext context,
-        ResourceKey archiveFile,
-        ResourcePath outputDirectory,
-        Function<ReadableResource, ZipInputStream> inputStreamFunction
+        ReadableResource archiveFile,
+        HierarchicalResource outputDirectory,
+        Function<ReadableResource, ZipInputStream> inputStreamFunction,
+        Provider provider
     ) throws IOException {
         // Normalize output directory to ensure that unpacked files have the output directory as prefix.
         outputDirectory = outputDirectory.getNormalized();
 
-        try(final ZipInputStream archiveInputStream = inputStreamFunction.apply(context.require(archiveFile))) {
+        try(final ZipInputStream archiveInputStream = inputStreamFunction.apply(archiveFile)) {
             ZipEntry entry;
             while((entry = archiveInputStream.getNextEntry()) != null) {
                 try {
@@ -90,11 +129,10 @@ public class UnarchiveCommon {
                     if(name.isEmpty() || name.equals("/")) {
                         continue; // Skip empty or root paths.
                     }
-                    final ResourcePath targetPath = outputDirectory.appendRelativePath(name).getNormalized();
-                    if(!targetPath.startsWith(outputDirectory)) {
-                        throw new IOException("Cannot unarchive entry '" + name + "' from archive '" + archiveFile + "', resulting path ' " + targetPath + "' is not in the unpack directory '" + outputDirectory + "'");
+                    final HierarchicalResource target = outputDirectory.appendRelativePath(name).getNormalized();
+                    if(!target.startsWith(outputDirectory)) {
+                        throw new IOException("Cannot unarchive entry '" + name + "' from archive '" + archiveFile + "', resulting path ' " + target + "' is not in the unpack directory '" + outputDirectory + "'");
                     }
-                    final HierarchicalResource target = context.getHierarchicalResource(targetPath);
                     if(entry.isDirectory()) {
                         target.ensureDirectoryExists();
                         // Do not provide directory to prevent overlapping provided resources.
@@ -105,7 +143,7 @@ public class UnarchiveCommon {
                             IoCommon.copy(archiveInputStream, outputStream, new byte[1024 * 4]);
                             outputStream.flush();
                         }
-                        context.provide(target);
+                        provider.provide(target);
                     }
                 } finally {
                     archiveInputStream.closeEntry();

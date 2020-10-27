@@ -7,11 +7,17 @@ import mb.esv.DaggerEsvComponent;
 import mb.libspoofax2.DaggerLibSpoofax2Component;
 import mb.libstatix.DaggerLibStatixComponent;
 import mb.log.noop.NoopLoggerFactory;
+import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
 import mb.pie.runtime.PieBuilderImpl;
-import mb.resource.ResourceService;
-import mb.resource.fs.FSPath;
+import mb.pie.task.archive.UnarchiveCommon;
+import mb.resource.classloader.ClassLoaderResource;
+import mb.resource.classloader.ClassLoaderResourceLocations;
+import mb.resource.classloader.ClassLoaderResourceRegistry;
+import mb.resource.classloader.JarFileWithPath;
+import mb.resource.fs.FSResource;
+import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import mb.sdf3.DaggerSdf3Component;
 import mb.spoofax.compiler.language.LanguageProject;
@@ -28,8 +34,10 @@ import mb.spoofax.core.platform.DaggerPlatformComponent;
 import mb.spoofax.core.platform.LoggerFactoryModule;
 import mb.spoofax.core.platform.PlatformComponent;
 import mb.spoofax.core.platform.PlatformPieModule;
+import mb.spoofax.core.platform.ResourceRegistriesModule;
 import mb.statix.DaggerStatixComponent;
 import mb.str.DaggerStrategoComponent;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -39,13 +47,18 @@ import java.nio.charset.StandardCharsets;
 
 @State(Scope.Thread)
 public class Spoofax3CompilerState {
-    public Spoofax3LanguageProjectCompilerInputBuilder inputBuilder;
+    // Trial set-up
+
+    public ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
     public PlatformComponent platformComponent;
     public Spoofax3CompilerComponent spoofax3CompilerComponent;
+    public @Nullable HierarchicalResource temporaryDirectory;
 
-    public Spoofax3CompilerState setupTrial() {
+    public Spoofax3CompilerState setupTrial(HierarchicalResource temporaryDirectory) throws IOException {
+        benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
         platformComponent = DaggerPlatformComponent.builder()
             .loggerFactoryModule(new LoggerFactoryModule(new NoopLoggerFactory()))
+            .resourceRegistriesModule(new ResourceRegistriesModule(benchClassLoaderResourceRegistry))
             .platformPieModule(new PlatformPieModule(PieBuilderImpl::new))
             .build();
         spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
@@ -58,7 +71,8 @@ public class Spoofax3CompilerState {
             .libSpoofax2Component(DaggerLibSpoofax2Component.builder().platformComponent(platformComponent).build())
             .libStatixComponent(DaggerLibStatixComponent.builder().platformComponent(platformComponent).build())
             .build();
-        inputBuilder = new Spoofax3LanguageProjectCompilerInputBuilder();
+        language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
+        this.temporaryDirectory = temporaryDirectory;
         return this;
     }
 
@@ -66,25 +80,44 @@ public class Spoofax3CompilerState {
         return spoofax3CompilerComponent.getPie();
     }
 
-    public ResourceService getResourceService() {
-        return spoofax3CompilerComponent.getResourceService();
-    }
 
+    // Invocation set-up
 
-    public Spoofax3LanguageProjectCompiler.Input input;
-    public Task<Result<KeyedMessages, CompilerException>> task;
+    private Spoofax3LanguageProjectCompiler.@Nullable Input input;
 
     public Task<Result<KeyedMessages, CompilerException>> setupInvocation() {
-        final Shared shared = Shared.builder().name(name).build();
-        final FSPath baseDirectory = FSPath.workingDirectory().appendOrReplaceWithPath(languageProjectBaseDirectory);
-        final LanguageProject languageProject = LanguageProject.builder().withDefaults(baseDirectory, shared).build();
-        final Spoofax3LanguageProject spoofax3LanguageProject = Spoofax3LanguageProject.builder().languageProject(languageProject).build();
-        input = inputBuilder.build(new Properties(), shared, spoofax3LanguageProject);
-        task = spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
-        return task;
+        if(temporaryDirectory == null) {
+            throw new IllegalStateException("setupInvocation was called without first calling setupTrial");
+        }
+        input = language.getCompilerInput(temporaryDirectory);
+        return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
     }
 
-    public void tearDownInvocation() throws IOException {
+
+    // Invocation hot-path (during measurement)
+
+    @SuppressWarnings("ConstantConditions")
+    public Result<KeyedMessages, CompilerException> require(MixedSession session, Task<Result<KeyedMessages, CompilerException>> task) throws Exception {
+        final Result<KeyedMessages, CompilerException> result = session.require(task);
+        if(result.isErr()) {
+            final CompilerException e = result.getErr();
+            System.out.println(e.getMessage() + ". " + e.getSubMessage());
+            e.getSubMessages().ifPresent((System.out::println));
+            if(e.getSubCause() != null) {
+                e.getSubCause().printStackTrace(System.out);
+            }
+            throw e;
+        }
+        return result;
+    }
+
+
+    // Invocation tear-down
+
+    public void deleteGeneratedFiles() throws IOException {
+        if(input == null) {
+            throw new IllegalStateException("deleteGeneratedFiles was called without first calling setupInvocation");
+        }
         final Spoofax3LanguageProject project = input.spoofax3LanguageProject();
         delete(project.generatedResourcesDirectory());
         delete(project.generatedSourcesDirectory());
@@ -93,11 +126,59 @@ public class Spoofax3CompilerState {
         delete(project.unarchiveDirectory());
     }
 
-    private void delete(ResourcePath path) throws IOException {
-        getResourceService().getHierarchicalResource(path).delete(true);
+
+    // Trial tear-down
+
+    public void tearDownTrial() throws IOException {
+
     }
 
 
-    @Param("Calc") public String name;
-    @Param("data/spoofax3/calc") public String languageProjectBaseDirectory;
+    // Helper methods
+
+    private void delete(ResourcePath path) throws IOException {
+        platformComponent.getResourceService().getHierarchicalResource(path).delete(true);
+    }
+
+
+    // Parameters
+
+    @Param("calc") public LanguageKind language;
+
+    public static enum LanguageKind {
+        calc {
+            @Override
+            public void unarchiveToTempDirectory(HierarchicalResource temporaryDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException {
+                final ClassLoaderResource sourceFileDirectory = classLoaderResourceRegistry.getResource("mb/pie/bench/data/spoofax3/calc");
+                final ClassLoaderResourceLocations locations = sourceFileDirectory.getLocations();
+                for(FSResource directory : locations.directories) {
+                    directory.copyRecursivelyTo(temporaryDirectory);
+                }
+                for(JarFileWithPath jarFileWithPath : locations.jarFiles) {
+                    UnarchiveCommon.unarchiveJar(jarFileWithPath.file, temporaryDirectory, false, false);
+                }
+            }
+
+            @Override
+            public Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDirectory) {
+                final Shared shared = Shared.builder()
+                    .name("Calc")
+                    .defaultPackageId("mb.calc")
+                    .defaultClassPrefix("Calc")
+                    .build();
+                final LanguageProject languageProject = LanguageProject.builder().withDefaults(baseDirectory.getPath(), shared).build();
+                final Spoofax3LanguageProject spoofax3LanguageProject = Spoofax3LanguageProject.builder().languageProject(languageProject).build();
+                final Spoofax3LanguageProjectCompilerInputBuilder inputBuilder = new Spoofax3LanguageProjectCompilerInputBuilder();
+                inputBuilder.withParser();
+                inputBuilder.withStyler();
+                inputBuilder.withConstraintAnalyzer();
+                inputBuilder.withStrategoRuntime();
+                return inputBuilder.build(new Properties(), shared, spoofax3LanguageProject);
+            }
+        };
+
+        public abstract void unarchiveToTempDirectory(HierarchicalResource tempDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException;
+
+        public abstract Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDirectory);
+    }
 }

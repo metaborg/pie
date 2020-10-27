@@ -2,7 +2,14 @@ package mb.pie.task.archive;
 
 import mb.pie.api.ExecContext;
 import mb.pie.api.stamp.resource.ResourceStampers;
+import mb.pie.task.archive.Common.ExecContextProvider;
+import mb.pie.task.archive.Common.ExecContextRequirer;
+import mb.pie.task.archive.Common.NoopProvider;
+import mb.pie.task.archive.Common.Provider;
+import mb.pie.task.archive.Common.Requirer;
+import mb.pie.task.archive.Common.ResourceServiceRequirer;
 import mb.resource.ResourceKey;
+import mb.resource.ResourceService;
 import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
 
@@ -24,8 +31,24 @@ public class ArchiveCommon {
         ResourceKey zipFile,
         Iterable<ArchiveDirectory> archiveDirectories
     ) throws IOException {
+        return archiveToZip(context.getWritableResource(zipFile), archiveDirectories, new ExecContextRequirer(context), new ExecContextProvider(context));
+    }
+
+    public static WritableResource archiveToZip(
+        ResourceService resourceService,
+        WritableResource zipFile,
+        Iterable<ArchiveDirectory> archiveDirectories
+    ) throws IOException {
+        return archiveToZip(zipFile, archiveDirectories, new ResourceServiceRequirer(resourceService), new NoopProvider());
+    }
+
+    private static WritableResource archiveToZip(
+        WritableResource zipFile,
+        Iterable<ArchiveDirectory> archiveDirectories,
+        Requirer requirer,
+        Provider provider
+    ) throws IOException {
         return archive(
-            context,
             zipFile,
             archiveDirectories,
             (resource) -> {
@@ -36,9 +59,12 @@ public class ArchiveCommon {
                 }
             },
             (relativePath) -> false,
-            ZipEntry::new
+            ZipEntry::new,
+            requirer,
+            provider
         );
     }
+
 
     public static WritableResource archiveToJar(
         ExecContext context,
@@ -46,8 +72,26 @@ public class ArchiveCommon {
         Iterable<ArchiveDirectory> archiveDirectories,
         Manifest manifest
     ) throws IOException {
+        return archiveToJar(context.getWritableResource(jarFile), archiveDirectories, manifest, new ExecContextRequirer(context), new ExecContextProvider(context));
+    }
+
+    public static WritableResource archiveToJar(
+        ResourceService resourceService,
+        WritableResource jarFile,
+        Iterable<ArchiveDirectory> archiveDirectories,
+        Manifest manifest
+    ) throws IOException {
+        return archiveToJar(jarFile, archiveDirectories, manifest, new ResourceServiceRequirer(resourceService), new NoopProvider());
+    }
+
+    private static WritableResource archiveToJar(
+        WritableResource jarFile,
+        Iterable<ArchiveDirectory> archiveDirectories,
+        Manifest manifest,
+        Requirer requirer,
+        Provider provider
+    ) throws IOException {
         return archive(
-            context,
             jarFile,
             archiveDirectories,
             (resource) -> {
@@ -63,22 +107,25 @@ public class ArchiveCommon {
                 // which results in an exception.
                 return relativePath.endsWith("META-INF/MANIFEST.MF");
             },
-            JarEntry::new
+            JarEntry::new,
+            requirer,
+            provider
         );
     }
 
+
     private static WritableResource archive(
-        ExecContext context,
-        ResourceKey archiveFileKey,
+        WritableResource archiveFile,
         Iterable<ArchiveDirectory> archiveDirectories,
         Function<WritableResource, ZipOutputStream> outputStreamFunction,
         Predicate<String> pathSkipPredicate,
-        Function<String, ZipEntry> entryFunction
+        Function<String, ZipEntry> entryFunction,
+        Requirer requirer,
+        Provider provider
     ) throws IOException {
-        final WritableResource archiveFile = context.getWritableResource(archiveFileKey);
         try(final ZipOutputStream archiveOutputStream = outputStreamFunction.apply(archiveFile)) {
             for(ArchiveDirectory archiveDirectory : archiveDirectories) {
-                final HierarchicalResource root = context.require(archiveDirectory.directory, ResourceStampers.modifiedDirRec(archiveDirectory.walker, archiveDirectory.matcher));
+                final HierarchicalResource root = requirer.require(archiveDirectory.directory, ResourceStampers.modifiedDirRec(archiveDirectory.walker, archiveDirectory.matcher));
                 try(final Stream<? extends HierarchicalResource> stream = root.walk(archiveDirectory.walker, archiveDirectory.matcher)) {
                     stream.forEach(resource -> {
                         // Files.walk returns absolute paths, so we need to relativize them.
@@ -110,7 +157,7 @@ public class ArchiveCommon {
         } catch(UncheckedIOException e) {
             throw e.getCause();
         }
-        context.provide(archiveFile);
+        provider.provide(archiveFile);
         return archiveFile;
     }
 
