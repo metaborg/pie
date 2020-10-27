@@ -36,7 +36,7 @@ import java.util.function.Function;
 public class PieState {
     private Pie pie;
 
-    public PieState setup(TaskDefs taskDefs, Pie... ancestors) {
+    public PieState setupTrial(TaskDefs taskDefs, Pie... ancestors) {
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
         pieBuilder.withStoreFactory(storeKind.get());
@@ -53,11 +53,11 @@ public class PieState {
         return this;
     }
 
-    public PieState setup(Pie... ancestors) {
-        return setup(new NullTaskDefs(), ancestors);
+    public PieState setupTrial(Pie... ancestors) {
+        return setupTrial(new NullTaskDefs(), ancestors);
     }
 
-    public void reset() {
+    public void tearDownInvocation() {
         pie.dropStore();
         pie.dropCallbacks();
     }

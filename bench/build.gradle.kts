@@ -12,6 +12,11 @@ application {
   }
 }
 
+tasks.getByName<JavaExec>("run") {
+  args("-prof", "mb.pie.bench.util.PieMetricsProfiler")
+}
+
+
 fun compositeBuild(name: String) = "$group:$name:$version"
 
 val jmhVersion = "1.26"
@@ -23,10 +28,12 @@ dependencies {
   implementation("org.openjdk.jmh:jmh-core:$jmhVersion")
 
   implementation(compositeBuild("pie.runtime"))
+  implementation(compositeBuild("pie.task.archive"))
 
   implementation("org.metaborg:spoofax.compiler.spoofax3:$spoofax3Version")
   implementation("org.metaborg:spoofax.compiler.spoofax3.dagger:$spoofax3Version")
 
+  implementation("com.google.jimfs:jimfs")
   implementation("org.metaborg:log.backend.noop")
   implementation("org.slf4j:slf4j-nop:1.7.30")
 
