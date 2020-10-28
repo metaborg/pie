@@ -1,34 +1,37 @@
 package mb.pie.bench.util;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
-/**
- * Simple time measurement functionality.
- */
 public class Timer {
-    /** ThreadMXBean for measuring CPU time. **/
+    public static class Time {
+        public final long systemNanoTime;
+        public final long threadCpuTime;
+        public final long threadUserTime;
+
+        public Time(long systemNanoTime, long threadCpuTime, long threadUserTime) {
+            this.systemNanoTime = systemNanoTime;
+            this.threadCpuTime = threadCpuTime;
+            this.threadUserTime = threadUserTime;
+        }
+    }
+
+
     private final ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+    private long startSystemNanoTime = 0;
+    private long startThreadCpuTime = 0;
+    private long startThreadUserTime = 0;
 
-    /** If precise CPU time measurements are available. **/
-    private final boolean canLogCPUTime = false; // HACK: force use System.nanoTime which is much closer to JMH's measurements.
 
-    /** Last starting time since start was called. **/
-    private long startTime = 0;
-
+    public Timer(boolean start) {
+        mxBean.setThreadCpuTimeEnabled(true);
+        if(start) {
+            start();
+        }
+    }
 
     public Timer() {
         this(false);
-    }
-
-    public Timer(boolean start) {
-        if(canLogCPUTime)
-            mxBean.setThreadCpuTimeEnabled(true);
-        if(start)
-            start();
     }
 
 
@@ -36,29 +39,32 @@ public class Timer {
      * Starts the timer, noting the current time.
      */
     public void start() {
-        startTime = time();
+        startSystemNanoTime = systemNanoTime();
+        startThreadCpuTime = threadCpuTime();
+        startThreadUserTime = threadUserTime();
     }
 
     /**
      * @return The duration, in nanoseconds, between the call to {@link #start()} and this invocation. This method can
-     *         be called multiple times after one {@link #start()} invocation.
+     * be called multiple times after one {@link #start()} invocation.
      */
-    public long stop() {
-        return time() - startTime;
+    public Time stop() {
+        return new Time(systemNanoTime() - startSystemNanoTime, threadCpuTime() - startThreadCpuTime, threadUserTime() - startThreadUserTime);
     }
 
     /**
      * Resets the timer, forgetting the time noted when {@link #start()} was called.
      */
     public void reset() {
-        startTime = 0;
+        startSystemNanoTime = 0;
+        startThreadCpuTime = 0;
+        startThreadUserTime = 0;
     }
 
 
-    private long time() {
-        if(canLogCPUTime)
-            return mxBean.getCurrentThreadCpuTime();
-        else
-            return System.nanoTime();
-    }
+    private long systemNanoTime() { return System.nanoTime(); }
+
+    private long threadCpuTime() { return mxBean.getCurrentThreadCpuTime(); }
+
+    private long threadUserTime() { return mxBean.getCurrentThreadUserTime(); }
 }

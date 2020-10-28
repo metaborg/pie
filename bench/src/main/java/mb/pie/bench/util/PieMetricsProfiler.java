@@ -48,8 +48,8 @@ public class PieMetricsProfiler implements InternalProfiler {
     }
 
     public void stop(String id) {
-        final long timeNs = timer.stop();
-        measurements.add(new Measurement(id, timeNs, Stats.requires, Stats.executions, Stats.fileReqs, Stats.fileGens, Stats.callReqs));
+        final Timer.Time time = timer.stop();
+        measurements.add(new Measurement(id, time, Stats.requires, Stats.executions, Stats.fileReqs, Stats.fileGens, Stats.callReqs));
     }
 
     @Override
@@ -57,12 +57,14 @@ public class PieMetricsProfiler implements InternalProfiler {
         final TimeUnit targetTimeUnit = benchmarkParams.getTimeUnit();
         final ArrayList<Result> results = new ArrayList<>();
         for(Measurement measurement : measurements) {
-            results.add(measurement.createSingleShotResult("time", measurement.timeNs, targetTimeUnit));
-            results.add(measurement.createMaxScalarResult("numTaskRequires", measurement.numTaskRequires, "#"));
-            results.add(measurement.createMaxScalarResult("numTaskExecutions", measurement.numTaskExecutions, "#"));
-            results.add(measurement.createMaxScalarResult("numResourceDepRequires", measurement.numResourceDepRequires, "#"));
-            results.add(measurement.createMaxScalarResult("numResourceDepProvides", measurement.numResourceDepProvides, "#"));
-            results.add(measurement.createMaxScalarResult("numTaskDepRequires", measurement.numTaskDepRequires, "#"));
+            results.add(measurement.createSingleShotResult("systemNanoTime", measurement.time.systemNanoTime, targetTimeUnit));
+            results.add(measurement.createSingleShotResult("threadCpuTime", measurement.time.threadCpuTime, targetTimeUnit));
+            results.add(measurement.createSingleShotResult("threadUserTime", measurement.time.threadUserTime, targetTimeUnit));
+            results.add(measurement.createMaxScalarResult("requiredTasks", measurement.requiredTasks, "#"));
+            results.add(measurement.createMaxScalarResult("executedTasks", measurement.executedTasks, "#"));
+            results.add(measurement.createMaxScalarResult("requiredResourceDependencies", measurement.requiredResourceDependencies, "#"));
+            results.add(measurement.createMaxScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "#"));
+            results.add(measurement.createMaxScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "#"));
         }
         return results;
     }
@@ -75,37 +77,37 @@ public class PieMetricsProfiler implements InternalProfiler {
 
     private static class Measurement {
         public final String id;
-        public final long timeNs;
-        public final long numTaskRequires;
-        public final long numTaskExecutions;
-        public final long numResourceDepRequires;
-        public final long numResourceDepProvides;
-        public final long numTaskDepRequires;
+        public final Timer.Time time;
+        public final long requiredTasks;
+        public final long executedTasks;
+        public final long requiredResourceDependencies;
+        public final long providedResourceDependencies;
+        public final long requiredTaskDependencies;
 
         private Measurement(
             String id,
-            long timeNs,
-            long numTaskRequires,
-            long numTaskExecutions,
-            long numResourceDepRequires,
-            long numResourceDepProvides,
-            long numTaskDepRequires
+            Timer.Time time,
+            long requiredTasks,
+            long executedTasks,
+            long requiredResourceDependencies,
+            long providedResourceDependencies,
+            long requiredTaskDependencies
         ) {
             this.id = id;
-            this.timeNs = timeNs;
-            this.numTaskRequires = numTaskRequires;
-            this.numTaskExecutions = numTaskExecutions;
-            this.numResourceDepRequires = numResourceDepRequires;
-            this.numResourceDepProvides = numResourceDepProvides;
-            this.numTaskDepRequires = numTaskDepRequires;
+            this.time = time;
+            this.requiredTasks = requiredTasks;
+            this.executedTasks = executedTasks;
+            this.requiredResourceDependencies = requiredResourceDependencies;
+            this.providedResourceDependencies = providedResourceDependencies;
+            this.requiredTaskDependencies = requiredTaskDependencies;
         }
 
         public SingleShotResult createSingleShotResult(String name, long duration, TimeUnit outputTimeUnit) {
-            return new SingleShotResult(ResultRole.SECONDARY, name + ":" + id, duration, outputTimeUnit);
+            return new SingleShotResult(ResultRole.SECONDARY, id + ":" + name, duration, outputTimeUnit);
         }
 
         public ScalarResult createScalarResult(String name, double n, String unit, AggregationPolicy policy) {
-            return new ScalarResult(name + ":" + id, n, unit, policy);
+            return new ScalarResult(id + ":" + name, n, unit, policy);
         }
 
         public ScalarResult createMaxScalarResult(String name, double n, String unit) {

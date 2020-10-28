@@ -7,11 +7,9 @@ import mb.esv.DaggerEsvComponent;
 import mb.libspoofax2.DaggerLibSpoofax2Component;
 import mb.libstatix.DaggerLibStatixComponent;
 import mb.log.noop.NoopLoggerFactory;
-import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
 import mb.pie.bench.util.ChangeMaker;
-import mb.pie.bench.util.PieMetricsProfiler;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.task.archive.UnarchiveCommon;
 import mb.resource.classloader.ClassLoaderResource;
@@ -40,7 +38,6 @@ import mb.spoofax.core.platform.ResourceRegistriesModule;
 import mb.statix.DaggerStatixComponent;
 import mb.str.DaggerStrategoComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.units.qual.C;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -53,10 +50,11 @@ import java.util.ArrayList;
 public class Spoofax3CompilerState {
     // Trial set-up
 
-    public ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
-    public PlatformComponent platformComponent;
-    public Spoofax3CompilerComponent spoofax3CompilerComponent;
-    public @Nullable HierarchicalResource temporaryDirectory;
+    private ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
+    private PlatformComponent platformComponent;
+    private Spoofax3CompilerComponent spoofax3CompilerComponent;
+    private @Nullable HierarchicalResource temporaryDirectory;
+    private @Nullable ChangeMaker changeMaker;
 
     public Spoofax3CompilerState setupTrial(HierarchicalResource temporaryDirectory) throws IOException {
         benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
@@ -77,6 +75,7 @@ public class Spoofax3CompilerState {
             .build();
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
         this.temporaryDirectory = temporaryDirectory;
+        changeMaker = new ChangeMaker(temporaryDirectory);
         return this;
     }
 
@@ -90,10 +89,11 @@ public class Spoofax3CompilerState {
     private Spoofax3LanguageProjectCompiler.@Nullable Input input;
 
     public Task<Result<KeyedMessages, CompilerException>> setupInvocation() {
-        if(temporaryDirectory == null) {
+        if(temporaryDirectory == null || changeMaker == null) {
             throw new IllegalStateException("setupInvocation was called without first calling setupTrial");
         }
         input = language.getCompilerInput(temporaryDirectory);
+        changeMaker.reset();
         return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
     }
 
@@ -101,11 +101,7 @@ public class Spoofax3CompilerState {
     // Invocation hot-path (during measurement)
 
     @SuppressWarnings("ConstantConditions")
-    public Result<KeyedMessages, CompilerException> require(MixedSession session, Task<Result<KeyedMessages, CompilerException>> task, String name) throws Exception {
-        PieMetricsProfiler.getInstance().start();
-        final Result<KeyedMessages, CompilerException> result = session.require(task);
-        PieMetricsProfiler.getInstance().stop(name);
-
+    public void handleResult(Result<KeyedMessages, CompilerException> result) throws Exception {
         if(result.isErr()) {
             final CompilerException e = result.getErr();
             System.out.println(e.getMessage() + ". " + e.getSubMessage());
@@ -115,7 +111,6 @@ public class Spoofax3CompilerState {
             }
             throw e;
         }
-        return result;
     }
 
     public ArrayList<Change> getChanges() {
@@ -195,11 +190,11 @@ public class Spoofax3CompilerState {
             @Override public ArrayList<Change> getChanges() {
                 final ArrayList<Change> changes = new ArrayList<>();
                 changes.add(changeMaker -> {
-                    changeMaker.replaceFirst("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
+                    changeMaker.replaceFirstLiteral("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
                     return "remove_str_false_rule";
                 });
                 changes.add(changeMaker -> {
-                    changeMaker.replaceFirst("src/main/sdf3/start.sdf3", "Exp.False = <false>", "");
+                    changeMaker.replaceFirstLiteral("src/main/sdf3/start.sdf3", "Exp.False = <false>", "");
                     return "remove_sdf3_false_rule";
                 });
                 return changes;

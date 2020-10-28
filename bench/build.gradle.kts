@@ -17,7 +17,7 @@ tasks.getByName<JavaExec>("run") {
   args("-prof", "mb.pie.bench.util.PieMetricsProfiler")
   args("-rf", "json")
   args("-rff", "build/result.json")
-  args("Spoofax3TopDownIncrBench")
+  args("Spoofax3Bench")
 }
 
 

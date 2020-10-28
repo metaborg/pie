@@ -1,5 +1,6 @@
 package mb.pie.bench.state;
 
+import mb.pie.api.ExecException;
 import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
 import mb.pie.api.Logger;
@@ -7,11 +8,13 @@ import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
+import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
 import mb.pie.api.stamp.resource.ResourceStampers;
+import mb.pie.bench.util.PieMetricsProfiler;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.layer.NoopLayer;
 import mb.pie.runtime.layer.ValidationLayer;
@@ -23,12 +26,16 @@ import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
 import mb.pie.runtime.taskdefs.NullTaskDefs;
 import mb.resource.ReadableResource;
+import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
+import java.io.Serializable;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -57,18 +64,33 @@ public class PieState {
         return setupTrial(new NullTaskDefs(), ancestors);
     }
 
+
+    public MixedSession newSession() {
+        return pie.newSession();
+    }
+
+    public <O extends @Nullable Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
+        try(final MixedSession session = newSession()) {
+            PieMetricsProfiler.getInstance().start();
+            final O result = session.require(task);
+            PieMetricsProfiler.getInstance().stop(name);
+            return result;
+        }
+    }
+
+    public void requireBottomUpInNewSession(Set<? extends ResourceKey> changedResources, String name) throws ExecException, InterruptedException {
+        try(final MixedSession session = newSession()) {
+            PieMetricsProfiler.getInstance().start();
+            session.updateAffectedBy(changedResources);
+            PieMetricsProfiler.getInstance().stop(name);
+        }
+    }
+
     public void dropStore() {
         pie.dropStore();
         pie.dropCallbacks();
     }
 
-    public Pie getPie() {
-        return pie;
-    }
-
-    public MixedSession newSession() {
-        return pie.newSession();
-    }
 
     @Param({"in_memory"}) public StoreKind storeKind;
     @Param({"non_sharing"}) public ShareKind shareKind;

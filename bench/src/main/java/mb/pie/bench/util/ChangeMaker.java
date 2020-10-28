@@ -7,6 +7,7 @@ import mb.resource.hierarchical.HierarchicalResource;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 public class ChangeMaker {
     private final HierarchicalResource baseDirectory;
@@ -44,12 +45,28 @@ public class ChangeMaker {
         writeString(file, readString(file).replaceAll(regex, replacement));
     }
 
+    public void replaceAllLiteral(String relativePath, String target, String replacement) throws IOException {
+        writeString(relativePath, readString(relativePath).replace(target, replacement));
+    }
+
+    public void replaceAllLiteral(WritableResource file, String target, String replacement) throws IOException {
+        writeString(file, readString(file).replace(target, replacement));
+    }
+
     public void replaceFirst(String relativePath, String regex, String replacement) throws IOException {
         writeString(relativePath, readString(relativePath).replaceFirst(regex, replacement));
     }
 
     public void replaceFirst(WritableResource file, String regex, String replacement) throws IOException {
         writeString(file, readString(file).replaceFirst(regex, replacement));
+    }
+
+    public void replaceFirstLiteral(String relativePath, String target, String replacement) throws IOException {
+        writeString(relativePath, readString(relativePath).replaceFirst(Pattern.quote(target), replacement));
+    }
+
+    public void replaceFirstLiteral(WritableResource file, String target, String replacement) throws IOException {
+        writeString(file, readString(file).replaceFirst(Pattern.quote(target), replacement));
     }
 
 
@@ -67,6 +84,6 @@ public class ChangeMaker {
 
 
     private HierarchicalResource getResource(String relativePath) {
-        return baseDirectory.appendRelativePath(relativePath);
+        return baseDirectory.appendRelativePath(relativePath).getNormalized();
     }
 }
