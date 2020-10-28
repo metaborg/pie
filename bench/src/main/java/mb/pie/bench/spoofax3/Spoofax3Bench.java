@@ -29,10 +29,6 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.SingleShotTime)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Benchmark)
-// Development/debugging settings
-@Warmup(iterations = 0)
-@Measurement(iterations = 1)
-@Fork(value = 0)
 public class Spoofax3Bench {
     // Trial
 

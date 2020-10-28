@@ -60,11 +60,11 @@ public class PieMetricsProfiler implements InternalProfiler {
             results.add(measurement.createSingleShotResult("systemNanoTime", measurement.time.systemNanoTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadCpuTime", measurement.time.threadCpuTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadUserTime", measurement.time.threadUserTime, targetTimeUnit));
-            results.add(measurement.createMaxScalarResult("requiredTasks", measurement.requiredTasks, "#"));
-            results.add(measurement.createMaxScalarResult("executedTasks", measurement.executedTasks, "#"));
-            results.add(measurement.createMaxScalarResult("requiredResourceDependencies", measurement.requiredResourceDependencies, "#"));
-            results.add(measurement.createMaxScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "#"));
-            results.add(measurement.createMaxScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "#"));
+            results.add(measurement.createMaxScalarResult("requiredTasks", measurement.requiredTasks, "tasks"));
+            results.add(measurement.createMaxScalarResult("executedTasks", measurement.executedTasks, "tasks"));
+            results.add(measurement.createMaxScalarResult("requiredResourceDependencies", measurement.requiredResourceDependencies, "dependencies"));
+            results.add(measurement.createMaxScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "dependencies"));
+            results.add(measurement.createMaxScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "dependencies"));
         }
         return results;
     }
