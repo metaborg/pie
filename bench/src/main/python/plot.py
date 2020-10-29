@@ -1,4 +1,6 @@
+import argparse
 import json
+import os
 
 import dash
 import dash_bootstrap_components as dbc  # https://dash-bootstrap-components.opensource.faculty.ai/
@@ -6,11 +8,33 @@ import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 
-# Gather data
+def main():
+    parser = argparse.ArgumentParser(description='PIE benchmark plotter')
+    parser.add_argument(
+        '--file',
+        default='{}/../../../build/reports/jmh/result.json'.format(os.path.dirname(os.path.realpath(__file__))),
+        type=str,
+        help='JMH result file'
+    )
+    subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
+    subparsers.add_parser('dash', help = 'Starts a live Dash application with benchmark results')
+    subparsers.add_parser('export-html', help = 'Exports benchmark results as a static HTML page')
+    args = parser.parse_args()
 
-def create_long_form_dataframe_from_json(path: str):
+    data = create_long_form_dataframe_from_json(args.file)
+    incrementality_fig = create_incrementality_figure(data)
+    raw_data_fig = create_raw_data_figure(data)
+
+    if args.subcommand == 'dash':
+        start_dash_app(incrementality_fig, raw_data_fig)
+    elif args.subcommand == 'export-html':
+        export_html(incrementality_fig, raw_data_fig)
+
+
+def create_long_form_dataframe_from_json(path: str) -> pd.DataFrame:
     with open(path) as json_file:
         json_data = json.load(json_file)
     series = []
@@ -37,35 +61,62 @@ def create_long_form_dataframe_from_json(path: str):
     return data
 
 
-data = create_long_form_dataframe_from_json('../../../build/result.json')
+def create_incrementality_figure(data: pd.DataFrame):
+    facets = {
+        'systemNanoTime': 'Time',
+        'requiredTasks': 'Required tasks',
+        'executedTasks': 'Executed tasks',
+        'requiredResourceDependencies': 'Required resource dependencies',
+        'providedResourceDependencies': 'Provided resource dependencies'
+    }
+    facet_keys = list(facets.keys())
+    fig = px.bar(
+        data[data.variable.isin(facet_keys)],
+        y='value',
+        error_y='error',
+        color='benchmark_name',
+        facet_row='variable',
+        height=1500,
+        category_orders={'variable': facet_keys}
+    )
+    fig.update_traces(texttemplate='%{value}')
+    fig.update_traces(texttemplate='%{value:.2f}s', row=0)
+    fig.update_layout(
+        barmode='group',
+        title='Incrementality comparison',
+        legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
+    )
+    fig.for_each_annotation(lambda a: a.update(text=facets[a.text.split("=")[-1]]))
+    fig.update_yaxes(matches=None, title=None)
+    return fig
 
-# Plot
 
-incrementality_facets = {
-    'systemNanoTime': 'Time',
-    'requiredTasks': 'Required tasks',
-    'executedTasks': 'Executed tasks',
-    'requiredResourceDependencies': 'Required resource dependencies',
-    'providedResourceDependencies': 'Provided resource dependencies'
-}
-incrementality_facets_keys = list(incrementality_facets.keys())
-incrementality_data = data[data.variable.isin(incrementality_facets_keys)]
-incrementality = px.bar(
-    incrementality_data, y='value', error_y='error', color='benchmark_name', facet_row='variable', facet_col_wrap=1,
-    height=1500,
-    category_orders={'variable': incrementality_facets_keys}
-)
-incrementality.update_traces(texttemplate='%{value}')
-incrementality.update_traces(texttemplate='%{value:.2f}s', row=0)
-incrementality.update_layout(
-    barmode='group',
-    legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
-)
-incrementality.for_each_annotation(lambda a: a.update(text=incrementality_facets[a.text.split("=")[-1]]))
-incrementality.update_yaxes(matches=None, title=None)
+def create_raw_data_figure(data: pd.DataFrame):
+    data = data.reset_index()
+    fig = go.Figure(data=[go.Table(
+        header=dict(
+            values=list(data.columns),
+            align='left'
+        ),
+        cells=dict(
+            values=data.transpose().values.tolist(),
+            align='left'
+        )
+    )])
+    fig.update_layout(title='Raw data', height=1000)
+    return fig
 
 
-# Render
+def start_dash_app(incrementality_fig, raw_data_fig):
+    app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+    app.layout = dbc.Container([
+        html.H1("PIE benchmarks"),
+        html.Hr(),
+        single_row_col_graph(figure=incrementality_fig),
+        single_row_col_graph(figure=raw_data_fig)
+    ], fluid=True)
+    app.run_server(debug=True)
+
 
 def single_row_col(children):
     return dbc.Row(dbc.Col(html.Div(children)))
@@ -75,15 +126,11 @@ def single_row_col_graph(figure):
     return single_row_col(dcc.Graph(figure=figure))
 
 
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = dbc.Container([
-    html.H1("PIE benchmarks"),
-    html.Hr(),
-    html.H2("Incrementality"),
-    html.Hr(),
-    single_row_col_graph(figure=incrementality),
-    html.H2("Raw data"),
-    html.Hr(),
-    single_row_col(dbc.Table.from_dataframe(data, striped=True, bordered=True, hover=True, size='sm')),
-], fluid=True)
-app.run_server(debug=True)
+def export_html(incrementality_fig, raw_data_fig):
+    with open('result.html', 'w') as f:
+        f.write(incrementality_fig.to_html(full_html=False, include_plotlyjs='cdn'))
+        f.write(raw_data_fig.to_html(full_html=False, include_plotlyjs='cdn'))
+
+
+if __name__ == "__main__":
+    main()

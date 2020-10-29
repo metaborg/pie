@@ -190,6 +190,9 @@ public class Spoofax3CompilerState {
             @Override public ArrayList<Change> getChanges() {
                 final ArrayList<Change> changes = new ArrayList<>();
                 changes.add(changeMaker -> {
+                    return "no_change";
+                });
+                changes.add(changeMaker -> {
                     changeMaker.replaceFirstLiteral("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
                     return "remove_str_false_rule";
                 });
