@@ -12,10 +12,49 @@ application {
   }
 }
 
+val reportDir = "$buildDir/reports/jmh/"
+val reportFile = "$buildDir/reports/jmh/result.json"
+val pieMetricsProfiler = "mb.pie.bench.util.PieMetricsProfiler"
+val benchmarkRegex = "Spoofax3Bench"
+// Development settings
 tasks.getByName<JavaExec>("run") {
-  args("-prof", "mb.pie.bench.util.PieMetricsProfiler")
-}
+  description = "Runs benchmarks with quick development settings"
 
+  args("-f", "0") // Do not fork to allow debugging.
+  args("-foe", "true") // Fail early.
+  args("-gc", "true") // Run GC between iterations, lowering noise.
+  args("-wi", "1", "-i", "1") // Only one warmup and measuring iteration.
+  args("-prof", pieMetricsProfiler) // Enable PIE metrics profiler; required.
+  args("-rf", "json", "-rff", reportFile) // Write results to JSON
+  args(benchmarkRegex)
+
+  doFirst {
+    mkdir(reportDir)
+  }
+}
+// Full benchmarking settings
+tasks.register<JavaExec>("runFull") {
+  // Copied from Gradle application plugin
+  description = "Runs benchmarks with full benchmarking settings"
+  group = ApplicationPlugin.APPLICATION_GROUP
+  val pluginConvention = project.convention.getPlugin(ApplicationPluginConvention::class.java)
+  val javaPluginConvention = project.convention.getPlugin(JavaPluginConvention::class.java)
+  classpath = javaPluginConvention.sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
+  conventionMapping.map("main") { pluginConvention.mainClassName }
+  conventionMapping.map("jvmArgs") { pluginConvention.applicationDefaultJvmArgs }
+
+  args("-f", "1") // Enable forking.
+  args("-foe", "true") // Fail early.
+  args("-gc", "true") // Run GC between iterations, lowering noise.
+  args("-wi", "5", "-i", "5") // 5 warmup and 5 measurement iterations
+  args("-prof", pieMetricsProfiler) // Enable PIE metrics profiler; required.
+  args("-rf", "json", "-rff", reportFile) // Write results to JSON
+  args(benchmarkRegex)
+
+  doFirst {
+    mkdir(reportDir)
+  }
+}
 
 fun compositeBuild(name: String) = "$group:$name:$version"
 

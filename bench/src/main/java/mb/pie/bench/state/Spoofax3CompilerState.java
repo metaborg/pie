@@ -7,9 +7,9 @@ import mb.esv.DaggerEsvComponent;
 import mb.libspoofax2.DaggerLibSpoofax2Component;
 import mb.libstatix.DaggerLibStatixComponent;
 import mb.log.noop.NoopLoggerFactory;
-import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
+import mb.pie.bench.util.ChangeMaker;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.task.archive.UnarchiveCommon;
 import mb.resource.classloader.ClassLoaderResource;
@@ -44,15 +44,17 @@ import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 @State(Scope.Thread)
 public class Spoofax3CompilerState {
     // Trial set-up
 
-    public ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
-    public PlatformComponent platformComponent;
-    public Spoofax3CompilerComponent spoofax3CompilerComponent;
-    public @Nullable HierarchicalResource temporaryDirectory;
+    private ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
+    private PlatformComponent platformComponent;
+    private Spoofax3CompilerComponent spoofax3CompilerComponent;
+    private @Nullable HierarchicalResource temporaryDirectory;
+    private @Nullable ChangeMaker changeMaker;
 
     public Spoofax3CompilerState setupTrial(HierarchicalResource temporaryDirectory) throws IOException {
         benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
@@ -73,6 +75,7 @@ public class Spoofax3CompilerState {
             .build();
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
         this.temporaryDirectory = temporaryDirectory;
+        changeMaker = new ChangeMaker(temporaryDirectory);
         return this;
     }
 
@@ -86,10 +89,11 @@ public class Spoofax3CompilerState {
     private Spoofax3LanguageProjectCompiler.@Nullable Input input;
 
     public Task<Result<KeyedMessages, CompilerException>> setupInvocation() {
-        if(temporaryDirectory == null) {
+        if(temporaryDirectory == null || changeMaker == null) {
             throw new IllegalStateException("setupInvocation was called without first calling setupTrial");
         }
         input = language.getCompilerInput(temporaryDirectory);
+        changeMaker.reset();
         return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
     }
 
@@ -97,8 +101,7 @@ public class Spoofax3CompilerState {
     // Invocation hot-path (during measurement)
 
     @SuppressWarnings("ConstantConditions")
-    public Result<KeyedMessages, CompilerException> require(MixedSession session, Task<Result<KeyedMessages, CompilerException>> task) throws Exception {
-        final Result<KeyedMessages, CompilerException> result = session.require(task);
+    public void handleResult(Result<KeyedMessages, CompilerException> result) throws Exception {
         if(result.isErr()) {
             final CompilerException e = result.getErr();
             System.out.println(e.getMessage() + ". " + e.getSubMessage());
@@ -108,7 +111,15 @@ public class Spoofax3CompilerState {
             }
             throw e;
         }
-        return result;
+    }
+
+    public ArrayList<Change> getChanges() {
+        return language.getChanges();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public ChangeMaker getChangeMaker() {
+        return new ChangeMaker(temporaryDirectory);
     }
 
 
@@ -145,7 +156,7 @@ public class Spoofax3CompilerState {
 
     @Param("calc") public LanguageKind language;
 
-    public static enum LanguageKind {
+    public enum LanguageKind {
         calc {
             @Override
             public void unarchiveToTempDirectory(HierarchicalResource temporaryDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException {
@@ -175,10 +186,29 @@ public class Spoofax3CompilerState {
                 inputBuilder.withStrategoRuntime();
                 return inputBuilder.build(new Properties(), shared, spoofax3LanguageProject);
             }
+
+            @Override public ArrayList<Change> getChanges() {
+                final ArrayList<Change> changes = new ArrayList<>();
+                changes.add(changeMaker -> {
+                    changeMaker.replaceFirstLiteral("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
+                    return "remove_str_false_rule";
+                });
+                changes.add(changeMaker -> {
+                    changeMaker.replaceFirstLiteral("src/main/sdf3/start.sdf3", "Exp.False = <false>", "");
+                    return "remove_sdf3_false_rule";
+                });
+                return changes;
+            }
         };
 
         public abstract void unarchiveToTempDirectory(HierarchicalResource tempDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException;
 
         public abstract Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDirectory);
+
+        public abstract ArrayList<Change> getChanges();
+    }
+
+    @FunctionalInterface public interface Change {
+        String applyChange(ChangeMaker changeMaker) throws IOException;
     }
 }
