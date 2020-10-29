@@ -70,7 +70,7 @@ public class Spoofax3Bench {
     // Benchmarks
 
     @Benchmark
-    public void topDownFull(Blackhole blackhole) throws Exception {
+    public void full(Blackhole blackhole) throws Exception {
         pieState.requireTopDownInNewSession(task, "0_initial");
         int i = 1;
         for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {
@@ -84,7 +84,7 @@ public class Spoofax3Bench {
     }
 
     @Benchmark
-    public void topDownIncremental(Blackhole blackhole) throws Exception {
+    public void incrementalTopDown(Blackhole blackhole) throws Exception {
         pieState.requireTopDownInNewSession(task, "0_initial");
         int i = 1;
         for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {
@@ -97,7 +97,7 @@ public class Spoofax3Bench {
     }
 
     @Benchmark
-    public void bottomUpIncremental(Blackhole blackhole) throws Exception {
+    public void incrementalBottomUp(Blackhole blackhole) throws Exception {
         pieState.requireTopDownInNewSession(task, "0_initial");
         int i = 1;
         for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {

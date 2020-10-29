@@ -11,6 +11,7 @@ import org.openjdk.jmh.results.Result;
 import org.openjdk.jmh.results.ResultRole;
 import org.openjdk.jmh.results.ScalarResult;
 import org.openjdk.jmh.results.SingleShotResult;
+import org.openjdk.jmh.runner.IterationType;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,29 +34,35 @@ public class PieMetricsProfiler implements InternalProfiler {
 
     private final Timer timer = new Timer();
     private final ArrayList<Measurement> measurements = new ArrayList<>();
+    private boolean measurementsActive = false;
 
 
     @Override
     public void beforeIteration(BenchmarkParams benchmarkParams, IterationParams iterationParams) {
+        if(iterationParams.getType() != IterationType.MEASUREMENT) return; // Do not measure warmup.
         timer.reset();
         measurements.clear();
         Stats.reset();
+        measurementsActive = true;
     }
 
     public void start() {
+        if(!measurementsActive) return;
         timer.start();
         Stats.reset();
     }
 
     public void stop(String id) {
+        if(!measurementsActive) return;
         final Timer.Time time = timer.stop();
         measurements.add(new Measurement(id, time, Stats.requires, Stats.executions, Stats.fileReqs, Stats.fileGens, Stats.callReqs));
     }
 
     @Override
     public Collection<? extends Result> afterIteration(BenchmarkParams benchmarkParams, IterationParams iterationParams, IterationResult result) {
-        final TimeUnit targetTimeUnit = benchmarkParams.getTimeUnit();
         final ArrayList<Result> results = new ArrayList<>();
+        if(!measurementsActive) return results;
+        final TimeUnit targetTimeUnit = benchmarkParams.getTimeUnit();
         for(Measurement measurement : measurements) {
             results.add(measurement.createSingleShotResult("systemNanoTime", measurement.time.systemNanoTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadCpuTime", measurement.time.threadCpuTime, targetTimeUnit));
@@ -66,6 +73,7 @@ public class PieMetricsProfiler implements InternalProfiler {
             results.add(measurement.createMaxScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "dependencies"));
             results.add(measurement.createMaxScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "dependencies"));
         }
+        measurementsActive = false;
         return results;
     }
 

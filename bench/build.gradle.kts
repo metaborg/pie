@@ -17,7 +17,7 @@ tasks.getByName<JavaExec>("run") {
   args("-f", "0") // Do not fork to allow debugging.
   args("-foe", "true") // Fail early.
   args("-gc", "true") // Run GC between iterations, lowering noise.
-  args("-wi", "0", "-i", "1") // No warmup iterations, only one measuring iteration.
+  args("-wi", "1", "-i", "1") // Only one warmup and measuring iteration.
   args("-prof", "mb.pie.bench.util.PieMetricsProfiler") // Enable PIE metrics profiler; required.
   args("-rf", "json", "-rff", "build/result.json") // Write results to JSON
   args("Spoofax3Bench")
