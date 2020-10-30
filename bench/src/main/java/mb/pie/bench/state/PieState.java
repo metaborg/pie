@@ -46,16 +46,16 @@ public class PieState {
     public PieState setupTrial(TaskDefs taskDefs, Pie... ancestors) {
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
-        pieBuilder.withStoreFactory(storeKind.get());
-        pieBuilder.withShareFactory(shareKind.get());
-        pieBuilder.withDefaultOutputStamper(defaultOutputStamperKind.get());
-        pieBuilder.withDefaultRequireReadableResourceStamper(defaultRequireReadableResourceStamperKind.get());
-        pieBuilder.withDefaultProvideReadableResourceStamper(defaultProvideReadableResourceStamperKind.get());
-        pieBuilder.withDefaultRequireHierarchicalResourceStamper(defaultRequireHierarchicalResourceStamperKind.get());
-        pieBuilder.withDefaultProvideHierarchicalResourceStamper(defaultProvideHierarchicalResourceStamperKind.get());
-        pieBuilder.withLayerFactory(layerKind.get());
-        pieBuilder.withLogger(loggerKind.get());
-        pieBuilder.withExecutorLoggerFactory(executorLoggerKind.get());
+        pieBuilder.withStoreFactory(store.get());
+        pieBuilder.withShareFactory(share.get());
+        pieBuilder.withDefaultOutputStamper(outputStamper.get());
+        pieBuilder.withDefaultRequireReadableResourceStamper(requireResourceStamper.getReadable());
+        pieBuilder.withDefaultProvideReadableResourceStamper(provideResourceStamper.getReadable());
+        pieBuilder.withDefaultRequireHierarchicalResourceStamper(requireResourceStamper.getHierarchical());
+        pieBuilder.withDefaultProvideHierarchicalResourceStamper(provideResourceStamper.getHierarchical());
+        pieBuilder.withLayerFactory(layer.get());
+        pieBuilder.withLogger(logger.get());
+        pieBuilder.withExecutorLoggerFactory(executorLogger.get());
         this.pie = pieBuilder.build().createChildBuilder(ancestors).build();
         return this;
     }
@@ -92,16 +92,14 @@ public class PieState {
     }
 
 
-    @Param({"in_memory"}) public StoreKind storeKind;
-    @Param({"non_sharing"}) public ShareKind shareKind;
-    @Param({"equals"}) private OutputStamperKind defaultOutputStamperKind;
-    @Param({"modified"}) private ReadableResourceStamperKind defaultRequireReadableResourceStamperKind;
-    @Param({"modified"}) private ReadableResourceStamperKind defaultProvideReadableResourceStamperKind;
-    @Param({"modified_direct"}) private HierarchicalResourceStamperKind defaultRequireHierarchicalResourceStamperKind;
-    @Param({"modified_direct"}) private HierarchicalResourceStamperKind defaultProvideHierarchicalResourceStamperKind;
-    @Param({"validation"}) public LayerKind layerKind;
-    @Param({"stdout_errors"}) public LoggerKind loggerKind;
-    @Param({"logger"}) public ExecutorLoggerKind executorLoggerKind;
+    @Param({"in_memory"}) public StoreKind store;
+    /*@Param({"non_sharing"})*/ public ShareKind share = ShareKind.non_sharing;
+    /*@Param({"equals"})*/ private OutputStamperKind outputStamper = OutputStamperKind.equals;
+    @Param({"modified"}) private ResourceStamperKind requireResourceStamper;
+    @Param({"modified"}) private ResourceStamperKind provideResourceStamper;
+    @Param({"validation"}) public LayerKind layer;
+    @Param({"stdout_errors"}) public LoggerKind logger;
+    @Param({"noop"}) public ExecutorLoggerKind executorLogger;
 
     public enum StoreKind {
         in_memory {
@@ -138,36 +136,36 @@ public class PieState {
         public abstract OutputStamper get();
     }
 
-    public enum ReadableResourceStamperKind {
+    public enum ResourceStamperKind {
         exists {
-            @Override public ResourceStamper<ReadableResource> get() { return ResourceStampers.exists(); }
+            @Override public ResourceStamper<ReadableResource> getReadable() {
+                return ResourceStampers.exists();
+            }
+
+            @Override public ResourceStamper<HierarchicalResource> getHierarchical() {
+                return ResourceStampers.exists();
+            }
         }, modified {
-            @Override public ResourceStamper<ReadableResource> get() { return ResourceStampers.modifiedFile(); }
+            @Override public ResourceStamper<ReadableResource> getReadable() {
+                return ResourceStampers.modifiedFile();
+            }
+
+            @Override public ResourceStamper<HierarchicalResource> getHierarchical() {
+                return ResourceStampers.modifiedFile();
+            }
         }, hash {
-            @Override public ResourceStamper<ReadableResource> get() { return ResourceStampers.hashFile(); }
+            @Override public ResourceStamper<ReadableResource> getReadable() {
+                return ResourceStampers.hashFile();
+            }
+
+            @Override public ResourceStamper<HierarchicalResource> getHierarchical() {
+                return ResourceStampers.hashDirRec();
+            }
         };
 
-        public abstract ResourceStamper<ReadableResource> get();
-    }
+        public abstract ResourceStamper<ReadableResource> getReadable();
 
-    public enum HierarchicalResourceStamperKind {
-        exists {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.exists(); }
-        }, modified_direct {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.modifiedFile(); }
-        }, modified_one_level {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.modifiedDir(); }
-        }, modified_recursive {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.modifiedDirRec(); }
-        }, hash_file_only {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.hashFile(); }
-        }, hash_one_level {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.hashDir(); }
-        }, hash_recursive {
-            @Override public ResourceStamper<HierarchicalResource> get() { return ResourceStampers.hashDirRec(); }
-        };
-
-        public abstract ResourceStamper<HierarchicalResource> get();
+        public abstract ResourceStamper<HierarchicalResource> getHierarchical();
     }
 
     public enum LayerKind {
