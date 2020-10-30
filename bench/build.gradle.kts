@@ -1,7 +1,34 @@
+import ru.vyarus.gradle.plugin.python.task.PythonTask
+
 plugins {
   id("org.metaborg.gradle.config.root-project") version "0.3.21"
   id("org.metaborg.gradle.config.java-application") version "0.3.21"
   id("org.metaborg.gitonium") version "0.1.3"
+  id("ru.vyarus.use-python") version "2.2.0"
+}
+
+// JMH application configuration and benchmarking tasks.
+dependencies {
+  val jmhVersion = "1.26"
+  val spoofax3Version = "0.5.2"
+  fun compositeBuild(name: String) = "$group:$name:$version"
+
+  implementation(platform(compositeBuild("pie.depconstraints")))
+
+  implementation("org.openjdk.jmh:jmh-core:$jmhVersion")
+
+  implementation(compositeBuild("pie.runtime"))
+  implementation(compositeBuild("pie.task.archive"))
+
+  implementation("org.metaborg:spoofax.compiler.spoofax3:$spoofax3Version")
+  implementation("org.metaborg:spoofax.compiler.spoofax3.dagger:$spoofax3Version")
+
+  implementation("com.google.jimfs:jimfs")
+  implementation("org.metaborg:log.backend.noop")
+  implementation("org.slf4j:slf4j-nop:1.7.30")
+
+  compileOnly("org.checkerframework:checker-qual-android")
+  annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion")
 }
 
 application {
@@ -13,11 +40,11 @@ application {
 }
 
 val reportDir = "$buildDir/reports/jmh/"
-val reportFile = "$buildDir/reports/jmh/result.json"
+val reportFile = "$reportDir/result.json"
 val pieMetricsProfiler = "mb.pie.bench.util.PieMetricsProfiler"
 val benchmarkRegex = "Spoofax3Bench"
 // Development settings
-tasks.getByName<JavaExec>("run") {
+val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
 
   args("-f", "0") // Do not fork to allow debugging.
@@ -33,7 +60,8 @@ tasks.getByName<JavaExec>("run") {
   }
 }
 // Full benchmarking settings
-tasks.register<JavaExec>("runFull") {
+val runFullTask = tasks.register<JavaExec>("runFull") {
+  mustRunAfter
   // Copied from Gradle application plugin
   description = "Runs benchmarks with full benchmarking settings"
   group = ApplicationPlugin.APPLICATION_GROUP
@@ -56,29 +84,23 @@ tasks.register<JavaExec>("runFull") {
   }
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
-
-val jmhVersion = "1.26"
-val spoofax3Version = "0.5.2"
-
-dependencies {
-  implementation(platform(compositeBuild("pie.depconstraints")))
-
-  implementation("org.openjdk.jmh:jmh-core:$jmhVersion")
-
-  implementation(compositeBuild("pie.runtime"))
-  implementation(compositeBuild("pie.task.archive"))
-
-  implementation("org.metaborg:spoofax.compiler.spoofax3:$spoofax3Version")
-  implementation("org.metaborg:spoofax.compiler.spoofax3.dagger:$spoofax3Version")
-
-  implementation("com.google.jimfs:jimfs")
-  implementation("org.metaborg:log.backend.noop")
-  implementation("org.slf4j:slf4j-nop:1.7.30")
-
-  compileOnly("org.checkerframework:checker-qual-android")
-  annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion")
+// Python configuration and plotting tasks.
+python {
+  pip("pip:20.2.4")
+  pip("plotly:4.12.0")
+  pip("pandas:1.1.3")
+  pip("dash:1.16.3")
+  pip("dash-bootstrap-components:0.10.7")
 }
+tasks.register<PythonTask>("plotToHtml") {
+  mustRunAfter(runTask, runFullTask)
+  command = "src/main/python/plot.py --input-file $reportFile export-html --output-file $reportDir/result.html"
+}
+tasks.register<PythonTask>("plotInteractive") {
+  mustRunAfter(runTask, runFullTask)
+  command = "src/main/python/plot.py --input-file $reportFile dash"
+}
+
 
 metaborg {
   javaCreatePublication = false // Do not publish benchmark.

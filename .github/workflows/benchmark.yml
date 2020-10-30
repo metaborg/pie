@@ -26,8 +26,12 @@ jobs:
       - uses: eskatos/gradle-command-action@v1
         with:
           gradle-version: ${{ matrix.gradle }}
-          arguments: benchmark --parallel --stacktrace
+          arguments: benchmark plotToHtml --parallel --stacktrace
       - uses: actions/upload-artifact@v2
         with:
           name: benchmark-result-${{ runner.os }}
           path: bench/build/reports/jmh/result.json
+      - uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-plot-${{ runner.os }}
+          path: bench/build/reports/jmh/result.html
