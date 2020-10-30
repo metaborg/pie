@@ -13,7 +13,25 @@ if(org.gradle.util.VersionNumber.parse(gradle.gradleVersion).major < 6) {
 // Only include composite builds when this is the root project (it has no parent). Otherwise, the parent project
 // (devenv) will include these composite builds, as IntelliJ does not support nested composite builds.
 if(gradle.parent == null) {
-  includeBuild("core")
-  includeBuild("lang")
-  includeBuild("bench")
+  "pie".run {
+    includeBuildWithPrefix("core")
+    includeBuildWithPrefix("lang")
+    includeBuildWithPrefix("bench")
+  }
+}
+
+fun String.includeBuildWithPrefix(dir: String) {
+  includeBuildWithName(dir, "$this.$dir")
+}
+
+fun includeBuildWithName(dir: String, name: String) {
+  includeBuild(dir) {
+    try {
+      ConfigurableIncludedBuild::class.java
+        .getDeclaredMethod("setName", String::class.java)
+        .invoke(this, name)
+    } catch(e: NoSuchMethodException) {
+      // Running Gradle < 6, no need to set the name, ignore.
+    }
+  }
 }
