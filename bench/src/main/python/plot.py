@@ -11,7 +11,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
-
 def main():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     parser = argparse.ArgumentParser(description='PIE benchmark plotter')
@@ -38,6 +37,8 @@ def main():
     figs = [
         create_incrementality_figure(data, 'calc', 'validation'),
         create_incrementality_figure(data, 'chars', 'validation'),
+        create_layer_figure(data, 'calc'),
+        create_layer_figure(data, 'chars'),
         create_raw_data_figure(data),
     ]
 
@@ -100,6 +101,7 @@ def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
         title='Incrementality comparison (language={}, layer={})'.format(language, layer),
         legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
     )
+
     def update_annotation(a):
         name = a.text.split("=")[-1]
         text: str
@@ -108,6 +110,45 @@ def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
         else:
             text = name
         a.update(text=text)
+
+    fig.for_each_annotation(update_annotation)
+    fig.update_yaxes(matches=None, title=None)
+    return fig
+
+
+def create_layer_figure(data: pd.DataFrame, language: str):
+    variables = {'systemNanoTime': 'Time'}
+    variables_keys = list(variables.keys())
+    layers = {'validation': 'Validation', 'noop': 'None'}
+    layers_keys = list(layers.keys())
+    go.Bar
+    fig = px.bar(
+        data.query('variable in @variables and language == @language'),
+        y='value',
+        error_y='error',
+        color='benchmark',
+        facet_row='layer',
+        height=500,
+        category_orders={'layer': layers_keys}
+    )
+    fig.update_traces(texttemplate='%{value:.2f}s')
+    fig.update_layout(
+        barmode='group',
+        title='Layer comparison (language={})'.format(language),
+        legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
+    )
+
+    def update_annotation(a):
+        name = a.text.split("=")[-1]
+        text: str
+        if name in variables:
+            text = variables[name]
+        elif name in layers:
+            text = layers[name]
+        else:
+            text = name
+        a.update(text=text)
+
     fig.for_each_annotation(update_annotation)
     fig.update_yaxes(matches=None, title=None)
     return fig
