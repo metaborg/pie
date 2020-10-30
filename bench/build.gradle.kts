@@ -41,6 +41,8 @@ application {
 
 val reportDir = "$buildDir/reports/jmh/"
 val reportFile = "$reportDir/result.json"
+val layers = listOf("validation", "noop")
+val languages = listOf("chars", "calc")
 val commonArgs = listOf(
   "-foe", "true", // Fail early.
   "-gc", "true", // Run GC between iterations, lowering noise.
@@ -52,16 +54,15 @@ val commonArgs = listOf(
 val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
   args("-f", "0") // Do not fork to allow debugging.
-  args("-wi", "3", "-i", "3") // 3 warmup and measurement iterations.
-  args("-p language=chars") // Only benchmark with minimal 'chars' language.
+  args("-wi", "0", "-i", "1") // 1 measurement iteration.
+  args("-p", "layer=${layers.joinToString(",")}") // Benchmark with different layers.
+  args("-p", "language=${languages.joinToString(",")}") // Benchmark with different languages.
   args(commonArgs)
   doFirst {
     mkdir(reportDir)
   }
 }
 // Full benchmarking settings
-val layers = listOf("validation", "noop")
-val languages = listOf("chars", "calc")
 val runFullTask = tasks.register<JavaExec>("runFull") {
   // Copied from Gradle application plugin
   description = "Runs benchmarks with full benchmarking settings"
@@ -74,8 +75,8 @@ val runFullTask = tasks.register<JavaExec>("runFull") {
 
   args("-f", "1") // Enable forking.
   args("-wi", "5", "-i", "5") // 5 warmup and measurement iterations.
-  args("-p layer=${layers.joinToString(",")}") // Benchmark with different layers.
-  args("-p language=${languages.joinToString(",")}") // Benchmark with different languages.
+  args("-p", "layer=${layers.joinToString(",")}") // Benchmark with different layers.
+  args("-p", "language=${languages.joinToString(",")}") // Benchmark with different languages.
   args(commonArgs)
   doFirst {
     mkdir(reportDir)

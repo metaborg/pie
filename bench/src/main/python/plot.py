@@ -11,6 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
+
 def main():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     parser = argparse.ArgumentParser(description='PIE benchmark plotter')
@@ -34,9 +35,11 @@ def main():
     args = parser.parse_args()
 
     data = create_long_form_dataframe_from_json(args.input_file)
-    incrementality_fig = create_incrementality_figure(data)
-    raw_data_fig = create_raw_data_figure(data)
-    figs = [incrementality_fig, raw_data_fig]
+    figs = [
+        create_incrementality_figure(data, 'calc', 'validation'),
+        create_incrementality_figure(data, 'chars', 'validation'),
+        create_raw_data_figure(data),
+    ]
 
     if args.subcommand == 'dash':
         start_dash_app(figs)
@@ -50,9 +53,10 @@ def create_long_form_dataframe_from_json(path: str) -> pd.DataFrame:
     series = []
     for bench_obj in json_data:
         series_dict = {}
-        benchmark_name: str = bench_obj['benchmark']
-        series_dict['benchmark_name'] = benchmark_name.replace("mb.pie.bench.spoofax3.Spoofax3Bench.", "")
+        benchmark: str = bench_obj['benchmark']
+        series_dict['benchmark'] = benchmark.replace("mb.pie.bench.spoofax3.Spoofax3Bench.", "")
         params_obj = bench_obj['params']
+        series_dict['language'] = params_obj['language']
         series_dict['layer'] = params_obj['layer']
         for (full_metrics_name, metrics_obj) in bench_obj['secondaryMetrics'].items():
             full_metrics_name: str
@@ -71,32 +75,40 @@ def create_long_form_dataframe_from_json(path: str) -> pd.DataFrame:
     return data
 
 
-def create_incrementality_figure(data: pd.DataFrame):
-    facets = {
+def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
+    variables = {
         'systemNanoTime': 'Time',
         'requiredTasks': 'Required tasks',
         'executedTasks': 'Executed tasks',
         'requiredResourceDependencies': 'Required resource dependencies',
         'providedResourceDependencies': 'Provided resource dependencies'
     }
-    facet_keys = list(facets.keys())
+    variables_keys = list(variables.keys())
     fig = px.bar(
-        data[data.variable.isin(facet_keys)],
+        data.query('variable in @variables and language == @language and layer == @layer'),
         y='value',
         error_y='error',
-        color='benchmark_name',
+        color='benchmark',
         facet_row='variable',
         height=1500,
-        category_orders={'variable': facet_keys}
+        category_orders={'variable': variables_keys}
     )
     fig.update_traces(texttemplate='%{value}')
     fig.update_traces(texttemplate='%{value:.2f}s', row=0)
     fig.update_layout(
         barmode='group',
-        title='Incrementality comparison',
+        title='Incrementality comparison (language={}, layer={})'.format(language, layer),
         legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
     )
-    fig.for_each_annotation(lambda a: a.update(text=facets[a.text.split("=")[-1]]))
+    def update_annotation(a):
+        name = a.text.split("=")[-1]
+        text: str
+        if name in variables:
+            text = variables[name]
+        else:
+            text = name
+        a.update(text=text)
+    fig.for_each_annotation(update_annotation)
     fig.update_yaxes(matches=None, title=None)
     return fig
 
