@@ -33,9 +33,13 @@ jobs:
           arguments: benchmark --parallel --stacktrace
       - uses: actions/upload-artifact@v2
         with:
-          name: benchmark-result-${{ runner.os }}
+          name: jmh-result-${{ runner.os }}-${{ matrix.java }}
           path: bench/build/reports/jmh/result.json
       - uses: actions/upload-artifact@v2
         with:
-          name: benchmark-plot-${{ runner.os }}
+          name: plot-${{ runner.os }}-${{ matrix.java }}
           path: bench/build/reports/jmh/result.html
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./bench/build/reports/jmh
