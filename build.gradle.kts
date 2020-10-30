@@ -5,6 +5,7 @@ plugins {
 
 tasks {
   register("benchmark") {
-    dependsOn(gradle.includedBuild("pie.bench").task(":runFull"))
+    val includedBuild = gradle.includedBuild("pie.bench")
+    dependsOn(includedBuild.task(":runFull"), includedBuild.task(":plotToHtml"))
   }
 }
