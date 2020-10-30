@@ -1,0 +1,3097 @@
+[
+    {
+        "jmhVersion" : "1.26",
+        "benchmark" : "mb.pie.bench.spoofax3.Spoofax3Bench.full",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "/opt/hostedtoolcache/jdk/15.0.1/x64/bin/java",
+        "jvmArgs" : [
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "-Dfile.encoding=UTF-8",
+            "-Duser.country",
+            "-Duser.language=en",
+            "-Duser.variant"
+        ],
+        "jdkVersion" : "15.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "15.0.1+8",
+        "warmupIterations" : 5,
+        "warmupTime" : "single-shot",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "single-shot",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "defaultOutputStamperKind" : "equals",
+            "defaultProvideHierarchicalResourceStamperKind" : "modified_direct",
+            "defaultProvideReadableResourceStamperKind" : "modified",
+            "defaultRequireHierarchicalResourceStamperKind" : "modified_direct",
+            "defaultRequireReadableResourceStamperKind" : "modified",
+            "executorLoggerKind" : "logger",
+            "language" : "calc",
+            "layerKind" : "validation",
+            "loggerKind" : "stdout_errors",
+            "shareKind" : "non_sharing",
+            "storeKind" : "in_memory",
+            "useDiskTemporaryDirectory" : "true"
+        },
+        "primaryMetric" : {
+            "score" : 93.83254513420002,
+            "scoreError" : 23.09328556503297,
+            "scoreConfidence" : [
+                70.73925956916705,
+                116.92583069923299
+            ],
+            "scorePercentiles" : {
+                "0.0" : 87.129507616,
+                "50.0" : 92.240516259,
+                "90.0" : 102.224002216,
+                "95.0" : 102.224002216,
+                "99.0" : 102.224002216,
+                "99.9" : 102.224002216,
+                "99.99" : 102.224002216,
+                "99.999" : 102.224002216,
+                "99.9999" : 102.224002216,
+                "100.0" : 102.224002216
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    87.129507616,
+                    90.180067257,
+                    92.240516259,
+                    97.388632323,
+                    102.224002216
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+            "0_initial:executedTasks" : {
+                "score" : 1279.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1279.0,
+                    1279.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1279.0,
+                    "50.0" : 1279.0,
+                    "90.0" : 1279.0,
+                    "95.0" : 1279.0,
+                    "99.0" : 1279.0,
+                    "99.9" : 1279.0,
+                    "99.99" : 1279.0,
+                    "99.999" : 1279.0,
+                    "99.9999" : 1279.0,
+                    "100.0" : 1279.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0
+                    ]
+                ]
+            },
+            "0_initial:providedResourceDependencies" : {
+                "score" : 133.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    133.0,
+                    133.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 133.0,
+                    "50.0" : 133.0,
+                    "90.0" : 133.0,
+                    "95.0" : 133.0,
+                    "99.0" : 133.0,
+                    "99.9" : 133.0,
+                    "99.99" : 133.0,
+                    "99.999" : 133.0,
+                    "99.9999" : 133.0,
+                    "100.0" : 133.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0
+                    ]
+                ]
+            },
+            "0_initial:requiredResourceDependencies" : {
+                "score" : 1707.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1707.0,
+                    1707.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1707.0,
+                    "50.0" : 1707.0,
+                    "90.0" : 1707.0,
+                    "95.0" : 1707.0,
+                    "99.0" : 1707.0,
+                    "99.9" : 1707.0,
+                    "99.99" : 1707.0,
+                    "99.999" : 1707.0,
+                    "99.9999" : 1707.0,
+                    "100.0" : 1707.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0
+                    ]
+                ]
+            },
+            "0_initial:requiredTaskDependencies" : {
+                "score" : 1519.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1519.0,
+                    1519.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1519.0,
+                    "50.0" : 1519.0,
+                    "90.0" : 1519.0,
+                    "95.0" : 1519.0,
+                    "99.0" : 1519.0,
+                    "99.9" : 1519.0,
+                    "99.99" : 1519.0,
+                    "99.999" : 1519.0,
+                    "99.9999" : 1519.0,
+                    "100.0" : 1519.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0
+                    ]
+                ]
+            },
+            "0_initial:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "0_initial:systemNanoTime" : {
+                "score" : 23.068105459199998,
+                "scoreError" : 6.050945062533073,
+                "scoreConfidence" : [
+                    17.017160396666924,
+                    29.119050521733072
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 21.355769473,
+                    "50.0" : 22.707031497,
+                    "90.0" : 25.572387569,
+                    "95.0" : 25.572387569,
+                    "99.0" : 25.572387569,
+                    "99.9" : 25.572387569,
+                    "99.99" : 25.572387569,
+                    "99.999" : 25.572387569,
+                    "99.9999" : 25.572387569,
+                    "100.0" : 25.572387569
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        21.355769473,
+                        22.378006539,
+                        22.707031497,
+                        23.327332218,
+                        25.572387569
+                    ]
+                ]
+            },
+            "0_initial:threadCpuTime" : {
+                "score" : 21.9383262842,
+                "scoreError" : 6.254656856878386,
+                "scoreConfidence" : [
+                    15.683669427321613,
+                    28.192983141078386
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 20.245816254,
+                    "50.0" : 21.684580711,
+                    "90.0" : 24.512376266,
+                    "95.0" : 24.512376266,
+                    "99.0" : 24.512376266,
+                    "99.9" : 24.512376266,
+                    "99.99" : 24.512376266,
+                    "99.999" : 24.512376266,
+                    "99.9999" : 24.512376266,
+                    "100.0" : 24.512376266
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        20.245816254,
+                        20.991255555,
+                        21.684580711,
+                        22.257602635,
+                        24.512376266
+                    ]
+                ]
+            },
+            "0_initial:threadUserTime" : {
+                "score" : 21.736,
+                "scoreError" : 6.395872040637426,
+                "scoreConfidence" : [
+                    15.340127959362576,
+                    28.131872040637425
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 20.0,
+                    "50.0" : 21.48,
+                    "90.0" : 24.36,
+                    "95.0" : 24.36,
+                    "99.0" : 24.36,
+                    "99.9" : 24.36,
+                    "99.99" : 24.36,
+                    "99.999" : 24.36,
+                    "99.9999" : 24.36,
+                    "100.0" : 24.36
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        20.0,
+                        20.76,
+                        21.48,
+                        22.08,
+                        24.36
+                    ]
+                ]
+            },
+            "1_no_change:executedTasks" : {
+                "score" : 1279.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1279.0,
+                    1279.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1279.0,
+                    "50.0" : 1279.0,
+                    "90.0" : 1279.0,
+                    "95.0" : 1279.0,
+                    "99.0" : 1279.0,
+                    "99.9" : 1279.0,
+                    "99.99" : 1279.0,
+                    "99.999" : 1279.0,
+                    "99.9999" : 1279.0,
+                    "100.0" : 1279.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0
+                    ]
+                ]
+            },
+            "1_no_change:providedResourceDependencies" : {
+                "score" : 133.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    133.0,
+                    133.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 133.0,
+                    "50.0" : 133.0,
+                    "90.0" : 133.0,
+                    "95.0" : 133.0,
+                    "99.0" : 133.0,
+                    "99.9" : 133.0,
+                    "99.99" : 133.0,
+                    "99.999" : 133.0,
+                    "99.9999" : 133.0,
+                    "100.0" : 133.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredResourceDependencies" : {
+                "score" : 1707.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1707.0,
+                    1707.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1707.0,
+                    "50.0" : 1707.0,
+                    "90.0" : 1707.0,
+                    "95.0" : 1707.0,
+                    "99.0" : 1707.0,
+                    "99.9" : 1707.0,
+                    "99.99" : 1707.0,
+                    "99.999" : 1707.0,
+                    "99.9999" : 1707.0,
+                    "100.0" : 1707.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredTaskDependencies" : {
+                "score" : 1519.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1519.0,
+                    1519.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1519.0,
+                    "50.0" : 1519.0,
+                    "90.0" : 1519.0,
+                    "95.0" : 1519.0,
+                    "99.0" : 1519.0,
+                    "99.9" : 1519.0,
+                    "99.99" : 1519.0,
+                    "99.999" : 1519.0,
+                    "99.9999" : 1519.0,
+                    "100.0" : 1519.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "1_no_change:systemNanoTime" : {
+                "score" : 23.2785302572,
+                "scoreError" : 7.103541781305156,
+                "scoreConfidence" : [
+                    16.174988475894843,
+                    30.382072038505157
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 21.246489384,
+                    "50.0" : 22.598853519,
+                    "90.0" : 25.691837077,
+                    "95.0" : 25.691837077,
+                    "99.0" : 25.691837077,
+                    "99.9" : 25.691837077,
+                    "99.99" : 25.691837077,
+                    "99.999" : 25.691837077,
+                    "99.9999" : 25.691837077,
+                    "100.0" : 25.691837077
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        21.246489384,
+                        22.172160122,
+                        22.598853519,
+                        24.683311184,
+                        25.691837077
+                    ]
+                ]
+            },
+            "1_no_change:threadCpuTime" : {
+                "score" : 22.217848523599997,
+                "scoreError" : 7.22841911959328,
+                "scoreConfidence" : [
+                    14.989429404006717,
+                    29.446267643193277
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 20.127052963,
+                    "50.0" : 21.51250074,
+                    "90.0" : 24.625764411,
+                    "95.0" : 24.625764411,
+                    "99.0" : 24.625764411,
+                    "99.9" : 24.625764411,
+                    "99.99" : 24.625764411,
+                    "99.999" : 24.625764411,
+                    "99.9999" : 24.625764411,
+                    "100.0" : 24.625764411
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        20.127052963,
+                        21.117141627,
+                        21.51250074,
+                        23.706782877,
+                        24.625764411
+                    ]
+                ]
+            },
+            "1_no_change:threadUserTime" : {
+                "score" : 22.03,
+                "scoreError" : 7.29770680817454,
+                "scoreConfidence" : [
+                    14.73229319182546,
+                    29.32770680817454
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 19.94,
+                    "50.0" : 21.31,
+                    "90.0" : 24.47,
+                    "95.0" : 24.47,
+                    "99.0" : 24.47,
+                    "99.9" : 24.47,
+                    "99.99" : 24.47,
+                    "99.999" : 24.47,
+                    "99.9999" : 24.47,
+                    "100.0" : 24.47
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        19.94,
+                        20.9,
+                        21.31,
+                        23.53,
+                        24.47
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:executedTasks" : {
+                "score" : 1279.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1279.0,
+                    1279.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1279.0,
+                    "50.0" : 1279.0,
+                    "90.0" : 1279.0,
+                    "95.0" : 1279.0,
+                    "99.0" : 1279.0,
+                    "99.9" : 1279.0,
+                    "99.99" : 1279.0,
+                    "99.999" : 1279.0,
+                    "99.9999" : 1279.0,
+                    "100.0" : 1279.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:providedResourceDependencies" : {
+                "score" : 133.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    133.0,
+                    133.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 133.0,
+                    "50.0" : 133.0,
+                    "90.0" : 133.0,
+                    "95.0" : 133.0,
+                    "99.0" : 133.0,
+                    "99.9" : 133.0,
+                    "99.99" : 133.0,
+                    "99.999" : 133.0,
+                    "99.9999" : 133.0,
+                    "100.0" : 133.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredResourceDependencies" : {
+                "score" : 1707.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1707.0,
+                    1707.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1707.0,
+                    "50.0" : 1707.0,
+                    "90.0" : 1707.0,
+                    "95.0" : 1707.0,
+                    "99.0" : 1707.0,
+                    "99.9" : 1707.0,
+                    "99.99" : 1707.0,
+                    "99.999" : 1707.0,
+                    "99.9999" : 1707.0,
+                    "100.0" : 1707.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredTaskDependencies" : {
+                "score" : 1519.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1519.0,
+                    1519.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1519.0,
+                    "50.0" : 1519.0,
+                    "90.0" : 1519.0,
+                    "95.0" : 1519.0,
+                    "99.0" : 1519.0,
+                    "99.9" : 1519.0,
+                    "99.99" : 1519.0,
+                    "99.999" : 1519.0,
+                    "99.9999" : 1519.0,
+                    "100.0" : 1519.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:systemNanoTime" : {
+                "score" : 23.0871525866,
+                "scoreError" : 5.2183500090926955,
+                "scoreConfidence" : [
+                    17.868802577507303,
+                    28.305502595692694
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 21.389797139,
+                    "50.0" : 22.753634402,
+                    "90.0" : 24.928151156,
+                    "95.0" : 24.928151156,
+                    "99.0" : 24.928151156,
+                    "99.9" : 24.928151156,
+                    "99.99" : 24.928151156,
+                    "99.999" : 24.928151156,
+                    "99.9999" : 24.928151156,
+                    "100.0" : 24.928151156
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        21.389797139,
+                        22.494123476,
+                        22.753634402,
+                        23.87005676,
+                        24.928151156
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:threadCpuTime" : {
+                "score" : 22.0258940248,
+                "scoreError" : 5.457005509445427,
+                "scoreConfidence" : [
+                    16.568888515354573,
+                    27.482899534245426
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 20.262949302,
+                    "50.0" : 21.729075548,
+                    "90.0" : 23.950506561,
+                    "95.0" : 23.950506561,
+                    "99.0" : 23.950506561,
+                    "99.9" : 23.950506561,
+                    "99.99" : 23.950506561,
+                    "99.999" : 23.950506561,
+                    "99.9999" : 23.950506561,
+                    "100.0" : 23.950506561
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        20.262949302,
+                        21.343766859,
+                        21.729075548,
+                        22.843171854,
+                        23.950506561
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:threadUserTime" : {
+                "score" : 21.839999999999996,
+                "scoreError" : 5.512139958517006,
+                "scoreConfidence" : [
+                    16.327860041482992,
+                    27.352139958517
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 20.08,
+                    "50.0" : 21.51,
+                    "90.0" : 23.8,
+                    "95.0" : 23.8,
+                    "99.0" : 23.8,
+                    "99.9" : 23.8,
+                    "99.99" : 23.8,
+                    "99.999" : 23.8,
+                    "99.9999" : 23.8,
+                    "100.0" : 23.8
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        20.08,
+                        21.15,
+                        21.51,
+                        22.66,
+                        23.8
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:executedTasks" : {
+                "score" : 1279.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1279.0,
+                    1279.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1279.0,
+                    "50.0" : 1279.0,
+                    "90.0" : 1279.0,
+                    "95.0" : 1279.0,
+                    "99.0" : 1279.0,
+                    "99.9" : 1279.0,
+                    "99.99" : 1279.0,
+                    "99.999" : 1279.0,
+                    "99.9999" : 1279.0,
+                    "100.0" : 1279.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:providedResourceDependencies" : {
+                "score" : 133.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    133.0,
+                    133.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 133.0,
+                    "50.0" : 133.0,
+                    "90.0" : 133.0,
+                    "95.0" : 133.0,
+                    "99.0" : 133.0,
+                    "99.9" : 133.0,
+                    "99.99" : 133.0,
+                    "99.999" : 133.0,
+                    "99.9999" : 133.0,
+                    "100.0" : 133.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredResourceDependencies" : {
+                "score" : 1707.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1707.0,
+                    1707.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1707.0,
+                    "50.0" : 1707.0,
+                    "90.0" : 1707.0,
+                    "95.0" : 1707.0,
+                    "99.0" : 1707.0,
+                    "99.9" : 1707.0,
+                    "99.99" : 1707.0,
+                    "99.999" : 1707.0,
+                    "99.9999" : 1707.0,
+                    "100.0" : 1707.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredTaskDependencies" : {
+                "score" : 1519.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1519.0,
+                    1519.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1519.0,
+                    "50.0" : 1519.0,
+                    "90.0" : 1519.0,
+                    "95.0" : 1519.0,
+                    "99.0" : 1519.0,
+                    "99.9" : 1519.0,
+                    "99.99" : 1519.0,
+                    "99.999" : 1519.0,
+                    "99.9999" : 1519.0,
+                    "100.0" : 1519.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:systemNanoTime" : {
+                "score" : 23.514408416000002,
+                "scoreError" : 4.861937998803269,
+                "scoreConfidence" : [
+                    18.65247041719673,
+                    28.376346414803272
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 22.302390853,
+                    "50.0" : 23.312175102,
+                    "90.0" : 25.039023559,
+                    "95.0" : 25.039023559,
+                    "99.0" : 25.039023559,
+                    "99.9" : 25.039023559,
+                    "99.99" : 25.039023559,
+                    "99.999" : 25.039023559,
+                    "99.9999" : 25.039023559,
+                    "100.0" : 25.039023559
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        22.333057938,
+                        22.302390853,
+                        23.312175102,
+                        24.585394628,
+                        25.039023559
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:threadCpuTime" : {
+                "score" : 22.4289778856,
+                "scoreError" : 5.1694801823985,
+                "scoreConfidence" : [
+                    17.259497703201497,
+                    27.5984580679985
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 21.082267953,
+                    "50.0" : 22.275532288,
+                    "90.0" : 24.01502652,
+                    "95.0" : 24.01502652,
+                    "99.0" : 24.01502652,
+                    "99.9" : 24.01502652,
+                    "99.99" : 24.01502652,
+                    "99.999" : 24.01502652,
+                    "99.9999" : 24.01502652,
+                    "100.0" : 24.01502652
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        21.082267953,
+                        21.191714205,
+                        22.275532288,
+                        23.580348462,
+                        24.01502652
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:threadUserTime" : {
+                "score" : 22.25,
+                "scoreError" : 5.240908871844689,
+                "scoreConfidence" : [
+                    17.009091128155312,
+                    27.490908871844688
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 20.86,
+                    "50.0" : 22.11,
+                    "90.0" : 23.84,
+                    "95.0" : 23.84,
+                    "99.0" : 23.84,
+                    "99.9" : 23.84,
+                    "99.99" : 23.84,
+                    "99.999" : 23.84,
+                    "99.9999" : 23.84,
+                    "100.0" : 23.84
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        20.86,
+                        21.01,
+                        22.11,
+                        23.43,
+                        23.84
+                    ]
+                ]
+            }
+        }
+    },
+    {
+        "jmhVersion" : "1.26",
+        "benchmark" : "mb.pie.bench.spoofax3.Spoofax3Bench.incrementalBottomUp",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "/opt/hostedtoolcache/jdk/15.0.1/x64/bin/java",
+        "jvmArgs" : [
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "-Dfile.encoding=UTF-8",
+            "-Duser.country",
+            "-Duser.language=en",
+            "-Duser.variant"
+        ],
+        "jdkVersion" : "15.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "15.0.1+8",
+        "warmupIterations" : 5,
+        "warmupTime" : "single-shot",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "single-shot",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "defaultOutputStamperKind" : "equals",
+            "defaultProvideHierarchicalResourceStamperKind" : "modified_direct",
+            "defaultProvideReadableResourceStamperKind" : "modified",
+            "defaultRequireHierarchicalResourceStamperKind" : "modified_direct",
+            "defaultRequireReadableResourceStamperKind" : "modified",
+            "executorLoggerKind" : "logger",
+            "language" : "calc",
+            "layerKind" : "validation",
+            "loggerKind" : "stdout_errors",
+            "shareKind" : "non_sharing",
+            "storeKind" : "in_memory",
+            "useDiskTemporaryDirectory" : "true"
+        },
+        "primaryMetric" : {
+            "score" : 21.796598113199998,
+            "scoreError" : 0.7227445058851761,
+            "scoreConfidence" : [
+                21.07385360731482,
+                22.519342619085176
+            ],
+            "scorePercentiles" : {
+                "0.0" : 21.541078725,
+                "50.0" : 21.803582241,
+                "90.0" : 22.069410199,
+                "95.0" : 22.069410199,
+                "99.0" : 22.069410199,
+                "99.9" : 22.069410199,
+                "99.99" : 22.069410199,
+                "99.999" : 22.069410199,
+                "99.9999" : 22.069410199,
+                "100.0" : 22.069410199
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    21.541078725,
+                    21.803582241,
+                    22.069410199,
+                    21.763762132,
+                    21.805157269
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+            "0_initial:executedTasks" : {
+                "score" : 1279.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1279.0,
+                    1279.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1279.0,
+                    "50.0" : 1279.0,
+                    "90.0" : 1279.0,
+                    "95.0" : 1279.0,
+                    "99.0" : 1279.0,
+                    "99.9" : 1279.0,
+                    "99.99" : 1279.0,
+                    "99.999" : 1279.0,
+                    "99.9999" : 1279.0,
+                    "100.0" : 1279.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0
+                    ]
+                ]
+            },
+            "0_initial:providedResourceDependencies" : {
+                "score" : 133.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    133.0,
+                    133.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 133.0,
+                    "50.0" : 133.0,
+                    "90.0" : 133.0,
+                    "95.0" : 133.0,
+                    "99.0" : 133.0,
+                    "99.9" : 133.0,
+                    "99.99" : 133.0,
+                    "99.999" : 133.0,
+                    "99.9999" : 133.0,
+                    "100.0" : 133.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0
+                    ]
+                ]
+            },
+            "0_initial:requiredResourceDependencies" : {
+                "score" : 1707.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1707.0,
+                    1707.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1707.0,
+                    "50.0" : 1707.0,
+                    "90.0" : 1707.0,
+                    "95.0" : 1707.0,
+                    "99.0" : 1707.0,
+                    "99.9" : 1707.0,
+                    "99.99" : 1707.0,
+                    "99.999" : 1707.0,
+                    "99.9999" : 1707.0,
+                    "100.0" : 1707.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0
+                    ]
+                ]
+            },
+            "0_initial:requiredTaskDependencies" : {
+                "score" : 1519.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1519.0,
+                    1519.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1519.0,
+                    "50.0" : 1519.0,
+                    "90.0" : 1519.0,
+                    "95.0" : 1519.0,
+                    "99.0" : 1519.0,
+                    "99.9" : 1519.0,
+                    "99.99" : 1519.0,
+                    "99.999" : 1519.0,
+                    "99.9999" : 1519.0,
+                    "100.0" : 1519.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0
+                    ]
+                ]
+            },
+            "0_initial:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "0_initial:systemNanoTime" : {
+                "score" : 17.419985963400002,
+                "scoreError" : 0.2755811514697672,
+                "scoreConfidence" : [
+                    17.144404811930237,
+                    17.695567114869768
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 17.301100619,
+                    "50.0" : 17.424326391,
+                    "90.0" : 17.480169332,
+                    "95.0" : 17.480169332,
+                    "99.0" : 17.480169332,
+                    "99.9" : 17.480169332,
+                    "99.99" : 17.480169332,
+                    "99.999" : 17.480169332,
+                    "99.9999" : 17.480169332,
+                    "100.0" : 17.480169332
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        17.301100619,
+                        17.480169332,
+                        17.472020968,
+                        17.422312507,
+                        17.424326391
+                    ]
+                ]
+            },
+            "0_initial:threadCpuTime" : {
+                "score" : 16.3595811082,
+                "scoreError" : 0.4071132478751075,
+                "scoreConfidence" : [
+                    15.952467860324893,
+                    16.766694356075106
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 16.177866969,
+                    "50.0" : 16.396984987,
+                    "90.0" : 16.450659404,
+                    "95.0" : 16.450659404,
+                    "99.0" : 16.450659404,
+                    "99.9" : 16.450659404,
+                    "99.99" : 16.450659404,
+                    "99.999" : 16.450659404,
+                    "99.9999" : 16.450659404,
+                    "100.0" : 16.450659404
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        16.177866969,
+                        16.396984987,
+                        16.450659404,
+                        16.369155851,
+                        16.40323833
+                    ]
+                ]
+            },
+            "0_initial:threadUserTime" : {
+                "score" : 16.152,
+                "scoreError" : 0.41952584467127724,
+                "scoreConfidence" : [
+                    15.732474155328724,
+                    16.571525844671278
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 15.96,
+                    "50.0" : 16.19,
+                    "90.0" : 16.23,
+                    "95.0" : 16.23,
+                    "99.0" : 16.23,
+                    "99.9" : 16.23,
+                    "99.99" : 16.23,
+                    "99.999" : 16.23,
+                    "99.9999" : 16.23,
+                    "100.0" : 16.23
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        15.96,
+                        16.18,
+                        16.23,
+                        16.19,
+                        16.2
+                    ]
+                ]
+            },
+            "1_no_change:executedTasks" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:providedResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredTaskDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredTasks" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:systemNanoTime" : {
+                "score" : 6.866E-5,
+                "scoreError" : 1.817487617913414E-5,
+                "scoreConfidence" : [
+                    5.0485123820865855E-5,
+                    8.683487617913414E-5
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 6.12E-5,
+                    "50.0" : 6.9E-5,
+                    "90.0" : 7.37E-5,
+                    "95.0" : 7.37E-5,
+                    "99.0" : 7.37E-5,
+                    "99.9" : 7.37E-5,
+                    "99.99" : 7.37E-5,
+                    "99.999" : 7.37E-5,
+                    "99.9999" : 7.37E-5,
+                    "100.0" : 7.37E-5
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        6.8E-5,
+                        6.12E-5,
+                        7.37E-5,
+                        6.9E-5,
+                        7.14E-5
+                    ]
+                ]
+            },
+            "1_no_change:threadCpuTime" : {
+                "score" : 6.332E-5,
+                "scoreError" : 2.20369899527685E-5,
+                "scoreConfidence" : [
+                    4.12830100472315E-5,
+                    8.53569899527685E-5
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 5.47E-5,
+                    "50.0" : 6.43E-5,
+                    "90.0" : 6.93E-5,
+                    "95.0" : 6.93E-5,
+                    "99.0" : 6.93E-5,
+                    "99.9" : 6.93E-5,
+                    "99.99" : 6.93E-5,
+                    "99.999" : 6.93E-5,
+                    "99.9999" : 6.93E-5,
+                    "100.0" : 6.93E-5
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        6.11E-5,
+                        5.47E-5,
+                        6.93E-5,
+                        6.43E-5,
+                        6.72E-5
+                    ]
+                ]
+            },
+            "1_no_change:threadUserTime" : {
+                "score" : 0.0,
+                "scoreError" : 0.0,
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:executedTasks" : {
+                "score" : 5.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    5.0,
+                    5.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 5.0,
+                    "50.0" : 5.0,
+                    "90.0" : 5.0,
+                    "95.0" : 5.0,
+                    "99.0" : 5.0,
+                    "99.9" : 5.0,
+                    "99.99" : 5.0,
+                    "99.999" : 5.0,
+                    "99.9999" : 5.0,
+                    "100.0" : 5.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        5.0,
+                        5.0,
+                        5.0,
+                        5.0,
+                        5.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:providedResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredResourceDependencies" : {
+                "score" : 1673.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1673.0,
+                    1673.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1673.0,
+                    "50.0" : 1673.0,
+                    "90.0" : 1673.0,
+                    "95.0" : 1673.0,
+                    "99.0" : 1673.0,
+                    "99.9" : 1673.0,
+                    "99.99" : 1673.0,
+                    "99.999" : 1673.0,
+                    "99.9999" : 1673.0,
+                    "100.0" : 1673.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1673.0,
+                        1673.0,
+                        1673.0,
+                        1673.0,
+                        1673.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredTaskDependencies" : {
+                "score" : 731.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    731.0,
+                    731.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 731.0,
+                    "50.0" : 731.0,
+                    "90.0" : 731.0,
+                    "95.0" : 731.0,
+                    "99.0" : 731.0,
+                    "99.9" : 731.0,
+                    "99.99" : 731.0,
+                    "99.999" : 731.0,
+                    "99.9999" : 731.0,
+                    "100.0" : 731.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        731.0,
+                        731.0,
+                        731.0,
+                        731.0,
+                        731.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredTasks" : {
+                "score" : 731.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    731.0,
+                    731.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 731.0,
+                    "50.0" : 731.0,
+                    "90.0" : 731.0,
+                    "95.0" : 731.0,
+                    "99.0" : 731.0,
+                    "99.9" : 731.0,
+                    "99.99" : 731.0,
+                    "99.999" : 731.0,
+                    "99.9999" : 731.0,
+                    "100.0" : 731.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        731.0,
+                        731.0,
+                        731.0,
+                        731.0,
+                        731.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:systemNanoTime" : {
+                "score" : 3.3336665894,
+                "scoreError" : 0.4720643070318304,
+                "scoreConfidence" : [
+                    2.8616022823681697,
+                    3.80573089643183
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 3.229871222,
+                    "50.0" : 3.293800173,
+                    "90.0" : 3.543865225,
+                    "95.0" : 3.543865225,
+                    "99.0" : 3.543865225,
+                    "99.9" : 3.543865225,
+                    "99.99" : 3.543865225,
+                    "99.999" : 3.543865225,
+                    "99.9999" : 3.543865225,
+                    "100.0" : 3.543865225
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        3.229871222,
+                        3.293800173,
+                        3.543865225,
+                        3.274350973,
+                        3.326445354
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:threadCpuTime" : {
+                "score" : 2.9129508544,
+                "scoreError" : 0.11426176633358097,
+                "scoreConfidence" : [
+                    2.798689088066419,
+                    3.027212620733581
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 2.87349045,
+                    "50.0" : 2.930560889,
+                    "90.0" : 2.937930923,
+                    "95.0" : 2.937930923,
+                    "99.0" : 2.937930923,
+                    "99.9" : 2.937930923,
+                    "99.99" : 2.937930923,
+                    "99.999" : 2.937930923,
+                    "99.9999" : 2.937930923,
+                    "100.0" : 2.937930923
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        2.87349045,
+                        2.934034501,
+                        2.937930923,
+                        2.930560889,
+                        2.888737509
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:threadUserTime" : {
+                "score" : 2.836,
+                "scoreError" : 0.12654507243515126,
+                "scoreConfidence" : [
+                    2.7094549275648485,
+                    2.962545072435151
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 2.8,
+                    "50.0" : 2.82,
+                    "90.0" : 2.88,
+                    "95.0" : 2.88,
+                    "99.0" : 2.88,
+                    "99.9" : 2.88,
+                    "99.99" : 2.88,
+                    "99.999" : 2.88,
+                    "99.9999" : 2.88,
+                    "100.0" : 2.88
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        2.8,
+                        2.88,
+                        2.86,
+                        2.82,
+                        2.82
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:executedTasks" : {
+                "score" : 1.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1.0,
+                    1.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1.0,
+                    "50.0" : 1.0,
+                    "90.0" : 1.0,
+                    "95.0" : 1.0,
+                    "99.0" : 1.0,
+                    "99.9" : 1.0,
+                    "99.99" : 1.0,
+                    "99.999" : 1.0,
+                    "99.9999" : 1.0,
+                    "100.0" : 1.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:providedResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredResourceDependencies" : {
+                "score" : 1.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1.0,
+                    1.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1.0,
+                    "50.0" : 1.0,
+                    "90.0" : 1.0,
+                    "95.0" : 1.0,
+                    "99.0" : 1.0,
+                    "99.9" : 1.0,
+                    "99.99" : 1.0,
+                    "99.999" : 1.0,
+                    "99.9999" : 1.0,
+                    "100.0" : 1.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredTaskDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredTasks" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:systemNanoTime" : {
+                "score" : 0.0141769442,
+                "scoreError" : 0.00539038003461737,
+                "scoreConfidence" : [
+                    0.00878656416538263,
+                    0.01956732423461737
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.013200841,
+                    "50.0" : 0.01362434,
+                    "90.0" : 0.016608553,
+                    "95.0" : 0.016608553,
+                    "99.0" : 0.016608553,
+                    "99.9" : 0.016608553,
+                    "99.99" : 0.016608553,
+                    "99.999" : 0.016608553,
+                    "99.9999" : 0.016608553,
+                    "100.0" : 0.016608553
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.014086047,
+                        0.016608553,
+                        0.013200841,
+                        0.01336494,
+                        0.01362434
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:threadCpuTime" : {
+                "score" : 0.013646906199999998,
+                "scoreError" : 0.001500206190740689,
+                "scoreConfidence" : [
+                    0.012146700009259308,
+                    0.015147112390740687
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.013174357,
+                    "50.0" : 0.013622347,
+                    "90.0" : 0.014050353,
+                    "95.0" : 0.014050353,
+                    "99.0" : 0.014050353,
+                    "99.9" : 0.014050353,
+                    "99.99" : 0.014050353,
+                    "99.999" : 0.014050353,
+                    "99.9999" : 0.014050353,
+                    "100.0" : 0.014050353
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.014050353,
+                        0.014022437,
+                        0.013174357,
+                        0.013365037,
+                        0.013622347
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:threadUserTime" : {
+                "score" : 0.014000000000000002,
+                "scoreError" : 0.021090845405858524,
+                "scoreConfidence" : [
+                    -0.007090845405858522,
+                    0.03509084540585852
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.01,
+                    "50.0" : 0.01,
+                    "90.0" : 0.02,
+                    "95.0" : 0.02,
+                    "99.0" : 0.02,
+                    "99.9" : 0.02,
+                    "99.99" : 0.02,
+                    "99.999" : 0.02,
+                    "99.9999" : 0.02,
+                    "100.0" : 0.02
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.01,
+                        0.01,
+                        0.01,
+                        0.02,
+                        0.02
+                    ]
+                ]
+            }
+        }
+    },
+    {
+        "jmhVersion" : "1.26",
+        "benchmark" : "mb.pie.bench.spoofax3.Spoofax3Bench.incrementalTopDown",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "/opt/hostedtoolcache/jdk/15.0.1/x64/bin/java",
+        "jvmArgs" : [
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "-Dfile.encoding=UTF-8",
+            "-Duser.country",
+            "-Duser.language=en",
+            "-Duser.variant"
+        ],
+        "jdkVersion" : "15.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "15.0.1+8",
+        "warmupIterations" : 5,
+        "warmupTime" : "single-shot",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "single-shot",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "defaultOutputStamperKind" : "equals",
+            "defaultProvideHierarchicalResourceStamperKind" : "modified_direct",
+            "defaultProvideReadableResourceStamperKind" : "modified",
+            "defaultRequireHierarchicalResourceStamperKind" : "modified_direct",
+            "defaultRequireReadableResourceStamperKind" : "modified",
+            "executorLoggerKind" : "logger",
+            "language" : "calc",
+            "layerKind" : "validation",
+            "loggerKind" : "stdout_errors",
+            "shareKind" : "non_sharing",
+            "storeKind" : "in_memory",
+            "useDiskTemporaryDirectory" : "true"
+        },
+        "primaryMetric" : {
+            "score" : 28.275453435600003,
+            "scoreError" : 0.983847935867614,
+            "scoreConfidence" : [
+                27.291605499732388,
+                29.25930137146762
+            ],
+            "scorePercentiles" : {
+                "0.0" : 27.965124709,
+                "50.0" : 28.429041298,
+                "90.0" : 28.509133122,
+                "95.0" : 28.509133122,
+                "99.0" : 28.509133122,
+                "99.9" : 28.509133122,
+                "99.99" : 28.509133122,
+                "99.999" : 28.509133122,
+                "99.9999" : 28.509133122,
+                "100.0" : 28.509133122
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    28.509133122,
+                    28.429041298,
+                    27.965124709,
+                    28.032452452,
+                    28.441515597
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+            "0_initial:executedTasks" : {
+                "score" : 1279.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1279.0,
+                    1279.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1279.0,
+                    "50.0" : 1279.0,
+                    "90.0" : 1279.0,
+                    "95.0" : 1279.0,
+                    "99.0" : 1279.0,
+                    "99.9" : 1279.0,
+                    "99.99" : 1279.0,
+                    "99.999" : 1279.0,
+                    "99.9999" : 1279.0,
+                    "100.0" : 1279.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0,
+                        1279.0
+                    ]
+                ]
+            },
+            "0_initial:providedResourceDependencies" : {
+                "score" : 133.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    133.0,
+                    133.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 133.0,
+                    "50.0" : 133.0,
+                    "90.0" : 133.0,
+                    "95.0" : 133.0,
+                    "99.0" : 133.0,
+                    "99.9" : 133.0,
+                    "99.99" : 133.0,
+                    "99.999" : 133.0,
+                    "99.9999" : 133.0,
+                    "100.0" : 133.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0,
+                        133.0
+                    ]
+                ]
+            },
+            "0_initial:requiredResourceDependencies" : {
+                "score" : 1707.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1707.0,
+                    1707.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1707.0,
+                    "50.0" : 1707.0,
+                    "90.0" : 1707.0,
+                    "95.0" : 1707.0,
+                    "99.0" : 1707.0,
+                    "99.9" : 1707.0,
+                    "99.99" : 1707.0,
+                    "99.999" : 1707.0,
+                    "99.9999" : 1707.0,
+                    "100.0" : 1707.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0,
+                        1707.0
+                    ]
+                ]
+            },
+            "0_initial:requiredTaskDependencies" : {
+                "score" : 1519.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1519.0,
+                    1519.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1519.0,
+                    "50.0" : 1519.0,
+                    "90.0" : 1519.0,
+                    "95.0" : 1519.0,
+                    "99.0" : 1519.0,
+                    "99.9" : 1519.0,
+                    "99.99" : 1519.0,
+                    "99.999" : 1519.0,
+                    "99.9999" : 1519.0,
+                    "100.0" : 1519.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0,
+                        1519.0
+                    ]
+                ]
+            },
+            "0_initial:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "0_initial:systemNanoTime" : {
+                "score" : 17.381888969400002,
+                "scoreError" : 0.6709507628581435,
+                "scoreConfidence" : [
+                    16.710938206541858,
+                    18.052839732258146
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 17.185552807,
+                    "50.0" : 17.475593278,
+                    "90.0" : 17.539580531,
+                    "95.0" : 17.539580531,
+                    "99.0" : 17.539580531,
+                    "99.9" : 17.539580531,
+                    "99.99" : 17.539580531,
+                    "99.999" : 17.539580531,
+                    "99.9999" : 17.539580531,
+                    "100.0" : 17.539580531
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        17.475593278,
+                        17.508846627,
+                        17.185552807,
+                        17.199871604,
+                        17.539580531
+                    ]
+                ]
+            },
+            "0_initial:threadCpuTime" : {
+                "score" : 16.3329216008,
+                "scoreError" : 0.5114532265044005,
+                "scoreConfidence" : [
+                    15.821468374295598,
+                    16.8443748273044
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 16.182489052,
+                    "50.0" : 16.314652257,
+                    "90.0" : 16.502356816,
+                    "95.0" : 16.502356816,
+                    "99.0" : 16.502356816,
+                    "99.9" : 16.502356816,
+                    "99.99" : 16.502356816,
+                    "99.999" : 16.502356816,
+                    "99.9999" : 16.502356816,
+                    "100.0" : 16.502356816
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        16.314652257,
+                        16.429753912,
+                        16.182489052,
+                        16.235355967,
+                        16.502356816
+                    ]
+                ]
+            },
+            "0_initial:threadUserTime" : {
+                "score" : 16.137999999999998,
+                "scoreError" : 0.54005195299151,
+                "scoreConfidence" : [
+                    15.597948047008488,
+                    16.67805195299151
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 15.99,
+                    "50.0" : 16.08,
+                    "90.0" : 16.32,
+                    "95.0" : 16.32,
+                    "99.0" : 16.32,
+                    "99.9" : 16.32,
+                    "99.99" : 16.32,
+                    "99.999" : 16.32,
+                    "99.9999" : 16.32,
+                    "100.0" : 16.32
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        16.05,
+                        16.25,
+                        15.99,
+                        16.08,
+                        16.32
+                    ]
+                ]
+            },
+            "1_no_change:executedTasks" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:providedResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredTaskDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "1_no_change:requiredTasks" : {
+                "score" : 1520.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1520.0,
+                    1520.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1520.0,
+                    "50.0" : 1520.0,
+                    "90.0" : 1520.0,
+                    "95.0" : 1520.0,
+                    "99.0" : 1520.0,
+                    "99.9" : 1520.0,
+                    "99.99" : 1520.0,
+                    "99.999" : 1520.0,
+                    "99.9999" : 1520.0,
+                    "100.0" : 1520.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0,
+                        1520.0
+                    ]
+                ]
+            },
+            "1_no_change:systemNanoTime" : {
+                "score" : 0.08702628999999999,
+                "scoreError" : 0.00871920674911306,
+                "scoreConfidence" : [
+                    0.07830708325088694,
+                    0.09574549674911305
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.083604899,
+                    "50.0" : 0.08731711,
+                    "90.0" : 0.089947511,
+                    "95.0" : 0.089947511,
+                    "99.0" : 0.089947511,
+                    "99.9" : 0.089947511,
+                    "99.99" : 0.089947511,
+                    "99.999" : 0.089947511,
+                    "99.9999" : 0.089947511,
+                    "100.0" : 0.089947511
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.086845316,
+                        0.087416614,
+                        0.08731711,
+                        0.083604899,
+                        0.089947511
+                    ]
+                ]
+            },
+            "1_no_change:threadCpuTime" : {
+                "score" : 0.0867527736,
+                "scoreError" : 0.009115197486212865,
+                "scoreConfidence" : [
+                    0.07763757611378713,
+                    0.09586797108621287
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.083605799,
+                    "50.0" : 0.087291212,
+                    "90.0" : 0.089948915,
+                    "95.0" : 0.089948915,
+                    "99.0" : 0.089948915,
+                    "99.9" : 0.089948915,
+                    "99.99" : 0.089948915,
+                    "99.999" : 0.089948915,
+                    "99.9999" : 0.089948915,
+                    "100.0" : 0.089948915
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.085501634,
+                        0.087416308,
+                        0.087291212,
+                        0.083605799,
+                        0.089948915
+                    ]
+                ]
+            },
+            "1_no_change:threadUserTime" : {
+                "score" : 0.082,
+                "scoreError" : 0.017220603162758714,
+                "scoreConfidence" : [
+                    0.0647793968372413,
+                    0.09922060316275871
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.08,
+                    "50.0" : 0.08,
+                    "90.0" : 0.09,
+                    "95.0" : 0.09,
+                    "99.0" : 0.09,
+                    "99.9" : 0.09,
+                    "99.99" : 0.09,
+                    "99.999" : 0.09,
+                    "99.9999" : 0.09,
+                    "100.0" : 0.09
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        0.08,
+                        0.08,
+                        0.08,
+                        0.08,
+                        0.09
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:executedTasks" : {
+                "score" : 6.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    6.0,
+                    6.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 6.0,
+                    "50.0" : 6.0,
+                    "90.0" : 6.0,
+                    "95.0" : 6.0,
+                    "99.0" : 6.0,
+                    "99.9" : 6.0,
+                    "99.99" : 6.0,
+                    "99.999" : 6.0,
+                    "99.9999" : 6.0,
+                    "100.0" : 6.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        6.0,
+                        6.0,
+                        6.0,
+                        6.0,
+                        6.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:providedResourceDependencies" : {
+                "score" : 0.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    0.0,
+                    0.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 0.0,
+                    "50.0" : 0.0,
+                    "90.0" : 0.0,
+                    "95.0" : 0.0,
+                    "99.0" : 0.0,
+                    "99.9" : 0.0,
+                    "99.99" : 0.0,
+                    "99.999" : 0.0,
+                    "99.9999" : 0.0,
+                    "100.0" : 0.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredResourceDependencies" : {
+                "score" : 1675.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1675.0,
+                    1675.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1675.0,
+                    "50.0" : 1675.0,
+                    "90.0" : 1675.0,
+                    "95.0" : 1675.0,
+                    "99.0" : 1675.0,
+                    "99.9" : 1675.0,
+                    "99.99" : 1675.0,
+                    "99.999" : 1675.0,
+                    "99.9999" : 1675.0,
+                    "100.0" : 1675.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1675.0,
+                        1675.0,
+                        1675.0,
+                        1675.0,
+                        1675.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredTaskDependencies" : {
+                "score" : 735.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    735.0,
+                    735.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 735.0,
+                    "50.0" : 735.0,
+                    "90.0" : 735.0,
+                    "95.0" : 735.0,
+                    "99.0" : 735.0,
+                    "99.9" : 735.0,
+                    "99.99" : 735.0,
+                    "99.999" : 735.0,
+                    "99.9999" : 735.0,
+                    "100.0" : 735.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        735.0,
+                        735.0,
+                        735.0,
+                        735.0,
+                        735.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:requiredTasks" : {
+                "score" : 1522.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1522.0,
+                    1522.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1522.0,
+                    "50.0" : 1522.0,
+                    "90.0" : 1522.0,
+                    "95.0" : 1522.0,
+                    "99.0" : 1522.0,
+                    "99.9" : 1522.0,
+                    "99.99" : 1522.0,
+                    "99.999" : 1522.0,
+                    "99.9999" : 1522.0,
+                    "100.0" : 1522.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1522.0,
+                        1522.0,
+                        1522.0,
+                        1522.0,
+                        1522.0
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:systemNanoTime" : {
+                "score" : 3.1923656594,
+                "scoreError" : 0.4489748017103761,
+                "scoreConfidence" : [
+                    2.743390857689624,
+                    3.641340461110376
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 3.08536825,
+                    "50.0" : 3.158306602,
+                    "90.0" : 3.355154463,
+                    "95.0" : 3.355154463,
+                    "99.0" : 3.355154463,
+                    "99.9" : 3.355154463,
+                    "99.99" : 3.355154463,
+                    "99.999" : 3.355154463,
+                    "99.9999" : 3.355154463,
+                    "100.0" : 3.355154463
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        3.355154463,
+                        3.08536825,
+                        3.158306602,
+                        3.094796138,
+                        3.268202844
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:threadCpuTime" : {
+                "score" : 2.8358240314,
+                "scoreError" : 0.35166237080015045,
+                "scoreConfidence" : [
+                    2.4841616605998498,
+                    3.1874864022001503
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 2.750950202,
+                    "50.0" : 2.808959258,
+                    "90.0" : 2.956045601,
+                    "95.0" : 2.956045601,
+                    "99.0" : 2.956045601,
+                    "99.9" : 2.956045601,
+                    "99.99" : 2.956045601,
+                    "99.999" : 2.956045601,
+                    "99.9999" : 2.956045601,
+                    "100.0" : 2.956045601
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        2.956045601,
+                        2.750950202,
+                        2.808959258,
+                        2.757599535,
+                        2.905565561
+                    ]
+                ]
+            },
+            "2_remove_str_false_rule:threadUserTime" : {
+                "score" : 2.7640000000000002,
+                "scoreError" : 0.3788532695806921,
+                "scoreConfidence" : [
+                    2.385146730419308,
+                    3.1428532695806926
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 2.68,
+                    "50.0" : 2.71,
+                    "90.0" : 2.89,
+                    "95.0" : 2.89,
+                    "99.0" : 2.89,
+                    "99.9" : 2.89,
+                    "99.99" : 2.89,
+                    "99.999" : 2.89,
+                    "99.9999" : 2.89,
+                    "100.0" : 2.89
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        2.89,
+                        2.68,
+                        2.71,
+                        2.69,
+                        2.85
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:executedTasks" : {
+                "score" : 12.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    12.0,
+                    12.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 12.0,
+                    "50.0" : 12.0,
+                    "90.0" : 12.0,
+                    "95.0" : 12.0,
+                    "99.0" : 12.0,
+                    "99.9" : 12.0,
+                    "99.99" : 12.0,
+                    "99.999" : 12.0,
+                    "99.9999" : 12.0,
+                    "100.0" : 12.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        12.0,
+                        12.0,
+                        12.0,
+                        12.0,
+                        12.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:providedResourceDependencies" : {
+                "score" : 9.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    9.0,
+                    9.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 9.0,
+                    "50.0" : 9.0,
+                    "90.0" : 9.0,
+                    "95.0" : 9.0,
+                    "99.0" : 9.0,
+                    "99.9" : 9.0,
+                    "99.99" : 9.0,
+                    "99.999" : 9.0,
+                    "99.9999" : 9.0,
+                    "100.0" : 9.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        9.0,
+                        9.0,
+                        9.0,
+                        9.0,
+                        9.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredResourceDependencies" : {
+                "score" : 1678.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1678.0,
+                    1678.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1678.0,
+                    "50.0" : 1678.0,
+                    "90.0" : 1678.0,
+                    "95.0" : 1678.0,
+                    "99.0" : 1678.0,
+                    "99.9" : 1678.0,
+                    "99.99" : 1678.0,
+                    "99.999" : 1678.0,
+                    "99.9999" : 1678.0,
+                    "100.0" : 1678.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        1678.0,
+                        1678.0,
+                        1678.0,
+                        1678.0,
+                        1678.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredTaskDependencies" : {
+                "score" : 755.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    755.0,
+                    755.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 755.0,
+                    "50.0" : 755.0,
+                    "90.0" : 755.0,
+                    "95.0" : 755.0,
+                    "99.0" : 755.0,
+                    "99.9" : 755.0,
+                    "99.99" : 755.0,
+                    "99.999" : 755.0,
+                    "99.9999" : 755.0,
+                    "100.0" : 755.0
+                },
+                "scoreUnit" : "dependencies",
+                "rawData" : [
+                    [
+                        755.0,
+                        755.0,
+                        755.0,
+                        755.0,
+                        755.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:requiredTasks" : {
+                "score" : 1528.0,
+                "scoreError" : "NaN",
+                "scoreConfidence" : [
+                    1528.0,
+                    1528.0
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 1528.0,
+                    "50.0" : 1528.0,
+                    "90.0" : 1528.0,
+                    "95.0" : 1528.0,
+                    "99.0" : 1528.0,
+                    "99.9" : 1528.0,
+                    "99.99" : 1528.0,
+                    "99.999" : 1528.0,
+                    "99.9999" : 1528.0,
+                    "100.0" : 1528.0
+                },
+                "scoreUnit" : "tasks",
+                "rawData" : [
+                    [
+                        1528.0,
+                        1528.0,
+                        1528.0,
+                        1528.0,
+                        1528.0
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:systemNanoTime" : {
+                "score" : 6.590732829399999,
+                "scoreError" : 0.3762885670032293,
+                "scoreConfidence" : [
+                    6.21444426239677,
+                    6.967021396403228
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 6.483342831,
+                    "50.0" : 6.593201276,
+                    "90.0" : 6.733218324,
+                    "95.0" : 6.733218324,
+                    "99.0" : 6.733218324,
+                    "99.9" : 6.733218324,
+                    "99.99" : 6.733218324,
+                    "99.999" : 6.733218324,
+                    "99.9999" : 6.733218324,
+                    "100.0" : 6.733218324
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        6.593201276,
+                        6.733218324,
+                        6.518794546,
+                        6.62510717,
+                        6.483342831
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:threadCpuTime" : {
+                "score" : 6.0696019606,
+                "scoreError" : 0.3750262999053031,
+                "scoreConfidence" : [
+                    5.694575660694697,
+                    6.444628260505303
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 5.991263417,
+                    "50.0" : 6.034950557,
+                    "90.0" : 6.232717661,
+                    "95.0" : 6.232717661,
+                    "99.0" : 6.232717661,
+                    "99.9" : 6.232717661,
+                    "99.99" : 6.232717661,
+                    "99.999" : 6.232717661,
+                    "99.9999" : 6.232717661,
+                    "100.0" : 6.232717661
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        6.034950557,
+                        6.232717661,
+                        6.007518686,
+                        6.081559482,
+                        5.991263417
+                    ]
+                ]
+            },
+            "3_remove_sdf3_false_rule:threadUserTime" : {
+                "score" : 6.01,
+                "scoreError" : 0.3632690216818678,
+                "scoreConfidence" : [
+                    5.646730978318132,
+                    6.3732690216818675
+                ],
+                "scorePercentiles" : {
+                    "0.0" : 5.92,
+                    "50.0" : 5.97,
+                    "90.0" : 6.16,
+                    "95.0" : 6.16,
+                    "99.0" : 6.16,
+                    "99.9" : 6.16,
+                    "99.99" : 6.16,
+                    "99.999" : 6.16,
+                    "99.9999" : 6.16,
+                    "100.0" : 6.16
+                },
+                "scoreUnit" : "s/op",
+                "rawData" : [
+                    [
+                        5.96,
+                        6.16,
+                        5.97,
+                        6.04,
+                        5.92
+                    ]
+                ]
+            }
+        }
+    }
+]
+
+
