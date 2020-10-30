@@ -53,7 +53,7 @@ def create_long_form_dataframe_from_json(path: str) -> pd.DataFrame:
         benchmark_name: str = bench_obj['benchmark']
         series_dict['benchmark_name'] = benchmark_name.replace("mb.pie.bench.spoofax3.Spoofax3Bench.", "")
         params_obj = bench_obj['params']
-        series_dict['layer_name'] = params_obj['layerKind']
+        series_dict['layer'] = params_obj['layer']
         for (full_metrics_name, metrics_obj) in bench_obj['secondaryMetrics'].items():
             full_metrics_name: str
             metric_name_colon_index: int = full_metrics_name.find(':')

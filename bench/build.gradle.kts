@@ -41,26 +41,27 @@ application {
 
 val reportDir = "$buildDir/reports/jmh/"
 val reportFile = "$reportDir/result.json"
-val layers = listOf("validation", "noop")
 val commonArgs = listOf(
   "-foe", "true", // Fail early.
   "-gc", "true", // Run GC between iterations, lowering noise.
   "-prof", "mb.pie.bench.util.PieMetricsProfiler", // Enable PIE metrics profiler; required.
-  "-rf", "json", "-rff", reportFile, // Write results to JSON
-  "Spoofax3Bench" // Benchmarks to run
+  "-rf", "json", "-rff", reportFile, // Write results to JSON.
+  "Spoofax3Bench" // Benchmarks to run.
 )
 // Development settings
 val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
-
   args("-f", "0") // Do not fork to allow debugging.
-  args("-wi", "1", "-i", "1") // Only one warmup and measuring iteration.
+  args("-wi", "3", "-i", "3") // 3 warmup and measurement iterations.
+  args("-p language=chars") // Only benchmark with minimal 'chars' language.
   args(commonArgs)
   doFirst {
     mkdir(reportDir)
   }
 }
 // Full benchmarking settings
+val layers = listOf("validation", "noop")
+val languages = listOf("chars", "calc")
 val runFullTask = tasks.register<JavaExec>("runFull") {
   // Copied from Gradle application plugin
   description = "Runs benchmarks with full benchmarking settings"
@@ -72,8 +73,9 @@ val runFullTask = tasks.register<JavaExec>("runFull") {
   conventionMapping.map("jvmArgs") { pluginConvention.applicationDefaultJvmArgs }
 
   args("-f", "1") // Enable forking.
-  args("-wi", "5", "-i", "5") // 5 warmup and 5 measurement iterations
-  args("-p layer=${layers.joinToString(",")}") // Benchmark different layers
+  args("-wi", "5", "-i", "5") // 5 warmup and measurement iterations.
+  args("-p layer=${layers.joinToString(",")}") // Benchmark with different layers.
+  args("-p language=${languages.joinToString(",")}") // Benchmark with different languages.
   args(commonArgs)
   doFirst {
     mkdir(reportDir)

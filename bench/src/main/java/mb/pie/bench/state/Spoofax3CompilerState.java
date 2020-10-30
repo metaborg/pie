@@ -154,30 +154,50 @@ public class Spoofax3CompilerState {
 
     // Parameters
 
-    @Param("calc") public LanguageKind language;
+    @Param("chars") public LanguageKind language;
 
     public enum LanguageKind {
-        calc {
+        chars {
             @Override
-            public void unarchiveToTempDirectory(HierarchicalResource temporaryDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException {
-                final ClassLoaderResource sourceFileDirectory = classLoaderResourceRegistry.getResource("mb/pie/bench/data/spoofax3/calc");
-                final ClassLoaderResourceLocations locations = sourceFileDirectory.getLocations();
-                for(FSResource directory : locations.directories) {
-                    directory.copyRecursivelyTo(temporaryDirectory);
-                }
-                for(JarFileWithPath jarFileWithPath : locations.jarFiles) {
-                    UnarchiveCommon.unarchiveJar(jarFileWithPath.file, temporaryDirectory, false, false);
-                }
+            public void unarchiveToTempDirectory(HierarchicalResource tempDir, ClassLoaderResourceRegistry registry) throws IOException {
+                copyResourcesToTemporaryDirectory("mb/pie/bench/data/spoofax3/chars", tempDir, registry);
             }
 
             @Override
-            public Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDirectory) {
+            public Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDir) {
+                final Shared shared = Shared.builder()
+                    .name("Chars")
+                    .defaultPackageId("mb.char")
+                    .defaultClassPrefix("Chars")
+                    .build();
+                final LanguageProject languageProject = LanguageProject.builder().withDefaults(baseDir.getPath(), shared).build();
+                final Spoofax3LanguageProject spoofax3LanguageProject = Spoofax3LanguageProject.builder().languageProject(languageProject).build();
+                final Spoofax3LanguageProjectCompilerInputBuilder inputBuilder = new Spoofax3LanguageProjectCompilerInputBuilder();
+                inputBuilder.withParser();
+                inputBuilder.withStyler();
+                return inputBuilder.build(new Properties(), shared, spoofax3LanguageProject);
+            }
+
+            @Override public ArrayList<Change> getChanges() {
+                final ArrayList<Change> changes = new ArrayList<>();
+                changes.add(changeMaker -> "no_change");
+                return changes;
+            }
+        },
+        calc {
+            @Override
+            public void unarchiveToTempDirectory(HierarchicalResource tempDir, ClassLoaderResourceRegistry registry) throws IOException {
+                copyResourcesToTemporaryDirectory("mb/pie/bench/data/spoofax3/calc", tempDir, registry);
+            }
+
+            @Override
+            public Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDir) {
                 final Shared shared = Shared.builder()
                     .name("Calc")
                     .defaultPackageId("mb.calc")
                     .defaultClassPrefix("Calc")
                     .build();
-                final LanguageProject languageProject = LanguageProject.builder().withDefaults(baseDirectory.getPath(), shared).build();
+                final LanguageProject languageProject = LanguageProject.builder().withDefaults(baseDir.getPath(), shared).build();
                 final Spoofax3LanguageProject spoofax3LanguageProject = Spoofax3LanguageProject.builder().languageProject(languageProject).build();
                 final Spoofax3LanguageProjectCompilerInputBuilder inputBuilder = new Spoofax3LanguageProjectCompilerInputBuilder();
                 inputBuilder.withParser();
@@ -189,9 +209,7 @@ public class Spoofax3CompilerState {
 
             @Override public ArrayList<Change> getChanges() {
                 final ArrayList<Change> changes = new ArrayList<>();
-                changes.add(changeMaker -> {
-                    return "no_change";
-                });
+                changes.add(changeMaker -> "no_change");
                 changes.add(changeMaker -> {
                     changeMaker.replaceFirstLiteral("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
                     return "remove_str_false_rule";
@@ -204,11 +222,23 @@ public class Spoofax3CompilerState {
             }
         };
 
-        public abstract void unarchiveToTempDirectory(HierarchicalResource tempDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException;
+        public abstract void unarchiveToTempDirectory(HierarchicalResource tempDir, ClassLoaderResourceRegistry registry) throws IOException;
 
-        public abstract Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDirectory);
+        public abstract Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDir);
 
         public abstract ArrayList<Change> getChanges();
+
+
+        private static void copyResourcesToTemporaryDirectory(String sourceFilesPath, HierarchicalResource temporaryDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException {
+            final ClassLoaderResource sourceFilesDirectory = classLoaderResourceRegistry.getResource(sourceFilesPath);
+            final ClassLoaderResourceLocations locations = sourceFilesDirectory.getLocations();
+            for(FSResource directory : locations.directories) {
+                directory.copyRecursivelyTo(temporaryDirectory);
+            }
+            for(JarFileWithPath jarFileWithPath : locations.jarFiles) {
+                UnarchiveCommon.unarchiveJar(jarFileWithPath.file, temporaryDirectory, false, false);
+            }
+        }
     }
 
     @FunctionalInterface public interface Change {
