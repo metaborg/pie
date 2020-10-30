@@ -12,26 +12,36 @@ import plotly.graph_objects as go
 
 
 def main():
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     parser = argparse.ArgumentParser(description='PIE benchmark plotter')
     parser.add_argument(
-        '--file',
-        default='{}/../../../build/reports/jmh/result.json'.format(os.path.dirname(os.path.realpath(__file__))),
+        '--input-file',
+        dest='input_file',
+        default='{}/../../../build/reports/jmh/result.json'.format(script_dir),
         type=str,
-        help='JMH result file'
+        help='Input JMH result file'
     )
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
-    subparsers.add_parser('dash', help = 'Starts a live Dash application with benchmark results')
-    subparsers.add_parser('export-html', help = 'Exports benchmark results as a static HTML page')
+    subparsers.add_parser('dash', help='Starts a live Dash application with benchmark results')
+    export_html_parser = subparsers.add_parser('export-html', help='Exports benchmark results as a static HTML page')
+    export_html_parser.add_argument(
+        '--output-file',
+        dest='output_file',
+        default='{}/../../../build/reports/jmh/result.html'.format(script_dir),
+        type=str,
+        help='Output HTML file'
+    )
     args = parser.parse_args()
 
-    data = create_long_form_dataframe_from_json(args.file)
+    data = create_long_form_dataframe_from_json(args.input_file)
     incrementality_fig = create_incrementality_figure(data)
     raw_data_fig = create_raw_data_figure(data)
+    figs = [incrementality_fig, raw_data_fig]
 
     if args.subcommand == 'dash':
-        start_dash_app(incrementality_fig, raw_data_fig)
+        start_dash_app(figs)
     elif args.subcommand == 'export-html':
-        export_html(incrementality_fig, raw_data_fig)
+        export_html(args.output_file, figs)
 
 
 def create_long_form_dataframe_from_json(path: str) -> pd.DataFrame:
@@ -107,14 +117,12 @@ def create_raw_data_figure(data: pd.DataFrame):
     return fig
 
 
-def start_dash_app(incrementality_fig, raw_data_fig):
+def start_dash_app(figs: [go.Figure]):
     app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = dbc.Container([
-        html.H1("PIE benchmarks"),
-        html.Hr(),
-        single_row_col_graph(figure=incrementality_fig),
-        single_row_col_graph(figure=raw_data_fig)
-    ], fluid=True)
+    elements = [html.H1("PIE benchmarks"), html.Hr()]
+    for fig in figs:
+        elements.append(single_row_col_graph(figure=fig))
+    app.layout = dbc.Container(elements, fluid=True)
     app.run_server(debug=True)
 
 
@@ -122,14 +130,19 @@ def single_row_col(children):
     return dbc.Row(dbc.Col(html.Div(children)))
 
 
-def single_row_col_graph(figure):
+def single_row_col_graph(figure: go.Figure):
     return single_row_col(dcc.Graph(figure=figure))
 
 
-def export_html(incrementality_fig, raw_data_fig):
-    with open('result.html', 'w') as f:
-        f.write(incrementality_fig.to_html(full_html=False, include_plotlyjs='cdn'))
-        f.write(raw_data_fig.to_html(full_html=False, include_plotlyjs='cdn'))
+def export_html(output_file: str, figs: [go.Figure]):
+    with open(output_file, 'w') as f:
+        f.write("<html><head></head><body>" + "\n")
+        add_js = True
+        for fig in figs:
+            fig: go.Figure
+            f.write(fig.to_html(full_html=False, include_plotlyjs=add_js))
+            add_js = False
+        f.write("</body></html>" + "\n")
 
 
 if __name__ == "__main__":
