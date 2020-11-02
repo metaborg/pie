@@ -41,9 +41,14 @@ import java.util.function.Function;
 
 @State(Scope.Thread)
 public class PieState {
-    private Pie pie;
+    // Trial
+
+    private @Nullable Pie pie;
 
     public PieState setupTrial(TaskDefs taskDefs, Pie... ancestors) {
+        if(pie != null) {
+            throw new IllegalStateException("setupTrial was called before tearDownTrial");
+        }
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
         pieBuilder.withStoreFactory(store.get());
@@ -64,13 +69,22 @@ public class PieState {
         return setupTrial(new NullTaskDefs(), ancestors);
     }
 
-
-    public MixedSession newSession() {
-        return pie.newSession();
+    public void tearDownTrial() {
+        if(pie == null) {
+            throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
+        }
     }
 
+
+    // Invocation
+
+    public void setupInvocation() {
+        // Nothing to do yet.
+    }
+
+    @SuppressWarnings("ConstantConditions")
     public <O extends @Nullable Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
-        try(final MixedSession session = newSession()) {
+        try(final MixedSession session = pie.newSession()) {
             PieMetricsProfiler.getInstance().start();
             final O result = session.require(task);
             PieMetricsProfiler.getInstance().stop(name);
@@ -78,17 +92,23 @@ public class PieState {
         }
     }
 
+    @SuppressWarnings("ConstantConditions")
     public void requireBottomUpInNewSession(Set<? extends ResourceKey> changedResources, String name) throws ExecException, InterruptedException {
-        try(final MixedSession session = newSession()) {
+        try(final MixedSession session = pie.newSession()) {
             PieMetricsProfiler.getInstance().start();
             session.updateAffectedBy(changedResources);
             PieMetricsProfiler.getInstance().stop(name);
         }
     }
 
-    public void dropStore() {
+    @SuppressWarnings("ConstantConditions")
+    public void resetState() {
         pie.dropStore();
         pie.dropCallbacks();
+    }
+
+    public void tearDownInvocation() {
+        resetState();
     }
 
 

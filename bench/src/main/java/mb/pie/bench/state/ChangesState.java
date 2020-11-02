@@ -1,22 +1,33 @@
-package mb.pie.bench.util;
+package mb.pie.bench.state;
 
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.regex.Pattern;
 
-public class ChangeMaker {
-    private final HierarchicalResource baseDirectory;
+@State(Scope.Thread)
+public class ChangesState {
+    private @Nullable HierarchicalResource baseDirectory;
     private final HashSet<ResourceKey> changedResources = new HashSet<>();
 
-    public ChangeMaker(HierarchicalResource baseDirectory) {
+
+    // Invocation set-up
+
+    public ChangesState setupInvocation(HierarchicalResource baseDirectory) {
         this.baseDirectory = baseDirectory;
+        changedResources.clear();
+        return this;
     }
 
+
+    // Invocation hot-path (during measurement)
 
     public String readString(String relativePath) throws IOException {
         return readString(getResource(relativePath));
@@ -74,16 +85,25 @@ public class ChangeMaker {
         changedResources.add(key);
     }
 
+
     public HashSet<ResourceKey> getChangedResources() {
         return changedResources;
     }
 
-    public void reset() {
+
+    // Invocation tear-down
+
+    public void tearDownInvocation() {
         changedResources.clear();
     }
 
 
+    // Helper methods
+
     private HierarchicalResource getResource(String relativePath) {
+        if(baseDirectory == null) {
+            throw new IllegalStateException("Invocation hot-path method was called without first calling setupInvocation");
+        }
         return baseDirectory.appendRelativePath(relativePath).getNormalized();
     }
 }

@@ -67,11 +67,11 @@ public class PieMetricsProfiler implements InternalProfiler {
             results.add(measurement.createSingleShotResult("systemNanoTime", measurement.time.systemNanoTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadCpuTime", measurement.time.threadCpuTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadUserTime", measurement.time.threadUserTime, targetTimeUnit));
-            results.add(measurement.createMaxScalarResult("requiredTasks", measurement.requiredTasks, "tasks"));
-            results.add(measurement.createMaxScalarResult("executedTasks", measurement.executedTasks, "tasks"));
-            results.add(measurement.createMaxScalarResult("requiredResourceDependencies", measurement.requiredResourceDependencies, "dependencies"));
-            results.add(measurement.createMaxScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "dependencies"));
-            results.add(measurement.createMaxScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "dependencies"));
+            results.add(measurement.createAvgScalarResult("requiredTasks", measurement.requiredTasks, "tasks"));
+            results.add(measurement.createAvgScalarResult("executedTasks", measurement.executedTasks, "tasks"));
+            results.add(measurement.createAvgScalarResult("requiredResourceDependencies", measurement.requiredResourceDependencies, "dependencies"));
+            results.add(measurement.createAvgScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "dependencies"));
+            results.add(measurement.createAvgScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "dependencies"));
         }
         measurementsActive = false;
         return results;
@@ -118,8 +118,8 @@ public class PieMetricsProfiler implements InternalProfiler {
             return new ScalarResult(id + ":" + name, n, unit, policy);
         }
 
-        public ScalarResult createMaxScalarResult(String name, double n, String unit) {
-            return createScalarResult(name, n, unit, AggregationPolicy.MAX);
+        public ScalarResult createAvgScalarResult(String name, double n, String unit) {
+            return createScalarResult(name, n, unit, AggregationPolicy.AVG);
         }
     }
 }

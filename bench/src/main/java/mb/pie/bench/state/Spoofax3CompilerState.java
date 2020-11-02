@@ -9,7 +9,6 @@ import mb.libstatix.DaggerLibStatixComponent;
 import mb.log.noop.NoopLoggerFactory;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
-import mb.pie.bench.util.ChangeMaker;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.task.archive.UnarchiveCommon;
 import mb.resource.classloader.ClassLoaderResource;
@@ -48,22 +47,23 @@ import java.util.ArrayList;
 
 @State(Scope.Thread)
 public class Spoofax3CompilerState {
-    // Trial set-up
+    // Trial
 
-    private ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
-    private PlatformComponent platformComponent;
-    private Spoofax3CompilerComponent spoofax3CompilerComponent;
-    private @Nullable HierarchicalResource temporaryDirectory;
-    private @Nullable ChangeMaker changeMaker;
+    private @Nullable ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
+    private @Nullable PlatformComponent platformComponent;
+    private @Nullable Spoofax3CompilerComponent spoofax3CompilerComponent;
 
-    public Spoofax3CompilerState setupTrial(HierarchicalResource temporaryDirectory) throws IOException {
-        benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
-        platformComponent = DaggerPlatformComponent.builder()
+    public Spoofax3CompilerState setupTrial() {
+        if(benchClassLoaderResourceRegistry != null && platformComponent != null && spoofax3CompilerComponent != null) {
+            throw new IllegalStateException("setupTrial was called before tearDownTrial");
+        }
+        this.benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
+        this.platformComponent = DaggerPlatformComponent.builder()
             .loggerFactoryModule(new LoggerFactoryModule(new NoopLoggerFactory()))
             .resourceRegistriesModule(new ResourceRegistriesModule(benchClassLoaderResourceRegistry))
             .platformPieModule(new PlatformPieModule(PieBuilderImpl::new))
             .build();
-        spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
+        this.spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
             .spoofax3CompilerModule(new Spoofax3CompilerModule(new TemplateCompiler(StandardCharsets.UTF_8)))
             .platformComponent(platformComponent)
             .sdf3Component(DaggerSdf3Component.builder().platformComponent(platformComponent).build())
@@ -73,32 +73,41 @@ public class Spoofax3CompilerState {
             .libSpoofax2Component(DaggerLibSpoofax2Component.builder().platformComponent(platformComponent).build())
             .libStatixComponent(DaggerLibStatixComponent.builder().platformComponent(platformComponent).build())
             .build();
-        language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
-        this.temporaryDirectory = temporaryDirectory;
-        changeMaker = new ChangeMaker(temporaryDirectory);
         return this;
     }
 
+    @SuppressWarnings("ConstantConditions")
     public Pie getPie() {
         return spoofax3CompilerComponent.getPie();
     }
 
-
-    // Invocation set-up
-
-    private Spoofax3LanguageProjectCompiler.@Nullable Input input;
-
-    public Task<Result<KeyedMessages, CompilerException>> setupInvocation() {
-        if(temporaryDirectory == null || changeMaker == null) {
-            throw new IllegalStateException("setupInvocation was called without first calling setupTrial");
+    public void tearDownTrial() {
+        if(benchClassLoaderResourceRegistry == null || platformComponent == null || spoofax3CompilerComponent == null) {
+            throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
-        input = language.getCompilerInput(temporaryDirectory);
-        changeMaker.reset();
-        return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
+        this.benchClassLoaderResourceRegistry = null;
+        this.platformComponent = null;
+        this.spoofax3CompilerComponent = null;
     }
 
 
-    // Invocation hot-path (during measurement)
+    // Invocation
+
+    private Spoofax3LanguageProjectCompiler.@Nullable Input input;
+
+    public Task<Result<KeyedMessages, CompilerException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
+        if(spoofax3CompilerComponent == null || benchClassLoaderResourceRegistry == null) {
+            throw new IllegalStateException("setupInvocation was called before setupTrial");
+        }
+        if(input != null) {
+            throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
+        }
+
+        language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
+
+        this.input = language.getCompilerInput(temporaryDirectory);
+        return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
+    }
 
     @SuppressWarnings("ConstantConditions")
     public void handleResult(Result<KeyedMessages, CompilerException> result) throws Exception {
@@ -109,7 +118,7 @@ public class Spoofax3CompilerState {
             if(e.getSubCause() != null) {
                 e.getSubCause().printStackTrace(System.out);
             }
-            throw e;
+            throw e; // TODO: allow errors
         }
     }
 
@@ -118,17 +127,7 @@ public class Spoofax3CompilerState {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public ChangeMaker getChangeMaker() {
-        return new ChangeMaker(temporaryDirectory);
-    }
-
-
-    // Invocation tear-down
-
     public void deleteGeneratedFiles() throws IOException {
-        if(input == null) {
-            throw new IllegalStateException("deleteGeneratedFiles was called without first calling setupInvocation");
-        }
         final Spoofax3LanguageProject project = input.spoofax3LanguageProject();
         delete(project.generatedResourcesDirectory());
         delete(project.generatedSourcesDirectory());
@@ -137,16 +136,17 @@ public class Spoofax3CompilerState {
         delete(project.unarchiveDirectory());
     }
 
-
-    // Trial tear-down
-
-    public void tearDownTrial() throws IOException {
-
+    public void tearDownInvocation() {
+        if(input == null) {
+            throw new IllegalStateException("tearDownInvocation was called before setupInvocation");
+        }
+        input = null;
     }
 
 
     // Helper methods
 
+    @SuppressWarnings("ConstantConditions")
     private void delete(ResourcePath path) throws IOException {
         platformComponent.getResourceService().getHierarchicalResource(path).delete(true);
     }
@@ -180,7 +180,7 @@ public class Spoofax3CompilerState {
 
             @Override public ArrayList<Change> getChanges() {
                 final ArrayList<Change> changes = new ArrayList<>();
-                changes.add(changeMaker -> "no_change");
+                changes.add(changesState -> "no_change");
                 return changes;
             }
         },
@@ -209,13 +209,13 @@ public class Spoofax3CompilerState {
 
             @Override public ArrayList<Change> getChanges() {
                 final ArrayList<Change> changes = new ArrayList<>();
-                changes.add(changeMaker -> "no_change");
-                changes.add(changeMaker -> {
-                    changeMaker.replaceFirstLiteral("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
+                changes.add(changesState -> "no_change");
+                changes.add(changesState -> {
+                    changesState.replaceFirstLiteral("src/main/str/to-java.str", "exp-to-java : False() -> $[false]", "");
                     return "remove_str_false_rule";
                 });
-                changes.add(changeMaker -> {
-                    changeMaker.replaceFirstLiteral("src/main/sdf3/start.sdf3", "Exp.False = <false>", "");
+                changes.add(changesState -> {
+                    changesState.replaceFirstLiteral("src/main/sdf3/start.sdf3", "Exp.False = <false>", "");
                     return "remove_sdf3_false_rule";
                 });
                 return changes;
@@ -242,6 +242,6 @@ public class Spoofax3CompilerState {
     }
 
     @FunctionalInterface public interface Change {
-        String applyChange(ChangeMaker changeMaker) throws IOException;
+        String applyChange(ChangesState changesState) throws IOException;
     }
 }

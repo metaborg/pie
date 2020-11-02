@@ -33,24 +33,28 @@ def main():
     )
     args = parser.parse_args()
 
-    data = create_long_form_dataframe_from_json(args.input_file)
-    figs = [
-        create_incrementality_figure(data, 'calc', 'validation'),
-        create_incrementality_figure(data, 'chars', 'validation'),
-        create_layer_figure(data, 'calc'),
-        create_layer_figure(data, 'chars'),
-        create_raw_data_figure(data),
-    ]
+    with open(args.input_file) as file:
+        text = file.read()
+    with open(args.input_file) as file:
+        data = create_long_form_dataframe_from_json(file)
+
+    langs: [str] = data.language.unique()
+    figs = []
+    for lang in langs:
+        figs.append(create_incrementality_figure(data, lang, 'validation'))
+    if len(data.layer.unique()) > 1:
+        for lang in langs:
+            figs.append(create_layer_figure(data, lang))
+    figs.append(create_raw_data_figure(data))
 
     if args.subcommand == 'dash':
         start_dash_app(figs)
     elif args.subcommand == 'export-html':
-        export_html(args.output_file, figs)
+        export_html(text, figs, args.output_file)
 
 
-def create_long_form_dataframe_from_json(path: str) -> pd.DataFrame:
-    with open(path) as json_file:
-        json_data = json.load(json_file)
+def create_long_form_dataframe_from_json(file: str) -> pd.DataFrame:
+    json_data = json.load(file)
     series = []
     for bench_obj in json_data:
         series_dict = {}
@@ -187,15 +191,17 @@ def single_row_col_graph(figure: go.Figure):
     return single_row_col(dcc.Graph(figure=figure))
 
 
-def export_html(output_file: str, figs: [go.Figure]):
+def export_html(input_result_file_text: str, figs: [go.Figure], output_file: str):
     with open(output_file, 'w') as f:
-        f.write("<html><head></head><body>" + "\n")
+        f.write('<html><head></head><body>\n')
         add_js = True
         for fig in figs:
             fig: go.Figure
             f.write(fig.to_html(full_html=False, include_plotlyjs=add_js))
+            f.write('\n')
             add_js = False
-        f.write("</body></html>" + "\n")
+        f.write('<pre style="height: 1000; overflow: scroll;">{}</pre>\n'.format(input_result_file_text))
+        f.write('</body></html>\n')
 
 
 if __name__ == "__main__":

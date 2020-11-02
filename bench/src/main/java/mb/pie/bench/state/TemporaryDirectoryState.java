@@ -13,12 +13,15 @@ import java.nio.file.FileSystem;
 
 @State(Scope.Thread)
 public class TemporaryDirectoryState {
-    // Trial set-up
+    // Invocation
 
     private @Nullable FileSystem fileSystem;
     private @Nullable HierarchicalResource temporaryDirectory;
 
-    public TemporaryDirectoryState setupTrial() throws IOException {
+    public TemporaryDirectoryState setupInvocation() throws IOException {
+        if(fileSystem != null && temporaryDirectory != null) {
+            throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
+        }
         if(useDiskTemporaryDirectory) {
             temporaryDirectory = FSResource.createTemporaryDirectory("pie.bench.spoofax3");
         } else {
@@ -28,20 +31,14 @@ public class TemporaryDirectoryState {
         return this;
     }
 
-
-    // Invocation hot-path (during measurement)
-
     @SuppressWarnings({"ConstantConditions", "NullableProblems"})
     public HierarchicalResource getTemporaryDirectory() {
         return temporaryDirectory;
     }
 
-
-    // Trial tear-down
-
-    public void tearDown() throws IOException {
+    public void tearDownInvocation() throws IOException {
         if(temporaryDirectory == null) {
-            throw new IllegalStateException("tearDown was called without first calling setup");
+            throw new IllegalStateException("tearDownInvocation was called before setupInvocation");
         }
         temporaryDirectory.delete(true);
         temporaryDirectory = null;
@@ -54,5 +51,5 @@ public class TemporaryDirectoryState {
 
     // Parameters
 
-    @Param("true") public boolean useDiskTemporaryDirectory;
+    /*@Param("true")*/ public boolean useDiskTemporaryDirectory = true;
 }
