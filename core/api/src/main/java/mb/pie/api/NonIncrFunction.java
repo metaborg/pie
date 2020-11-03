@@ -6,9 +6,9 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class NonIncrFunction<T extends Serializable, R extends @Nullable Serializable> implements Function<T, R> {
-    private final java.util.function.Function<? super T, ? extends R> nonIncrFunction;
+    private final SerializableFunction<? super T, ? extends R> nonIncrFunction;
 
-    public NonIncrFunction(java.util.function.Function<? super T, ? extends R> nonIncrFunction) {
+    public NonIncrFunction(SerializableFunction<? super T, ? extends R> nonIncrFunction) {
         this.nonIncrFunction = nonIncrFunction;
     }
 
@@ -19,7 +19,7 @@ public class NonIncrFunction<T extends Serializable, R extends @Nullable Seriali
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final NonIncrFunction<?, ?> that = (NonIncrFunction<?, ?>)o;
+        final NonIncrFunction<?, ?> that = (NonIncrFunction<?, ?>) o;
         return nonIncrFunction.equals(that.nonIncrFunction);
     }
 

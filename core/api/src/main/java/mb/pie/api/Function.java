@@ -2,7 +2,6 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -50,7 +49,7 @@ public interface Function<T extends Serializable, R extends Serializable> extend
      * @param <B>    New type of input.
      * @return Transformed function.
      */
-    default <B extends @Nullable Serializable> Function<B, R> mapInput(java.util.function.Function<? super B, ? extends T> before) {
+    default <B extends @Nullable Serializable> Function<B, R> mapInput(SerializableFunction<? super B, ? extends T> before) {
         return new MappedFunctionInput<>(this, new NonIncrFunction<>(before));
     }
 
@@ -62,7 +61,7 @@ public interface Function<T extends Serializable, R extends Serializable> extend
      * @param <A>   New type of output.
      * @return Transformed function.
      */
-    default <A extends @Nullable Serializable> Function<T, A> mapOutput(java.util.function.Function<? super R, ? extends A> after) {
+    default <A extends @Nullable Serializable> Function<T, A> mapOutput(SerializableFunction<? super R, ? extends A> after) {
         return new MappedFunctionOutput<>(this, new NonIncrFunction<>(after));
     }
 

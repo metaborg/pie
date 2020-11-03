@@ -38,7 +38,7 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
-    default <R extends Serializable> Supplier<R> map(java.util.function.Function<? super T, ? extends R> mapper) {
+    default <R extends Serializable> Supplier<R> map(SerializableFunction<? super T, ? extends R> mapper) {
         return new MappedSupplier<>(this, new NonIncrFunction<>(mapper));
     }
 
@@ -65,7 +65,7 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
-    default <R extends Serializable> Supplier<R> flatMap(java.util.function.Function<? super T, Supplier<R>> mapper) {
+    default <R extends Serializable> Supplier<R> flatMap(SerializableFunction<? super T, Supplier<R>> mapper) {
         return new FlatMappedSupplier<>(this, new NonIncrFunction<>(mapper));
     }
 }

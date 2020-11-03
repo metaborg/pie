@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class NonIncrSupplier<T extends Serializable> implements Supplier<T> {
-    private final java.util.function.Supplier<T> nonIncrSupplier;
+    private final SerializableSupplier<T> nonIncrSupplier;
 
-    public NonIncrSupplier(java.util.function.Supplier<T> nonIncrSupplier) {
+    public NonIncrSupplier(SerializableSupplier<T> nonIncrSupplier) {
         this.nonIncrSupplier = nonIncrSupplier;
     }
 
@@ -17,7 +17,7 @@ public class NonIncrSupplier<T extends Serializable> implements Supplier<T> {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final NonIncrSupplier<?> that = (NonIncrSupplier<?>)o;
+        final NonIncrSupplier<?> that = (NonIncrSupplier<?>) o;
         return nonIncrSupplier.equals(that.nonIncrSupplier);
     }
 
