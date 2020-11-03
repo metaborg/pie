@@ -6,6 +6,7 @@ import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -14,11 +15,13 @@ import java.util.Objects;
 public class ResourceStringSupplier implements Supplier<String> {
     private final ResourceKey key;
     private final @Nullable ResourceStamper<ReadableResource> stamper;
-    private final Charset charset;
+    private final String charsetName;
+    private transient Charset charset;
 
     public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper, Charset charset) {
         this.key = key;
         this.stamper = stamper;
+        this.charsetName = charset.name();
         this.charset = charset;
     }
 
@@ -57,10 +60,16 @@ public class ResourceStringSupplier implements Supplier<String> {
     }
 
     @Override public String toString() {
-        return "ResourceStringProvider{" +
+        return "ResourceStringSupplier{" +
             "key=" + key +
             ", stamper=" + stamper +
             ", charset=" + charset +
             '}';
+    }
+
+
+    private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException {
+        in.defaultReadObject();
+        this.charset = Charset.forName(charsetName);
     }
 }
