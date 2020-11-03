@@ -39,10 +39,16 @@ def main():
         data = create_long_form_dataframe_from_json(file)
 
     langs: [str] = data.language.unique()
+    layers: [str] = data.layer.unique()
+    if len(layers) > 1 and 'validation' in layers:
+        default_layer = 'validation'
+    else:
+        default_layer = layers[0]
+
     figs = []
     for lang in langs:
-        figs.append(create_incrementality_figure(data, lang, 'validation'))
-    if len(data.layer.unique()) > 1:
+        figs.append(create_incrementality_figure(data, lang, default_layer))
+    if len(layers) > 1:
         for lang in langs:
             figs.append(create_layer_figure(data, lang))
     figs.append(create_raw_data_figure(data))

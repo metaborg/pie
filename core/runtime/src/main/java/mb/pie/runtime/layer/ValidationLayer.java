@@ -35,6 +35,10 @@ public class ValidationLayer implements Layer {
         public final boolean provideAfterRequire;
         public final boolean requireWithoutDepToProvider;
 
+        public final boolean checkSelfEquals;
+        public final boolean checkSelfHashCode;
+        public final boolean checkSerialization;
+
         public final boolean checkKeyObjects;
         public final boolean checkInputObjects;
         public final boolean checkOutputObjects;
@@ -49,6 +53,9 @@ public class ValidationLayer implements Layer {
             boolean overlappingResourceProvide,
             boolean provideAfterRequire,
             boolean requireWithoutDepToProvider,
+            boolean checkSelfEquals,
+            boolean checkSelfHashCode,
+            boolean checkSerialization,
             boolean checkKeyObjects,
             boolean checkInputObjects,
             boolean checkOutputObjects,
@@ -60,6 +67,9 @@ public class ValidationLayer implements Layer {
             this.overlappingResourceProvide = overlappingResourceProvide;
             this.provideAfterRequire = provideAfterRequire;
             this.requireWithoutDepToProvider = requireWithoutDepToProvider;
+            this.checkSelfEquals = checkSelfEquals;
+            this.checkSelfHashCode = checkSelfHashCode;
+            this.checkSerialization = checkSerialization;
             this.checkKeyObjects = checkKeyObjects;
             this.checkInputObjects = checkInputObjects;
             this.checkOutputObjects = checkOutputObjects;
@@ -69,10 +79,14 @@ public class ValidationLayer implements Layer {
         }
 
         public static ValidationOptions normal() {
-            return new ValidationOptions(true,
+            return new ValidationOptions(
                 true,
                 true,
                 true,
+                true,
+                false,
+                false,
+                false,
                 false,
                 false,
                 false,
@@ -83,7 +97,7 @@ public class ValidationLayer implements Layer {
         }
 
         public static ValidationOptions all() {
-            return new ValidationOptions(true,
+            return new ValidationOptions(
                 true,
                 true,
                 true,
@@ -92,7 +106,29 @@ public class ValidationLayer implements Layer {
                 true,
                 true,
                 true,
-                1024
+                true,
+                true,
+                true,
+                true,
+                4096
+            );
+        }
+
+        public static ValidationOptions all_except_serialization() {
+            return new ValidationOptions(
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                false,
+                true,
+                true,
+                true,
+                true,
+                true,
+                4096
             );
         }
     }
@@ -298,23 +334,42 @@ public class ValidationLayer implements Layer {
         if(obj == null) {
             return errors;
         }
-        final byte[] serializedBeforeCalls = serialize(obj);
-        final byte[] serializedBeforeCallsAgain = serialize(obj);
 
-        // Check equality and hashCode after serialization because they may change the object's internal state.
-        // Check self equality.
-        if(!obj.equals(obj)) {
-            errors.add("Not equal to itself.\n  Possible incorrect cause equals implementation.");
+        byte[] serializedBeforeCalls = new byte[0];
+        byte[] serializedBeforeCallsAgain = new byte[0];
+        if(options.checkSerialization) {
+            serializedBeforeCalls = serialize(obj);
+            serializedBeforeCallsAgain = serialize(obj);
         }
 
-        // Check self hash.
-        {
+        // Check equality and hashCode after serialization because they may change the object's internal state.
+        if(options.checkSelfEquals) {
+            if(!obj.equals(obj)) {
+                final String serializeNote;
+                if(options.checkSerialization) {
+                    serializeNote = " Note: equals was called after serializing the object. Make sure that it does not compare internal state that changes after being serialized.";
+                } else {
+                    serializeNote = "";
+                }
+                errors.add("Not equal to itself.\n  Possible incorrect equals implementation." + serializeNote);
+            }
+        }
+        if(options.checkSelfHashCode) {
             final int hash1 = obj.hashCode();
             final int hash2 = obj.hashCode();
             if(hash1 != hash2) {
-                errors.add(
-                    "Produced different hash codes.\n  Possible incorrect cause hashCode implementation.\n  Hashes:\n    " + hash1 + "\n  vs\n    " + hash2);
+                final String serializeNote;
+                if(options.checkSerialization) {
+                    serializeNote = " Note: hashCode was called after serializing the object. Make sure that it does not hash internal state that changes after being serialized.";
+                } else {
+                    serializeNote = "";
+                }
+                errors.add("Hash code not equal to hash code of itself.\n  Possible incorrect hashCode implementation." + serializeNote + "\n  Hashes:\n    " + hash1 + "\n  vs\n    " + hash2);
             }
+        }
+
+        if(!options.checkSerialization) {
+            return errors;
         }
 
         // Check serialized output.

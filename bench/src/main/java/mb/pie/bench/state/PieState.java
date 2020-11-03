@@ -194,6 +194,16 @@ public class PieState {
                 return ValidationLayer::new;
             }
         },
+        validation_pedantic {
+            @Override public BiFunction<TaskDefs, Logger, Layer> get() {
+                return (taskDefs, logger) -> new ValidationLayer(ValidationLayer.ValidationOptions.all(), taskDefs, logger);
+            }
+        },
+        validation_pedantic_except_serialization {
+            @Override public BiFunction<TaskDefs, Logger, Layer> get() {
+                return (taskDefs, logger) -> new ValidationLayer(ValidationLayer.ValidationOptions.all_except_serialization(), taskDefs, logger);
+            }
+        },
         noop {
             @Override public BiFunction<TaskDefs, Logger, Layer> get() {
                 return (taskDefs, logger) -> new NoopLayer();
