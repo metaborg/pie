@@ -30,19 +30,71 @@ import java.util.stream.Collectors;
 @SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StatementWithEmptyBody", "StringBufferReplaceableByString"})
 public class ValidationLayer implements Layer {
     public static class ValidationOptions {
-        public boolean cycle = true;
-        public boolean overlappingResourceProvide = true;
-        public boolean provideAfterRequire = true;
-        public boolean requireWithoutDepToProvider = true;
+        public final boolean cycle;
+        public final boolean overlappingResourceProvide;
+        public final boolean provideAfterRequire;
+        public final boolean requireWithoutDepToProvider;
 
-        public boolean checkKeyObjects = false;
-        public boolean checkInputObjects = false;
-        public boolean checkOutputObjects = false;
+        public final boolean checkKeyObjects;
+        public final boolean checkInputObjects;
+        public final boolean checkOutputObjects;
 
-        public boolean throwErrors = true;
-        public boolean throwWarnings = false;
+        public final boolean throwErrors;
+        public final boolean throwWarnings;
 
-        public int shortStringLength = 1024;
+        public final int shortStringLength;
+
+        public ValidationOptions(
+            boolean cycle,
+            boolean overlappingResourceProvide,
+            boolean provideAfterRequire,
+            boolean requireWithoutDepToProvider,
+            boolean checkKeyObjects,
+            boolean checkInputObjects,
+            boolean checkOutputObjects,
+            boolean throwErrors,
+            boolean throwWarnings,
+            int shortStringLength
+        ) {
+            this.cycle = cycle;
+            this.overlappingResourceProvide = overlappingResourceProvide;
+            this.provideAfterRequire = provideAfterRequire;
+            this.requireWithoutDepToProvider = requireWithoutDepToProvider;
+            this.checkKeyObjects = checkKeyObjects;
+            this.checkInputObjects = checkInputObjects;
+            this.checkOutputObjects = checkOutputObjects;
+            this.throwErrors = throwErrors;
+            this.throwWarnings = throwWarnings;
+            this.shortStringLength = shortStringLength;
+        }
+
+        public static ValidationOptions normal() {
+            return new ValidationOptions(true,
+                true,
+                true,
+                true,
+                false,
+                false,
+                false,
+                true,
+                false,
+                1024
+            );
+        }
+
+        public static ValidationOptions all() {
+            return new ValidationOptions(true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                1024
+            );
+        }
     }
 
     private final ValidationOptions options;
@@ -58,7 +110,7 @@ public class ValidationLayer implements Layer {
     }
 
     public ValidationLayer(TaskDefs taskDefs, Logger logger) {
-        this(new ValidationOptions(), taskDefs, logger);
+        this(ValidationOptions.normal(), taskDefs, logger);
     }
 
 
@@ -217,7 +269,7 @@ public class ValidationLayer implements Layer {
     private void validateOutput(@Nullable Serializable output, TaskKey key) {
         final List<String> errors;
         if(output instanceof OutTransientEquatable<?, ?>) {
-            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>)output;
+            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>) output;
             errors = validateObject(outTransEq.getEquatableValue(), false);
         } else {
             errors = validateObject(output, false);
@@ -343,7 +395,7 @@ public class ValidationLayer implements Layer {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)
         ) {
-            @SuppressWarnings("unchecked") final T obj = (T)objectInputStream.readObject();
+            @SuppressWarnings("unchecked") final T obj = (T) objectInputStream.readObject();
             return obj;
         } catch(IOException | ClassNotFoundException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
