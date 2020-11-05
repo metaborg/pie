@@ -204,7 +204,7 @@ public class LoggingTracer implements Tracer {
 
     @Override
     public void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e) {
-        if(!logger.isErrorEnabled()) return;
+        if(!logger.isInfoEnabled()) return;
         indentation.decrementAndGet();
         logger.error(getIndent() + "← " + StringUtil.toShortString(e.toString(), strLimit), e);
     }
