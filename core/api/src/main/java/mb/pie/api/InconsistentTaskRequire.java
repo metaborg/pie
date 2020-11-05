@@ -6,12 +6,12 @@ import mb.pie.api.stamp.OutputStamp;
 /**
  * Execution reason for inconsistent task requires dependency.
  */
-public class InconsistentTaskReq implements ExecReason {
+public class InconsistentTaskRequire implements ExecReason {
     public final TaskRequireDep dep;
     public final OutputStamp newStamp;
 
 
-    public InconsistentTaskReq(TaskRequireDep dep, OutputStamp newStamp) {
+    public InconsistentTaskRequire(TaskRequireDep dep, OutputStamp newStamp) {
         this.dep = dep;
         this.newStamp = newStamp;
     }
@@ -20,7 +20,7 @@ public class InconsistentTaskReq implements ExecReason {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final InconsistentTaskReq that = (InconsistentTaskReq)o;
+        final InconsistentTaskRequire that = (InconsistentTaskRequire)o;
         if(!dep.equals(that.dep)) return false;
         return newStamp.equals(that.newStamp);
     }

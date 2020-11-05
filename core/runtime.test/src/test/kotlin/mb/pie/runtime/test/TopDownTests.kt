@@ -241,7 +241,7 @@ class TopDownTests {
           assertEquals(file.key, reason!!.dep.key)
         }, any(), anyC())
         verify(topDownSession, times(1)).exec(eq(combKey), eq(combTask), check {
-          val reason = it as? InconsistentTaskReq
+          val reason = it as? InconsistentTaskRequire
           assertNotNull(reason)
           assertEquals(readKey, reason!!.dep.callee)
         }, any(), anyC())

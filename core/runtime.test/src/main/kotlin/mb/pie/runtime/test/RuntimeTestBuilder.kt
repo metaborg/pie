@@ -3,7 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockitokotlin2.*
 import mb.log.api.LoggerFactory
 import mb.log.stream.StreamLoggerFactory
-import mb.pie.api.Tracer
+import mb.pie.api.Callbacks
 import mb.pie.api.Layer
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
@@ -12,13 +12,13 @@ import mb.pie.api.Store
 import mb.pie.api.TaskData
 import mb.pie.api.TaskDefs
 import mb.pie.api.TaskKey
+import mb.pie.api.Tracer
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.resource.HashMatchResourceStamper
 import mb.pie.api.stamp.resource.HashResourceStamper
 import mb.pie.api.stamp.resource.ModifiedMatchResourceStamper
 import mb.pie.api.stamp.resource.ModifiedResourceStamper
 import mb.pie.api.test.ApiTestBuilder
-import mb.pie.api.Callbacks
 import mb.pie.runtime.DefaultStampers
 import mb.pie.runtime.MapCallbacks
 import mb.pie.runtime.MixedSessionImpl
@@ -108,7 +108,7 @@ open class TestPieImpl(
       topDownSession = spy(topDownSession)
     }
 
-    var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, loggerFactory, executorLogger, taskExecutor,
+    var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, executorLogger, taskExecutor,
       requireShared, callbacks, visited)
     if(shouldSpy) {
       bottomUpSession = spy(bottomUpSession)

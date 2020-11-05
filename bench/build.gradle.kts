@@ -54,8 +54,8 @@ val runTask = tasks.getByName<JavaExec>("run") {
   args("-wi", "0", "-i", "3")
   args("-p", "layer=validation_pedantic_except_serialization")
   args("-p", "language=calc")
-  args("-p", "logger=stdout_errors")
-  args("-p", "executorLogger=noop")
+  args("-p", "loggerFactory=stdout_verbose")
+  args("-p", "tracer=logging")
   args(commonArgs)
   args("Spoofax3Bench.incrementalBottomUp")
   doFirst {

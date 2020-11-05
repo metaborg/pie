@@ -3,7 +3,7 @@ package mb.pie.runtime.exec;
 import mb.pie.api.Tracer;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
-import mb.pie.api.InconsistentTaskReq;
+import mb.pie.api.InconsistentTaskRequire;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.Store;
@@ -107,7 +107,7 @@ public class RequireShared {
     /**
      * Check if a task require dependency is totally consistent.
      */
-    @Nullable InconsistentTaskReq checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, boolean modifyObservability, CancelToken cancel) {
+    @Nullable InconsistentTaskRequire checkTaskRequireDep(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, RequireTask requireTask, boolean modifyObservability, CancelToken cancel) {
         final TaskKey calleeKey = taskRequireDep.callee;
         final Task<?> calleeTask;
         try(final StoreReadTxn txn = store.readTxn()) {
@@ -115,7 +115,7 @@ public class RequireShared {
         }
         final @Nullable Serializable calleeOutput = requireTask.require(calleeKey, calleeTask, modifyObservability, cancel);
         tracer.checkTaskRequireStart(key, task, taskRequireDep);
-        final @Nullable InconsistentTaskReq reason = taskRequireDep.checkConsistency(calleeOutput);
+        final @Nullable InconsistentTaskRequire reason = taskRequireDep.checkConsistency(calleeOutput);
         tracer.checkTaskRequireEnd(key, task, taskRequireDep, reason);
         return reason;
     }

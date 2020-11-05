@@ -81,6 +81,6 @@ public class STask<O extends @Nullable Serializable> implements Supplier<O>, Ser
     }
 
     @Override public String toString() {
-        return toShortString(100);
+        return toShortString(2048);
     }
 }

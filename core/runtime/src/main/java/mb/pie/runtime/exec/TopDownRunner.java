@@ -3,7 +3,7 @@ package mb.pie.runtime.exec;
 import mb.pie.api.Tracer;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
-import mb.pie.api.InconsistentTaskReq;
+import mb.pie.api.InconsistentTaskRequire;
 import mb.pie.api.Layer;
 import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
@@ -180,7 +180,7 @@ public class TopDownRunner implements RequireTask {
 
         // Task require consistency.
         for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
-            final @Nullable InconsistentTaskReq reason =
+            final @Nullable InconsistentTaskRequire reason =
                 requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, modifyObservability, cancel);
             if(reason != null) {
                 return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, cancel), true);

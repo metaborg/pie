@@ -226,7 +226,7 @@ public class PieState {
     }
 
     public enum TracerKind {
-        logger {
+        logging {
             @Override public Function<LoggerFactory, Tracer> get() {
                 return LoggingTracer::new;
             }
