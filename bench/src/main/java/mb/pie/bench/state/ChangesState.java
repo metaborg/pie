@@ -1,5 +1,6 @@
 package mb.pie.bench.state;
 
+import mb.log.api.LoggerFactory;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.WritableResource;
@@ -10,19 +11,26 @@ import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
 
 @State(Scope.Thread)
 public class ChangesState {
+    private mb.log.api.@Nullable Logger logger;
     private @Nullable HierarchicalResource baseDirectory;
-    private final HashSet<ResourceKey> changedResources = new HashSet<>();
+    private final LinkedHashSet<ResourceKey> changedResources = new LinkedHashSet<>();
 
 
     // Invocation set-up
 
-    public ChangesState setupInvocation(HierarchicalResource baseDirectory) {
+    public ChangesState setupInvocation(LoggerFactory loggerFactory, HierarchicalResource baseDirectory) {
+        if(logger != null || this.baseDirectory != null) {
+            throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
+        }
+        logger = loggerFactory.create(ChangesState.class);
+        logger.trace("ChangesState.setupInvocation");
         this.baseDirectory = baseDirectory;
-        changedResources.clear();
+        reset();
         return this;
     }
 
@@ -86,24 +94,32 @@ public class ChangesState {
     }
 
 
-    public HashSet<ResourceKey> getChangedResources() {
+    public LinkedHashSet<ResourceKey> getChangedResources() {
         return changedResources;
+    }
+
+
+    public void reset() {
+        changedResources.clear();
     }
 
 
     // Invocation tear-down
 
     public void tearDownInvocation() {
-        changedResources.clear();
+        if(logger == null || baseDirectory == null) {
+            throw new IllegalStateException("tearDownInvocation was called before setupInvocation");
+        }
+        reset();
+        baseDirectory = null;
+        logger.trace("ChangesState.tearDownInvocation");
+        logger = null;
     }
 
 
     // Helper methods
 
-    private HierarchicalResource getResource(String relativePath) {
-        if(baseDirectory == null) {
-            throw new IllegalStateException("Invocation hot-path method was called without first calling setupInvocation");
-        }
+    @SuppressWarnings("ConstantConditions") private HierarchicalResource getResource(String relativePath) {
         return baseDirectory.appendRelativePath(relativePath).getNormalized();
     }
 }

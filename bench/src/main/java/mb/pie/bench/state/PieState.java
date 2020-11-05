@@ -1,9 +1,10 @@
 package mb.pie.bench.state;
 
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecException;
-import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Tracer;
 import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Share;
@@ -18,13 +19,11 @@ import mb.pie.bench.util.PieMetricsProfiler;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.runtime.layer.NoopLayer;
 import mb.pie.runtime.layer.ValidationLayer;
-import mb.pie.runtime.logger.NoopLogger;
-import mb.pie.runtime.logger.StreamLogger;
-import mb.pie.runtime.logger.exec.LoggerExecutorLogger;
-import mb.pie.runtime.logger.exec.NoopExecutorLogger;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
 import mb.pie.runtime.taskdefs.NullTaskDefs;
+import mb.pie.runtime.tracer.LoggingTracer;
+import mb.pie.runtime.tracer.NoopTracer;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
@@ -43,12 +42,17 @@ import java.util.function.Function;
 public class PieState {
     // Trial
 
+    private @Nullable  LoggerFactory loggerFactory;
+    private @Nullable Logger logger;
     private @Nullable Pie pie;
 
-    public PieState setupTrial(TaskDefs taskDefs, Pie... ancestors) {
-        if(pie != null) {
+    public PieState setupTrial(LoggerFactory loggerFactory, TaskDefs taskDefs, Pie... ancestors) {
+        if(this.loggerFactory != null || logger != null || pie != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
+        this.loggerFactory = loggerFactory;
+        logger = loggerFactory.create(PieState.class);
+        logger.trace("PieState.setupTrial");
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
         pieBuilder.withStoreFactory(store.get());
@@ -59,35 +63,43 @@ public class PieState {
         pieBuilder.withDefaultRequireHierarchicalResourceStamper(requireResourceStamper.getHierarchical());
         pieBuilder.withDefaultProvideHierarchicalResourceStamper(provideResourceStamper.getHierarchical());
         pieBuilder.withLayerFactory(layer.get());
-        pieBuilder.withLogger(logger.get());
-        pieBuilder.withExecutorLoggerFactory(executorLogger.get());
-        this.pie = pieBuilder.build().createChildBuilder(ancestors).build();
+        pieBuilder.withLoggerFactory(loggerFactory);
+        pieBuilder.withTracerFactory(tracer.get());
+        pie = pieBuilder.build().createChildBuilder(ancestors).build();
         return this;
     }
 
-    public PieState setupTrial(Pie... ancestors) {
-        return setupTrial(new NullTaskDefs(), ancestors);
+    public PieState setupTrial(LoggerFactory loggerFactory, Pie... ancestors) {
+        return setupTrial(loggerFactory, new NullTaskDefs(), ancestors);
     }
 
     public void tearDownTrial() {
-        if(pie == null) {
+        if(loggerFactory == null || logger == null || pie == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
+        pie = null;
+        logger.trace("PieState.tearDownTrial");
+        logger = null;
+        loggerFactory = null;
     }
 
 
     // Invocation
 
     public void setupInvocation() {
+        if(logger == null || pie == null) {
+            throw new IllegalStateException("setupInvocation was called before calling setupTrial");
+        }
+        logger.trace("PieState.setupInvocation");
         // Nothing to do yet.
     }
 
     @SuppressWarnings("ConstantConditions")
     public <O extends @Nullable Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
-            PieMetricsProfiler.getInstance().start();
+            PieMetricsProfiler.getInstance(loggerFactory).start(name);
             final O result = session.require(task);
-            PieMetricsProfiler.getInstance().stop(name);
+            PieMetricsProfiler.getInstance(loggerFactory).stop(name);
             return result;
         }
     }
@@ -95,9 +107,9 @@ public class PieState {
     @SuppressWarnings("ConstantConditions")
     public void requireBottomUpInNewSession(Set<? extends ResourceKey> changedResources, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
-            PieMetricsProfiler.getInstance().start();
+            PieMetricsProfiler.getInstance(loggerFactory).start(name);
             session.updateAffectedBy(changedResources);
-            PieMetricsProfiler.getInstance().stop(name);
+            PieMetricsProfiler.getInstance(loggerFactory).stop(name);
         }
     }
 
@@ -109,6 +121,7 @@ public class PieState {
 
     public void tearDownInvocation() {
         resetState();
+        logger.trace("PieState.tearDownInvocation");
     }
 
 
@@ -118,27 +131,26 @@ public class PieState {
     @Param({"modified"}) private ResourceStamperKind requireResourceStamper;
     @Param({"modified"}) private ResourceStamperKind provideResourceStamper;
     @Param({"validation"}) public LayerKind layer;
-    @Param({"stdout_errors"}) public LoggerKind logger;
-    @Param({"noop"}) public ExecutorLoggerKind executorLogger;
+    @Param({"noop"}) public TracerKind tracer;
 
     public enum StoreKind {
         in_memory {
-            @Override public BiFunction<Logger, ResourceService, Store> get() {
+            @Override public BiFunction<LoggerFactory, ResourceService, Store> get() {
                 return (logger, resourceService) -> new InMemoryStore();
             }
         };
 
-        public abstract BiFunction<Logger, ResourceService, Store> get();
+        public abstract BiFunction<LoggerFactory, ResourceService, Store> get();
     }
 
     public enum ShareKind {
         non_sharing {
-            @Override public Function<Logger, Share> get() {
+            @Override public Function<LoggerFactory, Share> get() {
                 return (logger) -> new NonSharingShare();
             }
         };
 
-        public abstract Function<Logger, Share> get();
+        public abstract Function<LoggerFactory, Share> get();
     }
 
     public enum OutputStamperKind {
@@ -190,66 +202,41 @@ public class PieState {
 
     public enum LayerKind {
         validation {
-            @Override public BiFunction<TaskDefs, Logger, Layer> get() {
+            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
                 return ValidationLayer::new;
             }
         },
         validation_pedantic {
-            @Override public BiFunction<TaskDefs, Logger, Layer> get() {
+            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
                 return (taskDefs, logger) -> new ValidationLayer(ValidationLayer.ValidationOptions.all(), taskDefs, logger);
             }
         },
         validation_pedantic_except_serialization {
-            @Override public BiFunction<TaskDefs, Logger, Layer> get() {
+            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
                 return (taskDefs, logger) -> new ValidationLayer(ValidationLayer.ValidationOptions.all_except_serialization(), taskDefs, logger);
             }
         },
         noop {
-            @Override public BiFunction<TaskDefs, Logger, Layer> get() {
+            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
                 return (taskDefs, logger) -> new NoopLayer();
             }
         };
 
-        public abstract BiFunction<TaskDefs, Logger, Layer> get();
+        public abstract BiFunction<TaskDefs, LoggerFactory, Layer> get();
     }
 
-    public enum LoggerKind {
-        stdout_errors {
-            @Override public Logger get() {
-                return StreamLogger.onlyErrors();
-            }
-        },
-        stdout_non_verbose {
-            @Override public Logger get() {
-                return StreamLogger.nonVerbose();
-            }
-        },
-        stdout_verbose {
-            @Override public Logger get() {
-                return StreamLogger.verbose();
-            }
-        },
-        noop {
-            @Override public Logger get() {
-                return new NoopLogger();
-            }
-        };
-
-        public abstract Logger get();
-    }
-
-    public enum ExecutorLoggerKind {
+    public enum TracerKind {
         logger {
-            @Override public Function<Logger, ExecutorLogger> get() {
-                return LoggerExecutorLogger::new;
+            @Override public Function<LoggerFactory, Tracer> get() {
+                return LoggingTracer::new;
             }
         },
         noop {
-            @Override public Function<Logger, ExecutorLogger> get() {
-                return (logger) -> new NoopExecutorLogger();
+            @Override public Function<LoggerFactory, Tracer> get() {
+                return (logger) -> NoopTracer.instance;
             }
         };
 
-        public abstract Function<Logger, ExecutorLogger> get();
+        public abstract Function<LoggerFactory, Tracer> get();
     }
 }

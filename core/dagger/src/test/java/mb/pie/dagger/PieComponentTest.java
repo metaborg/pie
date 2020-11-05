@@ -4,14 +4,14 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import mb.log.api.LoggerFactory;
+import mb.log.stream.StreamLoggerFactory;
 import mb.pie.api.LambdaTaskDef;
-import mb.pie.api.Logger;
 import mb.pie.api.MixedSession;
 import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
-import mb.pie.runtime.logger.StreamLogger;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Singleton;
@@ -45,8 +45,8 @@ class PieComponentTest {
         }
 
 
-        @Provides @Singleton static Logger providesLogger() {
-            return StreamLogger.verbose();
+        @Provides @Singleton static LoggerFactory provideLoggerFactory() {
+            return StreamLoggerFactory.stdOutVeryVerbose();
         }
     }
 

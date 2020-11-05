@@ -1,6 +1,6 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.ExecutorLogger;
+import mb.pie.api.Tracer;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskReq;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 public class TopDownRunner implements RequireTask {
     private final Store store;
     private final Layer layer;
-    private final ExecutorLogger executorLogger;
+    private final Tracer tracer;
     private final TaskExecutor taskExecutor;
     private final RequireShared requireShared;
     private final Callbacks callbacks;
@@ -37,7 +37,7 @@ public class TopDownRunner implements RequireTask {
     public TopDownRunner(
         Store store,
         Layer layer,
-        ExecutorLogger executorLogger,
+        Tracer tracer,
         TaskExecutor taskExecutor,
         RequireShared requireShared,
         Callbacks callbacks,
@@ -45,7 +45,7 @@ public class TopDownRunner implements RequireTask {
     ) {
         this.store = store;
         this.layer = layer;
-        this.executorLogger = executorLogger;
+        this.tracer = tracer;
         this.taskExecutor = taskExecutor;
         this.requireShared = requireShared;
         this.callbacks = callbacks;
@@ -55,7 +55,7 @@ public class TopDownRunner implements RequireTask {
 
     public <O extends @Nullable Serializable> O requireInitial(Task<O> task, boolean modifyObservability, CancelToken cancel) {
         final TaskKey key = task.key();
-        executorLogger.requireTopDownInitialStart(key, task);
+        tracer.requireTopDownInitialStart(key, task);
         final O output = require(key, task, modifyObservability, cancel);
         if(modifyObservability) {
             try(StoreWriteTxn txn = store.writeTxn()) {
@@ -63,7 +63,7 @@ public class TopDownRunner implements RequireTask {
                 txn.setTaskObservability(key, Observability.ExplicitObserved);
             }
         }
-        executorLogger.requireTopDownInitialEnd(key, task, output);
+        tracer.requireTopDownInitialEnd(key, task, output);
         return output;
     }
 
@@ -72,7 +72,7 @@ public class TopDownRunner implements RequireTask {
         cancel.throwIfCanceled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
-        executorLogger.requireTopDownStart(key, task);
+        tracer.requireTopDownStart(key, task);
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, cancel);
             TaskData data = status.data;
@@ -99,14 +99,14 @@ public class TopDownRunner implements RequireTask {
                 // Invoke callback, if any.
                 final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
                 if(callback != null) {
-                    executorLogger.invokeCallbackStart(callback, key, output);
+                    tracer.invokeCallbackStart(callback, key, output);
                     callback.accept(output);
-                    executorLogger.invokeCallbackEnd(callback, key, output);
+                    tracer.invokeCallbackEnd(callback, key, output);
                 }
 
-                executorLogger.upToDate(key, task);
+                tracer.upToDate(key, task);
             }
-            executorLogger.requireTopDownEnd(key, task, output);
+            tracer.requireTopDownEnd(key, task, output);
             return output;
         } finally {
             layer.requireTopDownEnd(key);

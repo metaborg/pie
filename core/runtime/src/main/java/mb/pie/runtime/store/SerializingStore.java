@@ -1,6 +1,5 @@
 package mb.pie.runtime.store;
 
-import mb.pie.api.Logger;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;

@@ -1,9 +1,9 @@
 package mb.pie.runtime;
 
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
-import mb.pie.api.ExecutorLogger;
 import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.PieChildBuilder;
@@ -15,6 +15,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.Tracer;
 import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
@@ -34,9 +35,9 @@ public class PieImpl implements Pie {
     protected final Store store;
     protected final Share share;
     protected final DefaultStampers defaultStampers;
-    protected final BiFunction<TaskDefs, Logger, Layer> layerFactory;
-    protected final Logger logger;
-    protected final Function<Logger, ExecutorLogger> executorLoggerFactory;
+    protected final BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory;
+    protected final LoggerFactory loggerFactory;
+    protected final Function<LoggerFactory, Tracer> tracerFactory;
     protected final Callbacks callbacks;
 
 
@@ -46,9 +47,9 @@ public class PieImpl implements Pie {
         Store store,
         Share share,
         DefaultStampers defaultStampers,
-        BiFunction<TaskDefs, Logger, Layer> layerFactory,
-        Logger logger,
-        Function<Logger, ExecutorLogger> executorLoggerFactory,
+        BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory,
+        LoggerFactory loggerFactory,
+        Function<LoggerFactory, Tracer> tracerFactory,
         Callbacks callbacks
     ) {
         this.taskDefs = taskDefs;
@@ -57,8 +58,8 @@ public class PieImpl implements Pie {
         this.share = share;
         this.defaultStampers = defaultStampers;
         this.layerFactory = layerFactory;
-        this.logger = logger;
-        this.executorLoggerFactory = executorLoggerFactory;
+        this.loggerFactory = loggerFactory;
+        this.tracerFactory = tracerFactory;
         this.callbacks = callbacks;
     }
 
@@ -68,18 +69,18 @@ public class PieImpl implements Pie {
 
 
     @Override public MixedSession newSession() {
-        final Layer layer = layerFactory.apply(taskDefs, logger);
-        final ExecutorLogger executorLogger = executorLoggerFactory.apply(logger);
+        final Layer layer = layerFactory.apply(taskDefs, loggerFactory);
+        final Tracer tracer = tracerFactory.apply(loggerFactory);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
         final TaskExecutor taskExecutor =
-            new TaskExecutor(taskDefs, resourceService, store, share, defaultStampers, layer, logger, executorLogger,
+            new TaskExecutor(taskDefs, resourceService, store, share, defaultStampers, layer, loggerFactory, tracer,
                 callbacks, visited);
         final RequireShared requireShared =
-            new RequireShared(taskDefs, resourceService, store, executorLogger, visited);
+            new RequireShared(taskDefs, resourceService, store, tracer, visited);
         final TopDownRunner topDownRunner =
-            new TopDownRunner(store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited);
+            new TopDownRunner(store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         final BottomUpRunner bottomUpRunner =
-            new BottomUpRunner(taskDefs, resourceService, store, layer, logger, executorLogger, taskExecutor,
+            new BottomUpRunner(taskDefs, resourceService, store, layer, loggerFactory, tracer, taskExecutor,
                 requireShared, callbacks, visited);
         return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store);
     }
@@ -137,7 +138,7 @@ public class PieImpl implements Pie {
 
     @Override public PieChildBuilder createChildBuilder(Pie... ancestors) {
         PieChildBuilderImpl builder = new PieChildBuilderImpl(this);
-        for (Pie ancestor : ancestors) {
+        for(Pie ancestor : ancestors) {
             ancestor.addToChildBuilder(builder);
         }
         return builder;
@@ -151,6 +152,6 @@ public class PieImpl implements Pie {
     }
 
     @Override public String toString() {
-        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, logger) + ")";
+        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, loggerFactory) + ")";
     }
 }

@@ -1,9 +1,10 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
-import mb.pie.api.ExecutorLogger
+import mb.log.api.LoggerFactory
+import mb.log.stream.StreamLoggerFactory
+import mb.pie.api.Tracer
 import mb.pie.api.Layer
-import mb.pie.api.Logger
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
 import mb.pie.api.Share
@@ -28,10 +29,9 @@ import mb.pie.runtime.exec.RequireShared
 import mb.pie.runtime.exec.TaskExecutor
 import mb.pie.runtime.exec.TopDownRunner
 import mb.pie.runtime.layer.ValidationLayer
-import mb.pie.runtime.logger.StreamLogger
-import mb.pie.runtime.logger.exec.LoggerExecutorLogger
 import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
+import mb.pie.runtime.tracer.LoggingTracer
 import mb.resource.ReadableResource
 import mb.resource.ResourceService
 import mb.resource.hierarchical.HierarchicalResource
@@ -46,8 +46,8 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
   testContextFactory: (FileSystem, MapTaskDefs, Pie) -> Ctx
 ) : ApiTestBuilder<Ctx>(
   pieBuilderFactory = { TestPieBuilderImpl(shouldSpy) },
-  loggerFactory = { StreamLogger.onlyErrors() },
-  executorLoggerFactory = { l -> LoggerExecutorLogger(l) },
+  loggerFactory = { StreamLoggerFactory.stdOutErrors() },
+  tracerFactory = { l -> LoggingTracer(l) },
   defaultResourceStampers = if(multipleResourceStampers) mutableListOf(ModifiedResourceStamper(), HashResourceStamper()) else mutableListOf<ResourceStamper<ReadableResource>>(ModifiedResourceStamper()),
   defaultHierarchicalStampers = if(multipleResourceStampers) mutableListOf(ModifiedMatchResourceStamper(), HashMatchResourceStamper()) else mutableListOf<ResourceStamper<HierarchicalResource>>(ModifiedMatchResourceStamper()),
   testContextFactory = testContextFactory
@@ -61,8 +61,8 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
 
 open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl() {
   override fun build(): TestPieImpl {
-    val store = storeFactory.apply(logger, resourceService)
-    val share = shareFactory.apply(logger)
+    val store = storeFactory.apply(loggerFactory, resourceService)
+    val share = shareFactory.apply(loggerFactory)
     val defaultStampers = DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
       defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper)
     return TestPieImpl(
@@ -73,8 +73,8 @@ open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl()
       share,
       defaultStampers,
       layerFactory,
-      logger,
-      executorLoggerFactory,
+      loggerFactory,
+      tracerFactory,
       MapCallbacks()
     )
   }
@@ -87,19 +87,19 @@ open class TestPieImpl(
   store: Store,
   share: Share,
   defaultStampers: DefaultStampers,
-  layerFactory: BiFunction<TaskDefs, Logger, Layer>,
-  logger: Logger,
-  executorLoggerFactory: Function<Logger, ExecutorLogger>,
+  layerFactory: BiFunction<TaskDefs, LoggerFactory, Layer>,
+  loggerFactory: LoggerFactory,
+  tracerFactory: Function<LoggerFactory, Tracer>,
   callbacks: Callbacks
-) : PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, logger, executorLoggerFactory, callbacks) {
+) : PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks) {
   val store: Store get() = super.store // Make store available for testing.
 
   override fun newSession(): TestMixedSessionImpl {
-    val layer = layerFactory.apply(taskDefs, logger)
-    val executorLogger = executorLoggerFactory.apply(logger)
+    val layer = layerFactory.apply(taskDefs, loggerFactory)
+    val executorLogger = tracerFactory.apply(loggerFactory)
     val visited = HashMap<TaskKey, TaskData>()
 
-    val taskExecutor = TaskExecutor(taskDefs, resourceService, super.store, share, defaultStampers, layer, logger, executorLogger,
+    val taskExecutor = TaskExecutor(taskDefs, resourceService, super.store, share, defaultStampers, layer, loggerFactory, executorLogger,
       callbacks, visited)
     val requireShared = RequireShared(taskDefs, resourceService, super.store, executorLogger, visited)
 
@@ -108,7 +108,7 @@ open class TestPieImpl(
       topDownSession = spy(topDownSession)
     }
 
-    var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, logger, executorLogger, taskExecutor,
+    var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, loggerFactory, executorLogger, taskExecutor,
       requireShared, callbacks, visited)
     if(shouldSpy) {
       bottomUpSession = spy(bottomUpSession)

@@ -1,7 +1,8 @@
 package mb.pie.runtime.layer;
 
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.OutTransientEquatable;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
@@ -139,14 +140,14 @@ public class ValidationLayer implements Layer {
     private final HashSet<TaskKey> stack = new HashSet<>();
 
 
-    public ValidationLayer(ValidationOptions options, TaskDefs taskDefs, Logger logger) {
+    public ValidationLayer(ValidationOptions options, TaskDefs taskDefs, LoggerFactory loggerFactory) {
         this.options = options;
         this.taskDefs = taskDefs;
-        this.logger = logger;
+        this.logger = loggerFactory.create(ValidationLayer.class);
     }
 
-    public ValidationLayer(TaskDefs taskDefs, Logger logger) {
-        this(ValidationOptions.normal(), taskDefs, logger);
+    public ValidationLayer(TaskDefs taskDefs, LoggerFactory loggerFactory) {
+        this(ValidationOptions.normal(), taskDefs, loggerFactory);
     }
 
 
@@ -305,7 +306,7 @@ public class ValidationLayer implements Layer {
     private void validateOutput(@Nullable Serializable output, TaskKey key) {
         final List<String> errors;
         if(output instanceof OutTransientEquatable<?, ?>) {
-            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>) output;
+            final OutTransientEquatable<?, ?> outTransEq = (OutTransientEquatable<?, ?>)output;
             errors = validateObject(outTransEq.getEquatableValue(), false);
         } else {
             errors = validateObject(output, false);
@@ -450,7 +451,7 @@ public class ValidationLayer implements Layer {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)
         ) {
-            @SuppressWarnings("unchecked") final T obj = (T) objectInputStream.readObject();
+            @SuppressWarnings("unchecked") final T obj = (T)objectInputStream.readObject();
             return obj;
         } catch(IOException | ClassNotFoundException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
@@ -462,7 +463,7 @@ public class ValidationLayer implements Layer {
         if(options.throwErrors) {
             throw new ValidationException(message);
         } else {
-            logger.error(message, null);
+            logger.error(message);
         }
     }
 
@@ -470,7 +471,7 @@ public class ValidationLayer implements Layer {
         if(options.throwWarnings) {
             throw new ValidationException(message);
         } else {
-            logger.warn(message, null);
+            logger.warn(message);
         }
     }
 

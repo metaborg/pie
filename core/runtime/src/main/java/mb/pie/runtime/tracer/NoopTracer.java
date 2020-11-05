@@ -1,12 +1,12 @@
-package mb.pie.runtime.logger.exec;
+package mb.pie.runtime.tracer;
 
-import mb.pie.api.ExecutorLogger;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.ExecReason;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -15,7 +15,11 @@ import java.io.Serializable;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class NoopExecutorLogger implements ExecutorLogger {
+public class NoopTracer implements Tracer {
+    public static final NoopTracer instance = new NoopTracer();
+
+    private NoopTracer() {}
+
     @Override public void requireTopDownInitialStart(TaskKey key, Task<?> task) {}
 
     @Override public void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {}

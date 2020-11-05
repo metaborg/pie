@@ -18,7 +18,7 @@ public class TemporaryDirectoryState {
     private @Nullable FileSystem fileSystem;
     private @Nullable HierarchicalResource temporaryDirectory;
 
-    public TemporaryDirectoryState setupInvocation() throws IOException {
+    public HierarchicalResource setupInvocation() throws IOException {
         if(fileSystem != null && temporaryDirectory != null) {
             throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
         }
@@ -28,7 +28,7 @@ public class TemporaryDirectoryState {
             fileSystem = Jimfs.newFileSystem();
             temporaryDirectory = new FSResource(fileSystem.getPath(""));
         }
-        return this;
+        return temporaryDirectory;
     }
 
     @SuppressWarnings({"ConstantConditions", "NullableProblems"})

@@ -1,11 +1,12 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.ExecutorLogger;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
+import mb.pie.api.Callbacks;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskReq;
 import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
@@ -17,9 +18,9 @@ import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.Callbacks;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,8 +36,9 @@ public class BottomUpRunner implements RequireTask {
     private final ResourceService resourceService;
     private final Store store;
     private final Layer layer;
+    private final LoggerFactory loggerFactory;
     private final Logger logger;
-    private final ExecutorLogger executorLogger;
+    private final Tracer tracer;
     private final TaskExecutor taskExecutor;
     private final RequireShared requireShared;
     private final Callbacks callbacks;
@@ -49,8 +51,8 @@ public class BottomUpRunner implements RequireTask {
         ResourceService resourceService,
         Store store,
         Layer layer,
-        Logger logger,
-        ExecutorLogger executorLogger,
+        LoggerFactory loggerFactory,
+        Tracer tracer,
         TaskExecutor taskExecutor,
         RequireShared requireShared,
         Callbacks callbacks,
@@ -60,8 +62,9 @@ public class BottomUpRunner implements RequireTask {
         this.resourceService = resourceService;
         this.store = store;
         this.layer = layer;
-        this.logger = logger;
-        this.executorLogger = executorLogger;
+        this.loggerFactory = loggerFactory;
+        this.logger = loggerFactory.create(BottomUpRunner.class);
+        this.tracer = tracer;
         this.taskExecutor = taskExecutor;
         this.requireShared = requireShared;
         this.callbacks = callbacks;
@@ -72,10 +75,10 @@ public class BottomUpRunner implements RequireTask {
 
 
     public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) {
-        executorLogger.requireBottomUpInitialStart(changedResources);
+        tracer.requireBottomUpInitialStart(changedResources);
         scheduleAffectedByResources(changedResources.stream());
         execScheduled(cancel);
-        executorLogger.requireBottomUpInitialEnd();
+        tracer.requireBottomUpInitialEnd();
     }
 
 
@@ -165,12 +168,12 @@ public class BottomUpRunner implements RequireTask {
         cancel.throwIfCanceled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
-        executorLogger.requireTopDownStart(key, task);
+        tracer.requireTopDownStart(key, task);
         try {
             // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
             final TaskData data = getData(key, task, cancel);
             @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
-            executorLogger.requireTopDownEnd(key, task, output);
+            tracer.requireTopDownEnd(key, task, output);
             return output;
         } finally {
             layer.requireTopDownEnd(key);
@@ -241,12 +244,12 @@ public class BottomUpRunner implements RequireTask {
             // Invoke callback, if any.
             final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
             if(callback != null) {
-                executorLogger.invokeCallbackStart(callback, key, output);
+                tracer.invokeCallbackStart(callback, key, output);
                 callback.accept(output);
-                executorLogger.invokeCallbackEnd(callback, key, output);
+                tracer.invokeCallbackEnd(callback, key, output);
             }
 
-            executorLogger.upToDate(key, task);
+            tracer.upToDate(key, task);
 
             return storedData;
         }
@@ -312,12 +315,12 @@ public class BottomUpRunner implements RequireTask {
         // Invoke callback, if any.
         final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
         if(callback != null) {
-            executorLogger.invokeCallbackStart(callback, key, storedData.output);
+            tracer.invokeCallbackStart(callback, key, storedData.output);
             callback.accept(storedData.output);
-            executorLogger.invokeCallbackEnd(callback, key, storedData.output);
+            tracer.invokeCallbackEnd(callback, key, storedData.output);
         }
 
-        executorLogger.upToDate(key, task);
+        tracer.upToDate(key, task);
 
         return storedData;
     }

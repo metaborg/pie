@@ -9,9 +9,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * Logger interface for task executors.
+ * Interface for tracing build events, which can for example be used for debug logging or metrics collection.
  */
-public interface ExecutorLogger {
+public interface Tracer {
     void requireTopDownInitialStart(TaskKey key, Task<?> task);
 
     void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output);

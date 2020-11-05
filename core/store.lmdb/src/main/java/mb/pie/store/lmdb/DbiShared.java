@@ -1,8 +1,15 @@
 package mb.pie.store.lmdb;
 
-import mb.pie.api.Logger;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.lmdbjava.*;
+import org.lmdbjava.Cursor;
+import org.lmdbjava.Dbi;
+import org.lmdbjava.Env;
+import org.lmdbjava.GetOp;
+import org.lmdbjava.PutFlags;
+import org.lmdbjava.SeekOp;
+import org.lmdbjava.Txn;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -16,11 +23,11 @@ class DbiShared {
     private final boolean isWriteTxn;
     private final Logger logger;
 
-    DbiShared(Env<ByteBuffer> env, Txn<ByteBuffer> txn, boolean isWriteTxn, Logger logger) {
+    DbiShared(Env<ByteBuffer> env, Txn<ByteBuffer> txn, boolean isWriteTxn, LoggerFactory loggerFactory) {
         this.env = env;
         this.txn = txn;
         this.isWriteTxn = isWriteTxn;
-        this.logger = logger;
+        this.logger = loggerFactory.create(DbiShared.class);
     }
 
 

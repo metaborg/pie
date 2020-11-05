@@ -2,15 +2,17 @@ package mb.pie.bench.spoofax3;
 
 import mb.common.message.KeyedMessages;
 import mb.common.result.Result;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.Task;
 import mb.pie.bench.state.ChangesState;
+import mb.pie.bench.state.LoggerState;
 import mb.pie.bench.state.PieState;
 import mb.pie.bench.state.Spoofax3CompilerState;
 import mb.pie.bench.state.TemporaryDirectoryState;
 import mb.pie.bench.util.GarbageCollection;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.spoofax.compiler.spoofax3.language.CompilerException;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -31,21 +33,31 @@ import java.util.concurrent.TimeUnit;
 public class Spoofax3Bench {
     // Trial
 
-    protected @Nullable Spoofax3CompilerState spoofax3CompilerState;
-    protected @Nullable PieState pieState;
+    protected LoggerState loggerState;
+    protected LoggerFactory loggerFactory;
+    protected Logger logger;
+    protected Spoofax3CompilerState spoofax3CompilerState;
+    protected PieState pieState;
 
     @Setup(Level.Trial)
-    public void setupTrial(Spoofax3CompilerState spoofax3CompilerState, PieState pieState) {
-        this.spoofax3CompilerState = spoofax3CompilerState.setupTrial();
-        this.pieState = pieState.setupTrial(spoofax3CompilerState.getPie());
+    public void setupTrial(LoggerState loggerState, Spoofax3CompilerState spoofax3CompilerState, PieState pieState) {
+        this.loggerState = loggerState;
+        this.loggerFactory = loggerState.setupTrial();
+        logger = loggerFactory.create(Spoofax3Bench.class);
+        logger.trace("Spoofax3Bench.setupTrial");
+        this.spoofax3CompilerState = spoofax3CompilerState.setupTrial(loggerFactory);
+        this.pieState = pieState.setupTrial(loggerFactory, spoofax3CompilerState.getPie());
     }
 
     @TearDown(Level.Trial)
     public void tearDownTrial() {
-        this.pieState.tearDownTrial();
-        this.pieState = null;
-        this.spoofax3CompilerState.tearDownTrial();
-        this.spoofax3CompilerState = null;
+        pieState.tearDownTrial();
+        pieState = null;
+        spoofax3CompilerState.tearDownTrial();
+        spoofax3CompilerState = null;
+        loggerFactory = null;
+        logger.trace("Spoofax3Bench.tearDownTrial");
+        logger = null;
     }
 
 
@@ -57,9 +69,10 @@ public class Spoofax3Bench {
 
     @Setup(Level.Invocation)
     public void setupInvocation(TemporaryDirectoryState temporaryDirectoryState, ChangesState changesState) throws Exception {
-        this.temporaryDirectoryState = temporaryDirectoryState.setupInvocation();
-        final HierarchicalResource temporaryDirectory = temporaryDirectoryState.getTemporaryDirectory();
-        this.changesState = changesState.setupInvocation(temporaryDirectory);
+        logger.trace("Spoofax3Bench.setupInvocation");
+        this.temporaryDirectoryState = temporaryDirectoryState;
+        final HierarchicalResource temporaryDirectory = temporaryDirectoryState.setupInvocation();
+        this.changesState = changesState.setupInvocation(loggerFactory, temporaryDirectory);
 
         this.task = spoofax3CompilerState.setupInvocation(temporaryDirectory);
         this.pieState.setupInvocation();
@@ -75,6 +88,7 @@ public class Spoofax3Bench {
 
         this.pieState.tearDownInvocation();
         this.spoofax3CompilerState.tearDownInvocation();
+        logger.trace("Spoofax3Bench.tearDownInvocation");
     }
 
 
@@ -82,37 +96,37 @@ public class Spoofax3Bench {
 
     @Benchmark
     public void full(Blackhole blackhole) throws Exception {
-        pieState.requireTopDownInNewSession(task, "0_initial");
+        blackhole.consume(pieState.requireTopDownInNewSession(task, "0_initial"));
         int i = 1;
         for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {
-            changesState.tearDownInvocation(); // Reset change maker to clear changed resources.
+            changesState.reset(); // Reset change maker to clear changed resources.
             final String id = change.applyChange(changesState); // Apply change.
             reset(); // Reset to ensure full build.
             gc(); // Run garbage collection to make memory usage deterministic.
-            pieState.requireTopDownInNewSession(task, i + "_" + id); // Run build and measure.
+            blackhole.consume(pieState.requireTopDownInNewSession(task, i + "_" + id)); // Run build and measure.
             ++i;
         }
     }
 
     @Benchmark
     public void incrementalTopDown(Blackhole blackhole) throws Exception {
-        pieState.requireTopDownInNewSession(task, "0_initial");
+        blackhole.consume(pieState.requireTopDownInNewSession(task, "0_initial"));
         int i = 1;
         for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {
-            changesState.tearDownInvocation(); // Reset change maker to clear changed resources.
+            changesState.reset(); // Reset change maker to clear changed resources.
             final String id = change.applyChange(changesState); // Apply change.
             gc(); // Run garbage collection to make memory usage deterministic.
-            pieState.requireTopDownInNewSession(task, i + "_" + id); // Run build and measure.
+            blackhole.consume(pieState.requireTopDownInNewSession(task, i + "_" + id)); // Run build and measure.
             ++i;
         }
     }
 
     @Benchmark
     public void incrementalBottomUp(Blackhole blackhole) throws Exception {
-        pieState.requireTopDownInNewSession(task, "0_initial");
+        blackhole.consume(pieState.requireTopDownInNewSession(task, "0_initial"));
         int i = 1;
         for(Spoofax3CompilerState.Change change : spoofax3CompilerState.getChanges()) {
-            changesState.tearDownInvocation(); // Reset change maker to clear changed resources.
+            changesState.reset(); // Reset change maker to clear changed resources.
             final String id = change.applyChange(changesState); // Apply change.
             gc(); // Run garbage collection to make memory usage deterministic.
             pieState.requireBottomUpInNewSession(changesState.getChangedResources(), i + "_" + id); // Run build and measure.

@@ -1,5 +1,6 @@
 package mb.pie.api;
 
+import mb.log.api.Logger;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.CanceledException;
 import mb.pie.api.stamp.OutputStamper;
@@ -161,7 +162,8 @@ public interface ExecContext {
      * @param supplier {@link Supplier} to get output of.
      * @return Up-to-date output object of {@code supplier}.
      * @throws UncheckedExecException When the supplier requires a task that throws an exception.
-     * @throws UncheckedIOException   When the supplier requires/provides and reads/writes a resource, but fails to do so.
+     * @throws UncheckedIOException   When the supplier requires/provides and reads/writes a resource, but fails to do
+     *                                so.
      * @throws CanceledException      When execution is cancelled.
      */
     <O extends @Nullable Serializable> O require(Supplier<O> supplier);
@@ -176,7 +178,8 @@ public interface ExecContext {
      * @param input    Input to apply function to.
      * @return Up-to-date output object of {@code function}.
      * @throws UncheckedExecException When the function requires a task that throws an exception.
-     * @throws UncheckedIOException   When the function requires/provides and reads/writes a resource, but fails to do so.
+     * @throws UncheckedIOException   When the function requires/provides and reads/writes a resource, but fails to do
+     *                                so.
      * @throws CanceledException      When execution is cancelled.
      */
     <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input);
@@ -599,6 +602,8 @@ public interface ExecContext {
      * Gets the logger.
      *
      * @return Logger.
+     * @deprecated Getting a logger will be removed in a future version. Please attain a logger instance externally.
      */
+    @Deprecated
     Logger logger();
 }

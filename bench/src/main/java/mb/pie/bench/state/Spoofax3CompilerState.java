@@ -6,7 +6,8 @@ import mb.common.util.Properties;
 import mb.esv.DaggerEsvComponent;
 import mb.libspoofax2.DaggerLibSpoofax2Component;
 import mb.libstatix.DaggerLibStatixComponent;
-import mb.log.noop.NoopLoggerFactory;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
 import mb.pie.runtime.PieBuilderImpl;
@@ -49,21 +50,24 @@ import java.util.ArrayList;
 public class Spoofax3CompilerState {
     // Trial
 
+    private @Nullable Logger logger;
     private @Nullable ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
     private @Nullable PlatformComponent platformComponent;
     private @Nullable Spoofax3CompilerComponent spoofax3CompilerComponent;
 
-    public Spoofax3CompilerState setupTrial() {
+    public Spoofax3CompilerState setupTrial(LoggerFactory loggerFactory) {
         if(benchClassLoaderResourceRegistry != null && platformComponent != null && spoofax3CompilerComponent != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
-        this.benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
-        this.platformComponent = DaggerPlatformComponent.builder()
-            .loggerFactoryModule(new LoggerFactoryModule(new NoopLoggerFactory()))
+        logger = loggerFactory.create(Spoofax3CompilerState.class);
+        logger.trace("Spoofax3CompilerState.setupTrial");
+        benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
+        platformComponent = DaggerPlatformComponent.builder()
+            .loggerFactoryModule(new LoggerFactoryModule(loggerFactory))
             .resourceRegistriesModule(new ResourceRegistriesModule(benchClassLoaderResourceRegistry))
             .platformPieModule(new PlatformPieModule(PieBuilderImpl::new))
             .build();
-        this.spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
+        spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
             .spoofax3CompilerModule(new Spoofax3CompilerModule(new TemplateCompiler(StandardCharsets.UTF_8)))
             .platformComponent(platformComponent)
             .sdf3Component(DaggerSdf3Component.builder().platformComponent(platformComponent).build())
@@ -82,12 +86,14 @@ public class Spoofax3CompilerState {
     }
 
     public void tearDownTrial() {
-        if(benchClassLoaderResourceRegistry == null || platformComponent == null || spoofax3CompilerComponent == null) {
+        if(logger == null || benchClassLoaderResourceRegistry == null || platformComponent == null || spoofax3CompilerComponent == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
-        this.benchClassLoaderResourceRegistry = null;
-        this.platformComponent = null;
-        this.spoofax3CompilerComponent = null;
+        benchClassLoaderResourceRegistry = null;
+        platformComponent = null;
+        spoofax3CompilerComponent = null;
+        logger.trace("Spoofax3CompilerState.tearDownTrial");
+        logger = null;
     }
 
 
@@ -96,16 +102,15 @@ public class Spoofax3CompilerState {
     private Spoofax3LanguageProjectCompiler.@Nullable Input input;
 
     public Task<Result<KeyedMessages, CompilerException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
-        if(spoofax3CompilerComponent == null || benchClassLoaderResourceRegistry == null) {
+        if(logger == null || benchClassLoaderResourceRegistry == null || spoofax3CompilerComponent == null) {
             throw new IllegalStateException("setupInvocation was called before setupTrial");
         }
         if(input != null) {
             throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
         }
-
+        logger.trace("Spoofax3CompilerState.setupInvocation");
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
-
-        this.input = language.getCompilerInput(temporaryDirectory);
+        input = language.getCompilerInput(temporaryDirectory);
         return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
     }
 
@@ -113,7 +118,7 @@ public class Spoofax3CompilerState {
     public void handleResult(Result<KeyedMessages, CompilerException> result) throws Exception {
         if(result.isErr()) {
             final CompilerException e = result.getErr();
-            System.out.println(e.getMessage() + ". " + e.getSubMessage());
+            logger.trace(e.getMessage() + ". " + e.getSubMessage());
             e.getSubMessages().ifPresent((System.out::println));
             if(e.getSubCause() != null) {
                 e.getSubCause().printStackTrace(System.out);
@@ -137,10 +142,14 @@ public class Spoofax3CompilerState {
     }
 
     public void tearDownInvocation() {
+        if(logger == null) {
+            throw new IllegalStateException("tearDownInvocation was called before setupTrial");
+        }
         if(input == null) {
             throw new IllegalStateException("tearDownInvocation was called before setupInvocation");
         }
         input = null;
+        logger.trace("Spoofax3CompilerState.tearDownInvocation");
     }
 
 

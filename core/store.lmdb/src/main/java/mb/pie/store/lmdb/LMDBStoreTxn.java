@@ -1,6 +1,16 @@
 package mb.pie.store.lmdb;
 
-import mb.pie.api.*;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
+import mb.pie.api.Observability;
+import mb.pie.api.Output;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.TaskData;
+import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.lmdbjava.CursorIterator;
@@ -12,12 +22,10 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     private final Txn<ByteBuffer> txn;
-    private final Logger logger;
     private final Dbi<ByteBuffer> inputDb;
     private final Dbi<ByteBuffer> outputDb;
     private final Dbi<ByteBuffer> taskObservabilityDb;
@@ -30,12 +38,13 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     private final Dbi<ByteBuffer> resourceProvidesDb;
     private final Dbi<ByteBuffer> providerOfDb;
     private final DbiShared shared;
+    private final Logger logger;
 
     LMDBStoreTxn(
         Env<ByteBuffer> env,
         Txn<ByteBuffer> txn,
         boolean isWriteTxn,
-        Logger logger,
+        LoggerFactory loggerFactory,
         Dbi<ByteBuffer> inputDb,
         Dbi<ByteBuffer> outputDb,
         Dbi<ByteBuffer> taskObservabilityDb,
@@ -49,7 +58,6 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         Dbi<ByteBuffer> providerOfDb
     ) {
         this.txn = txn;
-        this.logger = logger;
         this.inputDb = inputDb;
         this.outputDb = outputDb;
         this.taskObservabilityDb = taskObservabilityDb;
@@ -61,7 +69,8 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         this.requireesOfValuesDb = requireesOfValuesDb;
         this.resourceProvidesDb = resourceProvidesDb;
         this.providerOfDb = providerOfDb;
-        this.shared = new DbiShared(env, txn, isWriteTxn, logger);
+        this.shared = new DbiShared(env, txn, isWriteTxn, loggerFactory);
+        this.logger = loggerFactory.create(LMDBStoreTxn.class);
     }
 
     @Override public void close() {

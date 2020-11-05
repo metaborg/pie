@@ -1,5 +1,7 @@
 package mb.pie.bench.util;
 
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.runtime.exec.Stats;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -20,14 +22,17 @@ import java.util.concurrent.TimeUnit;
 public class PieMetricsProfiler implements InternalProfiler {
     private static @Nullable PieMetricsProfiler instance;
 
+    private Logger logger;
+
     public PieMetricsProfiler() {
         PieMetricsProfiler.instance = this;
     }
 
-    public static PieMetricsProfiler getInstance() {
+    public static PieMetricsProfiler getInstance(LoggerFactory loggerFactory) {
         if(instance == null) {
             throw new IllegalStateException("PIE metrics profiler has not been initialized yet");
         }
+        instance.logger = loggerFactory.create(PieMetricsProfiler.class);
         return instance;
     }
 
@@ -46,16 +51,18 @@ public class PieMetricsProfiler implements InternalProfiler {
         measurementsActive = true;
     }
 
-    public void start() {
+    public void start(String id) {
         if(!measurementsActive) return;
         timer.start();
         Stats.reset();
+        logger.info("Start measuring: " + id);
     }
 
     public void stop(String id) {
         if(!measurementsActive) return;
         final Timer.Time time = timer.stop();
         measurements.add(new Measurement(id, time, Stats.requires, Stats.executions, Stats.fileReqs, Stats.fileGens, Stats.callReqs));
+        logger.info("Done measuring: " + id);
     }
 
     @Override

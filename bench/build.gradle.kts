@@ -24,8 +24,8 @@ dependencies {
   implementation("org.metaborg:spoofax.compiler.spoofax3.dagger:$spoofax3Version")
 
   implementation("com.google.jimfs:jimfs")
-  implementation("org.metaborg:log.backend.noop")
-  implementation("org.slf4j:slf4j-nop:1.7.30")
+  implementation("org.metaborg:log.backend.slf4j")
+  implementation("org.slf4j:slf4j-simple:1.7.30")
 
   compileOnly("org.checkerframework:checker-qual-android")
   annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion")
@@ -39,30 +39,33 @@ application {
   }
 }
 
-val reportDir = "$buildDir/reports/jmh/"
-val reportFile = "$reportDir/result.json"
-val layers = listOf("validation", "noop")
-val languages = listOf("chars", "calc")
+val jmhReportDir = "$buildDir/reports/jmh/"
+val resultFile = "$jmhReportDir/result.json"
 val commonArgs = listOf(
   "-foe", "true", // Fail early.
   "-gc", "true", // Run GC between iterations, lowering noise.
   "-prof", "mb.pie.bench.util.PieMetricsProfiler", // Enable PIE metrics profiler; required.
-  "-rf", "json", "-rff", reportFile, // Write results to JSON.
-  "Spoofax3Bench" // Benchmarks to run.
+  "-rf", "json", "-rff", resultFile // Write results to JSON file.
 )
 // Development settings
 val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
   args("-f", "0") // Do not fork to allow debugging.
-  args("-wi", "0", "-i", "1") // 1 measurement iteration.
-  args("-p", "layer=${layers.joinToString(",")}") // Benchmark with different layers.
-  args("-p", "language=${languages.joinToString(",")}") // Benchmark with different languages.
+  args("-wi", "0", "-i", "3")
+  args("-p", "layer=validation_pedantic_except_serialization")
+  args("-p", "language=calc")
+  args("-p", "logger=stdout_errors")
+  args("-p", "executorLogger=noop")
   args(commonArgs)
+  args("Spoofax3Bench.incrementalBottomUp")
   doFirst {
-    mkdir(reportDir)
+    mkdir(jmhReportDir)
   }
 }
 // Full benchmarking settings
+val layers = listOf("validation", "noop")
+val languages = listOf("chars", "calc")
+val benchmarkRegex = "Spoofax3Bench.*"
 val runFullTask = tasks.register<JavaExec>("runFull") {
   // Copied from Gradle application plugin
   description = "Runs benchmarks with full benchmarking settings"
@@ -78,8 +81,9 @@ val runFullTask = tasks.register<JavaExec>("runFull") {
   args("-p", "layer=${layers.joinToString(",")}") // Benchmark with different layers.
   args("-p", "language=${languages.joinToString(",")}") // Benchmark with different languages.
   args(commonArgs)
+  args(benchmarkRegex)
   doFirst {
-    mkdir(reportDir)
+    mkdir(jmhReportDir)
   }
 }
 
@@ -93,11 +97,11 @@ python {
 }
 tasks.register<PythonTask>("plotToHtml") {
   mustRunAfter(runTask, runFullTask)
-  command = "src/main/python/plot.py --input-file $reportFile export-html --output-file $reportDir/result.html"
+  command = "src/main/python/plot.py --input-file $resultFile export-html --output-file $jmhReportDir/result.html"
 }
 tasks.register<PythonTask>("plotInteractive") {
   mustRunAfter(runTask, runFullTask)
-  command = "src/main/python/plot.py --input-file $reportFile dash"
+  command = "src/main/python/plot.py --input-file $resultFile dash"
 }
 
 

@@ -1,8 +1,9 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.ExecutorLogger;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
+import mb.pie.api.Tracer;
 import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.Observability;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
@@ -35,8 +36,8 @@ public class TaskExecutor {
     private final Share share;
     private final DefaultStampers defaultStampers;
     private final Layer layer;
-    private final Logger logger;
-    private final ExecutorLogger executorLogger;
+    private final LoggerFactory loggerFactory;
+    private final Tracer tracer;
     private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
@@ -48,8 +49,8 @@ public class TaskExecutor {
         Share share,
         DefaultStampers defaultStampers,
         Layer layer,
-        Logger logger,
-        ExecutorLogger executorLogger,
+        LoggerFactory loggerFactory,
+        Tracer tracer,
         Callbacks callbacks,
         HashMap<TaskKey, TaskData> visited
     ) {
@@ -59,8 +60,8 @@ public class TaskExecutor {
         this.share = share;
         this.defaultStampers = defaultStampers;
         this.layer = layer;
-        this.logger = logger;
-        this.executorLogger = executorLogger;
+        this.loggerFactory = loggerFactory;
+        this.tracer = tracer;
         this.callbacks = callbacks;
 
         this.visited = visited;
@@ -108,21 +109,21 @@ public class TaskExecutor {
 
         // Execute the task.
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, logger);
+            new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, loggerFactory);
         final @Nullable Serializable output;
         try {
-            executorLogger.executeStart(key, task, reason);
+            tracer.executeStart(key, task, reason);
             output = task.exec(context);
         } catch(RuntimeException e) {
-            executorLogger.executeEndFailed(key, task, reason, e);
+            tracer.executeEndFailed(key, task, reason, e);
             // Propagate runtime exceptions, no need to wrap them.
             throw e;
         } catch(InterruptedException e) {
-            executorLogger.executeEndInterrupted(key, task, reason, e);
+            tracer.executeEndInterrupted(key, task, reason, e);
             // Turn InterruptedExceptions into UncheckedInterruptedException.
             throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
-            executorLogger.executeEndFailed(key, task, reason, e);
+            tracer.executeEndFailed(key, task, reason, e);
             // Wrap regular exceptions into an RuntimeExecException which is propagated up to the entry point, where it
             // will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
@@ -142,7 +143,7 @@ public class TaskExecutor {
         final TaskData data =
             new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires,
                 deps.resourceProvides);
-        executorLogger.executeEndSuccess(key, task, reason, data);
+        tracer.executeEndSuccess(key, task, reason, data);
 
         // Validate, write data, and detach removed dependencies.
         try(final StoreWriteTxn txn = store.writeTxn()) {
@@ -172,9 +173,9 @@ public class TaskExecutor {
         // Invoke callback, if any.
         final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
         if(callback != null) {
-            executorLogger.invokeCallbackStart(callback, key, output);
+            tracer.invokeCallbackStart(callback, key, output);
             callback.accept(output);
-            executorLogger.invokeCallbackEnd(callback, key, output);
+            tracer.invokeCallbackEnd(callback, key, output);
         }
 
         return data;

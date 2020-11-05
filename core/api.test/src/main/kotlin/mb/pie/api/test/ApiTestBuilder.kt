@@ -2,15 +2,15 @@ package mb.pie.api.test
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import mb.pie.api.ExecutorLogger
+import mb.log.api.LoggerFactory
 import mb.pie.api.Layer
-import mb.pie.api.Logger
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
 import mb.pie.api.PieBuilder
 import mb.pie.api.Share
 import mb.pie.api.Store
 import mb.pie.api.TaskDefs
+import mb.pie.api.Tracer
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.output.EqualsOutputStamper
@@ -23,8 +23,8 @@ import java.util.stream.Stream
 
 abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
   val pieBuilderFactory: () -> PieBuilder,
-  val loggerFactory: () -> Logger,
-  val executorLoggerFactory: (Logger) -> ExecutorLogger,
+  val loggerFactory: () -> LoggerFactory,
+  val tracerFactory: (LoggerFactory) -> Tracer,
   defaultResourceStampers: MutableList<ResourceStamper<ReadableResource>>,
   defaultHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>>,
   open val testContextFactory: (FileSystem, MapTaskDefs, Pie) -> Ctx
@@ -32,14 +32,14 @@ abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
   var filesystemFactory: () -> FileSystem = { Jimfs.newFileSystem(Configuration.unix()) }
 
   var taskDefsFactory: () -> MapTaskDefs = { MapTaskDefs() }
-  val storeFactories: MutableList<(Logger, ResourceService) -> Store> = mutableListOf()
-  val shareFactories: MutableList<(Logger) -> Share> = mutableListOf()
+  val storeFactories: MutableList<(LoggerFactory, ResourceService) -> Store> = mutableListOf()
+  val shareFactories: MutableList<(LoggerFactory) -> Share> = mutableListOf()
   val defaultOutputStampers: MutableList<OutputStamper> = mutableListOf(EqualsOutputStamper())
   val defaultRequireReadableStampers: MutableList<ResourceStamper<ReadableResource>> = defaultResourceStampers
   val defaultProvideReadableStampers: MutableList<ResourceStamper<ReadableResource>> = defaultResourceStampers
   val defaultRequireHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = defaultHierarchicalStampers
   val defaultProvideHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = defaultHierarchicalStampers
-  val layerFactories: MutableList<(TaskDefs, Logger) -> Layer> = mutableListOf()
+  val layerFactories: MutableList<(TaskDefs, LoggerFactory) -> Layer> = mutableListOf()
 
   fun test(testFunc: Ctx.() -> Unit): Stream<out DynamicTest> {
     if(storeFactories.isEmpty()) error("Store factories list is empty")
@@ -71,8 +71,8 @@ abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
                     pieBuilder.withDefaultRequireHierarchicalResourceStamper(defaultRequireHierarchicalStamper)
                     pieBuilder.withDefaultProvideHierarchicalResourceStamper(defaultProvideHierarchicalStamper)
                     pieBuilder.withLayerFactory(layerFactory)
-                    pieBuilder.withLogger(loggerFactory())
-                    pieBuilder.withExecutorLoggerFactory(executorLoggerFactory)
+                    pieBuilder.withLoggerFactory(loggerFactory())
+                    pieBuilder.withTracerFactory(tracerFactory)
                     val pie = pieBuilder.build()
                     DynamicTest.dynamicTest("$pie") {
                       val context = testContextFactory(filesystem, taskDefs, pie)

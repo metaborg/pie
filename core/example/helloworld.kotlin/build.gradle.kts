@@ -7,7 +7,7 @@ application {
 }
 
 dependencies {
-  compile(project(":pie.runtime"))
+  implementation(project(":pie.runtime"))
 }
 
 metaborg {

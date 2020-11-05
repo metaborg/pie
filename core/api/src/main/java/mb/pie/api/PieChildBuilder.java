@@ -1,5 +1,6 @@
 package mb.pie.api;
 
+import mb.log.api.LoggerFactory;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -27,11 +28,11 @@ public interface PieChildBuilder {
 
     PieChildBuilder withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
-    PieChildBuilder withLayerFactory(BiFunction<TaskDefs, Logger, Layer> layerFunc);
+    PieChildBuilder withLayerFactory(BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory);
 
-    PieChildBuilder withLogger(Logger logger);
+    PieChildBuilder withLoggerFactory(LoggerFactory loggerFactory);
 
-    PieChildBuilder withExecutorLoggerFactory(Function<Logger, ExecutorLogger> execLoggerFunc);
+    PieChildBuilder withTracerFactory(Function<LoggerFactory, Tracer> tracerFactory);
 
     PieChildBuilder addTaskDefs(TaskDefs taskDefs);
 

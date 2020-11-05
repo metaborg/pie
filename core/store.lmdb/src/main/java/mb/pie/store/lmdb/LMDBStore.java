@@ -1,5 +1,6 @@
 package mb.pie.store.lmdb;
 
+import mb.log.api.LoggerFactory;
 import mb.pie.api.*;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
@@ -42,13 +43,13 @@ public class LMDBStore implements Store {
     private final Dbi<ByteBuffer> requireesOfValues;
     private final Dbi<ByteBuffer> resourceProvides;
     private final Dbi<ByteBuffer> providerOf;
-    private final Logger logger;
+    private final LoggerFactory loggerFactory;
 
-    public LMDBStore(Logger logger, File envDir) {
-        this(logger, envDir, defaultMaxDbSize, defaultMaxReaders);
+    public LMDBStore(LoggerFactory loggerFactory, File envDir) {
+        this(loggerFactory, envDir, defaultMaxDbSize, defaultMaxReaders);
     }
 
-    public LMDBStore(Logger logger, File envDir, long maxDbSize, int maxReaders) {
+    public LMDBStore(LoggerFactory loggerFactory, File envDir, long maxDbSize, int maxReaders) {
         envDir.mkdirs();
         this.env = Env.create()
             .setMapSize(maxDbSize)
@@ -66,7 +67,7 @@ public class LMDBStore implements Store {
         this.requireesOfValues = env.openDbi("requireesOfValues", DbiFlags.MDB_CREATE);
         this.resourceProvides = env.openDbi("resourceProvides", DbiFlags.MDB_CREATE);
         this.providerOf = env.openDbi("providerOf", DbiFlags.MDB_CREATE);
-        this.logger = logger;
+        this.loggerFactory = loggerFactory;
     }
 
     @Override public void close() {
@@ -75,7 +76,7 @@ public class LMDBStore implements Store {
 
     @Override public StoreReadTxn readTxn() {
         final Txn<ByteBuffer> txn = env.txnRead();
-        return new LMDBStoreTxn(env, txn, false, logger,
+        return new LMDBStoreTxn(env, txn, false, loggerFactory,
             input,
             output,
             taskObservability,
@@ -92,7 +93,7 @@ public class LMDBStore implements Store {
 
     @Override public StoreWriteTxn writeTxn() {
         final Txn<ByteBuffer> txn = env.txnWrite();
-        return new LMDBStoreTxn(env, txn, true, logger,
+        return new LMDBStoreTxn(env, txn, true, loggerFactory,
             input,
             output,
             taskObservability,

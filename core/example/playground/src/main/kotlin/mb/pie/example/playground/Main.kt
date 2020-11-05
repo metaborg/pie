@@ -1,9 +1,13 @@
 package mb.pie.example.playground
 
-import mb.pie.api.*
+import mb.log.stream.StreamLoggerFactory
+import mb.pie.api.ExecContext
+import mb.pie.api.MapTaskDefs
+import mb.pie.api.None
+import mb.pie.api.Supplier
+import mb.pie.api.TaskDef
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
-import mb.pie.runtime.logger.StreamLogger
 import java.io.File
 import java.io.Serializable
 
@@ -56,8 +60,7 @@ fun main(args: Array<String>) {
 
   val pieBuilder = PieBuilderImpl()
   pieBuilder.withTaskDefs(taskDefs)
-  //LMDBStore.withLMDBStore(pieBuilder, File("build/run/lmdb"))
-  pieBuilder.withLogger(StreamLogger.verbose())
+  pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose())
   pieBuilder.build().use { pie ->
     val fileCreatorTask = createFile.createTask(sourceFile)
     val transformFileTask = transformFile.createTask(

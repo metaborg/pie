@@ -1,8 +1,9 @@
 package mb.pie.runtime.exec;
 
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Function;
-import mb.pie.api.Logger;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
@@ -36,7 +37,7 @@ public class ExecContextImpl implements ExecContext {
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
     private final DefaultStampers defaultStampers;
-    private final Logger logger;
+    private final LoggerFactory loggerFactory;
 
     private final ArrayList<TaskRequireDep> taskRequires = new ArrayList<>();
     private final ArrayList<ResourceRequireDep> resourceRequires = new ArrayList<>();
@@ -50,7 +51,7 @@ public class ExecContextImpl implements ExecContext {
         TaskDefs taskDefs,
         ResourceService resourceService,
         DefaultStampers defaultStampers,
-        Logger logger
+        LoggerFactory loggerFactory
     ) {
         this.requireTask = requireTask;
         this.modifyObservability = modifyObservability;
@@ -58,7 +59,7 @@ public class ExecContextImpl implements ExecContext {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.defaultStampers = defaultStampers;
-        this.logger = logger;
+        this.loggerFactory = loggerFactory;
     }
 
 
@@ -166,7 +167,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override public Logger logger() {
-        return logger;
+        return loggerFactory.create(ExecContextImpl.class);
     }
 
 

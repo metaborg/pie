@@ -1,11 +1,11 @@
 package mb.pie.example.helloworld.kotlin
 
+import mb.log.stream.StreamLoggerFactory
 import mb.pie.api.ExecContext
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.None
 import mb.pie.api.TaskDef
 import mb.pie.runtime.PieBuilderImpl
-import mb.pie.runtime.logger.StreamLogger
 import mb.pie.runtime.store.InMemoryStore
 import mb.pie.runtime.store.SerializingStore
 import mb.resource.ResourceKeyString
@@ -70,8 +70,8 @@ fun main(args: Array<String>) {
   pieBuilder.withTaskDefs(taskDefs)
   // For storing build results and the dependency graph, we will serialize the in-memory store on exit at build/store.
   pieBuilder.withStoreFactory { _, resourceService -> SerializingStore(resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), Supplier { InMemoryStore() }) }
-  // For example purposes, we use verbose logging which will output to stdout.
-  pieBuilder.withLogger(StreamLogger.verbose())
+  // For example purposes, we use very verbose logging which will output to stdout.
+  pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose())
   // Then we build the PIE runtime.
   pieBuilder.build().use { pie ->
     // Now we create concrete task instances from the task definitions.

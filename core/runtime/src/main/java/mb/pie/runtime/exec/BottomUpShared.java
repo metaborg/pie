@@ -1,6 +1,6 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.Logger;
+import mb.log.api.Logger;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;

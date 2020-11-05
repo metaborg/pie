@@ -4,13 +4,13 @@ import dagger.BindsOptionalOf;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import mb.pie.api.ExecutorLogger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.Tracer;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -34,10 +34,10 @@ import java.util.function.Function;
     abstract ResourceService resourceService();
 
     @BindsOptionalOf
-    abstract BiFunction<Logger, ResourceService, Store> storeFunc();
+    abstract BiFunction<LoggerFactory, ResourceService, Store> storeFactory();
 
     @BindsOptionalOf
-    abstract Function<Logger, Share> shareFunc();
+    abstract Function<LoggerFactory, Share> shareFactory();
 
     @BindsOptionalOf
     abstract OutputStamper defaultOutputStamper();
@@ -55,11 +55,11 @@ import java.util.function.Function;
     abstract ResourceStamper<HierarchicalResource> defaultProvideHierarchicalResourceStamper();
 
     @BindsOptionalOf
-    abstract BiFunction<TaskDefs, Logger, Layer> layerFunc();
+    abstract BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory();
 
     @BindsOptionalOf
-    abstract Logger logger();
+    abstract LoggerFactory loggerFactory();
 
     @BindsOptionalOf
-    abstract Function<Logger, ExecutorLogger> execLoggerFunc();
+    abstract Function<LoggerFactory, Tracer> tracerFactory();
 }

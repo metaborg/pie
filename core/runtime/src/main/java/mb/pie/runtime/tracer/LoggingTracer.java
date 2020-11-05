@@ -1,9 +1,9 @@
-package mb.pie.runtime.logger.exec;
+package mb.pie.runtime.tracer;
 
-import mb.pie.api.ExecutorLogger;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentTaskReq;
-import mb.pie.api.Logger;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.StringUtil;
@@ -11,6 +11,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.ExecReason;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -20,18 +21,18 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class LoggerExecutorLogger implements ExecutorLogger {
+public class LoggingTracer implements Tracer {
     private final Logger logger;
     private final int descLimit;
     private final AtomicInteger indentation = new AtomicInteger(0);
 
 
-    public LoggerExecutorLogger(Logger logger) {
-        this(logger, 200);
+    public LoggingTracer(LoggerFactory loggerFactory) {
+        this(loggerFactory, 200);
     }
 
-    public LoggerExecutorLogger(Logger logger, int descLimit) {
-        this.logger = logger;
+    public LoggingTracer(LoggerFactory loggerFactory, int descLimit) {
+        this.logger = loggerFactory.create(LoggingTracer.class);
         this.descLimit = descLimit;
     }
 

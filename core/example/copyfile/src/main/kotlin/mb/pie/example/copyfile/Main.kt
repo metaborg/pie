@@ -1,9 +1,9 @@
 package mb.pie.example.copyfile
 
+import mb.log.stream.StreamLoggerFactory
 import mb.pie.api.*
 import mb.pie.api.stamp.resource.ResourceStampers
 import mb.pie.runtime.PieBuilderImpl
-import mb.pie.runtime.logger.StreamLogger
 import mb.pie.store.lmdb.LMDBStore
 import java.io.File
 import java.io.Serializable
@@ -112,8 +112,8 @@ fun main(args: Array<String>) {
   pieBuilder.withTaskDefs(taskDefs)
   // For storing build results and the dependency graph, we will use the LMDB embedded database, stored at target/lmdb.
   LMDBStore.withLMDBStore(pieBuilder, File("build/run/lmdb"))
-  // For example purposes, we use verbose logging which will output to stdout.
-  pieBuilder.withLogger(StreamLogger.verbose())
+  // For example purposes, we use very verbose logging which will output to stdout.
+  pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose())
   // Then we build the PIE runtime.
   pieBuilder.build().use { pie ->
     // Now we create concrete task instances from the task definitions.
