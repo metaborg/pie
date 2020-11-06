@@ -23,7 +23,9 @@ public class TemporaryDirectoryState {
             throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
         }
         if(useDiskTemporaryDirectory) {
-            temporaryDirectory = FSResource.createTemporaryDirectory("pie.bench.spoofax3");
+            temporaryDirectory = FSResource.temporaryDirectory().appendRelativePath("pie.bench.spoofax3");
+            temporaryDirectory.delete(true);
+            temporaryDirectory.ensureDirectoryExists();
         } else {
             fileSystem = Jimfs.newFileSystem();
             temporaryDirectory = new FSResource(fileSystem.getPath(""));
