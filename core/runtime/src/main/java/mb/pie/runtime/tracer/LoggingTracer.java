@@ -1,5 +1,6 @@
 package mb.pie.runtime.tracer;
 
+import mb.log.api.Level;
 import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.InconsistentResourceProvide;
@@ -24,19 +25,23 @@ import java.util.function.Consumer;
 
 public class LoggingTracer implements Tracer {
     private final Logger logger;
+    private final Level bottomUpLoggingLevel;
     private final int strLimit;
     private final AtomicInteger indentation = new AtomicInteger(0);
 
 
-    public LoggingTracer(LoggerFactory loggerFactory) {
-        this(loggerFactory, 2048);
-    }
-
-    public LoggingTracer(LoggerFactory loggerFactory, int strLimit) {
+    public LoggingTracer(LoggerFactory loggerFactory, Level bottomUpLoggingLevel, int strLimit) {
         this.logger = loggerFactory.create(LoggingTracer.class);
+        this.bottomUpLoggingLevel = bottomUpLoggingLevel;
         this.strLimit = strLimit;
     }
 
+    public LoggingTracer(LoggerFactory loggerFactory) {
+        this(loggerFactory, Level.Debug, 4096);
+    }
+
+
+    private void log(Level level, String message) { logger.log(level, getIndent() + message); }
 
     @Override
     public void requireTopDownInitialStart(TaskKey key, Task<?> task) {
@@ -67,60 +72,92 @@ public class LoggingTracer implements Tracer {
     }
 
 
+    private boolean isBottomUpDisabled() { return !logger.isEnabled(bottomUpLoggingLevel); }
+
+    private void logBottomUp(String message) { log(bottomUpLoggingLevel, getIndent() + message); }
+
     @Override
     public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {
-        if(!logger.isTraceEnabled()) return;
-        logger.trace(getIndent() + "Bottom-up build start: " + changedResources);
+        if(isBottomUpDisabled()) return;
+        logBottomUp("Bottom-up build start: " + changedResources);
         indentation.incrementAndGet();
     }
 
     @Override
     public void requireBottomUpInitialEnd() {
-        if(!logger.isTraceEnabled()) return;
+        if(isBottomUpDisabled()) return;
         indentation.decrementAndGet();
-        logger.trace(getIndent() + "Bottom-up build end");
+        logBottomUp("Bottom-up build end");
     }
 
     @Override
-    public void scheduleAffectedByProvidedResource(ResourceKey changedResource, TaskKey provider, boolean isObserved, @Nullable InconsistentResourceProvide reason) {
-        if(!logger.isTraceEnabled()) return;
-        if(reason != null) {
-            logger.trace(getIndent() + "☒ " + provider.toShortString(strLimit) + " ↠ " + changedResource + " (" + reason.dep.stamp + " ≠ " + reason.newStamp + ")");
-        } else if(isObserved) {
-            logger.trace(getIndent() + "☑ " + provider.toShortString(strLimit) + " ↠ " + changedResource);
+    public void scheduleAffectedByResourceStart(ResourceKey resource) {
+        if(isBottomUpDisabled()) return;
+        logBottomUp("¿ " + resource);
+        indentation.incrementAndGet();
+    }
+
+    @Override
+    public void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
+        if(isBottomUpDisabled()) return;
+        if(reason != null && dep != null) {
+            logBottomUp("☒ " + provider.toShortString(strLimit) + "(" + dep.stamp + " ≠ " + reason.newStamp + ")");
+        } else if(dep != null) {
+            logBottomUp("☑ " + provider.toShortString(strLimit) + "(" + dep.stamp + ")");
         } else {
-            logger.trace(getIndent() + "☐ " + provider.toShortString(strLimit) + " ↠ " + changedResource);
+            logBottomUp("☐ " + provider.toShortString(strLimit));
         }
     }
 
     @Override
-    public void scheduleAffectedByRequiredResource(ResourceKey changedResource, TaskKey requiree, boolean isObserved, @Nullable InconsistentResourceRequire reason) {
-        if(!logger.isTraceEnabled()) return;
-        if(reason != null) {
-            logger.trace(getIndent() + "☒ " + requiree.toShortString(strLimit) + " → " + changedResource + " (" + reason.dep.stamp + " ≠ " + reason.newStamp + ")");
-        } else if(isObserved) {
-            logger.trace(getIndent() + "☑ " + requiree.toShortString(strLimit) + " → " + changedResource);
+    public void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
+        if(isBottomUpDisabled()) return;
+        if(reason != null && dep != null) {
+            logBottomUp("☒ " + requirer.toShortString(strLimit) + "(" + dep.stamp + " ≠ " + reason.newStamp + ")");
+        } else if(dep != null) {
+            logBottomUp("☑ " + requirer.toShortString(strLimit) + "(" + dep.stamp + ")");
         } else {
-            logger.trace(getIndent() + "☐ " + requiree.toShortString(strLimit) + " → " + changedResource);
+            logBottomUp("☐ " + requirer.toShortString(strLimit));
         }
     }
 
     @Override
-    public void scheduleAffectedByRequiredTask(TaskKey requiree, TaskKey requirer, boolean isObserved, @Nullable InconsistentTaskRequire reason) {
-        if(!logger.isTraceEnabled()) return;
-        if(reason != null) {
-            logger.trace(getIndent() + "☒ " + requirer.toShortString(strLimit) + " ⇢ " + requiree.toShortString(strLimit) + " (" + outputToString(reason.dep.stamp) + " ≠ " + outputToString(reason.newStamp) + ")");
-        } else if(isObserved) {
-            logger.trace(getIndent() + "☑ " + requirer.toShortString(strLimit) + " ⇢ " + requiree.toShortString(strLimit));
+    public void scheduleAffectedByResourceEnd(ResourceKey resource) {
+        if(isBottomUpDisabled()) return;
+        indentation.decrementAndGet();
+        //logBottomUp("¿ " + resource);
+    }
+
+    @Override
+    public void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output) {
+        if(isBottomUpDisabled()) return;
+        logBottomUp("¿ " + requiree.toShortString(strLimit));
+        indentation.incrementAndGet();
+    }
+
+    @Override
+    public void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {
+        if(isBottomUpDisabled()) return;
+        if(reason != null && dep != null) {
+            logBottomUp("☒ " + requirer.toShortString(strLimit) + "(" + outputToString(dep.stamp) + " ≠ " + outputToString(reason.newStamp) + ")");
+        } else if(dep != null) {
+            logBottomUp("☑ " + requirer.toShortString(strLimit) + "(" + outputToString(dep.stamp) + ")");
         } else {
-            logger.trace(getIndent() + "☐ " + requirer.toShortString(strLimit) + " ⇢ " + requiree.toShortString(strLimit));
+            logBottomUp("☐ " + requirer.toShortString(strLimit));
         }
+    }
+
+    @Override
+    public void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output) {
+        if(isBottomUpDisabled()) return;
+        indentation.decrementAndGet();
+        //logBottomUp("¿ " + requiree.toShortString(strLimit));
     }
 
     @Override
     public void scheduleTask(TaskKey key) {
-        if(!logger.isTraceEnabled()) return;
-        logger.trace(getIndent() + "† " + key);
+        if(isBottomUpDisabled()) return;
+        logBottomUp("† " + key);
     }
 
     @Override
@@ -143,10 +180,10 @@ public class LoggingTracer implements Tracer {
     public void checkStoredEnd(TaskKey key, @Nullable Serializable output) {}
 
     @Override
-    public void checkResourceProvideStart(TaskKey key, Task<?> task, ResourceProvideDep dep) {}
+    public void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep) {}
 
     @Override
-    public void checkResourceProvideEnd(TaskKey key, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
+    public void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
         if(!logger.isTraceEnabled()) return;
         if(reason != null) {
             logger.trace(getIndent() + "☒ " + dep.key + " (" + dep.stamp + " ≠ " + reason.newStamp + ")");
@@ -156,10 +193,10 @@ public class LoggingTracer implements Tracer {
     }
 
     @Override
-    public void checkResourceRequireStart(TaskKey key, Task<?> task, ResourceRequireDep dep) {}
+    public void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep) {}
 
     @Override
-    public void checkResourceRequireEnd(TaskKey key, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
+    public void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
         if(!logger.isTraceEnabled()) return;
         if(reason != null) {
             logger.trace(getIndent() + "☒ " + dep.key + " (" + dep.stamp + " ≠ " + reason.newStamp + ")");

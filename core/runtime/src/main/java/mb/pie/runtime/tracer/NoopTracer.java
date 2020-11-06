@@ -35,14 +35,24 @@ public class NoopTracer implements Tracer {
 
     @Override public void requireBottomUpInitialEnd() {}
 
-    @Override
-    public void scheduleAffectedByProvidedResource(ResourceKey changedResource, TaskKey providee, boolean isObserved, @Nullable InconsistentResourceProvide reason) {}
+    @Override public void scheduleAffectedByResourceStart(ResourceKey resource) {}
 
     @Override
-    public void scheduleAffectedByRequiredResource(ResourceKey changedResource, TaskKey requiree, boolean isObserved, @Nullable InconsistentResourceRequire reason) {}
+    public void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {}
 
     @Override
-    public void scheduleAffectedByRequiredTask(TaskKey requiree, TaskKey requirer, boolean isObserved, @Nullable InconsistentTaskRequire reason) {}
+    public void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {}
+
+    @Override
+    public void scheduleAffectedByResourceEnd(ResourceKey resource) {}
+
+    @Override
+    public void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output) {}
+
+    @Override
+    public void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {}
+
+    @Override public void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output) {}
 
     @Override public void scheduleTask(TaskKey key) {}
 
@@ -58,15 +68,15 @@ public class NoopTracer implements Tracer {
 
     @Override public void checkStoredEnd(TaskKey key, @Nullable Serializable output) {}
 
-    @Override public void checkResourceProvideStart(TaskKey key, Task<?> task, ResourceProvideDep dep) {}
+    @Override public void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep) {}
 
     @Override
-    public void checkResourceProvideEnd(TaskKey key, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {}
+    public void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {}
 
-    @Override public void checkResourceRequireStart(TaskKey key, Task<?> task, ResourceRequireDep dep) {}
+    @Override public void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep) {}
 
     @Override
-    public void checkResourceRequireEnd(TaskKey key, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {}
+    public void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {}
 
     @Override public void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep) {}
 

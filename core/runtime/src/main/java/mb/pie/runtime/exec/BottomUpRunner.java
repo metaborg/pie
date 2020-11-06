@@ -117,10 +117,14 @@ public class BottomUpRunner implements RequireTask {
      */
     private void scheduleAffectedByRequiredResources(Stream<? extends ResourceKey> resources) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            resources.forEach((resource) -> BottomUpShared.directlyAffectedByRequiredResource(txn, resource, resourceService, tracer, (key) -> {
-                tracer.scheduleTask(key);
-                queue.add(key);
-            }));
+            resources.forEach((changedResource) -> {
+                tracer.scheduleAffectedByResourceStart(changedResource);
+                BottomUpShared.directlyAffectedByRequiredResource(txn, changedResource, resourceService, tracer, (key) -> {
+                    tracer.scheduleTask(key);
+                    queue.add(key);
+                });
+                tracer.scheduleAffectedByResourceEnd(changedResource);
+            });
         }
     }
 

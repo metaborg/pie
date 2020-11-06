@@ -25,11 +25,19 @@ public interface Tracer {
 
     void requireBottomUpInitialEnd();
 
-    void scheduleAffectedByProvidedResource(ResourceKey changedResource, TaskKey providee, boolean isObserved, @Nullable InconsistentResourceProvide reason);
+    void scheduleAffectedByResourceStart(ResourceKey resource);
 
-    void scheduleAffectedByRequiredResource(ResourceKey changedResource, TaskKey requiree, boolean isObserved, @Nullable InconsistentResourceRequire reason);
+    void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason);
 
-    void scheduleAffectedByRequiredTask(TaskKey requiree, TaskKey requirer, boolean isObserved, @Nullable InconsistentTaskRequire reason);
+    void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason);
+
+    void scheduleAffectedByResourceEnd(ResourceKey resource);
+
+    void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output);
+
+    void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason);
+
+    void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output);
 
     void scheduleTask(TaskKey key);
 
@@ -46,13 +54,13 @@ public interface Tracer {
 
     void checkStoredEnd(TaskKey key, @Nullable Serializable output);
 
-    void checkResourceProvideStart(TaskKey key, Task<?> task, ResourceProvideDep dep);
+    void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep);
 
-    void checkResourceProvideEnd(TaskKey key, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason);
+    void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason);
 
-    void checkResourceRequireStart(TaskKey key, Task<?> task, ResourceRequireDep dep);
+    void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep);
 
-    void checkResourceRequireEnd(TaskKey key, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason);
+    void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason);
 
     void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep);
 
