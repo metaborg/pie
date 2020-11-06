@@ -149,12 +149,10 @@ public class BottomUpRunner implements RequireTask {
         cancel.throwIfCanceled();
         Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
-        tracer.requireTopDownStart(key, task);
         try {
             // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
             final TaskData data = getData(key, task, cancel);
             @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
-            tracer.requireTopDownEnd(key, task, output);
             return output;
         } finally {
             layer.requireTopDownEnd(key);
@@ -237,48 +235,54 @@ public class BottomUpRunner implements RequireTask {
     }
 
     private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, CancelToken cancel) {
-        // Input consistency.
-        {
-            final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);
-            if(reason != null) {
-                return exec(key, task, reason, cancel);
+        // Check consistency of task.
+        try {
+            tracer.checkTopDownStart(key, task);
+            // Input consistency.
+            {
+                final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);
+                if(reason != null) {
+                    return exec(key, task, reason, cancel);
+                }
             }
-        }
 
-        // Transient output consistency.
-        {
-            final @Nullable InconsistentTransientOutput reason =
-                requireShared.checkOutputConsistency(storedData.output);
-            if(reason != null) {
-                return exec(key, task, reason, cancel);
+            // Transient output consistency.
+            {
+                final @Nullable InconsistentTransientOutput reason =
+                    requireShared.checkOutputConsistency(storedData.output);
+                if(reason != null) {
+                    return exec(key, task, reason, cancel);
+                }
             }
-        }
 
-        // Resource require consistency.
-        for(ResourceRequireDep resourceRequireDep : storedData.resourceRequires) {
-            final @Nullable InconsistentResourceRequire reason =
-                requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
-            if(reason != null) {
-                return exec(key, task, reason, cancel);
+            // Resource require consistency.
+            for(ResourceRequireDep resourceRequireDep : storedData.resourceRequires) {
+                final @Nullable InconsistentResourceRequire reason =
+                    requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
+                if(reason != null) {
+                    return exec(key, task, reason, cancel);
+                }
             }
-        }
 
-        // Resource provide consistency.
-        for(ResourceProvideDep resourceProvideDep : storedData.resourceProvides) {
-            final @Nullable InconsistentResourceProvide reason =
-                requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
-            if(reason != null) {
-                return exec(key, task, reason, cancel);
+            // Resource provide consistency.
+            for(ResourceProvideDep resourceProvideDep : storedData.resourceProvides) {
+                final @Nullable InconsistentResourceProvide reason =
+                    requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
+                if(reason != null) {
+                    return exec(key, task, reason, cancel);
+                }
             }
-        }
 
-        // Task require consistency.
-        for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
-            final @Nullable InconsistentTaskRequire reason =
-                requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, true, cancel);
-            if(reason != null) {
-                return exec(key, task, reason, cancel);
+            // Task require consistency.
+            for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
+                final @Nullable InconsistentTaskRequire reason =
+                    requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, true, cancel);
+                if(reason != null) {
+                    return exec(key, task, reason, cancel);
+                }
             }
+        } finally {
+            tracer.checkTopDownEnd(key, task);
         }
 
         // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.

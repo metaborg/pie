@@ -25,7 +25,8 @@ dependencies {
 
   implementation("com.google.jimfs:jimfs")
   implementation("org.metaborg:log.backend.slf4j")
-  implementation("org.slf4j:slf4j-simple:1.7.30")
+  implementation("org.slf4j:slf4j-nop:1.7.30")
+  //implementation("org.slf4j:slf4j-simple:1.7.30")
 
   compileOnly("org.checkerframework:checker-qual-android")
   annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion")
@@ -52,12 +53,12 @@ val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
   args("-f", "0") // Do not fork to allow debugging.
   args("-wi", "0", "-i", "3")
-  args("-p", "layer=validation_pedantic_except_serialization")
+  args("-p", "loggerFactory=stdout_errors")
+  args("-p", "layer=validation")
+  args("-p", "tracer=noop")
   args("-p", "language=calc")
-  args("-p", "loggerFactory=stdout_verbose")
-  args("-p", "tracer=logging")
   args(commonArgs)
-  args("Spoofax3Bench.incrementalBottomUp")
+  args("Spoofax3Bench.*")
   doFirst {
     mkdir(jmhReportDir)
   }

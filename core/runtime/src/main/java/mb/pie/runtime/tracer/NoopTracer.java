@@ -27,9 +27,9 @@ public class NoopTracer implements Tracer {
 
     @Override public void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {}
 
-    @Override public void requireTopDownStart(TaskKey key, Task<?> task) {}
+    @Override public void checkTopDownStart(TaskKey key, Task<?> task) {}
 
-    @Override public void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {}
+    @Override public void checkTopDownEnd(TaskKey key, Task<?> task) {}
 
     @Override public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {}
 

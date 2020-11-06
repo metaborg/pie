@@ -12,13 +12,36 @@ import java.util.function.Consumer;
  * Interface for tracing build events, which can for example be used for debug logging or metrics collection.
  */
 public interface Tracer {
+    void upToDate(TaskKey key, Task<?> task);
+
+    void executeStart(TaskKey key, Task<?> task, ExecReason reason);
+
+    void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data);
+
+    void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e);
+
+    void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e);
+
+
     void requireTopDownInitialStart(TaskKey key, Task<?> task);
 
     void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output);
 
-    void requireTopDownStart(TaskKey key, Task<?> task);
+    void checkTopDownStart(TaskKey key, Task<?> task);
 
-    void requireTopDownEnd(TaskKey key, Task<?> task, @Nullable Serializable output);
+    void checkTopDownEnd(TaskKey key, Task<?> task);
+
+    void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep);
+
+    void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason);
+
+    void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep);
+
+    void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason);
+
+    void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep);
+
+    void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable InconsistentTaskRequire reason);
 
 
     void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources);
@@ -53,30 +76,6 @@ public interface Tracer {
     void checkStoredStart(TaskKey key);
 
     void checkStoredEnd(TaskKey key, @Nullable Serializable output);
-
-    void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep);
-
-    void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason);
-
-    void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep);
-
-    void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason);
-
-    void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep);
-
-    void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable InconsistentTaskRequire reason);
-
-
-    void upToDate(TaskKey key, Task<?> task);
-
-    void executeStart(TaskKey key, Task<?> task, ExecReason reason);
-
-    void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data);
-
-    void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e);
-
-    void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e);
-
 
     void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 
