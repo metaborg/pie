@@ -15,6 +15,9 @@ import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.api.Tracer;
 import mb.pie.api.exec.ExecReason;
+import mb.pie.api.stamp.OutputStamper;
+import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -73,6 +76,16 @@ public class LoggingTracer implements Tracer {
     private void log(Level level, String message) { logger.log(level, getIndent() + message); }
 
     private void log(Level level, String message, Exception e) { logger.log(level, getIndent() + message, e); }
+
+
+    @Override
+    public void providedResource(Resource resource, ResourceStamper<?> stamper) {}
+
+    @Override
+    public void requiredResource(Resource resource, ResourceStamper<?> stamper) {}
+
+    @Override
+    public void requiredTask(Task<?> task, OutputStamper stamper) {}
 
 
     private boolean isExecDisabled() { return !logger.isEnabled(execLoggingLevel); }

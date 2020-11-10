@@ -1,6 +1,9 @@
 package mb.pie.api;
 
 import mb.pie.api.exec.ExecReason;
+import mb.pie.api.stamp.OutputStamper;
+import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -12,7 +15,12 @@ import java.util.function.Consumer;
  * Interface for tracing build events, which can for example be used for debug logging or metrics collection.
  */
 public interface Tracer {
-    void upToDate(TaskKey key, Task<?> task);
+    void providedResource(Resource resource, ResourceStamper<?> stamper);
+
+    void requiredResource(Resource resource, ResourceStamper<?> stamper);
+
+    void requiredTask(Task<?> task, OutputStamper stamper);
+
 
     void executeStart(TaskKey key, Task<?> task, ExecReason reason);
 
@@ -21,6 +29,9 @@ public interface Tracer {
     void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e);
 
     void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e);
+
+
+    void upToDate(TaskKey key, Task<?> task);
 
 
     void requireTopDownInitialStart(TaskKey key, Task<?> task);
@@ -50,17 +61,17 @@ public interface Tracer {
 
     void scheduleAffectedByResourceStart(ResourceKey resource);
 
+    void scheduleAffectedByResourceEnd(ResourceKey resource);
+
     void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason);
 
     void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason);
 
-    void scheduleAffectedByResourceEnd(ResourceKey resource);
-
     void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output);
 
-    void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason);
-
     void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output);
+
+    void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason);
 
     void scheduleTask(TaskKey key);
 

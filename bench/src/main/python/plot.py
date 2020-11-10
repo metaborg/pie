@@ -91,8 +91,11 @@ def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
         'systemNanoTime': 'Time',
         'requiredTasks': 'Required tasks',
         'executedTasks': 'Executed tasks',
-        'requiredResourceDependencies': 'Required resource dependencies',
-        'providedResourceDependencies': 'Provided resource dependencies'
+        'requiredResources': 'Required resources',
+        'providedResources': 'Provided resources',
+        'checkedRequiredTaskDependencies': 'Checked require task deps.',
+        'checkedRequiredResourceDependencies': 'Checked require resource deps.',
+        'checkedProvidedResourceDependencies': 'Checked provide resource deps.',
     }
     variables_keys = list(variables.keys())
     fig = px.bar(
@@ -101,7 +104,7 @@ def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
         error_y='error',
         color='benchmark',
         facet_row='variable',
-        height=1500,
+        height=2000,
         category_orders={'variable': variables_keys}
     )
     fig.update_traces(texttemplate='%{value}')

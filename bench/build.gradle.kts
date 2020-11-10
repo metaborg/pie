@@ -55,7 +55,6 @@ val runTask = tasks.getByName<JavaExec>("run") {
   args("-wi", "0", "-i", "3")
   args("-p", "loggerFactory=stdout_errors")
   args("-p", "layer=validation")
-  args("-p", "tracer=noop")
   args("-p", "language=calc")
   args(commonArgs)
   args("Spoofax3Bench.*")

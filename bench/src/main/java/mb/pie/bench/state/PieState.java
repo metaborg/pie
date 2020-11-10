@@ -3,7 +3,6 @@ package mb.pie.bench.state;
 import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecException;
-import mb.pie.api.Tracer;
 import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
@@ -11,6 +10,7 @@ import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.Tracer;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
@@ -23,6 +23,7 @@ import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
 import mb.pie.runtime.taskdefs.NullTaskDefs;
 import mb.pie.runtime.tracer.LoggingTracer;
+import mb.pie.runtime.tracer.MetricsTracer;
 import mb.pie.runtime.tracer.NoopTracer;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
@@ -42,9 +43,10 @@ import java.util.function.Function;
 public class PieState {
     // Trial
 
-    private @Nullable  LoggerFactory loggerFactory;
+    private @Nullable LoggerFactory loggerFactory;
     private @Nullable Logger logger;
     private @Nullable Pie pie;
+    private @Nullable MetricsTracer metricsTracer;
 
     public PieState setupTrial(LoggerFactory loggerFactory, TaskDefs taskDefs, Pie... ancestors) {
         if(this.loggerFactory != null || logger != null || pie != null) {
@@ -65,6 +67,7 @@ public class PieState {
         pieBuilder.withLayerFactory(layer.get());
         pieBuilder.withLoggerFactory(loggerFactory);
         pieBuilder.withTracerFactory(tracer.get());
+        metricsTracer = tracer.getMetricsTracer();
         pie = pieBuilder.build().createChildBuilder(ancestors).build();
         return this;
     }
@@ -77,6 +80,7 @@ public class PieState {
         if(loggerFactory == null || logger == null || pie == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
+        metricsTracer = null;
         pie = null;
         logger.trace("PieState.tearDownTrial");
         logger = null;
@@ -97,9 +101,9 @@ public class PieState {
     @SuppressWarnings("ConstantConditions")
     public <O extends @Nullable Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
-            PieMetricsProfiler.getInstance(loggerFactory).start(name);
+            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).start(name);
             final O result = session.require(task);
-            PieMetricsProfiler.getInstance(loggerFactory).stop(name);
+            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).stop(name);
             return result;
         }
     }
@@ -107,9 +111,9 @@ public class PieState {
     @SuppressWarnings("ConstantConditions")
     public void requireBottomUpInNewSession(Set<? extends ResourceKey> changedResources, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
-            PieMetricsProfiler.getInstance(loggerFactory).start(name);
+            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).start(name);
             session.updateAffectedBy(changedResources);
-            PieMetricsProfiler.getInstance(loggerFactory).stop(name);
+            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).stop(name);
         }
     }
 
@@ -131,7 +135,7 @@ public class PieState {
     @Param({"modified"}) private ResourceStamperKind requireResourceStamper;
     @Param({"modified"}) private ResourceStamperKind provideResourceStamper;
     @Param({"validation"}) public LayerKind layer;
-    @Param({"noop"}) public TracerKind tracer;
+    @Param({"metrics"}) public TracerKind tracer;
 
     public enum StoreKind {
         in_memory {
@@ -225,18 +229,33 @@ public class PieState {
         public abstract BiFunction<TaskDefs, LoggerFactory, Layer> get();
     }
 
-    public enum TracerKind {
+    public static enum TracerKind {
+        metrics {
+            private final MetricsTracer metricsTracer = new MetricsTracer();
+
+            @Override public Function<LoggerFactory, Tracer> get() {
+                return (loggerFactory) -> metricsTracer;
+            }
+
+            @Override public MetricsTracer getMetricsTracer() { return metricsTracer; }
+        },
         logging {
             @Override public Function<LoggerFactory, Tracer> get() {
                 return LoggingTracer::new;
             }
+
+            @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
         },
         noop {
             @Override public Function<LoggerFactory, Tracer> get() {
                 return (logger) -> NoopTracer.instance;
             }
+
+            @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
         };
 
         public abstract Function<LoggerFactory, Tracer> get();
+
+        public abstract @Nullable MetricsTracer getMetricsTracer();
     }
 }

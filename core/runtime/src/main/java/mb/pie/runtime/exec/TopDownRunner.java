@@ -70,7 +70,6 @@ public class TopDownRunner implements RequireTask {
     @Override
     public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) {
         cancel.throwIfCanceled();
-        Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, cancel);

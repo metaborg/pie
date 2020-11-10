@@ -2,7 +2,8 @@ package mb.pie.bench.util;
 
 import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
-import mb.pie.runtime.exec.Stats;
+import mb.pie.runtime.tracer.MetricsTracer;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.IterationParams;
@@ -22,17 +23,19 @@ import java.util.concurrent.TimeUnit;
 public class PieMetricsProfiler implements InternalProfiler {
     private static @Nullable PieMetricsProfiler instance;
 
-    private Logger logger;
+    private @MonotonicNonNull Logger logger;
+    private @Nullable MetricsTracer metricsTracer;
 
     public PieMetricsProfiler() {
         PieMetricsProfiler.instance = this;
     }
 
-    public static PieMetricsProfiler getInstance(LoggerFactory loggerFactory) {
+    public static PieMetricsProfiler getInstance(LoggerFactory loggerFactory, MetricsTracer metricsTracer) {
         if(instance == null) {
             throw new IllegalStateException("PIE metrics profiler has not been initialized yet");
         }
         instance.logger = loggerFactory.create(PieMetricsProfiler.class);
+        instance.metricsTracer = metricsTracer;
         return instance;
     }
 
@@ -45,23 +48,29 @@ public class PieMetricsProfiler implements InternalProfiler {
     @Override
     public void beforeIteration(BenchmarkParams benchmarkParams, IterationParams iterationParams) {
         if(iterationParams.getType() != IterationType.MEASUREMENT) return; // Do not measure warmup.
-        timer.reset();
         measurements.clear();
-        Stats.reset();
         measurementsActive = true;
     }
 
     public void start(String id) {
         if(!measurementsActive) return;
         timer.start();
-        Stats.reset();
+        if(metricsTracer != null) {
+            metricsTracer.reset();
+        }
         logger.info("Start measuring: " + id);
     }
 
     public void stop(String id) {
         if(!measurementsActive) return;
         final Timer.Time time = timer.stop();
-        measurements.add(new Measurement(id, time, Stats.requires, Stats.executions, Stats.fileReqs, Stats.fileGens, Stats.callReqs));
+        final MetricsTracer.@Nullable Report report;
+        if(metricsTracer != null) {
+            report = metricsTracer.reportAndReset();
+        } else {
+            report = null;
+        }
+        measurements.add(new Measurement(id, time, report));
         logger.info("Done measuring: " + id);
     }
 
@@ -74,11 +83,18 @@ public class PieMetricsProfiler implements InternalProfiler {
             results.add(measurement.createSingleShotResult("systemNanoTime", measurement.time.systemNanoTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadCpuTime", measurement.time.threadCpuTime, targetTimeUnit));
             results.add(measurement.createSingleShotResult("threadUserTime", measurement.time.threadUserTime, targetTimeUnit));
-            results.add(measurement.createAvgScalarResult("requiredTasks", measurement.requiredTasks, "tasks"));
-            results.add(measurement.createAvgScalarResult("executedTasks", measurement.executedTasks, "tasks"));
-            results.add(measurement.createAvgScalarResult("requiredResourceDependencies", measurement.requiredResourceDependencies, "dependencies"));
-            results.add(measurement.createAvgScalarResult("providedResourceDependencies", measurement.providedResourceDependencies, "dependencies"));
-            results.add(measurement.createAvgScalarResult("requiredTaskDependencies", measurement.requiredTaskDependencies, "dependencies"));
+
+            if(measurement.report != null) {
+                results.add(measurement.createAvgScalarResult("providedResources", measurement.report.providedResources, "resources"));
+                results.add(measurement.createAvgScalarResult("requiredResources", measurement.report.requiredResources, "resources"));
+                results.add(measurement.createAvgScalarResult("requiredTasks", measurement.report.requiredTasks, "tasks"));
+
+                results.add(measurement.createAvgScalarResult("checkedProvidedResourceDependencies", measurement.report.checkedProvidedResourceDependencies, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedRequiredResourceDependencies", measurement.report.checkedRequiredResourceDependencies, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedRequiredTaskDependencies", measurement.report.checkedRequiredTaskDependencies, "dependencies"));
+
+                results.add(measurement.createAvgScalarResult("executedTasks", measurement.report.executedTasks, "tasks"));
+            }
         }
         measurementsActive = false;
         return results;
@@ -93,28 +109,16 @@ public class PieMetricsProfiler implements InternalProfiler {
     private static class Measurement {
         public final String id;
         public final Timer.Time time;
-        public final long requiredTasks;
-        public final long executedTasks;
-        public final long requiredResourceDependencies;
-        public final long providedResourceDependencies;
-        public final long requiredTaskDependencies;
+        public final MetricsTracer.@Nullable Report report;
 
         private Measurement(
             String id,
             Timer.Time time,
-            long requiredTasks,
-            long executedTasks,
-            long requiredResourceDependencies,
-            long providedResourceDependencies,
-            long requiredTaskDependencies
+            MetricsTracer.@Nullable Report report
         ) {
             this.id = id;
             this.time = time;
-            this.requiredTasks = requiredTasks;
-            this.executedTasks = executedTasks;
-            this.requiredResourceDependencies = requiredResourceDependencies;
-            this.providedResourceDependencies = providedResourceDependencies;
-            this.requiredTaskDependencies = requiredTaskDependencies;
+            this.report = report;
         }
 
         public SingleShotResult createSingleShotResult(String name, long duration, TimeUnit outputTimeUnit) {

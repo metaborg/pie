@@ -18,27 +18,70 @@ import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class NoopTracer implements Tracer {
-    public static final NoopTracer instance = new NoopTracer();
+public class MetricsTracer implements Tracer {
+    public static class Report {
+        public long providedResources = 0;
+        public long requiredResources = 0;
+        public long requiredTasks = 0;
 
-    private NoopTracer() {}
+        public long checkedProvidedResourceDependencies = 0;
+        public long checkedRequiredResourceDependencies = 0;
+        public long checkedRequiredTaskDependencies = 0;
+
+        public long executedTasks = 0;
+
+        public HashMap<String, Long> requiredPerTaskDefinition = new HashMap<>();
+        public HashMap<String, Long> executedPerTaskDefinition = new HashMap<>();
+
+        private void requireTask(Task<?> task) {
+            ++requiredTasks;
+            requiredPerTaskDefinition.merge(task.getId(), 1L, Long::sum);
+        }
+
+        private void executeTask(Task<?> task) {
+            ++executedTasks;
+            executedPerTaskDefinition.merge(task.getId(), 1L, Long::sum);
+        }
+    }
+
+    private Report report = new Report();
+
+
+    public void reset() {
+        this.report = new Report();
+    }
+
+    public Report reportAndReset() {
+        final Report report = this.report;
+        this.report = new Report();
+        return report;
+    }
 
 
     @Override
-    public void providedResource(Resource resource, ResourceStamper<?> stamper) {}
+    public void providedResource(Resource resource, ResourceStamper<?> stamper) {
+        ++report.providedResources;
+    }
 
     @Override
-    public void requiredResource(Resource resource, ResourceStamper<?> stamper) {}
+    public void requiredResource(Resource resource, ResourceStamper<?> stamper) {
+        ++report.requiredResources;
+    }
 
     @Override
-    public void requiredTask(Task<?> task, OutputStamper stamper) {}
+    public void requiredTask(Task<?> task, OutputStamper stamper) {
+        report.requireTask(task);
+    }
 
 
     @Override
-    public void executeStart(TaskKey key, Task<?> task, ExecReason reason) {}
+    public void executeStart(TaskKey key, Task<?> task, ExecReason reason) {
+        report.executeTask(task);
+    }
 
     @Override
     public void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {}
@@ -64,25 +107,31 @@ public class NoopTracer implements Tracer {
     public void checkTopDownStart(TaskKey key, Task<?> task) {}
 
     @Override
-    public void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep) {}
+    public void checkTopDownEnd(TaskKey key, Task<?> task) {}
+
+    @Override
+    public void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep) {
+        ++report.checkedProvidedResourceDependencies;
+    }
 
     @Override
     public void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {}
 
     @Override
-    public void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep) {}
+    public void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep) {
+        ++report.checkedRequiredResourceDependencies;
+    }
 
     @Override
     public void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {}
 
     @Override
-    public void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep) {}
+    public void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep) {
+        ++report.checkedRequiredTaskDependencies;
+    }
 
     @Override
     public void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {}
-
-    @Override
-    public void checkTopDownEnd(TaskKey key, Task<?> task) {}
 
 
     @Override
@@ -95,10 +144,14 @@ public class NoopTracer implements Tracer {
     public void scheduleAffectedByResourceStart(ResourceKey resource) {}
 
     @Override
-    public void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {}
+    public void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
+        ++report.checkedProvidedResourceDependencies;
+    }
 
     @Override
-    public void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {}
+    public void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
+        ++report.checkedRequiredResourceDependencies;
+    }
 
     @Override
     public void scheduleAffectedByResourceEnd(ResourceKey resource) {}
@@ -107,7 +160,9 @@ public class NoopTracer implements Tracer {
     public void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output) {}
 
     @Override
-    public void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {}
+    public void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {
+        ++report.checkedRequiredTaskDependencies;
+    }
 
     @Override
     public void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output) {}
@@ -135,8 +190,8 @@ public class NoopTracer implements Tracer {
     public void checkStoredEnd(TaskKey key, @Nullable Serializable output) {}
 
     @Override
-    public void invokeCallbackStart(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {}
 
     @Override
-    public void invokeCallbackEnd(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {}
 }

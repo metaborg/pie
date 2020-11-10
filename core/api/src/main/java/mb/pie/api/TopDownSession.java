@@ -5,8 +5,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 
 /**
- * Second stage of {@link MixedSession}, after running a bottom-up build with resource changes. This second stage is used
- * to get outputs of existing tasks or to execute new tasks using top-down builds..
+ * Second stage of {@link MixedSession}, after running a bottom-up build with resource changes. This second stage is
+ * used to get outputs of existing tasks or to execute new tasks using top-down builds.
  */
 public interface TopDownSession extends Session {
     /**

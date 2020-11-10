@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec;
 
-import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.Tracer;
 import mb.pie.api.Layer;
@@ -109,7 +108,7 @@ public class TaskExecutor {
 
         // Execute the task.
         final ExecContextImpl context =
-            new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, loggerFactory);
+            new ExecContextImpl(requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, loggerFactory, tracer);
         final @Nullable Serializable output;
         try {
             tracer.executeStart(key, task, reason);
@@ -128,7 +127,6 @@ public class TaskExecutor {
             // will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
         }
-        Stats.addExecution();
 
         // Gather task data.
         final Observability newObservability;

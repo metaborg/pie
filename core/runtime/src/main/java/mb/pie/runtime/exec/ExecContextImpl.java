@@ -14,6 +14,7 @@ import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
@@ -38,6 +39,7 @@ public class ExecContextImpl implements ExecContext {
     private final ResourceService resourceService;
     private final DefaultStampers defaultStampers;
     private final LoggerFactory loggerFactory;
+    private final Tracer tracer;
 
     private final ArrayList<TaskRequireDep> taskRequires = new ArrayList<>();
     private final ArrayList<ResourceRequireDep> resourceRequires = new ArrayList<>();
@@ -51,7 +53,8 @@ public class ExecContextImpl implements ExecContext {
         TaskDefs taskDefs,
         ResourceService resourceService,
         DefaultStampers defaultStampers,
-        LoggerFactory loggerFactory
+        LoggerFactory loggerFactory,
+        Tracer tracer
     ) {
         this.requireTask = requireTask;
         this.modifyObservability = modifyObservability;
@@ -60,6 +63,7 @@ public class ExecContextImpl implements ExecContext {
         this.resourceService = resourceService;
         this.defaultStampers = defaultStampers;
         this.loggerFactory = loggerFactory;
+        this.tracer = tracer;
     }
 
 
@@ -85,7 +89,7 @@ public class ExecContextImpl implements ExecContext {
         final O output = requireTask.require(key, task, modifyObservability, cancel);
         final OutputStamp stamp = stamper.stamp(output);
         taskRequires.add(new TaskRequireDep(key, stamp));
-        Stats.addCallReq();
+        tracer.requiredTask(task, stamper);
         return output;
     }
 
@@ -133,7 +137,7 @@ public class ExecContextImpl implements ExecContext {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
             (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
-        Stats.addFileReq();
+        tracer.requiredResource(resource, stamper);
     }
 
     @Override
@@ -141,7 +145,7 @@ public class ExecContextImpl implements ExecContext {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
             (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
-        Stats.addFileGen();
+        tracer.providedResource(resource, stamper);
     }
 
 

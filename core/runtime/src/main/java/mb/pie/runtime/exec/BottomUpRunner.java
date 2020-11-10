@@ -147,7 +147,6 @@ public class BottomUpRunner implements RequireTask {
     @Override
     public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) {
         cancel.throwIfCanceled();
-        Stats.addRequires();
         layer.requireTopDownStart(key, task.input);
         try {
             // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
