@@ -13,11 +13,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
-import mb.pie.api.Tracer;
 import mb.pie.api.exec.ExecReason;
-import mb.pie.api.stamp.OutputStamper;
-import mb.pie.api.stamp.ResourceStamper;
-import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -42,7 +38,7 @@ import java.util.function.Consumer;
  * <li>↑: indicates that a task has been scheduled for execution (if it has not already been scheduled).</li>
  * </ul>
  */
-public class LoggingTracer implements Tracer {
+public class LoggingTracer extends EmptyTracer {
     private final Logger logger;
     private final Level execLoggingLevel;
     private final Level upToDateLoggingLevel;
@@ -76,16 +72,6 @@ public class LoggingTracer implements Tracer {
     private void log(Level level, String message) { logger.log(level, getIndent() + message); }
 
     private void log(Level level, String message, Exception e) { logger.log(level, getIndent() + message, e); }
-
-
-    @Override
-    public void providedResource(Resource resource, ResourceStamper<?> stamper) {}
-
-    @Override
-    public void requiredResource(Resource resource, ResourceStamper<?> stamper) {}
-
-    @Override
-    public void requiredTask(Task<?> task, OutputStamper stamper) {}
 
 
     private boolean isExecDisabled() { return !logger.isEnabled(execLoggingLevel); }
@@ -166,9 +152,6 @@ public class LoggingTracer implements Tracer {
     }
 
     @Override
-    public void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep) {}
-
-    @Override
     public void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
         if(isTopDownDisabled()) return;
         if(reason != null) {
@@ -179,9 +162,6 @@ public class LoggingTracer implements Tracer {
     }
 
     @Override
-    public void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep) {}
-
-    @Override
     public void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
         if(isTopDownDisabled()) return;
         if(reason != null) {
@@ -190,9 +170,6 @@ public class LoggingTracer implements Tracer {
             logTopDown("☑ " + dep.key + " (" + dep.stamp + ")");
         }
     }
-
-    @Override
-    public void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep) {}
 
     @Override
     public void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {
@@ -231,6 +208,12 @@ public class LoggingTracer implements Tracer {
     }
 
     @Override
+    public void scheduleAffectedByResourceEnd(ResourceKey resource) {
+        if(isBottomUpDisabled()) return;
+        indentation.decrementAndGet();
+    }
+
+    @Override
     public void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
         if(isBottomUpDisabled()) return;
         if(reason != null && dep != null) {
@@ -255,16 +238,16 @@ public class LoggingTracer implements Tracer {
     }
 
     @Override
-    public void scheduleAffectedByResourceEnd(ResourceKey resource) {
-        if(isBottomUpDisabled()) return;
-        indentation.decrementAndGet();
-    }
-
-    @Override
     public void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output) {
         if(isBottomUpDisabled()) return;
         logBottomUp("¿ " + requiree.toShortString(strLimit));
         indentation.incrementAndGet();
+    }
+
+    @Override
+    public void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output) {
+        if(isBottomUpDisabled()) return;
+        indentation.decrementAndGet();
     }
 
     @Override
@@ -280,35 +263,11 @@ public class LoggingTracer implements Tracer {
     }
 
     @Override
-    public void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output) {
-        if(isBottomUpDisabled()) return;
-        indentation.decrementAndGet();
-    }
-
-    @Override
     public void scheduleTask(TaskKey key) {
         if(isBottomUpDisabled()) return;
         logBottomUp("↑ " + key);
     }
 
-    @Override
-    public void requireScheduledNowStart(TaskKey key) {}
-
-    @Override
-    public void requireScheduledNowEnd(TaskKey key, @Nullable TaskData data) {}
-
-
-    @Override
-    public void checkVisitedStart(TaskKey key) {}
-
-    @Override
-    public void checkVisitedEnd(TaskKey key, @Nullable Serializable output) {}
-
-    @Override
-    public void checkStoredStart(TaskKey key) {}
-
-    @Override
-    public void checkStoredEnd(TaskKey key, @Nullable Serializable output) {}
 
     @Override
     public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {

@@ -22,6 +22,7 @@ import mb.pie.runtime.layer.ValidationLayer;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
 import mb.pie.runtime.taskdefs.NullTaskDefs;
+import mb.pie.runtime.tracer.CompositeTracer;
 import mb.pie.runtime.tracer.LoggingTracer;
 import mb.pie.runtime.tracer.MetricsTracer;
 import mb.pie.runtime.tracer.NoopTracer;
@@ -229,10 +230,8 @@ public class PieState {
         public abstract BiFunction<TaskDefs, LoggerFactory, Layer> get();
     }
 
-    public static enum TracerKind {
+    public enum TracerKind {
         metrics {
-            private final MetricsTracer metricsTracer = new MetricsTracer();
-
             @Override public Function<LoggerFactory, Tracer> get() {
                 return (loggerFactory) -> metricsTracer;
             }
@@ -246,6 +245,13 @@ public class PieState {
 
             @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
         },
+        metrics_and_logging {
+            @Override public Function<LoggerFactory, Tracer> get() {
+                return (loggerFactory) -> new CompositeTracer(metricsTracer, new LoggingTracer(loggerFactory));
+            }
+
+            @Override public MetricsTracer getMetricsTracer() { return metricsTracer; }
+        },
         noop {
             @Override public Function<LoggerFactory, Tracer> get() {
                 return (logger) -> NoopTracer.instance;
@@ -253,6 +259,8 @@ public class PieState {
 
             @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
         };
+
+        private static final MetricsTracer metricsTracer = new MetricsTracer();
 
         public abstract Function<LoggerFactory, Tracer> get();
 

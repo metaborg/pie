@@ -53,11 +53,12 @@ val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
   args("-f", "0") // Do not fork to allow debugging.
   args("-wi", "0", "-i", "3")
-  args("-p", "loggerFactory=stdout_errors")
+  args("-p", "loggerFactory=stdout_verbose")
   args("-p", "layer=validation")
-  args("-p", "language=calc")
+  args("-p", "tracer=metrics_and_logging")
+  args("-p", "language=chars")
   args(commonArgs)
-  args("Spoofax3Bench.*")
+  args("Spoofax3Bench.incremental*")
   doFirst {
     mkdir(jmhReportDir)
   }
