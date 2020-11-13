@@ -25,9 +25,9 @@ public class BottomUpShared {
      * Notifies the {@code consumer} with tasks that are directly affected by providing the {@code changedResource}.
      */
     public static void directlyAffectedByProvidedResource(
-        StoreReadTxn txn,
         ResourceKey resource,
         ResourceService resourceService,
+        StoreReadTxn txn,
         Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
@@ -53,9 +53,9 @@ public class BottomUpShared {
      * Notifies the {@code consumer} with tasks that are directly affected by requiring the {@code resource}.
      */
     public static void directlyAffectedByRequiredResource(
-        StoreReadTxn txn,
         ResourceKey resource,
         ResourceService resourceService,
+        StoreReadTxn txn,
         Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
@@ -80,16 +80,16 @@ public class BottomUpShared {
      * Notifies the {@code consumer} with tasks that are directly affected by {@code changedResources}.
      */
     public static void directlyAffectedByResources(
-        StoreReadTxn txn,
         Stream<? extends ResourceKey> resources,
         ResourceService resourceService,
+        StoreReadTxn txn,
         Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
         resources.forEach((resource) -> {
             tracer.scheduleAffectedByResourceStart(resource);
-            directlyAffectedByProvidedResource(txn, resource, resourceService, tracer, consumer);
-            directlyAffectedByRequiredResource(txn, resource, resourceService, tracer, consumer);
+            directlyAffectedByProvidedResource(resource, resourceService, txn, tracer, consumer);
+            directlyAffectedByRequiredResource(resource, resourceService, txn, tracer, consumer);
             tracer.scheduleAffectedByResourceEnd(resource);
         });
     }
@@ -98,9 +98,9 @@ public class BottomUpShared {
      * Notifies the {@code consumer} with tasks that are directly affected by requiring the {@code requiree}.
      */
     public static void directlyAffectedByRequiredTask(
-        StoreReadTxn txn,
         TaskKey requiree,
         @Nullable Serializable output,
+        StoreReadTxn txn,
         Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
@@ -126,7 +126,7 @@ public class BottomUpShared {
     /**
      * Checks whether [caller] has a transitive (or direct) task requirement to [callee].
      */
-    public static boolean hasTransitiveTaskReq(StoreReadTxn txn, TaskKey caller, TaskKey callee) {
+    public static boolean hasTransitiveTaskReq(TaskKey caller, TaskKey callee, StoreReadTxn txn) {
         // TODO: more efficient implementation for transitive calls?
         final Queue<TaskKey> toCheckQueue = new LinkedList<>();
         toCheckQueue.add(caller);

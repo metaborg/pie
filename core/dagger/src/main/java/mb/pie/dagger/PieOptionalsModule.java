@@ -6,6 +6,7 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.Layer;
+import mb.pie.api.PieBuilder;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.TaskDef;
@@ -34,7 +35,7 @@ import java.util.function.Function;
     abstract ResourceService resourceService();
 
     @BindsOptionalOf
-    abstract BiFunction<LoggerFactory, ResourceService, Store> storeFactory();
+    abstract PieBuilder.StoreFactory storeFactory();
 
     @BindsOptionalOf
     abstract Function<LoggerFactory, Share> shareFactory();

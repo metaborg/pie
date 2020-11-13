@@ -1,7 +1,5 @@
 package mb.pie.store.lmdb;
 
-import mb.log.api.Logger;
-import mb.log.api.LoggerFactory;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.lmdbjava.Cursor;
 import org.lmdbjava.Dbi;
@@ -21,13 +19,14 @@ class DbiShared {
     private final Env<ByteBuffer> env;
     private final Txn<ByteBuffer> txn;
     private final boolean isWriteTxn;
-    private final Logger logger;
+    private final SerializeUtil serializeUtil;
 
-    DbiShared(Env<ByteBuffer> env, Txn<ByteBuffer> txn, boolean isWriteTxn, LoggerFactory loggerFactory) {
+
+    DbiShared(Env<ByteBuffer> env, Txn<ByteBuffer> txn, boolean isWriteTxn, SerializeUtil serializeUtil) {
         this.env = env;
         this.txn = txn;
         this.isWriteTxn = isWriteTxn;
-        this.logger = loggerFactory.create(DbiShared.class);
+        this.serializeUtil = serializeUtil;
     }
 
 
@@ -35,15 +34,23 @@ class DbiShared {
         return db.get(txn, keyHashedBuf) != null;
     }
 
-    <R extends @Nullable Serializable> @Nullable Deserialized<R> getOne(ByteBuffer keyHashedBuf, Dbi<ByteBuffer> db) {
+    <T> @Nullable De<T> getOne(Class<T> type, ByteBuffer keyHashedBuf, Dbi<ByteBuffer> db) {
         final @Nullable ByteBuffer valueBuf = db.get(txn, BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */);
         if(valueBuf == null) {
             return null;
         }
-        return deserializeOrDelete(keyHashedBuf, valueBuf, db);
+        return deserializeOrDelete(type, keyHashedBuf, valueBuf, db);
     }
 
-    <R extends @Nullable Serializable> Set<R> getMultiple(ByteBuffer keyHashedBuf, Dbi<ByteBuffer> dbDup, Dbi<ByteBuffer> dbVal) {
+    <T> @Nullable De<@Nullable T> getOneObject(ByteBuffer keyHashedBuf, Dbi<ByteBuffer> db) {
+        final @Nullable ByteBuffer valueBuf = db.get(txn, BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */);
+        if(valueBuf == null) {
+            return null;
+        }
+        return deserializeObjectOrDelete(keyHashedBuf, valueBuf, db);
+    }
+
+    <T> Set<T> getMultiple(Class<T> type, ByteBuffer keyHashedBuf, Dbi<ByteBuffer> dbDup, Dbi<ByteBuffer> dbVal) {
         final ArrayList<ByteBuffer> hashedValueBufs = new ArrayList<>();
         try(final Cursor<ByteBuffer> cursor = dbDup.openCursor(txn)) {
             if(!cursor.get(BufferUtil.copyBuffer(keyHashedBuf) /* OPTO: prevent copy? */, GetOp.MDB_SET)) {
@@ -54,13 +61,13 @@ class DbiShared {
                 hashedValueBufs.add(BufferUtil.copyBuffer(hashedValueBuf));
             } while(cursor.seek(SeekOp.MDB_NEXT_DUP));
         }
-        final HashSet<R> results = new HashSet<>(hashedValueBufs.size());
+        final HashSet<T> results = new HashSet<>(hashedValueBufs.size());
         for(ByteBuffer hashedValueBuf : hashedValueBufs) {
             final @Nullable ByteBuffer valueBuf = dbVal.get(txn, hashedValueBuf);
             if(valueBuf == null) {
                 continue;
             }
-            final Deserialized<R> deserializedValueBuf = deserializeOrDelete(hashedValueBuf, valueBuf, dbVal);
+            final De<T> deserializedValueBuf = deserializeOrDelete(type, hashedValueBuf, valueBuf, dbVal);
             if(!deserializedValueBuf.failed) {
                 results.add(deserializedValueBuf.deserialized);
             } else {
@@ -77,8 +84,20 @@ class DbiShared {
         return results;
     }
 
-    private <R extends @Nullable Serializable> Deserialized<R> deserializeOrDelete(ByteBuffer keyHashedBuf, ByteBuffer valueBuf, Dbi<ByteBuffer> db) {
-        final Deserialized<R> deserialized = SerializeUtil.deserialize(valueBuf, logger);
+
+    private <T> De<T> deserializeOrDelete(Class<T> type, ByteBuffer keyHashedBuf, ByteBuffer valueBuf, Dbi<ByteBuffer> db) {
+        final De<T> deserialized = serializeUtil.deserialize(type, valueBuf);
+        handleDeserializeFailure(deserialized, keyHashedBuf, db);
+        return deserialized;
+    }
+
+    private <T> De<@Nullable T> deserializeObjectOrDelete(ByteBuffer keyHashedBuf, ByteBuffer valueBuf, Dbi<ByteBuffer> db) {
+        final De<T> deserialized = serializeUtil.deserializeObject(valueBuf);
+        handleDeserializeFailure(deserialized, keyHashedBuf, db);
+        return deserialized;
+    }
+
+    private <T> void handleDeserializeFailure(De<T> deserialized, ByteBuffer keyHashedBuf, Dbi<ByteBuffer> db) {
         if(deserialized.failed) {
             if(isWriteTxn) {
                 db.delete(txn, keyHashedBuf);
@@ -90,7 +109,6 @@ class DbiShared {
                 }
             }
         }
-        return deserialized;
     }
 
 

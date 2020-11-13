@@ -23,7 +23,7 @@ class SerializingStoreTests {
     // Manually create PIE instance, as we need to control the serialization/deserialization of the InMemoryStore.
     val fileSystem = Jimfs.newFileSystem(Configuration.unix())
     val pieBuilder = TestPieBuilderImpl(true)
-    pieBuilder.withStoreFactory { _, _ -> SerializingStore(FSResource(fileSystem.getPath("store")), Supplier { InMemoryStore() }) }
+    pieBuilder.withStoreFactory { serde, _, _ -> SerializingStore(serde, FSResource(fileSystem.getPath("store")), Supplier { InMemoryStore() }, InMemoryStore::class.java) }
     val taskDefs = MapTaskDefs()
     pieBuilder.withTaskDefs(taskDefs)
 
@@ -37,7 +37,7 @@ class SerializingStoreTests {
         newSession().use { session ->
           val output = session.require(task)
           Assertions.assertEquals("HELLO WORLD!", output)
-          verify(session.topDownRunner, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+          verify(session.topDownRunner, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
         }
       }
     }
@@ -52,7 +52,7 @@ class SerializingStoreTests {
         newSession().use { session ->
           val output = session.require(task)
           Assertions.assertEquals("HELLO WORLD!", output)
-          verify(session.topDownRunner, never()).exec(eq(key), eq(task), anyER(), any(), anyC())
+          verify(session.topDownRunner, never()).exec(eq(key), eq(task), anyER(), any(), any(), anyC())
         }
       }
     }
@@ -74,7 +74,7 @@ class SerializingStoreTests {
             val reason = it as? InconsistentResourceRequire
             Assertions.assertNotNull(reason)
             Assertions.assertEquals(file.key, reason!!.dep.key)
-          }, any(), anyC())
+          }, any(), any(), anyC())
         }
       }
     }

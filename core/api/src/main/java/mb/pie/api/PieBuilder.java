@@ -1,7 +1,7 @@
 package mb.pie.api;
 
-import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -19,7 +19,13 @@ public interface PieBuilder {
 
     PieBuilder withResourceService(ResourceService resourceService);
 
-    PieBuilder withStoreFactory(BiFunction<LoggerFactory, ResourceService, Store> storeFactory);
+    PieBuilder withSerdeFactory(Function<LoggerFactory, Serde> serdeFactory);
+
+    @FunctionalInterface interface StoreFactory {
+        Store apply(Serde serde, ResourceService resourceService, LoggerFactory loggerFactory);
+    }
+
+    PieBuilder withStoreFactory(StoreFactory storeFactory);
 
     PieBuilder withShareFactory(Function<LoggerFactory, Share> shareFactory);
 

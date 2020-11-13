@@ -8,6 +8,7 @@ import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
 import mb.pie.api.STaskDef;
+import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Supplier;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
@@ -32,6 +33,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class ExecContextImpl implements ExecContext {
+    private final StoreWriteTxn txn;
     private final RequireTask requireTask;
     private final boolean modifyObservability;
     private final CancelToken cancel;
@@ -47,6 +49,7 @@ public class ExecContextImpl implements ExecContext {
 
 
     public ExecContextImpl(
+        StoreWriteTxn txn,
         RequireTask requireTask,
         boolean modifyObservability,
         CancelToken cancel,
@@ -56,6 +59,7 @@ public class ExecContextImpl implements ExecContext {
         LoggerFactory loggerFactory,
         Tracer tracer
     ) {
+        this.txn = txn;
         this.requireTask = requireTask;
         this.modifyObservability = modifyObservability;
         this.cancel = cancel;
@@ -86,7 +90,7 @@ public class ExecContextImpl implements ExecContext {
     public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) {
         cancel.throwIfCanceled();
         final TaskKey key = task.key();
-        final O output = requireTask.require(key, task, modifyObservability, cancel);
+        final O output = requireTask.require(key, task, modifyObservability, txn, cancel);
         final OutputStamp stamp = stamper.stamp(output);
         taskRequires.add(new TaskRequireDep(key, stamp));
         tracer.requiredTask(task, stamper);
@@ -134,16 +138,14 @@ public class ExecContextImpl implements ExecContext {
 
     @Override
     public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
-        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>)stamper.stamp(resource);
+        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
         tracer.requiredResource(resource, stamper);
     }
 
     @Override
     public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
-        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>)stamper.stamp(resource);
+        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
         tracer.providedResource(resource, stamper);
     }

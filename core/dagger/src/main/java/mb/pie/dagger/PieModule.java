@@ -8,7 +8,6 @@ import mb.pie.api.MapTaskDefs;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
 import mb.pie.api.Share;
-import mb.pie.api.Store;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.Tracer;
@@ -38,7 +37,7 @@ public class PieModule {
     Pie providePie(
         Set<TaskDef<?, ?>> taskDefs,
         Optional<ResourceService> resourceService,
-        Optional<BiFunction<LoggerFactory, ResourceService, Store>> storeFactory,
+        Optional<PieBuilder.StoreFactory> storeFactory,
         Optional<Function<LoggerFactory, Share>> shareFactory,
         Optional<OutputStamper> defaultOutputStamper,
         @Named("require") Optional<ResourceStamper<ReadableResource>> defaultRequireReadableResourceStamper,

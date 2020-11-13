@@ -18,6 +18,8 @@ dependencies {
   implementation("org.openjdk.jmh:jmh-core:$jmhVersion")
 
   implementation(compositeBuild("pie.runtime"))
+  implementation(compositeBuild("pie.store.lmdb"))
+  implementation(compositeBuild("pie.serde.kryo"))
   implementation(compositeBuild("pie.task.archive"))
 
   implementation("org.metaborg:spoofax.compiler.spoofax3:$spoofax3Version")
@@ -52,13 +54,15 @@ val commonArgs = listOf(
 val runTask = tasks.getByName<JavaExec>("run") {
   description = "Runs benchmarks with quick development settings"
   args("-f", "0") // Do not fork to allow debugging.
-  args("-wi", "0", "-i", "3")
+  args("-wi", "0", "-i", "1")
   args("-p", "loggerFactory=stdout_verbose")
-  args("-p", "layer=validation")
-  args("-p", "tracer=metrics_and_logging")
-  args("-p", "language=chars")
+  args("-p", "serde=java")
+  args("-p", "store=lmdb")
+  args("-p", "layer=noop")
+  args("-p", "tracer=metrics")
+  args("-p", "language=calc")
   args(commonArgs)
-  args("Spoofax3Bench.incremental*")
+  args("Spoofax3Bench.incrementalTopDown")
   doFirst {
     mkdir(jmhReportDir)
   }

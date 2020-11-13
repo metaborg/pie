@@ -115,15 +115,14 @@ public class Spoofax3CompilerState {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void handleResult(Result<KeyedMessages, CompilerException> result) throws Exception {
+    public void handleResult(Result<KeyedMessages, CompilerException> result) {
         if(result.isErr()) {
             final CompilerException e = result.getErr();
-            logger.trace(e.getMessage() + ". " + e.getSubMessage());
-            e.getSubMessages().ifPresent((System.out::println));
+            logger.error(e.getMessage() + ". " + e.getSubMessage());
+            e.getSubMessages().ifPresent((m) -> logger.error(m.toString()));
             if(e.getSubCause() != null) {
-                e.getSubCause().printStackTrace(System.out);
+                logger.error("", e.getSubCause());
             }
-            throw e; // TODO: allow errors
         }
     }
 

@@ -2,10 +2,11 @@ package mb.pie.runtime;
 
 import mb.log.api.LoggerFactory;
 import mb.log.noop.NoopLoggerFactory;
+import mb.pie.api.serde.JavaSerde;
 import mb.pie.api.Layer;
 import mb.pie.api.PieBuilder;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.Share;
-import mb.pie.api.Store;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.Tracer;
 import mb.pie.api.stamp.OutputStamper;
@@ -32,8 +33,9 @@ import java.util.function.Function;
 public class PieBuilderImpl implements PieBuilder {
     protected @Nullable TaskDefs taskDefs;
     protected ResourceService resourceService = new DefaultResourceService(new FSResourceRegistry(), new URLResourceRegistry(), new TextResourceRegistry(), new ClassLoaderResourceRegistry(PieBuilderImpl.class.getClassLoader()));
-    protected BiFunction<LoggerFactory, ResourceService, Store> storeFactory = (logger, resourceService) -> new InMemoryStore();
-    protected Function<LoggerFactory, Share> shareFactory = (logger) -> new NonSharingShare();
+    protected Function<LoggerFactory, Serde> serdeFactory = (loggerFactory) -> new JavaSerde();
+    protected StoreFactory storeFactory = (serde, resourceService, loggerFactory) -> new InMemoryStore();
+    protected Function<LoggerFactory, Share> shareFactory = (loggerFactory) -> new NonSharingShare();
     protected OutputStamper defaultOutputStamper = OutputStampers.equals();
     protected ResourceStamper<ReadableResource> defaultRequireReadableStamper = ResourceStampers.modifiedFile();
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper = ResourceStampers.modifiedFile();
@@ -41,7 +43,7 @@ public class PieBuilderImpl implements PieBuilder {
     protected ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper = ResourceStampers.modifiedFile();
     protected BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory = ValidationLayer::new;
     protected LoggerFactory loggerFactory = NoopLoggerFactory.instance;
-    protected Function<LoggerFactory, Tracer> tracerFactory = (logger) -> NoopTracer.instance;
+    protected Function<LoggerFactory, Tracer> tracerFactory = (loggerFactory) -> NoopTracer.instance;
 
 
     @Override
@@ -57,7 +59,13 @@ public class PieBuilderImpl implements PieBuilder {
     }
 
     @Override
-    public PieBuilderImpl withStoreFactory(BiFunction<LoggerFactory, ResourceService, Store> storeFactory) {
+    public PieBuilder withSerdeFactory(Function<LoggerFactory, Serde> serdeFactory) {
+        this.serdeFactory = serdeFactory;
+        return this;
+    }
+
+    @Override
+    public PieBuilderImpl withStoreFactory(StoreFactory storeFactory) {
         this.storeFactory = storeFactory;
         return this;
     }
@@ -131,7 +139,7 @@ public class PieBuilderImpl implements PieBuilder {
         return new PieImpl(
             taskDefs,
             resourceService,
-            storeFactory.apply(loggerFactory, resourceService),
+            storeFactory.apply(serdeFactory.apply(loggerFactory), resourceService, loggerFactory),
             shareFactory.apply(loggerFactory),
             defaultStampers,
             layerFactory,

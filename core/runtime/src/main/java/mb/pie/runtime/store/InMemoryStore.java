@@ -24,28 +24,26 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serializable {
-    private final ConcurrentHashMap<TaskKey, Serializable> taskInputs = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TaskKey, Output> taskOutputs = new ConcurrentHashMap<>();
+    private final HashMap<TaskKey, Serializable> taskInputs = new HashMap<>();
+    private final HashMap<TaskKey, Output> taskOutputs = new HashMap<>();
 
-    private final ConcurrentHashMap<TaskKey, Observability> taskObservability = new ConcurrentHashMap<>();
+    private final HashMap<TaskKey, Observability> taskObservability = new HashMap<>();
 
-    private final ConcurrentHashMap<TaskKey, ArrayList<TaskRequireDep>> taskRequires = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TaskKey, Set<TaskKey>> callersOf = new ConcurrentHashMap<>();
+    private final HashMap<TaskKey, ArrayList<TaskRequireDep>> taskRequires = new HashMap<>();
+    private final HashMap<TaskKey, Set<TaskKey>> callersOf = new HashMap<>();
 
-    private final ConcurrentHashMap<TaskKey, ArrayList<ResourceRequireDep>> resourceRequires =
-        new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<ResourceKey, Set<TaskKey>> requireesOf = new ConcurrentHashMap<>();
+    private final HashMap<TaskKey, ArrayList<ResourceRequireDep>> resourceRequires = new HashMap<>();
+    private final HashMap<ResourceKey, Set<TaskKey>> requireesOf = new HashMap<>();
 
-    private final ConcurrentHashMap<TaskKey, ArrayList<ResourceProvideDep>> resourceProvides =
-        new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<ResourceKey, TaskKey> providerOf = new ConcurrentHashMap<>();
+    private final HashMap<TaskKey, ArrayList<ResourceProvideDep>> resourceProvides = new HashMap<>();
+    private final HashMap<ResourceKey, TaskKey> providerOf = new HashMap<>();
 
 
     @Override public @Nullable Serializable input(TaskKey key) {
@@ -86,7 +84,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
     }
 
     @Override public Set<TaskKey> callersOf(TaskKey key) {
-        return getOrPutEmptyConcurrentHashSet(callersOf, key);
+        return getOrPutEmptyHashSet(callersOf, key);
     }
 
     @Override public void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires) {
@@ -94,13 +92,13 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
         final @Nullable ArrayList<TaskRequireDep> oldTaskRequires = this.taskRequires.remove(key);
         if(oldTaskRequires != null) {
             for(TaskRequireDep taskRequire : oldTaskRequires) {
-                getOrPutEmptyConcurrentHashSet(callersOf, taskRequire.callee).remove(key);
+                getOrPutEmptyHashSet(callersOf, taskRequire.callee).remove(key);
             }
         }
         // Add new task requirements.
         this.taskRequires.put(key, taskRequires);
         for(TaskRequireDep taskRequire : taskRequires) {
-            getOrPutEmptyConcurrentHashSet(callersOf, taskRequire.callee).add(key);
+            getOrPutEmptyHashSet(callersOf, taskRequire.callee).add(key);
         }
     }
 
@@ -110,7 +108,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
     }
 
     @Override public Set<TaskKey> requireesOf(ResourceKey key) {
-        return getOrPutEmptyConcurrentHashSet(requireesOf, key);
+        return getOrPutEmptyHashSet(requireesOf, key);
     }
 
     @Override public void setResourceRequires(TaskKey key, ArrayList<ResourceRequireDep> resourceRequires) {
@@ -118,13 +116,13 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
         final @Nullable ArrayList<ResourceRequireDep> oldResourceRequires = this.resourceRequires.remove(key);
         if(oldResourceRequires != null) {
             for(ResourceRequireDep resourceRequire : oldResourceRequires) {
-                getOrPutEmptyConcurrentHashSet(requireesOf, resourceRequire.key).remove(key);
+                getOrPutEmptyHashSet(requireesOf, resourceRequire.key).remove(key);
             }
         }
         // Add new resource requirements.
         this.resourceRequires.put(key, resourceRequires);
         for(ResourceRequireDep resourceRequire : resourceRequires) {
-            getOrPutEmptyConcurrentHashSet(requireesOf, resourceRequire.key).add(key);
+            getOrPutEmptyHashSet(requireesOf, resourceRequire.key).add(key);
         }
     }
 
@@ -302,11 +300,11 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
     }
 
 
-    private static <K, V> Set<V> getOrPutEmptyConcurrentHashSet(ConcurrentHashMap<K, Set<V>> map, K key) {
-        return map.computeIfAbsent(key, (k) -> ConcurrentHashMap.newKeySet());
+    private static <K, V> Set<V> getOrPutEmptyHashSet(HashMap<K, Set<V>> map, K key) {
+        return map.computeIfAbsent(key, (k) -> new HashSet<>());
     }
 
-    private static <K, V> ArrayList<V> getOrEmptyArrayList(ConcurrentHashMap<K, ArrayList<V>> map, K key) {
+    private static <K, V> ArrayList<V> getOrEmptyArrayList(HashMap<K, ArrayList<V>> map, K key) {
         return map.getOrDefault(key, new ArrayList<>());
     }
 

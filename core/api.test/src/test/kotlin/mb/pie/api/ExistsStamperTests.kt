@@ -1,6 +1,7 @@
-package mb.pie.api.test
+package mb.pie.api
 
 import mb.pie.api.stamp.resource.ResourceStampers
+import mb.pie.api.test.TestBuilder
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestFactory

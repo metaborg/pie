@@ -2,27 +2,29 @@ package mb.pie.store.lmdb;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Serializable;
 import java.util.function.Function;
 
-class Deserialized<R extends @Nullable Serializable> {
-    final R deserialized;
+/**
+ * Deserialized data, or a failure to deserialize, with mappers to deal with failure and non-existance.
+ */
+class De<T> {
+    final @Nullable T deserialized;
     final boolean failed;
 
-    private Deserialized(R deserialized, boolean failed) {
+    private De(@Nullable T deserialized, boolean failed) {
         this.deserialized = deserialized;
         this.failed = failed;
     }
 
-    Deserialized(R deserialized) {
+    De(@Nullable T deserialized) {
         this(deserialized, false);
     }
 
-    Deserialized() {
+    De() {
         this(null, true);
     }
 
-    static <R extends @Nullable Serializable> R orElse(@Nullable Deserialized<R> deserialized, R def) {
+    static <R> R orElse(@Nullable De<R> deserialized, R def) {
         if(deserialized == null || deserialized.failed) {
             return def;
         } else {
@@ -30,7 +32,7 @@ class Deserialized<R extends @Nullable Serializable> {
         }
     }
 
-    static <R extends @Nullable Serializable> R orElseNull(@Nullable Deserialized<R> deserialized) {
+    static <R> R orElseNull(@Nullable De<R> deserialized) {
         if(deserialized == null || deserialized.failed) {
             return null;
         } else {
@@ -38,7 +40,7 @@ class Deserialized<R extends @Nullable Serializable> {
         }
     }
 
-    static <R extends @Nullable Serializable, RR> RR mapOrElse(@Nullable Deserialized<R> deserialized, RR def, Function<R, RR> func) {
+    static <R, RR> RR mapOrElse(@Nullable De<R> deserialized, RR def, Function<R, RR> func) {
         if(deserialized == null || deserialized.failed) {
             return def;
         } else {
@@ -46,7 +48,7 @@ class Deserialized<R extends @Nullable Serializable> {
         }
     }
 
-    static <R extends @Nullable Serializable, @Nullable RR> RR mapOrElseNull(@Nullable Deserialized<R> deserialized, Function<R, RR> func) {
+    static <R, RR> @Nullable RR mapOrElseNull(@Nullable De<R> deserialized, Function<R, RR> func) {
         if(deserialized == null || deserialized.failed) {
             return null;
         } else {

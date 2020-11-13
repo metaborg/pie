@@ -8,7 +8,7 @@ dependencies {
   api(platform(project(":pie.depconstraints")))
 
   api(project(":pie.api"))
-  implementation("org.lmdbjava:lmdbjava:0.6.3")
+  implementation("org.lmdbjava:lmdbjava:0.8.1")
 
   compileOnly("org.checkerframework:checker-qual-android")
 

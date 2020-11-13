@@ -71,8 +71,8 @@ public class PieImpl implements Pie {
         final Layer layer = layerFactory.apply(taskDefs, loggerFactory);
         final Tracer tracer = tracerFactory.apply(loggerFactory);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
-        final TaskExecutor taskExecutor = new TaskExecutor(taskDefs, resourceService, store, share, defaultStampers, layer, loggerFactory, tracer, callbacks, visited);
-        final RequireShared requireShared = new RequireShared(taskDefs, resourceService, store, tracer, visited);
+        final TaskExecutor taskExecutor = new TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, tracer, callbacks, visited);
+        final RequireShared requireShared = new RequireShared(taskDefs, resourceService, tracer, visited);
         final TopDownRunner topDownRunner = new TopDownRunner(store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         final BottomUpRunner bottomUpRunner = new BottomUpRunner(taskDefs, resourceService, store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store);

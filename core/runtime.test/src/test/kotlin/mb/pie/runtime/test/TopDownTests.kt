@@ -28,7 +28,7 @@ class TopDownTests {
       val topDownSession = session.topDownRunner
       inOrder(topDownSession, lowerDef) {
         verify(topDownSession, times(1)).requireInitial(eq(task), any(), anyC())
-        verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
       }
     }
   }
@@ -46,7 +46,7 @@ class TopDownTests {
       val topDownSession = session.topDownRunner
       inOrder(topDownSession) {
         verify(topDownSession, times(1)).requireInitial(eq(task), any(), anyC())
-        verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
       }
       output
     }
@@ -59,7 +59,7 @@ class TopDownTests {
       val topDownSession = session.topDownRunner
       inOrder(topDownSession) {
         verify(topDownSession, times(1)).requireInitial(eq(task), any(), anyC())
-        verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
       }
       output
     }
@@ -85,7 +85,7 @@ class TopDownTests {
       val output = session.require(task)
       assertEquals("capitalized", output)
       // Result is reused if exec is never called.
-      verify(session.topDownRunner, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+      verify(session.topDownRunner, never()).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
       output
     }
 
@@ -106,14 +106,14 @@ class TopDownTests {
     newSession().use { session ->
       val output = session.require(task)
       assertEquals("HELLO WORLD!", output)
-      verify(session.topDownRunner, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+      verify(session.topDownRunner, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
     }
 
     // No changes - exec 'readPath', observe no rebuild.
     newSession().use { session ->
       val output = session.require(task)
       assertEquals("HELLO WORLD!", output)
-      verify(session.topDownRunner, never()).exec(eq(key), eq(task), anyER(), any(), anyC())
+      verify(session.topDownRunner, never()).exec(eq(key), eq(task), anyER(), any(), any(), anyC())
     }
 
     // Change required file in such a way that the output of 'readPath' changes (change file content).
@@ -127,7 +127,7 @@ class TopDownTests {
         val reason = it as? InconsistentResourceRequire
         assertNotNull(reason)
         assertEquals(file.key, reason!!.dep.key)
-      }, any(), anyC())
+      }, any(), any(), anyC())
     }
   }
 
@@ -145,7 +145,7 @@ class TopDownTests {
     // Build 'writePath', observe rebuild and existence of file
     newSession().use { session ->
       session.require(task)
-      verify(session.topDownRunner, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+      verify(session.topDownRunner, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
     }
 
     assertTrue(file.exists())
@@ -154,7 +154,7 @@ class TopDownTests {
     // No changes - exec 'writePath', observe no rebuild, no change to file
     newSession().use { session ->
       session.require(task)
-      verify(session.topDownRunner, never()).exec(eq(key), eq(task), anyER(), any(), anyC())
+      verify(session.topDownRunner, never()).exec(eq(key), eq(task), anyER(), any(), any(), anyC())
     }
 
     // Change generated file in such a way that 'writePath' is rebuilt (change file content)
@@ -167,7 +167,7 @@ class TopDownTests {
         val reason = it as? InconsistentResourceProvide
         assertNotNull(reason)
         assertEquals(file.key, reason!!.dep.key)
-      }, any(), anyC())
+      }, any(), any(), anyC())
     }
 
     assertEquals("HELLO WORLD!", read(file))
@@ -205,9 +205,9 @@ class TopDownTests {
       assertEquals("hello world!", output)
       val topDownSession = session.topDownRunner
       inOrder(topDownSession) {
-        verify(topDownSession, times(1)).exec(eq(combKey), eq(combTask), eq(NoData()), any(), anyC())
-        verify(topDownSession, times(1)).exec(eq(readKey), eq(readTask), eq(NoData()), any(), anyC())
-        verify(topDownSession, times(1)).exec(eq(lowerKey), eq(lowerTask), eq(NoData()), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(combKey), eq(combTask), eq(NoData()), any(), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(readKey), eq(readTask), eq(NoData()), any(), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(lowerKey), eq(lowerTask), eq(NoData()), any(), any(), anyC())
       }
     }
 
@@ -216,9 +216,9 @@ class TopDownTests {
       val output = session.require(combTask)
       assertEquals("hello world!", output)
       val topDownSession = session.topDownRunner
-      verify(topDownSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
-      verify(topDownSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-      verify(topDownSession, never()).exec(eq(lowerKey), eq(lowerTask), anyER(), any(), anyC())
+      verify(topDownSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
+      verify(topDownSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+      verify(topDownSession, never()).exec(eq(lowerKey), eq(lowerTask), anyER(), any(), any(), anyC())
     }
 
     // Change required file in such a way that the output of 'readPath' changes (change file content).
@@ -239,13 +239,13 @@ class TopDownTests {
           val reason = it as? InconsistentResourceRequire
           assertNotNull(reason)
           assertEquals(file.key, reason!!.dep.key)
-        }, any(), anyC())
+        }, any(), any(), anyC())
         verify(topDownSession, times(1)).exec(eq(combKey), eq(combTask), check {
           val reason = it as? InconsistentTaskRequire
           assertNotNull(reason)
           assertEquals(readKey, reason!!.dep.callee)
-        }, any(), anyC())
-        verify(topDownSession, times(1)).exec(eq(lowerRevKey), eq(lowerRevTask), eq(NoData()), any(), anyC())
+        }, any(), any(), anyC())
+        verify(topDownSession, times(1)).exec(eq(lowerRevKey), eq(lowerRevTask), eq(NoData()), any(), any(), anyC())
       }
     }
 
@@ -264,10 +264,10 @@ class TopDownTests {
           val reason = it as? InconsistentResourceRequire
           assertNotNull(reason)
           assertEquals(file.key, reason!!.dep.key)
-        }, any(), anyC())
+        }, any(), any(), anyC())
       }
-      verify(topDownSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
-      verify(topDownSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+      verify(topDownSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
+      verify(topDownSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
     }
   }
 

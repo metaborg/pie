@@ -1,7 +1,5 @@
 package mb.pie.store.lmdb;
 
-import mb.log.api.Logger;
-import mb.log.api.LoggerFactory;
 import mb.pie.api.Observability;
 import mb.pie.api.Output;
 import mb.pie.api.ResourceProvideDep;
@@ -13,7 +11,7 @@ import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.lmdbjava.CursorIterator;
+import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
@@ -38,13 +36,12 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     private final Dbi<ByteBuffer> resourceProvidesDb;
     private final Dbi<ByteBuffer> providerOfDb;
     private final DbiShared shared;
-    private final Logger logger;
+    private final SerializeUtil serializeUtil;
 
     LMDBStoreTxn(
         Env<ByteBuffer> env,
         Txn<ByteBuffer> txn,
         boolean isWriteTxn,
-        LoggerFactory loggerFactory,
         Dbi<ByteBuffer> inputDb,
         Dbi<ByteBuffer> outputDb,
         Dbi<ByteBuffer> taskObservabilityDb,
@@ -55,7 +52,8 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         Dbi<ByteBuffer> requireesOfDb,
         Dbi<ByteBuffer> requireesOfValuesDb,
         Dbi<ByteBuffer> resourceProvidesDb,
-        Dbi<ByteBuffer> providerOfDb
+        Dbi<ByteBuffer> providerOfDb,
+        SerializeUtil serializeUtil
     ) {
         this.txn = txn;
         this.inputDb = inputDb;
@@ -69,8 +67,8 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         this.requireesOfValuesDb = requireesOfValuesDb;
         this.resourceProvidesDb = resourceProvidesDb;
         this.providerOfDb = providerOfDb;
-        this.shared = new DbiShared(env, txn, isWriteTxn, loggerFactory);
-        this.logger = loggerFactory.create(LMDBStoreTxn.class);
+        this.shared = new DbiShared(env, txn, isWriteTxn, serializeUtil);
+        this.serializeUtil = serializeUtil;
     }
 
     @Override public void close() {
@@ -80,85 +78,64 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
 
 
     @Override public @Nullable Serializable input(TaskKey key) {
-        return Deserialized.orElseNull(shared.getOne(SerializeUtil.serializeHashedToBuffer(key), inputDb));
+        return De.orElseNull(shared.getOneObject(serializeUtil.serializeHashed(key), inputDb));
     }
 
     @Override public @Nullable Output output(TaskKey key) {
-        final ByteBuffer keyHashedBuf = SerializeUtil.serializeHashedToBuffer(key);
-        final @Nullable Deserialized<@Nullable Serializable> deserialized = shared.getOne(keyHashedBuf, outputDb);
-        return Deserialized.mapOrElseNull(deserialized, Output::new);
+        return De.mapOrElseNull(shared.getOneObject(serializeUtil.serializeHashed(key), outputDb), Output::new);
     }
 
     @Override public Observability taskObservability(TaskKey key) {
-        return Deserialized.orElse(shared.getOne(SerializeUtil.serializeHashedToBuffer(key), taskObservabilityDb),
-            Observability.Unobserved);
+        return De.orElse(shared.getOne(Observability.class, serializeUtil.serializeHashed(key), taskObservabilityDb), Observability.Unobserved);
     }
 
 
     @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
-        return Deserialized.orElse(
-            shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), taskRequiresDb),
-            new ArrayList<>());
+        return De.orElse(shared.getOne(ArrayList.class, serializeUtil.serializeHashed(key), taskRequiresDb), new ArrayList<>());
     }
 
     @Override public Set<TaskKey> callersOf(TaskKey key) {
-        return shared.getMultiple(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), callersOfDb,
-            callersOfValuesDb);
+        return shared.getMultiple(TaskKey.class, serializeUtil.serializeHashed(key), callersOfDb, callersOfValuesDb);
     }
 
 
     @Override public ArrayList<ResourceRequireDep> resourceRequires(TaskKey key) {
-        return Deserialized.orElse(
-            shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), resourceRequiresDb),
-            new ArrayList<>());
+        return De.orElse(shared.getOne(ArrayList.class, serializeUtil.serializeHashed(key), resourceRequiresDb), new ArrayList<>());
     }
 
     @Override public Set<TaskKey> requireesOf(ResourceKey key) {
-        return shared.getMultiple(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), requireesOfDb,
-            requireesOfValuesDb);
+        return shared.getMultiple(TaskKey.class, serializeUtil.serializeHashed(key), requireesOfDb, requireesOfValuesDb);
     }
 
 
     @Override public ArrayList<ResourceProvideDep> resourceProvides(TaskKey key) {
-        return Deserialized.orElse(
-            shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), resourceProvidesDb),
-            new ArrayList<>());
+        return De.orElse(shared.getOne(ArrayList.class, serializeUtil.serializeHashed(key), resourceProvidesDb), new ArrayList<>());
     }
 
     @Override public @Nullable TaskKey providerOf(ResourceKey key) {
-        return Deserialized.orElse(
-            shared.getOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))), providerOfDb), null);
+        return De.orElse(shared.getOne(TaskKey.class, serializeUtil.serializeHashed(key), providerOfDb), null);
     }
 
 
     @Override public @Nullable TaskData data(TaskKey key) {
         // OPTO: reuse buffers? is that safe?
-        final byte[] keyHashedBytes = SerializeUtil.hash(SerializeUtil.serialize(key));
-        final @Nullable Deserialized<Serializable> inputDeserialized =
-            shared.getOne(BufferUtil.toBuffer(keyHashedBytes), inputDb);
+        final byte[] keyHashedBytes = serializeUtil.serializeHashedToBytes(key);
+        final @Nullable De<Serializable> inputDeserialized = shared.getOneObject(BufferUtil.toBuffer(keyHashedBytes), inputDb);
         if(inputDeserialized == null || inputDeserialized.failed) {
             return null;
         }
-        final @Nullable Deserialized<@Nullable Serializable> outputDeserialized =
-            shared.getOne(BufferUtil.toBuffer(keyHashedBytes), outputDb);
+        final @Nullable De<@Nullable Serializable> outputDeserialized = shared.getOneObject(BufferUtil.toBuffer(keyHashedBytes), outputDb);
         if(outputDeserialized == null || outputDeserialized.failed) {
             return null;
         }
-        final @Nullable Deserialized<Observability> taskObservabilityDeserialized =
-            shared.getOne(BufferUtil.toBuffer(keyHashedBytes), taskObservabilityDb);
+        final @Nullable De<Observability> taskObservabilityDeserialized = shared.getOne(Observability.class, BufferUtil.toBuffer(keyHashedBytes), taskObservabilityDb);
 
         final Serializable input = inputDeserialized.deserialized;
         final @Nullable Serializable output = outputDeserialized.deserialized;
-        final Observability taskObservability =
-            Deserialized.orElse(taskObservabilityDeserialized, Observability.Unobserved);
-        final ArrayList<TaskRequireDep> taskRequires =
-            Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
-        final ArrayList<ResourceRequireDep> resourceRequires =
-            Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), resourceRequiresDb),
-                new ArrayList<>());
-        final ArrayList<ResourceProvideDep> resourceProvides =
-            Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb),
-                new ArrayList<>());
+        final Observability taskObservability = De.orElse(taskObservabilityDeserialized, Observability.Unobserved);
+        final ArrayList<TaskRequireDep> taskRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
+        final ArrayList<ResourceRequireDep> resourceRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceRequiresDb), new ArrayList<>());
+        final ArrayList<ResourceProvideDep> resourceProvides = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb), new ArrayList<>());
         return new TaskData(input, output, taskObservability, taskRequires, resourceRequires, resourceProvides);
     }
 
@@ -171,11 +148,9 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     @Override public int numSourceFiles() {
         // Cannot use requireesOfValuesDb, as these are never cleaned up at the moment. Instead use values of resourceRequiresDb.
         final HashSet<ResourceKey> requiredResources = new HashSet<>();
-        try(final CursorIterator<ByteBuffer> cursor = resourceRequiresDb.iterate(txn)) {
-            while(cursor.hasNext()) {
-                final CursorIterator.KeyVal<ByteBuffer> next = cursor.next();
-                final ArrayList<ResourceRequireDep> resourceRequires =
-                    Deserialized.orElse(SerializeUtil.deserialize(next.val(), logger), new ArrayList<>());
+        try(final CursorIterable<ByteBuffer> cursor = resourceRequiresDb.iterate(txn)) {
+            for(final CursorIterable.KeyVal<ByteBuffer> keyval : cursor) {
+                final ArrayList<ResourceRequireDep> resourceRequires = De.orElse(serializeUtil.deserialize(ArrayList.class, keyval.val()), new ArrayList<>());
                 for(ResourceRequireDep resourceRequire : resourceRequires) {
                     requiredResources.add(resourceRequire.key);
                 }
@@ -184,7 +159,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
 
         int numSourceFiles = 0;
         for(ResourceKey file : requiredResources) {
-            if(!shared.getBool(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(file))), providerOfDb)) {
+            if(!shared.getBool(serializeUtil.serializeHashed(file), providerOfDb)) {
                 ++numSourceFiles;
             }
         }
@@ -193,89 +168,71 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
 
 
     @Override public void setInput(TaskKey key, Serializable input) {
-        shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),
-            BufferUtil.toBuffer(SerializeUtil.serialize(input)), inputDb);
+        shared.setOne(serializeUtil.serializeHashed(key), serializeUtil.serializeObject(input), inputDb);
     }
 
     @Override public void setOutput(TaskKey key, @Nullable Serializable output) {
-        shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),
-            BufferUtil.toBuffer(SerializeUtil.serialize(output)), outputDb);
+        shared.setOne(serializeUtil.serializeHashed(key), serializeUtil.serializeObject(output), outputDb);
     }
 
     @Override public void setTaskObservability(TaskKey key, Observability observability) {
-        shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(key))),
-            BufferUtil.toBuffer(SerializeUtil.serialize(observability)), taskObservabilityDb);
+        shared.setOne(serializeUtil.serializeHashed(key), serializeUtil.serialize(observability), taskObservabilityDb);
     }
-
 
     @Override public void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires) {
         // OPTO: reuse buffers? is that safe?
-        final SerializedAndHashed serializedAndHashed = SerializeUtil.serializeAndHash(key);
+        final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
         final byte[] keyBytes = serializedAndHashed.serialized;
         final byte[] keyHashedBytes = serializedAndHashed.hashed;
 
         // Remove old inverse task requirements.
-        final ArrayList<TaskRequireDep> oldTaskRequires =
-            Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
+        final ArrayList<TaskRequireDep> oldTaskRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
         for(TaskRequireDep taskRequire : oldTaskRequires) {
-            shared.deleteDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(taskRequire.callee))),
-                BufferUtil.toBuffer(keyHashedBytes), callersOfDb, callersOfValuesDb);
+            shared.deleteDup(serializeUtil.serializeHashed(taskRequire.callee), BufferUtil.toBuffer(keyHashedBytes), callersOfDb, callersOfValuesDb);
         }
 
         // Add new task requirements.
-        shared.setOne(BufferUtil.toBuffer(keyHashedBytes), BufferUtil.toBuffer(SerializeUtil.serialize(taskRequires)),
-            taskRequiresDb);
+        shared.setOne(BufferUtil.toBuffer(keyHashedBytes), serializeUtil.serialize(taskRequires), taskRequiresDb);
         for(TaskRequireDep taskRequire : taskRequires) {
-            shared.setDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(taskRequire.callee))),
-                BufferUtil.toBuffer(keyBytes), BufferUtil.toBuffer(keyHashedBytes), callersOfDb, callersOfValuesDb);
+            shared.setDup(serializeUtil.serializeHashed(taskRequire.callee), BufferUtil.toBuffer(keyBytes), BufferUtil.toBuffer(keyHashedBytes), callersOfDb, callersOfValuesDb);
         }
     }
 
     @Override public void setResourceRequires(TaskKey key, ArrayList<ResourceRequireDep> resourceRequires) {
         // OPTO: reuse buffers? is that safe?
-        final SerializedAndHashed serializedAndHashed = SerializeUtil.serializeAndHash(key);
+        final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
         final byte[] keyBytes = serializedAndHashed.serialized;
         final byte[] keyHashedBytes = serializedAndHashed.hashed;
 
         // Remove old inverse file requirements.
-        final ArrayList<ResourceRequireDep> oldResourceRequires =
-            Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), resourceRequiresDb),
-                new ArrayList<>());
+        final ArrayList<ResourceRequireDep> oldResourceRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceRequiresDb), new ArrayList<>());
         for(ResourceRequireDep resourceRequire : oldResourceRequires) {
-            shared.deleteDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceRequire.key))),
-                BufferUtil.toBuffer(keyHashedBytes), requireesOfDb, requireesOfValuesDb);
+            shared.deleteDup(serializeUtil.serializeHashed(resourceRequire.key), BufferUtil.toBuffer(keyHashedBytes), requireesOfDb, requireesOfValuesDb);
         }
 
         // Add new file requirements.
-        shared.setOne(BufferUtil.toBuffer(keyHashedBytes),
-            BufferUtil.toBuffer(SerializeUtil.serialize(resourceRequires)), resourceRequiresDb);
+        shared.setOne(BufferUtil.toBuffer(keyHashedBytes), serializeUtil.serialize(resourceRequires), resourceRequiresDb);
         for(ResourceRequireDep resourceRequire : resourceRequires) {
-            shared.setDup(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceRequire.key))),
-                BufferUtil.toBuffer(keyBytes), BufferUtil.toBuffer(keyHashedBytes), requireesOfDb, requireesOfValuesDb);
+            shared.setDup(serializeUtil.serializeHashed(resourceRequire.key), BufferUtil.toBuffer(keyBytes), BufferUtil.toBuffer(keyHashedBytes), requireesOfDb, requireesOfValuesDb);
         }
     }
 
     @Override public void setResourceProvides(TaskKey key, ArrayList<ResourceProvideDep> resourceProvides) {
         // OPTO: reuse buffers? is that safe?
-        final SerializedAndHashed serializedAndHashed = SerializeUtil.serializeAndHash(key);
+        final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
         final byte[] keyBytes = serializedAndHashed.serialized;
         final byte[] keyHashedBytes = serializedAndHashed.hashed;
 
         // Remove old inverse file generates.
-        final ArrayList<ResourceProvideDep> oldResourceProvides =
-            Deserialized.orElse(shared.getOne(BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb),
-                new ArrayList<>());
+        final ArrayList<ResourceProvideDep> oldResourceProvides = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb), new ArrayList<>());
         for(ResourceProvideDep resourceProvide : oldResourceProvides) {
-            shared.deleteOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceProvide.key))),
-                providerOfDb);
+            shared.deleteOne(serializeUtil.serializeHashed(resourceProvide.key), providerOfDb);
         }
 
         // Add new file generates.
-        shared.setOne(BufferUtil.toBuffer(keyHashedBytes),
-            BufferUtil.toBuffer(SerializeUtil.serialize(resourceProvides)), resourceProvidesDb);
+        shared.setOne(BufferUtil.toBuffer(keyHashedBytes), serializeUtil.serialize(resourceProvides), resourceProvidesDb);
         for(ResourceProvideDep resourceProvide : resourceProvides) {
-            shared.setOne(BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(resourceProvide.key))),
-                BufferUtil.toBuffer(keyBytes), providerOfDb);
+            shared.setOne(serializeUtil.serializeHashed(resourceProvide.key), BufferUtil.toBuffer(keyBytes), providerOfDb);
         }
     }
 

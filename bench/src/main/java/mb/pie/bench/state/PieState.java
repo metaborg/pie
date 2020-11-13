@@ -6,11 +6,14 @@ import mb.pie.api.ExecException;
 import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
+import mb.pie.api.PieBuilder;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.Tracer;
+import mb.pie.api.serde.JavaSerde;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
@@ -26,6 +29,8 @@ import mb.pie.runtime.tracer.CompositeTracer;
 import mb.pie.runtime.tracer.LoggingTracer;
 import mb.pie.runtime.tracer.MetricsTracer;
 import mb.pie.runtime.tracer.NoopTracer;
+import mb.pie.serde.kryo.KryoSerde;
+import mb.pie.store.lmdb.LMDBStore;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
@@ -36,6 +41,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -46,19 +52,22 @@ public class PieState {
 
     private @Nullable LoggerFactory loggerFactory;
     private @Nullable Logger logger;
+    private @Nullable HierarchicalResource temporaryDirectory;
     private @Nullable Pie pie;
     private @Nullable MetricsTracer metricsTracer;
 
-    public PieState setupTrial(LoggerFactory loggerFactory, TaskDefs taskDefs, Pie... ancestors) {
-        if(this.loggerFactory != null || logger != null || pie != null) {
+    public PieState setupTrial(LoggerFactory loggerFactory, HierarchicalResource temporaryDirectory, TaskDefs taskDefs, Pie... ancestors) {
+        if(this.loggerFactory != null || this.temporaryDirectory != null || logger != null || pie != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
         this.loggerFactory = loggerFactory;
         logger = loggerFactory.create(PieState.class);
         logger.trace("PieState.setupTrial");
+        this.temporaryDirectory = temporaryDirectory;
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
-        pieBuilder.withStoreFactory(store.get());
+        pieBuilder.withSerdeFactory(serde.get());
+        pieBuilder.withStoreFactory(store.get(temporaryDirectory));
         pieBuilder.withShareFactory(share.get());
         pieBuilder.withDefaultOutputStamper(outputStamper.get());
         pieBuilder.withDefaultRequireReadableResourceStamper(requireResourceStamper.getReadable());
@@ -73,16 +82,18 @@ public class PieState {
         return this;
     }
 
-    public PieState setupTrial(LoggerFactory loggerFactory, Pie... ancestors) {
-        return setupTrial(loggerFactory, new NullTaskDefs(), ancestors);
+    public PieState setupTrial(LoggerFactory loggerFactory, HierarchicalResource temporaryDirectory, Pie... ancestors) {
+        return setupTrial(loggerFactory, temporaryDirectory, new NullTaskDefs(), ancestors);
     }
 
     public void tearDownTrial() {
-        if(loggerFactory == null || logger == null || pie == null) {
+        if(loggerFactory == null || temporaryDirectory == null || logger == null || pie == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
         metricsTracer = null;
+        pie.close();
         pie = null;
+        temporaryDirectory = null;
         logger.trace("PieState.tearDownTrial");
         logger = null;
         loggerFactory = null;
@@ -96,7 +107,7 @@ public class PieState {
             throw new IllegalStateException("setupInvocation was called before calling setupTrial");
         }
         logger.trace("PieState.setupInvocation");
-        // Nothing to do yet.
+        resetState(); // Reset state in case the previous run was terminated.
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -130,6 +141,7 @@ public class PieState {
     }
 
 
+    @Param({"java"}) public SerdeKind serde;
     @Param({"in_memory"}) public StoreKind store;
     /*@Param({"non_sharing"})*/ public ShareKind share = ShareKind.non_sharing;
     /*@Param({"equals"})*/ private OutputStamperKind outputStamper = OutputStamperKind.equals;
@@ -138,14 +150,36 @@ public class PieState {
     @Param({"validation"}) public LayerKind layer;
     @Param({"metrics"}) public TracerKind tracer;
 
+    public enum SerdeKind {
+        java {
+            @Override public Function<LoggerFactory, Serde> get() {
+                return (loggerFactory) -> new JavaSerde(PieState.class.getClassLoader());
+            }
+        },
+        kryo {
+            @Override public Function<LoggerFactory, Serde> get() {
+                return (loggerFactory) -> new KryoSerde(PieState.class.getClassLoader());
+            }
+        },
+        ;
+
+        public abstract Function<LoggerFactory, Serde> get();
+    }
+
     public enum StoreKind {
         in_memory {
-            @Override public BiFunction<LoggerFactory, ResourceService, Store> get() {
-                return (logger, resourceService) -> new InMemoryStore();
+            @Override public PieBuilder.StoreFactory get(HierarchicalResource temporaryDirectory) {
+                return (serde, resourceService, loggerFactory) -> new InMemoryStore();
             }
-        };
+        },
+        lmdb {
+            @Override public PieBuilder.StoreFactory get(HierarchicalResource temporaryDirectory) {
+                return (serde, resourceService, loggerFactory) -> new LMDBStore(serde, Objects.requireNonNull(resourceService.toLocalFile(temporaryDirectory.appendRelativePath("lmdb"))), loggerFactory);
+            }
+        },
+        ;
 
-        public abstract BiFunction<LoggerFactory, ResourceService, Store> get();
+        public abstract PieBuilder.StoreFactory get(HierarchicalResource temporaryDirectory);
     }
 
     public enum ShareKind {
@@ -153,7 +187,8 @@ public class PieState {
             @Override public Function<LoggerFactory, Share> get() {
                 return (logger) -> new NonSharingShare();
             }
-        };
+        },
+        ;
 
         public abstract Function<LoggerFactory, Share> get();
     }
@@ -168,7 +203,8 @@ public class PieState {
             @Override public OutputStamper get() {
                 return OutputStampers.inconsequential();
             }
-        };
+        },
+        ;
 
         public abstract OutputStamper get();
     }
@@ -182,7 +218,8 @@ public class PieState {
             @Override public ResourceStamper<HierarchicalResource> getHierarchical() {
                 return ResourceStampers.exists();
             }
-        }, modified {
+        },
+        modified {
             @Override public ResourceStamper<ReadableResource> getReadable() {
                 return ResourceStampers.modifiedFile();
             }
@@ -190,7 +227,8 @@ public class PieState {
             @Override public ResourceStamper<HierarchicalResource> getHierarchical() {
                 return ResourceStampers.modifiedFile();
             }
-        }, hash {
+        },
+        hash {
             @Override public ResourceStamper<ReadableResource> getReadable() {
                 return ResourceStampers.hashFile();
             }
@@ -198,7 +236,8 @@ public class PieState {
             @Override public ResourceStamper<HierarchicalResource> getHierarchical() {
                 return ResourceStampers.hashDirRec();
             }
-        };
+        },
+        ;
 
         public abstract ResourceStamper<ReadableResource> getReadable();
 
@@ -225,7 +264,8 @@ public class PieState {
             @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
                 return (taskDefs, logger) -> new NoopLayer();
             }
-        };
+        },
+        ;
 
         public abstract BiFunction<TaskDefs, LoggerFactory, Layer> get();
     }
@@ -258,7 +298,8 @@ public class PieState {
             }
 
             @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
-        };
+        },
+        ;
 
         private static final MetricsTracer metricsTracer = new MetricsTracer();
 

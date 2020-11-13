@@ -1,30 +1,36 @@
 package mb.pie.store.lmdb;
 
 import mb.log.api.LoggerFactory;
-import mb.pie.api.*;
+import mb.pie.api.PieBuilder;
+import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
+import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.serde.Serde;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
+import org.lmdbjava.EnvFlags;
 import org.lmdbjava.Txn;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 
 public class LMDBStore implements Store {
-    public static final long defaultMaxDbSize = 1024 * 1024 * 1024; // 1 GiB
+    public static final long defaultMaxDbSize = 1024L * 1024L * 1024L * 4L; // 4 GiB
     public static final int defaultMaxReaders = 64; // 64 reader threads
 
     /**
-     * Sets the store of this builder to the [LMDBStore], stored at given [envDir], with parameters [maxDbSize] determining the maximum
-     * database size and [maxReaders] determining the maximum concurrent readers.
+     * Sets the store of this builder to the [LMDBStore], stored at given [envDir], with parameters [maxDbSize]
+     * determining the maximum database size and [maxReaders] determining the maximum concurrent readers.
      */
     public static PieBuilder withLMDBStore(PieBuilder pieBuilder, File envDir, long maxDbSize, int maxReaders) {
-        pieBuilder.withStoreFactory((logger, resourceService) -> new LMDBStore(logger, envDir, maxDbSize, maxReaders));
+        pieBuilder.withStoreFactory((serde, resourceService, logger) -> new LMDBStore(serde, envDir, maxDbSize, maxReaders, logger));
         return pieBuilder;
     }
 
     /**
-     * Sets the store of this builder to the [LMDBStore], stored at given [envDir], with default maximum database size and number of readers.
+     * Sets the store of this builder to the [LMDBStore], stored at given [envDir], with default maximum database size
+     * and number of readers.
      */
     public static PieBuilder withLMDBStore(PieBuilder pieBuilder, File envDir) {
         return withLMDBStore(pieBuilder, envDir, defaultMaxDbSize, defaultMaxReaders);
@@ -43,19 +49,15 @@ public class LMDBStore implements Store {
     private final Dbi<ByteBuffer> requireesOfValues;
     private final Dbi<ByteBuffer> resourceProvides;
     private final Dbi<ByteBuffer> providerOf;
-    private final LoggerFactory loggerFactory;
+    private final SerializeUtil serializeUtil;
 
-    public LMDBStore(LoggerFactory loggerFactory, File envDir) {
-        this(loggerFactory, envDir, defaultMaxDbSize, defaultMaxReaders);
-    }
-
-    public LMDBStore(LoggerFactory loggerFactory, File envDir, long maxDbSize, int maxReaders) {
+    public LMDBStore(Serde serde, File envDir, long maxDbSize, int maxReaders, LoggerFactory loggerFactory) {
         envDir.mkdirs();
         this.env = Env.create()
             .setMapSize(maxDbSize)
             .setMaxReaders(maxReaders)
             .setMaxDbs(11)
-            .open(envDir);
+            .open(envDir, EnvFlags.MDB_MAPASYNC, EnvFlags.MDB_WRITEMAP);
         this.input = env.openDbi("input", DbiFlags.MDB_CREATE);
         this.output = env.openDbi("output", DbiFlags.MDB_CREATE);
         this.taskObservability = env.openDbi("taskObservability", DbiFlags.MDB_CREATE);
@@ -67,8 +69,13 @@ public class LMDBStore implements Store {
         this.requireesOfValues = env.openDbi("requireesOfValues", DbiFlags.MDB_CREATE);
         this.resourceProvides = env.openDbi("resourceProvides", DbiFlags.MDB_CREATE);
         this.providerOf = env.openDbi("providerOf", DbiFlags.MDB_CREATE);
-        this.loggerFactory = loggerFactory;
+        this.serializeUtil = new SerializeUtil(serde, loggerFactory);
     }
+
+    public LMDBStore(Serde serde, File envDir, LoggerFactory loggerFactory) {
+        this(serde, envDir, defaultMaxDbSize, defaultMaxReaders, loggerFactory);
+    }
+
 
     @Override public void close() {
         env.close();
@@ -76,7 +83,7 @@ public class LMDBStore implements Store {
 
     @Override public StoreReadTxn readTxn() {
         final Txn<ByteBuffer> txn = env.txnRead();
-        return new LMDBStoreTxn(env, txn, false, loggerFactory,
+        return new LMDBStoreTxn(env, txn, false,
             input,
             output,
             taskObservability,
@@ -87,13 +94,14 @@ public class LMDBStore implements Store {
             requireesOf,
             requireesOfValues,
             resourceProvides,
-            providerOf
+            providerOf,
+            serializeUtil
         );
     }
 
     @Override public StoreWriteTxn writeTxn() {
         final Txn<ByteBuffer> txn = env.txnWrite();
-        return new LMDBStoreTxn(env, txn, true, loggerFactory,
+        return new LMDBStoreTxn(env, txn, true,
             input,
             output,
             taskObservability,
@@ -104,12 +112,13 @@ public class LMDBStore implements Store {
             requireesOf,
             requireesOfValues,
             resourceProvides,
-            providerOf
+            providerOf,
+            serializeUtil
         );
     }
 
     @Override public void sync() {
-        env.sync(false);
+        env.sync(true);
     }
 
     @Override public String toString() {

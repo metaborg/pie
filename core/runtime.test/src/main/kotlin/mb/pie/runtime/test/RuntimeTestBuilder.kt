@@ -7,6 +7,7 @@ import mb.pie.api.Callbacks
 import mb.pie.api.Layer
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
+import mb.pie.api.PieBuilder
 import mb.pie.api.Share
 import mb.pie.api.Store
 import mb.pie.api.TaskData
@@ -53,7 +54,7 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
   testContextFactory = testContextFactory
 ) {
   init {
-    storeFactories.add { _, _ -> InMemoryStore() }
+    storeFactories.add(PieBuilder.StoreFactory { _, _, _ -> InMemoryStore() })
     shareFactories.add { _ -> NonSharingShare() }
     layerFactories.add { td, l -> ValidationLayer(td, l) }
   }
@@ -61,7 +62,7 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
 
 open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl() {
   override fun build(): TestPieImpl {
-    val store = storeFactory.apply(loggerFactory, resourceService)
+    val store = storeFactory.apply(serdeFactory.apply(loggerFactory), resourceService, loggerFactory)
     val share = shareFactory.apply(loggerFactory)
     val defaultStampers = DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
       defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper)
@@ -99,9 +100,9 @@ open class TestPieImpl(
     val executorLogger = tracerFactory.apply(loggerFactory)
     val visited = HashMap<TaskKey, TaskData>()
 
-    val taskExecutor = TaskExecutor(taskDefs, resourceService, super.store, share, defaultStampers, layer, loggerFactory, executorLogger,
+    val taskExecutor = TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, executorLogger,
       callbacks, visited)
-    val requireShared = RequireShared(taskDefs, resourceService, super.store, executorLogger, visited)
+    val requireShared = RequireShared(taskDefs, resourceService, executorLogger, visited)
 
     var topDownSession = TopDownRunner(super.store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited)
     if(shouldSpy) {

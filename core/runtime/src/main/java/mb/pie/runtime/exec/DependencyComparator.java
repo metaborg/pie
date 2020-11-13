@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -8,10 +7,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Comparator;
 
 class DependencyComparator implements Comparator<TaskKey> {
-    private final Store store;
+    private final StoreReadTxn txn;
 
-    DependencyComparator(Store store) {
-        this.store = store;
+    DependencyComparator(StoreReadTxn txn) {
+        this.txn = txn;
     }
 
     @Override
@@ -19,13 +18,9 @@ class DependencyComparator implements Comparator<TaskKey> {
         if(key1.equals(key2)) {
             return 0;
         }
-
-        try(final StoreReadTxn txn = store.readTxn()) {
-            if(BottomUpShared.hasTransitiveTaskReq(txn, key1, key2)) {
-                return 1;
-            }
+        if(BottomUpShared.hasTransitiveTaskReq(key1, key2, txn)) {
+            return 1;
         }
-
         return -1;
     }
 }

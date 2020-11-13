@@ -36,25 +36,30 @@ public class Spoofax3Bench {
     protected LoggerState loggerState;
     protected LoggerFactory loggerFactory;
     protected Logger logger;
+    protected TemporaryDirectoryState temporaryDirectoryState;
     protected Spoofax3CompilerState spoofax3CompilerState;
     protected PieState pieState;
 
     @Setup(Level.Trial)
-    public void setupTrial(LoggerState loggerState, Spoofax3CompilerState spoofax3CompilerState, PieState pieState) {
+    public void setupTrial(LoggerState loggerState, TemporaryDirectoryState temporaryDirectoryState, Spoofax3CompilerState spoofax3CompilerState, PieState pieState) throws IOException {
         this.loggerState = loggerState;
         this.loggerFactory = loggerState.setupTrial();
         logger = loggerFactory.create(Spoofax3Bench.class);
         logger.trace("Spoofax3Bench.setupTrial");
+        this.temporaryDirectoryState = temporaryDirectoryState;
+        final HierarchicalResource temporaryDirectory = temporaryDirectoryState.setupTrial();
         this.spoofax3CompilerState = spoofax3CompilerState.setupTrial(loggerFactory);
-        this.pieState = pieState.setupTrial(loggerFactory, spoofax3CompilerState.getPie());
+        this.pieState = pieState.setupTrial(loggerFactory, temporaryDirectory, spoofax3CompilerState.getPie());
     }
 
     @TearDown(Level.Trial)
-    public void tearDownTrial() {
+    public void tearDownTrial() throws IOException {
         pieState.tearDownTrial();
         pieState = null;
         spoofax3CompilerState.tearDownTrial();
         spoofax3CompilerState = null;
+        temporaryDirectoryState.tearDownTrial();
+        temporaryDirectoryState = null;
         loggerFactory = null;
         logger.trace("Spoofax3Bench.tearDownTrial");
         logger = null;
@@ -63,17 +68,15 @@ public class Spoofax3Bench {
 
     // Invocation
 
-    protected TemporaryDirectoryState temporaryDirectoryState;
+
     protected ChangesState changesState;
     protected Task<Result<KeyedMessages, CompilerException>> task;
 
     @Setup(Level.Invocation)
-    public void setupInvocation(TemporaryDirectoryState temporaryDirectoryState, ChangesState changesState) throws Exception {
+    public void setupInvocation(ChangesState changesState) throws Exception {
         logger.trace("Spoofax3Bench.setupInvocation");
-        this.temporaryDirectoryState = temporaryDirectoryState;
         final HierarchicalResource temporaryDirectory = temporaryDirectoryState.setupInvocation();
         this.changesState = changesState.setupInvocation(loggerFactory, temporaryDirectory);
-
         this.task = spoofax3CompilerState.setupInvocation(temporaryDirectory);
         this.pieState.setupInvocation();
     }
@@ -83,9 +86,8 @@ public class Spoofax3Bench {
         this.task = null;
         this.changesState.tearDownInvocation();
         this.changesState = null;
-        this.temporaryDirectoryState.tearDownInvocation();
-        this.temporaryDirectoryState = null;
 
+        this.temporaryDirectoryState.tearDownInvocation();
         this.pieState.tearDownInvocation();
         this.spoofax3CompilerState.tearDownInvocation();
         logger.trace("Spoofax3Bench.tearDownInvocation");

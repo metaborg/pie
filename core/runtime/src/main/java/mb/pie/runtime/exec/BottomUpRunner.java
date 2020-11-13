@@ -21,6 +21,7 @@ import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.ExecReason;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -40,7 +41,7 @@ public class BottomUpRunner implements RequireTask {
     private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
-    private final DistinctTaskKeyPriorityQueue queue;
+    private @MonotonicNonNull DistinctTaskKeyPriorityQueue queue;
 
     public BottomUpRunner(
         TaskDefs taskDefs,
@@ -63,81 +64,74 @@ public class BottomUpRunner implements RequireTask {
         this.callbacks = callbacks;
 
         this.visited = visited;
-        this.queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(store);
     }
 
 
     public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) {
-        tracer.requireBottomUpInitialStart(changedResources);
-        scheduleAffectedByResources(changedResources.stream());
-        execScheduled(cancel);
-        tracer.requireBottomUpInitialEnd();
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(txn);
+            tracer.requireBottomUpInitialStart(changedResources);
+            scheduleAffectedByResources(changedResources.stream(), txn);
+            execScheduled(txn, cancel);
+            tracer.requireBottomUpInitialEnd();
+        }
     }
 
 
     /**
      * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
      */
-    private void execScheduled(CancelToken cancel) {
+    private void execScheduled(StoreWriteTxn txn, CancelToken cancel) {
         while(queue.isNotEmpty()) {
             cancel.throwIfCanceled();
             final TaskKey key = queue.poll();
-            final Task<?> task;
-            try(final StoreReadTxn txn = store.readTxn()) {
-                task = key.toTask(taskDefs, txn);
-            }
-            execAndSchedule(key, task, cancel);
+            final Task<?> task = key.toTask(taskDefs, txn);
+            execAndSchedule(key, task, txn, cancel);
         }
     }
 
     /**
      * Executes given task, and schedules new tasks based on given task's output.
      */
-    private TaskData execAndSchedule(TaskKey key, Task<?> task, CancelToken cancel) {
-        final TaskData data = exec(key, task, new AffectedExecReason(), cancel);
-        scheduleAffectedByRequiredTask(key, data.output);
-        scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key));
+    private TaskData execAndSchedule(TaskKey key, Task<?> task, StoreWriteTxn txn, CancelToken cancel) {
+        final TaskData data = exec(key, task, new AffectedExecReason(), txn, cancel);
+        scheduleAffectedByRequiredTask(key, data.output, txn);
+        scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key), txn);
         return data;
     }
 
     /**
      * Schedules tasks affected by (changes to) required and provided files.
      */
-    private void scheduleAffectedByResources(Stream<? extends ResourceKey> resources) {
-        try(final StoreReadTxn txn = store.readTxn()) {
-            BottomUpShared.directlyAffectedByResources(txn, resources, resourceService, tracer, (key) -> {
-                tracer.scheduleTask(key);
-                queue.add(key);
-            });
-        }
+    private void scheduleAffectedByResources(Stream<? extends ResourceKey> resources, StoreReadTxn txn) {
+        BottomUpShared.directlyAffectedByResources(resources, resourceService, txn, tracer, (key) -> {
+            tracer.scheduleTask(key);
+            queue.add(key);
+        });
     }
 
     /**
      * Schedules tasks affected by (changes to) required files.
      */
-    private void scheduleAffectedByRequiredResources(Stream<? extends ResourceKey> resources) {
-        try(final StoreReadTxn txn = store.readTxn()) {
-            resources.forEach((changedResource) -> {
-                tracer.scheduleAffectedByResourceStart(changedResource);
-                BottomUpShared.directlyAffectedByRequiredResource(txn, changedResource, resourceService, tracer, (key) -> {
-                    tracer.scheduleTask(key);
-                    queue.add(key);
-                });
-                tracer.scheduleAffectedByResourceEnd(changedResource);
+    private void scheduleAffectedByRequiredResources(Stream<? extends ResourceKey> resources, StoreReadTxn txn) {
+        resources.forEach((changedResource) -> {
+            tracer.scheduleAffectedByResourceStart(changedResource);
+            BottomUpShared.directlyAffectedByRequiredResource(changedResource, resourceService, txn, tracer, (key) -> {
+                tracer.scheduleTask(key);
+                queue.add(key);
             });
-        }
+            tracer.scheduleAffectedByResourceEnd(changedResource);
+        });
     }
 
     /**
      * Schedules tasks affected by (changes to the) output of a task.
      */
-    private void scheduleAffectedByRequiredTask(TaskKey requiree, @Nullable Serializable output) {
-        try(final StoreReadTxn txn = store.readTxn()) {
-            BottomUpShared.directlyAffectedByRequiredTask(txn, requiree, output, tracer, (key) -> {
-                tracer.scheduleTask(key);
-                queue.add(key);
-            });
-        }
+    private void scheduleAffectedByRequiredTask(TaskKey requiree, @Nullable Serializable output, StoreReadTxn txn) {
+        BottomUpShared.directlyAffectedByRequiredTask(requiree, output, txn, tracer, (key) -> {
+            tracer.scheduleTask(key);
+            queue.add(key);
+        });
     }
 
 
@@ -145,12 +139,12 @@ public class BottomUpRunner implements RequireTask {
      * Require the result of a task.
      */
     @Override
-    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, CancelToken cancel) {
+    public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
         cancel.throwIfCanceled();
         layer.requireTopDownStart(key, task.input);
         try {
             // Ignoring `modifyObservability` value, always assuming we want to modify observability in bottom-up builds.
-            final TaskData data = getData(key, task, cancel);
+            final TaskData data = getData(key, task, txn, cancel);
             @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
             return output;
         } finally {
@@ -161,7 +155,7 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Get data for given task/key, either by getting existing data or through execution.
      */
-    private TaskData getData(TaskKey key, Task<?> task, CancelToken cancel) {
+    private TaskData getData(TaskKey key, Task<?> task, StoreWriteTxn txn, CancelToken cancel) {
         // Check if task was already visited this execution.
         final @Nullable TaskData visitedData = requireShared.dataFromVisited(key);
         if(visitedData != null) {
@@ -172,11 +166,11 @@ public class BottomUpRunner implements RequireTask {
         }
 
         // Check if data is stored for task. Execute if not.
-        final @Nullable TaskData storedData = requireShared.dataFromStore(key);
+        final @Nullable TaskData storedData = requireShared.dataFromStore(key, txn);
         if(storedData == null) {
             // This task is new, therefore we execute it. We do not schedule tasks affected by this new task, since new
             // tasks cannot affect existing tasks.
-            return exec(key, task, new NoData(), cancel);
+            return exec(key, task, new NoData(), txn, cancel);
         }
 
         // Task is in dependency graph, because we have stored data for it.
@@ -184,11 +178,11 @@ public class BottomUpRunner implements RequireTask {
         if(storedData.taskObservability.isUnobserved()) {
             // Task is detached (not observed) and therefore may not be consistent because detached tasks are not
             // scheduled. Require the detached task it in a top-down manner to make it consistent.
-            return requireUnobserved(key, task, storedData, cancel);
+            return requireUnobserved(key, task, storedData, txn, cancel);
         }
 
         // The task is observed. It may be scheduled to be run, but we need its output *now*.
-        final @Nullable TaskData requireNowData = requireScheduledNow(key, cancel);
+        final @Nullable TaskData requireNowData = requireScheduledNow(key, txn, cancel);
         if(requireNowData != null) {
             // Task was scheduled. That is, it was either directly or indirectly affected. Therefore, it has been
             // executed, and we return the result of that execution.
@@ -203,7 +197,7 @@ public class BottomUpRunner implements RequireTask {
             {
                 final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
 
@@ -212,7 +206,7 @@ public class BottomUpRunner implements RequireTask {
             {
                 final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(output);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
 
@@ -233,7 +227,7 @@ public class BottomUpRunner implements RequireTask {
         }
     }
 
-    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, CancelToken cancel) {
+    private TaskData requireUnobserved(TaskKey key, Task<?> task, TaskData storedData, StoreWriteTxn txn, CancelToken cancel) {
         // Check consistency of task.
         try {
             tracer.checkTopDownStart(key, task);
@@ -241,7 +235,7 @@ public class BottomUpRunner implements RequireTask {
             {
                 final @Nullable InconsistentInput reason = requireShared.checkInput(storedData.input, task);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
 
@@ -250,7 +244,7 @@ public class BottomUpRunner implements RequireTask {
                 final @Nullable InconsistentTransientOutput reason =
                     requireShared.checkOutputConsistency(storedData.output);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
 
@@ -259,7 +253,7 @@ public class BottomUpRunner implements RequireTask {
                 final @Nullable InconsistentResourceRequire reason =
                     requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
 
@@ -268,16 +262,16 @@ public class BottomUpRunner implements RequireTask {
                 final @Nullable InconsistentResourceProvide reason =
                     requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
 
             // Task require consistency.
             for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
                 final @Nullable InconsistentTaskRequire reason =
-                    requireShared.checkTaskRequireDep(key, task, taskRequireDep, this, true, cancel);
+                    requireShared.checkTaskRequireDep(key, task, taskRequireDep, true, txn, this, cancel);
                 if(reason != null) {
-                    return exec(key, task, reason, cancel);
+                    return exec(key, task, reason, txn, cancel);
                 }
             }
         } finally {
@@ -288,10 +282,8 @@ public class BottomUpRunner implements RequireTask {
         storedData = storedData.withTaskObservability(Observability.ImplicitObserved);
 
         // Validate well-formedness of the dependency graph, and set task to observed.
-        try(final StoreWriteTxn txn = store.writeTxn()) {
-            layer.validatePostWrite(key, storedData, txn);
-            txn.setTaskObservability(key, Observability.ImplicitObserved);
-        }
+        layer.validatePostWrite(key, storedData, txn);
+        txn.setTaskObservability(key, Observability.ImplicitObserved);
 
         // Mark task as visited.
         visited.put(key, storedData);
@@ -312,19 +304,16 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Execute the scheduled dependency of a task, and the task itself, which is required to be run *now*.
      */
-    private @Nullable TaskData requireScheduledNow(TaskKey key, CancelToken cancel) {
+    private @Nullable TaskData requireScheduledNow(TaskKey key, StoreWriteTxn txn, CancelToken cancel) {
         tracer.requireScheduledNowStart(key);
         while(queue.isNotEmpty()) {
             cancel.throwIfCanceled();
-            final @Nullable TaskKey minTaskKey = queue.pollLeastTaskWithDepTo(key, store);
+            final @Nullable TaskKey minTaskKey = queue.pollLeastTaskWithDepTo(key, txn);
             if(minTaskKey == null) {
                 break;
             }
-            final Task<?> minTask;
-            try(final StoreReadTxn txn = store.readTxn()) {
-                minTask = minTaskKey.toTask(taskDefs, txn);
-            }
-            final TaskData data = execAndSchedule(minTaskKey, minTask, cancel);
+            final Task<?> minTask = minTaskKey.toTask(taskDefs, txn);
+            final TaskData data = execAndSchedule(minTaskKey, minTask, txn, cancel);
             if(minTaskKey.equals(key)) {
                 tracer.requireScheduledNowEnd(key, data);
                 return data; // Task was affected, and has been executed: return result.
@@ -335,7 +324,7 @@ public class BottomUpRunner implements RequireTask {
     }
 
 
-    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, CancelToken cancel) {
-        return taskExecutor.exec(key, task, reason, this, true, cancel);
+    public TaskData exec(TaskKey key, Task<?> task, ExecReason reason, StoreWriteTxn txn, CancelToken cancel) {
+        return taskExecutor.exec(key, task, reason, true, txn, this, cancel);
     }
 }
