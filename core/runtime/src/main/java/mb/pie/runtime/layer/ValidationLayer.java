@@ -11,20 +11,19 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.serde.DeserializeRuntimeException;
+import mb.pie.api.serde.Serde;
+import mb.pie.api.serde.SerializeRuntimeException;
 import mb.pie.runtime.exec.BottomUpShared;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -137,17 +136,19 @@ public class ValidationLayer implements Layer {
     private final ValidationOptions options;
     private final TaskDefs taskDefs;
     private final Logger logger;
+    private final Serde serde;
     private final HashSet<TaskKey> stack = new HashSet<>();
 
 
-    public ValidationLayer(ValidationOptions options, TaskDefs taskDefs, LoggerFactory loggerFactory) {
+    public ValidationLayer(ValidationOptions options, TaskDefs taskDefs, LoggerFactory loggerFactory, Serde serde) {
         this.options = options;
         this.taskDefs = taskDefs;
         this.logger = loggerFactory.create(ValidationLayer.class);
+        this.serde = serde;
     }
 
-    public ValidationLayer(TaskDefs taskDefs, LoggerFactory loggerFactory) {
-        this(ValidationOptions.normal(), taskDefs, loggerFactory);
+    public ValidationLayer(TaskDefs taskDefs, LoggerFactory loggerFactory, Serde serde) {
+        this(ValidationOptions.normal(), taskDefs, loggerFactory, serde);
     }
 
 
@@ -330,7 +331,7 @@ public class ValidationLayer implements Layer {
     }
 
     @SuppressWarnings("EqualsWithItself")
-    private List<String> validateObject(@Nullable Serializable obj, boolean checkSerializeRoundtrip) {
+    private List<String> validateObject(@Nullable Serializable obj, boolean isKey) {
         final ArrayList<String> errors = new ArrayList<>();
         if(obj == null) {
             return errors;
@@ -376,56 +377,59 @@ public class ValidationLayer implements Layer {
         // Check serialized output.
         final byte[] serializedAfterCalls = serialize(obj);
         final byte[] serializedAfterCallsAgain = serialize(obj);
-        if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsAgain)) {
-            errors.add(
-                "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
-        } else if(!Arrays.equals(serializedBeforeCalls, serializedAfterCalls)) {
-            errors.add(
-                "Serialized representation is different when serialized twice, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
-        } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsAgain)) {
-            errors.add(
-                "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedAfterCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCallsAgain));
+        if(isKey) {
+            if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsAgain)) {
+                errors.add(
+                    "Serialized representation is different when serialized twice.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
+            } else if(!Arrays.equals(serializedBeforeCalls, serializedAfterCalls)) {
+                errors.add(
+                    "Serialized representation is different when serialized twice, with calls to equals and hashCode in between.\n  Possible incorrect serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCalls));
+            } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsAgain)) {
+                errors.add(
+                    "Serialized representation is different when serialized twice, after calls to equals and hashcode.\n  Possible incorrect serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedAfterCalls) + "\n  vs\n    " + Arrays.toString(serializedAfterCallsAgain));
+            }
         }
 
-        if(checkSerializeRoundtrip) {
-            // Check serialize-deserialize roundtrip.
-            // Equality.
-            final Serializable objDeserializedBeforeCalls = deserialize(serializedBeforeCalls);
-            final Serializable objDeserializedAfterCalls = deserialize(serializedAfterCalls);
-            if(!obj.equals(objDeserializedBeforeCalls) || !objDeserializedBeforeCalls.equals(obj)) {
+
+        // Check serialize-deserialize roundtrip.
+        // Equality.
+        final Serializable objDeserializedBeforeCalls = deserialize(serializedBeforeCalls);
+        final Serializable objDeserializedAfterCalls = deserialize(serializedAfterCalls);
+        if(!obj.equals(objDeserializedBeforeCalls) || !objDeserializedBeforeCalls.equals(obj)) {
+            errors.add(
+                "Not equal to itself after deserialization.\n  Possible incorrect serialization or equals implementation.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedBeforeCalls);
+        } else if(!obj.equals(objDeserializedAfterCalls) || !objDeserializedAfterCalls.equals(obj)) {
+            errors.add(
+                "Not equal to itself after deserialization, when serialized with calls to equals and hashCode in between.\n  Possible incorrect serialization or equals implementation, possibly by using a non-transient hashCode cache.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedAfterCalls);
+        }
+        // Hash code.
+        if(isKey) {
+            final int beforeHash1 = obj.hashCode();
+            final int beforeHash2 = objDeserializedBeforeCalls.hashCode();
+            if(beforeHash1 != beforeHash2) {
                 errors.add(
-                    "Not equal to itself after deserialization.\n  Possible incorrect cause serialization or equals implementation.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedBeforeCalls);
-            } else if(!obj.equals(objDeserializedAfterCalls) || !objDeserializedAfterCalls.equals(obj)) {
-                errors.add(
-                    "Not equal to itself after deserialization, when serialized with calls to equals and hashCode : between.\n  Possible incorrect cause serialization or equals implementation, possibly by using a non-transient hashCode cache.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedAfterCalls);
-            }
-            // Hash code.
-            {
-                final int beforeHash1 = obj.hashCode();
-                final int beforeHash2 = objDeserializedBeforeCalls.hashCode();
-                if(beforeHash1 != beforeHash2) {
+                    "Produced different hash codes after deserialization.\n  Possible incorrect serialization or hashCode implementation.\n  Hashes:\n    " + beforeHash1 + "\n  vs\n    " + beforeHash2);
+            } else {
+                final int afterHash1 = obj.hashCode();
+                final int afterHash2 = objDeserializedAfterCalls.hashCode();
+                if(afterHash1 != afterHash2) {
                     errors.add(
-                        "Produced different hash codes after deserialization.\n  Possible incorrect cause serialization or hashCode implementation.\n  Hashes:\n    " + beforeHash1 + "\n  vs\n    " + beforeHash2);
+                        "Produced different hash codes after deserialization, when serialized with calls to equals and hashCode in between.\n  Possible incorrect serialization or hashCode implementation.\n  Hashes:\n    " + afterHash1 + "\n  vs\n    " + afterHash2);
                 } else {
-                    final int afterHash1 = obj.hashCode();
-                    final int afterHash2 = objDeserializedAfterCalls.hashCode();
-                    if(afterHash1 != afterHash2) {
-                        errors.add(
-                            "Produced different hash codes after deserialization, when serialized with calls to equals and hashCode : between.\n  Possible incorrect cause serialization or hashCode implementation.\n  Hashes:\n    " + afterHash1 + "\n  vs\n    " + afterHash2);
-                    } else {
-                    }
                 }
             }
+        }
 
-            // Check serialize-deserialize-serialize roundtrip.
+        // Check serialize-deserialize-serialize roundtrip.
+        if(isKey) {
             final byte[] serializedBeforeCallsTwice = serialize(objDeserializedBeforeCalls);
             final byte[] serializedAfterCallsTwice = serialize(objDeserializedAfterCalls);
             if(!Arrays.equals(serializedBeforeCalls, serializedBeforeCallsTwice)) {
                 errors.add(
-                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect cause serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
+                    "Serialized representation is different after round-trip serialization.\n  Possible incorrect serialization implementation.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
             } else if(!Arrays.equals(serializedAfterCalls, serializedAfterCallsTwice)) {
                 errors.add(
-                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode : between.\n  Possible incorrect cause serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
+                    "Serialized representation is different after round-trip serialization, with calls to equals and hashCode in between.\n  Possible incorrect serialization implementation, possibly by using a non-transient hashCode cache.\n  Serialized bytes:\n    " + Arrays.toString(serializedBeforeCalls) + "\n  vs\n    " + Arrays.toString(serializedBeforeCallsTwice));
             }
         }
 
@@ -433,27 +437,18 @@ public class ValidationLayer implements Layer {
     }
 
     private byte[] serialize(Serializable obj) {
-        try(
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)
-        ) {
-            objectOutputStream.writeObject(obj);
-            objectOutputStream.flush();
-            outputStream.flush();
-            return outputStream.toByteArray();
-        } catch(IOException e) {
+        try {
+            return serde.serializeTypeAndObjectToBytes(obj);
+        } catch(SerializeRuntimeException e) {
             throw new ValidationException("Serialization of " + obj + " in validation failed unexpectedly", e);
         }
     }
 
+    @SuppressWarnings("unchecked")
     private <T extends Serializable> T deserialize(byte[] bytes) {
-        try(
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-            final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)
-        ) {
-            @SuppressWarnings("unchecked") final T obj = (T)objectInputStream.readObject();
-            return obj;
-        } catch(IOException | ClassNotFoundException e) {
+        try {
+            return (T)Objects.requireNonNull(serde.deserializeTypeAndObjectFromBytes(bytes));
+        } catch(DeserializeRuntimeException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
         }
     }

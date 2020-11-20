@@ -52,8 +52,7 @@ public class STask<O extends @Nullable Serializable> implements Supplier<O>, Ser
     public Task<O> toTask(TaskDefs taskDefs) {
         @SuppressWarnings("unchecked") final @Nullable TaskDef<?, O> taskDef = (TaskDef<?, O>)taskDefs.getTaskDef(id);
         if(taskDef == null) {
-            throw new RuntimeException(
-                "Cannot get task definition for id " + id + "; task definition with that id does not exist");
+            throw new RuntimeException("Cannot get task definition for id " + id + "; task definition with that id does not exist");
         }
         return new Task<>(taskDef, input);
     }

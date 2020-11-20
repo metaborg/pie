@@ -7,8 +7,8 @@ import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.Share;
-import mb.pie.api.Store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.Tracer;
@@ -33,7 +33,6 @@ import mb.pie.serde.kryo.KryoSerde;
 import mb.pie.store.lmdb.LMDBStore;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
-import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
@@ -246,28 +245,28 @@ public class PieState {
 
     public enum LayerKind {
         validation {
-            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
-                return ValidationLayer::new;
+            @Override public LayerFactory get() {
+                return (taskDefs, loggerFactory, serde) -> new ValidationLayer(taskDefs, loggerFactory, serde);
             }
         },
         validation_pedantic {
-            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
-                return (taskDefs, logger) -> new ValidationLayer(ValidationLayer.ValidationOptions.all(), taskDefs, logger);
+            @Override public LayerFactory get() {
+                return (taskDefs, logger, serde) -> new ValidationLayer(ValidationLayer.ValidationOptions.all(), taskDefs, logger, serde);
             }
         },
         validation_pedantic_except_serialization {
-            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
-                return (taskDefs, logger) -> new ValidationLayer(ValidationLayer.ValidationOptions.all_except_serialization(), taskDefs, logger);
+            @Override public LayerFactory get() {
+                return (taskDefs, logger, serde) -> new ValidationLayer(ValidationLayer.ValidationOptions.all_except_serialization(), taskDefs, logger, serde);
             }
         },
         noop {
-            @Override public BiFunction<TaskDefs, LoggerFactory, Layer> get() {
-                return (taskDefs, logger) -> new NoopLayer();
+            @Override public LayerFactory get() {
+                return (taskDefs, logger, serde) -> new NoopLayer();
             }
         },
         ;
 
-        public abstract BiFunction<TaskDefs, LoggerFactory, Layer> get();
+        public abstract LayerFactory get();
     }
 
     public enum TracerKind {

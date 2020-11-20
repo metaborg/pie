@@ -39,7 +39,11 @@ public interface PieBuilder {
 
     PieBuilder withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
-    PieBuilder withLayerFactory(BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory);
+    @FunctionalInterface interface LayerFactory {
+        Layer apply(TaskDefs taskDefs, LoggerFactory loggerFactory, Serde serde);
+    }
+
+    PieBuilder withLayerFactory(LayerFactory layerFactory);
 
     PieBuilder withLoggerFactory(LoggerFactory loggerFactory);
 

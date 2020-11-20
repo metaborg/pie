@@ -1,13 +1,13 @@
 package mb.pie.api;
 
 import mb.log.api.LoggerFactory;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -28,7 +28,7 @@ public interface PieChildBuilder {
 
     PieChildBuilder withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
-    PieChildBuilder withLayerFactory(BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory);
+    PieChildBuilder withLayerFactory(LayerFactory layerFactory);
 
     PieChildBuilder withLoggerFactory(LoggerFactory loggerFactory);
 

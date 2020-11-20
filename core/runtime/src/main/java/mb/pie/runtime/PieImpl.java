@@ -5,6 +5,7 @@ import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.PieChildBuilder;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
@@ -15,6 +16,7 @@ import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.api.Tracer;
+import mb.pie.api.serde.Serde;
 import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
@@ -24,17 +26,17 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieImpl implements Pie {
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
+    protected final Serde serde;
     protected final Store store;
     protected final Share share;
     protected final DefaultStampers defaultStampers;
-    protected final BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory;
+    protected final LayerFactory layerFactory;
     protected final LoggerFactory loggerFactory;
     protected final Function<LoggerFactory, Tracer> tracerFactory;
     protected final Callbacks callbacks;
@@ -43,16 +45,18 @@ public class PieImpl implements Pie {
     public PieImpl(
         TaskDefs taskDefs,
         ResourceService resourceService,
+        Serde serde,
         Store store,
         Share share,
         DefaultStampers defaultStampers,
-        BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory,
+        LayerFactory layerFactory,
         LoggerFactory loggerFactory,
         Function<LoggerFactory, Tracer> tracerFactory,
         Callbacks callbacks
     ) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
+        this.serde = serde;
         this.store = store;
         this.share = share;
         this.defaultStampers = defaultStampers;
@@ -68,7 +72,7 @@ public class PieImpl implements Pie {
 
 
     @Override public MixedSession newSession() {
-        final Layer layer = layerFactory.apply(taskDefs, loggerFactory);
+        final Layer layer = layerFactory.apply(taskDefs, loggerFactory, serde);
         final Tracer tracer = tracerFactory.apply(loggerFactory);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
         final TaskExecutor taskExecutor = new TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, tracer, callbacks, visited);
@@ -145,6 +149,6 @@ public class PieImpl implements Pie {
     }
 
     @Override public String toString() {
-        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, loggerFactory) + ")";
+        return "PieImpl(" + store + ", " + share + ", " + defaultStampers + ", " + layerFactory.apply(taskDefs, loggerFactory, serde) + ")";
     }
 }

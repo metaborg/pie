@@ -7,6 +7,7 @@ import dagger.multibindings.ElementsIntoSet;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.Layer;
 import mb.pie.api.PieBuilder;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.TaskDef;
@@ -56,7 +57,7 @@ import java.util.function.Function;
     abstract ResourceStamper<HierarchicalResource> defaultProvideHierarchicalResourceStamper();
 
     @BindsOptionalOf
-    abstract BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory();
+    abstract LayerFactory layerFactory();
 
     @BindsOptionalOf
     abstract LoggerFactory loggerFactory();

@@ -8,12 +8,15 @@ import mb.pie.api.Layer
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
 import mb.pie.api.PieBuilder
+import mb.pie.api.PieBuilder.LayerFactory
+import mb.pie.api.PieBuilder.StoreFactory
 import mb.pie.api.Share
 import mb.pie.api.Store
 import mb.pie.api.TaskData
 import mb.pie.api.TaskDefs
 import mb.pie.api.TaskKey
 import mb.pie.api.Tracer
+import mb.pie.api.serde.Serde
 import mb.pie.api.stamp.ResourceStamper
 import mb.pie.api.stamp.resource.HashMatchResourceStamper
 import mb.pie.api.stamp.resource.HashResourceStamper
@@ -54,15 +57,16 @@ open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
   testContextFactory = testContextFactory
 ) {
   init {
-    storeFactories.add(PieBuilder.StoreFactory { _, _, _ -> InMemoryStore() })
+    storeFactories.add(StoreFactory { _, _, _ -> InMemoryStore() })
     shareFactories.add { _ -> NonSharingShare() }
-    layerFactories.add { td, l -> ValidationLayer(td, l) }
+    layerFactories.add(LayerFactory { td, l, serde -> ValidationLayer(td, l, serde) })
   }
 }
 
 open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl() {
   override fun build(): TestPieImpl {
-    val store = storeFactory.apply(serdeFactory.apply(loggerFactory), resourceService, loggerFactory)
+    val serde = serdeFactory.apply(loggerFactory)
+    val store = storeFactory.apply(serde, resourceService, loggerFactory)
     val share = shareFactory.apply(loggerFactory)
     val defaultStampers = DefaultStampers(defaultOutputStamper, defaultRequireReadableStamper, defaultProvideReadableStamper,
       defaultRequireHierarchicalStamper, defaultProvideHierarchicalStamper)
@@ -70,6 +74,7 @@ open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl()
       shouldSpy,
       taskDefs ?: error("Task definitions have not been set. Call PieBuilder#withTaskDefs to set task definitions"),
       resourceService,
+      serde,
       store,
       share,
       defaultStampers,
@@ -85,18 +90,19 @@ open class TestPieImpl(
   private val shouldSpy: Boolean,
   taskDefs: TaskDefs,
   resourceService: ResourceService,
+  serde: Serde,
   store: Store,
   share: Share,
   defaultStampers: DefaultStampers,
-  layerFactory: BiFunction<TaskDefs, LoggerFactory, Layer>,
+  layerFactory: LayerFactory,
   loggerFactory: LoggerFactory,
   tracerFactory: Function<LoggerFactory, Tracer>,
   callbacks: Callbacks
-) : PieImpl(taskDefs, resourceService, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks) {
+) : PieImpl(taskDefs, resourceService, serde, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks) {
   val store: Store get() = super.store // Make store available for testing.
 
   override fun newSession(): TestMixedSessionImpl {
-    val layer = layerFactory.apply(taskDefs, loggerFactory)
+    val layer = layerFactory.apply(taskDefs, loggerFactory, serde)
     val executorLogger = tracerFactory.apply(loggerFactory)
     val visited = HashMap<TaskKey, TaskData>()
 

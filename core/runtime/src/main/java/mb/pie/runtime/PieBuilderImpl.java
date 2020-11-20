@@ -2,13 +2,12 @@ package mb.pie.runtime;
 
 import mb.log.api.LoggerFactory;
 import mb.log.noop.NoopLoggerFactory;
-import mb.pie.api.serde.JavaSerde;
-import mb.pie.api.Layer;
 import mb.pie.api.PieBuilder;
-import mb.pie.api.serde.Serde;
 import mb.pie.api.Share;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.Tracer;
+import mb.pie.api.serde.JavaSerde;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
@@ -27,7 +26,6 @@ import mb.resource.text.TextResourceRegistry;
 import mb.resource.url.URLResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class PieBuilderImpl implements PieBuilder {
@@ -41,7 +39,7 @@ public class PieBuilderImpl implements PieBuilder {
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper = ResourceStampers.modifiedFile();
     protected ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper = ResourceStampers.modifiedFile();
     protected ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper = ResourceStampers.modifiedFile();
-    protected BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory = ValidationLayer::new;
+    protected LayerFactory layerFactory = ValidationLayer::new;
     protected LoggerFactory loggerFactory = NoopLoggerFactory.instance;
     protected Function<LoggerFactory, Tracer> tracerFactory = (loggerFactory) -> NoopTracer.instance;
 
@@ -107,7 +105,7 @@ public class PieBuilderImpl implements PieBuilder {
     }
 
     @Override
-    public PieBuilderImpl withLayerFactory(BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory) {
+    public PieBuilderImpl withLayerFactory(LayerFactory layerFactory) {
         this.layerFactory = layerFactory;
         return this;
     }
@@ -136,10 +134,12 @@ public class PieBuilderImpl implements PieBuilder {
             defaultRequireHierarchicalStamper,
             defaultProvideHierarchicalStamper
         );
+        final Serde serde = serdeFactory.apply(loggerFactory);
         return new PieImpl(
             taskDefs,
             resourceService,
-            storeFactory.apply(serdeFactory.apply(loggerFactory), resourceService, loggerFactory),
+            serde,
+            storeFactory.apply(serde, resourceService, loggerFactory),
             shareFactory.apply(loggerFactory),
             defaultStampers,
             layerFactory,

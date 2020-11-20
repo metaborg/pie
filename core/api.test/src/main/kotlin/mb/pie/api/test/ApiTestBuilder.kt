@@ -3,12 +3,11 @@ package mb.pie.api.test
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import mb.log.api.LoggerFactory
-import mb.pie.api.Layer
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
 import mb.pie.api.PieBuilder
+import mb.pie.api.PieBuilder.LayerFactory
 import mb.pie.api.Share
-import mb.pie.api.TaskDefs
 import mb.pie.api.Tracer
 import mb.pie.api.stamp.OutputStamper
 import mb.pie.api.stamp.ResourceStamper
@@ -37,7 +36,7 @@ abstract class ApiTestBuilder<Ctx : ApiTestCtx>(
   val defaultProvideReadableStampers: MutableList<ResourceStamper<ReadableResource>> = defaultResourceStampers
   val defaultRequireHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = defaultHierarchicalStampers
   val defaultProvideHierarchicalStampers: MutableList<ResourceStamper<HierarchicalResource>> = defaultHierarchicalStampers
-  val layerFactories: MutableList<(TaskDefs, LoggerFactory) -> Layer> = mutableListOf()
+  val layerFactories: MutableList<LayerFactory> = mutableListOf()
 
   fun test(testFunc: Ctx.() -> Unit): Stream<out DynamicTest> {
     if(storeFactories.isEmpty()) error("Store factories list is empty")

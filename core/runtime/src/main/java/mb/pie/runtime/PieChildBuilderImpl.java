@@ -2,8 +2,8 @@ package mb.pie.runtime;
 
 import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
-import mb.pie.api.Layer;
 import mb.pie.api.MapTaskDefs;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.PieChildBuilder;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.Tracer;
@@ -18,7 +18,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class PieChildBuilderImpl implements PieChildBuilder {
@@ -33,7 +32,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper;
     protected ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper;
     protected ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper;
-    protected BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory;
+    protected LayerFactory layerFactory;
     protected LoggerFactory loggerFactory;
     protected Function<LoggerFactory, Tracer> tracerFactory;
 
@@ -99,7 +98,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     }
 
     @Override
-    public PieChildBuilderImpl withLayerFactory(BiFunction<TaskDefs, LoggerFactory, Layer> layerFactory) {
+    public PieChildBuilderImpl withLayerFactory(LayerFactory layerFactory) {
         this.layerFactory = layerFactory;
         return this;
     }
@@ -164,6 +163,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         return new PieImpl(
             taskDefs,
             resourceService,
+            parent.serde,
             parent.store,
             parent.share,
             defaultStampers,

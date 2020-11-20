@@ -7,6 +7,7 @@ import mb.pie.api.Layer;
 import mb.pie.api.MapTaskDefs;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.Share;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
@@ -44,7 +45,7 @@ public class PieModule {
         @Named("provide") Optional<ResourceStamper<ReadableResource>> defaultProvideReadableResourceStamper,
         @Named("require") Optional<ResourceStamper<HierarchicalResource>> defaultRequireHierarchicalResourceStamper,
         @Named("provide") Optional<ResourceStamper<HierarchicalResource>> defaultProvideHierarchicalResourceStamper,
-        Optional<BiFunction<TaskDefs, LoggerFactory, Layer>> layerFactory,
+        Optional<LayerFactory> layerFactory,
         Optional<LoggerFactory> loggerFactory,
         Optional<Function<LoggerFactory, Tracer>> tracerFactory
     ) {
