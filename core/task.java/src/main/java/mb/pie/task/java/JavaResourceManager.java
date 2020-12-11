@@ -1,5 +1,6 @@
 package mb.pie.task.java;
 
+import com.sun.tools.javac.file.PathFileObject;
 import mb.resource.ResourceKeyString;
 import mb.resource.ResourceRuntimeException;
 import mb.resource.ResourceService;
@@ -172,6 +173,13 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         return new JavaResource(resource);
     }
 
+    @Override
+    public boolean isSameFile(FileObject a, FileObject b) {
+        // Override isSameFile because JDK8's implementation throws if a or b are not of type PathFileObject. Mimic
+        // JDK9+'s implementation that performs equality when they are not PathFileObject.
+        if(a instanceof PathFileObject && b instanceof PathFileObject) return super.isSameFile(a, b);
+        return a.equals(b);
+    }
 
     private @Nullable List<HierarchicalResource> getResources(Location location) {
         if(location instanceof StandardLocation) {
