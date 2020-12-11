@@ -175,7 +175,7 @@ public class Spoofax3CompilerState {
             public Spoofax3LanguageProjectCompiler.Input getCompilerInput(HierarchicalResource baseDir) {
                 final Shared shared = Shared.builder()
                     .name("Chars")
-                    .defaultPackageId("mb.char")
+                    .defaultPackageId("mb.chars")
                     .defaultClassPrefix("Chars")
                     .build();
                 final LanguageProject languageProject = LanguageProject.builder().withDefaults(baseDir.getPath(), shared).build();

@@ -1,14 +1,19 @@
-module start
+module test
 
 context-free syntax
 
-  Start = <<Chars>>
+  Start.Start = <<CHARS>>
+
+context-free start-symbols
+
+  Start
 
 lexical syntax
 
-  Chars  = [a-zA-Z]*
-  LAYOUT = [\ \t\n\r]
+  CHARS  = ~[\ \t\n\v\f\r]*
+  LAYOUT = [\ \t\n\v\f\r]
 
 context-free restrictions
 
-  LAYOUT? -/- [\ \t\n\r]
+  CHARS   -/- ~[\ \t\n\v\f\r]
+  LAYOUT? -/- [\ \t\n\v\f\r]

@@ -4,7 +4,6 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import mb.pie.api.MapTaskDefs;
 import mb.pie.api.MixedSession;
-import mb.pie.api.None;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
 import mb.pie.runtime.PieBuilderImpl;
@@ -33,7 +32,6 @@ class CompileTest {
     private final FSResource buildDir = createDir(rootDirectory, "build");
     private final FSResource sourceFileOutputDir = createDir(buildDir, "generated/sources/annotationProcessor/java/main");
     private final FSResource classFileOutputDir = createDir(buildDir, "classes/java/main");
-    private final FSResource libsDir = createDir(buildDir, "libs");
 
     CompileTest() throws IOException {}
 
@@ -101,7 +99,7 @@ class CompileTest {
         classPath.addAll(annotationProcessorPath);
 
         try(MixedSession session = pie.newSession()) {
-            final Task<None> compileJavaTask = compileJava.createTask(new CompileJava.Input(
+            final Task<ArrayList<CompileJava.Message>> compileJavaTask = compileJava.createTask(new CompileJava.Input(
                 sourceFiles,
                 sourcePath,
                 classPath,
@@ -112,7 +110,8 @@ class CompileTest {
                 classFileOutputDir.getPath(),
                 createList()
             ));
-            session.require(compileJavaTask);
+            @SuppressWarnings("ConstantConditions") final ArrayList<CompileJava.Message> messages = session.require(compileJavaTask);
+            assertTrue(messages.isEmpty());
 
             final FSResource immutableHelloWorldJavaFile = sourceFileOutputDir.appendRelativePath("test/data/ImmutableHelloWorld.java");
             assertTrue(immutableHelloWorldJavaFile.exists());
