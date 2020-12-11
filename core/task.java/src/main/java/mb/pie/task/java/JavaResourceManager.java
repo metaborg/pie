@@ -1,6 +1,5 @@
 package mb.pie.task.java;
 
-import com.sun.tools.javac.file.PathFileObject;
 import mb.resource.ResourceKeyString;
 import mb.resource.ResourceRuntimeException;
 import mb.resource.ResourceService;
@@ -35,6 +34,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
     private final ArrayList<HierarchicalResource> sourcePath;
     private final HierarchicalResource sourceFileOutputDir;
     private final HierarchicalResource classFileOutputDir;
+    private final @Nullable Class<?> baseFileObjectClass;
 
     JavaResourceManager(
         StandardJavaFileManager fileManager,
@@ -48,6 +48,13 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         this.sourcePath = sourcePath;
         this.sourceFileOutputDir = sourceFileOutputDir;
         this.classFileOutputDir = classFileOutputDir;
+        @Nullable Class<?> baseFileObjectClass = null;
+        try {
+            baseFileObjectClass = Class.forName("com.sun.tools.javac.file.BaseFileObject");
+        } catch(ClassNotFoundException e) {
+            // Ignore, baseFileObjectClass will stay null.
+        }
+        this.baseFileObjectClass = baseFileObjectClass;
     }
 
     @Override public boolean hasLocation(Location location) {
@@ -175,10 +182,12 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
 
     @Override
     public boolean isSameFile(FileObject a, FileObject b) {
-        // Override isSameFile because JDK8's implementation throws if a or b are not of type PathFileObject. Mimic
-        // JDK9+'s implementation that performs equality when they are not PathFileObject.
-        if(a instanceof PathFileObject && b instanceof PathFileObject) return super.isSameFile(a, b);
-        return a.equals(b);
+        // Override isSameFile because JDK8's implementation throws if a or b are not of type BaseFileObject.
+        if(baseFileObjectClass != null && baseFileObjectClass.isInstance(a) && baseFileObjectClass.isInstance(b)) {
+            return super.isSameFile(a, b);
+        } else {
+            return a.equals(b);
+        }
     }
 
     private @Nullable List<HierarchicalResource> getResources(Location location) {
