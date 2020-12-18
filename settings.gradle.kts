@@ -14,8 +14,8 @@ if(org.gradle.util.VersionNumber.parse(gradle.gradleVersion).major < 6) {
 // (devenv) will include these composite builds, as IntelliJ does not support nested composite builds.
 if(gradle.parent == null) {
   includeBuildWithName("core", "pie.core.root")
-  //includeBuildWithName("lang", "pie.lang.root")
-  //includeBuildWithName("bench", "pie.bench")
+  includeBuildWithName("lang", "pie.lang.root")
+  includeBuildWithName("bench", "pie.bench")
 }
 
 fun includeBuildWithName(dir: String, name: String) {
