@@ -13,7 +13,8 @@ jobs:
       matrix:
         os: [ubuntu-18.04, windows-2019, macos-10.15]
         java: [8, 11]
-        gradle: [5.6.4]
+        gradle: [6.8]
+        experimental: [false]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

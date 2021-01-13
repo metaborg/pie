@@ -11,7 +11,7 @@ jobs:
         os: [ubuntu-18.04]
         java: [15]
         python: [3.8]
-        gradle: [6.7]
+        gradle: [6.8]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
