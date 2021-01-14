@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static mb.pie.task.java.Util.qualifiedNameToRelativePath;
 import static mb.pie.task.java.Util.relativePathToQualifiedName;
@@ -91,10 +92,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
             if(!resource.exists() || !resource.isDirectory()) continue;
             final ExtensionsPathMatcher pathMatcher = new ExtensionsPathMatcher(kinds.stream().map(Util::kindToExtension).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
             final ResourceMatcher matcher = new PathResourceMatcher(pathMatcher);
-            if(recurse) {
-                results.addAll(resource.walk(new TrueResourceWalker(), matcher).map(JavaResource::new).collect(Collectors.toList()));
-            } else {
-                results.addAll(resource.list(matcher).map(JavaResource::new).collect(Collectors.toList()));
+            try(Stream<? extends HierarchicalResource> stream = recurse ? resource.walk(new TrueResourceWalker(), matcher) : resource.list(matcher)) {
+                results.addAll(stream.map(JavaResource::new).collect(Collectors.toList()));
             }
         }
         return results;
