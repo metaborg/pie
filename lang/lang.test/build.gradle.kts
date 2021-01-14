@@ -9,7 +9,7 @@ spoofaxProject {
   outputIncludePatterns.add("*.java")
 }
 
-fun compositeBuild(name: String) = "$group:$name"
+fun compositeBuild(name: String) = "$group:$name:$version"
 
 dependencies {
   api(platform(compositeBuild("pie.depconstraints")))

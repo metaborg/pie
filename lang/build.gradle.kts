@@ -10,8 +10,6 @@ plugins {
 
 subprojects {
   metaborg {
-    kotlinApiVersion = "1.2"
-    kotlinLanguageVersion = "1.2"
     configureSubProject()
   }
 }
