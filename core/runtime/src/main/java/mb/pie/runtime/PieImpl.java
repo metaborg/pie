@@ -89,19 +89,11 @@ public class PieImpl implements Pie {
         }
     }
 
-    @Override public boolean hasBeenExecuted(Task<?> task) {
-        return hasBeenExecuted(task.key());
-    }
-
 
     @Override public boolean isObserved(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
             return txn.taskObservability(key).isObserved();
         }
-    }
-
-    @Override public boolean isObserved(Task<?> task) {
-        return isObserved(task.key());
     }
 
 

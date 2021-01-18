@@ -68,7 +68,7 @@ public class Hash {
         try(final Stream<? extends HierarchicalResource> stream = useMatcher ? dir.list(matcher) : dir.list()) {
             stream.forEach((resource) -> {
                 try {
-                    updateResource(resource);
+                    updateHierarchicalResource(resource);
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -83,7 +83,7 @@ public class Hash {
         try(final Stream<? extends HierarchicalResource> stream = useWalker ? dir.walk(walker, matcher) : dir.walk()) {
             stream.forEach((resource) -> {
                 try {
-                    updateResource(resource);
+                    updateHierarchicalResource(resource);
                 } catch(IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -92,6 +92,15 @@ public class Hash {
             throw e.getCause();
         }
     }
+
+    private void updateHierarchicalResource(HierarchicalResource resource) throws IOException {
+        if(!resource.exists()) {
+            updateNonExistent();
+        } else if(resource.isFile()) {
+            updateResource(resource);
+        } // Ignore directories: they have no content and cannot influence the hash.
+    }
+
 
     byte[] getHashBytesAndReset() {
         return digest.digest();
