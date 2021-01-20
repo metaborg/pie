@@ -50,7 +50,7 @@ public abstract class SessionImpl implements Session {
     }
 
     @Override
-    public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException {
+    public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, HierarchicalResource> shouldDeleteProvidedResource) throws IOException {
         try(StoreWriteTxn txn = store.writeTxn()) {
             // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
             final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
@@ -70,9 +70,10 @@ public abstract class SessionImpl implements Session {
                     // Delete provided resources.
                     for(ResourceProvideDep dep : deletedData.resourceProvides) {
                         final Resource resource = resourceService.getResource(dep.key);
-                        if(shouldDeleteProvidedResource.test(task, resource)) {
-                            if(resource instanceof HierarchicalResource) {
-                                ((HierarchicalResource)resource).delete();
+                        if(resource instanceof HierarchicalResource) {
+                            final HierarchicalResource hierarchicalResource = ((HierarchicalResource)resource);
+                            if(shouldDeleteProvidedResource.test(task, hierarchicalResource)) {
+                                hierarchicalResource.delete(true);
                             }
                         }
                     }

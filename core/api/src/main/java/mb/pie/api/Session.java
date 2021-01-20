@@ -2,6 +2,7 @@ package mb.pie.api;
 
 import mb.pie.api.exec.CancelToken;
 import mb.resource.Resource;
+import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -115,5 +116,5 @@ public interface Session {
      *                                     will not be deleted.
      * @throws IOException when deleting a resource fails unexpectedly.
      */
-    void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException;
+    void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, HierarchicalResource> shouldDeleteProvidedResource) throws IOException;
 }

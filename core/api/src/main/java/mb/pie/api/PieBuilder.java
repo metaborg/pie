@@ -17,6 +17,8 @@ import java.util.function.Function;
 public interface PieBuilder {
     PieBuilder withTaskDefs(TaskDefs taskDefs);
 
+    PieBuilder addTaskDefs(TaskDefs taskDefs);
+
     PieBuilder withResourceService(ResourceService resourceService);
 
     PieBuilder withSerdeFactory(Function<LoggerFactory, Serde> serdeFactory);
