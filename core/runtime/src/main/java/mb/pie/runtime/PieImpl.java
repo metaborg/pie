@@ -21,11 +21,13 @@ import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.RequireShared;
 import mb.pie.runtime.exec.TaskExecutor;
 import mb.pie.runtime.exec.TopDownRunner;
+import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -75,11 +77,12 @@ public class PieImpl implements Pie {
         final Layer layer = layerFactory.apply(taskDefs, loggerFactory, serde);
         final Tracer tracer = tracerFactory.apply(loggerFactory);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
-        final TaskExecutor taskExecutor = new TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, tracer, callbacks, visited);
+        final HashSet<ResourceKey> providedResources = new HashSet<>();
+        final TaskExecutor taskExecutor = new TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, tracer, callbacks, visited, providedResources);
         final RequireShared requireShared = new RequireShared(taskDefs, resourceService, tracer, visited);
         final TopDownRunner topDownRunner = new TopDownRunner(store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         final BottomUpRunner bottomUpRunner = new BottomUpRunner(taskDefs, resourceService, store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
-        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store);
+        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, providedResources);
     }
 
 

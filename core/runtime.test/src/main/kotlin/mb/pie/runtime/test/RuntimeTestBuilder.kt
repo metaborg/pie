@@ -37,6 +37,7 @@ import mb.pie.runtime.share.NonSharingShare
 import mb.pie.runtime.store.InMemoryStore
 import mb.pie.runtime.tracer.LoggingTracer
 import mb.resource.ReadableResource
+import mb.resource.ResourceKey
 import mb.resource.ResourceService
 import mb.resource.hierarchical.HierarchicalResource
 import java.nio.file.FileSystem
@@ -105,9 +106,10 @@ open class TestPieImpl(
     val layer = layerFactory.apply(taskDefs, loggerFactory, serde)
     val executorLogger = tracerFactory.apply(loggerFactory)
     val visited = HashMap<TaskKey, TaskData>()
+    val providedResources = HashSet<ResourceKey>()
 
     val taskExecutor = TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, executorLogger,
-      callbacks, visited)
+      callbacks, visited, providedResources)
     val requireShared = RequireShared(taskDefs, resourceService, executorLogger, visited)
 
     var topDownSession = TopDownRunner(super.store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited)
@@ -121,7 +123,7 @@ open class TestPieImpl(
       bottomUpSession = spy(bottomUpSession)
     }
 
-    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store)
+    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, providedResources)
     if(shouldSpy) {
       session = spy(session)
     }
@@ -135,8 +137,9 @@ open class TestMixedSessionImpl(
   bottomUpRunner: BottomUpRunner,
   taskDefs: TaskDefs,
   resourceService: ResourceService,
-  store: Store
-) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store) {
+  store: Store,
+  providedResources: HashSet<ResourceKey>
+) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, providedResources) {
   // Make store available for testing.
   val store: Store get() = super.store
 

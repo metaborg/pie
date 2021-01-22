@@ -5,7 +5,6 @@ import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
 import mb.pie.api.Observability;
 import mb.pie.api.Share;
-import mb.pie.api.Store;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
@@ -18,6 +17,7 @@ import mb.pie.api.exec.ExecReason;
 import mb.pie.api.exec.UncheckedInterruptedException;
 import mb.pie.runtime.DefaultStampers;
 import mb.pie.runtime.share.NonSharingShare;
+import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -38,6 +38,7 @@ public class TaskExecutor {
     private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
+    private final HashSet<ResourceKey> providedResources;
 
     public TaskExecutor(
         TaskDefs taskDefs,
@@ -48,7 +49,8 @@ public class TaskExecutor {
         LoggerFactory loggerFactory,
         Tracer tracer,
         Callbacks callbacks,
-        HashMap<TaskKey, TaskData> visited
+        HashMap<TaskKey, TaskData> visited,
+        HashSet<ResourceKey> providedResources
     ) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
@@ -60,6 +62,7 @@ public class TaskExecutor {
         this.callbacks = callbacks;
 
         this.visited = visited;
+        this.providedResources = providedResources;
     }
 
     TaskData exec(
@@ -130,6 +133,7 @@ public class TaskExecutor {
             newObservability = previousObservability;
         }
         final ExecContextImpl.Deps deps = context.deps();
+        deps.resourceProvides.forEach(d -> providedResources.add(d.key));
         final TaskData data = new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
         tracer.executeEndSuccess(key, task, reason, data);
 

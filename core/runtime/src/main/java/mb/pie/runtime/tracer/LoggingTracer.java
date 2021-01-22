@@ -30,10 +30,10 @@ import java.util.function.Consumer;
  * <li>✓: indicates that a task was required, but is already up-to-date.</li>
  * <li>→: indicates that a task is being executed (increases indentation).</li>
  * <li>←: indicates that a task has been executed, with its output being printed (decreases indentation).</li>
- * <li>¿: indicates that a task is being checked for execution (increases indentation until checking has completed).</li>
+ * <li>?: indicates that a task is being checked for execution (increases indentation until checking has completed).</li>
  * <li>☒: indicates that a dependency check has failed. The task is in an inconsistent state and needs to be scheduled/executed.</li>
  * <li>☑: indicates that a dependency check has succeeded. This dependency does not put the task in an inconsistent state.</li>
- * <li>?: indicates that a task is being checked for scheduling (increases indentation until checking has completed).</li>
+ * <li>¿: indicates that a resource or task's affected tasks are being checked for scheduling (increases indentation until checking has completed).</li>
  * <li>☐: indicates that a dependency check has been skipped, because the task is unobserved.</li>
  * <li>↑: indicates that a task has been scheduled for execution (if it has not already been scheduled).</li>
  * </ul>
@@ -141,7 +141,7 @@ public class LoggingTracer extends EmptyTracer {
     @Override
     public void checkTopDownStart(TaskKey key, Task<?> task) {
         if(isTopDownDisabled()) return;
-        logTopDown("¿ " + task.desc(strLimit));
+        logTopDown("? " + task.desc(strLimit));
         indentation.incrementAndGet();
     }
 
@@ -203,7 +203,7 @@ public class LoggingTracer extends EmptyTracer {
     @Override
     public void scheduleAffectedByResourceStart(ResourceKey resource) {
         if(isBottomUpDisabled()) return;
-        logBottomUp("? " + resource);
+        logBottomUp("¿ " + resource);
         indentation.incrementAndGet();
     }
 
