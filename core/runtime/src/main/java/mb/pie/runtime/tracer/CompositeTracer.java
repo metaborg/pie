@@ -174,7 +174,11 @@ public class CompositeTracer implements Tracer {
     }
 
     @Override
-    public void requireBottomUpInitialEnd() {}
+    public void requireBottomUpInitialEnd() {
+        for(Tracer tracer : tracers) {
+            tracer.requireBottomUpInitialEnd();
+        }
+    }
 
     @Override
     public void scheduleAffectedByResourceStart(ResourceKey resource) {

@@ -68,11 +68,12 @@ public class BottomUpRunner implements RequireTask {
 
 
     public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) {
+        tracer.requireBottomUpInitialStart(changedResources);
         try(final StoreWriteTxn txn = store.writeTxn()) {
             queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(txn);
-            tracer.requireBottomUpInitialStart(changedResources);
             scheduleAffectedByResources(changedResources.stream(), txn);
             execScheduled(txn, cancel);
+        } finally {
             tracer.requireBottomUpInitialEnd();
         }
     }
