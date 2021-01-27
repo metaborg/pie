@@ -5,10 +5,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Serializable> implements OutTransientEquatable<T, E> {
-    private final T value;
+public class OutTransientEquatableImpl<T extends @Nullable Object, E extends @Nullable Serializable> implements OutTransientEquatable<T, E> {
+    private transient final T value;
     private final E equatable;
-    private final boolean consistent;
+    private transient final boolean consistent;
 
     public OutTransientEquatableImpl(T value, E equatable, boolean consistent) {
         this.value = value;
@@ -30,7 +30,7 @@ public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Ser
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final OutTransientEquatableImpl<?, ?> that = (OutTransientEquatableImpl<?, ?>)o;
@@ -40,9 +40,7 @@ public class OutTransientEquatableImpl<T extends @Nullable Object, E extends Ser
     }
 
     @Override public int hashCode() {
-        //noinspection ConstantConditions
         int result = value != null ? value.hashCode() : 0;
-        //noinspection ConstantConditions
         result = 31 * result + (equatable != null ? equatable.hashCode() : 0);
         result = 31 * result + (consistent ? 1 : 0);
         return result;
