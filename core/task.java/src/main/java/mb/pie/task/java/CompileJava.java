@@ -6,6 +6,8 @@ import mb.pie.api.TaskDef;
 import mb.pie.api.stamp.resource.ResourceStampers;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
+import mb.resource.hierarchical.match.AllResourceMatcher;
+import mb.resource.hierarchical.match.FileResourceMatcher;
 import mb.resource.hierarchical.match.PathResourceMatcher;
 import mb.resource.hierarchical.match.path.ExtensionPathMatcher;
 import mb.resource.hierarchical.walk.TrueResourceWalker;
@@ -17,10 +19,13 @@ import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CompileJava implements TaskDef<CompileJava.Input, ArrayList<CompileJava.Message>> {
     public static class Input implements Serializable {
@@ -204,8 +209,34 @@ public class CompileJava implements TaskDef<CompileJava.Input, ArrayList<Compile
 
         compilationTask.call();
 
-        context.provide(sourceFileOutputDir, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("java"))));
-        context.provide(classFileOutputDir, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("class"))));
+        try {
+            // Provide generated Java source files.
+            try(final Stream<? extends HierarchicalResource> stream = sourceFileOutputDir.walk(
+                new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("java")))
+            )) {
+                stream.forEach(resource -> {
+                    try {
+                        context.provide(resource);
+                    } catch(IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            }
+            // Provide compiled Java class files.
+            try(final Stream<? extends HierarchicalResource> stream = classFileOutputDir.walk(
+                new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("class")))
+            )) {
+                stream.forEach(resource -> {
+                    try {
+                        context.provide(resource);
+                    } catch(IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            }
+        } catch(UncheckedIOException e) {
+            throw e.getCause();
+        }
 
         return messages; // TODO: handle messages using Result and list of KeyedMessage (but this requires them to be put into a common/util library)
     }
