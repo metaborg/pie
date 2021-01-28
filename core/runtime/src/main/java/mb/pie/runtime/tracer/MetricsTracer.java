@@ -16,58 +16,114 @@ import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class MetricsTracer extends EmptyTracer {
     public static class Report {
-        public long providedResources = 0;
-        public HashMap<ResourceKey, Long> providedPerResource = new HashMap<>();
-        public long requiredResources = 0;
+        public long totalProvidedResources = 0;
+        public HashSet<ResourceKey> providedResources = new HashSet<>();
+        public long totalRequiredResources = 0;
         public HashMap<ResourceKey, Long> requiredPerResource = new HashMap<>();
-        public long requiredTasks = 0;
+        public long totalRequiredTasks = 0;
         public HashMap<String, Long> requiredPerTaskDefinition = new HashMap<>();
 
-        public long checkedProvidedResourceDependencies = 0;
+        public boolean hasResourceBeenProvided(ResourceKey resourceKey) {
+            return providedResources.contains(resourceKey);
+        }
+
+        public boolean hasResourceBeenRequired(ResourceKey resourceKey) {
+            return getResourceRequiredCount(resourceKey) != 0;
+        }
+
+        public long getResourceRequiredCount(ResourceKey resourceKey) {
+            return requiredPerResource.getOrDefault(resourceKey, 0L);
+        }
+
+        public boolean hasTaskDefBeenRequired(String taskDefId) {
+            return getTaskDefRequiredCount(taskDefId) != 0;
+        }
+
+        public long getTaskDefRequiredCount(String taskDefId) {
+            return requiredPerTaskDefinition.getOrDefault(taskDefId, 0L);
+        }
+
+
+        public long totalCheckedProvidedResourceDependencies = 0;
         public HashMap<ResourceKey, Long> checkedProvidedPerResource = new HashMap<>();
-        public long checkedRequiredResourceDependencies = 0;
+        public long totalCheckedRequiredResourceDependencies = 0;
         public HashMap<ResourceKey, Long> checkedRequiredPerResource = new HashMap<>();
-        public long checkedRequiredTaskDependencies = 0;
+        public long totalCheckedRequiredTaskDependencies = 0;
         public HashMap<String, Long> checkedRequiredPerTaskDefinition = new HashMap<>();
 
-        public long executedTasks = 0;
+        public boolean hasResourceProvideDependnecyBeenChecked(ResourceKey resourceKey) {
+            return getResourceProvideDependencyCheckCount(resourceKey) != 0;
+        }
+
+        public long getResourceProvideDependencyCheckCount(ResourceKey resourceKey) {
+            return checkedProvidedPerResource.getOrDefault(resourceKey, 0L);
+        }
+
+        public boolean hasResourceRequireDependencyBeenChecked(ResourceKey resourceKey) {
+            return getResourceRequireDependencyCheckCount(resourceKey) != 0;
+        }
+
+        public long getResourceRequireDependencyCheckCount(ResourceKey resourceKey) {
+            return checkedRequiredPerResource.getOrDefault(resourceKey, 0L);
+        }
+
+        public boolean hasTaskDefRequireDependencyBeenChecked(String taskDefId) {
+            return getTaskDefRequireDependencyCheckCount(taskDefId) != 0;
+        }
+
+        public long getTaskDefRequireDependencyCheckCount(String taskDefId) {
+            return requiredPerTaskDefinition.getOrDefault(taskDefId, 0L);
+        }
+
+
+        public long totalExecutedTasks = 0;
         public HashMap<String, Long> executedPerTaskDefinition = new HashMap<>();
 
+        public boolean hasTaskDefExecuted(String taskDefId) {
+            return getTaskDefExecutedCount(taskDefId) != 0;
+        }
+
+        public long getTaskDefExecutedCount(String taskDefId) {
+            return executedPerTaskDefinition.getOrDefault(taskDefId, 0L);
+        }
+
+
         private void provideResource(Resource resource) {
-            ++providedResources;
-            providedPerResource.merge(resource.getKey(), 1L, Long::sum);
+            ++totalProvidedResources;
+            providedResources.add(resource.getKey());
         }
 
         private void requireResource(Resource resource) {
-            ++requiredResources;
+            ++totalRequiredResources;
             requiredPerResource.merge(resource.getKey(), 1L, Long::sum);
         }
 
         private void requireTask(Task<?> task) {
-            ++requiredTasks;
+            ++totalRequiredTasks;
             requiredPerTaskDefinition.merge(task.getId(), 1L, Long::sum);
         }
 
         private void checkProvidedResource(ResourceProvideDep dep) {
-            ++checkedProvidedResourceDependencies;
+            ++totalCheckedProvidedResourceDependencies;
             checkedProvidedPerResource.merge(dep.key, 1L, Long::sum);
         }
 
         private void checkRequiredResource(ResourceRequireDep dep) {
-            ++checkedRequiredResourceDependencies;
+            ++totalCheckedRequiredResourceDependencies;
             checkedRequiredPerResource.merge(dep.key, 1L, Long::sum);
         }
 
         private void checkRequiredTask(TaskRequireDep dep) {
-            ++checkedRequiredTaskDependencies;
+            ++totalCheckedRequiredTaskDependencies;
             checkedRequiredPerTaskDefinition.merge(dep.callee.id, 1L, Long::sum);
         }
 
         private void executeTask(Task<?> task) {
-            ++executedTasks;
+            ++totalExecutedTasks;
             executedPerTaskDefinition.merge(task.getId(), 1L, Long::sum);
         }
     }

@@ -85,15 +85,15 @@ public class PieMetricsProfiler implements InternalProfiler {
             results.add(measurement.createSingleShotResult("threadUserTime", measurement.time.threadUserTime, targetTimeUnit));
 
             if(measurement.report != null) {
-                results.add(measurement.createAvgScalarResult("providedResources", measurement.report.providedResources, "resources"));
-                results.add(measurement.createAvgScalarResult("requiredResources", measurement.report.requiredResources, "resources"));
-                results.add(measurement.createAvgScalarResult("requiredTasks", measurement.report.requiredTasks, "tasks"));
+                results.add(measurement.createAvgScalarResult("providedResources", measurement.report.totalProvidedResources, "resources"));
+                results.add(measurement.createAvgScalarResult("requiredResources", measurement.report.totalRequiredResources, "resources"));
+                results.add(measurement.createAvgScalarResult("requiredTasks", measurement.report.totalRequiredTasks, "tasks"));
 
-                results.add(measurement.createAvgScalarResult("checkedProvidedResourceDependencies", measurement.report.checkedProvidedResourceDependencies, "dependencies"));
-                results.add(measurement.createAvgScalarResult("checkedRequiredResourceDependencies", measurement.report.checkedRequiredResourceDependencies, "dependencies"));
-                results.add(measurement.createAvgScalarResult("checkedRequiredTaskDependencies", measurement.report.checkedRequiredTaskDependencies, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedProvidedResourceDependencies", measurement.report.totalCheckedProvidedResourceDependencies, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedRequiredResourceDependencies", measurement.report.totalCheckedRequiredResourceDependencies, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedRequiredTaskDependencies", measurement.report.totalCheckedRequiredTaskDependencies, "dependencies"));
 
-                results.add(measurement.createAvgScalarResult("executedTasks", measurement.report.executedTasks, "tasks"));
+                results.add(measurement.createAvgScalarResult("executedTasks", measurement.report.totalExecutedTasks, "tasks"));
             }
         }
         measurementsActive = false;
