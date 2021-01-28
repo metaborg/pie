@@ -235,7 +235,7 @@ public class ValidationLayer implements Layer {
                 sb.append("  " + resource + "\n");
                 sb.append("provided by task\n");
                 sb.append("  " + provider.toShortString(options.shortStringLength) + "\n");
-                sb.append("without a (transitive) task requirement on it");
+                sb.append("without a (transitive) task dependency from the requirer to the provider");
                 error(sb.toString());
             }
         }
@@ -256,6 +256,7 @@ public class ValidationLayer implements Layer {
                     sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
                     sb.append("after being previously required by task\n");
                     sb.append("  " + requiree.toShortString(options.shortStringLength));
+                    sb.append("without a (transitive) task dependency from the requirer to the provider");
                     error(sb.toString());
                 }
             }
