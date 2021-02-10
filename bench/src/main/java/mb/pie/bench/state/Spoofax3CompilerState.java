@@ -30,11 +30,13 @@ import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProjectCompiler;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProjectCompilerInputBuilder;
 import mb.spoofax.compiler.util.Shared;
 import mb.spoofax.compiler.util.TemplateCompiler;
+import mb.spoofax.core.platform.BaseResourceServiceComponent;
+import mb.spoofax.core.platform.BaseResourceServiceModule;
+import mb.spoofax.core.platform.DaggerBaseResourceServiceComponent;
 import mb.spoofax.core.platform.DaggerPlatformComponent;
 import mb.spoofax.core.platform.LoggerFactoryModule;
 import mb.spoofax.core.platform.PlatformComponent;
 import mb.spoofax.core.platform.PlatformPieModule;
-import mb.spoofax.core.platform.ResourceRegistriesModule;
 import mb.statix.DaggerStatixComponent;
 import mb.str.DaggerStrategoComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -52,21 +54,28 @@ public class Spoofax3CompilerState {
 
     private @Nullable Logger logger;
     private @Nullable ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
+    private @Nullable BaseResourceServiceComponent resourceServiceComponent;
     private @Nullable PlatformComponent platformComponent;
     private @Nullable Spoofax3CompilerComponent spoofax3CompilerComponent;
 
     public Spoofax3CompilerState setupTrial(LoggerFactory loggerFactory) {
-        if(benchClassLoaderResourceRegistry != null && platformComponent != null && spoofax3CompilerComponent != null) {
+        if(benchClassLoaderResourceRegistry != null && resourceServiceComponent != null && platformComponent != null && spoofax3CompilerComponent != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
         logger = loggerFactory.create(Spoofax3CompilerState.class);
         logger.trace("Spoofax3CompilerState.setupTrial");
+        final BaseResourceServiceModule resourceServiceModule = new BaseResourceServiceModule();
         benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
+        resourceServiceModule.addRegistry(benchClassLoaderResourceRegistry);
+        resourceServiceComponent = DaggerBaseResourceServiceComponent.builder()
+            .baseResourceServiceModule(resourceServiceModule)
+            .build();
         platformComponent = DaggerPlatformComponent.builder()
             .loggerFactoryModule(new LoggerFactoryModule(loggerFactory))
-            .resourceRegistriesModule(new ResourceRegistriesModule(benchClassLoaderResourceRegistry))
             .platformPieModule(new PlatformPieModule(PieBuilderImpl::new))
+            .resourceServiceComponent(resourceServiceComponent)
             .build();
+        // TODO: use Spoofax3 standalone compiler here, and integrate with the resourceServiceComponent.
         spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
             .spoofax3CompilerModule(new Spoofax3CompilerModule(new TemplateCompiler(StandardCharsets.UTF_8)))
             .platformComponent(platformComponent)
@@ -89,9 +98,10 @@ public class Spoofax3CompilerState {
         if(logger == null || benchClassLoaderResourceRegistry == null || platformComponent == null || spoofax3CompilerComponent == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
-        benchClassLoaderResourceRegistry = null;
-        platformComponent = null;
         spoofax3CompilerComponent = null;
+        platformComponent = null;
+        resourceServiceComponent = null;
+        benchClassLoaderResourceRegistry = null;
         logger.trace("Spoofax3CompilerState.tearDownTrial");
         logger = null;
     }
@@ -156,7 +166,7 @@ public class Spoofax3CompilerState {
 
     @SuppressWarnings("ConstantConditions")
     private void delete(ResourcePath path) throws IOException {
-        platformComponent.getResourceService().getHierarchicalResource(path).delete(true);
+        resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
     }
 
 
