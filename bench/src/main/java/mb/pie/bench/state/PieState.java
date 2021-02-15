@@ -34,6 +34,7 @@ import mb.pie.store.lmdb.LMDBStore;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.hierarchical.HierarchicalResource;
+import mb.spoofax.core.platform.LoggerComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -49,18 +50,18 @@ import java.util.function.Function;
 public class PieState {
     // Trial
 
-    private @Nullable LoggerFactory loggerFactory;
+    private @Nullable LoggerComponent loggerComponent;
     private @Nullable Logger logger;
     private @Nullable HierarchicalResource temporaryDirectory;
     private @Nullable Pie pie;
     private @Nullable MetricsTracer metricsTracer;
 
-    public PieState setupTrial(LoggerFactory loggerFactory, HierarchicalResource temporaryDirectory, TaskDefs taskDefs, Pie... ancestors) {
-        if(this.loggerFactory != null || this.temporaryDirectory != null || logger != null || pie != null) {
+    public PieState setupTrial(LoggerComponent loggerComponent, HierarchicalResource temporaryDirectory, TaskDefs taskDefs, Pie... ancestors) {
+        if(this.loggerComponent != null || this.temporaryDirectory != null || logger != null || pie != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
-        this.loggerFactory = loggerFactory;
-        logger = loggerFactory.create(PieState.class);
+        this.loggerComponent = loggerComponent;
+        logger = loggerComponent.getLoggerFactory().create(PieState.class);
         logger.trace("PieState.setupTrial");
         this.temporaryDirectory = temporaryDirectory;
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
@@ -74,19 +75,19 @@ public class PieState {
         pieBuilder.withDefaultRequireHierarchicalResourceStamper(requireResourceStamper.getHierarchical());
         pieBuilder.withDefaultProvideHierarchicalResourceStamper(provideResourceStamper.getHierarchical());
         pieBuilder.withLayerFactory(layer.get());
-        pieBuilder.withLoggerFactory(loggerFactory);
+        pieBuilder.withLoggerFactory(loggerComponent.getLoggerFactory());
         pieBuilder.withTracerFactory(tracer.get());
         metricsTracer = tracer.getMetricsTracer();
         pie = pieBuilder.build().createChildBuilder(ancestors).build();
         return this;
     }
 
-    public PieState setupTrial(LoggerFactory loggerFactory, HierarchicalResource temporaryDirectory, Pie... ancestors) {
-        return setupTrial(loggerFactory, temporaryDirectory, new NullTaskDefs(), ancestors);
+    public PieState setupTrial(LoggerComponent loggerComponent, HierarchicalResource temporaryDirectory, Pie... ancestors) {
+        return setupTrial(loggerComponent, temporaryDirectory, new NullTaskDefs(), ancestors);
     }
 
     public void tearDownTrial() {
-        if(loggerFactory == null || temporaryDirectory == null || logger == null || pie == null) {
+        if(loggerComponent == null || temporaryDirectory == null || logger == null || pie == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
         metricsTracer = null;
@@ -95,7 +96,7 @@ public class PieState {
         temporaryDirectory = null;
         logger.trace("PieState.tearDownTrial");
         logger = null;
-        loggerFactory = null;
+        loggerComponent = null;
     }
 
 
@@ -112,9 +113,9 @@ public class PieState {
     @SuppressWarnings("ConstantConditions")
     public <O extends @Nullable Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
-            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).start(name);
+            PieMetricsProfiler.getInstance(loggerComponent.getLoggerFactory(), metricsTracer).start(name);
             final O result = session.require(task);
-            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).stop(name);
+            PieMetricsProfiler.getInstance(loggerComponent.getLoggerFactory(), metricsTracer).stop(name);
             return result;
         }
     }
@@ -122,9 +123,9 @@ public class PieState {
     @SuppressWarnings("ConstantConditions")
     public void requireBottomUpInNewSession(Set<? extends ResourceKey> changedResources, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
-            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).start(name);
+            PieMetricsProfiler.getInstance(loggerComponent.getLoggerFactory(), metricsTracer).start(name);
             session.updateAffectedBy(changedResources);
-            PieMetricsProfiler.getInstance(loggerFactory, metricsTracer).stop(name);
+            PieMetricsProfiler.getInstance(loggerComponent.getLoggerFactory(), metricsTracer).stop(name);
         }
     }
 

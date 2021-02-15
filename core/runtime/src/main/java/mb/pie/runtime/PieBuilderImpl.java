@@ -29,7 +29,6 @@ import mb.resource.url.URLResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.function.Function;
 
 public class PieBuilderImpl implements PieBuilder {
@@ -154,6 +153,7 @@ public class PieBuilderImpl implements PieBuilder {
         );
         final Serde serde = serdeFactory.apply(loggerFactory);
         return new PieImpl(
+            true,
             taskDefs,
             resourceService,
             serde,

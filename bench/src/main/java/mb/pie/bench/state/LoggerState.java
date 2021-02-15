@@ -4,6 +4,9 @@ import mb.log.api.LoggerFactory;
 import mb.log.noop.NoopLoggerFactory;
 import mb.log.slf4j.SLF4JLoggerFactory;
 import mb.log.stream.StreamLoggerFactory;
+import mb.spoofax.core.platform.DaggerLoggerComponent;
+import mb.spoofax.core.platform.LoggerComponent;
+import mb.spoofax.core.platform.LoggerModule;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -12,21 +15,23 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Thread)
 public class LoggerState {
     // Trial
-    private @Nullable LoggerFactory theLoggerFactory;
+    private @Nullable LoggerComponent loggerComponent;
 
-    public LoggerFactory setupTrial() {
-        if(theLoggerFactory != null) {
+    public LoggerComponent setupTrial() {
+        if(loggerComponent != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
-        theLoggerFactory = loggerFactory.get();
-        return theLoggerFactory;
+        loggerComponent = DaggerLoggerComponent.builder()
+            .loggerModule(new LoggerModule(loggerFactory.get()))
+            .build();
+        return loggerComponent;
     }
 
     public void tearDownTrial() {
-        if(theLoggerFactory == null) {
+        if(loggerComponent == null) {
             throw new IllegalStateException("tearDownTrial was called before setupTrial");
         }
-        theLoggerFactory = null;
+        loggerComponent = null;
     }
 
 

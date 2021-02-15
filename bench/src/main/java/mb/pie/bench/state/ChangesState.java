@@ -1,16 +1,15 @@
 package mb.pie.bench.state;
 
-import mb.log.api.LoggerFactory;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
+import mb.spoofax.core.platform.LoggerComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
 
@@ -23,11 +22,11 @@ public class ChangesState {
 
     // Invocation set-up
 
-    public ChangesState setupInvocation(LoggerFactory loggerFactory, HierarchicalResource baseDirectory) {
+    public ChangesState setupInvocation(LoggerComponent loggerComponent, HierarchicalResource baseDirectory) {
         if(logger != null || this.baseDirectory != null) {
             throw new IllegalStateException("setupInvocation was called before tearDownInvocation");
         }
-        logger = loggerFactory.create(ChangesState.class);
+        logger = loggerComponent.getLoggerFactory().create(ChangesState.class);
         logger.trace("ChangesState.setupInvocation");
         this.baseDirectory = baseDirectory;
         reset();

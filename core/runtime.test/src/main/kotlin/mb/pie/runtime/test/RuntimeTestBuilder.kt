@@ -4,10 +4,8 @@ import com.nhaarman.mockitokotlin2.*
 import mb.log.api.LoggerFactory
 import mb.log.stream.StreamLoggerFactory
 import mb.pie.api.Callbacks
-import mb.pie.api.Layer
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.Pie
-import mb.pie.api.PieBuilder
 import mb.pie.api.PieBuilder.LayerFactory
 import mb.pie.api.PieBuilder.StoreFactory
 import mb.pie.api.Share
@@ -42,7 +40,6 @@ import mb.resource.ResourceService
 import mb.resource.hierarchical.HierarchicalResource
 import java.nio.file.FileSystem
 import java.util.*
-import java.util.function.BiFunction
 import java.util.function.Function
 
 open class RuntimeTestBuilder<Ctx : RuntimeTestCtx>(
@@ -99,7 +96,7 @@ open class TestPieImpl(
   loggerFactory: LoggerFactory,
   tracerFactory: Function<LoggerFactory, Tracer>,
   callbacks: Callbacks
-) : PieImpl(taskDefs, resourceService, serde, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks) {
+) : PieImpl(true, taskDefs, resourceService, serde, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks) {
   val store: Store get() = super.store // Make store available for testing.
 
   override fun newSession(): TestMixedSessionImpl {

@@ -161,6 +161,7 @@ public class PieChildBuilderImpl implements PieChildBuilder {
                     .toArray(ResourceService[]::new));
         }
         return new PieImpl(
+            false,
             taskDefs,
             resourceService,
             parent.serde,

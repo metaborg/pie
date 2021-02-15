@@ -3,7 +3,6 @@ package mb.pie.bench.spoofax3;
 import mb.common.message.KeyedMessages;
 import mb.common.result.Result;
 import mb.log.api.Logger;
-import mb.log.api.LoggerFactory;
 import mb.pie.api.Task;
 import mb.pie.bench.state.ChangesState;
 import mb.pie.bench.state.LoggerState;
@@ -13,6 +12,7 @@ import mb.pie.bench.state.TemporaryDirectoryState;
 import mb.pie.bench.util.GarbageCollection;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.spoofax.compiler.spoofax3.language.CompilerException;
+import mb.spoofax.core.platform.LoggerComponent;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -34,7 +34,7 @@ public class Spoofax3Bench {
     // Trial
 
     protected LoggerState loggerState;
-    protected LoggerFactory loggerFactory;
+    protected LoggerComponent loggerComponent;
     protected Logger logger;
     protected TemporaryDirectoryState temporaryDirectoryState;
     protected Spoofax3CompilerState spoofax3CompilerState;
@@ -43,13 +43,13 @@ public class Spoofax3Bench {
     @Setup(Level.Trial)
     public void setupTrial(LoggerState loggerState, TemporaryDirectoryState temporaryDirectoryState, Spoofax3CompilerState spoofax3CompilerState, PieState pieState) throws IOException {
         this.loggerState = loggerState;
-        this.loggerFactory = loggerState.setupTrial();
-        logger = loggerFactory.create(Spoofax3Bench.class);
+        this.loggerComponent = loggerState.setupTrial();
+        logger = loggerComponent.getLoggerFactory().create(Spoofax3Bench.class);
         logger.trace("Spoofax3Bench.setupTrial");
         this.temporaryDirectoryState = temporaryDirectoryState;
         final HierarchicalResource temporaryDirectory = temporaryDirectoryState.setupTrial();
-        this.spoofax3CompilerState = spoofax3CompilerState.setupTrial(loggerFactory);
-        this.pieState = pieState.setupTrial(loggerFactory, temporaryDirectory, spoofax3CompilerState.getPie());
+        this.spoofax3CompilerState = spoofax3CompilerState.setupTrial(loggerComponent);
+        this.pieState = pieState.setupTrial(loggerComponent, temporaryDirectory, spoofax3CompilerState.getPie());
     }
 
     @TearDown(Level.Trial)
@@ -60,7 +60,7 @@ public class Spoofax3Bench {
         spoofax3CompilerState = null;
         temporaryDirectoryState.tearDownTrial();
         temporaryDirectoryState = null;
-        loggerFactory = null;
+        loggerComponent = null;
         logger.trace("Spoofax3Bench.tearDownTrial");
         logger = null;
     }
@@ -76,7 +76,7 @@ public class Spoofax3Bench {
     public void setupInvocation(ChangesState changesState) throws Exception {
         logger.trace("Spoofax3Bench.setupInvocation");
         final HierarchicalResource temporaryDirectory = temporaryDirectoryState.setupInvocation();
-        this.changesState = changesState.setupInvocation(loggerFactory, temporaryDirectory);
+        this.changesState = changesState.setupInvocation(loggerComponent, temporaryDirectory);
         this.task = spoofax3CompilerState.setupInvocation(temporaryDirectory);
         this.pieState.setupInvocation();
     }

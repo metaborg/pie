@@ -22,21 +22,25 @@ import mb.resource.hierarchical.ResourcePath;
 import mb.sdf3.DaggerSdf3Component;
 import mb.spoofax.compiler.language.LanguageProject;
 import mb.spoofax.compiler.spoofax3.dagger.DaggerSpoofax3CompilerComponent;
+import mb.spoofax.compiler.spoofax3.dagger.Spoofax3Compiler;
 import mb.spoofax.compiler.spoofax3.dagger.Spoofax3CompilerComponent;
 import mb.spoofax.compiler.spoofax3.dagger.Spoofax3CompilerModule;
 import mb.spoofax.compiler.spoofax3.language.CompilerException;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProject;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProjectCompiler;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProjectCompilerInputBuilder;
+import mb.spoofax.compiler.spoofax3.standalone.dagger.Spoofax3CompilerStandalone;
 import mb.spoofax.compiler.util.Shared;
 import mb.spoofax.compiler.util.TemplateCompiler;
 import mb.spoofax.core.platform.BaseResourceServiceComponent;
 import mb.spoofax.core.platform.BaseResourceServiceModule;
 import mb.spoofax.core.platform.DaggerBaseResourceServiceComponent;
 import mb.spoofax.core.platform.DaggerPlatformComponent;
-import mb.spoofax.core.platform.LoggerFactoryModule;
+import mb.spoofax.core.platform.LoggerComponent;
+import mb.spoofax.core.platform.LoggerModule;
+import mb.spoofax.core.platform.PieModule;
 import mb.spoofax.core.platform.PlatformComponent;
-import mb.spoofax.core.platform.PlatformPieModule;
+import mb.spoofax.core.platform.ResourceServiceComponent;
 import mb.statix.DaggerStatixComponent;
 import mb.str.DaggerStrategoComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -54,53 +58,39 @@ public class Spoofax3CompilerState {
 
     private @Nullable Logger logger;
     private @Nullable ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
-    private @Nullable BaseResourceServiceComponent resourceServiceComponent;
-    private @Nullable PlatformComponent platformComponent;
-    private @Nullable Spoofax3CompilerComponent spoofax3CompilerComponent;
+    private @Nullable Spoofax3CompilerStandalone spoofax3CompilerStandalone;
 
-    public Spoofax3CompilerState setupTrial(LoggerFactory loggerFactory) {
-        if(benchClassLoaderResourceRegistry != null && resourceServiceComponent != null && platformComponent != null && spoofax3CompilerComponent != null) {
+    public Spoofax3CompilerState setupTrial(LoggerComponent loggerComponent) {
+        if(benchClassLoaderResourceRegistry != null && spoofax3CompilerStandalone != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
-        logger = loggerFactory.create(Spoofax3CompilerState.class);
+        logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("Spoofax3CompilerState.setupTrial");
-        final BaseResourceServiceModule resourceServiceModule = new BaseResourceServiceModule();
         benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
-        resourceServiceModule.addRegistry(benchClassLoaderResourceRegistry);
-        resourceServiceComponent = DaggerBaseResourceServiceComponent.builder()
-            .baseResourceServiceModule(resourceServiceModule)
+        final BaseResourceServiceComponent baseResourceServiceComponent = DaggerBaseResourceServiceComponent.builder()
+            .loggerComponent(loggerComponent)
+            .baseResourceServiceModule(new BaseResourceServiceModule(benchClassLoaderResourceRegistry))
             .build();
-        platformComponent = DaggerPlatformComponent.builder()
-            .loggerFactoryModule(new LoggerFactoryModule(loggerFactory))
-            .platformPieModule(new PlatformPieModule(PieBuilderImpl::new))
-            .resourceServiceComponent(resourceServiceComponent)
-            .build();
-        // TODO: use Spoofax3 standalone compiler here, and integrate with the resourceServiceComponent.
-        spoofax3CompilerComponent = DaggerSpoofax3CompilerComponent.builder()
-            .spoofax3CompilerModule(new Spoofax3CompilerModule(new TemplateCompiler(StandardCharsets.UTF_8)))
-            .platformComponent(platformComponent)
-            .sdf3Component(DaggerSdf3Component.builder().platformComponent(platformComponent).build())
-            .strategoComponent(DaggerStrategoComponent.builder().platformComponent(platformComponent).build())
-            .esvComponent(DaggerEsvComponent.builder().platformComponent(platformComponent).build())
-            .statixComponent(DaggerStatixComponent.builder().platformComponent(platformComponent).build())
-            .libSpoofax2Component(DaggerLibSpoofax2Component.builder().platformComponent(platformComponent).build())
-            .libStatixComponent(DaggerLibStatixComponent.builder().platformComponent(platformComponent).build())
-            .build();
+        final Spoofax3Compiler spoofax3Compiler = new Spoofax3Compiler(
+            loggerComponent,
+            baseResourceServiceComponent.createChildModule(),
+            new PieModule(PieBuilderImpl::new)
+        );
+        this.spoofax3CompilerStandalone = new Spoofax3CompilerStandalone(spoofax3Compiler);
         return this;
     }
 
     @SuppressWarnings("ConstantConditions")
     public Pie getPie() {
-        return spoofax3CompilerComponent.getPie();
+        return spoofax3CompilerStandalone.pieComponent.getPie();
     }
 
     public void tearDownTrial() {
-        if(logger == null || benchClassLoaderResourceRegistry == null || platformComponent == null || spoofax3CompilerComponent == null) {
+        if(logger == null || benchClassLoaderResourceRegistry == null || spoofax3CompilerStandalone == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
-        spoofax3CompilerComponent = null;
-        platformComponent = null;
-        resourceServiceComponent = null;
+        spoofax3CompilerStandalone.close();
+        spoofax3CompilerStandalone = null;
         benchClassLoaderResourceRegistry = null;
         logger.trace("Spoofax3CompilerState.tearDownTrial");
         logger = null;
@@ -112,7 +102,7 @@ public class Spoofax3CompilerState {
     private Spoofax3LanguageProjectCompiler.@Nullable Input input;
 
     public Task<Result<KeyedMessages, CompilerException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
-        if(logger == null || benchClassLoaderResourceRegistry == null || spoofax3CompilerComponent == null) {
+        if(logger == null || benchClassLoaderResourceRegistry == null || spoofax3CompilerStandalone == null) {
             throw new IllegalStateException("setupInvocation was called before setupTrial");
         }
         if(input != null) {
@@ -121,7 +111,8 @@ public class Spoofax3CompilerState {
         logger.trace("Spoofax3CompilerState.setupInvocation");
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
         input = language.getCompilerInput(temporaryDirectory);
-        return spoofax3CompilerComponent.getSpoofax3LanguageProjectCompiler().createTask(input);
+        // TODO: change to use Spoofax 3 compiler standalone.
+        return spoofax3CompilerStandalone.spoofax3Compiler.component.getSpoofax3LanguageProjectCompiler().createTask(input);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -166,7 +157,7 @@ public class Spoofax3CompilerState {
 
     @SuppressWarnings("ConstantConditions")
     private void delete(ResourcePath path) throws IOException {
-        resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
+        spoofax3CompilerStandalone.spoofax3Compiler.resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
     }
 
 

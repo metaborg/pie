@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieImpl implements Pie {
+    protected final boolean isBase;
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
     protected final Serde serde;
@@ -45,6 +46,7 @@ public class PieImpl implements Pie {
 
 
     public PieImpl(
+        boolean isBase,
         TaskDefs taskDefs,
         ResourceService resourceService,
         Serde serde,
@@ -56,6 +58,7 @@ public class PieImpl implements Pie {
         Function<LoggerFactory, Tracer> tracerFactory,
         Callbacks callbacks
     ) {
+        this.isBase = isBase;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.serde = serde;
@@ -69,7 +72,9 @@ public class PieImpl implements Pie {
     }
 
     @Override public void close() {
-        store.close();
+        if(isBase) {
+            store.close();
+        }
     }
 
 
