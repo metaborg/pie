@@ -3,7 +3,6 @@ package mb.pie.bench.state;
 import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecException;
-import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder;
@@ -43,7 +42,6 @@ import org.openjdk.jmh.annotations.State;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @State(Scope.Thread)
@@ -153,7 +151,7 @@ public class PieState {
     public enum SerdeKind {
         java {
             @Override public Function<LoggerFactory, Serde> get() {
-                return (loggerFactory) -> new JavaSerde(PieState.class.getClassLoader());
+                return (loggerFactory) -> JavaSerde.createWithClassLoaderOverride(PieState.class.getClassLoader());
             }
         },
         kryo {

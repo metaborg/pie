@@ -337,6 +337,7 @@ public class ValidationLayer implements Layer {
         if(obj == null) {
             return errors;
         }
+        final ClassLoader classLoader = obj.getClass().getClassLoader();
 
         byte[] serializedBeforeCalls = new byte[0];
         byte[] serializedBeforeCallsAgain = new byte[0];
@@ -394,8 +395,8 @@ public class ValidationLayer implements Layer {
 
         // Check serialize-deserialize roundtrip.
         // Equality.
-        final Serializable objDeserializedBeforeCalls = deserialize(serializedBeforeCalls);
-        final Serializable objDeserializedAfterCalls = deserialize(serializedAfterCalls);
+        final Serializable objDeserializedBeforeCalls = deserialize(classLoader, serializedBeforeCalls);
+        final Serializable objDeserializedAfterCalls = deserialize(classLoader, serializedAfterCalls);
         if(!obj.equals(objDeserializedBeforeCalls) || !objDeserializedBeforeCalls.equals(obj)) {
             errors.add(
                 "Not equal to itself after deserialization.\n  Possible incorrect serialization or equals implementation.\n  Objects:\n    " + obj + "\n  vs\n    " + objDeserializedBeforeCalls);
@@ -446,9 +447,9 @@ public class ValidationLayer implements Layer {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Serializable> T deserialize(byte[] bytes) {
+    private <T extends Serializable> T deserialize(@Nullable ClassLoader classLoader, byte[] bytes) {
         try {
-            return (T)Objects.requireNonNull(serde.deserializeTypeAndObjectFromBytes(bytes));
+            return (T)Objects.requireNonNull(serde.deserializeTypeAndObjectFromBytes(classLoader, bytes));
         } catch(DeserializeRuntimeException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
         }

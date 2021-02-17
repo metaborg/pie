@@ -108,7 +108,8 @@ class SerializeUtil {
 
     @SuppressWarnings("unchecked") <T> De<@Nullable T> deserializeObject(ByteBuffer byteBuffer) {
         try {
-            final @Nullable Object deserialized = serde.deserializeTypeAndObjectFromByteBuffer(byteBuffer);
+            // TODO: pass in the correct classloader for deserialization.
+            final @Nullable Object deserialized = serde.deserializeTypeAndObjectFromByteBuffer(null, byteBuffer);
             return new De<>((T)deserialized);
         } catch(DeserializeRuntimeException e) {
             logger.error("Deserialization failed", e.getCause());

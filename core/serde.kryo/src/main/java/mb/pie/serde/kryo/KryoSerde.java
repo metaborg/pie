@@ -6,21 +6,18 @@ import com.esotericsoftware.kryo.kryo5.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.kryo5.io.Input;
 import com.esotericsoftware.kryo.kryo5.io.Output;
 import com.esotericsoftware.kryo.kryo5.objenesis.strategy.StdInstantiatorStrategy;
-import com.esotericsoftware.kryo.kryo5.serializers.ExternalizableSerializer;
-import com.esotericsoftware.kryo.kryo5.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.kryo5.util.DefaultInstantiatorStrategy;
 import mb.pie.api.serde.Serde;
 import mb.resource.fs.FSPath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Externalizable;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
 public class KryoSerde implements Serde {
+    private final ClassLoader defaultClassLoader;
     private final Kryo kryo;
     private final Output sharedStreamOutput;
     private final Input sharedStreamInput;
@@ -29,7 +26,8 @@ public class KryoSerde implements Serde {
     private final int byteBufferInitialSize;
     private final ByteBufferInput sharedByteBufferInput;
 
-    public KryoSerde(Kryo kryo, int sharedBufferSize, int byteBufferInitialSize) {
+    public KryoSerde(ClassLoader defaultClassLoader, Kryo kryo, int sharedBufferSize, int byteBufferInitialSize) {
+        this.defaultClassLoader = defaultClassLoader;
         this.kryo = registerSerializers(kryo);
         this.sharedStreamOutput = new Output(sharedBufferSize, sharedBufferSize);
         this.sharedStreamInput = new Input(sharedBufferSize);
@@ -39,8 +37,8 @@ public class KryoSerde implements Serde {
         this.sharedByteBufferInput = new ByteBufferInput();
     }
 
-    public KryoSerde(ClassLoader classLoader) {
-        this(createDefaultKryo(classLoader), 4096, 512);
+    public KryoSerde(ClassLoader defaultClassLoader) {
+        this(defaultClassLoader, createDefaultKryo(defaultClassLoader), 4096, 512);
     }
 
     public KryoSerde() {
@@ -199,20 +197,35 @@ public class KryoSerde implements Serde {
 
 
     @Override
-    public @Nullable Object deserializeTypeAndObject(InputStream inputStream) {
+    public @Nullable Object deserializeTypeAndObject(@Nullable ClassLoader classLoader, InputStream inputStream) {
         sharedStreamInput.setInputStream(inputStream);
-        return kryo.readClassAndObject(sharedStreamInput);
+        try {
+            if(classLoader != null) kryo.setClassLoader(classLoader);
+            return kryo.readClassAndObject(sharedStreamInput);
+        } finally {
+            if(classLoader != null) kryo.setClassLoader(defaultClassLoader);
+        }
     }
 
     @Override
-    public @Nullable Object deserializeTypeAndObjectFromBytes(byte[] bytes) {
+    public @Nullable Object deserializeTypeAndObjectFromBytes(@Nullable ClassLoader classLoader, byte[] bytes) {
         sharedByteArrayInput.setBuffer(bytes);
-        return kryo.readClassAndObject(sharedByteArrayInput);
+        try {
+            if(classLoader != null) kryo.setClassLoader(classLoader);
+            return kryo.readClassAndObject(sharedByteArrayInput);
+        } finally {
+            if(classLoader != null) kryo.setClassLoader(defaultClassLoader);
+        }
     }
 
     @Override
-    public @Nullable Object deserializeTypeAndObjectFromByteBuffer(ByteBuffer bytes) {
+    public @Nullable Object deserializeTypeAndObjectFromByteBuffer(@Nullable ClassLoader classLoader, ByteBuffer bytes) {
         sharedByteBufferInput.setBuffer(bytes);
-        return kryo.readClassAndObject(sharedByteBufferInput);
+        try {
+            if(classLoader != null) kryo.setClassLoader(classLoader);
+            return kryo.readClassAndObject(sharedByteBufferInput);
+        } finally {
+            if(classLoader != null) kryo.setClassLoader(defaultClassLoader);
+        }
     }
 }

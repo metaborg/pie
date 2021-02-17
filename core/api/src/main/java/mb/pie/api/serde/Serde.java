@@ -118,19 +118,19 @@ public interface Serde {
     }
 
 
-    @Nullable Object deserializeTypeAndObject(InputStream inputStream);
+    @Nullable Object deserializeTypeAndObject(@Nullable ClassLoader classLoader, InputStream inputStream);
 
-    default @Nullable Object deserializeTypeAndObjectFromBytes(byte[] bytes) {
+    default @Nullable Object deserializeTypeAndObjectFromBytes(@Nullable ClassLoader classLoader, byte[] bytes) {
         try(final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes)) {
-            return deserializeTypeAndObject(inputStream);
+            return deserializeTypeAndObject(classLoader, inputStream);
         } catch(IOException e) {
             throw new DeserializeRuntimeException(e);
         }
     }
 
-    default @Nullable Object deserializeTypeAndObjectFromByteBuffer(ByteBuffer ByteBuffer) {
+    default @Nullable Object deserializeTypeAndObjectFromByteBuffer(@Nullable ClassLoader classLoader, ByteBuffer ByteBuffer) {
         try(final ByteBufferBackedInputStream inputStream = new ByteBufferBackedInputStream(ByteBuffer)) {
-            return deserializeTypeAndObject(inputStream);
+            return deserializeTypeAndObject(classLoader, inputStream);
         } catch(IOException e) {
             throw new DeserializeRuntimeException(e);
         }
