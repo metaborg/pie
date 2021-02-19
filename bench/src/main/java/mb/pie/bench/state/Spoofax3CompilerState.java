@@ -3,53 +3,37 @@ package mb.pie.bench.state;
 import mb.common.message.KeyedMessages;
 import mb.common.result.Result;
 import mb.common.util.Properties;
-import mb.esv.DaggerEsvComponent;
-import mb.libspoofax2.DaggerLibSpoofax2Component;
-import mb.libstatix.DaggerLibStatixComponent;
 import mb.log.api.Logger;
-import mb.log.api.LoggerFactory;
+import mb.log.dagger.LoggerComponent;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
+import mb.pie.dagger.PieModule;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.pie.task.archive.UnarchiveCommon;
 import mb.resource.classloader.ClassLoaderResource;
 import mb.resource.classloader.ClassLoaderResourceLocations;
 import mb.resource.classloader.ClassLoaderResourceRegistry;
 import mb.resource.classloader.JarFileWithPath;
+import mb.resource.dagger.DaggerRootResourceServiceComponent;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
-import mb.sdf3.DaggerSdf3Component;
 import mb.spoofax.compiler.language.LanguageProject;
-import mb.spoofax.compiler.spoofax3.dagger.DaggerSpoofax3CompilerComponent;
 import mb.spoofax.compiler.spoofax3.dagger.Spoofax3Compiler;
-import mb.spoofax.compiler.spoofax3.dagger.Spoofax3CompilerComponent;
-import mb.spoofax.compiler.spoofax3.dagger.Spoofax3CompilerModule;
 import mb.spoofax.compiler.spoofax3.language.CompilerException;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProject;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProjectCompiler;
 import mb.spoofax.compiler.spoofax3.language.Spoofax3LanguageProjectCompilerInputBuilder;
 import mb.spoofax.compiler.spoofax3.standalone.dagger.Spoofax3CompilerStandalone;
 import mb.spoofax.compiler.util.Shared;
-import mb.spoofax.compiler.util.TemplateCompiler;
-import mb.spoofax.core.platform.BaseResourceServiceComponent;
-import mb.spoofax.core.platform.BaseResourceServiceModule;
-import mb.spoofax.core.platform.DaggerBaseResourceServiceComponent;
-import mb.spoofax.core.platform.DaggerPlatformComponent;
-import mb.spoofax.core.platform.LoggerComponent;
-import mb.spoofax.core.platform.LoggerModule;
-import mb.spoofax.core.platform.PieModule;
-import mb.spoofax.core.platform.PlatformComponent;
-import mb.spoofax.core.platform.ResourceServiceComponent;
-import mb.statix.DaggerStatixComponent;
-import mb.str.DaggerStrategoComponent;
+import mb.resource.dagger.RootResourceServiceComponent;
+import mb.resource.dagger.RootResourceServiceModule;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 @State(Scope.Thread)
@@ -67,13 +51,13 @@ public class Spoofax3CompilerState {
         logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("Spoofax3CompilerState.setupTrial");
         benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
-        final BaseResourceServiceComponent baseResourceServiceComponent = DaggerBaseResourceServiceComponent.builder()
+        final RootResourceServiceComponent resourceServiceComponent = DaggerRootResourceServiceComponent.builder()
             .loggerComponent(loggerComponent)
-            .baseResourceServiceModule(new BaseResourceServiceModule(benchClassLoaderResourceRegistry))
+            .rootResourceServiceModule(new RootResourceServiceModule(benchClassLoaderResourceRegistry))
             .build();
         final Spoofax3Compiler spoofax3Compiler = new Spoofax3Compiler(
             loggerComponent,
-            baseResourceServiceComponent.createChildModule(),
+            resourceServiceComponent.createChildModule(),
             new PieModule(PieBuilderImpl::new)
         );
         this.spoofax3CompilerStandalone = new Spoofax3CompilerStandalone(spoofax3Compiler);

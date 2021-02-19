@@ -2,6 +2,7 @@ package mb.pie.bench.state;
 
 import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
+import mb.log.dagger.LoggerComponent;
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
@@ -33,7 +34,6 @@ import mb.pie.store.lmdb.LMDBStore;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.hierarchical.HierarchicalResource;
-import mb.spoofax.core.platform.LoggerComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;

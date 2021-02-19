@@ -6,15 +6,17 @@ plugins {
 val resourceVersion = "0.10.0"
 val logVersion = "0.5.0"
 
-val checkerframeworkVersion = "3.6.0"
+val checkerframeworkVersion = "3.10.0"
 
-val daggerVersion = "2.27"
+val daggerVersion = "2.32"
 
 dependencies {
   constraints {
     // Main
-    api("org.metaborg:resource:$resourceVersion")
     api("org.metaborg:log.api:$logVersion")
+    api("org.metaborg:log.dagger:$logVersion")
+    api("org.metaborg:resource:$resourceVersion")
+    api("org.metaborg:resource.dagger:$resourceVersion")
     api("org.checkerframework:checker-qual-android:$checkerframeworkVersion") // Use android version: annotation retention policy is class instead of runtime.
 
     // Test

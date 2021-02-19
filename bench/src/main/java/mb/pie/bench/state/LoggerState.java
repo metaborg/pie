@@ -1,12 +1,12 @@
 package mb.pie.bench.state;
 
 import mb.log.api.LoggerFactory;
+import mb.log.dagger.DaggerLoggerComponent;
+import mb.log.dagger.LoggerComponent;
+import mb.log.dagger.LoggerModule;
 import mb.log.noop.NoopLoggerFactory;
 import mb.log.slf4j.SLF4JLoggerFactory;
 import mb.log.stream.StreamLoggerFactory;
-import mb.spoofax.core.platform.DaggerLoggerComponent;
-import mb.spoofax.core.platform.LoggerComponent;
-import mb.spoofax.core.platform.LoggerModule;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;

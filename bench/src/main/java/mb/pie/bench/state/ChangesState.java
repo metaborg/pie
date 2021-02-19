@@ -1,10 +1,10 @@
 package mb.pie.bench.state;
 
+import mb.log.dagger.LoggerComponent;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
-import mb.spoofax.core.platform.LoggerComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;

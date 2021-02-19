@@ -12,7 +12,7 @@ import java.util.Set;
 
 @Module
 abstract class PieTestModule {
-    @Provides @Singleton @ElementsIntoSet
+    @Provides @mb.pie.dagger.PieScope @ElementsIntoSet
     public static Set<TaskDef<?, ?>> provideTaskDefs(
         main_typeInt typeInt
     ) {
