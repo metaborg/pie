@@ -10,7 +10,7 @@ plugins {
 // JMH application configuration and benchmarking tasks.
 dependencies {
   val jmhVersion = "1.26"
-  val spoofax3Version = "0.6.0"
+  val spoofax3Version = "0.7.0"
   fun compositeBuild(name: String) = "$group:$name:$version"
 
   implementation(platform(compositeBuild("pie.depconstraints")))
