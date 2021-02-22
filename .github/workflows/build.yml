@@ -11,9 +11,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019, macos-10.15]
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
         java: [8, 11]
-        gradle: [6.8]
+        gradle: [6.8.2]
         experimental: [false]
     runs-on: ${{ matrix.os }}
     steps:
@@ -23,8 +23,10 @@ jobs:
           java-version: ${{ matrix.java }}
       - uses: actions/cache@v2
         with:
-          path: ~/.gradle/caches
-          key: gradle-${{ runner.os }}-${{ matrix.gradle }}-${{ hashFiles('**/*.gradle*') }}
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ matrix.gradle }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
       - uses: eskatos/gradle-command-action@v1
