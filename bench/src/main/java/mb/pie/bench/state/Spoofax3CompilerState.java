@@ -101,7 +101,9 @@ public class Spoofax3CompilerState {
     public void handleResult(Result<CompileLanguageToJavaClassPath.Output, CompileLanguageWithCfgToJavaClassPathException> result) {
         if(result.isErr()) {
             final CompileLanguageWithCfgToJavaClassPathException e = result.getErr();
-            logger.error(ExceptionPrinter.printExceptionToString(e));
+            final ExceptionPrinter exceptionPrinter = new ExceptionPrinter();
+            exceptionPrinter.addCurrentDirectoryContext(rootDirectory);
+            logger.error(exceptionPrinter.printExceptionToString(e));
         }
     }
 
