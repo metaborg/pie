@@ -3,9 +3,9 @@ plugins {
   id("org.metaborg.gitonium") version "0.1.4"
 }
 
-tasks {
-  register("benchmark") {
-    val includedBuild = gradle.includedBuild("pie.bench")
-    dependsOn(includedBuild.task(":runFull"), includedBuild.task(":plotToHtml"))
-  }
-}
+//tasks {
+//  register("benchmark") {
+//    val includedBuild = gradle.includedBuild("pie.bench")
+//    dependsOn(includedBuild.task(":runFull"), includedBuild.task(":plotToHtml"))
+//  }
+//}
