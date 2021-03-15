@@ -1,9 +1,7 @@
 package mb.pie.bench.state;
 
-import mb.common.message.KeyedMessages;
 import mb.common.result.Result;
 import mb.common.util.ExceptionPrinter;
-import mb.common.util.Properties;
 import mb.log.api.Logger;
 import mb.log.dagger.LoggerComponent;
 import mb.pie.api.Pie;
@@ -15,17 +13,14 @@ import mb.resource.classloader.ClassLoaderResource;
 import mb.resource.classloader.ClassLoaderResourceLocations;
 import mb.resource.classloader.ClassLoaderResourceRegistry;
 import mb.resource.classloader.JarFileWithPath;
+import mb.resource.classloader.NoopClassLoaderUrlResolver;
 import mb.resource.dagger.DaggerRootResourceServiceComponent;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
-import mb.spoofax.compiler.language.LanguageProject;
 import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPath;
-import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPathException;
 import mb.spoofax.lwb.compiler.CompileLanguageWithCfgToJavaClassPathException;
 import mb.spoofax.lwb.compiler.dagger.Spoofax3Compiler;
-import mb.spoofax.lwb.compiler.CompileLanguage;
-import mb.spoofax.compiler.util.Shared;
 import mb.resource.dagger.RootResourceServiceComponent;
 import mb.resource.dagger.RootResourceServiceModule;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -50,7 +45,7 @@ public class Spoofax3CompilerState {
         }
         logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("Spoofax3CompilerState.setupTrial");
-        benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader());
+        benchClassLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", Spoofax3CompilerState.class.getClassLoader(), new NoopClassLoaderUrlResolver());
         final RootResourceServiceComponent resourceServiceComponent = DaggerRootResourceServiceComponent.builder()
             .loggerComponent(loggerComponent)
             .rootResourceServiceModule(new RootResourceServiceModule(benchClassLoaderResourceRegistry))
