@@ -211,34 +211,38 @@ public class CompileJava implements TaskDef<CompileJava.Input, ArrayList<Compile
 
         try {
             // Provide generated Java source files.
-            try(final Stream<? extends HierarchicalResource> stream = sourceFileOutputDir.walk(
-                new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("java")))
-            )) {
-                stream.forEach(resource -> {
-                    try {
-                        context.provide(resource);
-                    } catch(IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+            if(sourceFileOutputDir.exists() && sourceFileOutputDir.isDirectory()) {
+                try(final Stream<? extends HierarchicalResource> stream = sourceFileOutputDir.walk(
+                    new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("java")))
+                )) {
+                    stream.forEach(resource -> {
+                        try {
+                            context.provide(resource);
+                        } catch(IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                }
             }
             // Provide compiled Java class files.
-            try(final Stream<? extends HierarchicalResource> stream = classFileOutputDir.walk(
-                new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("class")))
-            )) {
-                stream.forEach(resource -> {
-                    try {
-                        context.provide(resource);
-                    } catch(IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+            if(classFileOutputDir.exists() && classFileOutputDir.isDirectory()) {
+                try(final Stream<? extends HierarchicalResource> stream = classFileOutputDir.walk(
+                    new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("class")))
+                )) {
+                    stream.forEach(resource -> {
+                        try {
+                            context.provide(resource);
+                        } catch(IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                }
             }
         } catch(UncheckedIOException e) {
             throw e.getCause();
         }
 
-        return messages; // TODO: handle messages using Result and list of KeyedMessage (but this requires them to be put into a common/util library)
+        return messages; // TODO: handle messages using Result and list of KeyedMessage
     }
 
     private static void collectDiagnostic(Diagnostic<? extends JavaFileObject> diagnostic, ArrayList<Message> messages) {
