@@ -8,6 +8,7 @@ import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
+import mb.resource.hierarchical.match.path.string.PathStringMatcher;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.BufferedOutputStream;
@@ -25,26 +26,45 @@ public class UnarchiveCommon {
     public static void unarchiveZip(
         ExecContext context,
         ResourceKey zipFile,
+        ResourcePath outputDirectory,
+        PathStringMatcher matcher
+    ) throws IOException {
+        unarchiveZip(context.require(zipFile), context.getHierarchicalResource(outputDirectory), matcher, new ExecContextProvider(context));
+    }
+
+    public static void unarchiveZip(
+        ExecContext context,
+        ResourceKey zipFile,
         ResourcePath outputDirectory
     ) throws IOException {
-        unarchiveZip(context.require(zipFile), context.getHierarchicalResource(outputDirectory), new ExecContextProvider(context));
+        unarchiveZip(context.require(zipFile), context.getHierarchicalResource(outputDirectory), PathStringMatcher.ofTrue(), new ExecContextProvider(context));
+    }
+
+    public static void unarchiveZip(
+        ReadableResource zipFile,
+        HierarchicalResource outputDirectory,
+        PathStringMatcher matcher
+    ) throws IOException {
+        unarchiveZip(zipFile, outputDirectory, matcher, new NoopProvider());
     }
 
     public static void unarchiveZip(
         ReadableResource zipFile,
         HierarchicalResource outputDirectory
     ) throws IOException {
-        unarchiveZip(zipFile, outputDirectory, new NoopProvider());
+        unarchiveZip(zipFile, outputDirectory, PathStringMatcher.ofTrue(), new NoopProvider());
     }
 
     private static void unarchiveZip(
         ReadableResource zipFile,
         HierarchicalResource outputDirectory,
+        PathStringMatcher matcher,
         Provider provider
     ) throws IOException {
         unarchive(
             zipFile,
             outputDirectory,
+            matcher,
             (resource) -> {
                 try {
                     return new ZipInputStream(resource.openReadBuffered());
@@ -61,10 +81,31 @@ public class UnarchiveCommon {
         ExecContext context,
         ResourceKey jarFile,
         ResourcePath outputDirectory,
+        PathStringMatcher matcher,
         boolean unarchiveManifest,
         boolean verifySignaturesIfSigned
     ) throws IOException {
-        return unarchiveJar(context.require(jarFile), context.getHierarchicalResource(outputDirectory), unarchiveManifest, verifySignaturesIfSigned, new ExecContextProvider(context));
+        return unarchiveJar(context.require(jarFile), context.getHierarchicalResource(outputDirectory), matcher, unarchiveManifest, verifySignaturesIfSigned, new ExecContextProvider(context));
+    }
+
+    public static @Nullable Manifest unarchiveJar(
+        ExecContext context,
+        ResourceKey jarFile,
+        ResourcePath outputDirectory,
+        boolean unarchiveManifest,
+        boolean verifySignaturesIfSigned
+    ) throws IOException {
+        return unarchiveJar(context.require(jarFile), context.getHierarchicalResource(outputDirectory), PathStringMatcher.ofTrue(), unarchiveManifest, verifySignaturesIfSigned, new ExecContextProvider(context));
+    }
+
+    public static @Nullable Manifest unarchiveJar(
+        ReadableResource jarFile,
+        HierarchicalResource outputDirectory,
+        PathStringMatcher matcher,
+        boolean unarchiveManifest,
+        boolean verifySignaturesIfSigned
+    ) throws IOException {
+        return unarchiveJar(jarFile, outputDirectory, matcher, unarchiveManifest, verifySignaturesIfSigned, new NoopProvider());
     }
 
     public static @Nullable Manifest unarchiveJar(
@@ -73,12 +114,13 @@ public class UnarchiveCommon {
         boolean unarchiveManifest,
         boolean verifySignaturesIfSigned
     ) throws IOException {
-        return unarchiveJar(jarFile, outputDirectory, unarchiveManifest, verifySignaturesIfSigned, new NoopProvider());
+        return unarchiveJar(jarFile, outputDirectory, PathStringMatcher.ofTrue(), unarchiveManifest, verifySignaturesIfSigned, new NoopProvider());
     }
 
     private static @Nullable Manifest unarchiveJar(
         ReadableResource jarFile,
         HierarchicalResource outputDirectory,
+        PathStringMatcher matcher,
         boolean unarchiveManifest,
         boolean verifySignaturesIfSigned,
         Provider provider
@@ -88,6 +130,7 @@ public class UnarchiveCommon {
         unarchive(
             jarFile,
             outputDirectory,
+            matcher,
             (resource) -> {
                 try {
                     final JarInputStream jarInputStream = new JarInputStream(resource.openReadBuffered(), verifySignaturesIfSigned);
@@ -115,6 +158,7 @@ public class UnarchiveCommon {
     private static void unarchive(
         ReadableResource archiveFile,
         HierarchicalResource outputDirectory,
+        PathStringMatcher matcher,
         Function<ReadableResource, ZipInputStream> inputStreamFunction,
         Provider provider
     ) throws IOException {
@@ -122,12 +166,12 @@ public class UnarchiveCommon {
         outputDirectory = outputDirectory.getNormalized();
 
         try(final ZipInputStream archiveInputStream = inputStreamFunction.apply(archiveFile)) {
-            ZipEntry entry;
+            @Nullable ZipEntry entry;
             while((entry = archiveInputStream.getNextEntry()) != null) {
                 try {
                     final String name = entry.getName();
-                    if(name.isEmpty() || name.equals("/")) {
-                        continue; // Skip empty or root paths.
+                    if(name.isEmpty() || name.equals("/") || !matcher.matches(name)) {
+                        continue; // Skip empty, root, and non-matching paths.
                     }
                     final HierarchicalResource target = outputDirectory.appendRelativePath(name).getNormalized();
                     if(!target.startsWith(outputDirectory)) {
