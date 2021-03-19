@@ -23,6 +23,7 @@ import mb.spoofax.lwb.compiler.CompileLanguageWithCfgToJavaClassPathException;
 import mb.spoofax.lwb.compiler.dagger.Spoofax3Compiler;
 import mb.resource.dagger.RootResourceServiceComponent;
 import mb.resource.dagger.RootResourceServiceModule;
+import mb.spoofax.lwb.compiler.dagger.StandaloneSpoofax3Compiler;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -37,7 +38,7 @@ public class Spoofax3CompilerState {
 
     private @Nullable Logger logger;
     private @Nullable ClassLoaderResourceRegistry benchClassLoaderResourceRegistry;
-    private @Nullable Spoofax3Compiler spoofax3Compiler;
+    private @Nullable StandaloneSpoofax3Compiler spoofax3Compiler;
 
     public Spoofax3CompilerState setupTrial(LoggerComponent loggerComponent) {
         if(benchClassLoaderResourceRegistry != null && spoofax3Compiler != null) {
@@ -50,7 +51,7 @@ public class Spoofax3CompilerState {
             .loggerComponent(loggerComponent)
             .rootResourceServiceModule(new RootResourceServiceModule(benchClassLoaderResourceRegistry))
             .build();
-        this.spoofax3Compiler = new Spoofax3Compiler(
+        this.spoofax3Compiler = new StandaloneSpoofax3Compiler(
             loggerComponent,
             resourceServiceComponent.createChildModule(),
             new PieModule(PieBuilderImpl::new)
@@ -89,7 +90,7 @@ public class Spoofax3CompilerState {
         logger.trace("Spoofax3CompilerState.setupInvocation");
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
         rootDirectory = temporaryDirectory.getPath();
-        return spoofax3Compiler.component.getCompileLanguageWithCfgToJavaClassPath().createTask(rootDirectory);
+        return spoofax3Compiler.compiler.component.getCompileLanguageWithCfgToJavaClassPath().createTask(rootDirectory);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -128,7 +129,7 @@ public class Spoofax3CompilerState {
 
     @SuppressWarnings("ConstantConditions")
     private void delete(ResourcePath path) throws IOException {
-        spoofax3Compiler.resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
+        spoofax3Compiler.compiler.resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
     }
 
 
