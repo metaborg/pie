@@ -5,14 +5,35 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 public class SupplierWithOrigins<T extends Serializable> implements Supplier<T> {
     private final Supplier<T> supplier;
-    private final ArrayList<? extends Supplier<?>> origins;
+    private final ArrayList<Supplier<?>> origins;
 
-    public SupplierWithOrigins(Supplier<T> supplier, ArrayList<? extends Supplier<?>> origins) {
+    public SupplierWithOrigins(Supplier<T> supplier, ArrayList<Supplier<?>> origins) {
         this.supplier = supplier;
         this.origins = origins;
+    }
+
+    public SupplierWithOrigins(Supplier<T> supplier, Collection<? extends Supplier<?>> origins) {
+        this.supplier = supplier;
+        this.origins = new ArrayList<>(origins);
+    }
+
+    public SupplierWithOrigins(Supplier<T> supplier, Iterable<? extends Supplier<?>> origins) {
+        this.supplier = supplier;
+        this.origins = new ArrayList<>();
+        for(Supplier<?> origin : origins) {
+            this.origins.add(origin);
+        }
+    }
+
+    public SupplierWithOrigins(Supplier<T> supplier, Supplier<?>... origins) {
+        this.supplier = supplier;
+        this.origins = new ArrayList<>();
+        Collections.addAll(this.origins, origins);
     }
 
     @Override public T get(ExecContext context) {
