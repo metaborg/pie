@@ -1,6 +1,5 @@
 package mb.pie.bench.spoofax3;
 
-import mb.common.message.KeyedMessages;
 import mb.common.result.Result;
 import mb.log.api.Logger;
 import mb.log.dagger.LoggerComponent;
@@ -12,10 +11,8 @@ import mb.pie.bench.state.Spoofax3CompilerState;
 import mb.pie.bench.state.TemporaryDirectoryState;
 import mb.pie.bench.util.GarbageCollection;
 import mb.resource.hierarchical.HierarchicalResource;
-import mb.spoofax.lwb.compiler.CompileLanguage;
 import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPath;
 import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPathException;
-import mb.spoofax.lwb.compiler.CompileLanguageWithCfgToJavaClassPathException;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -73,7 +70,7 @@ public class Spoofax3Bench {
 
 
     protected ChangesState changesState;
-    protected Task<Result<CompileLanguageToJavaClassPath.Output, CompileLanguageWithCfgToJavaClassPathException>> task;
+    protected Task<Result<CompileLanguageToJavaClassPath.Output, CompileLanguageToJavaClassPathException>> task;
 
     @Setup(Level.Invocation)
     public void setupInvocation(ChangesState changesState) throws Exception {

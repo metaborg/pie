@@ -19,8 +19,7 @@ import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPath;
-import mb.spoofax.lwb.compiler.CompileLanguageWithCfgToJavaClassPathException;
-import mb.spoofax.lwb.compiler.dagger.Spoofax3Compiler;
+import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPathException;
 import mb.resource.dagger.RootResourceServiceComponent;
 import mb.resource.dagger.RootResourceServiceModule;
 import mb.spoofax.lwb.compiler.dagger.StandaloneSpoofax3Compiler;
@@ -80,7 +79,7 @@ public class Spoofax3CompilerState {
 
     private @Nullable ResourcePath rootDirectory;
 
-    public Task<Result<CompileLanguageToJavaClassPath.Output, CompileLanguageWithCfgToJavaClassPathException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
+    public Task<Result<CompileLanguageToJavaClassPath.Output, CompileLanguageToJavaClassPathException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
         if(logger == null || benchClassLoaderResourceRegistry == null || spoofax3Compiler == null) {
             throw new IllegalStateException("setupInvocation was called before setupTrial");
         }
@@ -90,13 +89,13 @@ public class Spoofax3CompilerState {
         logger.trace("Spoofax3CompilerState.setupInvocation");
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
         rootDirectory = temporaryDirectory.getPath();
-        return spoofax3Compiler.compiler.component.getCompileLanguageWithCfgToJavaClassPath().createTask(rootDirectory);
+        return spoofax3Compiler.compiler.component.getCompileLanguageToJavaClassPath().createTask(new CompileLanguageToJavaClassPath.Args(rootDirectory));
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void handleResult(Result<CompileLanguageToJavaClassPath.Output, CompileLanguageWithCfgToJavaClassPathException> result) {
+    public void handleResult(Result<CompileLanguageToJavaClassPath.Output, CompileLanguageToJavaClassPathException> result) {
         if(result.isErr()) {
-            final CompileLanguageWithCfgToJavaClassPathException e = result.getErr();
+            final CompileLanguageToJavaClassPathException e = result.getErr();
             final ExceptionPrinter exceptionPrinter = new ExceptionPrinter();
             exceptionPrinter.addCurrentDirectoryContext(rootDirectory);
             logger.error(exceptionPrinter.printExceptionToString(e));
