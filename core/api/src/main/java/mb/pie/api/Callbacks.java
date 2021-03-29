@@ -6,13 +6,13 @@ import java.io.Serializable;
 import java.util.function.Consumer;
 
 public interface Callbacks {
-    @Nullable Consumer<@Nullable Serializable> get(TaskKey key);
+    @Nullable Consumer<Serializable> get(TaskKey key);
 
 
-    void set(TaskKey key, Consumer<@Nullable Serializable> function);
+    void set(TaskKey key, Consumer<Serializable> function);
 
-    default <O extends @Nullable Serializable> void set(Task<O> task, Consumer<O> function) {
-        @SuppressWarnings("unchecked") final Consumer<@Nullable Serializable> obs = (Consumer<@Nullable Serializable>)function;
+    default <O extends Serializable> void set(Task<O> task, Consumer<O> function) {
+        @SuppressWarnings("unchecked") final Consumer<Serializable> obs = (Consumer<Serializable>)function;
         set(task.key(), obs);
     }
 

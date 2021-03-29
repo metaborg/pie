@@ -1,46 +1,56 @@
 package mb.pie.api;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.io.Serializable;
 
 /**
  * Definition of an incremental task which takes objects of type {@code I} and produces objects of type {@code O} when
  * executed.
  *
- * <p>
  * Inputs of type {@code I} must adhere to the following properties:
  * <ul>
- * <li>Implement {@link Serializable}</li>
- * <li>Implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
- * <li>Must NOT be {@code null}</li>
- * <li>If the input is used as a key, it must also adhere to the properties of {@link #key(Serializable)} below</li>
- * </ul>
- * <p>
- * Furthermore, keys returned by the {@link #key(Serializable)} method, must adhere to the following properties:
- * <ul>
- * <li>Implement {@link Serializable}</li>
- * <li>Implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
+ * <li>Must implement {@link Serializable}</li>
+ * <li>Must have identity. That is, must implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
  * <li>Must NOT be {@code null}</li>
  * <li>
+ * Must be immutable. That is, once passed as an input to a task, it must not change in a way that its identity changes.
+ * This means that transient fields may still change, but no guarantee is given about these fields.
+ * </li>
+ * <li>If the input is used as a key, must also adhere to the properties of {@link #key(Serializable)} below</li>
+ * </ul>
+ *
+ * Furthermore, keys returned by the {@link #key(Serializable)} method, must adhere to the following properties:
+ * <ul>
+ * <li>Must implement {@link Serializable}</li>
+ * <li>Have identity: must implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
+ * <li>Must NOT be {@code null}</li>
+ * <li>
+ * Must be immutable. That is, once passed as an input to a task, it must not change in a way that its identity changes.
+ * This means that transient fields may still change, but no guarantee is given about these fields.
+ * </li>
  * {@link Object#equals(Object)} and {@link Object#hashCode()} must return the same values after a serialization
  * roundtrip (e.g., serialize-deserialize)
  * </li>
  * <li>
  * The key's serialized bytes must be equal when the key's {@link Object#equals(Object)} method returns {@code true}
  * </li>
- * <p>
+ * </ul>
+ *
  * Finally, outputs of type {@code O} must adhere to the following properties:
  * <ul>
- * <li>Implement {@link Serializable}</li>
- * <li>Implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
- * <p>
+ * <li>Must implement {@link Serializable}</li>
+ * <li>Must have identity. That is, must implement {@link Object#equals(Object)} and {@link Object#hashCode()}</li>
+ * <li>
+ * Must be immutable. That is, once passed as an input to a task, it must not change in a way that its identity changes.
+ * This means that transient fields may still change, but no guarantee is given about these fields.
+ * </li>
+ * </ul>
+ *
  * Failure to adhere to these properties will cause unsound incrementality.
  *
- * @param <I> Type of input objects. Must be {@link Serializable} and may NOT be {@code null}.
- * @param <O> Type of output objects. Must be {@link Serializable} but may be {@code null}.
+ * @param <I> Type of input objects. Must be {@link Serializable} and have identity, and may NOT be {@code null}.
+ * @param <O> Type of output objects. Must be {@link Serializable} and have identity, and may be {@code null}.
  */
-public interface TaskDef<I extends Serializable, O extends @Nullable Serializable> {
+public interface TaskDef<I extends Serializable, O extends Serializable> {
     /**
      * Gets the unique identifier of this task definition.
      *
@@ -53,7 +63,7 @@ public interface TaskDef<I extends Serializable, O extends @Nullable Serializabl
      *
      * @param context Execution context for requiring tasks, and requiring/providing resources.
      * @param input   Input object.
-     * @return Output object.
+     * @return Output object. May be {@code null}.
      * @throws Exception When execution of the task fails unexpectedly.
      */
     O exec(ExecContext context, I input) throws Exception;

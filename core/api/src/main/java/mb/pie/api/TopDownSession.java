@@ -1,7 +1,5 @@
 package mb.pie.api;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.io.Serializable;
 
 /**
@@ -15,9 +13,9 @@ public interface TopDownSession extends Session {
      * #requireWithoutObserving} instead.
      *
      * @param task Task to get result for.
-     * @return Up-to-date output of {@code task}.
+     * @return Up-to-date output of {@code task}. May be {@code null} if the task returns {@code null}.
      * @throws IllegalStateException When {@code task} has not been executed before or when its input object differs
      *                               from an existing task with the same {@link TaskKey key}.
      */
-    <O extends @Nullable Serializable> O getOutput(Task<O> task);
+    <O extends Serializable> O getOutput(Task<O> task);
 }
