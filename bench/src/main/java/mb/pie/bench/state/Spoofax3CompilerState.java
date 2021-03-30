@@ -15,13 +15,13 @@ import mb.resource.classloader.ClassLoaderResourceRegistry;
 import mb.resource.classloader.JarFileWithPath;
 import mb.resource.classloader.NoopClassLoaderUrlResolver;
 import mb.resource.dagger.DaggerRootResourceServiceComponent;
+import mb.resource.dagger.RootResourceServiceComponent;
+import mb.resource.dagger.RootResourceServiceModule;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
-import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPath;
-import mb.spoofax.lwb.compiler.CompileLanguageToJavaClassPathException;
-import mb.resource.dagger.RootResourceServiceComponent;
-import mb.resource.dagger.RootResourceServiceModule;
+import mb.spoofax.lwb.compiler.CompileLanguage;
+import mb.spoofax.lwb.compiler.CompileLanguageException;
 import mb.spoofax.lwb.compiler.dagger.StandaloneSpoofax3Compiler;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
@@ -79,7 +79,7 @@ public class Spoofax3CompilerState {
 
     private @Nullable ResourcePath rootDirectory;
 
-    public Task<Result<CompileLanguageToJavaClassPath.Output, CompileLanguageToJavaClassPathException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
+    public Task<Result<CompileLanguage.Output, CompileLanguageException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
         if(logger == null || benchClassLoaderResourceRegistry == null || spoofax3Compiler == null) {
             throw new IllegalStateException("setupInvocation was called before setupTrial");
         }
@@ -89,13 +89,13 @@ public class Spoofax3CompilerState {
         logger.trace("Spoofax3CompilerState.setupInvocation");
         language.unarchiveToTempDirectory(temporaryDirectory, benchClassLoaderResourceRegistry);
         rootDirectory = temporaryDirectory.getPath();
-        return spoofax3Compiler.compiler.component.getCompileLanguageToJavaClassPath().createTask(new CompileLanguageToJavaClassPath.Args(rootDirectory));
+        return spoofax3Compiler.compiler.component.getCompileLanguage().createTask(CompileLanguage.Args.builder().rootDirectory(rootDirectory).build());
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void handleResult(Result<CompileLanguageToJavaClassPath.Output, CompileLanguageToJavaClassPathException> result) {
+    public void handleResult(Result<CompileLanguage.Output, CompileLanguageException> result) {
         if(result.isErr()) {
-            final CompileLanguageToJavaClassPathException e = result.getErr();
+            final CompileLanguageException e = result.getErr();
             final ExceptionPrinter exceptionPrinter = new ExceptionPrinter();
             exceptionPrinter.addCurrentDirectoryContext(rootDirectory);
             logger.error(exceptionPrinter.printExceptionToString(e));

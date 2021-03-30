@@ -5,10 +5,15 @@ plugins {
 
 dependencies {
   api(platform(project(":pie.depconstraints")))
+  annotationProcessor(platform(project(":pie.depconstraints")))
 
   api(project(":pie.api"))
+  api("org.metaborg:common")
 
   compileOnly("org.checkerframework:checker-qual-android")
+  compileOnly("org.immutables:value-annotations")
+
+  annotationProcessor("org.immutables:value")
 
   testImplementation(project(":pie.runtime"))
   testImplementation("com.google.jimfs:jimfs:1.1")
@@ -20,6 +25,7 @@ val classPathInjection = configurations.create("classPathInjection")
 dependencies {
   classPathInjection("org.metaborg:log.api:0.3.0")
   classPathInjection("org.metaborg:log.backend.slf4j:0.3.0")
+  classPathInjection("org.immutables:value-annotations:2.8.2")
 }
 val annotationProcessorPathInjection = configurations.create("annotationProcessorPathInjection")
 dependencies {
