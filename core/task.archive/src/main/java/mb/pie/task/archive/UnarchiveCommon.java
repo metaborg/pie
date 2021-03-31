@@ -182,11 +182,11 @@ public class UnarchiveCommon {
                         // Do not provide directory to prevent overlapping provided resources.
                     } else {
                         target.ensureFileExists();
-                        target.setLastModifiedTime(entry.getLastModifiedTime().toInstant());
                         try(final BufferedOutputStream outputStream = target.openWriteBuffered()) {
                             IoCommon.copy(archiveInputStream, outputStream, new byte[1024 * 4]);
                             outputStream.flush();
                         }
+                        target.setLastModifiedTime(entry.getLastModifiedTime().toInstant());
                         provider.provide(target);
                     }
                 } finally {
