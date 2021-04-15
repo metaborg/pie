@@ -10,7 +10,7 @@ val commonVersion = "0.7.0"
 val checkerframeworkVersion = "3.10.0"
 
 val immutablesVersion = "2.8.2"
-val daggerVersion = "2.32"
+val daggerVersion = "2.34.1"
 
 dependencies {
   constraints {
