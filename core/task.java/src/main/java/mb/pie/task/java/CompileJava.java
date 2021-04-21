@@ -4,17 +4,16 @@ import mb.common.message.KeyedMessages;
 import mb.common.message.KeyedMessagesBuilder;
 import mb.common.message.Severity;
 import mb.common.region.Region;
+import mb.common.result.ThrowingConsumer;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.pie.api.stamp.resource.ResourceStampers;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
-import mb.resource.hierarchical.match.AllResourceMatcher;
-import mb.resource.hierarchical.match.FileResourceMatcher;
-import mb.resource.hierarchical.match.PathResourceMatcher;
-import mb.resource.hierarchical.match.path.ExtensionPathMatcher;
-import mb.resource.hierarchical.walk.TrueResourceWalker;
+import mb.resource.hierarchical.match.ResourceMatcher;
+import mb.resource.hierarchical.match.path.PathMatcher;
+import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -84,8 +83,12 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         }
         final ArrayList<HierarchicalResource> sourcePath = new ArrayList<>();
         for(ResourcePath sourcePathPart : input.sourcePaths()) {
-            final HierarchicalResource resource = context.require(sourcePathPart, ResourceStampers.modifiedDirRec(new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("java"))));
-            sourcePath.add(resource);
+            final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourcePathPart);
+            // Require directories recursively, so we re-execute whenever a directory changes.
+            walkAndPerform(sourceDirectory, ResourceMatcher.ofDirectory(), context::require);
+            // Require all Java source files recursively, so we re-execute whenever a file changes.
+            walkAndPerform(sourceDirectory, ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension("java"))), context::require);
+            sourcePath.add(sourceDirectory);
         }
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
         final HierarchicalResource classFileOutputDir = context.getHierarchicalResource(input.classFileOutputDirectory());
@@ -123,30 +126,34 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
         compilationTask.call();
 
-        try {
-            // Provide generated Java source files.
-            if(sourceFileOutputDir.exists() && sourceFileOutputDir.isDirectory()) {
-                try(final Stream<? extends HierarchicalResource> stream = sourceFileOutputDir.walk(
-                    new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("java")))
-                )) {
-                    stream.forEach(resource -> {
-                        try {
-                            context.provide(resource);
-                        } catch(IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
-                }
-            }
+        // Provide generated Java source files.
+        provideFilesInDirectoryOfExtension(context, sourceFileOutputDir, "java");
+        // Provide compiled Java class files.
+        provideFilesInDirectoryOfExtension(context, classFileOutputDir, "class");
 
-            // Provide compiled Java class files.
-            if(classFileOutputDir.exists() && classFileOutputDir.isDirectory()) {
-                try(final Stream<? extends HierarchicalResource> stream = classFileOutputDir.walk(
-                    new AllResourceMatcher(new FileResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("class")))
-                )) {
+        return messagesBuilder.build();
+    }
+
+    @Override public Serializable key(Input input) {
+        return input.key().orElse(input);
+    }
+
+
+    private static void provideFilesInDirectoryOfExtension(ExecContext context, HierarchicalResource directory, String extension) throws IOException {
+        walkAndPerform(directory, ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension(extension))), context::provide);
+    }
+
+    private static void walkAndPerform(HierarchicalResource directory, ResourceMatcher matcher, ThrowingConsumer<HierarchicalResource, IOException> consumer) throws IOException {
+        walkAndPerform(directory, ResourceWalker.ofTrue(), matcher, consumer);
+    }
+
+    private static void walkAndPerform(HierarchicalResource directory, ResourceWalker walker, ResourceMatcher matcher, ThrowingConsumer<HierarchicalResource, IOException> consumer) throws IOException {
+        try {
+            if(directory.exists() && directory.isDirectory()) {
+                try(final Stream<? extends HierarchicalResource> stream = directory.walk(walker, matcher)) {
                     stream.forEach(resource -> {
                         try {
-                            context.provide(resource);
+                            consumer.accept(resource);
                         } catch(IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -156,14 +163,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         } catch(UncheckedIOException e) {
             throw e.getCause();
         }
-
-        return messagesBuilder.build();
     }
-
-    @Override public Serializable key(Input input) {
-        return input.key().orElse(input);
-    }
-
 
     private static void collectDiagnostic(Diagnostic<? extends JavaFileObject> diagnostic, KeyedMessagesBuilder messagesBuilder) {
         final String text = diagnostic.getMessage(null);
