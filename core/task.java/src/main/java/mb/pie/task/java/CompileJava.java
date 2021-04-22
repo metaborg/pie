@@ -4,7 +4,6 @@ import mb.common.message.KeyedMessages;
 import mb.common.message.KeyedMessagesBuilder;
 import mb.common.message.Severity;
 import mb.common.region.Region;
-import mb.common.result.ThrowingConsumer;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
@@ -13,7 +12,6 @@ import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import mb.resource.hierarchical.match.ResourceMatcher;
 import mb.resource.hierarchical.match.path.PathMatcher;
-import mb.resource.hierarchical.walk.ResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -25,12 +23,10 @@ import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Value.Enclosing
 public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
@@ -84,10 +80,10 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         final ArrayList<HierarchicalResource> sourcePath = new ArrayList<>();
         for(ResourcePath sourcePathPart : input.sourcePaths()) {
             final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourcePathPart);
-            // Require directories recursively, so we re-execute whenever a directory changes.
-            walkAndPerform(sourceDirectory, ResourceMatcher.ofDirectory(), context::require);
+            // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
+            sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
             // Require all Java source files recursively, so we re-execute whenever a file changes.
-            walkAndPerform(sourceDirectory, ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension("java"))), context::require);
+            sourceDirectory.walkForEach(ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension("java"))), context::require);
             sourcePath.add(sourceDirectory);
         }
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
@@ -140,29 +136,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
 
     private static void provideFilesInDirectoryOfExtension(ExecContext context, HierarchicalResource directory, String extension) throws IOException {
-        walkAndPerform(directory, ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension(extension))), context::provide);
-    }
-
-    private static void walkAndPerform(HierarchicalResource directory, ResourceMatcher matcher, ThrowingConsumer<HierarchicalResource, IOException> consumer) throws IOException {
-        walkAndPerform(directory, ResourceWalker.ofTrue(), matcher, consumer);
-    }
-
-    private static void walkAndPerform(HierarchicalResource directory, ResourceWalker walker, ResourceMatcher matcher, ThrowingConsumer<HierarchicalResource, IOException> consumer) throws IOException {
-        try {
-            if(directory.exists() && directory.isDirectory()) {
-                try(final Stream<? extends HierarchicalResource> stream = directory.walk(walker, matcher)) {
-                    stream.forEach(resource -> {
-                        try {
-                            consumer.accept(resource);
-                        } catch(IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
-                }
-            }
-        } catch(UncheckedIOException e) {
-            throw e.getCause();
-        }
+        directory.walkForEach(ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension(extension))), context::provide);
     }
 
     private static void collectDiagnostic(Diagnostic<? extends JavaFileObject> diagnostic, KeyedMessagesBuilder messagesBuilder) {
