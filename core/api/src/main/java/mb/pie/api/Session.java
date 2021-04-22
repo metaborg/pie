@@ -101,6 +101,27 @@ public interface Session {
 
 
     /**
+     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build) or implicitly observed
+     * (when another observed task requires it).
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task is observed, false otherwise.
+     */
+    default boolean isObserved(Task<?> task) {
+        return isObserved(task.key());
+    }
+
+    /**
+     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or
+     * implicitly observed (when another observed task requires it).
+     *
+     * @param key Key of task to check.
+     * @return True if task is observed, false otherwise.
+     */
+    boolean isObserved(TaskKey key);
+
+
+    /**
      * Explicitly unobserves {@code task}, settings its observability status to {@link Observability#ImplicitObserved
      * implicitly observed} if it was {@link Observability#ExplicitObserved explicitly observed} but still observed by
      * another observed task. Otherwise, sets the observability status to {@link Observability#Unobserved unobserved}

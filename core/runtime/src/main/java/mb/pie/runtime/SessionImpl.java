@@ -59,6 +59,12 @@ public abstract class SessionImpl implements Session {
         }
     }
 
+    @Override public boolean isObserved(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.taskObservability(key).isObserved();
+        }
+    }
+
     @Override public void unobserve(TaskKey key) {
         try(final StoreWriteTxn txn = store.writeTxn()) {
             Observability.explicitUnobserve(txn, key);
