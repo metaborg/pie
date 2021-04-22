@@ -82,6 +82,25 @@ public interface Session {
 
 
     /**
+     * Checks whether {@code task} has been executed at least once.
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task was executed at least once, false otherwise.
+     */
+    default boolean hasBeenExecuted(Task<?> task) {
+        return hasBeenExecuted(task.key());
+    }
+
+    /**
+     * Checks whether task with given {@code key} has been executed at least once.
+     *
+     * @param key Key of task to check.
+     * @return True if task was executed at least once, false otherwise.
+     */
+    boolean hasBeenExecuted(TaskKey key);
+
+
+    /**
      * Explicitly unobserves {@code task}, settings its observability status to {@link Observability#ImplicitObserved
      * implicitly observed} if it was {@link Observability#ExplicitObserved explicitly observed} but still observed by
      * another observed task. Otherwise, sets the observability status to {@link Observability#Unobserved unobserved}
