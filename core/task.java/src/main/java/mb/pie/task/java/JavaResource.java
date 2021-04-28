@@ -77,7 +77,6 @@ class JavaResource implements JavaFileObject {
     }
 
     @Override public Writer openWriter() throws IOException {
-        resource.createParents();
         return new OutputStreamWriter(openOutputStream());
     }
 
