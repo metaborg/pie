@@ -41,6 +41,8 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
         List<ResourcePath> sourcePaths();
 
+        List<ResourcePath> sourceDirectoryPaths(); // Source path that is only used for packages (directories)
+
 
         // Using File for classPath and annotationProcessorPath, as handling this with ResourcePath takes too much effort at the moment.
 
@@ -84,6 +86,12 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
             sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
             // Require all Java source files recursively, so we re-execute whenever a file changes.
             sourceDirectory.walkForEach(ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension("java"))), context::require);
+            sourcePath.add(sourceDirectory);
+        }
+        for(ResourcePath sourceDirectoryPath : input.sourceDirectoryPaths()) {
+            final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourceDirectoryPath);
+            // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
+            sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
             sourcePath.add(sourceDirectory);
         }
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
