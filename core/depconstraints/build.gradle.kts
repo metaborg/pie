@@ -27,6 +27,8 @@ dependencies {
     api("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
     api("com.google.jimfs:jimfs:1.1")
 
+    // Annotations
+    api("javax.inject:javax.inject:1")
     api("org.immutables:value:$immutablesVersion")
     api("org.immutables:value-annotations:$immutablesVersion")
     api("com.google.dagger:dagger:$daggerVersion")

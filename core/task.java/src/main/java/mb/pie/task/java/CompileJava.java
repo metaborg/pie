@@ -18,6 +18,7 @@ import org.immutables.value.Value;
 import javax.tools.Diagnostic;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
+import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.File;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 @Value.Enclosing
 public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
     @Value.Immutable
-    public static interface Input extends Serializable {
+    public interface Input extends Serializable {
         class Builder extends CompileJavaData.Input.Builder {}
 
         static Builder builder() { return new Builder(); }
@@ -59,9 +60,27 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         ResourcePath classFileOutputDirectory();
 
 
+        @Value.Default default boolean reportWarnings() { return true; }
+
+
         List<Supplier<?>> originTasks();
 
         Optional<Serializable> key();
+    }
+
+
+    private final JavaCompiler compiler;
+    private final FileManagerFactory fileManagerFactory;
+    private final JavaFileObjectFactory javaFileObjectFactory;
+
+    public CompileJava(JavaCompiler compiler, FileManagerFactory fileManagerFactory, JavaFileObjectFactory javaFileObjectFactory) {
+        this.compiler = compiler;
+        this.fileManagerFactory = fileManagerFactory;
+        this.javaFileObjectFactory = javaFileObjectFactory;
+    }
+
+    public CompileJava() {
+        this(ToolProvider.getSystemJavaCompiler(), JavaResourceManager::new, new JavaResource.Factory());
     }
 
 
@@ -74,10 +93,10 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
             context.require(originTask);
         }
 
-        final ArrayList<JavaResource> compilationUnits = new ArrayList<>();
+        final ArrayList<JavaFileObject> compilationUnits = new ArrayList<>();
         for(ResourcePath sourceFilePath : input.sourceFiles()) {
             final HierarchicalResource sourceFile = context.require(sourceFilePath, ResourceStampers.<HierarchicalResource>modifiedFile());
-            compilationUnits.add(new JavaResource(sourceFile));
+            compilationUnits.add(javaFileObjectFactory.create(sourceFile));
         }
         final ArrayList<HierarchicalResource> sourcePath = new ArrayList<>();
         for(ResourcePath sourcePathPart : input.sourcePaths()) {
@@ -97,9 +116,9 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
         final HierarchicalResource classFileOutputDir = context.getHierarchicalResource(input.classFileOutputDirectory());
 
-        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        final JavaResourceManager resourceManager = new JavaResourceManager(
+        final JavaFileManager fileManager = fileManagerFactory.create(
             compiler.getStandardFileManager(null, null, null),
+            javaFileObjectFactory,
             context.getResourceService(),
             sourcePath,
             sourceFileOutputDir,
@@ -125,8 +144,11 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
             options.add("-processorpath");
             options.add(input.annotationProcessorPaths().stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
         }
+        if(!input.reportWarnings()) {
+            options.add("-nowarn");
+        }
         final KeyedMessagesBuilder messagesBuilder = new KeyedMessagesBuilder();
-        final CompilationTask compilationTask = compiler.getTask(null, resourceManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
+        final CompilationTask compilationTask = compiler.getTask(null, fileManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
 
         compilationTask.call();
 
