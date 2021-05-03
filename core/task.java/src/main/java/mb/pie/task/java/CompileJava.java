@@ -62,6 +62,11 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
         @Value.Default default boolean reportWarnings() { return true; }
 
+        @Value.Default default boolean emitDebuggingAttributes() { return true; }
+
+
+        List<String> additionalOptions();
+
 
         List<Supplier<?>> originTasks();
 
@@ -147,6 +152,10 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         if(!input.reportWarnings()) {
             options.add("-nowarn");
         }
+        if(!input.emitDebuggingAttributes()) {
+            options.add("-g:none");
+        }
+        options.addAll(input.additionalOptions());
         final KeyedMessagesBuilder messagesBuilder = new KeyedMessagesBuilder();
         final CompilationTask compilationTask = compiler.getTask(null, fileManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
 
