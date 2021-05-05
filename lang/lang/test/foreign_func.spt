@@ -1,0 +1,13 @@
+module foreign_func
+
+language pie
+
+fixture [[
+  module test:func:foreign
+
+  func main(args: string*) -> int = [[...]]
+]]
+
+test foreign task [[ foreign test.func.foreign.Main ]] analysis succeeds
+test foreign function [[ foreign java test.func.foreign.Main#main ]] analysis succeeds
+test foreign constructor [[ foreign java constructor test.func.foreign.Main ]] analysis succeeds

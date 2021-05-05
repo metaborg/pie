@@ -1,10 +1,10 @@
-module test
+module string
 
 language pie
 
 fixture [[
   module example:strings
-  
+
   func fixture() -> string = {
     val hello = "Hello";
     val name = "world";
