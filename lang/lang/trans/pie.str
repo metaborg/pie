@@ -6,7 +6,7 @@ imports
   pp
   outline
   analysis
-  gen/java-ast/main
+  gen/java/main
 
 rules // Debugging
 

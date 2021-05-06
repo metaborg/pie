@@ -1,12 +1,12 @@
-module gen/java-ast/main
+module gen/java/main
 
 imports
 
   nabl2/api
 
   gen/util
-  gen/java-ast/ast-util
-  gen/java-ast/func_def
+  gen/java/ast-util
+  gen/java/func_def
 
   src-gen/signatures/-
   signatures/-
