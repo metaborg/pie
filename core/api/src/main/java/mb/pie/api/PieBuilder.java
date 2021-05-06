@@ -1,5 +1,7 @@
 package mb.pie.api;
 
+import mb.log.api.LoggerFactory;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.resource.ReadableResource;
@@ -15,11 +17,19 @@ import java.util.function.Function;
 public interface PieBuilder {
     PieBuilder withTaskDefs(TaskDefs taskDefs);
 
+    PieBuilder addTaskDefs(TaskDefs taskDefs);
+
     PieBuilder withResourceService(ResourceService resourceService);
 
-    PieBuilder withStoreFactory(BiFunction<Logger, ResourceService, Store> storeFunc);
+    PieBuilder withSerdeFactory(Function<LoggerFactory, Serde> serdeFactory);
 
-    PieBuilder withShareFactory(Function<Logger, Share> shareFunc);
+    @FunctionalInterface interface StoreFactory {
+        Store apply(Serde serde, ResourceService resourceService, LoggerFactory loggerFactory);
+    }
+
+    PieBuilder withStoreFactory(StoreFactory storeFactory);
+
+    PieBuilder withShareFactory(Function<LoggerFactory, Share> shareFactory);
 
     PieBuilder withDefaultOutputStamper(OutputStamper outputStamper);
 
@@ -31,11 +41,15 @@ public interface PieBuilder {
 
     PieBuilder withDefaultProvideHierarchicalResourceStamper(ResourceStamper<HierarchicalResource> stamper);
 
-    PieBuilder withLayerFactory(BiFunction<TaskDefs, Logger, Layer> layerFunc);
+    @FunctionalInterface interface LayerFactory {
+        Layer apply(TaskDefs taskDefs, LoggerFactory loggerFactory, Serde serde);
+    }
 
-    PieBuilder withLogger(Logger logger);
+    PieBuilder withLayerFactory(LayerFactory layerFactory);
 
-    PieBuilder withExecutorLoggerFactory(Function<Logger, ExecutorLogger> execLoggerFunc);
+    PieBuilder withLoggerFactory(LoggerFactory loggerFactory);
+
+    PieBuilder withTracerFactory(Function<LoggerFactory, Tracer> tracerFactory);
 
 
     Pie build();

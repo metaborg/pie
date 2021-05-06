@@ -1,11 +1,13 @@
 package mb.pie.api;
 
 import mb.pie.api.exec.CancelToken;
-import mb.resource.Resource;
+import mb.resource.ResourceKey;
+import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -115,5 +117,13 @@ public interface Session {
      *                                     will not be deleted.
      * @throws IOException when deleting a resource fails unexpectedly.
      */
-    void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException;
+    void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, HierarchicalResource> shouldDeleteProvidedResource) throws IOException;
+
+
+    /**
+     * Gets the resources that were provided by executed tasks so far this session.
+     *
+     * @return Read-only set of provided resources.
+     */
+    Set<ResourceKey> getProvidedResources();
 }

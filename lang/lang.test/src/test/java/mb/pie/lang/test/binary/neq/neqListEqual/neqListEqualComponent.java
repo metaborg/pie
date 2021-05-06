@@ -6,8 +6,8 @@ import mb.pie.dagger.PieModule;
 
 import javax.inject.Singleton;
 
-@Singleton
-@Component(modules = {PieModule.class, PieTestModule.class})
+@mb.pie.dagger.PieScope
+@Component(modules = {PieModule.class, PieTestModule.class}, dependencies = {mb.log.dagger.LoggerComponent.class, mb.resource.dagger.ResourceServiceComponent.class})
 public interface neqListEqualComponent extends PieComponent {
     main_neqListEqual get();
 }

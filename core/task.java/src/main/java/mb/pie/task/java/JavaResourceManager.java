@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static mb.pie.task.java.Util.qualifiedNameToRelativePath;
 import static mb.pie.task.java.Util.relativePathToQualifiedName;
@@ -34,6 +35,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
     private final ArrayList<HierarchicalResource> sourcePath;
     private final HierarchicalResource sourceFileOutputDir;
     private final HierarchicalResource classFileOutputDir;
+    private final @Nullable Class<?> baseFileObjectClass;
 
     JavaResourceManager(
         StandardJavaFileManager fileManager,
@@ -47,6 +49,13 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         this.sourcePath = sourcePath;
         this.sourceFileOutputDir = sourceFileOutputDir;
         this.classFileOutputDir = classFileOutputDir;
+        @Nullable Class<?> baseFileObjectClass = null;
+        try {
+            baseFileObjectClass = Class.forName("com.sun.tools.javac.file.BaseFileObject");
+        } catch(ClassNotFoundException e) {
+            // Ignore, baseFileObjectClass will stay null.
+        }
+        this.baseFileObjectClass = baseFileObjectClass;
     }
 
     @Override public boolean hasLocation(Location location) {
@@ -59,6 +68,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 default:
                     return super.hasLocation(location);
             }
+        } else if(location.getName().contains("MODULE")) { // Java 9+ support
+            return super.hasLocation(location);
         } else {
             try {
                 getNonStandardResource(location);
@@ -81,10 +92,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
             if(!resource.exists() || !resource.isDirectory()) continue;
             final ExtensionsPathMatcher pathMatcher = new ExtensionsPathMatcher(kinds.stream().map(Util::kindToExtension).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
             final ResourceMatcher matcher = new PathResourceMatcher(pathMatcher);
-            if(recurse) {
-                results.addAll(resource.walk(new TrueResourceWalker(), matcher).map(JavaResource::new).collect(Collectors.toList()));
-            } else {
-                results.addAll(resource.list(matcher).map(JavaResource::new).collect(Collectors.toList()));
+            try(Stream<? extends HierarchicalResource> stream = recurse ? resource.walk(new TrueResourceWalker(), matcher) : resource.list(matcher)) {
+                results.addAll(stream.map(JavaResource::new).collect(Collectors.toList()));
             }
         }
         return results;
@@ -170,6 +179,15 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         return new JavaResource(resource);
     }
 
+    @Override
+    public boolean isSameFile(FileObject a, FileObject b) {
+        // Override isSameFile because JDK8's implementation throws if a or b are not of type BaseFileObject.
+        if(baseFileObjectClass != null && baseFileObjectClass.isInstance(a) && baseFileObjectClass.isInstance(b)) {
+            return super.isSameFile(a, b);
+        } else {
+            return a.equals(b);
+        }
+    }
 
     private @Nullable List<HierarchicalResource> getResources(Location location) {
         if(location instanceof StandardLocation) {
@@ -183,6 +201,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 default:
                     return null;
             }
+        } else if(location.getName().contains("MODULE")) { // Java 9+ support
+            return null;
         } else {
             return Collections.singletonList(getNonStandardResource(location));
         }
@@ -198,6 +218,8 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 default:
                     return null;
             }
+        } else if(location.getName().contains("MODULE")) { // Java 9+ support
+            return null;
         } else {
             return getNonStandardResource(location);
         }

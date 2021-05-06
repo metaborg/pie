@@ -1,26 +1,21 @@
 plugins {
   id("org.metaborg.gradle.config.java-library")
   id("org.metaborg.gradle.config.junit-testing")
-  id("net.ltgt.apt") version "0.21"
-  id("net.ltgt.apt-idea") version "0.21"
-  id("net.ltgt.apt-eclipse") version "0.21"
 }
 
-val daggerVersion = "2.25.2"
+val daggerVersion = "2.32"
 
 dependencies {
   api(platform(project(":pie.depconstraints")))
 
-  // Main
   api(project(":pie.api"))
-
+  api("org.metaborg:log.dagger")
+  api("org.metaborg:resource.dagger")
   api("com.google.dagger:dagger:$daggerVersion")
-  annotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
 
+  annotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
   compileOnly("org.checkerframework:checker-qual-android")
 
-  // Test
   testImplementation(project(":pie.runtime"))
-
   testAnnotationProcessor("com.google.dagger:dagger-compiler:$daggerVersion")
 }

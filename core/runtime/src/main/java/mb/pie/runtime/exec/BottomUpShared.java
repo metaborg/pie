@@ -1,13 +1,19 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.Logger;
+import mb.pie.api.InconsistentResourceProvide;
+import mb.pie.api.InconsistentResourceRequire;
+import mb.pie.api.InconsistentTaskRequire;
+import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -16,42 +22,56 @@ import java.util.stream.Stream;
 
 public class BottomUpShared {
     /**
-     * Notifies the {@code consumer} with tasks that are directly affected by requiring the {@code changedResource}.
+     * Notifies the {@code consumer} with tasks that are directly affected by providing the {@code changedResource}.
      */
-    public static void directlyAffectedByRequiredResource(
-        StoreReadTxn txn,
-        ResourceKey changedResource,
+    public static void directlyAffectedByProvidedResource(
+        ResourceKey resource,
         ResourceService resourceService,
-        Logger logger,
+        StoreReadTxn txn,
+        Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
-        for(TaskKey requiree : txn.requireesOf(changedResource)) {
-            logger.trace("  - required by: " + requiree.toShortString(200));
-            if(txn.taskObservability(requiree).isUnobserved()) {
-                logger.trace("    @ is unobserved; skipping");
-            } else if(!txn.resourceRequires(requiree).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(dep -> dep.isConsistent(resourceService))) {
-                consumer.accept(requiree);
+        final @Nullable TaskKey provider = txn.providerOf(resource);
+        if(provider != null) {
+            if(txn.taskObservability(provider).isObserved()) {
+                for(ResourceProvideDep dep : txn.resourceProvides(provider)) {
+                    if(!dep.key.equals(resource)) continue;
+                    final @Nullable InconsistentResourceProvide reason = dep.checkConsistency(resourceService);
+                    tracer.checkAffectedByProvidedResource(provider, dep, reason);
+                    if(reason != null) {
+                        consumer.accept(provider);
+                        break;
+                    }
+                }
+            } else {
+                tracer.checkAffectedByProvidedResource(provider, null, null);
             }
         }
     }
 
     /**
-     * Notifies the {@code consumer} with tasks that are directly affected by providing the {@code changedResource}.
+     * Notifies the {@code consumer} with tasks that are directly affected by requiring the {@code resource}.
      */
-    public static void directlyAffectedByProvidedResource(
-        StoreReadTxn txn,
-        ResourceKey changedResource,
+    public static void directlyAffectedByRequiredResource(
+        ResourceKey resource,
         ResourceService resourceService,
-        Logger logger,
+        StoreReadTxn txn,
+        Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
-        final @Nullable TaskKey provider = txn.providerOf(changedResource);
-        if(provider != null) {
-            logger.trace("  - provided by: " + provider.toShortString(200));
-            if(txn.taskObservability(provider).isUnobserved()) {
-                logger.trace("    @ is unobserved; skipping");
-            } else if(!txn.resourceProvides(provider).stream().filter(dep -> dep.key.equals(changedResource)).allMatch(dep -> dep.isConsistent(resourceService))) {
-                consumer.accept(provider);
+        for(TaskKey requirer : txn.requireesOf(resource)) {
+            if(txn.taskObservability(requirer).isObserved()) {
+                for(ResourceRequireDep dep : txn.resourceRequires(requirer)) {
+                    if(!dep.key.equals(resource)) continue;
+                    final @Nullable InconsistentResourceRequire reason = dep.checkConsistency(resourceService);
+                    tracer.checkAffectedByRequiredResource(requirer, dep, reason);
+                    if(reason != null) {
+                        consumer.accept(requirer);
+                        break;
+                    }
+                }
+            } else {
+                tracer.checkAffectedByRequiredResource(requirer, null, null);
             }
         }
     }
@@ -60,23 +80,53 @@ public class BottomUpShared {
      * Notifies the {@code consumer} with tasks that are directly affected by {@code changedResources}.
      */
     public static void directlyAffectedByResources(
-        StoreReadTxn txn,
-        Stream<? extends ResourceKey> changedResources,
+        Stream<? extends ResourceKey> resources,
         ResourceService resourceService,
-        Logger logger,
+        StoreReadTxn txn,
+        Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
-        changedResources.forEach((changedResource) -> {
-            logger.trace("* resource: " + changedResource);
-            directlyAffectedByRequiredResource(txn, changedResource, resourceService, logger, consumer);
-            directlyAffectedByProvidedResource(txn, changedResource, resourceService, logger, consumer);
+        resources.forEach((resource) -> {
+            tracer.scheduleAffectedByResourceStart(resource);
+            directlyAffectedByProvidedResource(resource, resourceService, txn, tracer, consumer);
+            directlyAffectedByRequiredResource(resource, resourceService, txn, tracer, consumer);
+            tracer.scheduleAffectedByResourceEnd(resource);
         });
+    }
+
+    /**
+     * Notifies the {@code consumer} with tasks that are directly affected by requiring the {@code requiree}.
+     */
+    public static void directlyAffectedByRequiredTask(
+        TaskKey requiree,
+        @Nullable Serializable output,
+        StoreReadTxn txn,
+        Tracer tracer,
+        Consumer<TaskKey> consumer
+    ) {
+        tracer.scheduleAffectedByTaskOutputStart(requiree, output);
+        for(TaskKey requirer : txn.callersOf(requiree)) {
+            if(txn.taskObservability(requirer).isObserved()) {
+                for(TaskRequireDep dep : txn.taskRequires(requirer)) {
+                    if(!dep.calleeEqual(requiree)) continue;
+                    final @Nullable InconsistentTaskRequire reason = dep.checkConsistency(output);
+                    tracer.checkAffectedByRequiredTask(requirer, dep, reason);
+                    if(reason != null) {
+                        consumer.accept(requirer);
+                        break;
+                    }
+                }
+            } else {
+                tracer.checkAffectedByRequiredTask(requirer, null, null);
+            }
+        }
+        tracer.scheduleAffectedByTaskOutputEnd(requiree, output);
     }
 
     /**
      * Checks whether [caller] has a transitive (or direct) task requirement to [callee].
      */
-    public static boolean hasTransitiveTaskReq(StoreReadTxn txn, TaskKey caller, TaskKey callee) {
+    public static boolean hasTransitiveTaskReq(TaskKey caller, TaskKey callee, StoreReadTxn txn) {
         // TODO: more efficient implementation for transitive calls?
         final Queue<TaskKey> toCheckQueue = new LinkedList<>();
         toCheckQueue.add(caller);

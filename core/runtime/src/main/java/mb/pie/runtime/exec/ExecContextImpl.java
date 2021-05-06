@@ -1,18 +1,21 @@
 package mb.pie.runtime.exec;
 
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Function;
-import mb.pie.api.Logger;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
 import mb.pie.api.STaskDef;
+import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Supplier;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.stamp.OutputStamp;
 import mb.pie.api.stamp.OutputStamper;
@@ -21,11 +24,8 @@ import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.DefaultStampers;
 import mb.resource.ReadableResource;
 import mb.resource.Resource;
-import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import mb.resource.WritableResource;
 import mb.resource.hierarchical.HierarchicalResource;
-import mb.resource.hierarchical.ResourcePath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
@@ -33,13 +33,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class ExecContextImpl implements ExecContext {
+    private final StoreWriteTxn txn;
     private final RequireTask requireTask;
     private final boolean modifyObservability;
     private final CancelToken cancel;
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
     private final DefaultStampers defaultStampers;
-    private final Logger logger;
+    private final LoggerFactory loggerFactory;
+    private final Tracer tracer;
 
     private final ArrayList<TaskRequireDep> taskRequires = new ArrayList<>();
     private final ArrayList<ResourceRequireDep> resourceRequires = new ArrayList<>();
@@ -47,21 +49,25 @@ public class ExecContextImpl implements ExecContext {
 
 
     public ExecContextImpl(
+        StoreWriteTxn txn,
         RequireTask requireTask,
         boolean modifyObservability,
         CancelToken cancel,
         TaskDefs taskDefs,
         ResourceService resourceService,
         DefaultStampers defaultStampers,
-        Logger logger
+        LoggerFactory loggerFactory,
+        Tracer tracer
     ) {
+        this.txn = txn;
         this.requireTask = requireTask;
         this.modifyObservability = modifyObservability;
         this.cancel = cancel;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.defaultStampers = defaultStampers;
-        this.logger = logger;
+        this.loggerFactory = loggerFactory;
+        this.tracer = tracer;
     }
 
 
@@ -84,10 +90,10 @@ public class ExecContextImpl implements ExecContext {
     public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) {
         cancel.throwIfCanceled();
         final TaskKey key = task.key();
-        final O output = requireTask.require(key, task, modifyObservability, cancel);
+        final O output = requireTask.require(key, task, modifyObservability, txn, cancel);
         final OutputStamp stamp = stamper.stamp(output);
         taskRequires.add(new TaskRequireDep(key, stamp));
-        Stats.addCallReq();
+        tracer.requiredTask(task, stamper);
         return output;
     }
 
@@ -112,7 +118,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) throws IOException {
+    public <O extends @Nullable Serializable> O require(Supplier<O> supplier) {
         return supplier.get(this);
     }
 
@@ -132,18 +138,16 @@ public class ExecContextImpl implements ExecContext {
 
     @Override
     public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
-        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>)stamper.stamp(resource);
+        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
-        Stats.addFileReq();
+        tracer.requiredResource(resource, stamper);
     }
 
     @Override
     public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
-        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp =
-            (ResourceStamp<Resource>)stamper.stamp(resource);
+        @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
         resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
-        Stats.addFileGen();
+        tracer.providedResource(resource, stamper);
     }
 
 
@@ -169,7 +173,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override public Logger logger() {
-        return logger;
+        return loggerFactory.create(ExecContextImpl.class);
     }
 
 

@@ -1,6 +1,5 @@
 package mb.pie.runtime.exec;
 
-import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -19,8 +18,8 @@ public class DistinctTaskKeyPriorityQueue {
         this.set = new HashSet<>();
     }
 
-    public static DistinctTaskKeyPriorityQueue withTransitiveDependencyComparator(Store store) {
-        return new DistinctTaskKeyPriorityQueue(new DependencyComparator(store));
+    public static DistinctTaskKeyPriorityQueue withTransitiveDependencyComparator(StoreReadTxn txn) {
+        return new DistinctTaskKeyPriorityQueue(new DependencyComparator(txn));
     }
 
 
@@ -38,7 +37,7 @@ public class DistinctTaskKeyPriorityQueue {
         return key;
     }
 
-    public @Nullable TaskKey pollLeastTaskWithDepTo(TaskKey key, Store store) {
+    public @Nullable TaskKey pollLeastTaskWithDepTo(TaskKey key, StoreReadTxn txn) {
         final PriorityQueue<TaskKey> queueCopy = new PriorityQueue<>(queue);
         while(!queueCopy.isEmpty()) {
             final TaskKey queuedKey = queueCopy.poll();
@@ -47,13 +46,11 @@ public class DistinctTaskKeyPriorityQueue {
                 set.remove(queuedKey);
                 return queuedKey;
             }
-            // Repeat to skip transaction in case queuedKey equals key.
-            try(final StoreReadTxn txn = store.readTxn()) {
-                if(BottomUpShared.hasTransitiveTaskReq(txn, key, queuedKey)) {
-                    queue.remove(queuedKey);
-                    set.remove(queuedKey);
-                    return queuedKey;
-                }
+            // Repeat to skip call in case queuedKey equals key.
+            if(BottomUpShared.hasTransitiveTaskReq(key, queuedKey, txn)) {
+                queue.remove(queuedKey);
+                set.remove(queuedKey);
+                return queuedKey;
             }
         }
         return null;

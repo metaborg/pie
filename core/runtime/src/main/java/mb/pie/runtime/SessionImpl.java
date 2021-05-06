@@ -14,6 +14,7 @@ import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CanceledException;
 import mb.pie.api.exec.UncheckedInterruptedException;
 import mb.resource.Resource;
+import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -21,7 +22,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -31,11 +35,20 @@ public abstract class SessionImpl implements Session {
     protected final ResourceService resourceService;
     protected final Store store;
 
+    protected final HashSet<ResourceKey> providedResources;
 
-    public SessionImpl(TaskDefs taskDefs, ResourceService resourceService, Store store) {
+
+    public SessionImpl(
+        TaskDefs taskDefs,
+        ResourceService resourceService,
+        Store store,
+        HashSet<ResourceKey> providedResources
+    ) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
+
+        this.providedResources = providedResources;
     }
 
 
@@ -50,7 +63,7 @@ public abstract class SessionImpl implements Session {
     }
 
     @Override
-    public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, Resource> shouldDeleteProvidedResource) throws IOException {
+    public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, HierarchicalResource> shouldDeleteProvidedResource) throws IOException {
         try(StoreWriteTxn txn = store.writeTxn()) {
             // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
             final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
@@ -70,9 +83,10 @@ public abstract class SessionImpl implements Session {
                     // Delete provided resources.
                     for(ResourceProvideDep dep : deletedData.resourceProvides) {
                         final Resource resource = resourceService.getResource(dep.key);
-                        if(shouldDeleteProvidedResource.test(task, resource)) {
-                            if(resource instanceof HierarchicalResource) {
-                                ((HierarchicalResource)resource).delete();
+                        if(resource instanceof HierarchicalResource) {
+                            final HierarchicalResource hierarchicalResource = ((HierarchicalResource)resource);
+                            if(shouldDeleteProvidedResource.test(task, hierarchicalResource)) {
+                                hierarchicalResource.delete(true);
                             }
                         }
                     }
@@ -88,6 +102,11 @@ public abstract class SessionImpl implements Session {
                 }
             }
         }
+    }
+
+
+    @Override public Set<ResourceKey> getProvidedResources() {
+        return Collections.unmodifiableSet(this.providedResources);
     }
 
     protected <T extends Serializable> T handleException(Supplier<T> supplier) throws ExecException, InterruptedException {

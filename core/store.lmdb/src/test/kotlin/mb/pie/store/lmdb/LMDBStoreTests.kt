@@ -1,9 +1,7 @@
 package mb.pie.store.lmdb
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.*
+import mb.pie.api.PieBuilder
 import mb.pie.api.test.anyC
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData
@@ -27,7 +25,7 @@ class LMDBStoreTests {
 
     newSession().use { session ->
       session.require(task)
-      verify(session.topDownRunner, never()).exec(eq(key), eq(task), eq(NoData()), any(), anyC())
+      verify(session.topDownRunner, never()).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
     }
   }
 }
@@ -35,6 +33,6 @@ class LMDBStoreTests {
 class LMDBStoreTestBuilder(shouldSpy: Boolean = true) : DefaultRuntimeTestBuilder(shouldSpy) {
   init {
     storeFactories.clear()
-    storeFactories.add { l, _ -> LMDBStore(l, File("build/test/lmdbstore")) }
+    storeFactories.add(PieBuilder.StoreFactory { serde, _, loggerFactory -> LMDBStore(serde, File("build/test/lmdbstore"), loggerFactory) })
   }
 }

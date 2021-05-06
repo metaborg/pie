@@ -13,7 +13,7 @@ import java.io.Serializable;
  * @param <T> Type of the input to the function.
  * @param <R> Type of the output of the function.
  */
-public interface Function<T extends Serializable, R extends @Nullable Serializable> extends Serializable {
+public interface Function<T extends Serializable, R extends Serializable> extends Serializable {
     R apply(ExecContext context, T input);
 
     /**
@@ -49,7 +49,7 @@ public interface Function<T extends Serializable, R extends @Nullable Serializab
      * @param <B>    New type of input.
      * @return Transformed function.
      */
-    default <B extends @Nullable Serializable> Function<B, R> mapInput(java.util.function.Function<? super B, ? extends T> before) {
+    default <B extends @Nullable Serializable> Function<B, R> mapInput(SerializableFunction<? super B, ? extends T> before) {
         return new MappedFunctionInput<>(this, new NonIncrFunction<>(before));
     }
 
@@ -61,13 +61,13 @@ public interface Function<T extends Serializable, R extends @Nullable Serializab
      * @param <A>   New type of output.
      * @return Transformed function.
      */
-    default <A extends @Nullable Serializable> Function<T, A> mapOutput(java.util.function.Function<? super R, ? extends A> after) {
+    default <A extends @Nullable Serializable> Function<T, A> mapOutput(SerializableFunction<? super R, ? extends A> after) {
         return new MappedFunctionOutput<>(this, new NonIncrFunction<>(after));
     }
 
     /**
-     * Creates an {@link Supplier incremental supplier} for this function with given {@code input}. An
-     * incremental supplier is {@link Serializable} and as such can be used as an input or output of a task.
+     * Creates an {@link Supplier incremental supplier} for this function with given {@code input}. An incremental
+     * supplier is {@link Serializable} and as such can be used as an input or output of a task.
      *
      * @param input The input for on top of which this function will be executed.
      * @return {@link Supplier} based on a function.

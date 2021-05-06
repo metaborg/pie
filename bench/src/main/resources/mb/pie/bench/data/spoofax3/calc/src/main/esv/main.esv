@@ -1,0 +1,6 @@
+module main
+
+imports
+
+  libspoofax/color/default
+  completion/colorer/start-cc-esv

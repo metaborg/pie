@@ -1,6 +1,7 @@
 package mb.pie.runtime.store;
 
-import mb.pie.api.Logger;
+import mb.pie.api.serde.DeserializeRuntimeException;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
@@ -10,33 +11,33 @@ import mb.resource.WritableResource;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.function.Supplier;
 
 public class SerializingStore<S extends Store & Serializable> implements Store, Serializable {
+    private final Serde serde;
     private final WritableResource resource;
     private final S store;
     private final boolean serializeOnSync;
 
 
-    public SerializingStore(WritableResource resource, S store, boolean serializeOnSync) {
+    public SerializingStore(Serde serde, WritableResource resource, S store, boolean serializeOnSync) {
+        this.serde = serde;
         this.resource = resource;
         this.store = store;
         this.serializeOnSync = serializeOnSync;
     }
 
-    public SerializingStore(WritableResource resource, S store) {
-        this(resource, store, false);
+    public SerializingStore(Serde serde, WritableResource resource, S store) {
+        this(serde, resource, store, false);
     }
 
-    public SerializingStore(WritableResource resource, Supplier<S> storeSupplier, boolean serializeOnSync) {
-        this(resource, deserialize(resource, storeSupplier));
+    public SerializingStore(Serde serde, WritableResource resource, Supplier<S> storeSupplier, Class<S> storeType, boolean serializeOnSync) {
+        this(serde, resource, deserialize(serde, resource, storeSupplier, storeType), serializeOnSync);
     }
 
-    public SerializingStore(WritableResource resource, Supplier<S> storeSupplier) {
-        this(resource, deserialize(resource, storeSupplier));
+    public SerializingStore(Serde serde, WritableResource resource, Supplier<S> storeSupplier, Class<S> storeType) {
+        this(serde, resource, deserialize(serde, resource, storeSupplier, storeType));
     }
 
 
@@ -62,18 +63,15 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
 
 
     private void serialize() {
-        try(
-            final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(resource.openWrite());
-            final ObjectOutputStream objectOutputStream = new ObjectOutputStream(bufferedOutputStream)
-        ) {
-            objectOutputStream.writeObject(store);
-            objectOutputStream.flush();
+        try(final BufferedOutputStream bufferedOutputStream = resource.openWriteBuffered()) {
+            serde.serialize(store, bufferedOutputStream);
+            bufferedOutputStream.flush();
         } catch(IOException e) {
             throw new RuntimeException("Serializing store '" + store + "' failed unexpectedly", e);
         }
     }
 
-    private static <S extends Store & Serializable> S deserialize(ReadableResource resource, Supplier<S> storeSupplier) {
+    private static <S extends Store & Serializable> S deserialize(Serde serde, ReadableResource resource, Supplier<S> storeSupplier, Class<S> storeType) {
         try {
             if(!resource.exists()) {
                 return storeSupplier.get();
@@ -81,14 +79,10 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
         } catch(IOException e) {
             return storeSupplier.get();
         }
-
-        try(
-            final BufferedInputStream bufferedInputStream = new BufferedInputStream(resource.openRead());
-            final ObjectInputStream objectInputStream = new ObjectInputStream(bufferedInputStream)
-        ) {
-            @SuppressWarnings("unchecked") final S deserialized = (S)objectInputStream.readObject();
-            return deserialized;
-        } catch(IOException | ClassNotFoundException e) {
+        try(final BufferedInputStream bufferedInputStream = resource.openReadBuffered()) {
+            return serde.deserialize(storeType, bufferedInputStream);
+        } catch(DeserializeRuntimeException | IOException e) {
+            // TODO: log error
             return storeSupplier.get();
         }
     }

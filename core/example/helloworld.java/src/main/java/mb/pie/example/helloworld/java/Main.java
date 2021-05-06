@@ -1,5 +1,6 @@
 package mb.pie.example.helloworld.java;
 
+import mb.log.stream.StreamLoggerFactory;
 import mb.pie.api.ExecContext;
 import mb.pie.api.MapTaskDefs;
 import mb.pie.api.MixedSession;
@@ -9,7 +10,6 @@ import mb.pie.api.PieBuilder;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
-import mb.pie.runtime.logger.StreamLogger;
 import mb.pie.runtime.store.InMemoryStore;
 import mb.pie.runtime.store.SerializingStore;
 import mb.resource.ResourceKeyString;
@@ -82,15 +82,15 @@ public class Main {
         // We pass in the TaskDefs object we created.
         pieBuilder.withTaskDefs(taskDefs);
         // For storing build results and the dependency graph, we will serialize the in-memory store on exit at build/store.
-        pieBuilder.withStoreFactory((logger, resourceService) -> {
+        pieBuilder.withStoreFactory((serde, resourceService, logger) -> {
             try {
-                return new SerializingStore<InMemoryStore>(resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), InMemoryStore::new);
+                return new SerializingStore<>(serde, resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), InMemoryStore::new, InMemoryStore.class);
             } catch(IOException e) {
                 throw new UncheckedIOException(e);
             }
         });
-        // For example purposes, we use verbose logging which will output to stdout.
-        pieBuilder.withLogger(StreamLogger.verbose());
+        // For example purposes, we use very verbose logging which will output to stdout.
+        pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose());
         // Then we build the PIE runtime.
         try(final Pie pie = pieBuilder.build()) {
             // Now we create concrete task instances from the task definitions.

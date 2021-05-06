@@ -7,8 +7,8 @@ import mb.pie.lang.test.supplier.fromTaskAndGet.helloName.main_helloName;
 
 import javax.inject.Singleton;
 
-@Singleton
-@Component(modules = {PieModule.class, PieTestModule.class})
+@mb.pie.dagger.PieScope
+@Component(modules = {PieModule.class, PieTestModule.class}, dependencies = {mb.log.dagger.LoggerComponent.class, mb.resource.dagger.ResourceServiceComponent.class})
 public interface helloNameComponent extends PieComponent {
     main_helloName get();
 }

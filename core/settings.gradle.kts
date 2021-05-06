@@ -17,14 +17,23 @@ fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
 
 includeProject("depconstraints")
 includeProject("api")
-includeProject("api.test")
 includeProject("runtime")
+
+includeProject("api.test")
 includeProject("runtime.test")
+
 includeProject("share.coroutine")
+
+includeProject("serde.kryo")
+
 includeProject("store.lmdb")
+
 includeProject("taskdefs.guice")
 includeProject("dagger")
+
 includeProject("task.java")
+includeProject("task.archive")
+
 includeProject("example/copyfile")
 includeProject("example/helloworld.java")
 includeProject("example/helloworld.kotlin")

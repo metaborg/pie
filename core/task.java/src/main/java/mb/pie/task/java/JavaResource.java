@@ -17,7 +17,7 @@ import java.net.URI;
 import java.util.Objects;
 
 class JavaResource implements JavaFileObject {
-    private final HierarchicalResource resource;
+    final HierarchicalResource resource;
     private final Kind kind;
 
 

@@ -11,18 +11,26 @@ import mb.pie.api.TopDownSession;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.TopDownRunner;
+import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.HashSet;
 
 public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
     private final TopDownRunner topDownRunner;
     private final Store store;
 
 
-    public TopDownSessionImpl(TopDownRunner topDownRunner, TaskDefs taskDefs, ResourceService resourceService, Store store) {
-        super(taskDefs, resourceService, store);
+    public TopDownSessionImpl(
+        TopDownRunner topDownRunner,
+        TaskDefs taskDefs,
+        ResourceService resourceService,
+        Store store,
+        HashSet<ResourceKey> providedResources
+    ) {
+        super(taskDefs, resourceService, store, providedResources);
         this.topDownRunner = topDownRunner;
         this.store = store;
     }

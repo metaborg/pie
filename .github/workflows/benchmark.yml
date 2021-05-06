@@ -1,0 +1,47 @@
+name: Benchmark
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        java: [15]
+        python: [3.8]
+        gradle: [6.8.2]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ matrix.gradle }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+      - uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: ${{ matrix.gradle }}
+          arguments: benchmark --parallel --stacktrace
+      - uses: actions/upload-artifact@v2
+        with:
+          name: jmh-result-${{ runner.os }}-${{ matrix.java }}
+          path: bench/build/reports/jmh/result.json
+      - uses: actions/upload-artifact@v2
+        with:
+          name: plot-${{ runner.os }}-${{ matrix.java }}
+          path: bench/build/reports/jmh/result.html
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./bench/build/reports/jmh

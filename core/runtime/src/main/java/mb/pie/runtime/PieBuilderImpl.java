@@ -1,21 +1,23 @@
 package mb.pie.runtime;
 
-import mb.pie.api.ExecutorLogger;
-import mb.pie.api.Layer;
-import mb.pie.api.Logger;
+import mb.log.api.LoggerFactory;
+import mb.log.noop.NoopLoggerFactory;
 import mb.pie.api.PieBuilder;
 import mb.pie.api.Share;
-import mb.pie.api.Store;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.Tracer;
+import mb.pie.api.serde.JavaSerde;
+import mb.pie.api.serde.Serde;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.api.stamp.output.OutputStampers;
 import mb.pie.api.stamp.resource.ResourceStampers;
 import mb.pie.runtime.layer.ValidationLayer;
-import mb.pie.runtime.logger.NoopLogger;
-import mb.pie.runtime.logger.exec.LoggerExecutorLogger;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
+import mb.pie.runtime.taskdefs.CompositeTaskDefs;
+import mb.pie.runtime.taskdefs.NullTaskDefs;
+import mb.pie.runtime.tracer.NoopTracer;
 import mb.resource.DefaultResourceService;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceService;
@@ -26,27 +28,35 @@ import mb.resource.text.TextResourceRegistry;
 import mb.resource.url.URLResourceRegistry;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.function.BiFunction;
+import java.util.ArrayList;
 import java.util.function.Function;
 
 public class PieBuilderImpl implements PieBuilder {
     protected @Nullable TaskDefs taskDefs;
+    protected ArrayList<TaskDefs> additionalTaskDefs = new ArrayList<>();
     protected ResourceService resourceService = new DefaultResourceService(new FSResourceRegistry(), new URLResourceRegistry(), new TextResourceRegistry(), new ClassLoaderResourceRegistry(PieBuilderImpl.class.getClassLoader()));
-    protected BiFunction<Logger, ResourceService, Store> storeFactory = (logger, resourceService) -> new InMemoryStore();
-    protected Function<Logger, Share> shareFactory = (logger) -> new NonSharingShare();
+    protected Function<LoggerFactory, Serde> serdeFactory = (loggerFactory) -> new JavaSerde();
+    protected StoreFactory storeFactory = (serde, resourceService, loggerFactory) -> new InMemoryStore();
+    protected Function<LoggerFactory, Share> shareFactory = (loggerFactory) -> new NonSharingShare();
     protected OutputStamper defaultOutputStamper = OutputStampers.equals();
     protected ResourceStamper<ReadableResource> defaultRequireReadableStamper = ResourceStampers.modifiedFile();
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper = ResourceStampers.modifiedFile();
     protected ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper = ResourceStampers.modifiedFile();
     protected ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper = ResourceStampers.modifiedFile();
-    protected BiFunction<TaskDefs, Logger, Layer> layerFactory = ValidationLayer::new;
-    protected Logger logger = new NoopLogger();
-    protected Function<Logger, ExecutorLogger> executorLoggerFactory = LoggerExecutorLogger::new;
+    protected LayerFactory layerFactory = ValidationLayer::new;
+    protected LoggerFactory loggerFactory = NoopLoggerFactory.instance;
+    protected Function<LoggerFactory, Tracer> tracerFactory = (loggerFactory) -> NoopTracer.instance;
 
 
     @Override
     public PieBuilderImpl withTaskDefs(TaskDefs taskDefs) {
         this.taskDefs = taskDefs;
+        return this;
+    }
+
+    @Override
+    public PieBuilder addTaskDefs(TaskDefs taskDefs) {
+        additionalTaskDefs.add(taskDefs);
         return this;
     }
 
@@ -57,14 +67,20 @@ public class PieBuilderImpl implements PieBuilder {
     }
 
     @Override
-    public PieBuilderImpl withStoreFactory(BiFunction<Logger, ResourceService, Store> store) {
-        this.storeFactory = store;
+    public PieBuilder withSerdeFactory(Function<LoggerFactory, Serde> serdeFactory) {
+        this.serdeFactory = serdeFactory;
         return this;
     }
 
     @Override
-    public PieBuilderImpl withShareFactory(Function<Logger, Share> share) {
-        this.shareFactory = share;
+    public PieBuilderImpl withStoreFactory(StoreFactory storeFactory) {
+        this.storeFactory = storeFactory;
+        return this;
+    }
+
+    @Override
+    public PieBuilderImpl withShareFactory(Function<LoggerFactory, Share> shareFactory) {
+        this.shareFactory = shareFactory;
         return this;
     }
 
@@ -99,27 +115,34 @@ public class PieBuilderImpl implements PieBuilder {
     }
 
     @Override
-    public PieBuilderImpl withLayerFactory(BiFunction<TaskDefs, Logger, Layer> layer) {
-        this.layerFactory = layer;
+    public PieBuilderImpl withLayerFactory(LayerFactory layerFactory) {
+        this.layerFactory = layerFactory;
         return this;
     }
 
     @Override
-    public PieBuilderImpl withLogger(Logger logger) {
-        this.logger = logger;
+    public PieBuilderImpl withLoggerFactory(LoggerFactory loggerFactory) {
+        this.loggerFactory = loggerFactory;
         return this;
     }
 
     @Override
-    public PieBuilderImpl withExecutorLoggerFactory(Function<Logger, ExecutorLogger> executorLogger) {
-        this.executorLoggerFactory = executorLogger;
+    public PieBuilderImpl withTracerFactory(Function<LoggerFactory, Tracer> tracerFactory) {
+        this.tracerFactory = tracerFactory;
         return this;
     }
 
 
     @Override public PieImpl build() {
-        if(taskDefs == null) {
+        final TaskDefs taskDefs;
+        if(this.taskDefs == null && additionalTaskDefs.isEmpty()) {
             throw new RuntimeException("Task definitions have not been set. Call PieBuilder#withTaskDefs to set task definitions");
+        } else if(additionalTaskDefs.isEmpty()) {
+            taskDefs = this.taskDefs;
+        } else if(this.taskDefs != null) {
+            taskDefs = new CompositeTaskDefs(additionalTaskDefs, this.taskDefs);
+        } else {
+            taskDefs = new CompositeTaskDefs(additionalTaskDefs, new NullTaskDefs());
         }
         final DefaultStampers defaultStampers = new DefaultStampers(
             defaultOutputStamper,
@@ -128,15 +151,18 @@ public class PieBuilderImpl implements PieBuilder {
             defaultRequireHierarchicalStamper,
             defaultProvideHierarchicalStamper
         );
+        final Serde serde = serdeFactory.apply(loggerFactory);
         return new PieImpl(
+            true,
             taskDefs,
             resourceService,
-            storeFactory.apply(logger, resourceService),
-            shareFactory.apply(logger),
+            serde,
+            storeFactory.apply(serde, resourceService, loggerFactory),
+            shareFactory.apply(loggerFactory),
             defaultStampers,
             layerFactory,
-            logger,
-            executorLoggerFactory,
+            loggerFactory,
+            tracerFactory,
             new MapCallbacks()
         );
     }

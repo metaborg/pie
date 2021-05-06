@@ -27,7 +27,9 @@ public interface Pie extends AutoCloseable {
      * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
      * @return True if task was executed at least once, false otherwise.
      */
-    boolean hasBeenExecuted(Task<?> task);
+    default boolean hasBeenExecuted(Task<?> task) {
+        return hasBeenExecuted(task.key());
+    }
 
     /**
      * Checks whether task with given {@code key} has been executed at least once.
@@ -45,7 +47,9 @@ public interface Pie extends AutoCloseable {
      * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
      * @return True if task is observed, false otherwise.
      */
-    boolean isObserved(Task<?> task);
+    default boolean isObserved(Task<?> task) {
+        return isObserved(task.key());
+    }
 
     /**
      * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or

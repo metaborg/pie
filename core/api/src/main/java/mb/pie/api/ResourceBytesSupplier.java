@@ -5,6 +5,7 @@ import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 public class ResourceBytesSupplier implements Supplier<byte[]> {
@@ -16,8 +17,12 @@ public class ResourceBytesSupplier implements Supplier<byte[]> {
         this.stamper = stamper;
     }
 
-    @Override public byte[] get(ExecContext context) throws IOException {
-        return context.require(key, stamper).readBytes();
+    @Override public byte[] get(ExecContext context) {
+        try {
+            return context.require(key, stamper).readBytes();
+        } catch(IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override public boolean equals(Object o) {

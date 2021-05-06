@@ -1,65 +1,129 @@
 package mb.pie.store.lmdb;
 
-import mb.pie.api.Logger;
+import mb.log.api.Logger;
+import mb.log.api.LoggerFactory;
+import mb.pie.api.serde.DeserializeRuntimeException;
+import mb.pie.api.serde.Serde;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 class SerializeUtil {
-    static <T extends @Nullable Serializable> byte[] serialize(T obj) {
-        try(
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)
-        ) {
-            objectOutputStream.writeObject(obj);
-            objectOutputStream.flush();
-            outputStream.flush();
-            // OPTO: copies bytes, not efficient
-            return outputStream.toByteArray();
-        } catch(IOException e) {
-            // TODO: should this exception be checked?
-            throw new UncheckedIOException(e);
+    private final Serde serde;
+    private final Logger logger;
+
+
+    SerializeUtil(Serde serde, LoggerFactory loggerFactory) {
+        this.serde = serde;
+        this.logger = loggerFactory.create(SerializeUtil.class);
+    }
+
+
+    <T> byte[] serializeToBytes(T obj) {
+        return serde.serializeToBytes(obj);
+    }
+
+    <T> byte[] serializeHashedToBytes(T obj) {
+        final byte[] serialized = serializeToBytes(obj);
+        return hash(serialized);
+    }
+
+    <T> ByteBuffer serialize(T obj) {
+        return serde.serializeToByteBuffer(obj);
+    }
+
+    <T> ByteBuffer serializeHashed(T obj) {
+        final byte[] serialized = serializeToBytes(obj);
+        final byte[] hashed = hash(serialized);
+        return BufferUtil.toBuffer(hashed);
+    }
+
+    <T> SerializedAndHashed serializeAndHash(T obj) {
+        final byte[] serialized = serializeToBytes(obj);
+        final byte[] hashed = hash(serialized);
+        return new SerializedAndHashed(serialized, hashed);
+    }
+
+    <T> De<T> deserialize(Class<T> type, ByteBuffer byteBuffer) {
+        try {
+            final T deserialized = serde.deserializeFromByteBuffer(type, byteBuffer);
+            return new De<>(deserialized);
+        } catch(DeserializeRuntimeException e) {
+            logger.error("Deserialization failed", e.getCause());
+            return new De<>();
         }
     }
 
-    static byte[] hash(byte[] bytes) {
+
+    <T> byte[] serializeNullableToBytes(@Nullable T obj, Class<T> type) {
+        return serde.serializeNullableToBytes(obj, type);
+    }
+
+    <T> byte[] serializeNullableHashedToBytes(@Nullable T obj, Class<T> type) {
+        final byte[] serialized = serializeNullableToBytes(obj, type);
+        return hash(serialized);
+    }
+
+    <T> ByteBuffer serializeNullable(@Nullable T obj, Class<T> type) {
+        return serde.serializeNullableToByteBuffer(obj, type);
+    }
+
+    <T> ByteBuffer serializeNullableHashed(@Nullable T obj, Class<T> type) {
+        final byte[] serialized = serializeNullableToBytes(obj, type);
+        final byte[] hashed = hash(serialized);
+        return BufferUtil.toBuffer(hashed);
+    }
+
+    <T> De<@Nullable T> deserializeNullable(Class<T> type, ByteBuffer byteBuffer) {
+        try {
+            final @Nullable T deserialized = serde.deserializeNullableFromByteBuffer(type, byteBuffer);
+            return new De<>(deserialized);
+        } catch(DeserializeRuntimeException e) {
+            logger.error("Deserialization failed", e.getCause());
+            return new De<>();
+        }
+    }
+
+
+    byte[] serializeObjectToBytes(@Nullable Object obj) {
+        return serde.serializeTypeAndObjectToBytes(obj);
+    }
+
+    byte[] serializeObjectHashedToBytes(@Nullable Object obj) {
+        final byte[] serialized = serializeObjectToBytes(obj);
+        return hash(serialized);
+    }
+
+    ByteBuffer serializeObject(@Nullable Object obj) {
+        return serde.serializeTypeAndObjectToByteBuffer(obj);
+    }
+
+    ByteBuffer serializeObjectHashed(@Nullable Object obj) {
+        final byte[] serialized = serializeObjectToBytes(obj);
+        final byte[] hashed = hash(serialized);
+        return BufferUtil.toBuffer(hashed);
+    }
+
+    @SuppressWarnings("unchecked") <T> De<@Nullable T> deserializeObject(ByteBuffer byteBuffer) {
+        try {
+            // TODO: pass in the correct classloader for deserialization.
+            final @Nullable Object deserialized = serde.deserializeTypeAndObjectFromByteBuffer(null, byteBuffer);
+            return new De<>((T)deserialized);
+        } catch(DeserializeRuntimeException e) {
+            logger.error("Deserialization failed", e.getCause());
+            return new De<>();
+        }
+    }
+
+
+    byte[] hash(byte[] bytes) {
         try {
             final MessageDigest digest = MessageDigest.getInstance("SHA-1");
             return digest.digest(bytes);
         } catch(NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    static <T extends @Nullable Serializable> SerializedAndHashed serializeAndHash(T obj) {
-        final byte[] serialized = serialize(obj);
-        final byte[] hashed = hash(serialized);
-        return new SerializedAndHashed(serialized, hashed);
-    }
-
-
-    static <T extends @Nullable Serializable> ByteBuffer serializeHashedToBuffer(T obj) {
-        return BufferUtil.toBuffer(SerializeUtil.hash(SerializeUtil.serialize(obj)));
-    }
-
-    public static <T extends @Nullable Serializable> ByteBuffer serializeToBuffer(T obj) {
-        return BufferUtil.toBuffer(SerializeUtil.serialize(obj));
-    }
-
-
-    static <T extends @Nullable Serializable> Deserialized<T> deserialize(ByteBuffer byteBuffer, Logger logger) {
-        try(
-            final ByteBufferBackedInputStream bufferInputStream = new ByteBufferBackedInputStream(byteBuffer);
-            final ObjectInputStream objectInputStream = new ObjectInputStream(bufferInputStream)
-        ) {
-            @SuppressWarnings("unchecked") final T deserialized = (T) objectInputStream.readObject();
-            return new Deserialized<>(deserialized);
-        } catch(ClassNotFoundException | IOException e) {
-            logger.error("Deserialization failed", e);
-            return new Deserialized<>();
         }
     }
 }

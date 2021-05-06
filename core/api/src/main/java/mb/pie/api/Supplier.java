@@ -2,7 +2,6 @@ package mb.pie.api;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -15,7 +14,7 @@ import java.io.Serializable;
  */
 @FunctionalInterface
 public interface Supplier<T extends @Nullable Serializable> extends Serializable {
-    T get(ExecContext context) throws IOException;
+    T get(ExecContext context);
 
     /**
      * Creates a new supplier for which given {@link Function incremental function} is executed on the result of this
@@ -39,7 +38,7 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
-    default <R extends Serializable> Supplier<R> map(java.util.function.Function<? super T, ? extends R> mapper) {
+    default <R extends Serializable> Supplier<R> map(SerializableFunction<? super T, ? extends R> mapper) {
         return new MappedSupplier<>(this, new NonIncrFunction<>(mapper));
     }
 
@@ -66,7 +65,7 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
-    default <R extends Serializable> Supplier<R> flatMap(java.util.function.Function<? super T, Supplier<R>> mapper) {
+    default <R extends Serializable> Supplier<R> flatMap(SerializableFunction<? super T, Supplier<R>> mapper) {
         return new FlatMappedSupplier<>(this, new NonIncrFunction<>(mapper));
     }
 }

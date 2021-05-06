@@ -14,7 +14,7 @@ class SerializedAndHashed {
     @Override public boolean equals(Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final SerializedAndHashed that = (SerializedAndHashed) o;
+        final SerializedAndHashed that = (SerializedAndHashed)o;
         return Arrays.equals(serialized, that.serialized) && Arrays.equals(hashed, that.hashed);
     }
 

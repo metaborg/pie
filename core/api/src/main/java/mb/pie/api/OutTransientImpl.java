@@ -5,8 +5,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.Objects;
 
 public class OutTransientImpl<T extends @Nullable Object> implements OutTransient<T> {
-    private final T value;
-    private final boolean consistent;
+    private transient final T value;
+    private transient final boolean consistent;
 
     public OutTransientImpl(T value, boolean consistent) {
         this.value = value;
@@ -23,7 +23,7 @@ public class OutTransientImpl<T extends @Nullable Object> implements OutTransien
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final OutTransientImpl<?> that = (OutTransientImpl<?>)o;
@@ -32,7 +32,7 @@ public class OutTransientImpl<T extends @Nullable Object> implements OutTransien
     }
 
     @Override public int hashCode() {
-        @SuppressWarnings("ConstantConditions") int result = value != null ? value.hashCode() : 0;
+        int result = value != null ? value.hashCode() : 0;
         result = 31 * result + (consistent ? 1 : 0);
         return result;
     }

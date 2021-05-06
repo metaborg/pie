@@ -1,12 +1,12 @@
 package mb.pie.runtime;
 
+import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
-import mb.pie.api.ExecutorLogger;
-import mb.pie.api.Layer;
-import mb.pie.api.Logger;
 import mb.pie.api.MapTaskDefs;
+import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.PieChildBuilder;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.Tracer;
 import mb.pie.api.stamp.OutputStamper;
 import mb.pie.api.stamp.ResourceStamper;
 import mb.pie.runtime.taskdefs.CompositeTaskDefs;
@@ -18,7 +18,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class PieChildBuilderImpl implements PieChildBuilder {
@@ -33,9 +32,9 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     protected ResourceStamper<ReadableResource> defaultProvideReadableStamper;
     protected ResourceStamper<HierarchicalResource> defaultRequireHierarchicalStamper;
     protected ResourceStamper<HierarchicalResource> defaultProvideHierarchicalStamper;
-    protected BiFunction<TaskDefs, Logger, Layer> layerFactory;
-    protected Logger logger;
-    protected Function<Logger, ExecutorLogger> executorLoggerFactory;
+    protected LayerFactory layerFactory;
+    protected LoggerFactory loggerFactory;
+    protected Function<LoggerFactory, Tracer> tracerFactory;
 
     public PieChildBuilderImpl(PieImpl parent) {
         this.parent = parent;
@@ -45,8 +44,8 @@ public class PieChildBuilderImpl implements PieChildBuilder {
         this.defaultRequireHierarchicalStamper = parent.defaultStampers.requireHierarchicalResource;
         this.defaultProvideHierarchicalStamper = parent.defaultStampers.provideHierarchicalResource;
         this.layerFactory = parent.layerFactory;
-        this.logger = parent.logger;
-        this.executorLoggerFactory = parent.executorLoggerFactory;
+        this.loggerFactory = parent.loggerFactory;
+        this.tracerFactory = parent.tracerFactory;
         // Following fields need special handling at build-time.
         this.taskDefs = null;
         this.resourceService = null;
@@ -99,20 +98,20 @@ public class PieChildBuilderImpl implements PieChildBuilder {
     }
 
     @Override
-    public PieChildBuilderImpl withLayerFactory(BiFunction<TaskDefs, Logger, Layer> layer) {
-        this.layerFactory = layer;
+    public PieChildBuilderImpl withLayerFactory(LayerFactory layerFactory) {
+        this.layerFactory = layerFactory;
         return this;
     }
 
     @Override
-    public PieChildBuilderImpl withLogger(Logger logger) {
-        this.logger = logger;
+    public PieChildBuilderImpl withLoggerFactory(LoggerFactory loggerFactory) {
+        this.loggerFactory = loggerFactory;
         return this;
     }
 
     @Override
-    public PieChildBuilderImpl withExecutorLoggerFactory(Function<Logger, ExecutorLogger> executorLogger) {
-        this.executorLoggerFactory = executorLogger;
+    public PieChildBuilderImpl withTracerFactory(Function<LoggerFactory, Tracer> tracerFactory) {
+        this.tracerFactory = tracerFactory;
         return this;
     }
 
@@ -162,14 +161,16 @@ public class PieChildBuilderImpl implements PieChildBuilder {
                     .toArray(ResourceService[]::new));
         }
         return new PieImpl(
+            false,
             taskDefs,
             resourceService,
+            parent.serde,
             parent.store,
             parent.share,
             defaultStampers,
             layerFactory,
-            logger,
-            executorLoggerFactory,
+            loggerFactory,
+            tracerFactory,
             new CompositeCallbacks(new MapCallbacks(), ancestorCallbacks)
         );
     }

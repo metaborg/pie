@@ -15,6 +15,7 @@ import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Set;
 
 public class MixedSessionImpl extends SessionImpl implements MixedSession {
@@ -34,9 +35,10 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         BottomUpRunner bottomUpRunner,
         TaskDefs taskDefs,
         ResourceService resourceService,
-        Store store
+        Store store,
+        HashSet<ResourceKey> providedResources
     ) {
-        super(taskDefs, resourceService, store);
+        super(taskDefs, resourceService, store, providedResources);
         this.topDownRunner = topDownRunner;
         this.bottomUpRunner = bottomUpRunner;
         this.taskDefs = taskDefs;
@@ -74,7 +76,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     }
 
     private TopDownSession createSessionAfterBottomUp() {
-        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store);
+        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store, providedResources);
     }
 
 

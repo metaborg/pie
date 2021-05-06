@@ -3,6 +3,7 @@ package mb.pie.taskdefs.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import mb.log.stream.StreamLoggerFactory;
 import mb.pie.api.ExecContext;
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
@@ -13,7 +14,6 @@ import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import mb.pie.runtime.PieBuilderImpl;
-import mb.pie.runtime.logger.StreamLogger;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
@@ -89,7 +89,7 @@ public class GuiceTaskDefsTest {
 
         final PieBuilder pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
-        pieBuilder.withLogger(StreamLogger.verbose());
+        pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose());
         try(final Pie pie = pieBuilder.build(); final MixedSession session = pie.newSession()) {
             final String returnedString = session.require(
                 returnResultString.createTask(returnInjectedString.createSupplier(None.instance)));

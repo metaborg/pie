@@ -22,10 +22,10 @@ public class TaskRequireDep implements Serializable {
     /**
      * @return an execution reason when this call requirement is inconsistent w.r.t. [output], `null` otherwise.
      */
-    public @Nullable InconsistentTaskReq checkConsistency(@Nullable Serializable output) {
+    public @Nullable InconsistentTaskRequire checkConsistency(@Nullable Serializable output) {
         final OutputStamp newStamp = stamp.getStamper().stamp(output);
         if(!stamp.equals(newStamp)) {
-            return new InconsistentTaskReq(this, newStamp);
+            return new InconsistentTaskRequire(this, newStamp);
         }
         return null;
     }

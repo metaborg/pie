@@ -7,9 +7,15 @@ application {
 }
 
 dependencies {
-  compile(project(":pie.runtime"))
+  implementation(project(":pie.runtime"))
 }
 
 metaborg {
-  javaCreatePublication = false // Do not publish example application.
+  javaCreatePublication = false // Do not publish benchmark.
+}
+tasks {
+  // Disable currently unused distribution tasks.
+  distZip.configure { enabled = false }
+  distTar.configure { enabled = false }
+  startScripts.configure { enabled = false }
 }
