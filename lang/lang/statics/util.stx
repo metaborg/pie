@@ -1,0 +1,134 @@
+module statics/util
+
+imports
+
+  signatures/common-sig
+  signatures/func_body-sig
+  statics/base
+  statics/type
+  statics/module
+  statics/func_body
+
+rules
+
+  /**
+   * getRoot(s)
+   * Get the root scope. The root scope is the scope passed to
+   * statics/project!projectOk.
+   * All scopes have a path of 0 or more P edges to a scope that declares the
+   * root scope in the !root relation.
+   */
+  getRoot : scope -> scope
+  getRoot(s) = s_root :- {occs}
+    query root filter P* in s |-> occs,
+    occs == [(_, s_root)|_] | error $[BUG: cannot resolve root scope from [s]. occs: [occs]].
+
+  /**
+   * getFileIfExists(s) = s_files
+   * Finds the file scope that a scope is defined in (i.e. given a scope in a
+   * function it returns the scope of the file that the function is declared
+   * in).
+   * Returns a list of zero or one element.
+   */
+  getFileIfExists : scope -> list(scope)
+  getFileIfExists(s) = getScopes(occs) :-
+    query file
+      filter P*
+      min $ < P
+      and {s1, s2 :- s1 == s2}
+      in s |-> occs.
+
+  /**
+   * getScope(occ) = s
+   * Gets the scope [s] from an occurence [occ].
+   */
+  getScope : (path * scope) -> scope
+  getScopes maps getScope(list(*)) = list(*)
+  getScope((_, s)) = s.
+
+  /**
+   * emptyScope(s) -> s_empty
+   * Returns an empty scope with simple module name <NONE>.
+   * scope [s] is used to set the root scope.
+   * Because it is returned, it cannot be extended.
+   * This function is used in error cases where a scope should be returned but
+   * none were found, e.g. resolving a non-existent module.
+   */
+  emptyScope : scope -> scope
+  emptyScope(s) = s_empty :-
+    new s_empty,
+    !root[getRoot(s)] in s_empty,
+    setModuleName(s_empty, "<NONE>").
+
+  /**
+   * expect Exp [exp] to be a subtype of type [expected_ty] in scope [s]
+   * give an error otherwise
+   * returns the updated scope
+   */
+  expectSubtype : scope * Exp * TYPE -> scope
+  expectSubtype(s1, exp, expected_ty) = s2 :- {actual_ty}
+    typeOfExp(s1, exp) == (s2, actual_ty),
+    subtype(actual_ty, expected_ty) | error $[Type mismatch: expected [expected_ty] type, got [actual_ty]] @exp.
+
+  /**
+   * Expect Exps [exps] to have types [tys]. This version passes along scopes from one expression to the next.
+   * Also takes a string argument [err], this will be used for the error message in case two lists have different lengths.
+   */
+  // todo: remove message
+  expectSubtypesPassScopes : scope * list(Exp) * list(TYPE) * string -> scope
+  expectSubtypesPassScopes(s, [], [], _) = s.
+  expectSubtypesPassScopes(s1, [exp | exps], [ty | tys], err) = s3 :- {s2}
+    expectSubtype(s1, exp, ty) == s2,
+    expectSubtypesPassScopes(s2, exps, tys, err) == s3.
+  expectSubtypesPassScopes(s, [], types@[_|_], err) = s :- false | error $[[err]; remaining types: [types]].
+  expectSubtypesPassScopes(s, exps@[_|_],  [], err) = s :- false | error $[[err]; remaining expressions: [exps]].
+
+  /**
+   * moduleToList(mod@Module(moduleList, name))
+   * Convert a Module [mod] to a list of the modules
+   * Append [name] to the [moduleList].
+   */
+  moduleToList : Module -> list(MODID)
+  moduleToList(Module(NoModuleList(), name)) = [name].
+  moduleToList(Module(ModuleList(mods), name)) = appendString(mods, name).
+
+  /**
+   * concatModuleLists(moduleList1, moduleList2) = moduleList
+   * concatenates the two lists of MODULEs
+   */
+  concatModuleLists : list(MODULE) * list(MODULE) -> list(MODULE)
+  concatModuleLists([], modules) = modules.
+  concatModuleLists([mod|mods], modules) = [mod|concatModuleLists(mods, modules)].
+
+
+  /**
+   * appendString(strs, newStr)
+   * append string [newStr] to list of strings [strs].
+   */
+  appendString : list(string) * string -> list(string)
+  appendString([], newStr) = [newStr].
+  appendString([str|strs], newStr) = [str|appendString(strs, newStr)].
+
+  /**
+   * getLast(names) = name
+   * Gets the last name in a list of names.
+   * This is a more efficient version of removeLast if case you only want the
+   * last name and not the names before that.
+   * Reports a bug if the list is empty.
+   */
+  getLast : list(string) -> string
+  getLast([]) = "<<ERROR>>" :- false | error "BUG: called getLast with empty list".
+  getLast([name]) = name.
+  getLast([_|name]) = getLast(name).
+
+  /**
+   * removeLast(strs) = (start_strs, last)
+   * splits a list of strings into the starting strings and the last string.
+   * Reports a bug if the list is empty.
+   * Use getLast if you only need the last element.
+   */
+  // todo: rename to splitLast
+  removeLast : list(string) -> (list(string) * string)
+  removeLast([]) = res :- false | error "BUG: called removeLast with empty list.".
+  removeLast([str]) = ([], str).
+  removeLast([str|strs]) = ([str|rest], last) :- removeLast(strs) == (rest, last).

@@ -1,0 +1,74 @@
+module statics/data
+
+imports
+
+  signatures/data-sig
+  statics/base
+  statics/type
+  statics/util
+  statics/func_def
+
+rules
+
+  dataDefOk : scope * DataDef
+  dataDefOk(s, DataDef(DataDefMods(mods), name, super, impl)) :- {s_data}
+    dataDefModsOk(mods),
+    new s_data,
+    !root[getRoot(s)] in s_data,
+    declareData(s, name, s_data),
+    declareLocalData(s, name, s_data),
+    @name.mods := mods,
+    superOk(s, s_data, super, name),
+    dataImplOk(s, s_data, impl).
+
+  dataDefModsOk : list(DataDefMod)
+  dataDefModsOk([]).
+  dataDefModsOk([mod|mods1]) :- {mods2}
+    dataDefModsOk_1(mods1, mod) == mods2,
+    dataDefModsOk(mods2).
+    
+    // checks that mods list does not contain a duplicate modifier
+    // returns list with duplicates removed
+    dataDefModsOk_1 : list(DataDefMod) * DataDefMod -> list(DataDefMod)
+    dataDefModsOk_1([], _) = [].
+    dataDefModsOk_1([mod|mods], mod) = mods_out :-
+      dataDefModsOk_1(mods, mod) == mods_out,
+      false | error $[Duplicate modifier [mod]] @mod.
+    dataDefModsOk_1([mod1|mods], mod2) = [mod1|mods_out] :-
+      dataDefModsOk_1(mods, mod2) == mods_out.
+
+  superOk : scope * scope * SuperType * string
+  superOk(s, s_data, NoSuperType(), name).
+  superOk(s, s_data, SuperType(data_ty@DataTy(_, super_name)), name) :- {s_super occs}
+    typeOfDataTy(s, data_ty) == DataType(s_super),
+    s_data -INHERIT-> s_super,
+    inherits(s_super, s_data) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
+    query func filter e in s_data |-> occs,
+    superOk_1s(s_super, occs).
+
+    // check that all functions of current are valid overrides of super.
+    superOk_1 : scope * (path * (FUNCID * TYPE))
+    superOk_1s maps superOk_1(*, list(*))
+    superOk_1(s_super, (_, (name, func_ty))) :- {occs}
+      resolveFunc(s_super, name) == occs,
+      superOk_2s(func_ty, occs, name).
+
+    // Check that function is either a valid override or not an override
+    superOk_2 : TYPE * (path * (FUNCID * TYPE)) * FUNCID
+    superOk_2s maps superOk_2(*, list(*), *)
+    superOk_2(FuncType(param_tys, ty_out), (path, (_, FuncType(param_tys_super, ty_out_super))), name_node) :-
+      orB(
+        notB(isAllSubTypes(param_tys_super, param_tys)),
+        isSubtype(ty_out_super, ty_out)
+      ) == TRUE() | error $[Type mismatch: incompatable return type for override] @name_node.
+      // todo: figure out how to set reference to overridden function (how to do?)
+
+  dataImplOk : scope * scope * DataImpl
+  dataImplOk(s, s_data, JavaDataImpl(java_name, members)) :-
+    javaDataMembersOk(s, s_data, members).
+  
+  javaDataMemberOk : scope * scope * JavaDataMemb
+  javaDataMembersOk maps javaDataMemberOk(*, *, list(*))
+  javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {name ty}
+    typeOfFuncHead(s, func_head) == (_, name, ty),
+    declareFunc(s_data, name, ty).

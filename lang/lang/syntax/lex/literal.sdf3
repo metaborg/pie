@@ -1,19 +1,31 @@
 module lex/literal
 
+lexical sorts
+  TYPEID
+  PIEQTYPEID
+  JAVAQTYPEID
+  VALID
+  MODID
+  FUNCID
+  ANYID
+  JAVAFUNCID
+  INT
+
 lexical syntax // Identifier
 
   // the alternative avoids ambiguity between negative number and ID
   ID  = ([a-zA-Z\_] | ("-" [0-9]* [a-zA-Z\-\_])) [a-zA-Z0-9\-\_]*
-  QID = [a-zA-Z\-\_] [a-zA-Z0-9\-\_\.]*
+  QID = [a-zA-Z\-\_] ("."? [a-zA-Z0-9\-\_])*
 
   TYPEID      = ID
   PIEQTYPEID  = QID
   JAVAQTYPEID = QID
 
-  VALID      = ID // VAL-ID, not the opposite of invalid
+  VALID      = ID // VAL-ID, not the opposite of 'invalid'
   MODID      = ID
   FUNCID     = VALID
   JAVAFUNCID = VALID
+  ANYID      = ID // any ID, used for imports because they can import anything
 
 lexical restrictions
 

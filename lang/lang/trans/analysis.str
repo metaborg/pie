@@ -1,29 +1,44 @@
 module analysis
 
 imports
-  
-  nabl2/api
-  nabl2/runtime
-  nabl2/shared
-  
-  statsem/-
-  desugar
+
+  statixruntime
+  statix/api
+
   pp
+  injections/-
 
 rules // Analysis
 
-  editor-analyze = nabl2-analyze(desugar-all)
+  // single-file analysis
+//  editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics/project", "programOk")
+
+  // see README.md for details on how to switch to multi-file analysis
+  // multi-file analysis
+  editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics/project", "projectOk", "programOk")
+
+  pre-analyze  = explicate-injections-pie-Start
+  post-analyze = implicate-injections-pie-Start
+
+rules // Editor Services
+
+  editor-resolve = stx-editor-resolve
+
+  editor-hover = stx-editor-hover
 
 rules // Debugging
-  
-  debug-show-aterm: 
-    (selected, _, _, path, project-path) -> (filename, result)
-    with 
-      filename := <guarantee-extension(|"aterm")> path
-    ; result   := selected
 
-  debug-show-analyzed:
-    (selected, _, _, path, project-path) -> (filename, result)
-    with
-      filename := <guarantee-extension(|"analyzed.aterm")> path
-    ; result   := selected
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-aterm: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path
+       ; result   := selected
+
+  // Prints the pre-analyzed abstract syntax ATerm of a selection.
+  debug-show-pre-analyzed: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"pre-analyzed.aterm")> path
+       ; result   := <pre-analyze> selected
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := selected

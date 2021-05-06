@@ -1,0 +1,51 @@
+module statics/constructors
+
+// todo: move these constructors to a dedicated SDF3 file
+// (also allows removing them from Statix
+
+signature // types
+  sorts
+    TYPE
+  
+  constructors
+    UnitType : TYPE
+    BoolType : TYPE
+    IntType : TYPE
+    StrType : TYPE
+    PathType : TYPE
+    NullType : TYPE
+    TopType : TYPE
+    
+    NullableType : TYPE -> TYPE
+    ListType : TYPE -> TYPE
+    EmptyListType : TYPE
+    TupleType : List(TYPE) -> TYPE
+    SupplierType : TYPE -> TYPE
+    
+    FuncType : List(TYPE) * TYPE -> TYPE
+    DataType : scope -> TYPE
+
+signature // signature
+  sorts
+    FuncImplKind
+
+  constructors
+    JavaForeignFuncKind : FuncImplKind
+    JavaForeignConstructorKind : FuncImplKind
+    PieForeignFuncKind : FuncImplKind
+    PieFuncKind : FuncImplKind
+
+signature // variables
+  sorts
+    VarKind
+
+  constructors
+    LocalVarKind : VarKind
+    InputVarKind : InputVarKind
+
+signature // data
+  sorts
+    TypeKind
+
+  constructors
+    JavaTypeKind : TypeKind

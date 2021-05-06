@@ -4,7 +4,21 @@ imports
   
   lex/literal
   func_def
+  type
   
+template options
+
+  keyword -/- [a-zA-Z0-9\-\_]
+
+context-free sorts
+
+  DataDef
+  DataDefMod
+  DataDefMods
+  SuperType
+  DataImpl
+  JavaDataMemb
+
 context-free syntax // Data definition
 
   DataDef.DataDef = <<DataDefMods> data <TYPEID><SuperType> = <DataImpl>>
@@ -13,7 +27,7 @@ context-free syntax // Data definition
   DataDefMods.DataDefMods = <<{DataDefMod " "}*>>
   
   SuperType.NoSuperType =
-  SuperType.SuperType = < : <TYPEID>>
+  SuperType.SuperType = < : <DataTy>>
 
 context-free syntax // Java foreign data definition
 
@@ -24,5 +38,9 @@ context-free syntax // Java foreign data definition
 
 lexical syntax // Reject keywords
 
-  TYPEID = "data"    {reject}
-  TYPEID = "foreign" {reject}
+  TYPEID = "unit"     {reject}
+  TYPEID = "bool"     {reject}
+  TYPEID = "int"      {reject}
+  TYPEID = "string"   {reject}
+  TYPEID = "path"     {reject}
+  TYPEID = "supplier" {reject}

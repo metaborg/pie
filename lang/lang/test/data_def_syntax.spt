@@ -8,7 +8,7 @@ test no mods [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeed
 test transient datadef [[ transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
 test datadef duplicate mods [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds // todo: This should probably parse but it should give some kind of error.
 test layout within transient keyword [[ transi ent data Foo = foreign java org.example.test.Foo {} ]] parse fails
-test missing layout after transient keyword [[ transientdata Foo = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test missing layout after transient keyword [[ transientdata Foo = foreign java org.example.test.Foo {} ]] parse fails
 test capitalized transient [[ Transient data Foo = foreign java org.example.test.Foo {} ]] parse fails
 test all uppercase transient [[ TRANSIENT data Foo = foreign java org.example.test.Foo {} ]] parse fails
 test unknown mod [[ mutable data Foo = foreign java org.example.test.Foo {} ]] parse fails
@@ -16,7 +16,7 @@ test unknown mod [[ mutable data Foo = foreign java org.example.test.Foo {} ]] p
 // data keyword
 test missing data keyword [[ Foo = foreign java org.example.test.Foo {} ]] parse fails
 test no layout within data keyword [[ dat a Foo = foreign java org.example.test.Foo {} ]] parse fails
-test no layout between data keyword and name [[ dataFoo = foreign java org.example.test.Foo {} ]] parse succeeds // todo: should fail
+test no layout between data keyword and name [[ dataFoo = foreign java org.example.test.Foo {} ]] parse fails
 
 // name
 test missing name [[ data = foreign java org.example.test.Foo {} ]] parse fails
@@ -28,17 +28,17 @@ test name dash in middle [[ data Foo-Bar = foreign java org.example.test.Foo {} 
 test name underscore in middle [[ data Foo_Bar = foreign java org.example.test.Foo {} ]] parse succeeds
 test name single letter lowercase [[ data g = foreign java org.example.test.Foo {} ]] parse succeeds
 
-test name is keyword 'data' [[ data data = foreign java org.example.test.Foo {} ]] parse fails // todo: allow
+test name is keyword 'data' [[ data data = foreign java org.example.test.Foo {} ]] parse succeeds
 test name is keyword 'func' [[ data func = foreign java org.example.test.Foo {} ]] parse succeeds
-test name is keyword 'foreign' [[ data foreign = foreign java org.example.test.Foo {} ]] parse fails // todo: allow
+test name is keyword 'foreign' [[ data foreign = foreign java org.example.test.Foo {} ]] parse succeeds
 test name is keyword 'transient' [[ data transient = foreign java org.example.test.Transient {} ]] parse succeeds
-test name is keyword 'unit' [[ data unit = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'unit' [[ data unit = foreign java org.example.test.Foo {} ]] parse fails
 test name is keyword 'null' [[ data null = foreign java org.example.test.Foo {} ]] parse succeeds
-test name is keyword 'int' [[ data int = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
-test name is keyword 'string' [[ data string = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
-test name is keyword 'path' [[ data path = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
-test name is keyword 'supplier' [[ data supplier = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
-test name is keyword 'bool' [[ data bool = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'int' [[ data int = foreign java org.example.test.Foo {} ]] parse fails
+test name is keyword 'string' [[ data string = foreign java org.example.test.Foo {} ]] parse fails
+test name is keyword 'path' [[ data path = foreign java org.example.test.Foo {} ]] parse fails
+test name is keyword 'supplier' [[ data supplier = foreign java org.example.test.Foo {} ]] parse fails
+test name is keyword 'bool' [[ data bool = foreign java org.example.test.Foo {} ]] parse fails
 test name is java keyword 'boolean' [[ data boolean = foreign java org.example.test.Foo {} ]] parse succeeds
 test name is java class for built-in type 'String' [[ data String = foreign java java.lang.string {} ]] parse succeeds
 
@@ -112,7 +112,7 @@ test name contains pipe [[ data Foo|Bar = foreign java org.example.test.Foo {} ]
 test name contains single quote [[ data Foo'Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains double quote [[ data Foo"Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains colon [[ data Foo:Bar = foreign java org.example.test.Foo {} ]]
-  parse to DataDef(DataDefMods([]), "Foo", SuperType("Bar"), JavaDataImpl("org.example.test.Foo", []))
+  parse to DataDef(DataDefMods([]), "Foo", SuperType(DataTy(NoModuleList(), "Bar")), JavaDataImpl("org.example.test.Foo", []))
 test name contains semicolon [[ data Foo;Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains comma [[ data Foo,Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains period [[ data Foo.Bar = foreign java org.example.test.Foo {} ]] parse fails
@@ -129,12 +129,12 @@ test name surrounded by matching double quotes [[ data "Foo" = foreign java org.
 // supertype
 test no supertype [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
 test with supertype [[ data Foo : Bar = foreign java org.example.test.Foo {} ]] parse succeeds
-test with imported supertype [[ data Foo : example:otherMod:Bar = foreign java org.example.test.Foo {} ]] parse fails // todo: allow
+test with imported supertype [[ data Foo : example:otherMod:Bar = foreign java org.example.test.Foo {} ]] parse succeeds
 test supertype missing name [[ data Foo : = foreign java org.example.test.Foo {} ]] parse fails
 test supertype missing colon [[ data Foo Bar = foreign java org.example.test.Foo {} ]] parse fails
 test double supertype colon-separated [[
   data Foo : Bar : Baz = foreign java org.example.test.Foo {}
-]] parse fails // todo: should parse to Foo : Bar:Baz, i.e. Foo is a subtype of the type Baz in module Bar
+]] parse to DataDef(DataDefMods([]), "Foo", SuperType(DataTy(ModuleList(["Bar"]), "Baz")), JavaDataImpl("org.example.test.Foo", []))
 test double supertype list [[ data Foo : [Bar, Baz] = foreign java org.example.test.Foo {} ]] parse fails
 test supertype no layout before colon [[ data Foo: Bar = foreign java org.example.test.Foo {} ]] parse succeeds
 test supertype no layout after colon [[ data Foo :Bar = foreign java org.example.test.Foo {} ]] parse succeeds
@@ -151,8 +151,8 @@ test no implementation without equals sign [[ data Foo ]] parse fails
 
 // implementation - foreign java - foreign java keywords
 test foreign java no layout before [[ data Foo =foreign java org.example.test.Foo {} ]] parse succeeds
-test foreign java no layout between [[ data Foo = foreignjava org.example.test.Foo {} ]] parse succeeds // todo: should fail
-test foreign java no layout after [[ data Foo = foreign javaorg.example.test.Foo {} ]] parse succeeds // todo: should fail
+test foreign java no layout between [[ data Foo = foreignjava org.example.test.Foo {} ]] parse fails
+test foreign java no layout after [[ data Foo = foreign javaorg.example.test.Foo {} ]] parse fails
 test foreign java layout within foreign [[ data Foo = forei gn java org.example.test.Foo {} ]] parse fails
 test foreign java layout within java [[ data Foo = foreign j ava org.example.test.Foo {} ]] parse fails
 test foreign java missing foreign [[ data Foo = java org.example.test.Foo {} ]] parse fails
@@ -163,8 +163,8 @@ test missing class def [[ data Foo = foreign java {} ]] parse fails
 test class def no package [[ data Foo = foreign java Foo {} ]] parse succeeds
 test class def single package [[ data Foo = foreign java test.Foo {} ]] parse succeeds
 test class def missing package name at start [[ data Foo = foreign java .example.test.Foo {} ]] parse fails
-test class def missing package name in middle [[ data Foo = foreign java org..test.Foo {} ]] parse succeeds // todo: should fail
-test class def missing class name [[ data Foo = foreign java org.example.test. {} ]] parse succeeds // todo: should fail
+test class def missing package name in middle [[ data Foo = foreign java org..test.Foo {} ]] parse fails
+test class def missing class name [[ data Foo = foreign java org.example.test. {} ]] parse fails
 test class def no layout after [[ data Foo = foreign java org.example.test.Foo{} ]] parse succeeds
 test class def layout before period [[ data Foo = foreign java org .example.test.Foo {} ]] parse fails
 test class def layout after period [[ data Foo = foreign java org.example. test.Foo {} ]] parse fails

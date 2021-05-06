@@ -48,12 +48,7 @@ test param type error [[ func main(val: int) -> string = [[val]] ]]
   0 warnings
 
 // expressions, no block
-test boolean conditions [[
-  func isFoo(bar: bool, hasBaz: bool, val: int, name: string?) -> bool =
-    bar || (hasBaz && val != 0) || (name != null && val == 10)
-]] parse ambiguous
-   analysis fails
-   // todo: should parse unambiguously and analysis should succeed
+test boolean conditions [[ func isFoo(bar: bool, hasBaz: bool, val: int, name: string?) -> bool = bar || (hasBaz && val != 0) || (name != null && val == 10) ]] analysis succeeds
 test add numbers [[ func plus(x: int, y: int) -> int = x + y ]] analysis succeeds
 test list comprehension [[ func mapToString(list: int*) -> string* = ["$x" | x <- list] ]] analysis succeeds
 test call other func [[

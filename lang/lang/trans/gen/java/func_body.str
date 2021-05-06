@@ -3,20 +3,20 @@ module gen/java/func_body
 imports
 
   libspoofax/stratego/debug
-  nabl2/api
 
   src-gen/signatures/-
   signatures/-
 
-  statsem/pie
+  statics
+  statics/constructors
 
   gen/java/func_def
   gen/java/binder
   gen/java/type
   gen/java/ast-util
   gen/idtype-tuples
-  gen/util
   gen/debug
+  gen/util
 
 rules
 
@@ -38,7 +38,7 @@ rules // Expression composition
     ; (lastStmts, lastVal) := <try-p2j-ast-exp> lastExp
     ; stmts                := <concat> [restStmts, lastStmts]
     ; blockResultVal       := <newname> "blockResult"
-    ; ty                   := <p2j-ast-type-sig> <pie-type> e
+    ; ty                   := <p2j-ast-type-sig> <pie-ast-type> e
     ; resultStmts          := [
       LocVarDeclStm(LocalVarDecl([Final()], <java-classType-to-unannType> ty, [VariableDecl(Id(blockResultVal))])),
       Block(<concat> [
@@ -62,7 +62,7 @@ rules // Unary expressions
     ; <add-import> "mb.pie.api.ExecException"
     ; (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; tmpVarName         := <newname> "exp"
-    ; ty                 := <p2j-ast-type-sig> <pie-type> n
+    ; ty                 := <p2j-ast-type-sig> <pie-ast-type> n
     ; stmts              := <concat> [
         expStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -160,7 +160,7 @@ rules // Control flow
     ; resultName             := <newname> "ifResult"
     ; trueBlockStmts         := <concat> [trueStmts, [ExpressionStatement(Assign(ExpressionName(Id(resultName)), trueVal))]]
     ; falseBlockStmts        := <concat> [falseStmts, [ExpressionStatement(Assign(ExpressionName(Id(resultName)), falseVal))]]
-    ; ty                     := <p2j-ast-type-sig> <pie-type> e
+    ; ty                     := <p2j-ast-type-sig> <pie-ast-type> e
     ; stmts                  := <concat> [
       condStmts,
       [
@@ -187,17 +187,17 @@ rules // Control flow
   p2j-ast-add(|lType, rType):
     (lExp, rExp) -> ([], Add(lExp, rExp))
     where
-      (IntTy(), IntTy()) := (lType, rType)
+      (IntType(), IntType()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
     (lExp, rExp) -> ([], Add(lExp, rExp))
     where
-      (StrTy(), _) := (lType, rType)
+      (StrType(), _) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
     (lExp, rExp) -> result
     where
-      (PathTy(), PathTy()) := (lType, rType)
+      (PathType(), PathType()) := (lType, rType)
     with
       <add-import> "mb.resource.ResourceRuntimeException"
     ; tmpResultName := <newname> "addResult"
@@ -251,7 +251,7 @@ rules // Control flow
     (lExp, rExp) -> ([], InvokeQExp(lExp, None(), Id("appendOrReplaceWithPath"), [rExp]))
     // Note: meaning of this AST: [lExp].appendSegment([rExp])
     where
-      (PathTy(), StrTy()) := (lType, rType)
+      (PathType(), StrType()) := (lType, rType)
 
   p2j-ast-add(|lType, rType):
     (lExp, rExp) -> ([],
@@ -283,7 +283,7 @@ rules // Control flow
     // Note: meaning of this AST:
     //   Stream.concat(([lExp]).stream(), Stream.of([rExp])).collect(Collectors.toCollection(ArrayList::new))
     where
-      (ListTy(a), a) := (lType, rType)
+      (ListType(a), a) := (lType, rType)
     with
       <add-import> "java.util.ArrayList"
     ; <add-import> "java.util.stream.Collectors"
@@ -314,7 +314,7 @@ rules // Control flow
     // Note: meaning of this AST:
     // Stream.concat(([lExp]).stream(), ([rExp]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where
-      (ListTy(a), ListTy(a)) := (lType, rType)
+      (ListType(a), ListType(a)) := (lType, rType)
     with
       <add-import> "java.util.ArrayList"
     ; <add-import> "java.util.stream.Collectors"
@@ -325,7 +325,7 @@ rules // Control flow
     with
       <add-import> "java.util.ArrayList"
     ; (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
-    ; ListTy(pieElemTy)       := <pie-type> listExp
+    ; ListType(pieElemTy)     := <pie-ast-type> listExp
     ; elemTy                  := <p2j-ast-type-sig> pieElemTy
     ; (mapStmts, mapExpVal)   := <try-p2j-ast-exp> mapExp
     ; (assignments, varId)    := <bind-tuples-to-ast-assignments> (binder, pieElemTy)
@@ -344,7 +344,7 @@ rules // Control flow
           )
         ]
       ]
-    ; ty                      := <p2j-ast-type-sig> <pie-type> e
+    ; ty                      := <p2j-ast-type-sig> <pie-ast-type> e
     ; stmts                   := <concat> [
         listStmts,
         [
@@ -403,13 +403,13 @@ rules // Binding
   bind-tuples-to-ast-assignments:
     (TupleBinder(binds), expTy) -> result
     with
-      varIds       := <map(p2j-ast-bind)> binds
-    ; TupleTy(tys) := expTy
-    ; javaTys      := <map(p2j-ast-type-sig)> tys
-    ; bindList     := <zip> (varIds, javaTys)
-    ; tmpVar       := <newname> "tmpTupleVar"
-    ; assignments  := <nmap-par(bind-tuple-to-ast | 1, tmpVar)> bindList
-    ; result       := (assignments, tmpVar)
+      varIds         := <map(p2j-ast-bind)> binds
+    ; TupleType(tys) := expTy
+    ; javaTys        := <map(p2j-ast-type-sig)> tys
+    ; bindList       := <zip> (varIds, javaTys)
+    ; tmpVar         := <newname> "tmpTupleVar"
+    ; assignments    := <nmap-par(bind-tuple-to-ast | 1, tmpVar)> bindList
+    ; result         := (assignments, tmpVar)
 
   // nmap that passes an extra parameter to the strategy
   nmap-par(s : Int * c * a -> b | i, par) =
@@ -434,7 +434,7 @@ rules // References
       LocalVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
 
   p2j-ast-exp:
-    Ref(varId) -> <fail>
+    Ref(varId) -> <fail> // todo: use error(|"message") instead of fail
     where
       InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 0 := <InputKind>
@@ -467,22 +467,23 @@ rules // References
   // succeeds if the current term is transient
   p2j-ast-ref-is-transient =
       pie-ast-type
-    ; (?DataTy(<id>) <+ ?NullableTy(DataTy(<id>)))
-    ; pie-occ-prop(|"mods")
+    ; (?DataType(<id>) <+ ?NullableType(DataType(<id>)))
+    ; pie-get-property(|"mods")
     ; collect-one(?Transient())
 
 rules // Java foreign function calls
 
   p2j-ast-exp:
-    c@Call(funcId, exps) -> result
+    c@Call(moduleList, funcId, exps) -> result
     where
       JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
+      // todo: use moduleList
       javaClassId           := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     ; javaMethodId          := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
     ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; callResultName        := <newname> "callResult"
-    ; ty                    := <p2j-ast-type-sig> <pie-type> c
+    ; ty                    := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                 := <concat> [
         <concat> expsStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -501,14 +502,15 @@ rules // Java foreign function calls
     ; result                := (stmts, callResultName)
 
   p2j-ast-exp:
-    c@Call(funcId, exps) -> result
+    c@Call(moduleList, funcId, exps) -> result
     where
       JavaForeignConstructorKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
+      // todo: use moduleList
       javaClassId           := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; callResultName        := <newname> "constructorResult"
-    ; ty                    := <p2j-ast-type-sig> <pie-type> c
+    ; ty                    := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                 := <concat> [
         <concat> expsStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -534,7 +536,7 @@ rules // Qualified function calls
       (expStmts, expVal)          := <try-p2j-ast-exp> exp
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
     ; callResultName              := <newname> "callResult"
-    ; ty                          := <p2j-ast-type-sig> <pie-type> c
+    ; ty                          := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                       := <concat> [
         expStmts,
         <concat> argExpsStmts,
@@ -553,8 +555,9 @@ rules // Qualified function calls
       ]
     ; result                      := (stmts, callResultName)
 
+  // todo: originally from ImportCall. Merge with existing Call.
   p2j-ast-exp:
-    c@ImportCall(moduleList, funcId, argExps) -> result
+    c@Call(moduleList, funcId, argExps) -> result
     where
       JavaForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
@@ -563,7 +566,7 @@ rules // Qualified function calls
     ; javaMethodId                := <pie-ast-ref-prop(|"Func", "javaMethodId")> funcId
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
     ; callResultName              := <newname> "callResult"
-    ; ty                          := <p2j-ast-type-sig> <pie-type> c
+    ; ty                          := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                       := <concat> [
         <concat> argExpsStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -581,15 +584,16 @@ rules // Qualified function calls
       ]
     ; result                      := (stmts, callResultName)
 
+  // todo: originally from ImportCall. Merge with existing Call.
   p2j-ast-exp:
-    c@ImportCall(moduleList, funcId, exps) -> result
+    c@Call(moduleList, funcId, exps) -> result
     where
       JavaForeignConstructorKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId           := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
     ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; callResultName        := <newname> "constructorResult"
-    ; ty                    := <p2j-ast-type-sig> <pie-type> c
+    ; ty                    := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                 := <concat> [
         <concat> expsStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -607,8 +611,9 @@ rules // Qualified function calls
       ]
     ; result                := (stmts, callResultName)
 
+  // todo: originally from ImportCall. Merge with existing Call.
   p2j-ast-exp:
-    c@ImportCall(moduleList, funcId, argExps) -> result
+    c@Call(moduleList, funcId, argExps) -> result
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
@@ -618,7 +623,7 @@ rules // Qualified function calls
     ; (expStmts, inputArg)     := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> argExps
     ; safeJavaClassId          := <string-replace(|".", "_")> javaClassId
     ; callResultName           := <newname> "callResult"
-    ; ty                       := <p2j-ast-type-sig> <pie-type> c
+    ; ty                       := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                    := <concat> [
         expStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -653,8 +658,9 @@ rules // Qualified function calls
         ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), None())])))
       ))
 
+  // todo: originally from ImportCall. Merge with existing Call.
   p2j-ast-exp:
-    c@ImportCall(moduleList, funcId, argExps) -> result
+    c@Call(moduleList, funcId, argExps) -> result
     where
       PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
@@ -664,7 +670,7 @@ rules // Qualified function calls
     ; (expStmts, inputArg)     := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> argExps
     ; safeJavaClassId          := <string-replace(|".", "_")> javaClassId
     ; callResultName           := <newname> "callResult"
-    ; ty                       := <p2j-ast-type-sig> <pie-type> c
+    ; ty                       := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                    := <concat> [
         expStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -705,15 +711,17 @@ rules // Qualified function calls
 
 rules // PIE function calls
 
+  // todo: use moduleList
   p2j-ast-exp:
-    c@Call(funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
+    c@Call(moduleList, funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
     where
       PieForeignFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
       javaClassId := <pie-ast-ref-prop(|"Func", "javaClassId")> funcId
 
+  // todo: use moduleList
   p2j-ast-exp:
-    c@Call(funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
+    c@Call(moduleList, funcId, _) -> <p2j-ast-exp-pie-call(|javaClassId)> c
     where
       PieFuncKind() := <pie-ast-ref-prop(|"Func", "kind")> funcId
     with
@@ -723,14 +731,15 @@ rules // PIE function calls
   // Like p2j-ast-exp, but specifically for pie Calls. Is called by the strategies
   // above. javaClassId is the name of the class that represents the Pie function
   p2j-ast-exp-pie-call(|javaClassId):
-   c@Call(funcId, exps) -> result
+   c@Call(moduleList, funcId, exps) -> result
     with
+      // todo: use moduleList
       <add-import> "mb.pie.api.ExecException"
     ; <add-import> "javax.inject.Provider"
     ; (expStmts, inputArg) := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> exps
     ; safeJavaClassId      := <string-replace(|".", "_")> javaClassId
     ; callResultName       := <newname> "callResult"
-    ; ty                   := <p2j-ast-type-sig> <pie-type> c
+    ; ty                   := <p2j-ast-type-sig> <pie-ast-type> c
     ; stmts                := <concat> [
         expStmts,
         [ LocVarDeclStm(LocalVarDecl(
@@ -807,7 +816,7 @@ rules // PIE function calls
       <add-import> "mb.pie.api.Supplier"
     ; <add-import> "mb.pie.api.ValueSupplier"
     ; (argStmts, argVal) := <p2j-ast-exp> arg
-    ; ty                 := <p2j-ast-type-sig> <pie-type> arg
+    ; ty                 := <p2j-ast-type-sig> <pie-ast-type> arg
     ; supplierName       := <newname> "supplier"
     ; stmts              := <concat> [
         argStmts,
@@ -832,14 +841,15 @@ rules // PIE function calls
     ; result             := (stmts, supplierName)
 
 
-  p2j-ast-exp: t@TaskSupplier(funcId, args) -> result
+  // todo: use moduleList
+  p2j-ast-exp: t@TaskSupplier(moduleList, funcId, args) -> result
     with
       <add-import> "javax.inject.Provider"
     ; javaClassId          := <p2j-ast-pieFuncId-to-javaClassId> funcId
     ; safeJavaClassId      := <string-replace(|".", "_")> javaClassId
     ; (argStmts, inputArg) := <p2j-ast-exp-pie-call-inputexp(|javaClassId)> args
     ; callResultName       := <newname> "callResult"
-    ; ty                   := <p2j-ast-type-sig> <pie-type> t
+    ; ty                   := <p2j-ast-type-sig> <pie-ast-type> t
     ; stmts                := <concat> [
         argStmts,
         [ LocVarDeclStm(
@@ -889,11 +899,11 @@ rules // PIE function calls
   p2j-ast-exp: SupplierGet(exp) -> result
     with
       <add-import> "java.io.IOException"
-    ; (expStmts, expVal) := <p2j-ast-exp> exp
-    ; SupplierTy(pieTy)  := <pie-type> exp
-    ; ty                 := <p2j-ast-type-sig> pieTy
-    ; callResultName     := <newname> "callResult"
-    ; stmts              := <concat> [
+    ; (expStmts, expVal)  := <p2j-ast-exp> exp
+    ; SupplierType(pieTy) := <pie-ast-type> exp
+    ; ty                  := <p2j-ast-type-sig> pieTy
+    ; callResultName      := <newname> "callResult"
+    ; stmts               := <concat> [
         expStmts,
         [ LocVarDeclStm(LocalVarDecl(
             [Final()]
@@ -1013,7 +1023,7 @@ rules // Path operations
     ; (expStmts, expVal)      := <try-p2j-ast-exp> exp
     ; (matcherStmts, matcher) := <p2j-ast-filter> filterOpt
     ; funcParamList           := <p2j-ast-filter-to-params-list(create-param-list)> (filterOpt, matcher)
-    ; ty                      := <p2j-ast-type-sig> <pie-type> astNode
+    ; ty                      := <p2j-ast-type-sig> <pie-ast-type> astNode
     ; expVarName              := <newname> "dirResult"
     ; stmts                   := <concat> [
         expStmts,
@@ -1106,7 +1116,7 @@ rules // Path operations
     r@ReadPath(exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
-    ; ty                 := <p2j-ast-type-sig> <pie-type> r
+    ; ty                 := <p2j-ast-type-sig> <pie-ast-type> r
     ; readResultName     := <newname> "readResult"
     ; stmts              := <concat> [
         expStmts,
@@ -1129,7 +1139,7 @@ rules // Path operations
     e@ExistsPath(exp) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
-    ; ty                 := <p2j-ast-type-sig> <pie-type> e
+    ; ty                 := <p2j-ast-type-sig> <pie-ast-type> e
     ; existsResultName   := <newname> "existsResult"
     ; stmts              := <concat> [
         expStmts,

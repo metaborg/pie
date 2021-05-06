@@ -1,8 +1,8 @@
 module Syntax
 
-imports 
+imports
 
-  libspoofax/color/colors
+  libspoofax/color/default
   completion/colorer/pie-cc-esv
 
 language
@@ -14,51 +14,14 @@ language
   block comment : "/*" * "*/"
   fences        : [ ] ( ) { }
 
-colorer
-
-  keyword  = 153 51 153
-  number   = 17 131 22
-  string   = 177 47 2
-  varid    = 0 0 128
-  classid  = 0 0 255
-  funcid   = 153 51 0
-  operator = 0 0 0
-  comment  = 63 127 95 italic
-
-colorer
-
-  keyword     : keyword
-  identifier  : varid
-  string      : string
-  number      : number
-  var         : varid
-  operator    : operator
-  layout      : comment
-
-  ID          : varid
-  
-  QID         : classid
-  TYPEID      : classid
-  PIEQTYPEID  : classid
-  JAVAQTYPEID : classid
-  
-  FUNCID      : funcid
-  JAVAFUNCID  : funcid
-  
-  STRING      : string
-  _.StrLit    : string
-  StrChars    : string
-  _.PathLit   : string
-  PathChars   : string
-
 menus
-  
+
   menu: "Syntax" (openeditor)
-    
+
     action: "Format"          = editor-format (source)
     action: "Show parsed AST" = debug-show-aterm (source)
 
 views
-  
+
   outline view: editor-outline (source)
     expand to level: 3

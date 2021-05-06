@@ -1,0 +1,189 @@
+module statics/type
+
+imports
+
+  signatures/data-sig
+  signatures/type-sig
+  statics/base
+  statics/module
+
+signature
+  constructors
+    UnitType : TYPE
+    BoolType : TYPE
+    IntType : TYPE
+    StrType : TYPE
+    PathType : TYPE
+    NullType : TYPE
+    TopType : TYPE
+    
+    NullableType : TYPE -> TYPE
+    ListType : TYPE -> TYPE
+    EmptyListType : TYPE
+    TupleType : list(TYPE) -> TYPE
+    SupplierType : TYPE -> TYPE
+    
+    FuncType : list(TYPE) * TYPE -> TYPE
+    DataType : scope -> TYPE
+
+rules // operations on types
+
+  /**
+   * inherits(s_sub, s_super) -> res
+   * Returns TRUE() if s_sub inherits from (can be reached by only
+   * following INHERIT edges from) s_super or is equal to s_super,
+   * FALSE() otherwise.
+   */
+  inherits : scope * scope -> BOOLEAN
+  inherits(s_sub, s_super) = inherits_1(paths) :-
+    query () filter INHERIT* and { s_data :- s_data == s_super } in s_sub |-> paths.
+
+    // Returns FALSE if the list is empty, TRUE otherwise.
+    inherits_1 : list((path * scope)) -> BOOLEAN
+    inherits_1([]) = FALSE().
+    inherits_1([_|_]) = TRUE().
+
+  /**
+   * subtype(T1, T2)
+   * Holds if type T1 is a non-strict subtype of type T2.
+   * Fails with error if T1 is not a subtype of T2.
+   * Will unify unbound variables if possible.
+   */
+  subtype : TYPE * TYPE
+  subtypes maps subtype(list(*), list(*))
+  subtype(NullType(), NullableType(_)).
+  subtype(T1, NullableType(T2)) :- subtype(T1, T2).
+  subtype(NullableType(T1), NullableType(T2)) :- subtype(T1, T2).
+  subtype(EmptyListType(), ListType(_)).
+  subtype(DataType(s_sub), DataType(s_super)) :- inherits(s_sub, s_super) == TRUE().
+  subtype(T1, T2) :- T1 == T2.
+
+  /**
+   * isSubtype(T1, T2)
+   * Returns TRUE() if type T1 is a non-strict subtype of type T2, FALSE() otherwise.
+   * May fail on unbound variables.
+   */
+  isSubtype : TYPE * TYPE -> BOOLEAN
+  isSubtype(NullType(), NullableType(_)) = TRUE().
+  isSubtype(T1, NullableType(T2)) = isSubtype(T1, T2).
+  isSubtype(NullableType(T1), NullableType(T2)) = isSubtype(T1, T2).
+  isSubtype(EmptyListType(), ListType(_)) = TRUE().
+  isSubtype(DataType(s_sub), DataType(s_super)) = inherits(s_sub, s_super).
+  isSubtype(T1, T2) = isSubtypeHelper(T1, T2).
+
+  // this rule is here to prevent "overlapping rules" error
+  // on isSubtype(T, NullableType(T))
+  isSubtypeHelper : TYPE * TYPE -> BOOLEAN
+  isSubtypeHelper(T, T) = TRUE().
+  isSubtypeHelper(_, _) = FALSE().
+
+  /**
+   * isAllSubTypes(T1s, T2s)
+   * Returns TRUE if the types in [T1s] are pairwise subtypes of [T2s], FALSE
+   * otherwise. Also returns FALSE if the lists don't have the same length.
+   * This is useful for comparing parameter lists of functions.
+   * Delegates to isSubtype.
+   */
+  isAllSubTypes : list(TYPE) * list(TYPE) -> BOOLEAN
+  isAllSubTypes([], []) = TRUE().
+  isAllSubTypes(Ts@[_|_], []) = FALSE().
+  isAllSubTypes([], Ts@[_|_]) = FALSE().
+  isAllSubTypes([T1|T1s], [T2|T2s]) = andB(isSubtype(T1, T2), isAllSubTypes(T1s, T2s)).
+
+  /**
+   * Returns the first element in the list that is TRUE(), or the default otherwise.
+   */
+  firstTrueT : list((BOOLEAN * TYPE)) * TYPE -> TYPE
+  firstTrueT([], T) = T.
+  firstTrueT([(FALSE(), _)|rest], T) = firstTrueT(rest, T).
+  firstTrueT([(TRUE(), T)|_], _) = T.
+
+  /**
+   * makeNullable(ty)
+   * Make Type [ty] nullable if it is not already.
+   * This returns either NullType() or NullableType(_)
+   */
+  makeNullable : TYPE -> TYPE
+  makeNullable(NullType()) = NullType().
+  makeNullable(T@NullableType(_)) = T.
+  makeNullable(T) = NullableType(T).  
+
+  /**
+   * dataTypeFromPathOrDefault(list, default)
+   * Returns the scope from the single pair in the list wrapped in a DataType
+   * or the default type if the list is empty.
+   */
+  dataTypeFromPathOrDefault : list((path * scope)) * TYPE -> TYPE
+  dataTypeFromPathOrDefault([], default) = default.
+  dataTypeFromPathOrDefault([(_, s)], _) = DataType(s).
+
+  /**
+   * lub(T1, T2)
+   * Returns the least upper bound of types [T1] and [T2].
+   */
+  lub : TYPE * TYPE -> TYPE
+  lub(NullType(), T) = makeNullable(T).
+  lub(T, NullType()) = makeNullable(T).
+  lub(NullableType(T1), NullableType(T2)) = NullableType(lub(T1, T2)).
+  lub(EmptyListType(), ListType(T)) = ListType(T).
+  lub(ListType(T), EmptyListType()) = ListType(T).
+  lub(DataType(s1), DataType(s2)) = dataTypeFromPathOrDefault(paths, TopType()) :-
+    // find all scopes from s1 that s2 inherits from, take the shortest one.
+    query ()
+      filter INHERIT* and { s_super :- inherits(s2, s_super) == TRUE() }
+      min $ < INHERIT in s1 |-> paths.
+  lub(T1, T2) = firstTrueT([
+    (isSubtype(T1, T2), T2),
+    (isSubtype(T2, T1), T1)],
+    TopType()).
+
+  /**
+   * listLub(list)
+   * Returns the least upper bound of a list of types.
+   */
+  listLub : list(TYPE) -> TYPE
+  listLub([]) = TopType() :- false | error "listLub is not well-defined for an empty list".
+  listLub([T]) = T.
+  listLub([T1|[T2|[]]]) = lub(T1, T2).
+  listLub([T1|[T2|rest]]) = listLub([lub(T1, T2) | rest]).
+  
+  /**
+   * Holds if the two types are comparable.
+   * This disregards the possibilty for two incomparable but Nullable values to
+   * both be null and the possibilty for two list types to both be empty lists.
+   */
+  comparable : TYPE * TYPE
+  listComparable maps comparable(list(*), list(*))
+  comparable(TupleType(T1s), TupleType(T2s)) :- listComparable(T1s, T2s).
+  comparable(ListType(T1), ListType(T2)) :- comparable(T1, T2).
+  comparable(SupplierType(T1), SupplierType(T2)) :- comparable(T1, T2).
+  comparable(T1, T2) :- orB(isSubtype(T1, T2), isSubtype(T2, T1)) == TRUE().
+
+rules
+
+  typeOf : scope * Type -> TYPE
+  typesOf maps typeOf(*, list(*)) = list(*)
+
+  typeOf(_, BaseType2Type(UnitTy())) = UnitType().
+  typeOf(_, BaseType2Type(BoolTy())) = BoolType().
+  typeOf(_, BaseType2Type(IntTy()))  = IntType().
+  typeOf(_, BaseType2Type(StrTy()))  = StrType().
+  typeOf(_, BaseType2Type(PathTy())) = PathType().
+  typeOf(s, BaseType2Type(DataTy2BaseType(data_ty))) = typeOfDataTy(s, data_ty).
+  typeOf(s, BaseType2Type(TupleTy(tys))) = TupleType(typesOf(s, tys)).
+  typeOf(s, BaseType2Type(ListTy(ty))) = ListType(typeOf(s, ty)).
+  typeOf(s, BaseType2Type(SupplierTy(ty))) = SupplierType(typeOf(s, ty)).
+  typeOf(s, TypeMod2Type(NullableTy(ty))) = NullableType(typeOf(s, BaseType2Type(ty))).
+
+  typeOfDataTy : scope * DataTy -> TYPE
+  typeOfDataTy(s, DataTy(modules, name)) = DataType(s_data) :- {s_mod}
+    resolveModuleListToFile(s, modules) == s_mod,
+    resolveUniqueData(s_mod, name) == s_data.
+
+  /**
+   * getScopeFromType(s, ty)
+   * Returns the scope with methods associated with type [ty]
+   */
+  getScopeFromType : scope * TYPE -> scope
+  getScopeFromType(s, DataType(s_data)) = s_data.
+  // todo: get scopes for built-in types

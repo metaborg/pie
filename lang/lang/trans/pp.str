@@ -7,8 +7,7 @@ imports
   libspoofax/editor/refactoring/-
   pp/pie-parenthesize
   pp/pie-pp
-  pp/impl/-
-  pp/lex/-
+
   pp/metaborg-java-pp
   pp/metaborg-java-parenthesize
 
@@ -22,43 +21,43 @@ rules
     ; result   := <pp-debug> node
 
 rules
-  
+
   pp-pie-string =
     parenthesize-pie
     ; prettyprint-pie-start-symbols
     ; !V([], <id>)
     ; box2text-string(|120)
-      
+
   pp-partial-pie-string =
     parenthesize-pie
     ; prettyprint-pie
     ; !V([], <id>)
     ; box2text-string(|120)
-    
+
   pp-partial-pie-string(|sort) =
     parenthesize-metaborg-java
     ; prettyprint-pie(|sort)
     ; !V([], <id>)
-    ; box2text-string(|120)  
-     
+    ; box2text-string(|120)
+
   pp-java-string =
     parenthesize-metaborg-java
     ; prettyprint-metaborg-java-start-symbols
     ; !V([], <id>)
     ; box2text-string(|120)
-      
+
   pp-partial-java-string =
     parenthesize-metaborg-java
     ; prettyprint-metaborg-java
     ; !V([], <id>)
     ; box2text-string(|120)
-    
+
   pp-partial-java-string(|sort) =
     parenthesize-metaborg-java
     ; prettyprint-metaborg-java(|sort)
     ; !V([], <id>)
-    ; box2text-string(|120)  
-      
+    ; box2text-string(|120)
+
   pp-debug :
     ast -> result
     with
@@ -67,5 +66,5 @@ rules
     ;  result := ""
 
 rules
-  
+
   construct-textual-change = construct-textual-change(pp-partial-pie-string, parenthesize, override-reconstruction, resugar)

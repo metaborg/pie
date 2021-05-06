@@ -10,6 +10,7 @@ language
   extensions : pie
 
   provider : target/metaborg/stratego.ctree
+  provider : target/metaborg/stratego.jar
 
   on save : generate-java-file-ast
 

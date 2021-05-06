@@ -16,190 +16,148 @@ fixture [[
 test simple function import [[
   import test:import:mod:[[foo]]
   func [[foo]]() -> int = 0
-]] analysis succeeds
-   // todo: allow importing functions
-//   2 errors at #1, #2
-//   resolve #1 to #2
-//   error like "Duplicate function" at #1
-//   error like "Duplicate function" at #2
+]] 2 errors at #1, #2
+   resolve #1 to #2
+   error like "Duplicate function" at #1
+   error like "Duplicate function" at #2
 test simple data import [[
   import test:import:mod:[[Bar]]
   data [[Bar]] = foreign java Bar {}
-]] analysis succeeds
-   // todo: allow importing data
-//   2 errors at #1, #2
-//   resolve #1 to #2
-//   error like "Duplicate definition" at #1
-//   error like "Duplicate definition" at #2
+]] 2 errors at #1, #2
+   resolve #1 to #2
+   error like "Duplicate definition" at #1
+   error like "Duplicate definition" at #2
 test simple import undefined submodule [[
   import [[example]]:main
-]] analysis succeeds
-//   todo: check if module resolves
-//   analysis fails
-//   error like "Undefined submodule" at #1
+]] analysis fails
+   error like "Undefined submodule" at #1
 test simple import undefined final element [[
   import test:import:mod:[[nope]]
-]] analysis succeeds
-//   todo: check if module resolves
-//   analysis fails
-//   error like "does not resolve" at #1
+]] analysis fails
+   error like "does not resolve" at #1
 test simple import rename to same name [[
   import test:import:mod:foo as [[foo]]
   func [[foo]]() -> int = 3
-]] parse fails
-//   todo: implement import renaming
-//   2 errors at #1, #2
-//   1 warning at #1
-//   warning like "same name" at #1
+]] 2 errors at #1, #2
+   1 warning at #1
+   warning like "same name" at #1
 
 // simple imports with renaming
 test simple renaming function import [[
   import test:import:mod:[[main]] as [[func]]
   func test() -> int = [[func]]()
-]] parse fails
-//   todo: implement import renaming
-//   analysis succeeds
-//   resolve #1
-//   resolve #3 to #2
+]] analysis succeeds
+   resolve #1
+   resolve #3 to #2
 test simple renaming function duplicate name [[
   import test:import:mod:main as [[func]]
   import test:import:mod:main as [[func]]
-]] parse fails
-// todo: implement import renaming
-//   2 errors at #1, #2
-//   error like "Duplicate function" at #1
-//   error like "Duplicate function" at #2
+]] 2 errors at #1, #2
+   error like "Duplicate function" at #1
+   error like "Duplicate function" at #2
 test simple renaming data import [[
   import test:import:mod:[[Foo]] as [[Bar]]
   func test(foo: [[Bar]]) -> int = 4
-]] parse fails
-//   todo: implement import renaming
-//   analysis succeeds
-//   resolve #1
-//   resolve #3 to #2
+]] analysis succeeds
+   resolve #1
+   resolve #3 to #2
 test simple renaming data duplicate name [[
   import test:import:mod:Foo as [[Bar]]
   import test:import:mod:Foo as [[Bar]]
-]] parse fails
-//   todo: implement import renaming
-//   2 errors at #1, #2
-//   error like "Duplicate definition" at #1
-//   error like "Duplicate definition" at #2
+]] 2 errors at #1, #2
+   error like "Duplicate definition" at #1
+   error like "Duplicate definition" at #2
 test two simple imports with renaming [[
   import test:import:mod:Foo as [[Bar]]
   import test:import:mod:main as [[function]]
   func test(bar: [[Bar]]) -> int = [[function]]()
-]] parse fails
-//   todo: implement import renaming
-//   0 errors
-//   resolve #3 to #1
-//   resolve #4 to #2
+]] 0 errors
+   resolve #3 to #1
+   resolve #4 to #2
 
 // multi imports
 test empty multi-import [[
   import test:import:mod:[[{}]]
-]] parse fails
-//   todo: implement multi imports
-//   1 warning at #1
-//   warning like "Empty" at #1
+]] 1 warning at #1
+   warning like "Empty" at #1
 
 test simple multi-import function no renaming single element [[
   import test:import:mod:[[{foo}]]
   func [[foo]]() -> int = 6
-]] parse fails
-//   todo: implement multi imports
-//   2 errors at #1, #2
-//   1 warning at #1
-//   resolve #1 to #2
-//   error like "Duplicate function" at #1
-//   error like "Duplicate function" at #2
-//   warning like "Single element" at #1
+]] 2 errors at #1, #2
+   1 warning at #1
+   resolve #1 to #2
+   error like "Duplicate function" at #1
+   error like "Duplicate function" at #2
+   warning like "Single element" at #1
 test simple multi-import function renaming single element [[
   import test:import:mod:[[{main as func}]]
-]] parse fails
-//   todo: implement multi imports, renaming
-//   1 warning at #1
-//   warning like "Single element" at #1
+]] 1 warning at #1
+   warning like "Single element" at #1
 test simple multi-import data no renaming single element [[
   import test:import:mod:[[{Bar}]]
   data [[Bar]] = foreign java Bar {}
-]] parse fails
-//   todo: implement multi imports
-//   2 errors at #1, #2
-//   1 warning at #1
-//   resolve #1 to #2
-//   error like "Duplicate definition" at #1
-//   error like "Duplicate definition" at #2
-//   warning like "Single element" at #1
+]] 2 errors at #1, #2
+   1 warning at #1
+   resolve #1 to #2
+   error like "Duplicate definition" at #1
+   error like "Duplicate definition" at #2
+   warning like "Single element" at #1
 test simple multi-import data renaming single element [[
   import test:import:mod:[[{Foo as Bar}]]
-]] parse fails
-//   todo: implement multi imports
-//   1 warning at #1
-//   warning like "Single element" at #1
+]] 1 warning at #1
+   warning like "Single element" at #1
 test simple multi-import data renaming to same name single element [[
   import test:import:mod:{Bar as [[Bar]]}
   data [[Bar]] = foreign java Bar {}
-]] parse fails
-//   todo: implement multi imports, renaming
-//   2 errors at #1, #2
-//   2 warnings
-//   warning like "Single element"
-//   warning like "same name" at #1
+]] 2 errors at #1, #2
+   2 warnings
+   warning like "Single element"
+   warning like "same name" at #1
 
 test simple multi-import no renaming [[
   import test:import:mod:{[[Bar]], [[foo]]}
   func [[foo]]() -> int = 6
   data [[Bar]] = foreign java Bar {}
-]] parse fails
-//   todo: implement multi imports
-//   4 errors at #1, #2, #3, #4
-//   resolve #1 to #4
-//   resolve #2 to #3
-//   error like "Duplicate function" at #2
-//   error like "Duplicate function" at #3
-//   error like "Duplicate definition" at #1
-//   error like "Duplicate definition" at #4
+]] 4 errors at #1, #2, #3, #4
+   resolve #1 to #4
+   resolve #2 to #3
+   error like "Duplicate function" at #2
+   error like "Duplicate function" at #3
+   error like "Duplicate definition" at #1
+   error like "Duplicate definition" at #4
 test simple multi-import rename first [[
   import test:import:mod:{[[Foo]] as [[Bar]], [[foo]]}
   func [[foo]](bar: [[Bar]]) -> int = 6
-]] parse fails
-//   todo: implement multi imports, renaming
-//   2 errors at #3, #4
-//   resolve #1
-//   resolve #3 to #4
-//   resolve #5 to #2
-//   error like "Duplicate function" at #3
-//   error like "Duplicate function" at #4
+]] 2 errors at #3, #4
+   resolve #1
+   resolve #3 to #4
+   resolve #5 to #2
+   error like "Duplicate function" at #3
+   error like "Duplicate function" at #4
 test simple multi-import rename second [[
   import test:import:mod:{[[Bar]], [[main]] as [[fun]]}
   data [[Bar]] = foreign java Bar {}
   func test() -> int = [[fun]]()
-]] parse fails
-//   todo: implement multi imports, renaming
-//   2 errors at #1, #4
-//   resolve #1 to #4
-//   resolve #2
-//   resolve #5 to #3
-//   error like "Duplicate definition" at #1
-//   error like "Duplicate definition" at #4
+]] 2 errors at #1, #4
+   resolve #1 to #4
+   resolve #2
+   resolve #5 to #3
+   error like "Duplicate definition" at #1
+   error like "Duplicate definition" at #4
 test simple multi-import rename both [[
   import test:import:mod:{[[Foo]] as [[Bar]], [[main]] as [[func]]}
   func test(bar: [[Bar]]) -> int = [[func]]()
-]] parse fails
-//   todo: implement multi imports, renaming
-//   resolve #1
-//   resolve #3
-//   resolve #5 to #2
-//   resolve #6 to #4
+]] resolve #1
+   resolve #3
+   resolve #5 to #2
+   resolve #6 to #4
 test simple multi-import rename to existing name [[
   import test:import:mod:{Foo as Bar, main as [[fun]]}
   func [[fun]]() -> int = 9
-]] parse fails
-//   todo: implement multi imports, renaming
-//   2 errors at #1, #2
-//   error like "Duplicate function" at #1
-//   error like "Duplicate function" at #2
+]] 2 errors at #1, #2
+   error like "Duplicate function" at #1
+   error like "Duplicate function" at #2
 
 // module imports
 test module import no rename [[
@@ -210,10 +168,8 @@ test module import no rename [[
 test module import rename [[
   import test:import as mod
   func [[test]]() -> int = mod:mod:[[test]]()
-]] parse fails
-//   todo: implement renaming
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 test file import no rename [[
   import test:import:mod
   func [[test]]() -> int = mod:[[test]]()
@@ -222,185 +178,145 @@ test file import no rename [[
 test file import rename [[
   import test:import:mod as file
   func [[test]]() -> int = file:[[test]]()
-]] parse fails
-//   todo: implement renaming
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 test file import rename to pseudo module [[
   import test:import:mod as pseudo:sub
   func [[test]]() -> int = pseudo:sub:[[test]]()
-]] parse fails
-//   todo: implement renaming
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 test file import nonexistent [[
   import test:import:[[none]]
-]] analysis succeeds // todo: check if module exists.  1 error at #1
+]] 1 error at #1
 test file import rename to pseudo module same name as existing top-level module [[
   import test:import:mod as test:sub
   func [[test]]() -> int = test:sub:[[test]]()
-]] parse fails
-//   todo: implement renaming
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 
 
 test module empty multi import [[
   import test:[[{}]]
-]] parse fails
-//   todo: implement multi-imports
-//   analysis succeeds
-//   1 warning at #1
-//   warning like "Empty" at #1
+]] analysis succeeds
+   1 warning at #1
+   warning like "Empty" at #1
 test module multi import single element [[
   import test:[[{import}]]
   func [[test]]() -> int = import:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports
-//   analysis succeeds
-//   1 warning at #1
-//   warning like "Single element" at #1
-//   resolve #3 to #2
+]] analysis succeeds
+   1 warning at #1
+   warning like "Single element" at #1
+   resolve #3 to #2
 
 test module multi import no rename [[
   import test:{import, [[none]]}
   func [[test]]() -> int = import:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports
-//   1 error at #1
-//   resolve #3 to #2
+]] 1 error at #1
+   resolve #3 to #2
 test module multi import rename first [[
   import test:{import as self, [[none]]}
   func [[test]]() -> int = self:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports, renaming
-//   1 error at #1
-//   resolve #3 to #2
+]] 1 error at #1
+   resolve #3 to #2
 test module multi import rename last [[
   import test:{import, [[none]] as nope}
   func [[test]]() -> int = import:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports, renaming
-//   1 error at #1
-//   resolve #3 to #2
+]] 1 error at #1
+   resolve #3 to #2
 test module multi import rename both [[
   import test:{import as self, [[none]] as nope}
   func [[test]]() -> int = self:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports, renaming
-//   1 error at #1
-//   resolve #3 to #2
+]] 1 error at #1
+   resolve #3 to #2
 
 // submodules
 test undefined submodule [[
   import test:[[none]]:[[mod]]
-]] analysis succeeds // todo: check if modules exist.
+]] 2 errors at #1, #2 // todo: don't show an error at #2
 
 test submodule empty multi import [[
   import test:[[{}]]:nope
-]] parse fails
-//   todo: implement multi-imports
-//   analysis succeeds
-//   1 warning at #1
-//   warning like "Empty" at #1
+]] analysis succeeds
+   1 warning at #1
+   warning like "Empty" at #1
 test submodule multi import single element [[
   import test:[[{import}]]:mod
   func [[test]]() -> int = import:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports
-//   analysis succeeds
-//   1 warning at #1
-//   warning like "Single element" at #1
-//   resolve #3 to #2
+]] analysis succeeds
+   1 warning at #1
+   warning like "Single element" at #1
+   resolve #3 to #2
 
 test submodule multi import no rename [[
   import test:{import, [[none]]}:[[mod]]
   func [[test]]() -> int = import:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports
-//   2 errors at #1, #2
-//   resolve #4 to #3
+]] 2 errors at #1, #2
+   resolve #4 to #3
 test submodule multi import rename first [[
   import test:{import as imp, [[none]]}:[[mod]]
   func [[test]]() -> int = imp:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports, renaming
-//   2 errors at #1, #2
-//   resolve #4 to #3
+]] 2 errors at #1, #2
+   resolve #4 to #3
 test submodule multi import rename second [[
   import test:{import, [[none]] as nope}:[[mod]]
   func [[test]]() -> int = import:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports, renaming
-//   2 errors at #1, #2
-//   resolve #4 to #3
+]] 2 errors at #1, #2
+   resolve #4 to #3
 test submodule empty multi import rename both [[
   import test:{import as imp, [[none]] as nope}:[[mod]]
   func [[test]]() -> int = imp:mod:[[test]]()
-]] parse fails
-//   todo: implement multi-imports, renaming
-//   2 errors at #1, #2
-//   resolve #4 to #3
+]] 2 errors at #1, #2
+   resolve #4 to #3
 
 test multiple definitions in pseudomodule allowed [[
   import test:import:mod as imp:mod1
   import test:import:mod as imp:mod2
 
   func test() -> int = imp:mod1:main() + imp:mod2:main()
-]] parse fails
-//   todo: implement renaming
-//   analysis succeeds
+]] analysis succeeds
 test disallow duplicate definition of submodule in pseudomodule[[
   import test:import:mod as imp:[[mod]]
   import test:import:mod as imp:[[mod]]
-]] parse fails
-//   todo: implement renaming
-//   2 errors at #1, #2
-//   error like "duplicate definition" at #1
-//   error like "duplicate definition" at #2
+]]    2 errors at #1, #2
+   error like "duplicate definition" at #1
+   error like "duplicate definition" at #2
 test duplicate definition in submodule [[
   import test:import:mod:main as sub:[[duplicate]]
   import test:import:mod:Foo  as sub:[[duplicate]]
-]] parse fails
-//   todo: implement renaming
-//   analysis succeeds
+]] analysis succeeds
 test duplicate defintition in submodule [[
   import test:import:mod:main as sub:[[duplicate]]
   import test:import:mod:main as sub:[[duplicate]]
-]] parse fails
-//   todo: implement renaming, give error on duplicate rename
+]] analysis succeeds // todo: implement error on duplicate functions in a pseudomodule
+//   2 errors at #1, #2
+//   error like "Duplicate function" at #1
+//   error like "Duplicate function" at #2
 test duplicate defintition in submodule [[
   import test:import:mod:Foo as sub:[[duplicate]]
   import test:import:mod:Foo as sub:[[duplicate]]
-]] parse fails
-//   todo: implement renaming, give error on duplicate rename
+]] analysis succeeds // todo: implement error on duplicate data definition in a pseudomodule
+//   2 errors at #1, #2
+//   error like "Duplicate data definition" at #1
+//   error like "Duplicate data definition" at #2
 
 // no-op imports
 test toplevel multi-import gives no-op warning [[
   import {foo, bar}:[[func]]
-]] parse fails
-//   todo: implement multi-imports
-//   analysis fails // foo and bar don't exist
-//   2 warnings at #1
-//   warning like "already available" at #1
+]] analysis fails // foo and bar don't exist
+   2 warnings at #1
+   warning like "already available" at #1
 test toplevel multi-import with rename gives no warning [[
   import {foo, bar}:func as fun
-]] parse fails
-//   todo: implement multi-imports
-//   analysis fails // foo and bar don't exist
+]] analysis fails // foo and bar don't exist
    0 warnings
 test renaming to same qualified name gives warning [[
   import test:import:mod:[[main]] as test:import:mod:[[main]]
-]] parse fails
-//   todo: implement multi-imports
-//   analysis fails
-//   1 warning at #2
-//   warning like "already available" at #2
-//   resolve #1
+]] analysis succeeds // todo: analysis should fail with duplicate function error
+   1 warning at #2
+   warning like "already available" at #2
+   resolve #1
 test renaming to same qualified name in multi-import gives warning [[
   import test:import:mod:{main as test:import:mod:[[main]]}
-]] parse fails
-//   todo: implement multi-imports
-//   analysis fails
-//   2 warnings at #1
-//   warning like "already available" at #1
+]] analysis succeeds // todo: analysis should fail with duplicate function error
+   2 warnings at #1
+   warning like "already available" at #1

@@ -1,0 +1,306 @@
+module statics/base
+
+imports
+
+  signatures/lex/literal-sig
+  signatures/pie-sig
+  statics/util
+  statics/type
+
+signature
+  sorts
+    TYPE // A semantic type (as opposed to the lexical, non-all caps Type)
+    ValKind // The kind of a value. Used by code generation.
+    BOOLEAN // For logic in this statix spec.
+    CONTEXT // context values that are saved in the scope graph
+
+  constructors
+    InputValKind : ValKind
+    LocalValKind : ValKind
+    TRUE : BOOLEAN
+    FALSE : BOOLEAN
+    ContextType : TYPE -> CONTEXT
+    ContextName : string -> CONTEXT
+    ContextModule : Module -> CONTEXT
+
+  relations
+    root : scope
+    file : scope
+    mod_wip : MODULE
+    mod : MODID -> scope
+    val : VALID -> TYPE
+    func : FUNCID -> TYPE
+    func_local : FUNCID -> TYPE
+    data : TYPEID -> scope
+    data_local : TYPEID -> scope
+    context : string -> CONTEXT
+
+signature
+  name-resolution
+    labels
+      INHERIT // Between data scopes
+      P // Scopes within functions, functions to file, files to root
+      I // import module tree to root module tree
+      FILE // module tree scope to file scope
+      MODULE_TREE_ROOT // points to a module tree root. Starts in root scope for
+                       // module structure or file scope for pseudo modules from imports
+
+rules // Logic functions
+
+  /**
+   * Logical and. Called andB because `and` is apparently a keyword.
+   */
+  andB : BOOLEAN * BOOLEAN -> BOOLEAN
+  andB(FALSE(), _) = FALSE().
+  andB(_, FALSE()) = FALSE().
+  andB(TRUE(), TRUE()) = TRUE().
+  andB(a, b) = FALSE() :- false | error $[Bug in Statix spec: no matching rule for andB([a], [b]).].
+
+  /**
+   * return TRUE() if all values in the list are TRUE().
+   */
+  allTrue : list(BOOLEAN) -> BOOLEAN
+  allTrue([]) = TRUE().
+  allTrue([FALSE()|_]) = FALSE().
+  allTrue([TRUE()|rest]) = allTrue(rest).
+
+  orB : BOOLEAN * BOOLEAN -> BOOLEAN
+  orB(TRUE(), _) = TRUE().
+  orB(_, TRUE()) = TRUE().
+  orB(FALSE(), FALSE()) = FALSE().
+  orB(a, b) = FALSE() :- false | error $[Bug in Statix spec: no matching rule for orB([a], [b]).].
+
+  notB : BOOLEAN -> BOOLEAN
+  notB(TRUE()) = FALSE().
+  notB(FALSE()) = TRUE().
+
+rules // Declararing and resolving
+
+  // For declaring and resolving modules in relation `mod` and `mod_wip`, see
+  // statics/module!declareModule and statics/module!resolveModuleList
+
+  /**
+   * Declare a value [name] with type [TYPE] and ValKind [kind] in scope [s],
+   * set the type on the value name.
+   */
+  declareVal : scope * string * TYPE * ValKind
+  declareVal(s, name, type, kind) :-
+    declareValWithoutSettingType(s, name, type, kind),
+    @name.type := type.
+
+  /**
+   * Declare a value [name] with type [TYPE] and ValKind [kind] in scope [s],
+   * do not set the type on the value name.
+   */
+  declareValWithoutSettingType : scope * string * TYPE * ValKind
+  declareValWithoutSettingType(s, name, type, kind) :-
+    !val[name, type] in s,
+    @name.kind := kind,
+    resolveVal(s, name) == [_]
+      | error $[Duplicate definition of value [name]].
+
+  /**
+   * Resolve a value [name] in scope [s]
+   */
+  resolveVal : scope * string -> list((path * (string * TYPE)))
+  resolveVal(s, name) = occs :-
+    query val
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * resolveUniqueVal(s, name) = ty
+   * Resolves a value [name] to a unique type [ty] in scope [s].
+   * Sets a type and a reference to the declaration on this name.
+   * Gives a undeclared value error if no declaration is found.
+   * Does not give an error if there are multiple definitions as there are
+   * already errors on the declarations.
+   * See also resolveVal
+   */
+  resolveUniqueVal : scope * string -> TYPE
+  resolveUniqueVal(s, name) = ty :- {occs name'}
+    resolveVal(s, name) == occs,
+    occs == [(_, (name', ty))],
+    @name.ref := name',
+    @name.type := ty,
+    // If there are multiple, the declaration will give an error.
+    // todo: apply same pattern as resolveUniqueFunc to make this error work
+    try { occs != [] } | error $[Cannot resolve [name]] @name.
+
+
+  /**
+   * Declare a function [name] with type [TYPE] in scope [s], set the type on
+   * the function name.
+   */
+  declareFunc : scope * string * TYPE
+  declareFunc(s, name, type) :-
+    !func[name, type] in s,
+    resolveFunc(s, name) == [_] | error $[Duplicate function [name]] @name,
+    @name.type := type.
+
+  /**
+   * declareFuncImport(s, import_as_name, import_name, (decl_name, type))
+   * Declare an imported function [import_as_name] with type [type] in scope [s].
+   * Set type on [import_name] and [import_as_name] and reference on [import_as_name].
+   */
+  declareFuncImport : scope * FUNCID * FUNCID * (FUNCID * TYPE)
+  declareFuncImports maps declareFuncImport(*, *, *, list(*))
+  declareFuncImport(s, import_as_name, import_name, (decl_name, type)) :-
+    !func[import_as_name, type] in s,
+    resolveFunc(s, import_as_name) == [_]
+      | error $[Duplicate function [import_as_name]] @import_as_name,
+    @import_as_name.type := type,
+//    @import_name.type := type, // todo: set reference if renamed only
+    @import_name.ref := decl_name.
+
+  /**
+   * declareLocalFunc(s, name, type)
+   * Declare a local function [name] with type [type] in scope [s]
+   */
+  declareLocalFunc : scope * string * TYPE
+  declareLocalFunc(s, name, type) :- !func_local[name, type] in s.
+
+  /**
+   * resolveLocalFunc(s, name)
+   * Resolve local function [name] in scope [s] to a list of function types.
+   * Used when declaring imports to avoid circular dependencies.
+   */
+  resolveLocalFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
+  resolveLocalFunc(s, name) = occs :-
+    query func_local
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * Resolve a function [name] in scope [s]
+   */
+  resolveFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
+  resolveFunc(s, name) = occs :-
+    query func
+      filter P*|INHERIT*
+         and { name' :- name' == name }
+         min $ < INHERIT
+         and true
+          in s |-> occs.
+
+  /**
+   * resolve a function [name] to a unique declaration in scope [s]
+   * The boolean represents whether the function resolved (if it didn't, don't
+   * check for argument number/types etc.)
+   */
+  resolveUniqueFunc : scope * FUNCID -> (TYPE * BOOLEAN)
+  resolveUniqueFunc(s, name) = resolveUniqueFunc_1(s, name, resolveFunc(s, name)).
+
+    // This function exists so that the result of resolveFunc is not
+    // prematurely matched to a single occurrence
+    resolveUniqueFunc_1 : scope * FUNCID * list((path * (FUNCID * TYPE))) -> (TYPE * BOOLEAN)
+    resolveUniqueFunc_1(s, name, []) = (_, FALSE()) :-
+      false | error $[Undefined function [name]] @name.
+
+    resolveUniqueFunc_1(s, name, [(_, (name', ty))]) = (ty, TRUE()) :-
+      // todo: allow overloading (multiple occurences, find best match by input types)
+      @name.ref := name',
+      @name.type := ty.
+
+    // If there are multiple, the declaration will give an error.
+    resolveUniqueFunc_1(s, name, [_,_|_]) = (_, FALSE()).
+
+
+  /**
+   * declareData(s, name, s_data)
+   * Declare a datatype [name] with scope [s_data] in scope [s], set the type
+   * on the data name.
+   */
+  declareData : scope * TYPEID * scope
+  declareData(s, name, s_data) :-
+    !data[name, s_data] in s,
+    resolveData(s, name) == [_]
+      | error $[Duplicate definition of Datatype [name]] @name,
+    @name.type := DataType(s_data).
+
+  /**
+   * declareDataImport(s, import_as_name, import_name, (decl_name, s_data))
+   * Declare a datatype [decl_name] with scope [s_data] in scope [s].
+   * Set reference and type on [import_name].
+   */
+  declareDataImport : scope * TYPEID * TYPEID * (TYPEID * scope)
+  declareDataImports maps declareDataImport(*, *, *, list(*))
+  declareDataImport(s, import_as_name, import_name, (decl_name, s_data)) :-
+    !data[import_as_name, s_data] in s,
+    resolveData(s, import_as_name) == [_]
+      | error $[Duplicate definition of Datatype [import_as_name]] @import_as_name,
+    @import_as_name.type := DataType(s_data),
+//    @import_name.type := DataType(s_data), // todo: set reference if renamed only
+    @import_name.ref := decl_name.
+
+  /**
+   * declareLocalData(s, name, s_data)
+   * Declare a local datatype [name] with scope [s_data] in scope [s]
+   */
+  declareLocalData : scope * string * scope
+  declareLocalData(s, name, s_data) :- !data_local[name, s_data] in s.
+
+  /**
+   * resolveLocalData(s, name)
+   * Resolve data [name] in scope [s] to a list of data scopes.
+   * Used when declaring imports to avoid circular dependencies.
+   */
+  resolveLocalData : scope * string -> list((path * (string * scope)))
+  resolveLocalData(s, name) = occs :-
+    query data_local
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * Resolve data [name] in scope [s] to a list of data scopes
+   */
+  resolveData : scope * string -> list((path * (string * scope)))
+  resolveData(s, name) = occs :-
+    query data
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * resolve data [name] to a unique data scope [s_data] in scope [s]
+   */
+  resolveUniqueData : scope * string -> scope
+  resolveUniqueData(s, name) = s_data :- {occs name'}
+    resolveData(s, name) == occs,
+    occs == [(_, (name', s_data))],
+    @name.ref := name',
+    @name.type := DataType(s_data),
+    // If there are multiple, the declaration will give an error.
+    // todo: apply same pattern as resolveUniqueFunc to make this error work
+    try { occs != [] } | error $[Could not resolve data [name]] @name.
+
+  /**
+   * setContext(s, name, context)
+   * Set a context value [context] named [name] in scope [s].
+   */
+  setContext : scope * string * CONTEXT
+  setContext(s, name, context) :-
+    !context[name, context] in s,
+    getContext(s, name) == context | error $[Context value [name] is already set in [s]].
+
+  /**
+   * getContext(s, name) -> context
+   * Get a context value [context] named [name] from scope [s].
+   */
+  getContext : scope * string -> CONTEXT
+  getContext(s, name) = context :- {occs}
+    query context
+      filter P*
+         and { name' :- name' == name }
+         min $ < P
+         and true
+          in s |-> occs,
+    occs == [(_, (_, context))],
+    try { occs != [] } | error $[cannot get context value [name] in [s]].

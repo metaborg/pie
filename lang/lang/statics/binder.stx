@@ -1,0 +1,37 @@
+module statics/binder
+
+imports
+
+  signatures/func_body-sig
+  statics/base
+  statics/type
+
+rules
+
+  /**
+   * type of a binder in scope [s] with type of the assignment expression [ty_exp]
+   */
+  typeOfBinder : scope * TYPE * Binder -> TYPE
+  typeOfBinder(s, ty_exp, b@SingleBinder(bind)) = ty@typeOfBind(s, ty_exp, bind) :-
+    @b.type := ty.
+  typeOfBinder(s, ty_exp, b@TupleBinder(binds)) = ty_dec :- {tys_exp tys_dec}
+    ty_exp == TupleType(tys_exp) | error $[Type mismatch: expected tuple type, got [ty_exp]] @b,
+    ty_dec == TupleType(tys_dec) | error $[Type mismatch: expected tuple type, got [ty_dec]] @b,
+    typeOfBinds(s, tys_exp, binds) == tys_dec,
+    @b.type := ty_dec.
+
+  /**
+   * type of a bind in scope [s] with type of the assignment expression [exp_ty]
+   */
+  typeOfBind : scope * TYPE * Bind -> TYPE
+  typeOfBinds maps typeOfBind(*, list(*), list(*)) = list(*)
+
+  typeOfBind(s, exp_ty, b@Bind(name)) = exp_ty :-
+    declareVal(s, name, exp_ty, LocalValKind()),
+    @b.type := exp_ty.
+  
+  typeOfBind(s, actual_ty, b@TBind(name, expected_ty_exp)) = expected_ty :-
+    typeOf(s, expected_ty_exp) == expected_ty,
+    subtype(actual_ty, expected_ty) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty]] @expected_ty_exp,
+    declareVal(s, name, expected_ty, LocalValKind()),
+    @b.type := expected_ty.

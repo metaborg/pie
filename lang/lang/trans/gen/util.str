@@ -1,79 +1,120 @@
 module gen/util
 
 imports
-  
-  libspoofax/stratego/debug
-  nabl2/api
 
+  libspoofax/stratego/debug
+  statix/api
+
+  signatures/-
+  statics/constructors
+
+// todo: remove commented code
 rules // Generic strategies for getting properties and types of anything
 
-  pie-prop(|ns, prop):
-    t -> <pie-occ-prop(|prop)> t
-    where
-      <nabl2-get-occurrence-ns> t
-      
-  pie-prop(|ns, prop):
-    t -> <pie-ast-ref-prop(|ns, prop)> t
-    where
-      <not(nabl2-get-occurrence-ns); is-string> t
+  // returns a named property set by statix analysis
+  // name: the name of the property to get
+  // term: the AST term to get the property from
+  pie-get-property(|name):
+    term -> val
+    with
+      a   := <AstAnalysis>
+    ; val := <stx-get-ast-property(|a, name)> term
 
-  pie-type(|ns) = pie-prop(|ns, "type")
-  
-  pie-type:
-    t -> <pie-ast-type> t
-    where
-      <not(nabl2-get-occurrence-ns); not(is-string)> t
+  // returns a named property set by statix analysis
+  // Depracated, use todo: pie-ast-ref-prop(|name) instead.
+  // Todo: remove this strategy
+  // _: unused
+  // name: the name of the property to get
+  // term: the AST term to get the property from
+  pie-prop(|_, name) = pie-get-property(|name)
+
+//  pie-prop(|ns, prop):
+//    t -> <pie-occ-prop(|prop)> t
+//    where
+//      <nabl2-get-occurrence-ns> t
+//
+//  pie-prop(|ns, prop):
+//    t -> <pie-ast-ref-prop(|ns, prop)> t
+//    where
+//      <not(nabl2-get-occurrence-ns); is-string> t
+
+//  pie-type(|ns) = pie-prop(|ns, "type")
+//
+//  pie-type:
+//    t -> <pie-ast-type> t
+//    where
+//      <not(nabl2-get-occurrence-ns); not(is-string)> t
 
 rules // AST type
 
-  pie-ast-type = nabl2-get-ast-type
-  
+//  pie-ast-type = nabl2-get-ast-type
+
 rules // Property of reference in the AST
-  
-  pie-ast-ref-prop(|ns, prop):
+
+  // returns a named property set by statix analysis on a declaration.
+  // First resolves this term to a declaration and then gets the property from the declaration.
+  // name: the name of the property to get
+  // term: the term to get the property from. This term needs to be resolvable, i.e. it needs to have a reference set
+  pie-ast-ref-prop(|name):
     term -> val
     with
-      a      := <AstAnalysis>
-    ; refOcc := <nabl2-mk-occurrence(|ns)> term
-    ; defOcc := <nabl2-get-resolved-name(|a); Fst> refOcc
-    ; val    := <nabl2-get-property(|a, prop)> defOcc
-  
-  pie-ast-ref-type(|ns) = pie-ast-ref-prop(|ns, "type")
+      a    := <AstAnalysis>
+    ; decl := <stx-editor-resolve> term
+    ; val  := <stx-get-ast-property(|a, name)> decl
+
+  // returns a named property set by statix analysis
+  // Depracated, use todo: pie-ast-ref-prop(|name) instead.
+  // Todo: remove this strategy
+  // _: unused
+  // name: the name of the property to get
+  // term: the term to get the property from
+  pie-ast-ref-prop(|_, name) = pie-ast-ref-prop(|name)
+
+
+//  pie-ast-ref-prop(|ns, prop):
+//    term -> val
+//    with
+//      a      := <AstAnalysis>
+//    ; refOcc := <nabl2-mk-occurrence(|ns)> term
+//    ; defOcc := <nabl2-get-resolved-name(|a); Fst> refOcc
+//    ; val    := <nabl2-get-property(|a, prop)> defOcc
+
+//  pie-ast-ref-type(|ns) = pie-ast-ref-prop(|ns, "type")
 
 rules // Property of occurrence
-  
-  pie-occ-prop(|prop):
-    occ -> val
-    with
-      a   := <AstAnalysis>
-    ; val := <nabl2-get-property(|a, prop)> occ
 
-  pie-occ-type = pie-occ-prop(|"type")
+//  pie-occ-prop(|prop):
+//    occ -> val
+//    with
+//      a   := <AstAnalysis>
+//    ; val := <nabl2-get-property(|a, prop)> occ
+//
+//  pie-occ-type = pie-occ-prop(|"type")
 
 rules
 
   pie-set-ast-analysis:
     ast -> ast
     with
-      rules(AstAnalysis : _ -> <nabl2-get-ast-analysis> ast)
+      rules(AstAnalysis : _ -> <stx-get-ast-analysis> ast)
 
 rules
 
   pie-sep-nl    = separate-by(|"\n")
   pie-sep-comma = separate-by(|", ")
   pie-sep-space = separate-by(|" ")
-  
+
   pie-remove-emptystrings = filter(not(?""))
-  
+
   pie-sep-concat(|sep) = pie-remove-emptystrings; separate-by(|sep); concat-strings
   pie-concat-nl = pie-sep-concat(|"\n")
   pie-concat-comma = pie-sep-concat(|", ")
   pie-concat-space = pie-sep-concat(|" ")
   pie-concat-commanl = pie-sep-concat(|",\n")
-  
-  pie-prepend-comma-nonempty: 
+
+  pie-prepend-comma-nonempty:
     [] -> []
-  pie-prepend-comma-nonempty: 
+  pie-prepend-comma-nonempty:
     list -> [", "|list]
     where
       <not(?[])> list
@@ -81,7 +122,7 @@ rules
 rules
 
   pie-sanitize-class-id = string-replace(|"-", "_")
-  
+
 rules
 
   error(|message) = debug(|message); fail
@@ -96,9 +137,29 @@ rules
   // Also works on lists with only one element (simply returns that element)
   fold-left(s):
     [] -> <fail>
-  
+
   fold-left(s):
     [x | []] -> x
-  
+
   fold-left(s):
     [x | [y | rest]] -> <fold-left(s)> [<s> (x, y) | rest]
+
+rules // project specific helper strategies
+
+  // transforms a PIE ModuleList to a list
+  moduleListToList: NoModuleList() -> []
+  moduleListToList: ModuleList(list) -> list
+
+  // transforms a PIE Module or a PIE ModuleStmt to a list of module names
+  moduleToList: Module(moduleList, name) -> <concat> [<moduleListToList> moduleList, [name]]
+  moduleToList: ModuleStmt(mod) -> <moduleToList> mod
+
+  syntacticToSemanticType: UnitTy() -> UnitType()
+  syntacticToSemanticType: BoolTy() -> BoolType()
+  syntacticToSemanticType: IntTy() -> IntType()
+  syntacticToSemanticType: StrTy() -> StrType()
+  syntacticToSemanticType: PathTy() -> PathType()
+  syntacticToSemanticType: NullableTy(ty) -> NullableType(<syntacticToSemanticType> ty)
+  syntacticToSemanticType: ListTy(ty) -> ListType(<syntacticToSemanticType> ty)
+  syntacticToSemanticType: TupleTy(tys) -> TupleType(<map(syntacticToSemanticType)> tys)
+  syntacticToSemanticType: SupplierTy(ty) -> SupplierType(<syntacticToSemanticType> ty)

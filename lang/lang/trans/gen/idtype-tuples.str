@@ -3,6 +3,7 @@ module gen/idtype-tuples
 imports
 
   src-gen/signatures/-
+  statics/constructors
 
 rules // Params to idtype tuples
 
@@ -20,6 +21,6 @@ rules // Params to idtype tuples
 rules // Tuple type to idtype tuples
 
   pie-idtype-tuples:
-    TupleTy(tys) -> idTypeTuples
+    TupleType(tys) -> idTypeTuples
     with
       idTypeTuples := <map-with-index(\(i, ty) -> ($[_[i]], ty)\)> tys

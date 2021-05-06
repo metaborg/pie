@@ -1,0 +1,36 @@
+module statics/project
+
+imports
+
+  signatures/pie-sig
+  statics/base
+  statics/module
+  statics/import
+  statics/data
+  statics/func_def
+
+rules
+
+  projectOk : scope
+  projectOk(s_root) :-
+    !root[s_root] in s_root,
+    declareDeduplicatedModules(s_root).
+    // todo: create scopes for built-in types
+
+  programOk : scope * Start
+  programOk(s_project, Program(ModuleStmt(module@Module(_, name)), imports, defs)) :- {s_mod}
+    new s_mod,
+    s_mod -P-> s_project,
+    !file[s_mod] in s_mod,
+    setModuleName(s_mod, name),
+    setContext(s_mod, "module_name_qualified", ContextModule(module)),
+    declareWipModule(s_project, s_mod, module),
+    importsOk(s_mod, imports),
+    defsOk(s_mod, defs).
+
+  defOk : scope * Def
+  defsOk maps defOk(*, list(*))
+  defOk(s_mod, FuncDef2Def(funcDef)) :-
+    funcDefOk(s_mod, funcDef).
+  defOk(s_mod, DataDef2Def(dataDef)) :-
+    dataDefOk(s_mod, dataDef).

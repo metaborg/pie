@@ -3,7 +3,29 @@ module func_body
 imports
 
   lex/literal
+  common
   type
+
+template options
+
+  keyword -/- [a-zA-Z0-9\-\_\"\/\.\[\!\+]
+  tokenize : "(<."
+
+context-free sorts
+
+  PieFuncBody
+  Exp
+  Block
+  Binder
+  Bind
+  Ref
+  StamperPart
+  StampKind
+  FilterPart
+  Filter
+  Bool
+  StrPart
+  PathPart
 
 context-free syntax // PIE function body
 
@@ -33,8 +55,8 @@ context-free syntax // Binary expressions
 
 context-free syntax // Control flow
 
-  Exp.If     = <if(<Exp>) <Exp>>            {left}
-  Exp.IfElse = <if(<Exp>) <Exp> else <Exp>> {left}
+  Exp.If     = <if(<Exp>) <Exp>>
+  Exp.IfElse = <if(<Exp>) <Exp> else <Exp>>
 
   Exp.ListComprehension = <[<Exp> | <Binder> \<- <Exp>]> {left}
 
@@ -52,12 +74,11 @@ context-free syntax // References
   Ref.Ref = <<VALID>> {avoid}
   Exp     = Ref
 
-  Exp.Call  = <<FUNCID>(<{Exp ", "}*>)>       {left}
-  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)> {left}
-  Exp.ImportCall = <<{MODID ":"}+>:<FUNCID>(<{Exp ", "}*>)> {left}
+  Exp.Call  = <<ModuleList><FUNCID>(<{Exp ", "}*>)> {left}
+  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)>       {left}
 
   Exp.CreateSupplier = <supplier (<Exp>)>
-  Exp.TaskSupplier   = <<FUNCID>.supplier(<{Exp ", "}*>)>
+  Exp.TaskSupplier   = <<ModuleList><FUNCID>.supplier(<{Exp ", "}*>)>
   Exp.SupplierGet    = <<Exp>.get\<\>()>
 
 context-free syntax // Paths
@@ -106,6 +127,11 @@ syntax // Interpolated string literal
   StrPart-CF.StrInterpRef = "$" Ref-CF
   StrPart-CF.StrInterpExp =  "${" Exp-CF "}"
 
+lexical sorts
+
+  StrChars
+  StrChar
+
 lexical syntax
 
   StrChars = StrChar+
@@ -124,6 +150,12 @@ syntax // Interpolated path literal
   PathPart-CF.PathInterpRef = "$" Ref-CF
   PathPart-CF.PathInterpExp =  "${" Exp-CF "}"
 
+lexical sorts
+
+  PathStart
+  PathChars
+  PathChar
+
 lexical syntax
 
   PathStart = "/"
@@ -139,6 +171,9 @@ lexical restrictions
   PathChars -/- ~[\n\r\$\,\;\]\)\ ]
 
 context-free priorities // Expression priorities
+
+  // Solves ambiguity between single element tuples and brackets
+  Exp.TupleLit <1> .> {Exp ","}+ = Exp,
 
   { right:
     Exp.Not
@@ -184,14 +219,16 @@ context-free priorities // Expression priorities
   } > { non-assoc:
     Exp.Return
     Exp.Fail
-  } > { left:
-    Exp.If
+  } > {
     Exp.IfElse
+  } > {
+    Exp.If
   }
 
 lexical syntax // Reject keywords
 
   FUNCID = "return"    {reject}
+  FUNCID = "fail"      {reject}
   FUNCID = "requires"  {reject}
   FUNCID = "generates" {reject}
   FUNCID = "list"      {reject}
