@@ -1,4 +1,4 @@
-module gen/java-ast/ast-util
+module gen/java/ast-util
 
 imports
 
@@ -64,9 +64,9 @@ rules
     name -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
     where
       [fst | rest] := <reverse> name
-  
+
   java-qualifiedClass-to-expressionName-after-reverse: [name|[]] -> AmbiguousName(Id(name))
-  java-qualifiedClass-to-expressionName-after-reverse: 
+  java-qualifiedClass-to-expressionName-after-reverse:
     [name|rest] -> AmbiguousName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(name))
 
   // concat-strings-separator(|sep): list -> string
@@ -77,4 +77,3 @@ rules
   concat-strings-separator(|sep): [] -> ""
   concat-strings-separator(|sep): [last | []] -> last
   concat-strings-separator(|sep): [first | rest] -> $[[first][sep][<concat-strings-separator(|sep)> rest]]
-  

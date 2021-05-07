@@ -1,4 +1,4 @@
-module gen/java-ast/binder
+module gen/java/binder
 
 imports
 

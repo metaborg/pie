@@ -6,9 +6,7 @@ imports
   pp
   outline
   analysis
-  gen/kotlin/main
-  gen/java-string/main
-  gen/java-ast/main
+  gen/java/main
 
 rules // Debugging
 

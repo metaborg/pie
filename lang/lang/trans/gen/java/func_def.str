@@ -1,4 +1,4 @@
-module gen/java-ast/func_def
+module gen/java/func_def
 
 imports
 
@@ -7,9 +7,9 @@ imports
   src-gen/signatures/-
   signatures/-
 
-  gen/java-ast/type
-  gen/java-ast/func_body
-  gen/java-ast/ast-util
+  gen/java/type
+  gen/java/func_body
+  gen/java/ast-util
   gen/idtype-tuples
   gen/util
 

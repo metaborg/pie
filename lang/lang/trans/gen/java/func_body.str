@@ -1,4 +1,4 @@
-module gen/java-ast/func_body
+module gen/java/func_body
 
 imports
 
@@ -10,10 +10,10 @@ imports
 
   statsem/pie
 
-  gen/java-ast/func_def
-  gen/java-ast/binder
-  gen/java-ast/type
-  gen/java-ast/ast-util
+  gen/java/func_def
+  gen/java/binder
+  gen/java/type
+  gen/java/ast-util
   gen/idtype-tuples
   gen/util
   gen/debug

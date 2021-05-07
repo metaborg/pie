@@ -1,4 +1,4 @@
-module gen/java-ast/type
+module gen/java/type
 
 imports
 
@@ -11,7 +11,7 @@ imports
 
   gen/idtype-tuples
   gen/util
-  gen/java-ast/ast-util
+  gen/java/ast-util
 
 rules
 
@@ -67,7 +67,7 @@ rules
     with
       <add-import> "java.util.ArrayList"
   p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
-  
+
   p2j-ast-type-sig:
     SupplierTy(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
     with
