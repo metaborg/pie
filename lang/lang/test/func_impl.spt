@@ -1,0 +1,123 @@
+module func_impl
+
+language pie
+
+fixture [[
+  module test:expression
+
+  [[...]]
+]]
+
+test missing body [[ func main() -> unit = ]] parse fails
+
+// literals, no block
+test unit literal [[ func main() -> unit = unit ]] analysis succeeds
+test null literal where unit expected [[ func main() -> unit = null ]] analysis fails
+test null literal unit [[ func main() -> unit? = null ]] analysis succeeds
+test null literal int [[ func main() -> int? = null ]] analysis succeeds
+test int literal [[ func main() -> int = 8 ]] analysis succeeds
+test string literal [[ func main() -> string = "Hello world!" ]] analysis succeeds
+test absolute path literal [[ func main() -> path = ./tmp/test.txt ]] analysis succeeds
+test relative path literal [[ func main() -> path = ./test.txt ]] analysis succeeds
+test true literal [[ func main() -> bool = true ]] analysis succeeds
+test false literal [[ func main() -> bool = false ]] analysis succeeds
+test tuple literal [[ func main() -> (int, bool, string) = (1, true, "hello?") ]] analysis succeeds
+test empty bools list literal [[ func main() -> bool* = [] ]] analysis succeeds
+test empty strings list literal [[ func main() -> string* = [] ]] analysis succeeds
+test int list literal [[ func main() -> int* = [1, 2] ]] analysis succeeds
+test string list literal [[ func main() -> string* = ["hello", "world"] ]] analysis succeeds
+
+// params, no block
+test bool  val [[ func main([[flag]]: bool) -> bool = [[flag]] ]] analysis succeeds resolve #2 to #1
+test int   val [[ func main([[val]]: int) -> int = [[val]] ]] analysis succeeds resolve #2 to #1
+test tuple val [[ func main([[name]]: string) -> string = [[name]] ]] analysis succeeds resolve #2 to #1
+test list  val [[
+  func main([[comment]]: string, [[amount]]: int) -> string* =
+    ["$[[amount]]", [[comment]], "another string"]
+]] analysis succeeds
+   resolve #3 to #2
+   resolve #4 to #1
+test string val with unused param [[
+  func main([[name]]: string, [[values]]: (int, int*)) -> string =
+    [[name]]
+]] 0 errors
+   0 warning // todo: give a warning like "unused" at #2 about unused var values
+   resolve #3 to #1
+test param type error [[ func main(val: int) -> string = [[val]] ]]
+  1 error at #1 // error like "type mismatch"
+  0 warnings
+
+// expressions, no block
+test boolean conditions [[
+  func isFoo(bar: bool, hasBaz: bool, val: int, name: string?) -> bool =
+    bar || (hasBaz && val != 0) || (name != null && val == 10)
+]] parse ambiguous
+   analysis fails
+   // todo: should parse unambiguously and analysis should succeed
+test add numbers [[ func plus(x: int, y: int) -> int = x + y ]] analysis succeeds
+test list comprehension [[ func mapToString(list: int*) -> string* = ["$x" | x <- list] ]] analysis succeeds
+test call other func [[
+  func [[main]]([[x]]: int) -> string = [[message]]([[x]], "main")
+  func [[message]]([[x]]: int, [[caller]]: string) -> string =
+    "could not finagle foo for value $[[x]] in $[[caller]]"
+]] 0 errors
+   0 warnings
+   // nothing resolves to #1
+   resolve #4 to #2
+   resolve #3 to #5
+   resolve #8 to #6
+   resolve #9 to #7
+
+test walk path [[
+  func recursiveFileNames([[path]]: path, [[extension]]: string) -> string* =
+    ["$x" | x <- walk [[path]] with extension [[extension]] ]
+]] 0 errors
+   0 warnings
+   resolve #3 to #1
+   resolve #4 to #2
+
+test fail [[ func doTheThing() -> unit = fail "Not implemented" ]] analysis succeeds
+
+// with block
+test empty block [[ func main() -> unit = {} ]] analysis succeeds
+test int literal in block [[ func main() -> int = {-10} ]] analysis succeeds
+test string literal in block [[ func main() -> string = {"hello world"} ]] analysis succeeds
+test times [[
+  // Only works for positive y
+  func [[times]]([[x]]: int, [[y]]: int) -> int = {
+    if ([[x]] == 0 || [[y]] == 0) return 0;
+    if ([[x]] == 1) return [[y]];
+    if ([[y]] == 1) return [[x]];
+    [[x]] + [[times]]([[x]], [[y]] + -1)
+  }
+]] 0 errors
+   0 warnings
+   resolve #4  to #2
+   resolve #5  to #3
+   resolve #6  to #2
+   resolve #7  to #3
+   resolve #8  to #3
+   resolve #9  to #2
+   resolve #10 to #2
+   resolve #11 to #1
+   resolve #12 to #2
+   resolve #13 to #3
+
+test fibonacci with variables [[
+  func [[fibonacci]]([[x]]: int) -> int = {
+    if ([[x]] == 0 || [[x]] == 1) return [[x]];
+    val [[a]] = [[fibonacci]]([[x]] + -1);
+    val [[b]] = [[fibonacci]]([[x]] + -2);
+    [[a]] + [[b]]
+  }
+]] 0 errors
+   0 warnings
+   resolve #3  to #2
+   resolve #4  to #2
+   resolve #5  to #2
+   resolve #7  to #1
+   resolve #8  to #2
+   resolve #10 to #1
+   resolve #11 to #2
+   resolve #12 to #6
+   resolve #13 to #9

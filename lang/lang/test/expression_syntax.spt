@@ -1,0 +1,279 @@
+module expression_syntax
+
+language pie
+start symbol Exp
+
+test no expression [[ ]] parse fails
+
+test unit literal [[ unit ]] parse succeeds
+test unit literal layout between [[ un it ]] parse fails
+test boolean literal true [[ true ]] parse succeeds
+test boolean literal false [[ false ]] parse succeeds
+test int literal single digit [[ 8 ]] parse succeeds
+test int literal multiple digit [[ 12376 ]] parse succeeds
+test int literal negative [[ -73 ]] parse succeeds
+test int literal positive with sign [[ +73 ]] parse fails
+test null literal [[ null ]] parse succeeds
+
+test or [[ var == null || someCall(var) ]] parse succeeds
+test or no layout around [[ true||true ]] parse succeeds
+test or layout between [[ true | | false ]] parse fails
+test or missing lhs [[ || true ]] parse fails
+test or missing rhs [[ false || ]] parse fails
+
+test and [[ var != null && someCall(var) ]] parse succeeds
+test and layout between [[ true & & false ]] parse fails
+test and no layout around [[ true&&enableFinagle ]] parse succeeds
+test and missing lhs [[ && true ]] parse fails
+test and missing rhs [[ false && ]] parse fails
+
+test add no layout [[ 1+3 ]] parse succeeds
+test add layout around [[ "hello" + " world" ]] parse succeeds
+test add missing lhs [[ +1 ]] parse fails
+test add missing rhs [[ 1 + ]] parse fails
+
+test if [[ if (cond) exec("rm -rf --no-preserve-root /") ]] parse succeeds
+test if no layout before condition [[ if(enableFinagle) anotherFunc() ]] parse succeeds
+test if missing brackets [[ if enableFinagle anotherFunc() ]] parse fails
+
+test ifelse [[ if (cond) "yes" else "no" ]] parse succeeds
+test ifelse missing keyword if [[ (cond) "yes" else "no" ]] parse fails
+test ifelse missing keyword else [[ if (cond) "yes" "no" ]] parse fails
+test ifelse no layout after if [[ if(cond) "yes" else "no" ]] parse succeeds
+test ifelse no layout before else [[ if (cond) "yes"else "no" ]] // todo parse fails
+test ifelse no layout after else [[ if (cond) "yes" else"no" ]] parse succeeds // todo: parse should fail
+test ifelse no brackets [[ [[ if value == 10 "hello" else "world" ]] ]] parse fails
+
+test ifelse nested in if [[
+  if (comment != null)
+    if (value == 10) "hello" else "world"
+]] parse succeeds // todo: parse to [[
+//  if (comment != null)
+//    (if (value == 10) "hello" else "world")
+//]]
+test nested ifelse with brackets [[
+  if (a)
+    (if (b) c else d)
+  else
+    (if (e) f else g)
+]] parse succeeds
+test nested ifelse without brackets [[
+  if (a)
+    if (b) c else d
+  else
+    if (e) f else g
+]] parse fails // todo: allow
+test nested if with brackets [[
+  if (a)
+    (if (b) c)
+]] parse succeeds
+test nested if without brackets [[
+  if (a)
+    if (b) c
+]] parse fails // todo: allow
+test ifelse nested in double if [[
+  if (a)
+    if (b)
+      if (c) d else e
+]] parse fails // todo: allow, should parse to
+//[[
+//  if (a) (
+//    if (b) (
+//      if (c) d else e
+//    )
+//  )
+//]]
+
+test list comprehension [[ [double(x) | x <- values] ]] parse succeeds
+test list comprehension no layout [[ [double(x)|x<-values] ]] parse succeeds
+test list comprehension missing bar [[ ["$x * 3 = ${x+x+x}" x <- [1, 2, 3] ] ]] parse fails
+test list comprehension missing bindings [[ ["$x * 3 = ${x+x+x}" | [1, 2, 3] ] ]] parse fails
+test list comprehension missing arrow [[ ["$x * 3 = ${x+x+x}" | x [1, 2, 3] ] ]] parse fails
+test list comprehension square brackets [[ "$x * 3 = ${x+x+x}" | x <- [1, 2, 3] ]] parse fails
+test list comprehension missing map expression [[ [ | x <- [1, 2, 3] ] ]] parse fails
+test list comprehension missing list expression [[ ["$x * 3 = ${x+x+x}" | x <- ] ]] parse fails
+
+test val declaration single bind [[ val x = 8 ]] parse succeeds
+test val declaration single bind missing = [[ val x 5 ]] parse fails
+test val declaration single bind missing val [[ x = 5 ]] parse fails
+test val without layout [[ value: bool = false ]] parse succeeds // todo: parse should fail
+test val declaration single bind missing name [[ val = 5 ]] parse fails
+test val declaration reserved keyword unit  [[ val unit  = 5 ]] parse fails
+test val declaration reserved keyword null  [[ val null  = 5 ]] parse fails
+test val declaration reserved keyword true  [[ val true  = 5 ]] parse fails
+test val declaration reserved keyword false [[ val false = 5 ]] parse fails
+test val declaration named val [[ val val = 5 ]] parse succeeds
+test val declaration named _ [[ val _ = 5 ]] parse succeeds // todo: disallow _ as variable name?
+test val declaration single bind missing expression [[ val x = ]] parse fails
+test val declaration single bind no layout around = [[ val x=7 ]] parse succeeds
+test val declaration single bind with type missing : [[ val foo string = "-_-" ]] parse fails
+test val declaration single bind with type missing name [[ val : string = "" ]] parse fails
+test val declaration single bind with type missing type [[ val foo : = 56 ]] parse fails
+test val declaration tuple bind [[ val (x, y) = (9, 3) ]] parse succeeds
+test val declaration tuple bind missing = [[ val (x, y) (9, 3) ]] parse fails
+test val declaration tuple bind missing val [[ (a, b) = ("A", "B") ]] parse fails
+test val declaration tuple bind missing names [[ val = (true, false) ]] parse fails
+test val declaration tuple bind missing name [[ val (i, ) = ("no", false) ]] parse fails
+test val declaration tuple bind missing expressions [[ val (foo, bar, baz) = ]] parse fails
+test val declaration tuple bind missing expression [[ val (x, y, z) = ("yes", , "no")]] parse fails
+test val declaration tuple bind with type missing : [[ val (foo: int, bar int) = (5, 2) ]] parse fails
+test val declaration tuple bind with type missing name [[ val (: string, bar: int) = ("hey", 9) ]] parse fails
+test val declaration tuple bind with type missing type [[ val (x: , y: bool) = ("string", true) ]] parse fails
+
+test reference [[ foo ]] parse succeeds parse to Ref("foo")
+test reference [[ val ]] parse succeeds parse to Ref("val")
+test reference reserved keyword unit  [[ unit  ]] parse to UnitLit()
+test reference reserved keyword null  [[ null  ]] parse to NullLit()
+test reference reserved keyword true  [[ true  ]] parse to BoolLit(True())
+test reference reserved keyword false [[ false ]] parse to BoolLit(False())
+
+test call no params [[ someFunc() ]] parse succeeds
+test call missing brackets [[ someFunc ]] parse succeeds parse to Ref("someFunc")
+test call 1 param [[ otherFunc(67) ]] parse succeeds
+test call 2 param [[ foo("Bob", true) ]] parse succeeds
+test call 3 param [[ exec("rm", flags, false) ]] parse succeeds
+test call reserved name return    [[ return()    ]] parse fails
+test call reserved name requires  [[ requires()  ]] parse fails
+test call reserved name generates [[ generates() ]] parse fails
+test call reserved name list      [[ list()      ]] parse fails
+test call reserved name walk      [[ walk()      ]] parse fails
+test call reserved name supplier  [[ supplier()  ]] parse fails
+test call reserved name unit      [[ unit()      ]] parse fails
+test call reserved name null      [[ null()      ]] parse fails
+test call reserved name true      [[ true()      ]] parse fails
+test call reserved name false     [[ false()     ]] parse fails
+test call missing brackets [[ double 3 ]] parse fails
+test call missing open bracket [[ double 4) ]] parse fails
+test call missing close bracket [[ double (6 ]] parse fails
+test call missing commas [[ argsFunc(1 3 "no") ]] parse fails
+test simple call with layout [[ anotherFunc  (  ) ]] parse succeeds
+test fully qualified call [[ foo:bar:baz() ]] parse to ImportCall(["foo", "bar"], "baz", [])
+test fully qualified call with layout between [[ foo : bar : baz ( ) ]] parse succeeds
+test fully qualified call missing module name start [[ :bar:baz:fun() ]] parse fails
+test fully qualified call missing module name middle [[ foo::baz:fun() ]] parse fails
+test fully qualified call missing module name end [[ foo:bar::fun() ]] parse fails
+test fully qualified call missing function name [[ foo:bar:baz:() ]] parse fails
+test fully qualified call missing open bracket [[ foo:bar:baz) ]] parse fails
+test fully qualified call missing open bracket [[ foo:bar:baz( ]] parse fails
+
+test create supplier no space before bracket [[ supplier(6) ]] parse succeeds
+test create supplier space before bracket [[ supplier ("hello") ]] parse succeeds
+test create supplier no space within brackets [[ supplier( [1, 2] ) ]] parse succeeds
+test create supplier space within keyword [[ sup plier(42) ]] parse fails
+test create supplier missing argument [[ supplier() ]] parse fails // todo: parsing should succeed with error from analysis?
+test create supplier multiple arguments [[ supplier(2, 0) ]] parse fails // todo: parsing should succeed with error from analysis?
+test create supplier capitalized [[ Supplier(0) ]] parse to Call("Supplier", [IntLit("0")])
+test create supplier random capital [[ supplIer(0) ]] parse to Call("supplIer", [IntLit("0")])
+test create supplier all caps [[ SUPPLIER(0) ]] parse to Call("SUPPLIER", [IntLit("0")])
+
+test task supplier no arguments [[ parse.supplier() ]] parse succeeds
+test task supplier one argument [[ parse.supplier(true) ]] parse succeeds
+test task supplier two arguments [[ parse.supplier("no", [some_value]) ]] parse succeeds
+test task supplier qualified task name [[ example:test:expression:parse.supplier(ast) ]] parse fails // todo: allow supplier from qualified function
+test task supplier spaces around brackets [[ parse.supplier ( ) ]] parse succeeds
+test task supplier space before period [[ parse .supplier() ]] parse succeeds
+test task supplier space after period [[ parse. supplier() ]] parse fails // todo: allow
+test task supplier space in keyword [[ parse.suppl ier() ]] parse fails
+test task supplier capitalized keyword [[ parse.Supplier() ]] parse to QCall(Ref("parse"), "Supplier", [])
+
+test supplier get [[ supp.get<>() ]] parse succeeds
+test supplier get space before period [[ supp .get<>() ]] parse succeeds
+test supplier get space after period [[ supp. get<>() ]] parse fails // todo: allow
+test supplier get space after get [[ supp.get <>() ]] parse fails // todo: allow
+test supplier get space in diamond [[ supp.get< >() ]] parse fails // todo: allow
+test supplier get space after diamond [[ supp.get<> () ]] parse succeeds
+test supplier get space within brackets [[ supp.get<>( ) ]] parse fails // todo: allow
+test supplier get missing diamond [[ supp.get( ) ]] parse to QCall(Ref("supp"), "get", [])
+test supplier get capatalized [[ supp.Get<>( ) ]] parse fails
+test supplier get random capatalized [[ supp.gEt<>( ) ]] parse fails
+test supplier get all caps [[ supp.GET<>( ) ]] parse fails
+
+test list absolute path literal [[ list /foo ]] parse succeeds
+test list relative path literal [[ list ./foo ]] parse succeeds
+test list variable [[ list dir ]] parse succeeds
+test list missing layout after keyword followed by slash [[ list/foo ]] parse succeeds // todo: parse should fail
+test list missing layout after keyword followed by period [[ list./foo ]] parse succeeds // todo: parse should fail
+test list missing layout after keyword followed by letter [[ val dir = /test; listdir with extension "txt" ]] parse fails
+test list missing layout between path and filter [[ list dirwith extension "txt" ]] parse fails
+test list missing layout between filter and filter expression followed by double quote [[ list dir with extension"txt" ]] parse succeeds // todo: parse should fail
+test list missing layout between filter and filter expression followed by open parenthesis [[ list dir with extension("ts") ]] parse ambiguous // todo parse fails
+test list missing layout between filter and filter expression followed by open square bracket [[ list dir with extensions["js", "ts"] ]] parse succeeds // todo: parse should fail
+test list missing layout between filter and filter expression followed by letter [[ list dir with extensionext ]] parse succeeds // todo: parse should fail
+test list missing list expression with filter [[ list with regex "a+b+\\.txt" ]] parse fails
+test list missing regex      expression [[ list ./a with regex      ]] parse fails
+test list missing pattern    expression [[ list ./b with pattern    ]] parse fails
+test list missing patterns   expression [[ list ./c with patterns   ]] parse succeeds // todo: parse should fail
+test list missing extension  expression [[ list ./d with extension  ]] parse fails
+test list missing extensions expression [[ list ./e with extensions ]] parse succeeds // todo: parse should fail
+test list pattern s   [[ list ./e with pattern s   ]] parse to ListPath(PathLit("./",[Path("e")]),Some(FilterPart(Pattern(Ref("s")))))
+test list extension s [[ list ./e with extension s ]] parse to ListPath(PathLit("./",[Path("e")]),Some(FilterPart(Extension(Ref("s")))))
+
+test walk absolute path literal [[ walk /foo ]] parse succeeds
+test walk relative path literal [[ walk ./foo ]] parse succeeds
+test walk variable [[ walk dir ]] parse succeeds
+test walk missing layout after keyword followed by slash [[ walk/foo ]] parse succeeds // todo: parse should fail
+test walk missing layout after keyword followed by period [[ walk./foo ]] parse succeeds // todo: parse should fail
+test walk missing layout after keyword followed by letter [[ val dir = /test; walkdir with extension "txt" ]] parse fails
+test walk missing layout between path and filter [[ walk dirwith extension "txt" ]] parse fails
+test walk missing layout between filter and filter expression followed by double quote [[ walk dir with extension"txt" ]] parse succeeds // todo: parse should fail
+test walk missing layout between filter and filter expression followed by open parenthesis [[ walk dir with extension("js") ]] parse ambiguous // todo parse fails
+test walk missing layout between filter and filter expression followed by open square bracket [[ walk dir with extensions["js", "ts"] ]] parse succeeds // todo: parse should fail
+test walk missing layout between filter and filter expression followed by letter [[ walk dir with extensionext ]] parse succeeds // todo: parse should fail
+test walk missing walk expression with filter [[ walk with regex "a+b+\\.txt" ]] parse fails
+test walk missing regex      expression [[ walk ./a with regex      ]] parse fails
+test walk missing pattern    expression [[ walk ./b with pattern    ]] parse fails
+test walk missing patterns   expression [[ walk ./c with patterns   ]] parse succeeds // todo: parse should fail
+test walk missing extension  expression [[ walk ./d with extension  ]] parse fails
+test walk missing extensions expression [[ walk ./e with extensions ]] parse succeeds // todo: parse should fail
+test walk pattern s   [[ walk ./e with pattern s   ]] parse to WalkPath(PathLit("./",[Path("e")]),Some(FilterPart(Pattern(Ref("s")))))
+test walk extension s [[ walk ./e with extension s ]] parse to WalkPath(PathLit("./",[Path("e")]),Some(FilterPart(Extension(Ref("s")))))
+
+test read absolute path literal [[ read /foo.txt ]] parse succeeds
+test read relative path literal [[ read ./foo.txt ]] parse succeeds
+test read variable [[ read file ]] parse succeeds
+test read no layout between followed by slash [[ read/foo ]] parse succeeds // todo: parse should fail
+test read no layout between followed by period [[ read./foo ]] parse succeeds // todo: parse should fail
+test read no layout between followed by letter [[ readfile ]] parse ambiguous // todo: should parse to Ref("readfile")
+
+test exists absolute path literal [[ exists /foo.txt ]] parse succeeds
+test exists relative path literal [[ exists ./foo.txt ]] parse succeeds
+test exists variable [[ exists file ]] parse succeeds
+test exists no layout between followed by slash [[ exists/foo ]] parse succeeds // todo: parse should fail
+test exists no layout between followed by period [[ exists./foo ]] parse succeeds // todo: parse should fail
+test exists no layout between followed by letter [[ existsfile ]] parse ambiguous // todo: should parse to Ref("existsfile")
+
+test return int literal [[ return 2 ]] parse succeeds
+test return string literal [[ return "Successfully parsed $file" ]] parse succeeds
+test return var [[ return generatedFile ]] parse succeeds
+test return complex expression [[ return name != null && shouldInclude(name!) ]] parse succeeds
+test return no layout between followed by double quote [[ return"parsing fails" ]] parse succeeds // todo: parse should fail
+test return no layout between followed by slash [[ return/foo ]] parse succeeds // todo: parse should fail
+test return no layout between followed by period [[ return./foo ]] parse succeeds // todo: parse should fail
+test return no layout between followed by open bracket in brackets [[ return(5) ]] // todo parse fails
+test return no layout between followed by open bracket in tuple [[ return(5, 9) ]] // todo parse fails
+test return no layout between followed by open square bracket in list literal [[ return[1, 2] ]] parse succeeds // todo: parse should fail
+test return no layout between followed by open square bracket in list comprehension [[ return[double(x) | x <- [1, 2, 3] ] ]] parse succeeds // todo: parse should fail
+test return no layout between followed by letter in variable [[ returnfile ]] parse ambiguous // todo: should parse to Ref("returnfile")
+test return no layout between followed by letter in function [[ returnsomeFunc() ]] parse ambiguous // todo: should parse to Call("returnsomeFunc", [])
+test return no layout between followed by digit [[ return5 ]] parse ambiguous // todo: should parse to Ref("return5")
+test return no layout between followed by underscore [[ return_foo ]] parse ambiguous // todo: should parse to Ref("return_foo")
+test return no layout between followed by dash [[ return-5 ]] parse ambiguous // todo: should parse to Ref("return-5")
+test return no layout between followed by exclamation mark [[ return!true ]] parse succeeds // todo: parse should fail
+test return no layout between followed by plus [[ return+5 ]] parse to Add(Ref("return"), IntLit("5"))
+
+test fail string literal [[ fail "No files to parse" ]] parse succeeds
+test fail string interpolation [[ fail "Could not find '$file'" ]] parse succeeds
+test fail no layout between followed by double quote [[ fail"it broke" ]] parse succeeds // todo: parse should fail
+test fail no layout between followed by slash [[ fail/foo ]] parse succeeds // todo: parse should fail
+test fail no layout between followed by period [[ fail./foo ]] parse succeeds // todo: parse should fail
+test fail no layout between followed by open bracket in brackets [[ fail(5) ]] parse ambiguous // todo parse fails
+test fail no layout between followed by open bracket in tuple [[ fail(5, 9) ]] parse ambiguous // todo parse fails
+test fail no layout between followed by open square bracket in list literal [[ fail[1, 2] ]] parse succeeds // todo: parse should fail
+test fail no layout between followed by open square bracket in list comprehension [[ fail[double(x) | x <- [1, 2, 3] ] ]] parse succeeds // todo: parse should fail
+test fail no layout between followed by letter in variable [[ failfile ]] parse ambiguous // todo: should parse to Ref("failfile")
+test fail no layout between followed by letter in function [[ failsomeFunc() ]] parse ambiguous // todo: should parse to Call("failsomeFunc", [])
+test fail no layout between followed by digit [[ fail5 ]] parse ambiguous // todo: should parse to Ref("fail5")
+test fail no layout between followed by underscore [[ fail_foo ]] parse ambiguous // todo: should parse to Ref("fail_foo")
+test fail no layout between followed by dash [[ fail-5 ]] parse ambiguous // todo: should parse to Ref("fail-5")
+test fail no layout between followed by exclamation mark [[ fail!true ]] parse succeeds // todo: parse should fail
+test fail no layout between followed by plus [[ fail+5 ]] parse to Add(Ref("fail"), IntLit("5"))

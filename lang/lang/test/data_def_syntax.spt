@@ -1,0 +1,200 @@
+module data_def_syntax
+
+language pie
+start symbol DataDef
+
+// data mods
+test no mods [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test transient datadef [[ transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test datadef duplicate mods [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds // todo: This should probably parse but it should give some kind of error.
+test layout within transient keyword [[ transi ent data Foo = foreign java org.example.test.Foo {} ]] parse fails
+test missing layout after transient keyword [[ transientdata Foo = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test capitalized transient [[ Transient data Foo = foreign java org.example.test.Foo {} ]] parse fails
+test all uppercase transient [[ TRANSIENT data Foo = foreign java org.example.test.Foo {} ]] parse fails
+test unknown mod [[ mutable data Foo = foreign java org.example.test.Foo {} ]] parse fails
+
+// data keyword
+test missing data keyword [[ Foo = foreign java org.example.test.Foo {} ]] parse fails
+test no layout within data keyword [[ dat a Foo = foreign java org.example.test.Foo {} ]] parse fails
+test no layout between data keyword and name [[ dataFoo = foreign java org.example.test.Foo {} ]] parse succeeds // todo: should fail
+
+// name
+test missing name [[ data = foreign java org.example.test.Foo {} ]] parse fails
+test name mismatch with java name [[ data Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name single letter uppercase [[ data K = foreign java org.example.test.Foo {} ]] parse succeeds
+test name single letter lowercase [[ data g = foreign java org.example.test.Foo {} ]] parse succeeds
+test name camelcase [[ data FooBar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name dash in middle [[ data Foo-Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name underscore in middle [[ data Foo_Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name single letter lowercase [[ data g = foreign java org.example.test.Foo {} ]] parse succeeds
+
+test name is keyword 'data' [[ data data = foreign java org.example.test.Foo {} ]] parse fails // todo: allow
+test name is keyword 'func' [[ data func = foreign java org.example.test.Foo {} ]] parse succeeds
+test name is keyword 'foreign' [[ data foreign = foreign java org.example.test.Foo {} ]] parse fails // todo: allow
+test name is keyword 'transient' [[ data transient = foreign java org.example.test.Transient {} ]] parse succeeds
+test name is keyword 'unit' [[ data unit = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'null' [[ data null = foreign java org.example.test.Foo {} ]] parse succeeds
+test name is keyword 'int' [[ data int = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'string' [[ data string = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'path' [[ data path = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'supplier' [[ data supplier = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is keyword 'bool' [[ data bool = foreign java org.example.test.Foo {} ]] parse  succeeds // todo: should fail
+test name is java keyword 'boolean' [[ data boolean = foreign java org.example.test.Foo {} ]] parse succeeds
+test name is java class for built-in type 'String' [[ data String = foreign java java.lang.string {} ]] parse succeeds
+
+test name starts with lowercase [[ data foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test name starts with underscore [[ data _Foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test name starts with number [[ data 2Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with exclamation mark [[ data !Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with dollar sign [[ data $Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with asterisk [[ data *Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with open parenthesis [[ data (Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with close parenthesis [[ data )Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with dash [[ data -Foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test name starts with plus sign [[ data +Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with equals sign [[ data =Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with open curly brace [[ data {Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with close curly brace [[ data }Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with open square bracket [[ data [Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with close square bracket [[ data ]Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with pipe [[ data |Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with single quote [[ data 'Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with double quote [[ data "Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with colon [[ data :Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with semicolon [[ data ;Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with comma [[ data ,Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with period [[ data .Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with slash [[ data /Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with period slash [[ data ./Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with question mark [[ data ?Foo = foreign java org.example.test.Foo {} ]] parse fails
+test name starts with backslash [[ data \Foo = foreign java org.example.test.Foo {} ]] parse fails
+
+test name ends with underscore [[ data Foo_ = foreign java org.example.test.Foo {} ]] parse succeeds
+test name ends with number [[ data Foo2 = foreign java org.example.test.Foo {} ]] parse succeeds
+test name ends with exclamation mark [[ data Foo! = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with dollar sign [[ data Foo$ = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with asterisk [[ data Foo* = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with open parenthesis [[ data Foo( = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with close parenthesis [[ data Foo) = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with dash [[ data Foo- = foreign java org.example.test.Foo {} ]] parse succeeds
+test name ends with plus sign [[ data Foo+ = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with equals sign [[ data Foo= = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with open curly brace [[ data Foo{ = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with close curly brace [[ data Foo} = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with open square bracket [[ data Foo[ = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with close square bracket [[ data Foo] = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with pipe [[ data Foo| = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with single quote [[ data Foo' = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with double quote [[ data Foo" = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with colon [[ data Foo: = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with semicolon [[ data Foo; = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with comma [[ data Foo, = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with period [[ data Foo. = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with slash [[ data Foo/ = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with question mark [[ data Foo? = foreign java org.example.test.Foo {} ]] parse fails
+test name ends with backslash [[ data Foo\ = foreign java org.example.test.Foo {} ]] parse fails
+
+test name contains underscore [[ data Foo_Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name contains number [[ data Foo2Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name contains exclamation mark [[ data Foo!Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains dollar sign [[ data Foo$Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains asterisk [[ data Foo*Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains open parenthesis [[ data Foo(Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains close parenthesis [[ data Foo)Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains dash [[ data Foo-Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test name contains plus sign [[ data Foo+Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains equals sign [[ data Foo=Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains open curly brace [[ data Foo{Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains close curly brace [[ data Foo}Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains open square bracket [[ data Foo[Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains close square bracket [[ data Foo]Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains pipe [[ data Foo|Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains single quote [[ data Foo'Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains double quote [[ data Foo"Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains colon [[ data Foo:Bar = foreign java org.example.test.Foo {} ]]
+  parse to DataDef(DataDefMods([]), "Foo", SuperType("Bar"), JavaDataImpl("org.example.test.Foo", []))
+test name contains semicolon [[ data Foo;Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains comma [[ data Foo,Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains period [[ data Foo.Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains slash [[ data Foo/Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains question mark [[ data Foo?Bar = foreign java org.example.test.Foo {} ]] parse fails
+test name contains backslash [[ data Foo\Bar = foreign java org.example.test.Foo {} ]] parse fails
+
+test name surrounded by matching parentheses [[ data (Foo) = foreign java org.example.test.Foo {} ]] parse fails
+test name surrounded by matching curly braces [[ data {Foo} = foreign java org.example.test.Foo {} ]] parse fails
+test name surrounded by matching square brackets [[ data [Foo] = foreign java org.example.test.Foo {} ]] parse fails
+test name surrounded by matching single quotes [[ data 'Foo' = foreign java org.example.test.Foo {} ]] parse fails
+test name surrounded by matching double quotes [[ data "Foo" = foreign java org.example.test.Foo {} ]] parse fails
+
+// supertype
+test no supertype [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test with supertype [[ data Foo : Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test with imported supertype [[ data Foo : example:otherMod:Bar = foreign java org.example.test.Foo {} ]] parse fails // todo: allow
+test supertype missing name [[ data Foo : = foreign java org.example.test.Foo {} ]] parse fails
+test supertype missing colon [[ data Foo Bar = foreign java org.example.test.Foo {} ]] parse fails
+test double supertype colon-separated [[
+  data Foo : Bar : Baz = foreign java org.example.test.Foo {}
+]] parse fails // todo: should parse to Foo : Bar:Baz, i.e. Foo is a subtype of the type Baz in module Bar
+test double supertype list [[ data Foo : [Bar, Baz] = foreign java org.example.test.Foo {} ]] parse fails
+test supertype no layout before colon [[ data Foo: Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+test supertype no layout after colon [[ data Foo :Bar = foreign java org.example.test.Foo {} ]] parse succeeds
+
+// equals sign
+test missing equals sign [[ data Foo foreign java org.example.test.Foo {} ]] parse fails
+test no layout before equals [[ data Foo= foreign java org.example.test.Foo {} ]] parse succeeds
+test no layout after equals [[ data Foo =foreign java org.example.test.Foo {} ]] parse succeeds
+test double equals sign [[ data Foo == foreign java org.example.test.Foo {} ]] parse fails
+
+// implementation
+test no implementation with equals sign [[ data Foo = ]] parse fails
+test no implementation without equals sign [[ data Foo ]] parse fails
+
+// implementation - foreign java - foreign java keywords
+test foreign java no layout before [[ data Foo =foreign java org.example.test.Foo {} ]] parse succeeds
+test foreign java no layout between [[ data Foo = foreignjava org.example.test.Foo {} ]] parse succeeds // todo: should fail
+test foreign java no layout after [[ data Foo = foreign javaorg.example.test.Foo {} ]] parse succeeds // todo: should fail
+test foreign java layout within foreign [[ data Foo = forei gn java org.example.test.Foo {} ]] parse fails
+test foreign java layout within java [[ data Foo = foreign j ava org.example.test.Foo {} ]] parse fails
+test foreign java missing foreign [[ data Foo = java org.example.test.Foo {} ]] parse fails
+test foreign java missing java [[ data Foo = foreign org.example.test.Foo {} ]] parse fails
+
+// implementation - foreign java - class ref
+test missing class def [[ data Foo = foreign java {} ]] parse fails
+test class def no package [[ data Foo = foreign java Foo {} ]] parse succeeds
+test class def single package [[ data Foo = foreign java test.Foo {} ]] parse succeeds
+test class def missing package name at start [[ data Foo = foreign java .example.test.Foo {} ]] parse fails
+test class def missing package name in middle [[ data Foo = foreign java org..test.Foo {} ]] parse succeeds // todo: should fail
+test class def missing class name [[ data Foo = foreign java org.example.test. {} ]] parse succeeds // todo: should fail
+test class def no layout after [[ data Foo = foreign java org.example.test.Foo{} ]] parse succeeds
+test class def layout before period [[ data Foo = foreign java org .example.test.Foo {} ]] parse fails
+test class def layout after period [[ data Foo = foreign java org.example. test.Foo {} ]] parse fails
+test class def layout in package name [[ data Foo = foreign java org.exam ple.test.Foo {} ]] parse fails
+// todo: check weird characters allowed in class ref
+
+// implementation - foreign java - methods
+test datadef no methods missing curly braces [[ data Foo = foreign java org.example.test.Foo ]] parse fails // todo: allow, desugar to {}
+test datadef no methods missing open brace [[ data Foo = foreign java org.example.test.Foo } ]] parse fails
+test datadef no methods missing close brace [[ data Foo = foreign java org.example.test.Foo { ]] parse fails
+test datadef one method missing curly braces [[ data Foo = foreign java org.example.test.Foo
+  func get() -> int
+]] parse fails
+test datadef one method missing open brace [[ data Foo = foreign java org.example.test.Foo
+  func get() -> int
+} ]] parse fails
+test datadef one method missing close brace [[ data Foo = foreign java org.example.test.Foo {
+  func get() -> int
+]] parse fails
+
+test datadef no methods [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
+test datadef one method [[ data Foo = foreign java org.example.test.Foo {
+  func get() -> int
+} ]] parse succeeds
+test datadef two methods [[ data Foo = foreign java org.example.test.Foo {
+  func get() -> int
+  func set(int) -> unit
+} ]] parse succeeds
+test datadef three methods [[ data Foo = foreign java org.example.test.Foo {
+  func get() -> int
+  func set(int) -> unit
+  func getAndSet(int) -> int
+} ]] parse succeeds

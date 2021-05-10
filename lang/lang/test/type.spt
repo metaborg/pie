@@ -1,0 +1,39 @@
+module type
+language pie
+
+fixture [[
+  module test:type
+
+  [[...]]
+]]
+
+test unit [[ func foo() -> unit = unit ]] analysis succeeds
+test bool true [[ func foo() -> bool = true ]] analysis succeeds
+test bool false [[ func foo() -> bool = false ]] analysis succeeds
+test int [[ func foo() -> int = -24 ]] analysis succeeds
+test string [[ func foo() -> string = "Hello world!" ]] analysis succeeds
+test path [[ func foo() -> path = /test/types ]] analysis succeeds
+test tuple [[ func foo() -> (path, string?) = {
+  val str: string? = null;
+  (/test.txt, str)
+} ]] analysis succeeds
+test list [[ func foo() -> path* = [./file1.txt, ./file2.txt] ]] analysis succeeds
+test supplier [[ func foo() -> supplier<string> = supplier("Nope") ]] analysis succeeds
+test data type local [[
+  data [[Foo]] = foreign java org.example.test.type.Foo {}
+  func getFoo() -> [[Foo]] = foreign java constructor org.example.test.type.Foo
+]] analysis succeeds
+   resolve #2 to #1
+test data type use before declaration [[
+  func getFoo() -> [[Foo]] = foreign java constructor org.example.test.type.Foo
+  data [[Foo]] = foreign java org.example.test.type.Foo {}
+]] analysis succeeds
+   resolve #1 to #2
+test data type imported [[
+  data [[Foo]] = foreign java org.example.test.type.Foo {}
+  func getFoo() -> test:type:[[Foo]] = foreign java constructor org.example.test.type.Foo
+]] analysis succeeds
+   resolve #2 to #1
+test data type undefined [[ func foo() -> Bar = getBar() ]] analysis fails
+test nullable value [[ func foo() -> int? = 12 ]] analysis succeeds
+test nullable null [[ func foo() -> int? = null ]] analysis succeeds

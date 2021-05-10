@@ -13,6 +13,13 @@ imports
 context-free start-symbols
 
   Start
+  
+  // for testing grammar
+  Exp
+  DataDef
+  Type
+  Import
+  FuncImpl
 
 context-free syntax
 

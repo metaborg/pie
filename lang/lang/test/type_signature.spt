@@ -1,0 +1,23 @@
+module type_signature
+language pie
+
+fixture [[
+  module test:type_signature
+
+  data Foo = foreign java org.example.test.type.Foo {
+    func bar() -> [[...]]
+  }
+]]
+
+test unit [[ unit ]] analysis succeeds
+test bool [[ bool ]] analysis succeeds
+test int [[ int ]] analysis succeeds
+test string [[ string ]] analysis succeeds
+test path [[ path ]] analysis succeeds
+test tuple [[ (path, string?) ]] analysis succeeds
+test list [[ path* ]] analysis succeeds
+test supplier [[ supplier<string> ]] analysis succeeds
+test data type local [[ Foo ]] analysis succeeds
+test data type imported [[ test:type_signature:Foo ]] analysis succeeds
+test data type undefined [[ Bar ]] analysis fails
+test nullable [[ int? ]] analysis succeeds
