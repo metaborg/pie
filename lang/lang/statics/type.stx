@@ -16,13 +16,13 @@ signature
     PathType : TYPE
     NullType : TYPE
     TopType : TYPE
-    
+
     NullableType : TYPE -> TYPE
     ListType : TYPE -> TYPE
     EmptyListType : TYPE
     TupleType : list(TYPE) -> TYPE
     SupplierType : TYPE -> TYPE
-    
+
     FuncType : list(TYPE) * TYPE -> TYPE
     DataType : scope -> TYPE
 
@@ -106,7 +106,7 @@ rules // operations on types
   makeNullable : TYPE -> TYPE
   makeNullable(NullType()) = NullType().
   makeNullable(T@NullableType(_)) = T.
-  makeNullable(T) = NullableType(T).  
+  makeNullable(T) = NullableType(T).
 
   /**
    * dataTypeFromPathOrDefault(list, default)
@@ -146,7 +146,7 @@ rules // operations on types
   listLub([T]) = T.
   listLub([T1|[T2|[]]]) = lub(T1, T2).
   listLub([T1|[T2|rest]]) = listLub([lub(T1, T2) | rest]).
-  
+
   /**
    * Holds if the two types are comparable.
    * This disregards the possibilty for two incomparable but Nullable values to
