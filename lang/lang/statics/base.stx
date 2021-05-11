@@ -120,23 +120,29 @@ rules // Declararing and resolving
           in s |-> occs.
 
   /**
-   * resolveUniqueVal(s, name) = ty
+   * resolveUniqueVal(s, name) = (ty, resolved)
    * Resolves a value [name] to a unique type [ty] in scope [s].
    * Sets a type and a reference to the declaration on this name.
    * Gives a undeclared value error if no declaration is found.
    * Does not give an error if there are multiple definitions as there are
    * already errors on the declarations.
+   * [resolved] indicated whether [name] resolved to a single declaration.
+   * If it did not (resolved == FALSE()), [ty] will be an unbound variable.
    * See also resolveVal
    */
-  resolveUniqueVal : scope * string -> TYPE
-  resolveUniqueVal(s, name) = ty :- {occs name'}
-    resolveVal(s, name) == occs,
-    occs == [(_, (name', ty))],
-    @name.ref := name',
-    @name.type := ty,
+  resolveUniqueVal : scope * string -> (TYPE * BOOLEAN)
+  resolveUniqueVal(s, name) = resolveUniqueVal_1(resolveVal(s, name), name).
+
+    resolveUniqueVal_1 : list((path * (VALID * TYPE))) * VALID -> (TYPE * BOOLEAN)
+    resolveUniqueVal_1([], name) = (_, FALSE()) :-
+      false | error $[Cannot resolve [name]] @name.
+
+    resolveUniqueVal_1([(_, (name', ty))], name) = (ty, TRUE()) :-
+      @name.ref := name',
+      @name.type := ty.
+
     // If there are multiple, the declaration will give an error.
-    // todo: apply same pattern as resolveUniqueFunc to make this error work
-    try { occs != [] } | error $[Cannot resolve [name]] @name.
+    resolveUniqueVal_1([_,_|_], _) = (_, FALSE()).
 
 
   /**

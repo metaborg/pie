@@ -138,7 +138,8 @@ rules
     s3 -P-> s2,
     typeOfBinder(s3, actual_ty, binder) == declared_ty.
 
-  typeOfExpImpl(s, Ref2Exp(r@Ref(name))) = (s, ty@resolveUniqueVal(s, name)) :-
+  typeOfExpImpl(s, Ref2Exp(r@Ref(name))) = (s, ty) :-
+    resolveUniqueVal(s, name) == (ty, _),
     @r.type := ty.
 
 // Calls

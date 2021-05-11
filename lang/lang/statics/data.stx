@@ -15,11 +15,21 @@ rules
     dataDefModsOk(mods),
     new s_data,
     !root[getRoot(s)] in s_data,
+    setFileIfExists(s, s_data),
+    setContext(s_data, "data_name_unqualified", ContextName(name)),
+    !data_mods[mods] in s_data,
     declareData(s, name, s_data),
     declareLocalData(s, name, s_data),
-    !data_mods[mods] in s_data,
     superOk(s, s_data, super, name),
     dataImplOk(s, s_data, impl).
+    
+    setFileIfExists : scope * scope
+    setFileIfExists(s, s_new) :- setFileIfExists_1(getFileIfExists(s), s_new, s).
+    
+    setFileIfExists_1 : list(scope) * scope * scope
+    setFileIfExists_1([], _, _).
+    setFileIfExists_1([s_file], s_new, _) :- !file[s_file] in s_new.
+    setFileIfExists_1([_,_|_], _, s) :- false | error $[BUG: multiple files from scope [s]].
 
   dataDefModsOk : list(DataDefMod)
   dataDefModsOk([]).
@@ -73,3 +83,8 @@ rules
   javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {name ty}
     typeOfFuncHead(s, func_head) == (_, name, ty),
     declareFunc(s_data, name, ty, JavaForeignFuncKind()).
+
+
+  getDataName : scope -> TYPEID
+  getDataName(s) = name :-
+    getContext(s, "data_name_unqualified") == ContextName(name).
