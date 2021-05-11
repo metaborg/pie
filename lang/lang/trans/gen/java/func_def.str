@@ -40,7 +40,7 @@ rules // PIE function definitions
     ; fields                          := <map(type-tuple-to-ast-field)> injectTuples
     ; constructorParams               := <create-ast-formal-params> injectTuples
     ; assignments                     := <map(type-tuple-to-ast-assignment)> injectTuples
-    ; returnValue                     := <?UnitType(); !<Snd> <p2j-ast-exp> UnitLit() <+ !lastValue> type
+    ; returnValue                     := <?UnitType(); !<Snd> <p2j-ast-exp> UnitLit() <+ !lastValue> <syntacticToSemanticType> type
    |}
     with
       rules(ModuleBindings :+= ExpressionStatement(Invoke(

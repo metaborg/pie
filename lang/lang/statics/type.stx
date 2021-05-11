@@ -164,16 +164,25 @@ rules
   typeOf : scope * Type -> TYPE
   typesOf maps typeOf(*, list(*)) = list(*)
 
-  typeOf(_, BaseType2Type(UnitTy())) = UnitType().
-  typeOf(_, BaseType2Type(BoolTy())) = BoolType().
-  typeOf(_, BaseType2Type(IntTy()))  = IntType().
-  typeOf(_, BaseType2Type(StrTy()))  = StrType().
-  typeOf(_, BaseType2Type(PathTy())) = PathType().
-  typeOf(s, BaseType2Type(DataTy2BaseType(data_ty))) = typeOfDataTy(s, data_ty).
-  typeOf(s, BaseType2Type(TupleTy(tys))) = TupleType(typesOf(s, tys)).
-  typeOf(s, BaseType2Type(ListTy(ty))) = ListType(typeOf(s, ty)).
-  typeOf(s, BaseType2Type(SupplierTy(ty))) = SupplierType(typeOf(s, ty)).
-  typeOf(s, TypeMod2Type(NullableTy(ty))) = NullableType(typeOf(s, BaseType2Type(ty))).
+  typeOf(s, injector@BaseType2Type(base_type)) = ty@typeOfBaseType(s, base_type) :-
+    @base_type.type := ty,
+    @injector.type := ty.
+
+  typeOf(s, tm@TypeMod2Type(nt@NullableTy(ty))) = type@NullableType(typeOfBaseType(s, ty)) :-
+    @nt.type := type,
+    @tm.type := type.
+
+  typeOfBaseType : scope * BaseType -> TYPE
+  typeOfBaseType(_, UnitTy()) = UnitType().
+  typeOfBaseType(_, BoolTy()) = BoolType().
+  typeOfBaseType(_, IntTy())  = IntType().
+  typeOfBaseType(_, StrTy())  = StrType().
+  typeOfBaseType(_, PathTy()) = PathType().
+  typeOfBaseType(s, DataTy2BaseType(data_ty)) = ty@typeOfDataTy(s, data_ty) :-
+    @data_ty.type := ty.
+  typeOfBaseType(s, TupleTy(tys)) = TupleType(typesOf(s, tys)).
+  typeOfBaseType(s, ListTy(ty)) = ListType(typeOf(s, ty)).
+  typeOfBaseType(s, SupplierTy(ty)) = SupplierType(typeOf(s, ty)).
 
   typeOfDataTy : scope * DataTy -> TYPE
   typeOfDataTy(s, DataTy(modules, name)) = DataType(s_data) :- {s_mod}

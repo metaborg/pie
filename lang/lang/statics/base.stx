@@ -33,6 +33,7 @@ signature
     func_local : FUNCID -> TYPE
     data : TYPEID -> scope
     data_local : TYPEID -> scope
+    data_mods : list(DataDefMod)
     context : string -> CONTEXT
 
 signature

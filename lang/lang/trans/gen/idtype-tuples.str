@@ -4,19 +4,21 @@ imports
 
   src-gen/signatures/-
   statics/constructors
+  gen/util
 
 rules // Params to idtype tuples
 
+  // converts Params to a list of pairs of (name, semantic type)
   pie-idtype-tuples:
     Params(params) -> idTypeTuples
     with
       idTypeTuples := <nmap(pie-idtype-tuple|1)> params
-    
+
   pie-idtype-tuple(|i):
-    Param(ty) -> ($[p[<int-to-string>i]], ty)
-    
+    Param(ty) -> ($[p[<int-to-string>i]], <syntacticToSemanticType> ty)
+
   pie-idtype-tuple(|i):
-    NParam(varId, ty) -> (varId, ty)
+    NParam(varId, ty) -> (varId, <syntacticToSemanticType> ty)
 
 rules // Tuple type to idtype tuples
 

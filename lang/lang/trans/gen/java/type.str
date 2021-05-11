@@ -25,26 +25,23 @@ rules
   p2j-ast-type-sig: TopType()  -> ClassType([], Id("Object"), None())
   p2j-ast-type-sig: NullType() -> ClassType([], Id("Void"), None())
 
-  // todo: set JavaTypeKind in Statix
   p2j-ast-type-sig:
-    DataType(occ) -> ClassType([], Id(javaClassId), None())
+    DataType(scope) -> ClassType([], Id(javaClassId), None())
     where
-      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
-    ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
+      <pie-get-data-mods; not(collect-one(?Transient()))> scope
     with
-      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+      ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
 
   p2j-ast-type-sig:
-    DataType(occ) -> ClassType(
+    DataType(scope) -> ClassType(
       [],
       Id("OutTransient"),
       Some(TypeArguments([ClassType([], Id(javaClassId), None())]))
     )
     where
-      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
-    ; <pie-prop(|"Type", "mods"); collect-one(?Transient())> occ
+      <pie-get-data-mods; collect-one(?Transient())> scope
     with
-      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+      ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
     ; <add-import> "mb.pie.api.OutTransient"
 
   p2j-ast-type-sig:

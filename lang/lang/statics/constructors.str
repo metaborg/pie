@@ -49,3 +49,16 @@ signature // data
 
   constructors
     JavaTypeKind : TypeKind
+
+signature // base
+  sorts
+    TYPE // A semantic type (as opposed to the lexical, non-all caps Type)
+    ValKind // The kind of a value. Used by code generation.
+    CONTEXT // context values that are saved in the scope graph
+
+  constructors
+    InputValKind : ValKind
+    LocalValKind : ValKind
+    ContextType : TYPE -> CONTEXT
+    ContextName : string -> CONTEXT
+    ContextModule : Module -> CONTEXT

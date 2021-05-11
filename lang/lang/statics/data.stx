@@ -17,7 +17,7 @@ rules
     !root[getRoot(s)] in s_data,
     declareData(s, name, s_data),
     declareLocalData(s, name, s_data),
-    @name.mods := mods,
+    !data_mods[mods] in s_data,
     superOk(s, s_data, super, name),
     dataImplOk(s, s_data, impl).
 
@@ -65,6 +65,7 @@ rules
 
   dataImplOk : scope * scope * DataImpl
   dataImplOk(s, s_data, JavaDataImpl(java_name, members)) :-
+    setContext(s_data, "foreign_java_impl", ContextName(java_name)),
     javaDataMembersOk(s, s_data, members).
   
   javaDataMemberOk : scope * scope * JavaDataMemb

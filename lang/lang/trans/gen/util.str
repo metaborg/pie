@@ -13,12 +13,12 @@ rules // Generic strategies for getting properties and types of anything
 
   // returns a named property set by statix analysis
   // name: the name of the property to get
-  // term: the AST term to get the property from
+  // node: the AST term to get the property from
   pie-get-property(|name):
-    term -> val
+    node -> val
     with
-      a   := <AstAnalysis>
-    ; val := <stx-get-ast-property(|a, name)> term
+      a    := <stx-get-ast-analysis> node
+    ; val := <stx-get-ast-property(|a, name)> node
 
   // returns a named property set by statix analysis
   // Depracated, use todo: pie-ast-ref-prop(|name) instead.
@@ -38,12 +38,32 @@ rules // Generic strategies for getting properties and types of anything
 //    where
 //      <not(nabl2-get-occurrence-ns); is-string> t
 
-//  pie-type(|ns) = pie-prop(|ns, "type")
-//
-//  pie-type:
-//    t -> <pie-ast-type> t
-//    where
-//      <not(nabl2-get-occurrence-ns); not(is-string)> t
+  // return the type of an ast node
+  pie-get-type:
+    node -> type
+    with
+      a    := <stx-get-ast-analysis> node
+    ; type := <stx-get-ast-type(|a)> node
+
+  // get context value [name] from scope
+  pie-get-context(|name):
+    scope -> val
+    with
+      a    := <AstAnalysis>
+    ; vals := <stx-get-scopegraph-data(|a, "statics/base!context")> scope
+    ; matches := <filter(matches-occurrence(|name))> vals
+    ; [(val)] := matches
+
+    matches-occurrence(|name): (name', val) -> val
+    where
+      name := <rm-annotations> name'
+
+  // get the list of modifiers for a data type.
+  pie-get-data-mods:
+    data_scope -> mods
+    with
+      a    := <AstAnalysis>
+    ; mods := <stx-get-scopegraph-data(|a, "statics/base!data_mods")> data_scope
 
 rules // AST type
 
@@ -56,10 +76,10 @@ rules // Property of reference in the AST
   // name: the name of the property to get
   // term: the term to get the property from. This term needs to be resolvable, i.e. it needs to have a reference set
   pie-ast-ref-prop(|name):
-    term -> val
+    node -> val
     with
-      a    := <AstAnalysis>
-    ; decl := <stx-editor-resolve> term
+      a    := <stx-get-ast-analysis> node
+    ; decl := <stx-editor-resolve> node
     ; val  := <stx-get-ast-property(|a, name)> decl
 
   // returns a named property set by statix analysis
@@ -154,12 +174,4 @@ rules // project specific helper strategies
   moduleToList: Module(moduleList, name) -> <concat> [<moduleListToList> moduleList, [name]]
   moduleToList: ModuleStmt(mod) -> <moduleToList> mod
 
-  syntacticToSemanticType: UnitTy() -> UnitType()
-  syntacticToSemanticType: BoolTy() -> BoolType()
-  syntacticToSemanticType: IntTy() -> IntType()
-  syntacticToSemanticType: StrTy() -> StrType()
-  syntacticToSemanticType: PathTy() -> PathType()
-  syntacticToSemanticType: NullableTy(ty) -> NullableType(<syntacticToSemanticType> ty)
-  syntacticToSemanticType: ListTy(ty) -> ListType(<syntacticToSemanticType> ty)
-  syntacticToSemanticType: TupleTy(tys) -> TupleType(<map(syntacticToSemanticType)> tys)
-  syntacticToSemanticType: SupplierTy(ty) -> SupplierType(<syntacticToSemanticType> ty)
+  syntacticToSemanticType: ty -> <pie-get-type> ty
