@@ -9,22 +9,12 @@ imports
   statics/util
   statics/func_body
 
-signature
-  sorts
-    FuncImplKind
-
-  constructors
-    JavaForeignFuncKind : FuncImplKind
-    JavaForeignConstructorKind : FuncImplKind
-    PieForeignFuncKind : FuncImplKind
-    PieFuncKind : FuncImplKind
-
 rules
 
   funcDefOk : scope * FuncDef
   funcDefOk(s_mod, func@FuncDef(func_head, impl)) :- {name s_func out_ty impl_kind ty}
     typeOfFuncHead(s_mod, func_head) == (s_func, name, ty@FuncType(_, out_ty)),
-    declareFunc(s_mod, name, ty),
+    declareFunc(s_mod, name, ty, impl_kind),
     declareLocalFunc(s_mod, name, ty),
     funcImplOk(s_func, impl, out_ty) == impl_kind,
     @func.kind := impl_kind,

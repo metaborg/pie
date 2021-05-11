@@ -72,4 +72,4 @@ rules
   javaDataMembersOk maps javaDataMemberOk(*, *, list(*))
   javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {name ty}
     typeOfFuncHead(s, func_head) == (_, name, ty),
-    declareFunc(s_data, name, ty).
+    declareFunc(s_data, name, ty, JavaForeignFuncKind()).

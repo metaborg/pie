@@ -10,18 +10,26 @@ imports
 signature
   sorts
     TYPE // A semantic type (as opposed to the lexical, non-all caps Type)
-    ValKind // The kind of a value. Used by code generation.
     BOOLEAN // For logic in this statix spec.
     CONTEXT // context values that are saved in the scope graph
+    ValKind // The kind of a value. Used by code generation.
+    FuncImplKind // The kind of a function implementation. Used by code generation.
 
   constructors
-    InputValKind : ValKind
-    LocalValKind : ValKind
     TRUE : BOOLEAN
     FALSE : BOOLEAN
+
     ContextType : TYPE -> CONTEXT
     ContextName : string -> CONTEXT
     ContextModule : Module -> CONTEXT
+
+    InputValKind : ValKind
+    LocalValKind : ValKind
+
+    JavaForeignFuncKind : FuncImplKind
+    JavaForeignConstructorKind : FuncImplKind
+    PieForeignFuncKind : FuncImplKind
+    PieFuncKind : FuncImplKind
 
   relations
     root : scope
@@ -135,11 +143,19 @@ rules // Declararing and resolving
    * Declare a function [name] with type [TYPE] in scope [s], set the type on
    * the function name.
    */
-  declareFunc : scope * string * TYPE
-  declareFunc(s, name, type) :-
+  declareFunc : scope * string * TYPE * FuncImplKind
+  declareFunc(s, name, type, kind) :-
     !func[name, type] in s,
     resolveFunc(s, name) == [_] | error $[Duplicate function [name]] @name,
-    @name.type := type.
+    @name.type := type,
+    @name.kind := kind,
+    @name.qualifiedModule := getQualifiedModule(getFileIfExists(s), s).
+
+    getQualifiedModule : list(scope) * scope -> list(MODID)
+    getQualifiedModule([], s) = ["<ERROR>"] :- false | error $[BUG: cannot get file from scope [s]].
+    getQualifiedModule([s_file], _) = moduleToList(module) :-
+      getContext(s_file, "module_name_qualified") == ContextModule(module) | error $[BUG: cannot get qualified module name from [s_file]].
+    getQualifiedModule([_,_|_], s) = ["<ERROR>"] :- false | error $[BUG: multiple files from scope [s]].
 
   /**
    * declareFuncImport(s, import_as_name, import_name, (decl_name, type))
@@ -155,6 +171,7 @@ rules // Declararing and resolving
     @import_as_name.type := type,
 //    @import_name.type := type, // todo: set reference if renamed only
     @import_name.ref := decl_name.
+    // todo: set func kind and qualified name on renamed functions
 
   /**
    * declareLocalFunc(s, name, type)
