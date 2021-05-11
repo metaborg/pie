@@ -29,7 +29,7 @@ rules
   typeOfBind(s, exp_ty, b@Bind(name)) = exp_ty :-
     declareVal(s, name, exp_ty, LocalValKind()),
     @b.type := exp_ty.
-  
+
   typeOfBind(s, actual_ty, b@TBind(name, expected_ty_exp)) = expected_ty :-
     typeOf(s, expected_ty_exp) == expected_ty,
     subtype(actual_ty, expected_ty) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty]] @expected_ty_exp,
