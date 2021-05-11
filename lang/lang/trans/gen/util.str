@@ -69,6 +69,9 @@ rules // AST type
 
 //  pie-ast-type = nabl2-get-ast-type
 
+imports
+  statix/runtime/ast
+
 rules // Property of reference in the AST
 
   // returns a named property set by statix analysis on a declaration.
@@ -79,7 +82,10 @@ rules // Property of reference in the AST
     node -> val
     with
       a    := <stx-get-ast-analysis> node
-    ; decl := <stx-editor-resolve> node
+      // the following line uses an internal Statix strategy.
+      // todo: use external api when available (stx-get-ast-ref)
+      // (Also remove import above when switching)
+    ; decl := <stx--get-ast-property(|a, Ref())> node
     ; val  := <stx-get-ast-property(|a, name)> decl
 
   // returns a named property set by statix analysis

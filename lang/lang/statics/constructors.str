@@ -37,11 +37,11 @@ signature // signature
 
 signature // variables
   sorts
-    VarKind
+    ValKind
 
   constructors
-    LocalVarKind : VarKind
-    InputVarKind : InputVarKind
+    LocalValKind : ValKind
+    InputValKind : InputValKind
 
 signature // data
   sorts

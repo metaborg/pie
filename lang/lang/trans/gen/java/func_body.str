@@ -431,18 +431,18 @@ rules // References
   p2j-ast-exp:
     r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id(varId)))> r)
     where
-      LocalVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
+      LocalValKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
 
   p2j-ast-exp:
     Ref(varId) -> <fail> // todo: use error(|"message") instead of fail
     where
-      InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
+      InputValKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 0 := <InputKind>
 
   p2j-ast-exp:
     r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id("input")))> r)
     where
-      InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
+      InputValKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 1 := <InputKind>
 
   p2j-ast-exp:
@@ -450,7 +450,7 @@ rules // References
       ExpressionName(Id("input")), None(), Id($[get_[varId]]), [])
     )> r)
     where
-      InputVarKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
+      InputValKind() := <pie-ast-ref-prop(|"Var", "kind")> varId
     ; 2 := <InputKind>
 
   // p2j-ast-ref-add-transient-val(|ast): Pie Ref -> Java reference
