@@ -468,7 +468,7 @@ rules // References
   p2j-ast-ref-is-transient =
       pie-ast-type
     ; (?DataType(<id>) <+ ?NullableType(DataType(<id>)))
-    ; pie-get-property(|"mods")
+    ; pie-get-data-mods
     ; collect-one(?Transient())
 
 rules // Java foreign function calls
