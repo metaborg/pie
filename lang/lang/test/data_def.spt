@@ -59,15 +59,15 @@ test supertype non-overriding methods [[
    resolve #2 to #1
 test supertype overriding, compatible methods [[
   data [[Foo]] = foreign java org.example.test.Foo {
-    func get() -> [[Bar]]
-  }
-  data [[Bar]] : [[Foo]] = foreign java org.example.test.Bar {
     func get() -> [[Foo]]
   }
+  data [[Bar]] : [[Foo]] = foreign java org.example.test.Bar {
+    func get() -> [[Bar]]
+  }
 ]] analysis succeeds
-   resolve #2 to #3
+   resolve #2 to #1
    resolve #4 to #1
-   resolve #5 to #1
+   resolve #5 to #3
 test supertype - non-overriding methods - different parameter count [[
   data Bar = foreign java org.example.test.Bar {
     func get() -> bool
@@ -78,10 +78,10 @@ test supertype - non-overriding methods - different parameter count [[
 ]] analysis succeeds
 test supertype - overriding, incompatible methods - non-subtype return type [[
   data Foo = foreign java org.example.test.Foo {
-    func get() -> Foo
+    func get() -> Bar
   }
   data Bar : Foo = foreign java org.example.test.Bar {
-    func [[get]]() -> Bar
+    func [[get]]() -> Foo
   }
 ]] 1 error at #1
    error like "incompatable return type"
