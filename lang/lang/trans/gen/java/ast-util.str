@@ -3,6 +3,16 @@ module gen/java/ast-util
 imports
 
   signatures/metaborg-java-sig
+  signatures/java/arrays/-
+  signatures/java/classes/-
+  signatures/java/interfaces/-
+  signatures/java/lexical/-
+  signatures/java/literals/-
+  signatures/java/names/-
+  signatures/java/packages/-
+  signatures/java/statements/-
+  signatures/java/types/-
+  signatures/java/expressions/-
 
 rules
 
