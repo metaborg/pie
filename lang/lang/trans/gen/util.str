@@ -5,7 +5,7 @@ imports
   libspoofax/stratego/debug
   statix/api
 
-  signatures/-
+  src-gen/signatures/-
   statics/constructors
 
 // todo: remove commented code
