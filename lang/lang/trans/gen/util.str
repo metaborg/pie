@@ -19,14 +19,6 @@ rules // Generic strategies for getting properties and types of AST nodes
       a    := <stx-get-ast-analysis> node
     ; val := <stx-get-ast-property(|a, name)> node
 
-  // returns a named property set by statix analysis
-  // Depracated, use todo: pie-ast-ref-prop(|name) instead.
-  // Todo: remove this strategy
-  // _: unused
-  // name: the name of the property to get
-  // term: the AST term to get the property from
-  pie-prop(|_, name) = pie-get-property(|name)
-
   // return the type of an ast node
   pie-get-type:
     node -> type
@@ -72,14 +64,6 @@ rules // Property of reference in the AST
       // (Also remove import above when switching)
     ; decl := <stx--get-ast-property(|a, Ref())> node
     ; val  := <stx-get-ast-property(|a, name)> decl
-
-  // returns a named property set by statix analysis
-  // Depracated, use todo: pie-ast-ref-prop(|name) instead.
-  // Todo: remove this strategy
-  // _: unused
-  // name: the name of the property to get
-  // term: the term to get the property from
-  pie-ast-ref-prop(|_, name) = pie-ast-ref-prop(|name)
 
 rules
 
