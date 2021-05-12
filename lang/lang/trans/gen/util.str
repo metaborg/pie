@@ -10,23 +10,43 @@ imports
 
 rules // Generic strategies for getting properties and types of AST nodes
 
-  // returns a named property set by statix analysis
-  // name: the name of the property to get
-  // node: the AST term to get the property from
+  /**
+   * pie-get-property(|name): node -> val
+   * Type: PIE AST node -> Any
+   * 
+   * returns a named property set by statix analysis
+   * name: the name of the property to get
+   * node: the AST node to get the property from
+   */
   pie-get-property(|name):
     node -> val
     with
       a    := <stx-get-ast-analysis> node
     ; val := <stx-get-ast-property(|a, name)> node
 
-  // return the type of an ast node
+  /**
+   * pie-get-type: node -> type
+   * PIE AST node -> TYPE
+   *
+   * Get the semantic type of an ast node
+   *
+   * node: The AST node to get the type of.
+   */
   pie-get-type:
     node -> type
     with
       a    := <stx-get-ast-analysis> node
     ; type := <stx-get-ast-type(|a)> node
 
-  // get context value [name] from scope
+  /**
+   * pie-get-context(|name): scope -> val
+   * Type: Scope -> CONTEXT
+   *
+   * Get a context value from a scope
+   *
+   * scope: The scope to get the context value from
+   * name:  The name of the context value to get
+   */
   pie-get-context(|name):
     scope -> val
     with
@@ -35,11 +55,19 @@ rules // Generic strategies for getting properties and types of AST nodes
     ; matches := <filter(matches-occurrence(|name))> vals
     ; [(val)] := matches
 
+    // check if an occurence matches the provided name
     matches-occurrence(|name): (name', val) -> val
     where
       name := <rm-annotations> name'
 
-  // get the list of modifiers for a data type.
+  /**
+   * pie-get-data-mods: data_scope -> mods
+   * Type: Scope -> list(DataDefMod)
+   *
+   * Get the list of modifiers for a data type.
+   *
+   * data_scope: Scope representing a data type.
+   */
   pie-get-data-mods:
     data_scope -> mods
     with
@@ -51,10 +79,18 @@ imports
 
 rules // Property of reference in the AST
 
-  // returns a named property set by statix analysis on a declaration.
-  // First resolves this term to a declaration and then gets the property from the declaration.
-  // name: the name of the property to get
-  // term: the term to get the property from. This term needs to be resolvable, i.e. it needs to have a reference set
+  /**
+   * pie-ast-ref-prop(|name): node -> val
+   * Type: PIE AST node -> Any
+   *
+   * Get a named property from a declaration.
+   * First resolves the node to a declaration and then gets the property from
+   * the declaration.
+   *
+   * name: the name of the property to get
+   * node: the node to get the property from. This term needs to be resolvable,
+   * i.e. it needs to have a reference set.
+   */
   pie-ast-ref-prop(|name):
     node -> val
     with
@@ -67,6 +103,16 @@ rules // Property of reference in the AST
 
 rules
 
+  /**
+   * pie-set-ast-analysis: ast -> ast
+   * Type: AST -> AST
+   *
+   * Make a Statix analysis available through dynamic rule AstAnalysis.
+   * Call this strategy on the top-level node of your program (in case of PIE:
+   * Program). Afterwards, you can use `a := <AstAnalysis>` to get the analysis
+   *
+   * ast: top level node of AST
+   */
   pie-set-ast-analysis:
     ast -> ast
     with
