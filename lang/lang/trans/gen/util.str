@@ -8,8 +8,7 @@ imports
   src-gen/signatures/-
   statics/constructors
 
-// todo: remove commented code
-rules // Generic strategies for getting properties and types of anything
+rules // Generic strategies for getting properties and types of AST nodes
 
   // returns a named property set by statix analysis
   // name: the name of the property to get
@@ -27,16 +26,6 @@ rules // Generic strategies for getting properties and types of anything
   // name: the name of the property to get
   // term: the AST term to get the property from
   pie-prop(|_, name) = pie-get-property(|name)
-
-//  pie-prop(|ns, prop):
-//    t -> <pie-occ-prop(|prop)> t
-//    where
-//      <nabl2-get-occurrence-ns> t
-//
-//  pie-prop(|ns, prop):
-//    t -> <pie-ast-ref-prop(|ns, prop)> t
-//    where
-//      <not(nabl2-get-occurrence-ns); is-string> t
 
   // return the type of an ast node
   pie-get-type:
@@ -65,10 +54,6 @@ rules // Generic strategies for getting properties and types of anything
       a    := <AstAnalysis>
     ; mods := <stx-get-scopegraph-data(|a, "statics/base!data_mods")> data_scope
 
-rules // AST type
-
-//  pie-ast-type = nabl2-get-ast-type
-
 imports
   statix/runtime/ast
 
@@ -95,27 +80,6 @@ rules // Property of reference in the AST
   // name: the name of the property to get
   // term: the term to get the property from
   pie-ast-ref-prop(|_, name) = pie-ast-ref-prop(|name)
-
-
-//  pie-ast-ref-prop(|ns, prop):
-//    term -> val
-//    with
-//      a      := <AstAnalysis>
-//    ; refOcc := <nabl2-mk-occurrence(|ns)> term
-//    ; defOcc := <nabl2-get-resolved-name(|a); Fst> refOcc
-//    ; val    := <nabl2-get-property(|a, prop)> defOcc
-
-//  pie-ast-ref-type(|ns) = pie-ast-ref-prop(|ns, "type")
-
-rules // Property of occurrence
-
-//  pie-occ-prop(|prop):
-//    occ -> val
-//    with
-//      a   := <AstAnalysis>
-//    ; val := <nabl2-get-property(|a, prop)> occ
-//
-//  pie-occ-type = pie-occ-prop(|"type")
 
 rules
 
