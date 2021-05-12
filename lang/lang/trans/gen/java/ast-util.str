@@ -2,7 +2,7 @@ module gen/java/ast-util
 
 imports
 
-  signatures/-
+  signatures/metaborg-java-sig
 
 rules
 

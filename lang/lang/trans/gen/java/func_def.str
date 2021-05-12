@@ -5,7 +5,10 @@ imports
   libspoofax/stratego/debug
 
   src-gen/signatures/-
-  signatures/-
+  signatures/metaborg-java-sig
+
+  statics
+  statics/constructors
 
   gen/java/type
   gen/java/func_body

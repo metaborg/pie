@@ -7,15 +7,8 @@ imports
   gen/java/func_def
 
   src-gen/signatures/-
-  signatures/-
+  signatures/metaborg-java-sig
   signatures/pie-sig
-  signatures/java/packages/-
-  signatures/java/names/-
-  signatures/java/classes/-
-  signatures/java/lexical/-
-  signatures/java/types/-
-  signatures/java/interfaces/-
-  signatures/java/statements/-
 
   pp
 
