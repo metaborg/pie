@@ -45,6 +45,10 @@ language:
     - strc
 build:
   useBuildSystemSpec: true
+runtime:
+  statix:
+    message-trace-length: 2 # default: 0, full trace: -1
+    message-term-depth: 5 # -1 = max
 exports:
 - language: ATerm
   directory: src-gen/statix
