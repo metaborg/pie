@@ -93,7 +93,7 @@ rules
   typeOfAdd : TYPE * TYPE * Exp -> TYPE
   typeOfAdd(IntType()      , IntType()      , _) = IntType().
   typeOfAdd(StrType()      , _              , _) = StrType().
-  typeOfAdd(PathType()     , PathType()     , _) = PathType(). // todo: error when second argument is an absolute path
+  typeOfAdd(PathType()     , PathType()     , _) = PathType().
   typeOfAdd(PathType()     , StrType()      , _) = PathType().
   typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- subtype(T2, T1) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
   typeOfAdd(ListType(T)    , EmptyListType(), _) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op].

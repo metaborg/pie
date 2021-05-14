@@ -46,7 +46,6 @@ rules
   funcImplOk(_, JavaForeignConstructorImpl(class_id), _, name) = JavaForeignConstructorKind() :-
     @name.javaClassId := class_id.
   funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), expected_type, _) = PieFuncKind() :- {s_func_inner}
-    // todo: set FuncDef moduleList
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
     setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
