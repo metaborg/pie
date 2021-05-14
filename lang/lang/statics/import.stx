@@ -126,8 +126,8 @@ rules
   normalizedImportOk(s, import@NormalizedImport(Renaming(imported, renaming))) =
     concatModuleLists(declared_modules, modules) :- {funcs data mods import_name submodule name}
     resolveImport(s, import) == (funcs, data, mods),
-    removeLast(imported) == (_, import_name),
-    removeLast(renaming) == (submodule, name),
+    getLast(imported) == import_name,
+    splitLast(renaming) == (submodule, name),
     reportErrors(funcs, data, mods, import_name, imported, name, renaming),
     try {renaming != imported} | warning $[[renaming] is already available] @name,
     declareFuncsAndData(s, submodule, import_name, name, funcs, data) == declared_modules,
@@ -157,7 +157,7 @@ rules
     )
   resolveImport(s, NormalizedImport(Renaming(import, renaming))) = (funcs, data, mods) :-
     {submodule name s_mod_tree}
-    removeLast(import) == (submodule, name),
+    splitLast(import) == (submodule, name),
     resolveModuleList(s, ModuleList(submodule), FALSE(), FALSE()) == s_mod_tree,
     resolveImportInFile(moduleTreeScopeToFiles(s_mod_tree), name) == (funcs, data),
     resolveModuleOpt(s_mod_tree, name) == mods.

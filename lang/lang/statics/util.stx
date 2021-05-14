@@ -111,7 +111,7 @@ rules
   /**
    * getLast(names) = name
    * Gets the last name in a list of names.
-   * This is a more efficient version of removeLast if case you only want the
+   * This is a more efficient version of splitLast if case you only want the
    * last name and not the names before that.
    * Reports a bug if the list is empty.
    */
@@ -121,13 +121,12 @@ rules
   getLast([_|name]) = getLast(name).
 
   /**
-   * removeLast(strs) = (start_strs, last)
+   * splitLast(strs) = (start_strs, last)
    * splits a list of strings into the starting strings and the last string.
    * Reports a bug if the list is empty.
    * Use getLast if you only need the last element.
    */
-  // todo: rename to splitLast
-  removeLast : list(string) -> (list(string) * string)
-  removeLast([]) = res :- false | error "BUG: called removeLast with empty list.".
-  removeLast([str]) = ([], str).
-  removeLast([str|strs]) = ([str|rest], last) :- removeLast(strs) == (rest, last).
+  splitLast : list(string) -> (list(string) * string)
+  splitLast([]) = res :- false | error "BUG: called splitLast with empty list.".
+  splitLast([str]) = ([], str).
+  splitLast([str|strs]) = ([str|rest], last) :- splitLast(strs) == (rest, last).
