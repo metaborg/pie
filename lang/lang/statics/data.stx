@@ -66,12 +66,14 @@ rules
     // Check that function is either a valid override or not an override
     superOk_2 : TYPE * (path * (FUNCID * TYPE)) * FUNCID
     superOk_2s maps superOk_2(*, list(*), *)
-    superOk_2(FuncType(param_tys, ty_out), (path, (_, FuncType(param_tys_super, ty_out_super))), name_node) :-
-      orB(
-        notB(isAllSubTypes(param_tys_super, param_tys)),
-        isSubtype(ty_out, ty_out_super)
-      ) == TRUE() | error $[Type mismatch: incompatable return type for override] @name_node.
-      // todo: figure out how to set reference to overridden function (how to do?)
+    superOk_2(FuncType(param_tys, ty_out), (path, (name_super, FuncType(param_tys_super, ty_out_super))), name) :-
+        superOk_3(isAllSubTypes(param_tys_super, param_tys), name, ty_out, name_super, ty_out_super).
+    
+    superOk_3 : BOOLEAN * TYPEID * TYPE * TYPEID * TYPE
+    superOk_3(FALSE(), _, _, _, _).
+    superOk_3(TRUE(), name, ty_out, name_super, ty_out_super) :-
+      @name.ref := name_super,
+      isSubtype(ty_out, ty_out_super) == TRUE() | error $[Type mismatch: incompatable return type for override] @name.
 
   dataImplOk : scope * scope * DataImpl
   dataImplOk(s, s_data, JavaDataImpl(java_name, members)) :-
