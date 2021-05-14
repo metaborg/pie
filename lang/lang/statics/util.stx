@@ -71,17 +71,16 @@ rules
     subtype(actual_ty, expected_ty) | error $[Type mismatch: expected [expected_ty] type, got [actual_ty]] @exp.
 
   /**
-   * Expect Exps [exps] to have types [tys]. This version passes along scopes from one expression to the next.
-   * Also takes a string argument [err], this will be used for the error message in case two lists have different lengths.
+   * Expect Exps [exps] to have types [tys]. This version passes along scopes
+   * from one expression to the next.
    */
-  // todo: remove message
-  expectSubtypesPassScopes : scope * list(Exp) * list(TYPE) * string -> scope
-  expectSubtypesPassScopes(s, [], [], _) = s.
-  expectSubtypesPassScopes(s1, [exp | exps], [ty | tys], err) = s3 :- {s2}
+  expectSubtypesPassScopes : scope * list(Exp) * list(TYPE) -> scope
+  expectSubtypesPassScopes(s, [], []) = s.
+  expectSubtypesPassScopes(s1, [exp | exps], [ty | tys]) = s3 :- {s2}
     expectSubtype(s1, exp, ty) == s2,
-    expectSubtypesPassScopes(s2, exps, tys, err) == s3.
-  expectSubtypesPassScopes(s, [], types@[_|_], err) = s :- false | error $[[err]; remaining types: [types]].
-  expectSubtypesPassScopes(s, exps@[_|_],  [], err) = s :- false | error $[[err]; remaining expressions: [exps]].
+    expectSubtypesPassScopes(s2, exps, tys) == s3.
+  expectSubtypesPassScopes(s, [], types@[_|_]) = s :- false | error $[Unexpected number of arguments; remaining types: [types]].
+  expectSubtypesPassScopes(s, exps@[_|_],  []) = s :- false | error $[Unexpected number of arguments; remaining expressions: [exps]].
 
   /**
    * moduleToList(mod@Module(moduleList, name))

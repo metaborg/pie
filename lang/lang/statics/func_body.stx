@@ -157,7 +157,7 @@ rules
 
     typeOfCall_1 : scope * list(Exp) * (TYPE * BOOLEAN) -> (scope * TYPE)
     typeOfCall_1(s1, arg_exps, (FuncType(param_tys, out_ty), TRUE())) = (s2, out_ty) :-
-      expectSubtypesPassScopes(s1, arg_exps, param_tys, "Unexpected number of arguments") == s2.
+      expectSubtypesPassScopes(s1, arg_exps, param_tys) == s2.
 
     // Function didn't resolve. No need to check arguments.
     // Errors for non-resolving are created by resolveUniqueFunc.
