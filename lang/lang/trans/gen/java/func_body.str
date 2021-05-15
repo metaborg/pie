@@ -511,30 +511,17 @@ rules // Java foreign function calls
     ; result                      := (stmts, callResultName)
 
   p2j-ast-exp:
-    c@Call(moduleList, funcId, exps) -> result
+    c@Call(moduleList, name, exps) -> (stmts, callExpr)
     where
-      JavaForeignConstructorKind() := <pie-ast-ref-prop(|"kind")> funcId
+      JavaForeignConstructorKind() := <pie-ast-ref-prop(|"kind")> name
     with
-      javaClassId           := <pie-ast-ref-prop(|"javaClassId")> funcId
+      javaClassId           := <pie-ast-ref-prop(|"javaClassId")> name
     ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
-    ; callResultName        := <newname> "constructorResult"
-    ; ty                    := <p2j-ast-type-sig> <pie-ast-type> c
-    ; stmts                 := <concat> [
-        <concat> expsStmts,
-        [ LocVarDeclStm(LocalVarDecl(
-            [Final()]
-          , <java-classType-to-unannType> ty
-          , [ VariableDeclInit(
-                VariableDecl(Id(callResultName))
-              , NewInstance(None(), [], Id(javaClassId), [], None(), expsVals)
-              )
-            ]
-          ))
-        ]
-        // Note: meaning of this AST:
-        //     final [ty] [callResultName] = new [javaClassId].([expsVals]);
-      ]
-    ; result                := (stmts, callResultName)
+    ; javaExpr              := NewInstance(None(), [], Id(javaClassId), [], None(), expsVals)
+      // Note: meaning of this AST:
+      //       new [javaClassId].([expsVals])
+    ; (callStmts, callExpr) := <p2j-ast-exp-call> (name, javaExpr)
+    ; stmts                 := <concat> [<concat> expsStmts, callStmts]
 
 rules // Qualified function calls
 
