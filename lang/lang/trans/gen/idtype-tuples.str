@@ -3,7 +3,6 @@ module gen/idtype-tuples
 imports
 
   src-gen/signatures/-
-  statics/constructors
   gen/util
 
 rules // Params to idtype tuples

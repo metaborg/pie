@@ -2,29 +2,12 @@ module statics/type
 
 imports
 
+  signatures/constructors-sig
   signatures/data-sig
   signatures/type-sig
   statics/base
   statics/module
 
-signature
-  constructors
-    UnitType : TYPE
-    BoolType : TYPE
-    IntType : TYPE
-    StrType : TYPE
-    PathType : TYPE
-    NullType : TYPE
-    TopType : TYPE
-
-    NullableType : TYPE -> TYPE
-    ListType : TYPE -> TYPE
-    EmptyListType : TYPE
-    TupleType : list(TYPE) -> TYPE
-    SupplierType : TYPE -> TYPE
-
-    FuncType : list(TYPE) * TYPE -> TYPE
-    DataType : scope -> TYPE
 
 rules // operations on types
 

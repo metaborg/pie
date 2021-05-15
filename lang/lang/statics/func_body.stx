@@ -2,6 +2,7 @@ module statics/func_body
 
 imports
 
+  signatures/constructors-sig
   signatures/func_body-sig
   statics/base
   statics/type

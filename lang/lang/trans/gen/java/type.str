@@ -17,11 +17,15 @@ imports
   signatures/java/types/-
   signatures/java/expressions/-
 
-  statics/constructors
+  statics
 
   gen/idtype-tuples
   gen/util
   gen/java/ast-util
+
+signature
+  constructors
+    DataType : scope -> TYPE // todo: move to syntax/constructors.sdf3.
 
 rules
 

@@ -2,19 +2,11 @@ module statics/import
 
 imports
 
+  signatures/constructors-sig
   signatures/pie-sig
   statics/base
   statics/util
   statics/module
-
-signature
-  sorts
-    Renaming
-    NormalizedImport
-
-  constructors
-    Renaming : list(string) * list(string) -> Renaming
-    NormalizedImport : Renaming -> NormalizedImport
 
 rules
 

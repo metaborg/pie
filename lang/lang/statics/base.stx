@@ -2,6 +2,7 @@ module statics/base
 
 imports
 
+  signatures/constructors-sig
   signatures/lex/literal-sig
   signatures/pie-sig
   statics/util
@@ -9,27 +10,17 @@ imports
 
 signature
   sorts
-    TYPE // A semantic type (as opposed to the lexical, non-all caps Type)
-    BOOLEAN // For logic in this statix spec.
-    CONTEXT // context values that are saved in the scope graph
-    ValKind // The kind of a value. Used by code generation.
-    FuncImplKind // The kind of a function implementation. Used by code generation.
+    ModuleTree
+    MODULE
 
+  // todo: move these to syntax/constructors.sdf3.
+  // Note: See syntax/constructors.sdf3 for documentation
   constructors
-    TRUE : BOOLEAN
-    FALSE : BOOLEAN
-
-    ContextType : TYPE -> CONTEXT
-    ContextName : string -> CONTEXT
-    ContextModule : Module -> CONTEXT
-
-    InputValKind : ValKind
-    LocalValKind : ValKind
-
-    JavaForeignFuncKind : FuncImplKind
-    JavaForeignConstructorKind : FuncImplKind
-    PieForeignFuncKind : FuncImplKind
-    PieFuncKind : FuncImplKind
+    ModuleTreeRoot : list(scope) * list(ModuleTree) -> ModuleTree
+    ModuleTreeNode : MODID * list(scope) * list((MODID * scope)) * list(ModuleTree) -> ModuleTree
+    MODULE : scope * list(MODID) -> MODULE
+    SUBMODULE : scope * list(MODID) -> MODULE
+    DataType : scope -> TYPE
 
   relations
     root : scope

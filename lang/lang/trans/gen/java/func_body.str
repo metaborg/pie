@@ -18,7 +18,6 @@ imports
   signatures/java/expressions/-
 
   statics
-  statics/constructors
 
   gen/java/func_def
   gen/java/binder

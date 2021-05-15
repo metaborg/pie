@@ -6,14 +6,13 @@ imports
   statix/api
 
   src-gen/signatures/-
-  statics/constructors
 
 rules // Generic strategies for getting properties and types of AST nodes
 
   /**
    * pie-get-property(|name): node -> val
    * Type: PIE AST node -> Any
-   * 
+   *
    * returns a named property set by statix analysis
    * name: the name of the property to get
    * node: the AST node to get the property from
