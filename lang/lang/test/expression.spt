@@ -175,7 +175,7 @@ test list comprehension single binder on tuple [[
    resolve #1 to #2
    run pie-ast-type on #2 to TupleType([StrType(), IntType()])
    run pie-ast-type on #1 to TupleType([StrType(), IntType()])
-test list comprehension not a list [[ ["$x * 3 = ${x+x+x}" | x <- [[ (1, 2, 3) ]] ] ]] error like "expected" at #1
+test list comprehension not a list [[ ["$x * 3 = ${x+x+x}" | x <- [[ (1, 2, 3) ]] ] ]] error like "expected a list" at #1
 test list comprehension empty list [[ ["$x * 3 = ${x+x+x}" | x: int <- [[ [] ]] ] ]] 0 errors 1 warning warning like "empty list" at #1
 test list comprehension binder type mismatch [[ ["$x * 3 = ${x+x+x}" | x: [[string]] <- [1, 2, 3] ] ]] error like "Type mismatch" at #1
 test list comprehension binder tuple binder on non-tuple list [[ ["$x * 3 = ${x+x+x}" | (x, y) <- [1, 2, 3] ] ]] analysis fails

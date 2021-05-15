@@ -117,21 +117,23 @@ rules
     try { ty != TopType()               } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type],
     try { ty != NullableType(TopType()) } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type].
 
-  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) = (s1, ListType(ty_map)) :- {s2 s3 ty_list expected_ty ty_arg}
+  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) = (s1, ListType(ty_map)) :- {s2 s3 ty_list expected_ty arg_ty}
     typeOfExp(s1, exp_list) == (s2, ty_list),
-    subtype(ty_list, expected_ty@ListType(ty_arg)) | error $[Type mismatch: expected [expected_ty], got [ty_list]] @exp_list,
-    try { ty_list != EmptyListType() } | warning $[Dead code: list comprehension over empty list] @exp_list,
-    // todo: better error messages
-    // If not a list: expected a list
-    // If Empty list: dead code
-    // If non-empty list but wrong element type: wrong element type
+    typeOfExpImplListComprehension(s3, ty_list, exp_list) == arg_ty,
     new s3,
     s3 -P-> s2,
-    typeOfBinder(s3, ty_arg, binder) == _,
+    typeOfBinder(s3, arg_ty, binder) == _,
     typeOfExp(s3, exp_map) == (_, ty_map).
 
+    typeOfExpImplListComprehension : scope * TYPE * Exp -> TYPE
+    typeOfExpImplListComprehension(s3, ListType(elem_ty), _) = elem_ty.
+    typeOfExpImplListComprehension(s3, EmptyListType(), exp_list) = _ :-
+      try { false } | warning $[Dead code: list comprehension over empty list] @exp_list.
+    typeOfExpImplListComprehension(s3, actual_ty, exp_list) = _ :-
+      false | error $[Type mismatch: expected a list, got [actual_ty]] @exp_list.
+
 // Value declaration and use.
-  
+
   typeOfExpImpl(s1, ValDec(binder, exp)) = (s3, declared_ty) :- {s2 actual_ty}
     typeOfExp(s1, exp) == (s2, actual_ty),
     new s3,
@@ -189,7 +191,7 @@ rules
   stamperOk : scope * StampKind -> scope
   stamperOk(s, Modified()) = s.
   stamperOk(s, Hash()) = s.
-  
+
   optionalFilterOk: scope * list(FilterPart) -> scope
   optionalFilterOk(s, []) = s.
   optionalFilterOk(s, [FilterPart(filter)]) = filterOk(s, filter).
@@ -221,16 +223,16 @@ rules
 
   typeOfExpImpl(s1, ReadPath(exp)) = (s2, NullableType(StrType())) :-
     expectSubtype(s1, exp, PathType()) == s2.
-  
+
   typeOfExpImpl(s1, ExistsPath(exp)) = (s2, BoolType()) :-
     expectSubtype(s1, exp, PathType()) == s2.
-  
+
 // Early return and failure
 
   typeOfExpImpl(s1, Return(exp)) = (s2, UnitType()) :- {expected_ty}
     getContext(s1, "func_return_type") == ContextType(expected_ty),
     expectSubtype(s1, exp, expected_ty) == s2.
-    
+
   typeOfExpImpl(s1, Fail(exp)) = (s2, UnitType()) :-
     expectSubtype(s1, exp, StrType()) == s2.
 
@@ -240,11 +242,11 @@ rules
   typeOfExpImpl(s, BoolLit(_)) = (s, BoolType()).
   typeOfExpImpl(s, IntLit(_))  = (s, IntType()).
   typeOfExpImpl(s, NullLit())  = (s, NullType()).
-  typeOfExpImpl(s1, TupleLit(exps)) = (s2, TupleType(tys)) :- 
+  typeOfExpImpl(s1, TupleLit(exps)) = (s2, TupleType(tys)) :-
     typeOfExpsPassScopes(s1, exps) == (s2, tys).
 
   typeOfExpImpl(s, ListLit([])) = (s, EmptyListType()).
-  typeOfExpImpl(s1, ListLit(exps)) = (s2, ListType(listLub(tys))) :- 
+  typeOfExpImpl(s1, ListLit(exps)) = (s2, ListType(listLub(tys))) :-
     typeOfExpsPassScopes(s1, exps) == (s2, tys).
 
 // String literals
@@ -253,7 +255,7 @@ rules
   strPartOk(s, Str(_)) = s.
   strPartOk(s, StrInterpRef(Ref(name))) = s :- resolveUniqueVal(s, name) == _.
   strPartOk(s1, StrInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
-  
+
   strPartsOkPassScopes : scope * list(StrPart) -> scope
   strPartsOkPassScopes(s, []) = s.
   strPartsOkPassScopes(s1, [part|parts]) = s3 :- {s2}
