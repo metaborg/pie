@@ -71,7 +71,9 @@ rules
   // , Id("Foo")
   // )
   java-qualifiedClass-to-expressionName:
-    name -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
+    [name] -> ExpressionName(Id(name))
+  java-qualifiedClass-to-expressionName:
+    name@[_|_] -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
     where
       [fst | rest] := <reverse> name
 
