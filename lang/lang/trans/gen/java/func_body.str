@@ -539,29 +539,15 @@ rules // Java foreign function calls
 rules // Qualified function calls
 
   p2j-ast-exp:
-    c@QCall(exp, funcId, argExps) -> result
+    c@QCall(exp, name, argExps) -> (stmts, callExpr)
     with
       (expStmts, expVal)          := <try-p2j-ast-exp> exp
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
-    ; callResultName              := <newname> "callResult"
-    ; ty                          := <p2j-ast-type-sig> <pie-ast-type> c
-    ; stmts                       := <concat> [
-        expStmts,
-        <concat> argExpsStmts,
-        [ LocVarDeclStm(LocalVarDecl(
-            [Final()]
-          , <java-classType-to-unannType> ty
-          , [ VariableDeclInit(
-                VariableDecl(Id(callResultName))
-              , InvokeQExp(expVal, None(), Id(funcId), argExpsVals)
-              )
-            ]
-          ))
-        ]
-        // Note: meaning of this AST:
-        //       final [ty] [callResultName] = [expVal].[funcId]([argExpsVals]);]]
-      ]
-    ; result                      := (stmts, callResultName)
+    ; javaExpr                    := InvokeQExp(expVal, None(), Id(name), argExpsVals)
+      // Note: meaning of this AST:
+      //       [expVal].[funcId]([argExpsVals]);
+    ; (callStmts, callExpr)       := <p2j-ast-exp-call> (name, javaExpr)
+    ; stmts                       := <concat> [expStmts, <concat> argExpsStmts, callStmts]
 
 rules // PIE function calls
 
