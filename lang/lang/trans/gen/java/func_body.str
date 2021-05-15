@@ -483,32 +483,19 @@ rules // References
 rules // Java foreign function calls
 
   p2j-ast-exp:
-    c@Call(moduleList, funcId, argExps) -> result
+    c@Call(moduleList, name, argExps) -> (stmts, callExpr)
     where
-      JavaForeignFuncKind() := <pie-ast-ref-prop(|"kind")> funcId
+      JavaForeignFuncKind() := <pie-ast-ref-prop(|"kind")> name
     with
-      javaClassId                 := <pie-ast-ref-prop(|"javaClassId")> funcId
+      javaClassId                 := <pie-ast-ref-prop(|"javaClassId")> name
     ; expressionNameJavaClassId   := <java-qualifiedClass-to-expressionName> <string-tokenize(|['.'])> javaClassId
-    ; javaMethodId                := <pie-ast-ref-prop(|"javaMethodId")> funcId
+    ; javaMethodId                := <pie-ast-ref-prop(|"javaMethodId")> name
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
-    ; callResultName              := <newname> "callResult"
-    ; ty                          := <p2j-ast-type-sig> <pie-ast-type> c
-    ; stmts                       := <concat> [
-        <concat> argExpsStmts,
-        [ LocVarDeclStm(LocalVarDecl(
-            [Final()]
-          , <java-classType-to-unannType> ty
-          , [ VariableDeclInit(
-                VariableDecl(Id(callResultName))
-              , InvokeQExp(expressionNameJavaClassId, None(), Id(javaMethodId), argExpsVals)
-              )
-            ]
-          ))
-        ]
-        // Note: meaning of this AST:
-        //       final [ty] [callResultName] = [javaClassId].[javaMethodId]([argExpsVals]);
-      ]
-    ; result                      := (stmts, callResultName)
+    ; javaExpr                    := InvokeQExp(expressionNameJavaClassId, None(), Id(javaMethodId), argExpsVals)
+      // Note: meaning of this AST:
+      //       [javaClassId].[javaMethodId]([argExpsVals])
+    ; (callStmts, callExpr)       := <p2j-ast-exp-call> (name, javaExpr)
+    ; stmts                       := <concat> [<concat> argExpsStmts, callStmts]
 
   p2j-ast-exp:
     c@Call(moduleList, name, exps) -> (stmts, callExpr)
