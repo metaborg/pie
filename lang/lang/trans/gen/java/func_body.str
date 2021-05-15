@@ -626,9 +626,10 @@ rules // PIE function calls
   p2j-ast-exp-call:
     (name, javaExpr) -> (stmts, exp)
     with
-      callResultName           := <newname> "callResult"
-    ; ty                       := <p2j-ast-type-sig> <pie-ast-type> name
-    ; stmts                    := [
+      callResultName          := <newname> "callResult"
+    ; FuncType(_, outputType) := <pie-ast-type> name
+    ; ty                      := <p2j-ast-type-sig> outputType
+    ; stmts                   := [
         LocVarDeclStm(LocalVarDecl(
           [Final()]
         , <java-classType-to-unannType> ty
