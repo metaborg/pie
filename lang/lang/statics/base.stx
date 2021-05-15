@@ -293,17 +293,20 @@ rules // Declararing and resolving
           in s |-> occs.
 
   /**
-   * resolve data [name] to a unique data scope [s_data] in scope [s]
+   * resolveUniqueData(s, name) = s_data
+   * Resolve data [name] to a unique data scope [s_data] in scope [s].
+   * Returns an empty scope if [name] could not be resolved to a unique data
+   * type.
    */
-  resolveUniqueData : scope * string -> scope
-  resolveUniqueData(s, name) = s_data :- {occs name'}
-    resolveData(s, name) == occs,
-    occs == [(_, (name', s_data))],
-    @name.ref := name',
-    @name.type := DataType(s_data),
-    // If there are multiple, the declaration will give an error.
-    // todo: apply same pattern as resolveUniqueFunc to make this error work
-    try { occs != [] } | error $[Could not resolve data [name]] @name.
+  resolveUniqueData : scope * TYPEID -> scope
+  resolveUniqueData(s, name) = resolveUniqueData_1(s, resolveData(s, name), name).
+
+    resolveUniqueData_1 : scope * list((path * (TYPEID * scope))) * TYPEID -> scope
+    resolveUniqueData_1(s, [], name) = emptyScope(s) :- false | error $[Undefined data [name]] @name.
+    resolveUniqueData_1(_, [(_, (name', s_data))], name) = s_data :-
+      @name.ref := name',
+      @name.type := DataType(s_data).
+    resolveUniqueData_1(s, [_,_|_], _) = emptyScope(s).
 
   /**
    * setContext(s, name, context)

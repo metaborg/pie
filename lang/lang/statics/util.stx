@@ -58,7 +58,23 @@ rules
   emptyScope(s) = s_empty :-
     new s_empty,
     !root[getRoot(s)] in s_empty,
-    setModuleName(s_empty, "<NONE>").
+    setModuleName(s_empty, "<NONE>"),
+    setFileIfExists(s, s_empty),
+    setContext(s_empty, "data_name_unqualified", ContextName("<NONE>")),
+    !data_mods[[]] in s_empty.
+
+  /**
+   * setFileIfExists(s, s_new)
+   * Copies the file value (if any) over from scope [s] to scope [s_new].
+   */
+  setFileIfExists : scope * scope
+  setFileIfExists(s, s_new) :- setFileIfExists_1(getFileIfExists(s), s_new, s).
+
+    setFileIfExists_1 : list(scope) * scope * scope
+    setFileIfExists_1([], _, _).
+    setFileIfExists_1([s_file], s_new, _) :- !file[s_file] in s_new.
+    setFileIfExists_1([_,_|_], _, s) :- false | error $[BUG: multiple files from scope [s]].
+  
 
   /**
    * expect Exp [exp] to be a subtype of type [expected_ty] in scope [s]
