@@ -17,6 +17,7 @@ imports
   signatures/java/types/-
   signatures/java/expressions/-
 
+  statics
   gen/java/type
   gen/java/func_body
   gen/java/ast-util
