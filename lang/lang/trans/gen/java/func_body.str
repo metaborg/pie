@@ -209,6 +209,7 @@ rules // Control flow
       (PathType(), PathType()) := (lType, rType)
     with
       <add-import> "mb.resource.ResourceRuntimeException"
+    ; <add-import> "mb.pie.api.ExecException"
     ; tmpResultName := <newname> "addResult"
     ; stmts         := [
         LocVarDeclStm(LocalVarDecl(
@@ -1008,7 +1009,8 @@ rules // Early return and failure
   p2j-ast-exp:
     Fail(exp) -> result
     with
-      (expStmts, expVal) := <try-p2j-ast-exp> exp
+      <add-import> "mb.pie.api.ExecException"
+    ; (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; stmts              := <concat> [
         expStmts
       , [ Throw(NewInstance(
