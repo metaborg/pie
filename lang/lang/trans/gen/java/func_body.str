@@ -586,6 +586,16 @@ rules // PIE function calls
         ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(simpleClassName), None())])))
       ))
 
+  /**
+   * p2j-ast-exp-call: (name, javaExpr) -> (stmts, exp)
+   * Type: (string, Java Expression) -> (Java Statement*, Java Expression)
+   *
+   * Takes a pie function name and a java expression and returns a list with
+   * single statement `final [ty] callResultX = [expr]` where `X` is a number
+   * to make the callResult identifier unique, [ty] is the type of the java
+   * expression (extracted from [name]), and [expr] is the java expression.
+   * The returned Java Expression is just the identifier [callResultX]
+   */
   p2j-ast-exp-call:
     (name, javaExpr) -> (stmts, exp)
     with
