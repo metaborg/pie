@@ -1,0 +1,5 @@
+module mb:pie:lang:test:supplier:fromTaskAndGet:fullyQualifiedSupplier
+
+func main_fullyQualifiedSupplier(str: string) -> string = {
+  mb:pie:lang:test:supplier:otherPackage:helper:helper_helloName.supplier(str).get<>()
+}
