@@ -1,7 +1,0 @@
-module mb:pie:lang:test:controlFlow:listComprehension:__error__emptyLitToPaths
-
-// Gives error when generating code: Tries to generate ArrayList of TopTy() (Object)
-// but return type is ArrayList<FSPath>
-//func main_emptyLitToPaths() -> path* = {
-//  [elem | elem <- []]
-//}

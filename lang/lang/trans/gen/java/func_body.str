@@ -332,10 +332,11 @@ rules // Control flow
 
   p2j-ast-exp:
     e@ListComprehension(mapExp, binder, listExp) -> result
+    where
+      ListType(pieElemTy) := <pie-ast-type> listExp
     with
       <add-import> "java.util.ArrayList"
     ; (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
-    ; ListType(pieElemTy)     := <pie-ast-type> listExp
     ; elemTy                  := <p2j-ast-type-sig> pieElemTy
     ; (mapStmts, mapExpVal)   := <try-p2j-ast-exp> mapExp
     ; (assignments, varId)    := <bind-tuples-to-ast-assignments> (binder, pieElemTy)
@@ -382,6 +383,35 @@ rules // Control flow
         //   }
       ]
     ; result                     := (stmts, comprehensionTmpVarName)
+
+
+  p2j-ast-exp:
+    e@ListComprehension(mapExp, binder, listExp) -> result
+    where
+      EmptyListType() := <pie-ast-type> listExp
+    with
+      <add-import> "java.util.ArrayList"
+    ; (listStmts, listExpVal) := <try-p2j-ast-exp> listExp
+    ; comprehensionTmpVarName := <newname> "comprehensionResult"
+    ; ty                      := <p2j-ast-type-sig> <pie-ast-type> e
+    ; stmts                   := <concat> [
+        listStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [ VariableDeclInit(
+                VariableDecl(Id(comprehensionTmpVarName))
+              , NewInstance(None(), [], Id("ArrayList"), [], Some(Diamond()), [])
+              )
+            ]
+          ))
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [comprehensionTmpVarName] = new ArrayList<>();
+      ]
+    ; result                     := (stmts, comprehensionTmpVarName)
+
+
 
 rules // Binding
 
