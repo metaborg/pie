@@ -1043,8 +1043,6 @@ rules // Interpolated string literal
     ; result                  := (stmts, exp)
 
   // Replace all escaped \$ with $. Note: "\\$" because the \ needs to be escaped in stratego.
-  // todo: Check if simply replacing is fine, or if it is possible that it is actually a $,
-  // e.g. "\\$foo" should evaluate to "\<valueOfFoo>"
   p2j-ast-strpart:
     Str(chars) -> ([], StringLiteral($["[<string-replace(|"\\$", "$")> chars]"]))
 
