@@ -138,9 +138,14 @@ rules
     where
       <not(?[])> list
 
-rules
-
-  pie-sanitize-class-id = string-replace(|"-", "_")
+  // concat-strings-separator(|sep): list -> string
+  //   Type: list of strings -> string
+  //   sep: string
+  // concatenates a list of strings with a separator
+  // Example: <concat-strings-separator(|"_")> ["mb", "pie", "lang", "Foo"] -> "mb_pie_lang_Foo"
+  concat-strings-separator(|sep): [] -> ""
+  concat-strings-separator(|sep): [last | []] -> last
+  concat-strings-separator(|sep): [first | rest] -> $[[first][sep][<concat-strings-separator(|sep)> rest]]
 
 rules
 
