@@ -70,6 +70,12 @@ rules
     ListType(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
     with
       <add-import> "java.util.ArrayList"
+
+  p2j-ast-type-sig:
+    t@EmptyListType() -> <error(|"Cannot generate code for empty list. Use a type hint to specify the type you need")> t
+    where
+      <ppdebugna(|"In emptylisttype! ")> t
+
   p2j-ast-type-sig: NullableType(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
 
   p2j-ast-type-sig:
