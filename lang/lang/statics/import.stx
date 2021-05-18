@@ -73,7 +73,7 @@ rules
     normalizeElement_1 : list(ImportSubModule) * ImportListElement
     normalizeElement_1([], elems) :- try {false} | warning "Empty multi-import" @elems.
     normalizeElement_1([_], elems) :- try {false} | warning "Single element in multi-import" @elems.
-    normalizeElement_1([_, _], elems).
+    normalizeElement_1([_,_|_], elems).
 
   normalizeSubModule : ImportSubModule -> Renaming
   normalizeSubModules maps normalizeSubModule(list(*)) = list(*)
@@ -92,7 +92,7 @@ rules
     normalizeFinal_1 : list(ImportFinalSubModule) * ImportFinalElement
     normalizeFinal_1([], elems) :- try {false} | warning "Empty multi-import" @elems.
     normalizeFinal_1([_], elems) :- try {false} | warning "Single element in multi-import" @elems.
-    normalizeFinal_1([_, _], elems).
+    normalizeFinal_1([_,_|_], elems).
 
 
   normalizeFinalSubmodule : ImportFinalSubModule -> Renaming

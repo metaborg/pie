@@ -1,0 +1,5 @@
+module mb:pie:lang:test:imports:subModule:multiImport
+
+import mb:pie:lang:test:imports:subModule:a:b:c:{Foo, createFoo, helper_takeFoo}
+
+func main_multiImport() -> bool = helper_takeFoo(createFoo())
