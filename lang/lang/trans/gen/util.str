@@ -97,7 +97,7 @@ rules // Property of reference in the AST
       // the following line uses an internal Statix strategy.
       // todo: use external api when available (stx-get-ast-ref)
       // (Also remove import above when switching)
-    ; decl := <stx--get-ast-property(|a, Ref())> node
+    ; decl := <while(id, stx--get-ast-property(|a, Ref()))> node
     ; val  := <stx-get-ast-property(|a, name)> decl
 
 rules

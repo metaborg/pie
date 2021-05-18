@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importFunction
+
+import mb:pie:lang:test:imports:subModule:a:b:c:helper_function
+
+func main_importFunction() -> unit = {
+  helper_function();
+  unit
+}
