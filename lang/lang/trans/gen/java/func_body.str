@@ -488,7 +488,7 @@ rules // Java foreign function calls
     where
       JavaForeignFuncKind() := <pie-ast-ref-prop(|"kind")> name
     with
-      javaClassId                 := <pie-ast-ref-prop(|"javaClassId")> name
+      javaClassId                 := <pie-func-name-to-javaClassId> name
     ; expressionNameJavaClassId   := <java-qualifiedClass-to-expressionName> <string-tokenize(|['.'])> javaClassId
     ; javaMethodId                := <pie-ast-ref-prop(|"javaMethodId")> name
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
@@ -503,7 +503,7 @@ rules // Java foreign function calls
     where
       JavaForeignConstructorKind() := <pie-ast-ref-prop(|"kind")> name
     with
-      javaClassId           := <pie-ast-ref-prop(|"javaClassId")> name
+      javaClassId           := <pie-func-name-to-javaClassId> name
     ; (expsStmts, expsVals) := <unzip> <map(try-p2j-ast-exp)> exps
     ; javaExpr              := NewInstance(None(), [], Id(javaClassId), [], None(), expsVals)
       // Note: meaning of this AST:
