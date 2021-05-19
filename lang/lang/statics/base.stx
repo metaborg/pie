@@ -27,6 +27,7 @@ signature
     file : scope
     mod_wip : MODULE
     mod : MODID -> scope
+    is_proxy_module : // no value, can be set as a flag
     val : VALID -> TYPE
     func : FUNCID -> TYPE
     func_local : FUNCID -> TYPE
@@ -208,21 +209,33 @@ rules // Declararing and resolving
    * check for argument number/types etc.)
    */
   resolveUniqueFunc : scope * FUNCID -> (TYPE * BOOLEAN)
-  resolveUniqueFunc(s, name) = resolveUniqueFunc_1(s, name, resolveFunc(s, name)).
+  resolveUniqueFunc(s, name) = resolveUniqueFunc_1(name, resolveFunc(s, name)).
 
     // This function exists so that the result of resolveFunc is not
     // prematurely matched to a single occurrence
-    resolveUniqueFunc_1 : scope * FUNCID * list((path * (FUNCID * TYPE))) -> (TYPE * BOOLEAN)
-    resolveUniqueFunc_1(s, name, []) = (_, FALSE()) :-
+    resolveUniqueFunc_1 : FUNCID * list((path * (FUNCID * TYPE))) -> (TYPE * BOOLEAN)
+    resolveUniqueFunc_1(name, []) = (_, FALSE()) :-
       false | error $[Undefined function [name]] @name.
 
-    resolveUniqueFunc_1(s, name, [(_, (name', ty))]) = (ty, TRUE()) :-
+    resolveUniqueFunc_1( name, [(_, (name', ty))]) = (ty, TRUE()) :-
       // todo: allow overloading (multiple occurences, find best match by input types)
       @name.ref := name',
       @name.type := ty.
 
     // If there are multiple, the declaration will give an error.
-    resolveUniqueFunc_1(s, name, [_,_|_]) = (_, FALSE()).
+    resolveUniqueFunc_1(name, [_,_|_]) = (_, FALSE()).
+
+  /**
+   * resolveUniqueFuncInScopes(scopes, name) = (ty, resolved)
+   * Resolve a unique function [name] in [scopes] to a function type [ty].
+   * Only one of the scopes can have this function, so this does not look for
+   * one data type in each scope.
+   */
+  resolveUniqueFuncInScopes : list(scope) * FUNCID -> (TYPE * BOOLEAN)
+  resolveUniqueFuncInScopes(scopes, name) = resolveUniqueFunc(s, name) :-
+    new s,
+    !root[getRoot(s)] in s,
+    createPEdges(s, scopes).
 
 
   /**
@@ -299,6 +312,18 @@ rules // Declararing and resolving
       @name.ref := name',
       @name.type := DataType(s_data).
     resolveUniqueData_1(s, [_,_|_], _) = emptyScope(s).
+
+  /**
+   * resolveUniqueDataInScopes(scopes, name) = s_data
+   * Resolve a unique data type [name] in [scopes] to a data scope [s_data].
+   * Only one of the scopes can have this data type, so this does not look for
+   * one data type in each scope.
+   */
+  resolveUniqueDataInScopes : list(scope) * TYPEID -> scope
+  resolveUniqueDataInScopes(scopes, name) = resolveUniqueData(s, name) :-
+    new s,
+    !root[getRoot(s)] in s,
+    createPEdges(s, scopes).
 
   /**
    * setContext(s, name, context)

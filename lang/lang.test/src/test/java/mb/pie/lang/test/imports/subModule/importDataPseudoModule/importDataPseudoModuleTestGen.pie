@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importDataPseudoModule
+
+import mb:pie:lang:test:imports:subModule:a:b:c:Foo as pseudo:someData
+
+func main_importDataPseudoModule() -> unit = {
+  val data: pseudo:someData? = null;
+  unit
+}

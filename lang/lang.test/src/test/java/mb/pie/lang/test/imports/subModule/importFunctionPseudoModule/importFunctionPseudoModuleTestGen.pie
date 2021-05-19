@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importFunctionPseudoModule
+
+import mb:pie:lang:test:imports:subModule:a:b:c:helper_function as pseudo:someFunc
+
+func main_importFunctionPseudoModule() -> unit = {
+  pseudo:someFunc();
+  unit
+}

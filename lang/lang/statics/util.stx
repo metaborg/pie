@@ -74,7 +74,15 @@ rules
     setFileIfExists_1([], _, _).
     setFileIfExists_1([s_file], s_new, _) :- !file[s_file] in s_new.
     setFileIfExists_1([_,_|_], _, s) :- false | error $[BUG: multiple files from scope [s]].
-  
+
+  /**
+   * CreatePEdge(s1, s2)
+   * Creates a P edge from s1 to s2.
+   */
+  createPEdge : scope * scope
+  createPEdges maps createPEdge(*, list(*))
+  createPEdge(s1, s2) :- s1 -P-> s2.
+
 
   /**
    * expect Exp [exp] to be a subtype of type [expected_ty] in scope [s]

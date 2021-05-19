@@ -131,12 +131,13 @@ rules
     declareFuncsAndData(s, [], import_name, rename, funcs, data) = [] :-
       declareFuncImports(s, rename, import_name, funcs),
       declareDataImports(s, rename, import_name, data).
-    declareFuncsAndData(s, submodule@[_|_], import_name, rename, funcs, data) = [MODULE(s_import_tree, submodule)] :-
-      new s_import_tree,
-      !root[getRoot(s)] in s_import_tree,
-      setModuleName(s_import_tree, rename),
-      declareFuncImports(s_import_tree, rename, import_name, funcs),
-      declareDataImports(s_import_tree, rename, import_name, data).
+    declareFuncsAndData(s, submodule@[_|_], import_name, rename, funcs, data) = [MODULE(s_mod_proxy, submodule)] :-
+      new s_mod_proxy,
+      !root[getRoot(s)] in s_mod_proxy,
+      !is_proxy_module[] in s_mod_proxy,
+      setModuleName(s_mod_proxy, rename),
+      declareFuncImports(s_mod_proxy, rename, import_name, funcs),
+      declareDataImports(s_mod_proxy, rename, import_name, data).
 
     createModuleForScope : list(MODID) * scope -> MODULE
     createModulesForScopes maps createModuleForScope(*, list(*)) = list(*)
@@ -148,7 +149,7 @@ rules
       * list(scope)
     )
   resolveImport(s, NormalizedImport(Renaming(import, renaming))) = (funcs, data, mods) :-
-    {submodule name s_mod_tree}
+  {submodule name s_mod_tree}
     splitLast(import) == (submodule, name),
     resolveModuleList(s, ModuleList(submodule), FALSE(), FALSE()) == s_mod_tree,
     resolveImportInFile(moduleTreeScopeToFiles(s_mod_tree), name) == (funcs, data),

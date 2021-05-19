@@ -135,7 +135,7 @@ rules
     declareModulesFromTrees(s_mod_tree, sub_modules, add_duplicate_errors),
     addDuplicateModuleErrors(file_scopes, add_duplicate_errors),
     addDuplicateNameErrors(tree_scopes).
-    
+
     declareAlternateTreeScope : scope * (MODID * scope)
     declareAlternateTreeScopes maps declareAlternateTreeScope(*, list(*))
     declareAlternateTreeScope(s_mod_tree, (_, s_mod_tree_alternate)) :-
@@ -236,26 +236,46 @@ rules
    * such files exist. (example: given foo:bar:baz, it points foo to a file foo
    * if it exists and bar to a file foo:bar if it exists)
    */
-  resolveModuleListToFile : scope * ModuleList -> scope
-  resolveModuleListToFile(s, NoModuleList()) = s.
+  resolveModuleListToFile : scope * ModuleList -> list(scope)
+  resolveModuleListToFile(s, NoModuleList()) = [s].
   resolveModuleListToFile(s, moduleList@ModuleList(mods)) =
     moduleTreeScopeToFile(resolveModuleList(s, moduleList, TRUE(), TRUE()), getLast(mods)).
 
   /**
-   * moduleTreeScopeToFile(s_mod_tree, name_node) = s_mod_file
-   * Gets the single file scope [s_mod_file] associated with a tree scope
+   * moduleTreeScopeToFile(s_mod_tree, name_node) = file_scopes
+   * Gets the single file scopes [file_scopes] associated with a tree scope
    * [s_mod_tree].
-   * Gives a duplicate module error of there are multiple files, and a not
-   * instantiated error in case no file is associated with the scope.
+   * Gives a duplicate module error of there are multiple proper modules, and a
+   * not instantiated error in case no proper modules and no proxy modules are
+   * associated with the scope.
    * errors are reported on [name_node].
    * See also moduleTreeScopeToFiles.
    */
-  moduleTreeScopeToFile : scope * MODID -> scope
-  moduleTreeScopeToFile(s_mod_tree, name_node) = s_mod_file :- {file_scopes name}
+  moduleTreeScopeToFile : scope * MODID -> list(scope)
+  moduleTreeScopeToFile(s_mod_tree, name_node) = file_scopes :-
+    {proper_module_scopes proxy_scopes name}
     moduleTreeScopeToFiles(s_mod_tree) == file_scopes,
     getModuleName(s_mod_tree) == name,
-    file_scopes == [s_mod_file|_] | error $[Submodule [name] is not instantiated] @name_node,
-    try { file_scopes != [_,_|_] } | error $[Duplicate module [name]] @name_node.
+    moduleTreeScopeToFile_1(separateProxyModules(file_scopes), name, name_node, s_mod_tree).
+
+    // gives an error if there is more than 1 proper module scope, or no proper module scopes and no proxy scopes
+    moduleTreeScopeToFile_1 : (list(scope) * list(scope)) * MODID * MODID * scope
+    moduleTreeScopeToFile_1(([], []), name, name_node, s) :-
+      false | error $[Submodule [name] is not instantiated] @name_node.
+    moduleTreeScopeToFile_1(([], [_|_]), _, _, _).
+    moduleTreeScopeToFile_1(([_], _), _, _, _).
+    moduleTreeScopeToFile_1(([_,_|_], _), name, name_node, s) :-
+      false | error $[Duplicate module [name]] @name_node.
+
+    // separate proper modules and proxy modules into two lists
+    separateProxyModules : list(scope) -> (list(scope) * list(scope))
+    separateProxyModules([]) = ([], []).
+    separateProxyModules([s|rest]) = separateProxyModules_1(s, occs, separateProxyModules(rest)) :-
+      query is_proxy_module in s |-> occs.
+
+    separateProxyModules_1 : scope * list((path * ())) * (list(scope) * list(scope)) -> (list(scope) * list(scope))
+    separateProxyModules_1(s, [], (proper_module_scopes, proxy_scopes)) = ([s|proper_module_scopes], proxy_scopes).
+    separateProxyModules_1(s, [_|_], (proper_module_scopes, proxy_scopes)) = (proper_module_scopes, [s|proxy_scopes]).
 
   /**
    * moduleTreeScopeToFiles(s_mod_tree) = file_scopes

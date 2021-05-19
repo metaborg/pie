@@ -152,11 +152,11 @@ rules
    * - resolve function [name] in scope [s_data].
    * - Check that [arg_exps] have the right types (resolved in scope [s])
    * This is a general function to check any type of call.
-   * The caller just needs to provide s_data.
+   * The caller just needs to provide search_scopes.
    */
-  typeOfCall : scope * scope * string * list(Exp) -> (scope * TYPE)
-  typeOfCall(s, s_data, name, arg_exps) =
-    typeOfCall_1(s, arg_exps, resolveUniqueFunc(s_data, name)).
+  typeOfCall : scope * list(scope) * string * list(Exp) -> (scope * TYPE)
+  typeOfCall(s, search_scopes, name, arg_exps) =
+    typeOfCall_1(s, arg_exps, resolveUniqueFuncInScopes(search_scopes, name)).
 
     typeOfCall_1 : scope * list(Exp) * (TYPE * BOOLEAN) -> (scope * TYPE)
     typeOfCall_1(s1, arg_exps, (FuncType(param_tys, out_ty), TRUE())) = (s2, out_ty) :-
@@ -172,7 +172,7 @@ rules
   typeOfExpImpl(s1, QCall(exp, name, arg_exps)) = (s3, ty) :- {s2 exp_ty s_data}
     typeOfExp(s1, exp) == (s2, exp_ty),
     getScopeFromType(s2, exp_ty) == s_data,
-    typeOfCall(s2, s_data, name, arg_exps) == (s3, ty).
+    typeOfCall(s2, [s_data], name, arg_exps) == (s3, ty).
 
   typeOfExpImpl(s1, CreateSupplier(exp)) = (s2, SupplierType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty).
