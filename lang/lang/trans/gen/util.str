@@ -79,6 +79,24 @@ imports
 rules // Property of reference in the AST
 
   /**
+   * pie-get-decl: node -> decl
+   * Type: PIE AST node -> PIE AST node
+   *
+   * Get the declaration from a node. Node does not need to have reference set,
+   * if it does not, the node itself is returned.
+   *
+   * node: the node to get the declaration for.
+   */
+  pie-get-decl:
+    node -> decl
+    with
+      a    := <stx-get-ast-analysis> node
+      // the following line uses an internal Statix strategy.
+      // todo: use external api when available (stx-get-ast-ref)
+      // (Also remove import above when switching)
+    ; decl := <while(id, stx--get-ast-property(|a, Ref()) <+ stx-get-ast-property(|a, "renamed_from"))> node
+
+  /**
    * pie-ast-ref-prop(|name): node -> val
    * Type: PIE AST node -> Any
    *
@@ -94,10 +112,7 @@ rules // Property of reference in the AST
     node -> val
     with
       a    := <stx-get-ast-analysis> node
-      // the following line uses an internal Statix strategy.
-      // todo: use external api when available (stx-get-ast-ref)
-      // (Also remove import above when switching)
-    ; decl := <while(id, stx--get-ast-property(|a, Ref()))> node
+    ; decl := <pie-get-decl> node
     ; val  := <stx-get-ast-property(|a, name)> decl
 
 rules
