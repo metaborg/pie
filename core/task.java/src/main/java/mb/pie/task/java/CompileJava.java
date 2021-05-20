@@ -4,6 +4,7 @@ import mb.common.message.KeyedMessages;
 import mb.common.message.KeyedMessagesBuilder;
 import mb.common.message.Severity;
 import mb.common.region.Region;
+import mb.common.result.Result;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
@@ -32,17 +33,54 @@ import java.util.stream.Collectors;
 @Value.Enclosing
 public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
     @Value.Immutable
+    public interface Sources extends Serializable {
+        class Builder extends CompileJavaData.Sources.Builder {}
+
+        static Builder builder() { return new Builder(); }
+
+        /**
+         * Java source files to compile (i.e., the compilation units). The Java compiler will start compiling from these
+         * source files, and also compile all recursively imported source files. A dependency to these files will be
+         * added, such that a change in these files will trigger recompilation. Additionally, changing the files in this
+         * list will also trigger recompilation.
+         */
+        List<ResourcePath> sourceFiles();
+
+        /**
+         * Directory with Java source files to compile. These directories will be recursively scanned for Java files
+         * which are treated as compilation units (as if the individual files would be returned from {@link
+         * #sourceFiles()}. A dependency to all recursive directories and recursive .java files will be added, such that
+         * an added/changed/remove Java file will trigger recompilation. Additionally, changing the directories in this
+         * list will also trigger recompilation.
+         */
+        List<ResourcePath> sourceFilesFromPaths();
+
+        /**
+         * Directories to include on the source path, used to resolve imports in Java source files. A dependency to all
+         * recursive directories and recursive .java files will be added, such that an added/changed/remove Java file
+         * will trigger recompilation. Additionally, changing the directories in this list will also trigger
+         * recompilation.
+         */
+        List<ResourcePath> sourcePaths();
+
+        /**
+         * Directories to include on the source path, but only used to resolve packages in Java source files. A
+         * dependency to all recursive directories will be added, such that an added/changed/removed package will
+         * trigger recompilation. Additionally, changing the directories in this list will also trigger recompilation.
+         */
+        List<ResourcePath> packagePaths();
+    }
+
+    @Value.Immutable
     public interface Input extends Serializable {
         class Builder extends CompileJavaData.Input.Builder {}
 
         static Builder builder() { return new Builder(); }
 
 
-        List<ResourcePath> sourceFiles();
+        Optional<Sources> sources();
 
-        List<ResourcePath> sourcePaths();
-
-        List<ResourcePath> sourceDirectoryPaths(); // Source path that is only used for packages (directories)
+        List<Supplier<Result<Sources, ?>>> sourceTasks();
 
 
         // Using File for classPath and annotationProcessorPath, as handling this with ResourcePath takes too much effort at the moment.
@@ -94,29 +132,50 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
     }
 
     @Override public KeyedMessages exec(ExecContext context, Input input) throws Exception {
+        final KeyedMessagesBuilder messagesBuilder = new KeyedMessagesBuilder();
+        final ArrayList<Sources> allSources = new ArrayList<>();
+        input.sources().ifPresent(allSources::add);
+        for(final Supplier<Result<Sources, ?>> sourceTask : input.sourceTasks()) {
+            context.require(sourceTask).ifElse(
+                allSources::add,
+                e -> messagesBuilder.addMessage("Failed to get Java sources from '" + sourceTask + "'", e, Severity.Error)
+            );
+        }
         for(final Supplier<?> originTask : input.originTasks()) {
             context.require(originTask);
         }
 
         final ArrayList<JavaFileObject> compilationUnits = new ArrayList<>();
-        for(ResourcePath sourceFilePath : input.sourceFiles()) {
-            final HierarchicalResource sourceFile = context.require(sourceFilePath, ResourceStampers.<HierarchicalResource>modifiedFile());
-            compilationUnits.add(javaFileObjectFactory.create(sourceFile));
-        }
         final ArrayList<HierarchicalResource> sourcePath = new ArrayList<>();
-        for(ResourcePath sourcePathPart : input.sourcePaths()) {
-            final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourcePathPart);
-            // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
-            sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
-            // Require all Java source files recursively, so we re-execute whenever a file changes.
-            sourceDirectory.walkForEach(ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension("java"))), context::require);
-            sourcePath.add(sourceDirectory);
-        }
-        for(ResourcePath sourceDirectoryPath : input.sourceDirectoryPaths()) {
-            final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourceDirectoryPath);
-            // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
-            sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
-            sourcePath.add(sourceDirectory);
+        for(Sources sources : allSources) {
+            for(ResourcePath sourceFilePath : sources.sourceFiles()) {
+                final HierarchicalResource sourceFile = context.require(sourceFilePath, ResourceStampers.<HierarchicalResource>modifiedFile());
+                compilationUnits.add(javaFileObjectFactory.create(sourceFile));
+            }
+            for(ResourcePath sourceFilesFromPath : sources.sourceFilesFromPaths()) {
+                final HierarchicalResource sourceFilesFromDirectory = context.getHierarchicalResource(sourceFilesFromPath);
+                // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
+                sourceFilesFromDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
+                // Require all Java source files recursively, so we re-execute whenever a file changes.
+                sourceFilesFromDirectory.walkForEach(ResourceMatcher.ofFileExtension("java"), javaSourceFile -> {
+                    context.require(javaSourceFile, ResourceStampers.<HierarchicalResource>modifiedFile());
+                    compilationUnits.add(javaFileObjectFactory.create(javaSourceFile));
+                });
+            }
+            for(ResourcePath sourcePathPart : sources.sourcePaths()) {
+                final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourcePathPart);
+                // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
+                sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
+                // Require all Java source files recursively, so we re-execute whenever a file changes.
+                sourceDirectory.walkForEach(ResourceMatcher.ofFileExtension("java"), context::require);
+                sourcePath.add(sourceDirectory);
+            }
+            for(ResourcePath sourceDirectoryPath : sources.packagePaths()) {
+                final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourceDirectoryPath);
+                // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
+                sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
+                sourcePath.add(sourceDirectory);
+            }
         }
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
         final HierarchicalResource classFileOutputDir = context.getHierarchicalResource(input.classFileOutputDirectory());
@@ -156,7 +215,6 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
             options.add("-g:none");
         }
         options.addAll(input.additionalOptions());
-        final KeyedMessagesBuilder messagesBuilder = new KeyedMessagesBuilder();
         final CompilationTask compilationTask = compiler.getTask(null, fileManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
 
         compilationTask.call();
