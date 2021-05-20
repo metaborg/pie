@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importPartialModulePathRename
+
+import mb:pie:lang:test:imports:subModule:a:b as mod
+
+func main_importPartialModulePathRename() -> unit = {
+  mod:c:helper_function();
+  unit
+}
