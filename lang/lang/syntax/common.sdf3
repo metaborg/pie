@@ -10,6 +10,6 @@ context-free sorts
 
 context-free syntax
 
-  // todo: rename ModuleList to Qualifier
+  // todo: rename ModuleList to Qualifier (see https://github.com/MeAmAnUsername/pie/issues/97)
   ModuleList.NoModuleList = <>
   ModuleList.ModuleList = <<{MODID ":"}+>:>
