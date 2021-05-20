@@ -11,6 +11,7 @@ fixture [[
   }
   data Bar : Foo = foreign java org.example.test.expression.Bar {
     func finagle(bool, Foo) -> int
+    func set(Foo) -> unit
   }
   data Bak : Foo = foreign java org.example.test.expression.Bak {}
   data Bok = foreign java org.example.test.expression.Bok {}
@@ -229,7 +230,8 @@ test method call no args [[ foo.[[get]]() ]] analysis succeeds  resolve #1
 test method call 1 arg [[ foo.[[set]](bar) ]] analysis succeeds  resolve #1
 test method call 2 args [[ bar.[[finagle]](true, foo) ]] analysis succeeds  resolve #1
 test method call subtype argument [[ bar.[[finagle]](true, bak) ]] analysis succeeds  resolve #1
-test method call overriden method [[ bar.[[get]]() ]] analysis succeeds  resolve #1
+test method call super method [[ bar.[[get]]() ]] analysis succeeds  resolve #1
+test method call overridden method [[ bar.[[set]](bak) ]] analysis succeeds  resolve #1
 test method call undefined func [[ bar.[[nope]]() ]] 1 error at #1  error like "Undefined function"
 test method call incorrect arg count [[ foo.set(foo, 8) ]] >= 1 error
 test method call incorrect arg type [[ foo.set([[bok]]) ]] >= 1 error at #1

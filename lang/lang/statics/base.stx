@@ -217,7 +217,7 @@ rules // Declararing and resolving
     resolveUniqueFunc_1(name, []) = (_, FALSE()) :-
       false | error $[Undefined function [name]] @name.
 
-    resolveUniqueFunc_1( name, [(_, (name', ty))]) = (ty, TRUE()) :-
+    resolveUniqueFunc_1(name, [(_, (name', ty))]) = (ty, TRUE()) :-
       // todo: allow overloading (multiple occurences, find best match by input types)
       @name.ref := name',
       @name.type := ty.
@@ -232,10 +232,18 @@ rules // Declararing and resolving
    * one data type in each scope.
    */
   resolveUniqueFuncInScopes : list(scope) * FUNCID -> (TYPE * BOOLEAN)
-  resolveUniqueFuncInScopes(scopes, name) = resolveUniqueFunc(s, name) :-
-    new s,
-    !root[getRoot(s)] in s,
-    createPEdges(s, scopes).
+  resolveUniqueFuncInScopes(scopes, name) =
+    resolveUniqueFunc_1(name, flattenFuncOccurrences(resolveUniqueFuncInScopes_1(scopes, name))).
+
+    resolveUniqueFuncInScopes_1 maps resolveFunc(list(*), *) = list(*)
+
+    flattenFuncOccurrences : list(list((path * (FUNCID * TYPE)))) -> list((path * (FUNCID * TYPE)))
+    flattenFuncOccurrences([]) = [].
+    flattenFuncOccurrences([occs|rest]) = concatFuncOccurrences(occs, flattenFuncOccurrences(rest)).
+
+    concatFuncOccurrences : list((path * (FUNCID * TYPE))) * list((path * (FUNCID * TYPE))) -> list((path * (FUNCID * TYPE)))
+    concatFuncOccurrences([], rest) = rest.
+    concatFuncOccurrences([occ|occs], rest) = [occ|concatFuncOccurrences(occs, rest)].
 
 
   /**
