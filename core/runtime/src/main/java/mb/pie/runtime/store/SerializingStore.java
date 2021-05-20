@@ -21,14 +21,14 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
     private final boolean serializeOnSync;
 
 
-    public SerializingStore(Serde serde, WritableResource resource, S store, boolean serializeOnSync) {
+    private SerializingStore(Serde serde, WritableResource resource, S store, boolean serializeOnSync) {
         this.serde = serde;
         this.resource = resource;
         this.store = store;
         this.serializeOnSync = serializeOnSync;
     }
 
-    public SerializingStore(Serde serde, WritableResource resource, S store) {
+    private SerializingStore(Serde serde, WritableResource resource, S store) {
         this(serde, resource, store, false);
     }
 

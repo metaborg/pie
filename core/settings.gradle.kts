@@ -32,6 +32,7 @@ includeProject("taskdefs.guice")
 includeProject("dagger")
 
 includeProject("task.java")
+includeProject("task.java.ecj")
 includeProject("task.archive")
 
 includeProject("example/copyfile")

@@ -3,25 +3,25 @@ package mb.pie.api;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
 
 public final class TaskData {
     public final Serializable input;
     public final @Nullable Serializable output;
     public final Observability taskObservability;
-    public final ArrayList<TaskRequireDep> taskRequires;
-    public final ArrayList<ResourceRequireDep> resourceRequires;
-    public final ArrayList<ResourceProvideDep> resourceProvides;
+    public final Collection<TaskRequireDep> taskRequires;
+    public final Collection<ResourceRequireDep> resourceRequires;
+    public final Collection<ResourceProvideDep> resourceProvides;
 
 
     public TaskData(
         Serializable input,
         @Nullable Serializable output,
         Observability taskObservability,
-        ArrayList<TaskRequireDep> taskRequires,
-        ArrayList<ResourceRequireDep> resourceRequires,
-        ArrayList<ResourceProvideDep> resourceProvides
+        Collection<TaskRequireDep> taskRequires,
+        Collection<ResourceRequireDep> resourceRequires,
+        Collection<ResourceProvideDep> resourceProvides
     ) {
         this.input = input;
         this.output = output;

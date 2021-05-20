@@ -1,14 +1,9 @@
 package mb.pie.task.archive;
 
 import mb.resource.hierarchical.ResourcePath;
-import mb.resource.hierarchical.match.AnyResourceMatcher;
-import mb.resource.hierarchical.match.DirectoryResourceMatcher;
-import mb.resource.hierarchical.match.PathResourceMatcher;
 import mb.resource.hierarchical.match.ResourceMatcher;
-import mb.resource.hierarchical.match.TrueResourceMatcher;
-import mb.resource.hierarchical.match.path.ExtensionPathMatcher;
+import mb.resource.hierarchical.match.path.PathMatcher;
 import mb.resource.hierarchical.walk.ResourceWalker;
-import mb.resource.hierarchical.walk.TrueResourceWalker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -25,13 +20,26 @@ public class ArchiveDirectory implements Serializable {
         this.walker = walker;
     }
 
+    public static ArchiveDirectory ofDirectory(ResourcePath directory, ResourceWalker walker, ResourceMatcher matcher) {
+        return new ArchiveDirectory(directory, walker, matcher);
+    }
+
+    public static ArchiveDirectory ofDirectory(ResourcePath directory, ResourceWalker walker) {
+        return ofDirectory(directory, walker, ResourceMatcher.ofTrue());
+    }
+
+    public static ArchiveDirectory ofDirectory(ResourcePath directory, ResourceMatcher matcher) {
+        return ofDirectory(directory, ResourceWalker.ofTrue(), matcher);
+    }
+
     public static ArchiveDirectory ofDirectory(ResourcePath directory) {
-        return new ArchiveDirectory(directory, new TrueResourceWalker(), new TrueResourceMatcher());
+        return ofDirectory(directory, ResourceMatcher.ofTrue());
     }
 
     public static ArchiveDirectory ofClassFilesInDirectory(ResourcePath directory) {
-        return new ArchiveDirectory(directory, new TrueResourceWalker(), new AnyResourceMatcher(new DirectoryResourceMatcher(), new PathResourceMatcher(new ExtensionPathMatcher("class"))));
+        return ofDirectory(directory, ResourceMatcher.ofDirectory().or(ResourceMatcher.ofPath(PathMatcher.ofExtension("class"))));
     }
+
 
     @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;

@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 public class ExecContextImpl implements ExecContext {
     private final StoreWriteTxn txn;
@@ -43,9 +44,10 @@ public class ExecContextImpl implements ExecContext {
     private final LoggerFactory loggerFactory;
     private final Tracer tracer;
 
-    private final ArrayList<TaskRequireDep> taskRequires = new ArrayList<>();
-    private final ArrayList<ResourceRequireDep> resourceRequires = new ArrayList<>();
-    private final ArrayList<ResourceProvideDep> resourceProvides = new ArrayList<>();
+    // LinkedHashSet to remove duplicates while preserving insertion order.
+    private final LinkedHashSet<TaskRequireDep> taskRequires = new LinkedHashSet<>();
+    private final LinkedHashSet<ResourceRequireDep> resourceRequires = new LinkedHashSet<>();
+    private final LinkedHashSet<ResourceProvideDep> resourceProvides = new LinkedHashSet<>();
 
 
     public ExecContextImpl(
@@ -178,11 +180,11 @@ public class ExecContextImpl implements ExecContext {
 
 
     static class Deps {
-        final ArrayList<TaskRequireDep> taskRequires;
-        final ArrayList<ResourceRequireDep> resourceRequires;
-        final ArrayList<ResourceProvideDep> resourceProvides;
+        final LinkedHashSet<TaskRequireDep> taskRequires;
+        final LinkedHashSet<ResourceRequireDep> resourceRequires;
+        final LinkedHashSet<ResourceProvideDep> resourceProvides;
 
-        Deps(ArrayList<TaskRequireDep> taskRequires, ArrayList<ResourceRequireDep> resourceRequires, ArrayList<ResourceProvideDep> resourceProvides) {
+        Deps(LinkedHashSet<TaskRequireDep> taskRequires, LinkedHashSet<ResourceRequireDep> resourceRequires, LinkedHashSet<ResourceProvideDep> resourceProvides) {
             this.taskRequires = taskRequires;
             this.resourceRequires = resourceRequires;
             this.resourceProvides = resourceProvides;

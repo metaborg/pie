@@ -13,9 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public class ResourceStringSupplier implements Supplier<String> {
-    private final ResourceKey key;
-    private final @Nullable ResourceStamper<ReadableResource> stamper;
-    private final String charsetName;
+    public final ResourceKey key;
+    public final @Nullable ResourceStamper<ReadableResource> stamper;
+    public final String charsetName;
     private transient Charset charset;
 
     public ResourceStringSupplier(ResourceKey key, @Nullable ResourceStamper<ReadableResource> stamper, Charset charset) {

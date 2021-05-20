@@ -5,7 +5,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class ValueSupplier<T extends @Nullable Serializable> implements Supplier<T> {
+public class ValueSupplier<T extends Serializable> implements Supplier<T> {
     private final T value;
 
     public ValueSupplier(T value) {
@@ -16,7 +16,7 @@ public class ValueSupplier<T extends @Nullable Serializable> implements Supplier
         return value;
     }
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final ValueSupplier<?> that = (ValueSupplier<?>)o;

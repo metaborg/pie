@@ -58,6 +58,9 @@ public abstract class PieProviderModule {
             final PieChildBuilder builder = p.createChildBuilder();
             builder.withTaskDefs(new MapTaskDefs(taskDefs));
             builder.withResourceService(resourceService);
+            serdeFactory.ifPresent(builder::overrideSerdeFactory);
+            storeFactory.ifPresent(builder::overrideStoreFactory);
+            shareFactory.ifPresent(builder::overrideShareFactory);
             defaultOutputStamper.ifPresent(builder::withDefaultOutputStamper);
             defaultRequireReadableResourceStamper.ifPresent(builder::withDefaultRequireReadableResourceStamper);
             defaultProvideReadableResourceStamper.ifPresent(builder::withDefaultProvideReadableResourceStamper);

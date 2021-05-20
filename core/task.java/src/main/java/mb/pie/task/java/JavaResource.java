@@ -16,17 +16,28 @@ import java.io.Writer;
 import java.net.URI;
 import java.util.Objects;
 
-class JavaResource implements JavaFileObject {
-    final HierarchicalResource resource;
-    private final Kind kind;
+public class JavaResource implements JavaFileObject {
+    public static class Factory implements JavaFileObjectFactory {
+        @Override public JavaFileObject create(HierarchicalResource resource) {
+            return new JavaResource(resource);
+        }
+
+        @Override public JavaFileObject create(HierarchicalResource resource, Kind kind) {
+            return new JavaResource(resource, kind);
+        }
+    }
 
 
-    JavaResource(HierarchicalResource resource, Kind kind) {
+    protected final HierarchicalResource resource;
+    protected final Kind kind;
+
+
+    public JavaResource(HierarchicalResource resource, Kind kind) {
         this.resource = resource;
         this.kind = kind;
     }
 
-    JavaResource(HierarchicalResource resource) {
+    public JavaResource(HierarchicalResource resource) {
         this(resource, Util.kindOfResource(resource));
     }
 
@@ -77,7 +88,6 @@ class JavaResource implements JavaFileObject {
     }
 
     @Override public Writer openWriter() throws IOException {
-        resource.createParents();
         return new OutputStreamWriter(openOutputStream());
     }
 

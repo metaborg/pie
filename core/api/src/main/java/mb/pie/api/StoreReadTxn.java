@@ -4,6 +4,7 @@ import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -31,7 +32,7 @@ public interface StoreReadTxn extends StoreTxn {
     /**
      * @return task require dependencies (calls) of task [key].
      */
-    List<TaskRequireDep> taskRequires(TaskKey key);
+    Collection<TaskRequireDep> taskRequires(TaskKey key);
 
     /**
      * @return callers of task [key].
@@ -42,7 +43,7 @@ public interface StoreReadTxn extends StoreTxn {
     /**
      * @return resource require dependencies of task [key].
      */
-    List<ResourceRequireDep> resourceRequires(TaskKey key);
+    Collection<ResourceRequireDep> resourceRequires(TaskKey key);
 
     /**
      * @return tasks that require resource [key].
@@ -53,7 +54,7 @@ public interface StoreReadTxn extends StoreTxn {
     /**
      * @return resource provide dependencies of task [key].
      */
-    List<ResourceProvideDep> resourceProvides(TaskKey key);
+    Collection<ResourceProvideDep> resourceProvides(TaskKey key);
 
     /**
      * @return task that provides resource [key], or `null` if no task provides it.

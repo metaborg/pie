@@ -29,22 +29,25 @@ import java.util.stream.Stream;
 import static mb.pie.task.java.Util.qualifiedNameToRelativePath;
 import static mb.pie.task.java.Util.relativePathToQualifiedName;
 
-class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
+public class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
     private final ResourceService resourceService;
+    private final JavaFileObjectFactory javaFileObjectFactory;
 
     private final ArrayList<HierarchicalResource> sourcePath;
     private final HierarchicalResource sourceFileOutputDir;
     private final HierarchicalResource classFileOutputDir;
     private final @Nullable Class<?> baseFileObjectClass;
 
-    JavaResourceManager(
+    public JavaResourceManager(
         StandardJavaFileManager fileManager,
+        JavaFileObjectFactory javaFileObjectFactory,
         ResourceService resourceService,
         ArrayList<HierarchicalResource> sourcePath,
         HierarchicalResource sourceFileOutputDir,
         HierarchicalResource classFileOutputDir
     ) {
         super(fileManager);
+        this.javaFileObjectFactory = javaFileObjectFactory;
         this.resourceService = resourceService;
         this.sourcePath = sourcePath;
         this.sourceFileOutputDir = sourceFileOutputDir;
@@ -57,6 +60,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         }
         this.baseFileObjectClass = baseFileObjectClass;
     }
+
 
     @Override public boolean hasLocation(Location location) {
         if(location instanceof StandardLocation) {
@@ -93,7 +97,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
             final ExtensionsPathMatcher pathMatcher = new ExtensionsPathMatcher(kinds.stream().map(Util::kindToExtension).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
             final ResourceMatcher matcher = new PathResourceMatcher(pathMatcher);
             try(Stream<? extends HierarchicalResource> stream = recurse ? resource.walk(new TrueResourceWalker(), matcher) : resource.list(matcher)) {
-                results.addAll(stream.map(JavaResource::new).collect(Collectors.toList()));
+                results.addAll(stream.map(javaFileObjectFactory::create).collect(Collectors.toList()));
             }
         }
         return results;
@@ -109,7 +113,14 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                     if(baseResources == null) break;
                     for(HierarchicalResource baseResource : baseResources) {
                         final ResourcePath basePath = baseResource.getPath();
-                        final ResourcePath path = resourceService.getResourcePath(ResourceKeyString.parse(file.getName()));
+                        final ResourcePath path;
+                        if(file instanceof JavaResource) {
+                            // HACK: cannot always use getName on our JavaResource because of ECJ hacks. Special case
+                            //       for our own JavaResource class which does what we expect.
+                            path = ((JavaResource)file).resource.getPath();
+                        } else {
+                            path = resourceService.getResourcePath(ResourceKeyString.parse(file.getName()));
+                        }
                         if(!path.startsWith(basePath)) continue;
                         return relativePathToQualifiedName(FilenameExtensionUtil.removeExtension(basePath.relativize(path)));
                     }
@@ -132,7 +143,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 .appendRelativePath(qualifiedNameToRelativePath(packageName))
                 .appendRelativePath(relativeName);
             if(resource.exists()) {
-                return new JavaResource(resource);
+                return javaFileObjectFactory.create(resource);
             }
         }
         return null;
@@ -147,7 +158,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         final HierarchicalResource resource = baseResource
             .appendRelativePath(qualifiedNameToRelativePath(packageName))
             .appendRelativePath(relativeName);
-        return new JavaResource(resource);
+        return javaFileObjectFactory.create(resource);
     }
 
     @Override
@@ -161,7 +172,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
                 .appendRelativePath(qualifiedNameToRelativePath(className))
                 .appendToLeaf(kind.extension);
             if(resource.exists()) {
-                return new JavaResource(resource, kind);
+                return javaFileObjectFactory.create(resource, kind);
             }
         }
         return null;
@@ -176,7 +187,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
         final HierarchicalResource resource = baseResource
             .appendRelativePath(qualifiedNameToRelativePath(className))
             .appendToLeaf(kind.extension);
-        return new JavaResource(resource);
+        return javaFileObjectFactory.create(resource);
     }
 
     @Override
@@ -188,6 +199,7 @@ class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileMana
             return a.equals(b);
         }
     }
+
 
     private @Nullable List<HierarchicalResource> getResources(Location location) {
         if(location instanceof StandardLocation) {

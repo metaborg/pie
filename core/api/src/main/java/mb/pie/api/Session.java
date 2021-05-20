@@ -3,7 +3,6 @@ package mb.pie.api;
 import mb.pie.api.exec.CancelToken;
 import mb.resource.ResourceKey;
 import mb.resource.hierarchical.HierarchicalResource;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -35,12 +34,12 @@ public interface Session {
      * should be kept up-to-date in bottom-up builds.
      *
      * @param task Task to make up-to-date.
-     * @return Up-to-date output of {@code task}.
+     * @return Up-to-date output of {@code task}. May be {@code null} when task returns {@code null}.
      * @throws ExecException        When a task throws an {@link Exception}.
      * @throws InterruptedException When execution is cancelled.
      * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
+    <O extends Serializable> O require(Task<O> task) throws ExecException, InterruptedException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
@@ -49,24 +48,24 @@ public interface Session {
      *
      * @param task   Task to make up-to-date.
      * @param cancel Cancel checker to use.
-     * @return Up-to-date output of {@code task}.
+     * @return Up-to-date output of {@code task}. May be {@code null} when task returns {@code null}.
      * @throws ExecException        When a task throws an {@link Exception}.
      * @throws InterruptedException When execution is cancelled.
      * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+    <O extends Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, returning its up-to-date output, without marking it as
      * {@link Observability#ExplicitObserved explicitly observed}.
      *
      * @param task Task to make up-to-date.
-     * @return Up-to-date output of {@code task}.
+     * @return Up-to-date output of {@code task}. May be {@code null} when task returns {@code null}.
      * @throws ExecException        When a task throws an {@link Exception}.
      * @throws InterruptedException When execution is cancelled.
      * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
-    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException;
+    <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException;
 
     /**
      * Makes {@code task} up-to-date in a top-down fashion, using given {@code cancel} checker, returning its up-to-date
@@ -74,12 +73,52 @@ public interface Session {
      *
      * @param task   Task to make up-to-date.
      * @param cancel Cancel checker to use.
-     * @return Up-to-date output of {@code task}.
+     * @return Up-to-date output of {@code task}. May be {@code null} when task returns {@code null}.
      * @throws ExecException        When a task throws an {@link Exception}.
      * @throws InterruptedException When execution is cancelled.
      * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
-    <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+    <O extends Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+
+
+    /**
+     * Checks whether {@code task} has been executed at least once.
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task was executed at least once, false otherwise.
+     */
+    default boolean hasBeenExecuted(Task<?> task) {
+        return hasBeenExecuted(task.key());
+    }
+
+    /**
+     * Checks whether task with given {@code key} has been executed at least once.
+     *
+     * @param key Key of task to check.
+     * @return True if task was executed at least once, false otherwise.
+     */
+    boolean hasBeenExecuted(TaskKey key);
+
+
+    /**
+     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build) or implicitly observed
+     * (when another observed task requires it).
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task is observed, false otherwise.
+     */
+    default boolean isObserved(Task<?> task) {
+        return isObserved(task.key());
+    }
+
+    /**
+     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or
+     * implicitly observed (when another observed task requires it).
+     *
+     * @param key Key of task to check.
+     * @return True if task is observed, false otherwise.
+     */
+    boolean isObserved(TaskKey key);
 
 
     /**

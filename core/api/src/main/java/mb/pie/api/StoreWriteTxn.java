@@ -3,7 +3,7 @@ package mb.pie.api;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Storage read/write transaction. Must be closed after use.
@@ -27,17 +27,17 @@ public interface StoreWriteTxn extends StoreReadTxn {
     /**
      * Sets the task require dependencies of task [key] to [taskRequires].
      */
-    void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires);
+    void setTaskRequires(TaskKey key, Collection<TaskRequireDep> taskRequires);
 
     /**
      * Sets the resource require dependencies of task [key] to [resourceRequires].
      */
-    void setResourceRequires(TaskKey key, ArrayList<ResourceRequireDep> resourceRequires);
+    void setResourceRequires(TaskKey key, Collection<ResourceRequireDep> resourceRequires);
 
     /**
      * Sets the resource provide dependencies of task [key] to [resourceProvides].
      */
-    void setResourceProvides(TaskKey key, ArrayList<ResourceProvideDep> resourceProvides);
+    void setResourceProvides(TaskKey key, Collection<ResourceProvideDep> resourceProvides);
 
     /**
      * Sets the output and dependencies for task [key] to [data].

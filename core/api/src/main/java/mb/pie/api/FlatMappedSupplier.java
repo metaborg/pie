@@ -4,7 +4,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 
-public class FlatMappedSupplier<T extends Serializable, R extends @Nullable Serializable> implements Supplier<R> {
+public class FlatMappedSupplier<T extends Serializable, R extends Serializable> implements Supplier<R> {
     private final Supplier<T> supplier;
     private final Function<? super T, Supplier<R>> func;
 
@@ -17,7 +17,7 @@ public class FlatMappedSupplier<T extends Serializable, R extends @Nullable Seri
         return func.apply(context, supplier.get(context)).get(context);
     }
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final FlatMappedSupplier<?, ?> mappedSupplier = (FlatMappedSupplier<?, ?>)o;

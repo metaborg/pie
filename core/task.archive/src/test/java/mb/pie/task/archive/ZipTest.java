@@ -5,13 +5,10 @@ import mb.pie.api.MixedSession;
 import mb.pie.api.Task;
 import mb.resource.ResourceKey;
 import mb.resource.fs.FSResource;
-import mb.resource.hierarchical.match.PathResourceMatcher;
-import mb.resource.hierarchical.match.TrueResourceMatcher;
-import mb.resource.hierarchical.match.path.AntPattern;
-import mb.resource.hierarchical.match.path.ExtensionPathMatcher;
-import mb.resource.hierarchical.match.path.PatternPathMatcher;
-import mb.resource.hierarchical.walk.PathResourceWalker;
-import mb.resource.hierarchical.walk.TrueResourceWalker;
+import mb.resource.hierarchical.match.ResourceMatcher;
+import mb.resource.hierarchical.match.path.PathMatcher;
+import mb.resource.hierarchical.match.path.string.PathStringMatcher;
+import mb.resource.hierarchical.walk.ResourceWalker;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -68,7 +65,12 @@ class ZipTest extends TestBase {
             assertTrue(zipFile.isFile());
 
             final FSResource unarchiveDir = createDir(rootDirectory, "unarchive");
-            session.require(unarchiveFromZip.createTask(new UnarchiveFromZip.Input(zipFile.getPath(), unarchiveDir.getPath(), zipTask.toSupplier())));
+            session.require(unarchiveFromZip.createTask(new UnarchiveFromZip.Input(
+                zipFile.getPath(),
+                unarchiveDir.getPath(),
+                PathStringMatcher.ofTrue(),
+                zipTask.toSupplier()
+            )));
 
             final FSResource unarchivedFile1 = unarchiveDir.appendRelativePath(archiveFile1Path);
             assertTrue(unarchivedFile1.exists());
@@ -107,9 +109,9 @@ class ZipTest extends TestBase {
             final FSResource zipFile = rootDirectory.appendRelativePath("archive.zip");
             final Task<ResourceKey> zipTask = archiveToZip.createTask(new ArchiveToZip.Input(
                 createList(
-                    new ArchiveDirectory(archiveDir1.getPath(), new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("txt"))),
-                    new ArchiveDirectory(archiveDir2.getPath(), new PathResourceWalker(new PatternPathMatcher(new AntPattern(archiveFile4Sdir))), new TrueResourceMatcher()),
-                    new ArchiveDirectory(archiveDir2.getPath(), new TrueResourceWalker(), new PathResourceMatcher(new ExtensionPathMatcher("md")))
+                    ArchiveDirectory.ofDirectory(archiveDir1.getPath(), ResourceMatcher.ofPath(PathMatcher.ofExtension("txt"))),
+                    ArchiveDirectory.ofDirectory(archiveDir2.getPath(), ResourceWalker.ofPath(PathMatcher.ofAntPattern(archiveFile4Sdir))),
+                    ArchiveDirectory.ofDirectory(archiveDir2.getPath(), ResourceMatcher.ofPath(PathMatcher.ofExtension("md")))
                 ),
                 zipFile.getPath(),
                 createList())
@@ -119,7 +121,12 @@ class ZipTest extends TestBase {
             assertTrue(zipFile.isFile());
 
             final FSResource unarchiveDir = createDir(rootDirectory, "unarchive");
-            session.require(unarchiveFromZip.createTask(new UnarchiveFromZip.Input(zipFile.getPath(), unarchiveDir.getPath(), zipTask.toSupplier())));
+            session.require(unarchiveFromZip.createTask(new UnarchiveFromZip.Input(
+                zipFile.getPath(),
+                unarchiveDir.getPath(),
+                PathStringMatcher.ofAntPattern("**/file4.md").not(),
+                zipTask.toSupplier()
+            )));
 
             final FSResource unarchivedFile1 = unarchiveDir.appendRelativePath(archiveFile1Path);
             assertTrue(unarchivedFile1.exists());
@@ -137,9 +144,7 @@ class ZipTest extends TestBase {
             assertEquals(archiveFile3Text, unarchivedFile3.readString());
 
             final FSResource unarchivedFile4 = unarchiveDir.appendRelativePath(archiveFile4Path);
-            assertTrue(unarchivedFile4.exists());
-            assertTrue(unarchivedFile4.isFile());
-            assertEquals(archiveFile4Text, unarchivedFile4.readString());
+            assertFalse(unarchivedFile4.exists());
 
             final FSResource unarchivedFile5 = unarchiveDir.appendRelativePath(archiveFile5Path);
             assertFalse(unarchivedFile5.exists());

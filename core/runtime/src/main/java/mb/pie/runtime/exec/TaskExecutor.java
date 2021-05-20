@@ -118,7 +118,7 @@ public class TaskExecutor {
             throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
             tracer.executeEndFailed(key, task, reason, e);
-            // Wrap regular exceptions into an RuntimeExecException which is propagated up to the entry point, where it
+            // Wrap regular exceptions into an UncheckedExecException which is propagated up to the entry point, where it
             // will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
         }

@@ -1,7 +1,5 @@
 package mb.pie.api;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.io.Serializable;
 import java.util.function.Consumer;
 
@@ -67,18 +65,20 @@ public interface Pie extends AutoCloseable {
      *
      * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
      *                 which callback function to call when a task is required.
-     * @param function Function to call with up-to-date output as argument when {@code task} is required.
+     * @param function Function to call with up-to-date output as argument when {@code task} is required. Consumed value
+     *                 by the function may be {@code null} when a task returns {@code null}.
      */
-    <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function);
+    <O extends Serializable> void setCallback(Task<O> task, Consumer<O> function);
 
     /**
      * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
      * required, its up-to-date output will be passed as an argument to the {@code function}.
      *
      * @param key      Key of task to set callback for.
-     * @param function Function to call with up-to-date output as argument when task is required.
+     * @param function Function to call with up-to-date output as argument when task is required. Consumed value by the
+     *                 function may be {@code null} when a task returns {@code null}.
      */
-    void setCallback(TaskKey key, Consumer<@Nullable Serializable> function);
+    void setCallback(TaskKey key, Consumer<Serializable> function);
 
     /**
      * Removes the callback function for outputs of {@code task}.

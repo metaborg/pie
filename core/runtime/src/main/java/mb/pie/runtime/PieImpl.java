@@ -46,7 +46,7 @@ public class PieImpl implements Pie {
 
 
     public PieImpl(
-        boolean isBase,
+        boolean ownsStore,
         TaskDefs taskDefs,
         ResourceService resourceService,
         Serde serde,
@@ -58,7 +58,7 @@ public class PieImpl implements Pie {
         Function<LoggerFactory, Tracer> tracerFactory,
         Callbacks callbacks
     ) {
-        this.isBase = isBase;
+        this.isBase = ownsStore;
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.serde = serde;

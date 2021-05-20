@@ -19,6 +19,7 @@ import org.lmdbjava.Txn;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -179,7 +180,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         shared.setOne(serializeUtil.serializeHashed(key), serializeUtil.serialize(observability), taskObservabilityDb);
     }
 
-    @Override public void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires) {
+    @Override public void setTaskRequires(TaskKey key, Collection<TaskRequireDep> taskRequires) {
         // OPTO: reuse buffers? is that safe?
         final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
         final byte[] keyBytes = serializedAndHashed.serialized;
@@ -198,7 +199,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         }
     }
 
-    @Override public void setResourceRequires(TaskKey key, ArrayList<ResourceRequireDep> resourceRequires) {
+    @Override public void setResourceRequires(TaskKey key, Collection<ResourceRequireDep> resourceRequires) {
         // OPTO: reuse buffers? is that safe?
         final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
         final byte[] keyBytes = serializedAndHashed.serialized;
@@ -217,7 +218,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         }
     }
 
-    @Override public void setResourceProvides(TaskKey key, ArrayList<ResourceProvideDep> resourceProvides) {
+    @Override public void setResourceProvides(TaskKey key, Collection<ResourceProvideDep> resourceProvides) {
         // OPTO: reuse buffers? is that safe?
         final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
         final byte[] keyBytes = serializedAndHashed.serialized;

@@ -1,27 +1,34 @@
 package mb.pie.api;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.io.Serializable;
 
 /**
  * An incremental version of {@link java.util.function.Supplier}: a supplier of a {@link Serializable serializable}
  * object of some type {@code T}, which may be gotten incrementally through an {@link ExecContext execution context},
- * for example by requiring the output of a task or resource. The supplier itself is also {@link Serializable
- * serializable} so that it can be passed as input and outputs of tasks.
+ * for example by requiring the output of a task or resource.
+ *
+ * The supplier itself is {@link Serializable serializable} and has identity so that it can be passed as input and
+ * outputs of tasks.
  *
  * @param <T> Type of object to supply.
+ * @implNote Must implement {@link Object#equals(Object)} and {@link Object#hashCode()} as this supplier can be passed
+ * as inputs to tasks, or produced as output from tasks, which require these implementations for incrementality.
  */
 @FunctionalInterface
-public interface Supplier<T extends @Nullable Serializable> extends Serializable {
+public interface Supplier<T extends Serializable> extends Serializable {
+    /**
+     * Incrementally gets the value.
+     *
+     * @param context Execution context for incrementality.
+     * @return Output object. May be {@code null}.
+     */
     T get(ExecContext context);
 
     /**
      * Creates a new supplier for which given {@link Function incremental function} is executed on the result of this
-     * supplier. {@code T} may not be {@code @Nullable}, because incremental functions may not take {@code null} as
-     * input.
+     * supplier.
      *
-     * @param mapper Incremental function to apply to result of this supplier.
+     * @param mapper {@link Function Incremental function} to apply to result of this supplier.
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
@@ -30,11 +37,10 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
     }
 
     /**
-     * Creates a new supplier for which given {@link java.util.function.Function function} is executed on the result of
-     * this supplier. {@code T} may not be {@code @Nullable}, because incremental functions may not take {@code null} as
-     * input. Given function must be {@link Serializable}.
+     * Creates a new supplier for which given {@link SerializableFunction serializable function} is executed on the
+     * result of this supplier.
      *
-     * @param mapper Function to apply to result of this supplier. Must be {@link Serializable}.
+     * @param mapper {@link SerializableFunction Serializable function} to apply to result of this supplier.
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
@@ -45,10 +51,9 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
 
     /**
      * Creates a new supplier for which given {@link Function incremental function} is executed on the result of this
-     * supplier, which returns a new supplier. {@code T} may not be {@code @Nullable}, because incremental functions may
-     * not take {@code null} as input.
+     * supplier, which returns a new supplier.
      *
-     * @param mapper Incremental function to apply to result of this supplier.
+     * @param mapper {@link Function Incremental function} to apply to result of this supplier.
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */
@@ -57,11 +62,10 @@ public interface Supplier<T extends @Nullable Serializable> extends Serializable
     }
 
     /**
-     * Creates a new supplier for which given {@link java.util.function.Function function} is executed on the result of
-     * this supplier, which returns a new supplier. {@code T} may not be {@code @Nullable}, because incremental
-     * functions may not take {@code null} as input. Given function must be {@link Serializable}.
+     * Creates a new supplier for which given {@link SerializableFunction serializable function} is executed on the
+     * result of this supplier, which returns a new supplier.
      *
-     * @param mapper Function to apply to result of this supplier. Must be {@link Serializable}.
+     * @param mapper {@link SerializableFunction Serializable function} to apply to result of this supplier.
      * @param <R>    Resulting type.
      * @return Mapped supplier.
      */

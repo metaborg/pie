@@ -22,8 +22,7 @@ dependencies {
   implementation(compositeBuild("pie.serde.kryo"))
   implementation(compositeBuild("pie.task.archive"))
 
-  implementation("org.metaborg:spoofax.compiler.spoofax3.standalone:$spoofax3Version")
-  implementation("org.metaborg:spoofax.compiler.spoofax3.standalone.dagger:$spoofax3Version")
+  implementation("org.metaborg:spoofax.lwb.compiler.dagger:$spoofax3Version")
 
   implementation("com.google.jimfs:jimfs")
   implementation("org.metaborg:log.backend.slf4j")

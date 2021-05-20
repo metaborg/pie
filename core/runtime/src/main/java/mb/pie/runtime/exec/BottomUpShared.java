@@ -14,6 +14,7 @@ import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -132,7 +133,7 @@ public class BottomUpShared {
         toCheckQueue.add(caller);
         while(!toCheckQueue.isEmpty()) {
             final TaskKey toCheck = toCheckQueue.poll();
-            final List<TaskRequireDep> taskReqDeps = txn.taskRequires(toCheck);
+            final Collection<TaskRequireDep> taskReqDeps = txn.taskRequires(toCheck);
             for(TaskRequireDep dep : taskReqDeps) {
                 if(dep.calleeEqual(callee)) {
                     return true;

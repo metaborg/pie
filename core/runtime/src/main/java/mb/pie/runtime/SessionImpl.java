@@ -5,6 +5,7 @@ import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.Session;
 import mb.pie.api.Store;
+import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
@@ -52,8 +53,20 @@ public abstract class SessionImpl implements Session {
     }
 
 
+    @Override public boolean hasBeenExecuted(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.output(key) != null;
+        }
+    }
+
+    @Override public boolean isObserved(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.taskObservability(key).isObserved();
+        }
+    }
+
     @Override public void unobserve(TaskKey key) {
-        try(StoreWriteTxn txn = store.writeTxn()) {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
             Observability.explicitUnobserve(txn, key);
         }
     }
@@ -64,7 +77,7 @@ public abstract class SessionImpl implements Session {
 
     @Override
     public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, HierarchicalResource> shouldDeleteProvidedResource) throws IOException {
-        try(StoreWriteTxn txn = store.writeTxn()) {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
             // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
             final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
             while(!tasksToDelete.isEmpty()) {

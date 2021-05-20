@@ -23,9 +23,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,13 +37,13 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
 
     private final HashMap<TaskKey, Observability> taskObservability = new HashMap<>();
 
-    private final HashMap<TaskKey, ArrayList<TaskRequireDep>> taskRequires = new HashMap<>();
+    private final HashMap<TaskKey, Collection<TaskRequireDep>> taskRequires = new HashMap<>();
     private final HashMap<TaskKey, Set<TaskKey>> callersOf = new HashMap<>();
 
-    private final HashMap<TaskKey, ArrayList<ResourceRequireDep>> resourceRequires = new HashMap<>();
+    private final HashMap<TaskKey, Collection<ResourceRequireDep>> resourceRequires = new HashMap<>();
     private final HashMap<ResourceKey, Set<TaskKey>> requireesOf = new HashMap<>();
 
-    private final HashMap<TaskKey, ArrayList<ResourceProvideDep>> resourceProvides = new HashMap<>();
+    private final HashMap<TaskKey, Collection<ResourceProvideDep>> resourceProvides = new HashMap<>();
     private final HashMap<ResourceKey, TaskKey> providerOf = new HashMap<>();
 
 
@@ -79,17 +80,17 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
     }
 
 
-    @Override public ArrayList<TaskRequireDep> taskRequires(TaskKey key) {
-        return getOrEmptyArrayList(taskRequires, key);
+    @Override public Collection<TaskRequireDep> taskRequires(TaskKey key) {
+        return getOrEmptyLinkedHashSet(taskRequires, key);
     }
 
     @Override public Set<TaskKey> callersOf(TaskKey key) {
         return getOrPutEmptyHashSet(callersOf, key);
     }
 
-    @Override public void setTaskRequires(TaskKey key, ArrayList<TaskRequireDep> taskRequires) {
+    @Override public void setTaskRequires(TaskKey key, Collection<TaskRequireDep> taskRequires) {
         // Remove old task requirements.
-        final @Nullable ArrayList<TaskRequireDep> oldTaskRequires = this.taskRequires.remove(key);
+        final @Nullable Collection<TaskRequireDep> oldTaskRequires = this.taskRequires.remove(key);
         if(oldTaskRequires != null) {
             for(TaskRequireDep taskRequire : oldTaskRequires) {
                 getOrPutEmptyHashSet(callersOf, taskRequire.callee).remove(key);
@@ -103,17 +104,17 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
     }
 
 
-    @Override public ArrayList<ResourceRequireDep> resourceRequires(TaskKey key) {
-        return getOrEmptyArrayList(resourceRequires, key);
+    @Override public Collection<ResourceRequireDep> resourceRequires(TaskKey key) {
+        return getOrEmptyLinkedHashSet(resourceRequires, key);
     }
 
     @Override public Set<TaskKey> requireesOf(ResourceKey key) {
         return getOrPutEmptyHashSet(requireesOf, key);
     }
 
-    @Override public void setResourceRequires(TaskKey key, ArrayList<ResourceRequireDep> resourceRequires) {
+    @Override public void setResourceRequires(TaskKey key, Collection<ResourceRequireDep> resourceRequires) {
         // Remove old resource requirements.
-        final @Nullable ArrayList<ResourceRequireDep> oldResourceRequires = this.resourceRequires.remove(key);
+        final @Nullable Collection<ResourceRequireDep> oldResourceRequires = this.resourceRequires.remove(key);
         if(oldResourceRequires != null) {
             for(ResourceRequireDep resourceRequire : oldResourceRequires) {
                 getOrPutEmptyHashSet(requireesOf, resourceRequire.key).remove(key);
@@ -127,17 +128,17 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
     }
 
 
-    @Override public ArrayList<ResourceProvideDep> resourceProvides(TaskKey key) {
-        return getOrEmptyArrayList(resourceProvides, key);
+    @Override public Collection<ResourceProvideDep> resourceProvides(TaskKey key) {
+        return getOrEmptyLinkedHashSet(resourceProvides, key);
     }
 
     @Override public @Nullable TaskKey providerOf(ResourceKey key) {
         return providerOf.get(key);
     }
 
-    @Override public void setResourceProvides(TaskKey key, ArrayList<ResourceProvideDep> resourceProvides) {
+    @Override public void setResourceProvides(TaskKey key, Collection<ResourceProvideDep> resourceProvides) {
         // Remove old resource providers.
-        final @Nullable ArrayList<ResourceProvideDep> oldResourceProvides = this.resourceProvides.remove(key);
+        final @Nullable Collection<ResourceProvideDep> oldResourceProvides = this.resourceProvides.remove(key);
         if(oldResourceProvides != null) {
             for(ResourceProvideDep resourceProvide : oldResourceProvides) {
                 providerOf.remove(resourceProvide.key);
@@ -161,9 +162,9 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
             return null;
         }
         final Observability taskObservability = taskObservability(key);
-        final ArrayList<TaskRequireDep> taskRequires = taskRequires(key);
-        final ArrayList<ResourceRequireDep> resourceRequires = resourceRequires(key);
-        final ArrayList<ResourceProvideDep> resourceProvides = resourceProvides(key);
+        final Collection<TaskRequireDep> taskRequires = taskRequires(key);
+        final Collection<ResourceRequireDep> resourceRequires = resourceRequires(key);
+        final Collection<ResourceProvideDep> resourceProvides = resourceProvides(key);
         return new TaskData(input, output.output, taskObservability, taskRequires, resourceRequires, resourceProvides);
     }
 
@@ -188,7 +189,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
         }
         final @Nullable Observability observability = taskObservability.remove(key);
 
-        final @Nullable ArrayList<TaskRequireDep> removedTaskRequires = taskRequires.remove(key);
+        final @Nullable Collection<TaskRequireDep> removedTaskRequires = taskRequires.remove(key);
         if(removedTaskRequires != null) {
             for(final TaskRequireDep taskRequire : removedTaskRequires) {
                 final @Nullable Set<TaskKey> callers = callersOf.get(taskRequire.callee);
@@ -199,7 +200,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
         }
         callersOf.remove(key);
 
-        final @Nullable ArrayList<ResourceRequireDep> removedResourceRequires = resourceRequires.remove(key);
+        final @Nullable Collection<ResourceRequireDep> removedResourceRequires = resourceRequires.remove(key);
         if(removedResourceRequires != null) {
             for(final ResourceRequireDep resourceRequire : removedResourceRequires) {
                 final @Nullable Set<TaskKey> requirees = requireesOf.get(resourceRequire.key);
@@ -209,7 +210,7 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
             }
         }
 
-        final @Nullable ArrayList<ResourceProvideDep> removedResourceProvides = resourceProvides.remove(key);
+        final @Nullable Collection<ResourceProvideDep> removedResourceProvides = resourceProvides.remove(key);
         if(removedResourceProvides != null) {
             for(final ResourceProvideDep resourceProvide : removedResourceProvides) {
                 providerOf.remove(resourceProvide.key);
@@ -220,9 +221,9 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
             input,
             output.output,
             observability != null ? observability : Observability.Unobserved,
-            removedTaskRequires != null ? removedTaskRequires : new ArrayList<>(),
-            removedResourceRequires != null ? removedResourceRequires : new ArrayList<>(),
-            removedResourceProvides != null ? removedResourceProvides : new ArrayList<>()
+            removedTaskRequires != null ? removedTaskRequires : new LinkedHashSet<>(),
+            removedResourceRequires != null ? removedResourceRequires : new LinkedHashSet<>(),
+            removedResourceProvides != null ? removedResourceProvides : new LinkedHashSet<>()
         );
     }
 
@@ -304,8 +305,8 @@ public class InMemoryStore implements Store, StoreReadTxn, StoreWriteTxn, Serial
         return map.computeIfAbsent(key, (k) -> new HashSet<>());
     }
 
-    private static <K, V> ArrayList<V> getOrEmptyArrayList(HashMap<K, ArrayList<V>> map, K key) {
-        return map.getOrDefault(key, new ArrayList<>());
+    private static <K, V> Collection<V> getOrEmptyLinkedHashSet(HashMap<K, Collection<V>> map, K key) {
+        return map.getOrDefault(key, new LinkedHashSet<>());
     }
 
 

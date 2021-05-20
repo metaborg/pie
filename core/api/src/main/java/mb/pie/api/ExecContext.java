@@ -16,7 +16,6 @@ import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,11 +48,11 @@ public interface ExecContext {
      * @param <O>     Type of the output object.
      * @param taskDef Task definition of the task to require.
      * @param input   Input object of the task to require.
-     * @return Up-to-date output object of the task.
+     * @return Up-to-date output object of the task. May be {@code null} when the task returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input);
+    <I extends Serializable, O extends Serializable> O require(TaskDef<I, O> taskDef, I input);
 
     /**
      * Requires task given by its {@code taskDef} and {@code input}, using given {@code stamper}, returning the
@@ -64,11 +63,11 @@ public interface ExecContext {
      * @param taskDef Task definition of the task to require.
      * @param input   Input object of the task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
-     * @return Up-to-date output object of the task.
+     * @return Up-to-date output object of the task. May be {@code null} when the task returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper);
+    <I extends Serializable, O extends Serializable> O require(TaskDef<I, O> taskDef, I input, OutputStamper stamper);
 
     /**
      * Requires given {@code task}, using the {@link #getDefaultOutputStamper() default output stamper}, returning the
@@ -76,11 +75,11 @@ public interface ExecContext {
      *
      * @param <O>  Type of the output object.
      * @param task Task to require.
-     * @return Up-to-date output object of {@code task}.
+     * @return Up-to-date output object of {@code task}. May be {@code null} when the task returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task);
+    <O extends Serializable> O require(Task<O> task);
 
     /**
      * Requires given {@code task}, using given {@code stamper}, returning the up-to-date output object of the task.
@@ -88,71 +87,93 @@ public interface ExecContext {
      * @param <O>     Type of the output object.
      * @param task    Task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
-     * @return Up-to-date output object of {@code task}.
+     * @return Up-to-date output object of {@code task}. May be {@code null} when the task returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper);
+    <O extends Serializable> O require(Task<O> task, OutputStamper stamper);
 
     /**
      * Requires task given by the {@link STaskDef serializable task definition} and {@code input} of the task, using the
      * {@link #getDefaultOutputStamper() default output stamper}, returning the up-to-date output object of the task.
-     * <p>
+     *
+     * This method performs an unchecked cast from a task definition's actual input and output type, to {@link I} and
+     * {@link O}. If these differ, execution may fail for example due to {@link ClassCastException} or {@link
+     * NoSuchMethodError}. Additionally, your code may fail with the same exceptions if the returned object is not
+     * actually of type {@link O}.
+     *
      * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
-     * lookup and cast of the task definition, which is less efficient.
+     * lookup which is less efficient.
      *
      * @param sTaskDef {@link STaskDef Serializable task definition} of the task to require.
      * @param input    Input object of the task to require.
-     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @return Up-to-date output object of the task, assumed to be of type {@link O}. May be {@code null} when the task
+     * returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input);
+    <I extends Serializable, O extends Serializable> O require(STaskDef<I, O> sTaskDef, I input);
 
     /**
      * Requires task given by the {@link STaskDef serializable task definition} and {@code input} of the task, using
      * given {@code stamper}, returning the up-to-date output object of the task.
-     * <p>
+     *
+     * This method performs an unchecked cast from a task definition's actual input and output type, to {@link I} and
+     * {@link O}. If these differ, execution may fail for example due to {@link ClassCastException} or {@link
+     * NoSuchMethodError}. Additionally, your code may fail with the same exceptions if the returned object is not
+     * actually of type {@link O}.
+     *
      * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
-     * possible, as this methods performs a lookup and cast of the task definition, which is less efficient.
+     * possible, as this methods performs a lookup which is less efficient.
      *
      * @param sTaskDef {@link STaskDef Serializable task definition} of the task to require.
      * @param input    Input object of the task to require.
      * @param stamper  {@link OutputStamper Output stamper} to use.
-     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @return Up-to-date output object of the task, assumed to be of type {@link O}. May be {@code null} when the task
+     * returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper);
+    <I extends Serializable, O extends Serializable> O require(STaskDef<I, O> sTaskDef, I input, OutputStamper stamper);
 
     /**
      * Requires task given by its {@link STask serializable task form}, using the {@link #getDefaultOutputStamper()
      * default output stamper}, returning the up-to-date output object of the task.
-     * <p>
+     *
+     * This method performs an unchecked cast from a task's output type, to {@link O}. If these differ, execution may
+     * fail for example due to {@link ClassCastException} or {@link NoSuchMethodError}. Additionally, your code may fail
+     * with the same exceptions if the returned object is not actually of type {@link O}.
+     *
      * Prefer {@link #require(Task)} or {@link #require(TaskDef, Serializable)} if possible, as this methods performs a
-     * lookup and cast of the task definition, which is less efficient.
+     * lookup which is less efficient.
      *
      * @param sTask {@link STask Serializable task form} of the task to require.
-     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @return Up-to-date output object of the task, assumed to be of type {@link O}. May be {@code null} when the task
+     * returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(STask<O> sTask);
+    <O extends Serializable> O require(STask<O> sTask);
 
     /**
      * Requires task given by its {@link STask serializable task form}, using given {@code stamper}, returning the
      * up-to-date output object of the task.
-     * <p>
+     *
+     * This method performs an unchecked cast from a task's output type, to {@link O}. If these differ, execution may
+     * fail for example due to {@link ClassCastException} or {@link NoSuchMethodError}. Additionally, your code may fail
+     * with the same exceptions if the returned object is not actually of type {@link O}.
+     *
      * Prefer {@link #require(Task, OutputStamper)} or {@link #require(TaskDef, Serializable, OutputStamper)} if
      * possible, as this methods performs a lookup and cast of the task definition, which is less efficient.
      *
      * @param sTask   {@link STask Serializable task form} of the task to require.
      * @param stamper {@link OutputStamper Output stamper} to use.
-     * @return Up-to-date output object of the task, which must be casted to the correct type.
+     * @return Up-to-date output object of the task, assumed to be of type {@link O}. May be {@code null} when the task
+     * returns {@code null}.
      * @throws UncheckedExecException When an executing task throws an exception.
      * @throws CanceledException      When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(STask<O> sTask, OutputStamper stamper);
+    <O extends Serializable> O require(STask<O> sTask, OutputStamper stamper);
 
     /**
      * Returns output of given {@link Supplier incremental supplier}, which may in turn require the output of a task, or
@@ -160,13 +181,13 @@ public interface ExecContext {
      *
      * @param <O>      Type of the output object.
      * @param supplier {@link Supplier} to get output of.
-     * @return Up-to-date output object of {@code supplier}.
+     * @return Up-to-date output object of {@code supplier}. May be {@code null} when the supplier returns {@code null}.
      * @throws UncheckedExecException When the supplier requires a task that throws an exception.
      * @throws UncheckedIOException   When the supplier requires/provides and reads/writes a resource, but fails to do
      *                                so.
      * @throws CanceledException      When execution is cancelled.
      */
-    <O extends @Nullable Serializable> O require(Supplier<O> supplier);
+    <O extends Serializable> O require(Supplier<O> supplier);
 
     /**
      * Returns output of given {@link Function incremental function} applied to given {@code input}, which may in turn
@@ -176,13 +197,13 @@ public interface ExecContext {
      * @param <O>      Type of the output object.
      * @param function {@link Function} to get output of.
      * @param input    Input to apply function to.
-     * @return Up-to-date output object of {@code function}.
+     * @return Up-to-date output object of {@code function}. May be {@code null} when the function returns {@code null}.
      * @throws UncheckedExecException When the function requires a task that throws an exception.
      * @throws UncheckedIOException   When the function requires/provides and reads/writes a resource, but fails to do
      *                                so.
      * @throws CanceledException      When execution is cancelled.
      */
-    <I extends Serializable, O extends @Nullable Serializable> O require(Function<I, O> function, I input);
+    <I extends Serializable, O extends Serializable> O require(Function<I, O> function, I input);
 
     /**
      * Gets the default output stamper.

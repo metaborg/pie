@@ -87,15 +87,15 @@ public class BottomUpRunner implements RequireTask {
             cancel.throwIfCanceled();
             final TaskKey key = queue.poll();
             final Task<?> task = key.toTask(taskDefs, txn);
-            execAndSchedule(key, task, txn, cancel);
+            execAndSchedule(key, task, new AffectedExecReason(), txn, cancel);
         }
     }
 
     /**
      * Executes given task, and schedules new tasks based on given task's output.
      */
-    private TaskData execAndSchedule(TaskKey key, Task<?> task, StoreWriteTxn txn, CancelToken cancel) {
-        final TaskData data = exec(key, task, new AffectedExecReason(), txn, cancel);
+    private TaskData execAndSchedule(TaskKey key, Task<?> task, ExecReason reason, StoreWriteTxn txn, CancelToken cancel) {
+        final TaskData data = exec(key, task, reason, txn, cancel);
         scheduleAffectedByRequiredTask(key, data.output, txn);
         scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key), txn);
         return data;
@@ -198,7 +198,7 @@ public class BottomUpRunner implements RequireTask {
             {
                 final @Nullable InconsistentInput reason = requireShared.checkInput(input, task);
                 if(reason != null) {
-                    return exec(key, task, reason, txn, cancel);
+                    return execAndSchedule(key, task, reason, txn, cancel);
                 }
             }
 
@@ -207,7 +207,7 @@ public class BottomUpRunner implements RequireTask {
             {
                 final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(output);
                 if(reason != null) {
-                    return exec(key, task, reason, txn, cancel);
+                    return execAndSchedule(key, task, reason, txn, cancel);
                 }
             }
 
@@ -314,7 +314,7 @@ public class BottomUpRunner implements RequireTask {
                 break;
             }
             final Task<?> minTask = minTaskKey.toTask(taskDefs, txn);
-            final TaskData data = execAndSchedule(minTaskKey, minTask, txn, cancel);
+            final TaskData data = execAndSchedule(minTaskKey, minTask, new AffectedExecReason(), txn, cancel);
             if(minTaskKey.equals(key)) {
                 tracer.requireScheduledNowEnd(key, data);
                 return data; // Task was affected, and has been executed: return result.

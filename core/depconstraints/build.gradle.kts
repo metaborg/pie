@@ -3,12 +3,14 @@ plugins {
   `maven-publish`
 }
 
-val resourceVersion = "0.10.1"
 val logVersion = "0.5.1"
+val resourceVersion = "0.10.1"
+val commonVersion = "0.7.0"
 
 val checkerframeworkVersion = "3.10.0"
 
-val daggerVersion = "2.32"
+val immutablesVersion = "2.8.2"
+val daggerVersion = "2.34.1"
 
 dependencies {
   constraints {
@@ -17,6 +19,7 @@ dependencies {
     api("org.metaborg:log.dagger:$logVersion")
     api("org.metaborg:resource:$resourceVersion")
     api("org.metaborg:resource.dagger:$resourceVersion")
+    api("org.metaborg:common:$commonVersion")
     api("org.checkerframework:checker-qual-android:$checkerframeworkVersion") // Use android version: annotation retention policy is class instead of runtime.
 
     // Test
@@ -24,6 +27,10 @@ dependencies {
     api("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
     api("com.google.jimfs:jimfs:1.1")
 
+    // Annotations
+    api("javax.inject:javax.inject:1")
+    api("org.immutables:value:$immutablesVersion")
+    api("org.immutables:value-annotations:$immutablesVersion")
     api("com.google.dagger:dagger:$daggerVersion")
     api("com.google.dagger:dagger-compiler:$daggerVersion")
   }
