@@ -1,6 +1,6 @@
 ---
 pie:
-  version: pie-dsl-merge-statix-SNAPSHOT
+  version: develop-SNAPSHOT
 id: org.metaborg:pie.lang:${pie.version}
 name: pie
 dependencies:
