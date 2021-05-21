@@ -7,6 +7,7 @@ imports
 //  statix/API // use for Stx-Scope
 
 // A semantic type (as opposed to the lexical, non-all caps Type)
+context-free start-symbols TYPE // For type hint on editor mouseover
 context-free sorts TYPE
 context-free syntax
 

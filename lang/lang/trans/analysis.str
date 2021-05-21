@@ -4,9 +4,15 @@ imports
 
   statixruntime
   statix/api
+  statix/runtime/-
 
   pp
   injections/-
+  src-gen/pp/constructors-pp
+  libspoofax/sdf/pp
+  
+  gen/java/type
+  gen/util
 
 rules // Analysis
 
@@ -24,7 +30,52 @@ rules // Editor Services
 
   editor-resolve = stx-editor-resolve
 
-  editor-hover = stx-editor-hover
+  editor-hover = stx-editor-hover(pp-pie-string)
+
+rules // Pretty-printing DataType(scope)
+
+  prettyprint-pie-TYPE :
+    t@DataType(_) -> [ H(
+                      [SOpt(HS(), "0")]
+                    , t1__'
+                    )
+                  ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S(<pp-Statix-ATerm> t)] // todo: get name of type
+
+  is-pie-TYPE =
+    ?DataType(_)
+
+  pie-get-indent :
+    (t@DataType(_), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  pie-get-separator :
+    (t@DataType(_), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  pie-get-leading-ws :
+    (t@DataType(_), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
 
 rules // Debugging
 
