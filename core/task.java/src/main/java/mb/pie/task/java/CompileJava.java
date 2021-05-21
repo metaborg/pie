@@ -177,6 +177,11 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
                 sourcePath.add(sourceDirectory);
             }
         }
+        if(compilationUnits.isEmpty()) {
+            // Compiler throws exception if there are no source files. Return early.
+            return messagesBuilder.build();
+        }
+
         final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
         final HierarchicalResource classFileOutputDir = context.getHierarchicalResource(input.classFileOutputDirectory());
 
