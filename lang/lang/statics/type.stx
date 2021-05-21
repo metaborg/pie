@@ -170,7 +170,7 @@ rules
   typeOfDataTy : scope * DataTy -> TYPE
   typeOfDataTy(s, DataTy(modules, name)) = DataType(s_data) :- {module_scopes}
     resolveModuleListToFile(s, modules) == module_scopes,
-    resolveUniqueDataInScopes(module_scopes, name) == s_data.
+    resolveUniqueDataInScopes(s, module_scopes, name) == s_data.
 
   /**
    * getScopeFromType(s, ty)

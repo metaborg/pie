@@ -322,16 +322,17 @@ rules // Declararing and resolving
     resolveUniqueData_1(s, [_,_|_], _) = emptyScope(s).
 
   /**
-   * resolveUniqueDataInScopes(scopes, name) = s_data
+   * resolveUniqueDataInScopes(s, scopes, name) = s_data
    * Resolve a unique data type [name] in [scopes] to a data scope [s_data].
    * Only one of the scopes can have this data type, so this does not look for
    * one data type in each scope.
+   * Scope [s] is used to set the root on an auxilary scope.
    */
-  resolveUniqueDataInScopes : list(scope) * TYPEID -> scope
-  resolveUniqueDataInScopes(scopes, name) = resolveUniqueData(s, name) :-
-    new s,
-    !root[getRoot(s)] in s,
-    createPEdges(s, scopes).
+  resolveUniqueDataInScopes : scope * list(scope) * TYPEID -> scope
+  resolveUniqueDataInScopes(s, scopes, name) = resolveUniqueData(s_auxilary, name) :-
+    new s_auxilary,
+    !root[getRoot(s)] in s_auxilary,
+    createPEdges(s_auxilary, scopes).
 
   /**
    * setContext(s, name, context)
