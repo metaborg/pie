@@ -82,8 +82,10 @@ class CompileTest {
                 "} ",
             "test/data/HelloWorld.java");
         final CompileJava.Input.Builder inputBuilder = CompileJava.Input.builder()
-            .addSourceFiles(mainJavaFile.getPath(), helloWorldJavaFile.getPath())
-            .addSourcePaths(sourceDirectory.getPath());
+            .sources(CompileJava.Sources.builder()
+                .addSourceFiles(mainJavaFile.getPath(), helloWorldJavaFile.getPath())
+                .addSourcePaths(sourceDirectory.getPath()).build()
+            );
         final @Nullable String classPathProperty = System.getProperty("classPath");
         assertNotNull(classPathProperty);
         for(String classPathPart : classPathProperty.split(File.pathSeparator)) {
