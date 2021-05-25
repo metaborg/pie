@@ -101,26 +101,26 @@ open class TestPieImpl(
 
   override fun newSession(): TestMixedSessionImpl {
     val layer = layerFactory.apply(taskDefs, loggerFactory, serde)
-    val executorLogger = tracerFactory.apply(loggerFactory)
+    val tracer = tracerFactory.apply(loggerFactory)
     val visited = HashMap<TaskKey, TaskData>()
     val providedResources = HashSet<ResourceKey>()
 
-    val taskExecutor = TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, executorLogger,
+    val taskExecutor = TaskExecutor(taskDefs, resourceService, share, defaultStampers, layer, loggerFactory, tracer,
       callbacks, visited, providedResources)
-    val requireShared = RequireShared(taskDefs, resourceService, executorLogger, visited)
+    val requireShared = RequireShared(taskDefs, resourceService, tracer, visited)
 
-    var topDownSession = TopDownRunner(super.store, layer, executorLogger, taskExecutor, requireShared, callbacks, visited)
+    var topDownSession = TopDownRunner(super.store, layer, tracer, taskExecutor, requireShared, callbacks, visited)
     if(shouldSpy) {
       topDownSession = spy(topDownSession)
     }
 
-    var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, executorLogger, taskExecutor,
+    var bottomUpSession = BottomUpRunner(taskDefs, resourceService, super.store, layer, tracer, taskExecutor,
       requireShared, callbacks, visited)
     if(shouldSpy) {
       bottomUpSession = spy(bottomUpSession)
     }
 
-    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, providedResources)
+    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, tracer, providedResources)
     if(shouldSpy) {
       session = spy(session)
     }
@@ -135,8 +135,9 @@ open class TestMixedSessionImpl(
   taskDefs: TaskDefs,
   resourceService: ResourceService,
   store: Store,
+  tracer: Tracer,
   providedResources: HashSet<ResourceKey>
-) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, providedResources) {
+) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources) {
   // Make store available for testing.
   val store: Store get() = super.store
 

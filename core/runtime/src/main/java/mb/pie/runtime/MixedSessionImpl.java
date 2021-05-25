@@ -6,6 +6,7 @@ import mb.pie.api.Store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TopDownSession;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.BottomUpRunner;
@@ -36,9 +37,10 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         TaskDefs taskDefs,
         ResourceService resourceService,
         Store store,
+        Tracer tracer,
         HashSet<ResourceKey> providedResources
     ) {
-        super(taskDefs, resourceService, store, providedResources);
+        super(taskDefs, resourceService, store, tracer, providedResources);
         this.topDownRunner = topDownRunner;
         this.bottomUpRunner = bottomUpRunner;
         this.taskDefs = taskDefs;
@@ -76,7 +78,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     }
 
     private TopDownSession createSessionAfterBottomUp() {
-        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store, providedResources);
+        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store, tracer, providedResources);
     }
 
 

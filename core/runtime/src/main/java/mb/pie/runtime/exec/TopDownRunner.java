@@ -58,8 +58,14 @@ public class TopDownRunner implements RequireTask {
             tracer.requireTopDownInitialStart(key, task);
             final O output = require(key, task, modifyObservability, txn, cancel);
             if(modifyObservability) {
+                // OPTO: can we make `require` set the desired observability?
                 // Set task as explicitly observable when required initially in top-down fashion.
-                txn.setTaskObservability(key, Observability.ExplicitObserved);
+                final Observability previousObservability = txn.taskObservability(key);
+                if(previousObservability != Observability.ExplicitObserved) {
+                    final Observability newObservability = Observability.ExplicitObserved;
+                    tracer.setTaskObservability(key, previousObservability, newObservability);
+                    txn.setTaskObservability(key, newObservability);
+                }
             }
             tracer.requireTopDownInitialEnd(key, task, output);
             return output;
@@ -77,8 +83,10 @@ public class TopDownRunner implements RequireTask {
             if(!status.executed) {
                 if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
-                    data = data.withTaskObservability(Observability.ImplicitObserved);
-                    txn.setTaskObservability(key, Observability.ImplicitObserved);
+                    final Observability newObservability = Observability.ImplicitObserved;
+                    tracer.setTaskObservability(key, Observability.Unobserved, newObservability);
+                    data = data.withTaskObservability(newObservability);
+                    txn.setTaskObservability(key, newObservability);
                 }
 
                 // Validate well-formedness of the dependency graph.

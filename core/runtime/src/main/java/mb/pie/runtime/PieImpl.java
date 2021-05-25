@@ -87,7 +87,7 @@ public class PieImpl implements Pie {
         final RequireShared requireShared = new RequireShared(taskDefs, resourceService, tracer, visited);
         final TopDownRunner topDownRunner = new TopDownRunner(store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         final BottomUpRunner bottomUpRunner = new BottomUpRunner(taskDefs, resourceService, store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
-        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, providedResources);
+        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources);
     }
 
 

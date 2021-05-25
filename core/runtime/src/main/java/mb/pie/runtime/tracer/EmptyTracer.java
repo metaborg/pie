@@ -3,6 +3,7 @@ package mb.pie.runtime.tracer;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskRequire;
+import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.Task;
@@ -134,4 +135,8 @@ class EmptyTracer implements Tracer {
 
     @Override
     public void invokeCallbackEnd(@Nullable Consumer<Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+
+
+    @Override
+    public void setTaskObservability(TaskKey key, Observability previousObservability, Observability newObservability) {}
 }

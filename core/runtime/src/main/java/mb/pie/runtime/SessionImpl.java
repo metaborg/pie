@@ -11,6 +11,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.Tracer;
 import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CanceledException;
 import mb.pie.api.exec.UncheckedInterruptedException;
@@ -35,6 +36,7 @@ public abstract class SessionImpl implements Session {
     protected final TaskDefs taskDefs;
     protected final ResourceService resourceService;
     protected final Store store;
+    protected final Tracer tracer;
 
     protected final HashSet<ResourceKey> providedResources;
 
@@ -43,11 +45,13 @@ public abstract class SessionImpl implements Session {
         TaskDefs taskDefs,
         ResourceService resourceService,
         Store store,
+        Tracer tracer,
         HashSet<ResourceKey> providedResources
     ) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
+        this.tracer = tracer;
 
         this.providedResources = providedResources;
     }
@@ -67,7 +71,7 @@ public abstract class SessionImpl implements Session {
 
     @Override public void unobserve(TaskKey key) {
         try(final StoreWriteTxn txn = store.writeTxn()) {
-            Observability.explicitUnobserve(txn, key);
+            Observability.explicitUnobserve(txn, key, tracer);
         }
     }
 

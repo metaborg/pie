@@ -97,7 +97,7 @@ public class TaskExecutor {
         cancel.throwIfCanceled();
 
         // Store previous data for observability comparison.
-        // Graceful: returns Observability.Detached if task has no observability status yet.
+        // Graceful: returns Observability.Unobserved if task has no observability status yet.
         final Observability previousObservability = txn.taskObservability(key);
         // Graceful: returns empty list if task has no task require dependencies yet.
         final HashSet<TaskKey> previousTaskRequires = txn.taskRequires(key).stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
@@ -128,6 +128,7 @@ public class TaskExecutor {
         if(modifyObservability && previousObservability.isUnobserved()) {
             // Set to observed if previously unobserved (and we are allowed to modify observability).
             newObservability = Observability.ImplicitObserved;
+            tracer.setTaskObservability(key, previousObservability, newObservability);
         } else {
             // Copy observability otherwise.
             newObservability = previousObservability;
@@ -151,7 +152,7 @@ public class TaskExecutor {
             final HashSet<TaskKey> newTaskRequires = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
             previousTaskRequires.removeAll(newTaskRequires);
             for(TaskKey removedTaskRequire : previousTaskRequires) {
-                Observability.implicitUnobserve(txn, removedTaskRequire);
+                Observability.implicitUnobserve(txn, removedTaskRequire, tracer);
             }
         }
 

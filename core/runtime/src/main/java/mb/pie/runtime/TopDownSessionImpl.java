@@ -8,6 +8,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TopDownSession;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
 import mb.pie.runtime.exec.TopDownRunner;
@@ -28,9 +29,10 @@ public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
         TaskDefs taskDefs,
         ResourceService resourceService,
         Store store,
+        Tracer tracer,
         HashSet<ResourceKey> providedResources
     ) {
-        super(taskDefs, resourceService, store, providedResources);
+        super(taskDefs, resourceService, store, tracer, providedResources);
         this.topDownRunner = topDownRunner;
         this.store = store;
     }

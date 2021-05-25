@@ -3,6 +3,7 @@ package mb.pie.runtime.tracer;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskRequire;
+import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.Task;
@@ -290,6 +291,14 @@ public class CompositeTracer implements Tracer {
     public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
         for(Tracer tracer : tracers) {
             tracer.invokeCallbackEnd(observer, key, output);
+        }
+    }
+
+
+    @Override
+    public void setTaskObservability(TaskKey key, Observability previousObservability, Observability newObservability) {
+        for(Tracer tracer : tracers) {
+            tracer.setTaskObservability(key, previousObservability, newObservability);
         }
     }
 }

@@ -280,11 +280,13 @@ public class BottomUpRunner implements RequireTask {
         }
 
         // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
-        storedData = storedData.withTaskObservability(Observability.ImplicitObserved);
+        final Observability newObservability = Observability.ImplicitObserved;
+        storedData = storedData.withTaskObservability(newObservability);
 
         // Validate well-formedness of the dependency graph, and set task to observed.
         layer.validatePostWrite(key, storedData, txn);
-        txn.setTaskObservability(key, Observability.ImplicitObserved);
+        tracer.setTaskObservability(key, Observability.Unobserved, newObservability);
+        txn.setTaskObservability(key, newObservability);
 
         // Mark task as visited.
         visited.put(key, storedData);

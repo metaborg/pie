@@ -91,4 +91,7 @@ public interface Tracer {
     void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
 
     void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output);
+
+
+    void setTaskObservability(TaskKey key, Observability previousObservability, Observability newObservability);
 }

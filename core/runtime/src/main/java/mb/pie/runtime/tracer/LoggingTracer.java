@@ -6,6 +6,7 @@ import mb.log.api.LoggerFactory;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskRequire;
+import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.StringUtil;
@@ -36,6 +37,12 @@ import java.util.function.Consumer;
  * <li>¿: indicates that a resource or task's affected tasks are being checked for scheduling (increases indentation until checking has completed).</li>
  * <li>☐: indicates that a dependency check has been skipped, because the task is unobserved.</li>
  * <li>↑: indicates that a task has been scheduled for execution (if it has not already been scheduled).</li>
+ * <li>⇒: indicates that the observability of a task has changed from one to another.</li>
+ *   <ul>
+ *       <li>‼: explicitly observed</li>
+ *       <li>!: implicitly observed</li>
+ *       <li>†: unobserved</li>
+ *   </ul>
  * </ul>
  */
 public class LoggingTracer extends EmptyTracer {
@@ -277,6 +284,27 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+
+
+    @Override
+    public void setTaskObservability(TaskKey key, Observability previousObservability, Observability newObservability) {
+        if(previousObservability == newObservability) return;
+        final String previousSigil = observabilityToSigil(previousObservability);
+        final String newSigil = observabilityToSigil(newObservability);
+        logger.trace(getIndent() + previousSigil + "⇒" + newSigil + " " + key.toShortString(strLimit));
+    }
+
+    private String observabilityToSigil(Observability observability) {
+        switch(observability) {
+            case ExplicitObserved:
+                return "‼";
+            case ImplicitObserved:
+                return "!";
+            case Unobserved:
+                return "†";
+        }
+        return "";
+    }
 
 
     private String getIndent() {

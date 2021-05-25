@@ -48,14 +48,26 @@ public enum Observability implements Serializable {
      * @param txn Store write transaction.
      * @param key Key of the task to unobsreve.
      */
-    public static void explicitUnobserve(StoreWriteTxn txn, TaskKey key) {
+    public static void explicitUnobserve(StoreWriteTxn txn, TaskKey key, Tracer tracer) {
+        final Observability previousObservability = txn.taskObservability(key);
+        if(previousObservability == Observability.Unobserved) {
+            // If task is already unobserved, there is no need to do anything.
+            return;
+        }
         if(isObservedByCaller(txn, key)) {
-            // Task is observed, therefore we cannot unobserve it. If the task was RootObserved, we set it to Observed.
-            txn.setTaskObservability(key, Observability.ImplicitObserved);
+            if(previousObservability == Observability.ExplicitObserved) {
+                // Task is explicitly observed, but also implicitly observed by a caller. Therefore we set the
+                // observability to ImplicitObserved.
+                final Observability newObservability = Observability.ImplicitObserved;
+                tracer.setTaskObservability(key, previousObservability, newObservability);
+                txn.setTaskObservability(key, newObservability);
+            }
         } else {
-            txn.setTaskObservability(key, Observability.Unobserved);
+            final Observability newObservability = Observability.Unobserved;
+            tracer.setTaskObservability(key, previousObservability, newObservability);
+            txn.setTaskObservability(key, newObservability);
             for(TaskRequireDep taskRequire : txn.taskRequires(key)) {
-                implicitUnobserve(txn, taskRequire.callee);
+                implicitUnobserve(txn, taskRequire.callee, tracer);
             }
         }
     }
@@ -68,9 +80,9 @@ public enum Observability implements Serializable {
      * @param txn Store write transaction.
      * @param key Key of the task to unobserve.
      */
-    public static void implicitUnobserve(StoreWriteTxn txn, TaskKey key) {
-        final Observability observability = txn.taskObservability(key);
-        if(observability != Observability.ImplicitObserved) {
+    public static void implicitUnobserve(StoreWriteTxn txn, TaskKey key, Tracer tracer) {
+        final Observability previousObservability = txn.taskObservability(key);
+        if(previousObservability != Observability.ImplicitObserved) {
             // If task is already unobserved, there is no need to do anything.
             // If task is explicitly observed, we may not implicitly unobserve it, so we stop.
             return;
@@ -78,9 +90,11 @@ public enum Observability implements Serializable {
         if(isObservedByCaller(txn, key)) {
             return; // Cannot unobserve, an observed task requires the task.
         }
-        txn.setTaskObservability(key, Observability.Unobserved);
+        final Observability newObservability = Observability.Unobserved;
+        tracer.setTaskObservability(key, previousObservability, newObservability);
+        txn.setTaskObservability(key, newObservability);
         for(TaskRequireDep taskRequire : txn.taskRequires(key)) {
-            implicitUnobserve(txn, taskRequire.callee);
+            implicitUnobserve(txn, taskRequire.callee, tracer);
         }
     }
 
