@@ -15,7 +15,7 @@ if(org.gradle.util.VersionNumber.parse(gradle.gradleVersion).major < 6) {
 if(gradle.parent == null) {
   includeBuildWithName("core", "pie.core.root")
   includeBuildWithName("lang", "pie.lang.root")
-//  includeBuildWithName("bench", "pie.bench") // todo: re-enable before merge
+  includeBuildWithName("bench", "pie.bench")
 }
 
 fun includeBuildWithName(dir: String, name: String) {
