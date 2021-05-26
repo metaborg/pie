@@ -26,7 +26,7 @@ context-free syntax
   TYPE.SupplierType = [supplier([TYPE])]
 
   TYPE.FuncType = [func([{TYPE ", "}+]) -> [TYPE]]
-//  TYPE.DataType = [data: [Stx-Scope]]
+//  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
 
 // Boolean values. Used in Statix logic.
 context-free sorts BOOLEAN
@@ -41,98 +41,6 @@ context-free syntax
 
   Renaming.Renaming = [[{STRING ":"}*] -> [{STRING ":"}*]]
   NormalizedImport.NormalizedImport = [normalized import: [Renaming]]
-
-//context-free sorts MODULE
-//context-free syntax
-
-  /**
-   * MODULE(module_scope, qualified_name)
-   * Data class representing module [qualified_name] and its scope
-   * [module_scope].
-   * A MODULE holds the same data as a SUBMODULE, but a MODULE signifies to
-   * module.stx!addToModuleTree that this module should be added within the
-   * new tree.
-   * Also see the constructors for ModuleTree (ModuleTreeRoot and
-   * ModuleTreeNode) above.
-   * module_scope:   scope that this module represents.
-   * qualified_name: qualified name of this module.
-   */
-//  MODULE.MODULE = [MODULE([Stx-Scope], [{MODID ":"}+])]
-
-  /**
-   * SUBMODULE(module_scope, qualified_name)
-   * Data class representing module [qualified_name] and its scope
-   * [module_scope].
-   * A SUBMODULE holds the same data as a MODULE, but a SUBMODULE signifies
-   * to module.stx!addToModuleTree that this module should refer to the same
-   * module in the root tree.
-   * Also see the constructors for ModuleTree (ModuleTreeRoot and
-   * ModuleTreeNode) above.
-   * module_scope:   scope that this module represents.
-   * qualified_name: qualified name of this module.
-   */
-//  MODULE.SUBMODULE = [SUBMODULE([Stx-Scope], [{MODID ":"}+])]
-
-//context-free sorts ModuleTree
-//context-free syntax
-
-  /**
-   * ModuleTreeRoot(tree_scopes, subnodes)
-   * The root of a module tree. Contains ModuleTreeNodes in [subnodes].
-   * The scopes [tree_scopes] represent scopes to be imported into this
-   * module tree.
-   * tree_scopes: A list of names and tree scopes that represent the same
-   *              submodule. Used to point import module tree to root module
-   *              tree on module imports. Each scope will be pointed to with
-   *              an I edge.
-   * subnodes:    The nodes representing the submodules of this module.
-   *              This should be a list of only ModuleTreeNodes without
-   *              duplicate names, anything else is a bug in this Statix
-   *              specification.
-   */
-//  ModuleTree.ModuleTreeRoot =
-//  [ModuleTreeRoot {
-//    tree_scopes {
-//      [{Stx-Scope "\n"}*]
-//    }
-//    subnodes {
-//      [{ModuleTree "\n"}*]
-//    }
-//  }]
-
-  /**
-   * ModuleTreeNode(name, file_scopes, tree_scopes, subnodes)
-   * A node of a module tree. Each node represents a module and its contents.
-   * name:        The name of the submodule.
-   * file_scopes: A list of file scopes that are instances of this submodule.
-   *              Each scope will be pointed to with a FILE edge.
-   *              This should have 0 or 1 scope, more represents a duplicate
-   *              module error.
-   * tree_scopes: A list of names and tree scopes that represent the same
-   *              submodule. Used to point import module tree to root module
-   *              tree on module imports. Each scope will be pointed to with
-   *              an I edge.
-   * subnodes:    The nodes representing the submodules of this module.
-   *              This should be a list of only ModuleTreeNodes without
-   *              duplicate names, anything else is a bug in this Statix
-   *              specification.
-   */
-//  ModuleTree.ModuleTreeNode =
-//  [ModuleTreeRoot {
-//    module name: [MODID]
-//    file_scopes {
-//      [{Stx-Scope "\n"}*]
-//    }
-//    tree_scopes {
-//      [{TreeScope "\n"}*]
-//    }
-//    subnodes {
-//      [{ModuleTree "\n"}*]
-//    }
-//  }]
-//
-//  TreeScope = [([MODID], [Stx-Scope])]
-// todo: figure out how to represent a pair
 
 // The kind of a Function. Used by code generation.
 context-free sorts FuncImplKind

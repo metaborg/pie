@@ -8,18 +8,78 @@ imports
   statics/util
   statics/type
 
+// These sorts/constructors are declared here and not in
+// syntax/constructors.sdf3 because I couldn't figure out how to declare a
+// scope in SDF3 so that it generates constructors with Statix scopes.
 signature
   sorts
     ModuleTree
     MODULE
 
-  // todo: move these to syntax/constructors.sdf3.
-  // Note: See syntax/constructors.sdf3 for documentation
   constructors
+    /**
+     * ModuleTreeRoot(tree_scopes, subnodes)
+     * The root of a module tree. Contains ModuleTreeNodes in [subnodes].
+     * The scopes [tree_scopes] represent scopes to be imported into this
+     * module tree.
+     * tree_scopes: A list of names and tree scopes that represent the same
+     *              submodule. Used to point import module tree to root module
+     *              tree on module imports. Each scope will be pointed to with
+     *              an I edge.
+     * subnodes:    The nodes representing the submodules of this module.
+     *              This should be a list of only ModuleTreeNodes without
+     *              duplicate names, anything else is a bug in this Statix
+     *              specification.
+     */
     ModuleTreeRoot : list(scope) * list(ModuleTree) -> ModuleTree
+
+    /**
+     * ModuleTreeNode(name, file_scopes, tree_scopes, subnodes)
+     * A node of a module tree. Each node represents a module and its contents.
+     * name:        The name of the submodule.
+     * file_scopes: A list of file scopes that are instances of this submodule.
+     *              Each scope will be pointed to with a FILE edge.
+     *              This should have 0 or 1 scope, more represents a duplicate
+     *              module error.
+     * tree_scopes: A list of names and tree scopes that represent the same
+     *              submodule. Used to point import module tree to root module
+     *              tree on module imports. Each scope will be pointed to with
+     *              an I edge.
+     * subnodes:    The nodes representing the submodules of this module.
+     *              This should be a list of only ModuleTreeNodes without
+     *              duplicate names, anything else is a bug in this Statix
+     *              specification.
+     */
     ModuleTreeNode : MODID * list(scope) * list((MODID * scope)) * list(ModuleTree) -> ModuleTree
+
+    /**
+     * MODULE(module_scope, qualified_name)
+     * Data class representing module [qualified_name] and its scope
+     * [module_scope].
+     * A MODULE holds the same data as a SUBMODULE, but a MODULE signifies to
+     * module.stx!addToModuleTree that this module should be added within the
+     * new tree.
+     * Also see the constructors for ModuleTree (ModuleTreeRoot and
+     * ModuleTreeNode) above.
+     * module_scope:   scope that this module represents.
+     * qualified_name: qualified name of this module.
+     */
     MODULE : scope * list(MODID) -> MODULE
+
+    /**
+     * SUBMODULE(module_scope, qualified_name)
+     * Data class representing module [qualified_name] and its scope
+     * [module_scope].
+     * A SUBMODULE holds the same data as a MODULE, but a SUBMODULE signifies
+     * to module.stx!addToModuleTree that this module should refer to the same
+     * module in the root tree.
+     * Also see the constructors for ModuleTree (ModuleTreeRoot and
+     * ModuleTreeNode) above.
+     * module_scope:   scope that this module represents.
+     * qualified_name: qualified name of this module.
+     */
     SUBMODULE : scope * list(MODID) -> MODULE
+
     DataType : scope -> TYPE
 
   relations
@@ -168,7 +228,6 @@ rules // Declararing and resolving
       | error $[Duplicate function [import_as_name]] @import_as_name,
     @import_as_name.type := type,
     @import_as_name.renamed_from := import_name,
-//    @import_name.type := type, // todo: set reference if renamed only
     @import_name.ref := decl_name.
 
   /**
@@ -218,7 +277,6 @@ rules // Declararing and resolving
       false | error $[Undefined function [name]] @name.
 
     resolveUniqueFunc_1(name, [(_, (name', ty))]) = (ty, TRUE()) :-
-      // todo: allow overloading (multiple occurences, find best match by input types)
       @name.ref := name',
       @name.type := ty.
 
@@ -271,7 +329,6 @@ rules // Declararing and resolving
       | error $[Duplicate definition of Datatype [import_as_name]] @import_as_name,
     @import_as_name.type := DataType(s_data),
     @import_as_name.renamed_from := import_name,
-//    @import_name.type := DataType(s_data), // todo: set reference if renamed only
     @import_name.ref := decl_name.
 
   /**

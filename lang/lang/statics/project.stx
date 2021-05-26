@@ -15,7 +15,6 @@ rules
   projectOk(s_root) :-
     !root[s_root] in s_root,
     declareDeduplicatedModules(s_root).
-    // todo: create scopes for built-in types
 
   programOk : scope * Start
   programOk(s_project, Program(ModuleStmt(module@Module(_, name)), imports, defs)) :- {s_mod}

@@ -45,7 +45,7 @@ rules // Pretty-printing DataType(scope)
                    , FALSE()
                    , FALSE()
                    )
-                   ; flatten-list> [S(<pp-Statix-ATerm> t)] // todo: get name of type
+                   ; flatten-list> [S(<pp-Statix-ATerm> t)]
 
   is-pie-TYPE =
     ?DataType(_)

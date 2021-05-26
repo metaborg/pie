@@ -25,7 +25,7 @@ imports
 
 signature
   constructors
-    DataType : scope -> TYPE // todo: move to syntax/constructors.sdf3.
+    DataType : scope -> TYPE
 
 rules
 

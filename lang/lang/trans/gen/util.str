@@ -93,6 +93,7 @@ rules // Property of reference in the AST
       a    := <stx-get-ast-analysis> node
       // the following line uses an internal Statix strategy.
       // todo: use external api when available (stx-get-ast-ref)
+      // Should be available in Spoofax 2.5.16
       // (Also remove import above when switching)
     ; decl := <while(id, stx--get-ast-property(|a, Ref()) <+ stx-get-ast-property(|a, "renamed_from"))> node
 
