@@ -34,6 +34,6 @@ test data type imported [[
   func getFoo() -> test:type:[[Foo]] = foreign java constructor org.example.test.type.Foo
 ]] analysis succeeds
    resolve #2 to #1
-test data type undefined [[ func foo() -> Bar = getBar() ]] analysis fails
+test data type undefined [[ func foo(bar: [[Bar]]) -> int = 83 ]] 1 error at #1  error like "Undefined data"
 test nullable value [[ func foo() -> int? = 12 ]] analysis succeeds
 test nullable null [[ func foo() -> int? = null ]] analysis succeeds

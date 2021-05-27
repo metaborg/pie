@@ -19,7 +19,7 @@ test duplicate name [[
 
 // data def mods
 test transient datadef [[ transient data Foo = foreign java org.example.test.Foo {} ]] analysis succeeds
-test double transient [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] analysis succeeds // todo: give error
+test double transient [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] analysis fails
 
 // supertypes
 test supertype declaration before use [[
@@ -35,25 +35,19 @@ test supertype use before declaration [[
 test supertype imported [[
   data [[Bar]] = foreign java org.example.test.Bar {}
   data Foo : test:data_def:[[Bar]] = foreign java org.example.test.Foo {}
-]] parse fails
-//   todo: allow importing supertypes
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 test supertype is self [[ data [[Foo]] : [[Foo]] = foreign java org.example.test.Foo {} ]]
   resolve #2 to #1
-  analysis succeeds
-//  todo: disallow inheriting from self
-//  1 error at #2
-//  error like "inherit" at #2
+  1 error at #2
+  error like "inherit" at #2
 test supertype is self indirect [[
   data [[Foo]] : [[Bar]] = foreign java org.example.test.Foo {}
   data [[Bar]] : [[Foo]] = foreign java org.example.test.Bar {}
 ]] resolve #2 to #3
    resolve #4 to #1
-   1 error
-// todo: better error message, give error at both (they both indirectly inherit from themselves)
-//   2 errors at #2, #4
-//   error like "inherit" at #2, #4
+   2 errors at #2, #4
+   error like "inherit" at #2, #4
 test supertype non-overriding methods [[
   data [[Bar]] = foreign java org.example.test.Bar {
     func get() -> int
@@ -65,15 +59,16 @@ test supertype non-overriding methods [[
    resolve #2 to #1
 test supertype overriding, compatible methods [[
   data [[Foo]] = foreign java org.example.test.Foo {
-    func get() -> [[Bar]]
+    func [[get]]() -> [[Foo]]
   }
   data [[Bar]] : [[Foo]] = foreign java org.example.test.Bar {
-    func get() -> [[Foo]]
+    func [[get]]() -> [[Bar]]
   }
 ]] analysis succeeds
-   resolve #2 to #3
-   resolve #4 to #1
+   resolve #3 to #1
    resolve #5 to #1
+   resolve #6 to #2
+   resolve #7 to #4
 test supertype - non-overriding methods - different parameter count [[
   data Bar = foreign java org.example.test.Bar {
     func get() -> bool
@@ -84,15 +79,14 @@ test supertype - non-overriding methods - different parameter count [[
 ]] analysis succeeds
 test supertype - overriding, incompatible methods - non-subtype return type [[
   data Foo = foreign java org.example.test.Foo {
-    func get() -> Foo
-  }
-  data Bar : Foo = foreign java org.example.test.Bar {
     func [[get]]() -> Bar
   }
-]] analysis succeeds
-//  todo: disallow overriding with incompatible return type
-//   1 error at #1
-//   error like "incompatable return type"
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[get]]() -> Foo
+  }
+]] 1 error at #2
+   error like "incompatable return type"
+   resolve #2 to #1
 test supertype - non-overriding methods - narrowing parameter [[
   data Bar = foreign java org.example.test.Bar {
     func get(Bar) -> int
@@ -118,11 +112,11 @@ test foreign java same class [[
   data Foo1 : Bar = foreign java org.example.test.Foo {}
   data Foo2 = foreign java org.example.test.Foo {}
   func takesFoo1(foo: Foo1) -> unit = {}
-  func main(foo: Foo2) -> unit = [[takesFoo1]](foo)
+  func main(foo: Foo2) -> unit = takesFoo1([[foo]])
 ]] // Checks that:
    // Using the same class for different pie data types is allowed, even if the signatures don't match
    // Cannot use Foo2 where Foo1 is expected, even though both are the same Java class.
-   1 error at #1 // todo: show error at argument instead of function name
+   1 error at #1
 
 // implementation - foreign java - methods
 test foreign java no methods [[ data Foo = foreign java org.example.test.Foo {} ]] analysis succeeds

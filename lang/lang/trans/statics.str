@@ -1,0 +1,9 @@
+module statics
+
+imports
+
+  statix/api
+
+rules
+
+  pie-ast-type = stx-get-ast-type(|<stx-get-ast-analysis>)

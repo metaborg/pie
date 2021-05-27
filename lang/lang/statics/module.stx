@@ -1,0 +1,369 @@
+module statics/module
+
+imports
+
+  signatures/constructors-sig
+  statics/base
+  statics/util
+
+rules
+
+  /**
+   * declareWipModule(s_project, s_mod, Module(moduleList, name))
+   * Declare a work in progress module [s_mod] named [name] in the relation
+   * mod_wip. [name] is declared recursively nested in the modules of
+   * [moduleList] starting in the root scope [s_project].
+   * The module is work in progress because there can be multiple such
+   * recursively nested modules, possibly with duplicate names.
+   * The modules are deduplicated in statics/project.stx!projectOk.
+   */
+  declareWipModule : scope * scope * Module
+  declareWipModule(s_project, s_mod, module) :-
+    !mod_wip[MODULE(s_mod, moduleToList(module))] in s_project.
+
+  /**
+   * declareDeduplicatedModules(s_root)
+   * Gets all declared work in progress modules (see
+   * statics/module!declareWipModule), converts them to a module tree (without
+   * duplicates) and then declares all the modules.
+   */
+  declareDeduplicatedModules : scope
+  declareDeduplicatedModules(s) :- {occs}
+    query mod_wip filter e in s |-> occs,
+    declareModules(s, getWipModules(occs), TRUE()).
+
+  /**
+   * getWipModule(occ) = module
+   * Gets the MODULE [module] from an occurence [occ].
+   */
+  getWipModule : (path * MODULE) -> MODULE
+  getWipModules maps getWipModule(list(*)) = list(*)
+  getWipModule((_, module)) = module.
+
+  /**
+   * declareModules(s, modules, add_duplicate_errors)
+   * Declares the MODULEs [modules] in scope [s].
+   * Adds errors for duplicate files if [add_duplicate_errors] is TRUE().
+   * This should be FALSE() when declaring modules from imports because a check
+   * will lead to circular dependencies.
+   */
+  declareModules : scope * list(MODULE) * BOOLEAN
+  declareModules(s, modules, add_duplicate_errors) :- {tree}
+    createModuleTree(modules) == tree,
+    declareModulesFromTree(s, tree, add_duplicate_errors).
+
+  /**
+   * createModuleTree(modules) = module_tree
+   * Transforms a list of MODULEs into a tree structure.
+   */
+  createModuleTree : list(MODULE) -> ModuleTree
+  createModuleTree(modules) = addAllToModuleTree(ModuleTreeRoot([], []), modules).
+
+  /**
+   * addAllToModuleTree(root_in, wip_modules) -> root_out
+   * Add all wip modules [wip_modules] to module tree [root_in].
+   * root_in is required to be a ModuleTreeRoot
+   * All modules are deduplicated and added recursively.
+   */
+  addAllToModuleTree : ModuleTree * list(MODULE) -> ModuleTree
+  addAllToModuleTree(node@ModuleTreeNode(_, _, _, _), _) = node :-
+    false | error $[BUG: called addAllToModuleTree with a non-root node].
+  addAllToModuleTree(root@ModuleTreeRoot(_, _), []) = root.
+  addAllToModuleTree(root_1@ModuleTreeRoot(_, _), [occ|occs]) = root_3 :- {root_2}
+    addToModuleTree(root_1, occ) == root_2,
+    addAllToModuleTree(root_2, occs) == root_3.
+
+  /**
+   * addToModuleTree(root_in, module) -> root_out
+   * Add MODULE [module] to module tree [root_in].
+   * root_in is required to be a ModuleTreeRoot
+   * The module is added recursively and deduplicated as necessary.
+   */
+  addToModuleTree : ModuleTree * MODULE -> ModuleTree
+  addToModuleTree(node@ModuleTreeNode(_, _, _, _), _) = node :-
+    false | error $[BUG: called addToModuleTree with a non-root node].
+  addToModuleTree(ModuleTreeRoot(root_scopes, modules), MODULE(s_mod, [])) =
+    ModuleTreeRoot([s_mod|root_scopes], modules).
+  addToModuleTree(ModuleTreeRoot(root_scopes, modules), module) =
+    ModuleTreeRoot(root_scopes, addToModuleTree_1(modules, getNames(module), module)).
+
+    getNames : MODULE -> list(MODID)
+    getNames(MODULE(_, names)) = names.
+    getNames(SUBMODULE(_, names)) = names.
+
+    addToModuleTree_1 : list(ModuleTree) * list(MODID) * MODULE -> list(ModuleTree)
+    addToModuleTree_1(mods, [], module) = mods :- false | error "BUG: called addToModuleTree_1 with empty module name list".
+    addToModuleTree_1([], [name], MODULE(s_file, _)) =
+      [ModuleTreeNode(name, [s_file], [], [])].
+    addToModuleTree_1([], [name], SUBMODULE(s_tree, names)) =
+      [ModuleTreeNode(name, [], [(getLast(names), s_tree)], [])].
+    addToModuleTree_1([ModuleTreeNode(name, file_scopes, tree_scopes, sub_modules)|modules], [name_node@name], MODULE(s_file, _)) =
+      [ModuleTreeNode(name_node, [s_file|file_scopes], tree_scopes, sub_modules)|modules].
+    addToModuleTree_1([ModuleTreeNode(name, file_scopes, tree_scopes, sub_modules)|modules], [name_node@name], SUBMODULE(s_tree, names)) =
+      [ModuleTreeNode(name_node, file_scopes, [(getLast(names), s_tree)|tree_scopes], sub_modules)|modules].
+    addToModuleTree_1([node@ModuleTreeNode(name', _, _, _)|modules], [name], module) =
+      [node|addToModuleTree_1(modules, [name], module)] :- name' != name.
+    addToModuleTree_1([], [name|names], module) =
+      [ModuleTreeNode(name, [], [], addToModuleTree_1([], names, module))].
+    addToModuleTree_1([ModuleTreeNode(name, file_scopes, tree_scopes, sub_modules)|modules], [name|names], module) =
+      [ModuleTreeNode(name, file_scopes, tree_scopes, addToModuleTree_1(sub_modules, names, module))|modules].
+    addToModuleTree_1([node@ModuleTreeNode(name', _, _, _)|modules], names@[name|_], module) =
+      [node|addToModuleTree_1(modules, names, module)] :- name' != name.
+
+  /**
+   * declareModulesFromTree(s, tree, add_duplicate_errors)
+   * Declares all modules in the tree with a new scope and adds a pointer to
+   * the file scopes where applicible (see statics/module!instantiateModule).
+   * Adds errors for duplicate files if add_duplicate_errors is TRUE().
+   */
+  declareModulesFromTree : scope * ModuleTree * BOOLEAN
+  declareModulesFromTrees maps declareModulesFromTree(*, list(*), *)
+  declareModulesFromTree(s, ModuleTreeRoot(root_scopes, sub_modules), add_duplicate_errors) :- {s_tree_root}
+    new s_tree_root,
+    !root[getRoot(s)] in s_tree_root,
+    setModuleName(s_tree_root, "<ROOT>"),
+    s -MODULE_TREE_ROOT-> s_tree_root,
+    declareModuleInstances(s_tree_root, root_scopes),
+    declareModulesFromTrees(s_tree_root, sub_modules, add_duplicate_errors).
+  declareModulesFromTree(s, ModuleTreeNode(name, file_scopes, tree_scopes, sub_modules), add_duplicate_errors) :- {s_mod_tree}
+    new s_mod_tree,
+    !root[getRoot(s)] in s_mod_tree,
+    declareModule(s, name, s_mod_tree),
+    setModuleName(s_mod_tree, name),
+    declareModuleInstances(s_mod_tree, file_scopes),
+    declareAlternateTreeScopes(s_mod_tree, tree_scopes),
+    declareModulesFromTrees(s_mod_tree, sub_modules, add_duplicate_errors),
+    addDuplicateModuleErrors(file_scopes, add_duplicate_errors),
+    addDuplicateNameErrors(tree_scopes).
+
+    declareAlternateTreeScope : scope * (MODID * scope)
+    declareAlternateTreeScopes maps declareAlternateTreeScope(*, list(*))
+    declareAlternateTreeScope(s_mod_tree, (_, s_mod_tree_alternate)) :-
+      s_mod_tree -I-> s_mod_tree_alternate.
+
+    addDuplicateModuleErrors : list(scope) * BOOLEAN
+    addDuplicateModuleErrors(_, FALSE()).
+    addDuplicateModuleErrors([], TRUE()).
+    addDuplicateModuleErrors([_], TRUE()).
+    addDuplicateModuleErrors(scopes@[_, _|_], TRUE()) :-
+      addDuplicateModuleErrors_1s(scopes, scopes).
+
+    // give an error on name of s_mod and set references to all other names from scopes in list
+    addDuplicateModuleErrors_1 : scope * list(scope)
+    addDuplicateModuleErrors_1s maps addDuplicateModuleErrors_1(list(*), *)
+    addDuplicateModuleErrors_1(s_mod, scopes) :- {module module_pp name}
+      getContext(s_mod, "module_name_qualified") == ContextModule(module) | error $[BUG: cannot get qualified module name from [s_mod]],
+      moduleToList(module) == module_pp,
+      getModuleName(s_mod) == name,
+      false | error $[Duplicate module [module_pp]. Ctrl/Cmd + click on [name] to go to duplicate definition.] @module,
+      setModuleReferences(filterScope(scopes, s_mod), name).
+
+    // set a reference from name to s_cur
+    setModuleReference : scope * string
+    setModuleReferences maps setModuleReference(list(*), *)
+    setModuleReference(s_cur, ref_name) :-
+      @ref_name.ref := getModuleName(s_cur).
+
+    // filter scope from list of scopes
+    // assumes that scope only occurs once.
+    filterScope : list(scope) * scope -> list(scope)
+    filterScope([], _) = [].
+    filterScope([s_mod|rest], s_mod) = rest.
+    filterScope([s    |rest], s_mod) = [s|filterScope(rest, s_mod)] :-
+      s != s_mod.
+
+    // adds duplicate name errors when importing two modules under the same name
+    addDuplicateNameErrors : list((MODID * scope))
+    addDuplicateNameErrors([]).
+    addDuplicateNameErrors([_]).
+    addDuplicateNameErrors(scopes@[_, _|_]) :- addDuplicateNameErrors_1s(scopes, scopes).
+
+    // give an error on name of s_mod and set references to all other names from scopes in list
+    addDuplicateNameErrors_1 : (MODID * scope) * list((MODID * scope))
+    addDuplicateNameErrors_1s maps addDuplicateNameErrors_1(list(*), *)
+    addDuplicateNameErrors_1((name, s_tree), scopes) :-
+      false | error $[Duplicate definition [name]. Ctrl/Cmd + click to go to duplicate definition.] @name,
+      setModuleReferences(filterScope(getScopeFromNamePairs(scopes), s_tree), name).
+
+    getScopeFromNamePair : (MODID * scope) -> scope
+    getScopeFromNamePairs maps getScopeFromNamePair(list(*)) = list(*)
+    getScopeFromNamePair((name, scope)) = scope.
+
+  /**
+   * declareModule(s, name, s_mod)
+   * Declare a module [s_mod] named [name] in scope [s].
+   */
+  declareModule : scope * MODID * scope
+  declareModule(s, name, s_mod) :-
+    !mod[name, s_mod] in s,
+    resolveModuleOpt(s, name) == [s_mod]
+      | error $[BUG: duplicate definitions for module [name] in [s]].
+
+  /**
+   * instantiateModule(s_mod_tree, s_mod_file)
+   * Instantiate module [s_mod_file] by adding a MOD_INSTANCE edge to
+   * [s_mod_tree].
+   */
+  declareModuleInstance : scope * scope
+  declareModuleInstances maps declareModuleInstance(*, list(*))
+  declareModuleInstance(s_mod_tree, s_mod_file) :-
+    s_mod_tree -FILE-> s_mod_file.
+
+  /**
+   * setModuleName(s, name)
+   * Set the module_name_simple context value to [name] in [s]
+   */
+  setModuleName : scope * MODID
+  setModuleName(s, name) :-
+    setContext(s, "module_name_simple", ContextName(name)).
+
+  /**
+   * getModuleName(s_mod) -> name
+   * Get the simple name of a module from its scope.
+   * Works with both module tree scopes and module file scopes.
+   */
+  getModuleName : scope -> MODID
+  getModuleName(s_mod) = name :-
+    getContext(s_mod, "module_name_simple") == ContextName(name)
+      | error $[BUG: cannot get module name in [s_mod]].
+
+  /**
+   * resolveModuleListToFile(s, moduleList) = s_tree
+   * Resolve the modules from the ModuleList [moduleList] and return the module
+   * file scope [s_file] of the last module in the list.
+   * This function will also resolve pseudo modules defined by imports.
+   * Also sets references on the names in the moduleList to files, if
+   * such files exist. (example: given foo:bar:baz, it points foo to a file foo
+   * if it exists and bar to a file foo:bar if it exists)
+   */
+  resolveModuleListToFile : scope * ModuleList -> list(scope)
+  resolveModuleListToFile(s, NoModuleList()) = [s].
+  resolveModuleListToFile(s, moduleList@ModuleList(mods)) =
+    moduleTreeScopeToFile(resolveModuleList(s, moduleList, TRUE(), TRUE()), getLast(mods)).
+
+  /**
+   * moduleTreeScopeToFile(s_mod_tree, name_node) = file_scopes
+   * Gets the single file scopes [file_scopes] associated with a tree scope
+   * [s_mod_tree].
+   * Gives a duplicate module error of there are multiple proper modules, and a
+   * not instantiated error in case no proper modules and no proxy modules are
+   * associated with the scope.
+   * errors are reported on [name_node].
+   * See also moduleTreeScopeToFiles.
+   */
+  moduleTreeScopeToFile : scope * MODID -> list(scope)
+  moduleTreeScopeToFile(s_mod_tree, name_node) = file_scopes :-
+    {proper_module_scopes proxy_scopes name}
+    moduleTreeScopeToFiles(s_mod_tree) == file_scopes,
+    getModuleName(s_mod_tree) == name,
+    moduleTreeScopeToFile_1(separateProxyModules(file_scopes), name, name_node, s_mod_tree).
+
+    // gives an error if there is more than 1 proper module scope, or no proper module scopes and no proxy scopes
+    moduleTreeScopeToFile_1 : (list(scope) * list(scope)) * MODID * MODID * scope
+    moduleTreeScopeToFile_1(([], []), name, name_node, s) :-
+      false | error $[Submodule [name] is not instantiated] @name_node.
+    moduleTreeScopeToFile_1(([], [_|_]), _, _, _).
+    moduleTreeScopeToFile_1(([_], _), _, _, _).
+    moduleTreeScopeToFile_1(([_,_|_], _), name, name_node, s) :-
+      false | error $[Duplicate module [name]] @name_node.
+
+    // separate proper modules and proxy modules into two lists
+    separateProxyModules : list(scope) -> (list(scope) * list(scope))
+    separateProxyModules([]) = ([], []).
+    separateProxyModules([s|rest]) = separateProxyModules_1(s, occs, separateProxyModules(rest)) :-
+      query is_proxy_module in s |-> occs.
+
+    separateProxyModules_1 : scope * list((path * ())) * (list(scope) * list(scope)) -> (list(scope) * list(scope))
+    separateProxyModules_1(s, [], (proper_module_scopes, proxy_scopes)) = ([s|proper_module_scopes], proxy_scopes).
+    separateProxyModules_1(s, [_|_], (proper_module_scopes, proxy_scopes)) = (proper_module_scopes, [s|proxy_scopes]).
+
+  /**
+   * moduleTreeScopeToFiles(s_mod_tree) = file_scopes
+   * returns the file scopes [file_scopes] associated with a tree scope
+   * [s_mod_tree].
+   */
+  moduleTreeScopeToFiles : scope -> list(scope)
+  moduleTreeScopeToFiles(s_mod_tree) = getScopes(occs) :-
+    query () filter I? FILE in s_mod_tree |-> occs.
+
+  /**
+   * resolveModuleList(s, moduleList, follow_imports, add_references) = s_mod_tree
+   * Resolve the modules from the ModuleList [moduleList] and return the module
+   * tree scope [s_mod_tree] of the last module in the list.
+   * If follow_imports is TRUE() it will follow pseudomodules declared by
+   * imports, otherwise not (and only resolve modules at the root scope)
+   * Also sets references on the names in the moduleList to files, if
+   * such files exist. (example: given foo:bar:baz, it points foo to a file foo
+   * if it exists and bar to a file foo:bar if it exists)
+   */
+  resolveModuleList : scope * ModuleList * BOOLEAN * BOOLEAN -> scope
+  resolveModuleList(s, NoModuleList(), _, _) = s.
+  resolveModuleList(s, ModuleList([]), _, _) = s :- try {false} | note "BUG?: called resolveModuleList with empty ModuleList".
+  resolveModuleList(s, module@ModuleList(mods@[name|_]), follow_imports, add_references) =
+    resolveModuleList_1(s, getModuleTreeRoots(s, follow_imports), mods, name, module, add_references).
+
+    // gets the roots of all module trees reachable from s (should be root and file module tree)
+    getModuleTreeRoots : scope * BOOLEAN -> list(scope)
+    getModuleTreeRoots(s, TRUE()) = getModuleTreeRoots_1s([getRoot(s)|getFileIfExists(s)]).
+    getModuleTreeRoots(s, FALSE()) = [getModuleTreeRoots_1(getRoot(s))].
+
+      // resolve module tree root scope from root / file scope
+      getModuleTreeRoots_1 : scope -> scope
+      getModuleTreeRoots_1s maps getModuleTreeRoots_1(list(*)) = list(*)
+      getModuleTreeRoots_1(s) = s_module_tree_root :-
+        query () filter MODULE_TREE_ROOT in s |-> [(_, s_module_tree_root)].
+
+    resolveModuleList_1 : scope * list(scope) * list(MODID) * MODID * ModuleList * BOOLEAN -> scope
+    resolveModuleList_1(s, [], _, last_name, module, _) = emptyScope(s) :- false | error $[Undefined submodule [last_name] in [module]] @last_name.
+    resolveModuleList_1(s, scopes, [], _, module, _) = resolveModuleList_2(s, scopes, module).
+    resolveModuleList_1(s, scopes, [name|names], last_name, module, FALSE()) =
+      result@resolveModuleList_1(s, next_scopes@flattenScopeList(resolveModulesOpt(scopes, name)), names, name, module, FALSE()).
+    resolveModuleList_1(s, scopes, [name|names], last_name, module, TRUE()) =
+      result@resolveModuleList_1(s, next_scopes@flattenScopeList(resolveModulesOpt(scopes, name)), names, name, module, TRUE()) :-
+      addFileReferences(next_scopes, name).
+
+    resolveModuleList_2 : scope * list(scope) * ModuleList -> scope
+    resolveModuleList_2(s, [], module) = emptyScope(s) :- false | error "BUG: called resolveModuleList_2 with empty list (should have been caught by `resolveModuleList_1([], _, last_name, module)`)" @module.
+    resolveModuleList_2(_, [s_mod], _) = s_mod.
+    resolveModuleList_2(s, [s_mod|rest@[s_mod|_]], module) = resolveModuleList_2(s, rest, module).
+    resolveModuleList_2(s, [s_mod,s_mod'|_], module) = emptyScope(s) :- false | error $[[module] resolved to different scopes].
+
+  /**
+   * flattenScopeList(lists) = list
+   * flattens a nested list [lists] of scopes. Gives an error if any list
+   * contains more than 1 element.
+   */
+  flattenScopeList : list(list(scope)) -> list(scope)
+  flattenScopeList([]) = [].
+  flattenScopeList([list|lists]) = concatScopes(list, flattenScopeList(lists)).
+
+    // concatenates two lists of scopes. Gives an error if the first list contains more than 1 element.
+    concatScopes : list(scope) * list(scope) -> list(scope)
+    concatScopes([], scopes) = scopes.
+    concatScopes([s], scopes) = [s|scopes].
+    concatScopes([s|rest@[_|_]], scopes) = [s|concatScopes(rest, scopes)] :- false | error "BUG: resolved multiple scopes".
+
+  /*
+   * addFileReference(s_mod_tree, name_node)
+   * Sets a reference on [name_node] to the name of [s_mod_tree].
+   */
+  addFileReference : scope * MODID
+  addFileReferences maps addFileReference(list(*), *)
+  addFileReference(s_mod_tree, name_node) :-
+    setModuleReferences(moduleTreeScopeToFiles(s_mod_tree), name_node).
+
+  /**
+   * resolveModuleOpt(s, name) = tree_scopes
+   * Get all modules named [name] defined/reachable from tree scope [s].
+   * "Reachable" means either defined directly in the module that [s] is a part
+   * of, or another module tree that [name] is imported from.
+   */
+  resolveModuleOpt : scope * MODID -> list(scope)
+  resolveModulesOpt maps resolveModuleOpt(list(*), *) = list(*)
+  resolveModuleOpt(s, name) = getModules(occs) :-
+    query mod filter I? and {name' :- name' == name} in s |-> occs.
+
+    // get the module from an occurrence
+    getModule : (path * (MODID * scope)) -> scope
+    getModules maps getModule(list(*)) = list(*)
+    getModule((_, (_, s_mod))) = s_mod.

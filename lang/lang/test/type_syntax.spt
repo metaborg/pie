@@ -5,14 +5,14 @@ start symbol Type
 // simple types
 test unit [[ unit ]] parse to UnitTy()
 test bool [[ bool ]] parse to BoolTy()
-test boolean [[ boolean ]] parse to DataTy("boolean")
+test boolean [[ boolean ]] parse to DataTy(NoModuleList(), "boolean")
 test int [[ int ]] parse to IntTy()
 test string [[ string ]] parse to StrTy()
 test path [[ path ]] parse to PathTy()
 
 // data types
-test data [[ Foo ]] parse to DataTy("Foo")
-test imported data [[ example:othermod:Bar ]] parse to ImportTy(["example", "othermod"], "Bar")
+test data [[ Foo ]] parse to DataTy(NoModuleList(), "Foo")
+test imported data [[ example:othermod:Bar ]] parse to DataTy(ModuleList(["example", "othermod"]), "Bar")
 test imported data missing final name [[ example:othermod: ]] parse fails
 test imported data missing first name [[ :othermod:Bar ]] parse fails
 test imported data missing middle [[ example::Bar ]] parse fails
@@ -28,8 +28,8 @@ test tuple missing brackets [[ string, int ]] parse fails
 test tuple missing open bracket [[ string, int) ]] parse fails
 test tuple missing closing bracket [[ (path, string ]] parse fails
 test tuple single element simple [[ (int) ]] parse to TupleTy([IntTy()])
-test tuple single element data [[ (Fuz) ]] parse to TupleTy([DataTy("Fuz")])
-test tuple single element imported data [[ (example:Bak) ]] parse to TupleTy([ImportTy(["example"], "Bak")])
+test tuple single element data [[ (Fuz) ]] parse to TupleTy([DataTy(NoModuleList(), "Fuz")])
+test tuple single element imported data [[ (example:Bak) ]] parse to TupleTy([DataTy(ModuleList(["example"]), "Bak")])
 test tuple two elements [[ (string, path) ]] parse succeeds
 test tuple three elements [[ (string, path, Foo) ]] parse succeeds
 test tuple two elements composite [[ (string?, path*) ]] parse succeeds
@@ -39,7 +39,7 @@ test tuple nested [[ (path, (string, type)) ]] parse succeeds
 test list simple type [[ bool* ]] parse to ListTy(BoolTy())
 test list square brackets [[ bool[] ]] parse fails
 test list brackets around [[ [bool] ]] parse fails
-test list data type [[ Bar* ]] parse to ListTy(DataTy("Bar"))
+test list data type [[ Bar* ]] parse to ListTy(DataTy(NoModuleList(), "Bar"))
 test list nullable type [[ string?* ]] parse to ListTy(NullableTy(StrTy()))
 test list nested [[ int** ]] parse to ListTy(ListTy(IntTy()))
 test list of pairs [[ (string, bool)* ]] parse to ListTy(TupleTy([StrTy(), BoolTy()]))
@@ -51,12 +51,12 @@ test supplier layout within keyword [[ suppl ier<path> ]] parse fails
 test supplier layout after less than sign [[ supplier< path> ]] parse succeeds
 test supplier layout before greater than sign [[ supplier<path > ]] parse succeeds
 test supplier missing brackets [[ supplier path ]] parse fails
-test supplier missing brackets no layout [[ supplierpath ]] parse to DataTy("supplierpath")
+test supplier missing brackets no layout [[ supplierpath ]] parse to DataTy(NoModuleList(), "supplierpath")
 test supplier missing brackets [[ supplier path ]] parse fails
 test supplier missing open bracket [[ supplier path> ]] parse fails
 test supplier missing open bracket no layout [[ supplierpath> ]] parse fails
 test supplier missing close bracket [[ supplier<path ]] parse fails
-test supplier data type [[ supplier<Bar> ]] parse to SupplierTy(DataTy("Bar"))
+test supplier data type [[ supplier<Bar> ]] parse to SupplierTy(DataTy(NoModuleList(), "Bar"))
 test supplier nullable type [[ supplier<string?> ]] parse to SupplierTy(NullableTy(StrTy()))
 test supplier nested [[ supplier<supplier<int>> ]] parse to SupplierTy(SupplierTy(IntTy()))
 test supplier of pairs [[ supplier<(string, bool)> ]] parse to SupplierTy(TupleTy([StrTy(), BoolTy()]))
@@ -64,9 +64,9 @@ test supplier of pairs [[ supplier<(string, bool)> ]] parse to SupplierTy(TupleT
 // nullable
 test nullable simple [[ string? ]] parse to NullableTy(StrTy())
 test nullable double [[ string?? ]] parse fails
-test nullable data type [[ Foo? ]] parse to NullableTy(DataTy("Foo"))
-test nullable imported data type [[ example:othermod:Foo? ]] parse to NullableTy(ImportTy(["example", "othermod"], "Foo"))
+test nullable data type [[ Foo? ]] parse to NullableTy(DataTy(NoModuleList(), "Foo"))
+test nullable imported data type [[ example:othermod:Foo? ]] parse to NullableTy(DataTy(ModuleList(["example", "othermod"]), "Foo"))
 test nullable list [[ bool*? ]] parse to NullableTy(ListTy(BoolTy()))
 test nullable list of nullable [[ int?*? ]] parse to NullableTy(ListTy(NullableTy(IntTy())))
 test nullable in tuple [[ (path, string?) ]] parse to TupleTy([PathTy(), NullableTy(StrTy())])
-test nullable in supplier [[ supplier<Thing?> ]] parse to SupplierTy(NullableTy(DataTy("Thing")))
+test nullable in supplier [[ supplier<Thing?> ]] parse to SupplierTy(NullableTy(DataTy(NoModuleList(), "Thing")))

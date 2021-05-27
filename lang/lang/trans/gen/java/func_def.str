@@ -5,8 +5,19 @@ imports
   libspoofax/stratego/debug
 
   src-gen/signatures/-
-  signatures/-
+  signatures/metaborg-java-sig
+  signatures/java/arrays/-
+  signatures/java/classes/-
+  signatures/java/interfaces/-
+  signatures/java/lexical/-
+  signatures/java/literals/-
+  signatures/java/names/-
+  signatures/java/packages/-
+  signatures/java/statements/-
+  signatures/java/types/-
+  signatures/java/expressions/-
 
+  statics
   gen/java/type
   gen/java/func_body
   gen/java/ast-util
@@ -33,14 +44,14 @@ rules // PIE function definitions
     with
     {| InputKind, InjectValues:
       (inputType, inputDataClasses)   := <p2j-ast-pie-func-impl-inputsig(|className)> params
-    ; (outputType, outputDataClasses) := <p2j-ast-pie-func-impl-outputsig(|className)> type
+    ; (outputType, outputDataClasses) := <p2j-ast-pie-func-impl-outputsig(|className)> <syntacticToSemanticType> type
     ; (stmts, lastValue)              := <p2j-ast-pie-func-impl-body> body
     ; keyImpl                         := <p2j-ast-pie-func-key-body> optKeyBody
     ; injectTuples                    := <bagof-InjectValues; make-set>
     ; fields                          := <map(type-tuple-to-ast-field)> injectTuples
     ; constructorParams               := <create-ast-formal-params> injectTuples
     ; assignments                     := <map(type-tuple-to-ast-assignment)> injectTuples
-    ; returnValue                     := <?UnitTy(); !<Snd> <p2j-ast-exp> UnitLit() <+ !lastValue> type
+    ; returnValue                     := <?UnitType(); !<Snd> <p2j-ast-exp> UnitLit() <+ !lastValue> <syntacticToSemanticType> type
    |}
     with
       rules(ModuleBindings :+= ExpressionStatement(Invoke(
@@ -51,7 +62,6 @@ rules // PIE function definitions
       // Note: meaning of this AST: bindTaskDef([className].class, "[className]");
     ; <add-import> "javax.inject.Inject"
     ; <add-import> "mb.pie.api.ExecContext"
-    ; <add-import> "mb.pie.api.ExecException"
     ; <add-import> "mb.pie.api.None"
     ; <add-import> "mb.pie.api.TaskDef"
     ; <add-import> "java.io.Serializable"
@@ -184,7 +194,7 @@ rules // PIE function definitions
   p2j-ast-pie-func-impl-returnvalue:
     exp -> result
     where
-      <pie-ast-type; (?TupleTy(_) <+ NullableTy(?TupleTy(_)))> exp
+      <pie-ast-type; (?TupleType(_) <+ NullableType(?TupleType(_)))> exp
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; resultExp          := InvokeQExp(ExpressionName(Id("Output")), None(), Id("fromTuple"), [expVal])
@@ -194,7 +204,7 @@ rules // PIE function definitions
   p2j-ast-pie-func-impl-returnvalue:
     exp -> <try-p2j-ast-exp> exp
     where
-      <pie-ast-type; not(?TupleTy(_)); not(NullableTy(?TupleTy(_)))> exp
+      <pie-ast-type; not(?TupleType(_)); not(NullableType(?TupleType(_)))> exp
 
   // p2j-ast-pie-func-impl-inputsig(|className):
   //   Params(params) -> (inputType, list of dataClasses)
@@ -204,7 +214,7 @@ rules // PIE function definitions
   // on None / Some)
   // This also sets the dynamic rule InputKind
   p2j-ast-pie-func-impl-inputsig(|className):
-    Params(params) -> (<p2j-ast-type-sig> UnitTy(), [])
+    Params(params) -> (<p2j-ast-type-sig> UnitType(), [])
     where
       0 := <length> params
     with
@@ -243,7 +253,7 @@ rules // PIE function definitions
   p2j-ast-pie-func-impl-outputsig(|className):
     ty -> (<p2j-ast-type-sig> ty, [])
     where
-      <not(?TupleTy(_)); not(?NullableTy(TupleTy(_)))> ty
+      <not(?TupleType(_)); not(?NullableType(TupleType(_)))> ty
 
   p2j-ast-pie-func-impl-outputsig(|className):
     ty -> result
@@ -262,8 +272,8 @@ rules // PIE function definitions
     ; result       := (returnType, [dataClass])
 
   // is-tuple-type: matches a Tuple type
-  is-tuple-type: tty@TupleTy(_)             -> tty
-  is-tuple-type: NullableTy(tty@TupleTy(_)) -> tty
+  is-tuple-type: tty@TupleType(_)             -> tty
+  is-tuple-type: NullableType(tty@TupleType(_)) -> tty
 
 
   // p2j-ast-pie-func-key-body: PieKeyFunc(exp)? -> list of Java statament AST nodes

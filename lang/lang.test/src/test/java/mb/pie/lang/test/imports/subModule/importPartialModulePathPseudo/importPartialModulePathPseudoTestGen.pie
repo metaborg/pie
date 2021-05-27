@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importPartialModulePathPseudo
+
+import mb:pie:lang:test:imports:subModule:a:b:c as mod:sub
+
+func main_importPartialModulePathPseudo() -> unit = {
+  mod:sub:helper_function();
+  unit
+}

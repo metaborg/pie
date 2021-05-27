@@ -1,29 +1,95 @@
 module analysis
 
 imports
-  
-  nabl2/api
-  nabl2/runtime
-  nabl2/shared
-  
-  statsem/-
-  desugar
+
+  statixruntime
+  statix/api
+  statix/runtime/-
+
   pp
+  injections/-
+  src-gen/pp/constructors-pp
+  libspoofax/sdf/pp
+  
+  gen/java/type
+  gen/util
 
 rules // Analysis
 
-  editor-analyze = nabl2-analyze(desugar-all)
+  // single-file analysis
+//  editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics/project", "programOk")
+
+  // see README.md for details on how to switch to multi-file analysis
+  // multi-file analysis
+  editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics/project", "projectOk", "programOk")
+
+  pre-analyze  = explicate-injections-pie-Start
+  post-analyze = implicate-injections-pie-Start
+
+rules // Editor Services
+
+  editor-resolve = stx-editor-resolve
+
+  editor-hover = stx-editor-hover(pp-pie-string)
+
+rules // Pretty-printing DataType(scope)
+
+  prettyprint-pie-TYPE :
+    t@DataType(_) -> [ H(
+                      [SOpt(HS(), "0")]
+                    , t1__'
+                    )
+                  ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S(<pp-Statix-ATerm> t)]
+
+  is-pie-TYPE =
+    ?DataType(_)
+
+  pie-get-indent :
+    (t@DataType(_), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  pie-get-separator :
+    (t@DataType(_), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  pie-get-leading-ws :
+    (t@DataType(_), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
 
 rules // Debugging
-  
-  debug-show-aterm: 
-    (selected, _, _, path, project-path) -> (filename, result)
-    with 
-      filename := <guarantee-extension(|"aterm")> path
-    ; result   := selected
 
-  debug-show-analyzed:
-    (selected, _, _, path, project-path) -> (filename, result)
-    with
-      filename := <guarantee-extension(|"analyzed.aterm")> path
-    ; result   := selected
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-aterm: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path
+       ; result   := selected
+
+  // Prints the pre-analyzed abstract syntax ATerm of a selection.
+  debug-show-pre-analyzed: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"pre-analyzed.aterm")> path
+       ; result   := <pre-analyze> selected
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := selected

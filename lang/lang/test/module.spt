@@ -4,7 +4,7 @@ language pie
 
 // syntax
 test missing module statement [[ ]] parse fails
-test module statement missing layout [[ moduletest ]] parse succeeds // todo: should fail
+test module statement missing layout [[ moduletest ]] parse fails
 test module statement layout in keyword [[ mod ule test ]] parse fails
 test module statement missing name [[ module ]] parse fails
 test module statement no nesting [[module example]]
@@ -57,20 +57,16 @@ test not nested referenced by data supertype [[
   module [[example]]
   data [[Foo]] = foreign java org.example.Foo {}
   data Bar : [[example]]:[[Foo]] = foreign java org.example.Foo {}
-]] parse fails
-//   todo: 
-//   analysis succeeds
-//   resolve #3 to #1
-//   resolve #4 to #2
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
 test nested referenced by data supertype [[
   module example:modules:[[module]]
   data [[Foo]] = foreign java org.example.Foo {}
   data Bar : example:modules:[[module]]:[[Foo]] = foreign java org.example.Foo {}
-]] parse fails
-//   todo: 
-//   analysis succeeds
-//   resolve #3 to #1
-//   resolve #4 to #2
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
 test not nested referenced by return type [[
   module [[example]]
   data [[Foo]] = foreign java org.example.Foo {}

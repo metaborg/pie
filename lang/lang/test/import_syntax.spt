@@ -1,12 +1,12 @@
 module import_syntax
 language pie
-start symbol Import
+start symbol ImportStmt
 
 test missing import statement [[ ]] parse fails
-test import statement missing layout [[ importexample:test ]] parse succeeds // todo: should fail
+test import statement missing layout [[ importexample:test ]] parse fails
 test import statement layout in keyword [[ imp ort example:test ]] parse fails
 test import statement missing name [[ import ]] parse fails
-test import statement no nesting [[import example]] parse succeeds
+test import statement no nesting [[import example]] parse fails
 test import statement nested 1 [[import example:sub]]
 test import statement nested 2 [[import example:sub:subb]]
 test import statement nested many [[import example:sub:subb:foo:bar:very:deeply:nested:import]]
@@ -54,8 +54,8 @@ test renaming missing modulelist [[import foo as bar]] parse fails
 test renaming no layout before keyword as [[import fooas bar]] parse fails
 test renaming no layout after keyword as [[import foo asbar]] parse fails
 test renaming layout within keyword as [[import foo a s bar]] parse fails
-test renaming [[ import example:foo as bar ]] parse fails // todo: implement renaming
-test renaming to modulelist [[ import example:foo as example:bar ]] parse fails // todo: implement renaming
+test renaming [[ import example:foo as bar ]]
+test renaming to modulelist [[ import example:foo as example:bar ]]
 test renaming to modulelist missing modulelist [[ import example as test:foo ]] parse fails
 
 test multi import missing list single element [[import {foo}]] parse fails
@@ -64,21 +64,21 @@ test multi import missing list [[import {foo, bar}]] parse fails
 test multi import missing list rename first element [[import {foo as fuz, bar}]] parse fails
 test multi import missing list rename second element [[import {foo, bar as baz}]] parse fails
 test multi import missing list rename all [[import {foo as fuz, bar as baz}]] parse fails
-test multi import [[ import example:{foo, bar} ]] parse fails // todo: implement multi-import
-test empty multi import [[ import example:{} ]] parse fails // todo: implement multi-import
-test multi import single element [[ import example:{foo} ]] parse fails // todo: implement multi-import
-test multi import rename first [[ import example:{foo as fuz, bar} ]] parse fails // todo: implement multi-import, renaming
-test multi import rename second [[ import example:{foo, bar as baz} ]] parse fails // todo: implement multi-import, renaming
-test multi import rename both [[ import example:{foo as fuz, bar as baz} ]] parse fails // todo: implement multi-import, renaming
-test multi import renaming with modulelist to nested module [[ import example:{foo as example:foo, bar as example:bar} ]] parse fails // todo: implement multi-import, renaming
+test multi import [[ import example:{foo, bar} ]]
+test empty multi import [[ import example:{} ]] parse succeeds // warning from static analysis, see import.spt
+test multi import single element [[ import example:{foo} ]]
+test multi import rename first [[ import example:{foo as fuz, bar} ]]
+test multi import rename second [[ import example:{foo, bar as baz} ]]
+test multi import rename both [[ import example:{foo as fuz, bar as baz} ]]
+test multi import renaming with modulelist to nested module [[ import example:{foo as example:foo, bar as example:bar} ]]
 
-test multi import in modulelist first element [[ import {foo, bar}:compile ]] parse fails // todo: implement multi-import
-test multi import in modulelist [[ import example:{foo, bar}:compile ]] parse fails // todo: implement multi-import
-test double multi import [[ import example:{foo, bar}:{fuz, baz}:compile ]] parse fails // todo: implement multi-import
-test double multi import with end [[ import example:{foo, bar}:{parse, compile} ]] parse fails // todo: implement multi-import
-test multi import in modulelist rename first [[ import example:{foo as fuz, bar}:prettprint ]] parse fails // todo: implement multi-import, renaming
-test multi import in modulelist rename second [[ import example:{foo, bar as buz}:prettprint ]] parse fails // todo: implement multi-import, renaming
-test multi import in modulelist rename both [[ import example:{foo as fuz, bar as buz}:prettprint ]] parse fails // todo: implement multi-import, renaming
+test multi import in modulelist first element [[ import {foo, bar}:compile ]]
+test multi import in modulelist [[ import example:{foo, bar}:compile ]]
+test double multi import [[ import example:{foo, bar}:{fuz, baz}:compile ]]
+test double multi import with end [[ import example:{foo, bar}:{parse, compile} ]]
+test multi import in modulelist rename first [[ import example:{foo as fuz, bar}:prettprint ]]
+test multi import in modulelist rename second [[ import example:{foo, bar as buz}:prettprint ]]
+test multi import in modulelist rename both [[ import example:{foo as fuz, bar as buz}:prettprint ]]
 test multi import in modulelist rename multi list [[ import example:{foo, bar} as wrong:prettprint ]] parse fails
 test nested multi import [[ import example:{foo:{glub, glab}, bar}:prettprint ]] parse fails
 test nested multi import at end [[ import example:{foo:{parse, compile}, prettyprint} ]] parse fails

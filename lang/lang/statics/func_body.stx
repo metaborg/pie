@@ -1,0 +1,281 @@
+module statics/func_body
+
+imports
+
+  signatures/constructors-sig
+  signatures/func_body-sig
+  statics/base
+  statics/type
+  statics/util
+  statics/module
+  statics/binder
+
+rules
+
+  typeOfExp     : scope * Exp -> (scope * TYPE)
+  typeOfExpImpl : scope * Exp -> (scope * TYPE)
+
+  typeOfExp(s1, exp) = (s2, ty) :-
+    typeOfExpImpl(s1, exp) == (s2, ty),
+    @exp.type := ty.
+
+  typeOfExpsPassScopes : scope * list(Exp) -> (scope * list(TYPE))
+  typeOfExpsPassScopes(s, []) = (s, []).
+  typeOfExpsPassScopes(s1, [exp|exps]) = (s3, [ty|tys]) :- {s2}
+    typeOfExp(s1, exp) == (s2, ty),
+    typeOfExpsPassScopes(s2, exps) == (s3, tys).
+
+// Blocks
+
+  typeOfExpImpl(s, Block2Exp(b@EmptyBlock())) = (s, UnitType()) :-
+    @b.type := UnitType().
+
+  typeOfExpImpl(s, Block2Exp(b@Block(exps))) = (s, ty) :- {s_block}
+    new s_block,
+    s_block -P-> s,
+    typeOfBlockExps(s_block, exps) == ty,
+    @b.type := ty.
+
+  typeOfBlockExps : scope * list(Exp) -> TYPE
+  typeOfBlockExps(s1, [exp | exps@[_|_]]) = ty :- {s2}
+    typeOfExp(s1, exp) == (s2, _),
+    typeOfBlockExps(s2, exps) == ty.
+
+  typeOfBlockExps(s, [exp | []]) = ty :-
+    typeOfExp(s, exp) == (_, ty).
+
+// Unary expressions
+
+  typeOfExpImpl(s1, ToNullable(exp)) = (s2, NullableType(ty)) :-
+    typeOfExp(s1, exp) == (s2, ty),
+    ty != NullableType(_) | error $[Type mismatch: cannot make [ty] nullable] @exp.
+
+  typeOfExpImpl(s1, ToNonNullable(exp)) = (s2, ty) :-
+    typeOfExp(s1, exp) == (s2, NullableType(ty)) | error $[Type mismatch: cannot make [ty] non-nullable] @exp.
+
+  typeOfExpImpl(s1, Not(exp)) = (s2, BoolType()) :- {ty}
+    expectSubtype(s1, exp, BoolType()) == s2.
+
+// Binary expressions
+
+  /*
+   * Body for Eq and Neq, since the statics are the same.
+   * Takes a scope [s], left sub expression and right subexpression
+   * It also uses the full expression for error reporting.
+   */
+  comparableOk : scope * Exp * Exp * Exp -> (scope * TYPE)
+  comparableOk(s1, exp_left, exp_right, exp) = (s3, BoolType()) :- {s2 ty_left ty_right}
+    typeOfExp(s1, exp_left) == (s2, ty_left),
+    typeOfExp(s2, exp_right) == (s3, ty_right),
+    comparable(ty_left, ty_right) | error $[Cannot compare [ty_left] to [ty_right]] @exp.
+
+  typeOfExpImpl(s, e@Eq(l, r)) = comparableOk(s, l, r, e).
+  typeOfExpImpl(s, e@Neq(l, r)) = comparableOk(s, l, r, e).
+
+  typeOfExpImpl(s1, Lor(exp_left, exp_right)) = (s3, BoolType()) :- {s2 ty_left ty_right}
+    expectSubtype(s1, exp_left, BoolType()) == s2,
+    expectSubtype(s2, exp_right, BoolType()) == s3.
+
+  typeOfExpImpl(s1, Land(exp_left, exp_right)) = (s3, BoolType()) :- {s2 ty_left ty_right}
+    expectSubtype(s1, exp_left, BoolType()) == s2,
+    expectSubtype(s2, exp_right, BoolType()) == s3.
+
+  typeOfExpImpl(s1, Add(exp_left, exp_right)) = (s3, ty) :- {s2 ty_left ty_right}
+    typeOfExp(s1, exp_left) == (s2, ty_left),
+    typeOfExp(s2, exp_right) == (s3, ty_right),
+    typeOfAdd(ty_left, ty_right, exp_right) == ty | error $[Type mismatch: cannot add [ty_right] to [ty_left]].
+
+  /**
+   * typeOfAdd(ty_left, ty_right, exp_right)
+   * Returns the type of adding [ty_right] to [ty_left].
+   * Gives a specific error on [exp_right] when adding
+   * an incompatible type to a list.
+   */
+  typeOfAdd : TYPE * TYPE * Exp -> TYPE
+  typeOfAdd(IntType()      , IntType()      , _) = IntType().
+  typeOfAdd(StrType()      , _              , _) = StrType().
+  typeOfAdd(PathType()     , PathType()     , _) = PathType().
+  typeOfAdd(PathType()     , StrType()      , _) = PathType().
+  typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- subtype(T2, T1) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
+  typeOfAdd(ListType(T)    , EmptyListType(), _) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op].
+  typeOfAdd(ListType(T)    , NullType()     , _) = ListType(makeNullable(T)).
+  typeOfAdd(ListType(T1)   , T2             , e) = ListType(T1) :- subtype(T2, T1) | error $[Type mismatch: cannot add element [T1] to list [T2]] @e.
+  typeOfAdd(EmptyListType(), ListType(T)    , _) = ListType(T).
+  typeOfAdd(EmptyListType(), EmptyListType(), _) = EmptyListType() :- try {false} | warning $[concatenating an empty list is a no-op].
+  typeOfAdd(EmptyListType(), T              , _) = ListType(T).
+
+// Control flow
+
+  typeOfExpImpl(s, If(exp_cond, exp_body)) = (s, UnitType()) :- {s_if}
+    expectSubtype(s, exp_cond, BoolType()) == s_if,
+    typeOfExp(s_if, exp_body) == _.
+
+  typeOfExpImpl(s, IfElse(exp_cond, exp_true, exp_false)) = (s, ty) :- {s_if ty_true ty_false}
+    expectSubtype(s, exp_cond, BoolType()) == s_if,
+    typeOfExp(s_if, exp_true) == (_, ty_true),
+    typeOfExp(s_if, exp_false) == (_, ty_false),
+    lub(ty_true, ty_false) == ty,
+    try { ty != TopType()               } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type],
+    try { ty != NullableType(TopType()) } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type].
+
+  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) = (s1, ListType(ty_map)) :- {s2 s3 ty_list expected_ty arg_ty}
+    typeOfExp(s1, exp_list) == (s2, ty_list),
+    typeOfExpImplListComprehension(s3, ty_list, exp_list) == arg_ty,
+    new s3,
+    s3 -P-> s2,
+    typeOfBinder(s3, arg_ty, binder) == _,
+    typeOfExp(s3, exp_map) == (_, ty_map).
+
+    typeOfExpImplListComprehension : scope * TYPE * Exp -> TYPE
+    typeOfExpImplListComprehension(s3, ListType(elem_ty), _) = elem_ty.
+    typeOfExpImplListComprehension(s3, EmptyListType(), exp_list) = _ :-
+      try { false } | warning $[Dead code: list comprehension over empty list] @exp_list.
+    typeOfExpImplListComprehension(s3, actual_ty, exp_list) = _ :-
+      false | error $[Type mismatch: expected a list, got [actual_ty]] @exp_list.
+
+// Value declaration and use.
+
+  typeOfExpImpl(s1, ValDec(binder, exp)) = (s3, declared_ty) :- {s2 actual_ty}
+    typeOfExp(s1, exp) == (s2, actual_ty),
+    new s3,
+    s3 -P-> s2,
+    typeOfBinder(s3, actual_ty, binder) == declared_ty.
+
+  typeOfExpImpl(s, Ref2Exp(r@Ref(name))) = (s, ty) :-
+    resolveUniqueVal(s, name) == (ty, _),
+    @r.type := ty.
+
+// Calls
+
+  /**
+   * Checks that a call is Ok, returns the return type of the function.
+   * - resolve function [name] in scope [s_data].
+   * - Check that [arg_exps] have the right types (resolved in scope [s])
+   * This is a general function to check any type of call.
+   * The caller just needs to provide search_scopes.
+   */
+  typeOfCall : scope * list(scope) * string * list(Exp) -> (scope * TYPE)
+  typeOfCall(s, search_scopes, name, arg_exps) =
+    typeOfCall_1(s, arg_exps, resolveUniqueFuncInScopes(search_scopes, name)).
+
+    typeOfCall_1 : scope * list(Exp) * (TYPE * BOOLEAN) -> (scope * TYPE)
+    typeOfCall_1(s1, arg_exps, (FuncType(param_tys, out_ty), TRUE())) = (s2, out_ty) :-
+      expectSubtypesPassScopes(s1, arg_exps, param_tys) == s2.
+
+    // Function didn't resolve. No need to check arguments.
+    // Errors for non-resolving are created by resolveUniqueFunc.
+    typeOfCall_1(s, _, (_, FALSE())) = (s, _).
+
+  typeOfExpImpl(s, Call(moduleList, name, arg_exps)) =
+    typeOfCall(s, resolveModuleListToFile(s, moduleList), name, arg_exps).
+
+  typeOfExpImpl(s1, QCall(exp, name, arg_exps)) = (s3, ty) :- {s2 exp_ty s_data}
+    typeOfExp(s1, exp) == (s2, exp_ty),
+    getScopeFromType(s2, exp_ty) == s_data,
+    typeOfCall(s2, [s_data], name, arg_exps) == (s3, ty).
+
+  typeOfExpImpl(s1, CreateSupplier(exp)) = (s2, SupplierType(ty)) :-
+    typeOfExp(s1, exp) == (s2, ty).
+
+  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, args)) = (s2, SupplierType(ty)) :-
+    typeOfCall(s1, resolveModuleListToFile(s1, moduleList), func_name, args) == (s2, ty).
+
+  typeOfExpImpl(s1, SupplierGet(exp)) = (s2, ty) :-
+    typeOfExp(s1, exp) == (s2, SupplierType(ty)) | error $[Type mismatch: cannot call 'get<>()'. Expected a Supplier, got a [ty]].
+
+// Path operations
+
+  optionalStamperOk : scope * list(StamperPart) -> scope
+  optionalStamperOk(s, []) = s.
+  optionalStamperOk(s, [StamperPart(stampKind)]) = stamperOk(s, stampKind).
+
+  stamperOk : scope * StampKind -> scope
+  stamperOk(s, Modified()) = s.
+  stamperOk(s, Hash()) = s.
+
+  optionalFilterOk: scope * list(FilterPart) -> scope
+  optionalFilterOk(s, []) = s.
+  optionalFilterOk(s, [FilterPart(filter)]) = filterOk(s, filter).
+
+  filterOk : scope * Filter -> scope
+  filterOk(s, Regex(exp))      = expectSubtype(s, exp, StrType()).
+  filterOk(s, Pattern(exp))    = expectSubtype(s, exp, StrType()).
+  filterOk(s, Patterns(exp))   = expectSubtype(s, exp, ListType(StrType())).
+  filterOk(s, Extension(exp))  = expectSubtype(s, exp, StrType()).
+  filterOk(s, Extensions(exp)) = expectSubtype(s, exp, ListType(StrType())).
+
+
+  typeOfExpImpl(s1, RequiresPath(exp, filter, stamper)) = (s4, UnitType()) :- {s2 s3 exp_ty}
+    expectSubtype(s1, exp, PathType()) == s2,
+    optionalFilterOk(s2, filter) == s3,
+    optionalStamperOk(s3, stamper) == s4.
+
+  typeOfExpImpl(s1, GeneratesPath(exp, stamper)) = (s3, UnitType()) :- {s2}
+    expectSubtype(s1, exp, PathType()) == s2,
+    optionalStamperOk(s2, stamper) == s3.
+
+  typeOfExpImpl(s1, ListPath(exp, filter)) = (s3, ListType(PathType())) :- {s2}
+    expectSubtype(s1, exp, PathType()) == s2,
+    optionalFilterOk(s2, filter) == s3.
+
+  typeOfExpImpl(s1, WalkPath(exp, filter)) = (s3, ListType(PathType())) :- {s2}
+    expectSubtype(s1, exp, PathType()) == s2,
+    optionalFilterOk(s2, filter) == s3.
+
+  typeOfExpImpl(s1, ReadPath(exp)) = (s2, NullableType(StrType())) :-
+    expectSubtype(s1, exp, PathType()) == s2.
+
+  typeOfExpImpl(s1, ExistsPath(exp)) = (s2, BoolType()) :-
+    expectSubtype(s1, exp, PathType()) == s2.
+
+// Early return and failure
+
+  typeOfExpImpl(s1, Return(exp)) = (s2, UnitType()) :- {expected_ty}
+    getContext(s1, "func_return_type") == ContextType(expected_ty),
+    expectSubtype(s1, exp, expected_ty) == s2.
+
+  typeOfExpImpl(s1, Fail(exp)) = (s2, UnitType()) :-
+    expectSubtype(s1, exp, StrType()) == s2.
+
+// literals
+
+  typeOfExpImpl(s, UnitLit())  = (s, UnitType()).
+  typeOfExpImpl(s, BoolLit(_)) = (s, BoolType()).
+  typeOfExpImpl(s, IntLit(_))  = (s, IntType()).
+  typeOfExpImpl(s, NullLit())  = (s, NullType()).
+  typeOfExpImpl(s1, TupleLit(exps)) = (s2, TupleType(tys)) :-
+    typeOfExpsPassScopes(s1, exps) == (s2, tys).
+
+  typeOfExpImpl(s, ListLit([])) = (s, EmptyListType()).
+  typeOfExpImpl(s1, ListLit(exps)) = (s2, ListType(listLub(tys))) :-
+    typeOfExpsPassScopes(s1, exps) == (s2, tys).
+
+// String literals
+
+  strPartOk : scope * StrPart -> scope
+  strPartOk(s, Str(_)) = s.
+  strPartOk(s, StrInterpRef(Ref(name))) = s :- resolveUniqueVal(s, name) == _.
+  strPartOk(s1, StrInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
+
+  strPartsOkPassScopes : scope * list(StrPart) -> scope
+  strPartsOkPassScopes(s, []) = s.
+  strPartsOkPassScopes(s1, [part|parts]) = s3 :- {s2}
+    strPartOk(s1, part) == s2,
+    strPartsOkPassScopes(s2, parts) == s3.
+
+  typeOfExpImpl(s, StrLit(parts)) = (strPartsOkPassScopes(s, parts), StrType()).
+
+// Path literals
+
+  pathPartOk : scope * PathPart -> scope
+  pathPartOk(s, Path(_)) = s.
+  pathPartOk(s, PathInterpRef(Ref(name))) = s :- resolveUniqueVal(s, name) == _.
+  pathPartOk(s1, PathInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
+
+  pathPartsOkPassScopes : scope * list(PathPart) -> scope
+  pathPartsOkPassScopes(s, []) = s.
+  pathPartsOkPassScopes(s1, [part|parts]) = s3 :- {s2}
+    pathPartOk(s1, part) == s2,
+    pathPartsOkPassScopes(s2, parts) == s3.
+
+  typeOfExpImpl(s, PathLit(_, parts)) = (pathPartsOkPassScopes(s, parts), PathType()).

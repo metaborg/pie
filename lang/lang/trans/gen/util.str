@@ -1,87 +1,168 @@
 module gen/util
 
 imports
-  
+
   libspoofax/stratego/debug
-  nabl2/api
+  statix/api
 
-rules // Generic strategies for getting properties and types of anything
+  src-gen/signatures/-
 
-  pie-prop(|ns, prop):
-    t -> <pie-occ-prop(|prop)> t
+rules // Generic strategies for getting properties and types of AST nodes
+
+  /**
+   * pie-get-property(|name): node -> val
+   * Type: PIE AST node -> Any
+   *
+   * returns a named property set by statix analysis
+   * name: the name of the property to get
+   * node: the AST node to get the property from
+   */
+  pie-get-property(|name):
+    node -> val
+    with
+      a    := <stx-get-ast-analysis> node
+    ; val := <stx-get-ast-property(|a, name)> node
+
+  /**
+   * pie-get-type: node -> type
+   * PIE AST node -> TYPE
+   *
+   * Get the semantic type of an ast node
+   *
+   * node: The AST node to get the type of.
+   */
+  pie-get-type:
+    node -> type
+    with
+      a    := <stx-get-ast-analysis> node
+    ; type := <stx-get-ast-type(|a)> node
+
+  /**
+   * pie-get-context(|name): scope -> val
+   * Type: Scope -> CONTEXT
+   *
+   * Get a context value from a scope
+   *
+   * scope: The scope to get the context value from
+   * name:  The name of the context value to get
+   */
+  pie-get-context(|name):
+    scope -> val
+    with
+      a    := <AstAnalysis>
+    ; vals := <stx-get-scopegraph-data(|a, "statics/base!context")> scope
+    ; matches := <filter(matches-occurrence(|name))> vals
+    ; [(val)] := matches
+
+    // check if an occurence matches the provided name
+    matches-occurrence(|name): (name', val) -> val
     where
-      <nabl2-get-occurrence-ns> t
-      
-  pie-prop(|ns, prop):
-    t -> <pie-ast-ref-prop(|ns, prop)> t
-    where
-      <not(nabl2-get-occurrence-ns); is-string> t
+      name := <rm-annotations> name'
 
-  pie-type(|ns) = pie-prop(|ns, "type")
-  
-  pie-type:
-    t -> <pie-ast-type> t
-    where
-      <not(nabl2-get-occurrence-ns); not(is-string)> t
+  /**
+   * pie-get-data-mods: data_scope -> mods
+   * Type: Scope -> list(DataDefMod)
+   *
+   * Get the list of modifiers for a data type.
+   *
+   * data_scope: Scope representing a data type.
+   */
+  pie-get-data-mods:
+    data_scope -> mods
+    with
+      a    := <AstAnalysis>
+    ; mods := <stx-get-scopegraph-data(|a, "statics/base!data_mods")> data_scope
 
-rules // AST type
+imports
+  statix/runtime/ast
 
-  pie-ast-type = nabl2-get-ast-type
-  
 rules // Property of reference in the AST
-  
-  pie-ast-ref-prop(|ns, prop):
-    term -> val
-    with
-      a      := <AstAnalysis>
-    ; refOcc := <nabl2-mk-occurrence(|ns)> term
-    ; defOcc := <nabl2-get-resolved-name(|a); Fst> refOcc
-    ; val    := <nabl2-get-property(|a, prop)> defOcc
-  
-  pie-ast-ref-type(|ns) = pie-ast-ref-prop(|ns, "type")
 
-rules // Property of occurrence
-  
-  pie-occ-prop(|prop):
-    occ -> val
+  /**
+   * pie-get-decl: node -> decl
+   * Type: PIE AST node -> PIE AST node
+   *
+   * Get the declaration from a node. Node does not need to have reference set,
+   * if it does not, the node itself is returned.
+   *
+   * node: the node to get the declaration for.
+   */
+  pie-get-decl:
+    node -> decl
     with
-      a   := <AstAnalysis>
-    ; val := <nabl2-get-property(|a, prop)> occ
+      a    := <stx-get-ast-analysis> node
+      // the following line uses an internal Statix strategy.
+      // todo: use external api when available (stx-get-ast-ref)
+      // Should be available in Spoofax 2.5.16
+      // (Also remove import above when switching)
+    ; decl := <while(id, stx--get-ast-property(|a, Ref()) <+ stx-get-ast-property(|a, "renamed_from"))> node
 
-  pie-occ-type = pie-occ-prop(|"type")
+  /**
+   * pie-ast-ref-prop(|name): node -> val
+   * Type: PIE AST node -> Any
+   *
+   * Get a named property from a declaration.
+   * First resolves the node to a declaration and then gets the property from
+   * the declaration.
+   *
+   * name: the name of the property to get
+   * node: the node to get the property from. This term needs to be resolvable,
+   * i.e. it needs to have a reference set.
+   */
+  pie-ast-ref-prop(|name):
+    node -> val
+    with
+      a    := <stx-get-ast-analysis> node
+    ; decl := <pie-get-decl> node
+    ; val  := <stx-get-ast-property(|a, name)> decl
 
 rules
 
+  /**
+   * pie-set-ast-analysis: ast -> ast
+   * Type: AST -> AST
+   *
+   * Make a Statix analysis available through dynamic rule AstAnalysis.
+   * Call this strategy on the top-level node of your program (in case of PIE:
+   * Program). Afterwards, you can use `a := <AstAnalysis>` to get the analysis
+   *
+   * ast: top level node of AST
+   */
   pie-set-ast-analysis:
     ast -> ast
     with
-      rules(AstAnalysis : _ -> <nabl2-get-ast-analysis> ast)
+      rules(AstAnalysis : _ -> <stx-get-ast-analysis> ast)
 
 rules
 
   pie-sep-nl    = separate-by(|"\n")
   pie-sep-comma = separate-by(|", ")
   pie-sep-space = separate-by(|" ")
-  
+
   pie-remove-emptystrings = filter(not(?""))
-  
+
   pie-sep-concat(|sep) = pie-remove-emptystrings; separate-by(|sep); concat-strings
   pie-concat-nl = pie-sep-concat(|"\n")
   pie-concat-comma = pie-sep-concat(|", ")
   pie-concat-space = pie-sep-concat(|" ")
   pie-concat-commanl = pie-sep-concat(|",\n")
-  
-  pie-prepend-comma-nonempty: 
+
+  pie-prepend-comma-nonempty:
     [] -> []
-  pie-prepend-comma-nonempty: 
+  pie-prepend-comma-nonempty:
     list -> [", "|list]
     where
       <not(?[])> list
 
-rules
+  // concat-strings-separator(|sep): list -> string
+  //   Type: list of strings -> string
+  //   sep: string
+  // concatenates a list of strings with a separator
+  // Example: <concat-strings-separator(|"_")> ["mb", "pie", "lang", "Foo"] -> "mb_pie_lang_Foo"
+  concat-strings-separator(|sep): [] -> ""
+  concat-strings-separator(|sep): [last | []] -> last
+  concat-strings-separator(|sep): [first | rest] -> $[[first][sep][<concat-strings-separator(|sep)> rest]]
 
-  pie-sanitize-class-id = string-replace(|"-", "_")
-  
 rules
 
   error(|message) = debug(|message); fail
@@ -96,9 +177,21 @@ rules
   // Also works on lists with only one element (simply returns that element)
   fold-left(s):
     [] -> <fail>
-  
+
   fold-left(s):
     [x | []] -> x
-  
+
   fold-left(s):
     [x | [y | rest]] -> <fold-left(s)> [<s> (x, y) | rest]
+
+rules // project specific helper strategies
+
+  // transforms a PIE ModuleList to a list
+  moduleListToList: NoModuleList() -> []
+  moduleListToList: ModuleList(list) -> list
+
+  // transforms a PIE Module or a PIE ModuleStmt to a list of module names
+  moduleToList: Module(moduleList, name) -> <concat> [<moduleListToList> moduleList, [name]]
+  moduleToList: ModuleStmt(mod) -> <moduleToList> mod
+
+  syntacticToSemanticType: ty -> <pie-get-type> ty

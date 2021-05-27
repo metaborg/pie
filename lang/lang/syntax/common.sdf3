@@ -1,0 +1,14 @@
+module common
+
+imports
+
+  lex/literal
+
+context-free sorts
+
+  ModuleList
+
+context-free syntax
+
+  ModuleList.NoModuleList = <>
+  ModuleList.ModuleList = <<{MODID ":"}+>:>

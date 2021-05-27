@@ -1,0 +1,416 @@
+module statics/base
+
+imports
+
+  signatures/constructors-sig
+  signatures/lex/literal-sig
+  signatures/pie-sig
+  statics/util
+  statics/type
+
+// These sorts/constructors are declared here and not in
+// syntax/constructors.sdf3 because I couldn't figure out how to declare a
+// scope in SDF3 so that it generates constructors with Statix scopes.
+signature
+  sorts
+    ModuleTree
+    MODULE
+
+  constructors
+    /**
+     * ModuleTreeRoot(tree_scopes, subnodes)
+     * The root of a module tree. Contains ModuleTreeNodes in [subnodes].
+     * The scopes [tree_scopes] represent scopes to be imported into this
+     * module tree.
+     * tree_scopes: A list of names and tree scopes that represent the same
+     *              submodule. Used to point import module tree to root module
+     *              tree on module imports. Each scope will be pointed to with
+     *              an I edge.
+     * subnodes:    The nodes representing the submodules of this module.
+     *              This should be a list of only ModuleTreeNodes without
+     *              duplicate names, anything else is a bug in this Statix
+     *              specification.
+     */
+    ModuleTreeRoot : list(scope) * list(ModuleTree) -> ModuleTree
+
+    /**
+     * ModuleTreeNode(name, file_scopes, tree_scopes, subnodes)
+     * A node of a module tree. Each node represents a module and its contents.
+     * name:        The name of the submodule.
+     * file_scopes: A list of file scopes that are instances of this submodule.
+     *              Each scope will be pointed to with a FILE edge.
+     *              This should have 0 or 1 scope, more represents a duplicate
+     *              module error.
+     * tree_scopes: A list of names and tree scopes that represent the same
+     *              submodule. Used to point import module tree to root module
+     *              tree on module imports. Each scope will be pointed to with
+     *              an I edge.
+     * subnodes:    The nodes representing the submodules of this module.
+     *              This should be a list of only ModuleTreeNodes without
+     *              duplicate names, anything else is a bug in this Statix
+     *              specification.
+     */
+    ModuleTreeNode : MODID * list(scope) * list((MODID * scope)) * list(ModuleTree) -> ModuleTree
+
+    /**
+     * MODULE(module_scope, qualified_name)
+     * Data class representing module [qualified_name] and its scope
+     * [module_scope].
+     * A MODULE holds the same data as a SUBMODULE, but a MODULE signifies to
+     * module.stx!addToModuleTree that this module should be added within the
+     * new tree.
+     * Also see the constructors for ModuleTree (ModuleTreeRoot and
+     * ModuleTreeNode) above.
+     * module_scope:   scope that this module represents.
+     * qualified_name: qualified name of this module.
+     */
+    MODULE : scope * list(MODID) -> MODULE
+
+    /**
+     * SUBMODULE(module_scope, qualified_name)
+     * Data class representing module [qualified_name] and its scope
+     * [module_scope].
+     * A SUBMODULE holds the same data as a MODULE, but a SUBMODULE signifies
+     * to module.stx!addToModuleTree that this module should refer to the same
+     * module in the root tree.
+     * Also see the constructors for ModuleTree (ModuleTreeRoot and
+     * ModuleTreeNode) above.
+     * module_scope:   scope that this module represents.
+     * qualified_name: qualified name of this module.
+     */
+    SUBMODULE : scope * list(MODID) -> MODULE
+
+    DataType : scope -> TYPE
+
+  relations
+    root : scope
+    file : scope
+    mod_wip : MODULE
+    mod : MODID -> scope
+    is_proxy_module : // no value, can be set as a flag
+    val : VALID -> TYPE
+    func : FUNCID -> TYPE
+    func_local : FUNCID -> TYPE
+    data : TYPEID -> scope
+    data_local : TYPEID -> scope
+    data_mods : list(DataDefMod)
+    context : string -> CONTEXT
+
+signature
+  name-resolution
+    labels
+      INHERIT // Between data scopes
+      P // Scopes within functions, functions to file, files to root
+      I // import module tree to root module tree
+      FILE // module tree scope to file scope
+      MODULE_TREE_ROOT // points to a module tree root. Starts in root scope for
+                       // module structure or file scope for pseudo modules from imports
+
+rules // Logic functions
+
+  /**
+   * Logical and. Called andB because `and` is apparently a keyword.
+   */
+  andB : BOOLEAN * BOOLEAN -> BOOLEAN
+  andB(FALSE(), _) = FALSE().
+  andB(_, FALSE()) = FALSE().
+  andB(TRUE(), TRUE()) = TRUE().
+  andB(a, b) = FALSE() :- false | error $[Bug in Statix spec: no matching rule for andB([a], [b]).].
+
+  /**
+   * return TRUE() if all values in the list are TRUE().
+   */
+  allTrue : list(BOOLEAN) -> BOOLEAN
+  allTrue([]) = TRUE().
+  allTrue([FALSE()|_]) = FALSE().
+  allTrue([TRUE()|rest]) = allTrue(rest).
+
+  orB : BOOLEAN * BOOLEAN -> BOOLEAN
+  orB(TRUE(), _) = TRUE().
+  orB(_, TRUE()) = TRUE().
+  orB(FALSE(), FALSE()) = FALSE().
+  orB(a, b) = FALSE() :- false | error $[Bug in Statix spec: no matching rule for orB([a], [b]).].
+
+  notB : BOOLEAN -> BOOLEAN
+  notB(TRUE()) = FALSE().
+  notB(FALSE()) = TRUE().
+
+rules // Declararing and resolving
+
+  // For declaring and resolving modules in relation `mod` and `mod_wip`, see
+  // statics/module!declareModule and statics/module!resolveModuleList
+
+  /**
+   * Declare a value [name] with type [TYPE] and ValKind [kind] in scope [s],
+   * set the type on the value name.
+   */
+  declareVal : scope * string * TYPE * ValKind
+  declareVal(s, name, type, kind) :-
+    declareValWithoutSettingType(s, name, type, kind),
+    @name.type := type.
+
+  /**
+   * Declare a value [name] with type [TYPE] and ValKind [kind] in scope [s],
+   * do not set the type on the value name.
+   */
+  declareValWithoutSettingType : scope * string * TYPE * ValKind
+  declareValWithoutSettingType(s, name, type, kind) :-
+    !val[name, type] in s,
+    @name.kind := kind,
+    resolveVal(s, name) == [_]
+      | error $[Duplicate definition of value [name]].
+
+  /**
+   * Resolve a value [name] in scope [s]
+   */
+  resolveVal : scope * string -> list((path * (string * TYPE)))
+  resolveVal(s, name) = occs :-
+    query val
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * resolveUniqueVal(s, name) = (ty, resolved)
+   * Resolves a value [name] to a unique type [ty] in scope [s].
+   * Sets a type and a reference to the declaration on this name.
+   * Gives a undeclared value error if no declaration is found.
+   * Does not give an error if there are multiple definitions as there are
+   * already errors on the declarations.
+   * [resolved] indicated whether [name] resolved to a single declaration.
+   * If it did not (resolved == FALSE()), [ty] will be an unbound variable.
+   * See also resolveVal
+   */
+  resolveUniqueVal : scope * string -> (TYPE * BOOLEAN)
+  resolveUniqueVal(s, name) = resolveUniqueVal_1(resolveVal(s, name), name).
+
+    resolveUniqueVal_1 : list((path * (VALID * TYPE))) * VALID -> (TYPE * BOOLEAN)
+    resolveUniqueVal_1([], name) = (_, FALSE()) :-
+      false | error $[Cannot resolve [name]] @name.
+
+    resolveUniqueVal_1([(_, (name', ty))], name) = (ty, TRUE()) :-
+      @name.ref := name',
+      @name.type := ty.
+
+    // If there are multiple, the declaration will give an error.
+    resolveUniqueVal_1([_,_|_], _) = (_, FALSE()).
+
+
+  /**
+   * Declare a function [name] with type [TYPE] in scope [s], set the type on
+   * the function name.
+   */
+  declareFunc : scope * string * TYPE * FuncImplKind
+  declareFunc(s, name, type, kind) :-
+    !func[name, type] in s,
+    resolveFunc(s, name) == [_] | error $[Duplicate function [name]] @name,
+    @name.type := type,
+    @name.kind := kind,
+    @name.qualifiedModule := getQualifiedModule(getFileIfExists(s), s).
+
+    getQualifiedModule : list(scope) * scope -> list(MODID)
+    getQualifiedModule([], s) = ["<ERROR>"] :- false | error $[BUG: cannot get file from scope [s]].
+    getQualifiedModule([s_file], _) = moduleToList(module) :-
+      getContext(s_file, "module_name_qualified") == ContextModule(module) | error $[BUG: cannot get qualified module name from [s_file]].
+    getQualifiedModule([_,_|_], s) = ["<ERROR>"] :- false | error $[BUG: multiple files from scope [s]].
+
+  /**
+   * declareFuncImport(s, import_as_name, import_name, (decl_name, type))
+   * Declare an imported function [import_as_name] with type [type] in scope [s].
+   * Set type on [import_name] and [import_as_name] and reference on [import_as_name].
+   */
+  declareFuncImport : scope * FUNCID * FUNCID * (FUNCID * TYPE)
+  declareFuncImports maps declareFuncImport(*, *, *, list(*))
+  declareFuncImport(s, import_as_name, import_name, (decl_name, type)) :-
+    !func[import_as_name, type] in s,
+    resolveFunc(s, import_as_name) == [_]
+      | error $[Duplicate function [import_as_name]] @import_as_name,
+    @import_as_name.type := type,
+    @import_as_name.renamed_from := import_name,
+    @import_name.ref := decl_name.
+
+  /**
+   * declareLocalFunc(s, name, type)
+   * Declare a local function [name] with type [type] in scope [s]
+   */
+  declareLocalFunc : scope * string * TYPE
+  declareLocalFunc(s, name, type) :- !func_local[name, type] in s.
+
+  /**
+   * resolveLocalFunc(s, name)
+   * Resolve local function [name] in scope [s] to a list of function types.
+   * Used when declaring imports to avoid circular dependencies.
+   */
+  resolveLocalFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
+  resolveLocalFunc(s, name) = occs :-
+    query func_local
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * Resolve a function [name] in scope [s]
+   */
+  resolveFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
+  resolveFunc(s, name) = occs :-
+    query func
+      filter P*|INHERIT*
+         and { name' :- name' == name }
+         min $ < INHERIT
+         and true
+          in s |-> occs.
+
+  /**
+   * resolve a function [name] to a unique declaration in scope [s]
+   * The boolean represents whether the function resolved (if it didn't, don't
+   * check for argument number/types etc.)
+   */
+  resolveUniqueFunc : scope * FUNCID -> (TYPE * BOOLEAN)
+  resolveUniqueFunc(s, name) = resolveUniqueFunc_1(name, resolveFunc(s, name)).
+
+    // This function exists so that the result of resolveFunc is not
+    // prematurely matched to a single occurrence
+    resolveUniqueFunc_1 : FUNCID * list((path * (FUNCID * TYPE))) -> (TYPE * BOOLEAN)
+    resolveUniqueFunc_1(name, []) = (_, FALSE()) :-
+      false | error $[Undefined function [name]] @name.
+
+    resolveUniqueFunc_1(name, [(_, (name', ty))]) = (ty, TRUE()) :-
+      @name.ref := name',
+      @name.type := ty.
+
+    // If there are multiple, the declaration will give an error.
+    resolveUniqueFunc_1(name, [_,_|_]) = (_, FALSE()).
+
+  /**
+   * resolveUniqueFuncInScopes(scopes, name) = (ty, resolved)
+   * Resolve a unique function [name] in [scopes] to a function type [ty].
+   * Only one of the scopes can have this function, so this does not look for
+   * one data type in each scope.
+   */
+  resolveUniqueFuncInScopes : list(scope) * FUNCID -> (TYPE * BOOLEAN)
+  resolveUniqueFuncInScopes(scopes, name) =
+    resolveUniqueFunc_1(name, flattenFuncOccurrences(resolveUniqueFuncInScopes_1(scopes, name))).
+
+    resolveUniqueFuncInScopes_1 maps resolveFunc(list(*), *) = list(*)
+
+    flattenFuncOccurrences : list(list((path * (FUNCID * TYPE)))) -> list((path * (FUNCID * TYPE)))
+    flattenFuncOccurrences([]) = [].
+    flattenFuncOccurrences([occs|rest]) = concatFuncOccurrences(occs, flattenFuncOccurrences(rest)).
+
+    concatFuncOccurrences : list((path * (FUNCID * TYPE))) * list((path * (FUNCID * TYPE))) -> list((path * (FUNCID * TYPE)))
+    concatFuncOccurrences([], rest) = rest.
+    concatFuncOccurrences([occ|occs], rest) = [occ|concatFuncOccurrences(occs, rest)].
+
+
+  /**
+   * declareData(s, name, s_data)
+   * Declare a datatype [name] with scope [s_data] in scope [s], set the type
+   * on the data name.
+   */
+  declareData : scope * TYPEID * scope
+  declareData(s, name, s_data) :-
+    !data[name, s_data] in s,
+    resolveData(s, name) == [_]
+      | error $[Duplicate definition of Datatype [name]] @name,
+    @name.type := DataType(s_data).
+
+  /**
+   * declareDataImport(s, import_as_name, import_name, (decl_name, s_data))
+   * Declare a datatype [decl_name] with scope [s_data] in scope [s].
+   * Set reference and type on [import_name].
+   */
+  declareDataImport : scope * TYPEID * TYPEID * (TYPEID * scope)
+  declareDataImports maps declareDataImport(*, *, *, list(*))
+  declareDataImport(s, import_as_name, import_name, (decl_name, s_data)) :-
+    !data[import_as_name, s_data] in s,
+    resolveData(s, import_as_name) == [_]
+      | error $[Duplicate definition of Datatype [import_as_name]] @import_as_name,
+    @import_as_name.type := DataType(s_data),
+    @import_as_name.renamed_from := import_name,
+    @import_name.ref := decl_name.
+
+  /**
+   * declareLocalData(s, name, s_data)
+   * Declare a local datatype [name] with scope [s_data] in scope [s]
+   */
+  declareLocalData : scope * string * scope
+  declareLocalData(s, name, s_data) :- !data_local[name, s_data] in s.
+
+  /**
+   * resolveLocalData(s, name)
+   * Resolve data [name] in scope [s] to a list of data scopes.
+   * Used when declaring imports to avoid circular dependencies.
+   */
+  resolveLocalData : scope * string -> list((path * (string * scope)))
+  resolveLocalData(s, name) = occs :-
+    query data_local
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * Resolve data [name] in scope [s] to a list of data scopes
+   */
+  resolveData : scope * string -> list((path * (string * scope)))
+  resolveData(s, name) = occs :-
+    query data
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
+
+  /**
+   * resolveUniqueData(s, name) = s_data
+   * Resolve data [name] to a unique data scope [s_data] in scope [s].
+   * Returns an empty scope if [name] could not be resolved to a unique data
+   * type.
+   */
+  resolveUniqueData : scope * TYPEID -> scope
+  resolveUniqueData(s, name) = resolveUniqueData_1(s, resolveData(s, name), name).
+
+    resolveUniqueData_1 : scope * list((path * (TYPEID * scope))) * TYPEID -> scope
+    resolveUniqueData_1(s, [], name) = emptyScope(s) :- false | error $[Undefined data [name]] @name.
+    resolveUniqueData_1(_, [(_, (name', s_data))], name) = s_data :-
+      @name.ref := name',
+      @name.type := DataType(s_data).
+    resolveUniqueData_1(s, [_,_|_], _) = emptyScope(s).
+
+  /**
+   * resolveUniqueDataInScopes(s, scopes, name) = s_data
+   * Resolve a unique data type [name] in [scopes] to a data scope [s_data].
+   * Only one of the scopes can have this data type, so this does not look for
+   * one data type in each scope.
+   * Scope [s] is used to set the root on an auxilary scope.
+   */
+  resolveUniqueDataInScopes : scope * list(scope) * TYPEID -> scope
+  resolveUniqueDataInScopes(s, scopes, name) = resolveUniqueData(s_auxilary, name) :-
+    new s_auxilary,
+    !root[getRoot(s)] in s_auxilary,
+    createPEdges(s_auxilary, scopes).
+
+  /**
+   * setContext(s, name, context)
+   * Set a context value [context] named [name] in scope [s].
+   */
+  setContext : scope * string * CONTEXT
+  setContext(s, name, context) :-
+    !context[name, context] in s,
+    getContext(s, name) == context | error $[Context value [name] is already set in [s]].
+
+  /**
+   * getContext(s, name) -> context
+   * Get a context value [context] named [name] from scope [s].
+   */
+  getContext : scope * string -> CONTEXT
+  getContext(s, name) = context :- {occs}
+    query context
+      filter P*
+         and { name' :- name' == name }
+         min $ < P
+         and true
+          in s |-> occs,
+    occs == [(_, (_, context))],
+    try { occs != [] } | error $[cannot get context value [name] in [s]].

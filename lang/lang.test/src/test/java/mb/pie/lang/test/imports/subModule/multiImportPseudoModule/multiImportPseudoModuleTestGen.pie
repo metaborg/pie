@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:multiImportPseudoModule
+
+import mb:pie:lang:test:imports:subModule:a:b:{c as pseudo}:{Foo, createFoo, helper_takeFoo}
+
+func main_multiImportPseudoModule() -> bool = {
+  val foo: pseudo:Foo = pseudo:createFoo();
+  pseudo:helper_takeFoo(foo)
+}

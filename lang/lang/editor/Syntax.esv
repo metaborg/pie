@@ -1,8 +1,8 @@
 module Syntax
 
-imports 
+imports
 
-  libspoofax/color/colors
+  libspoofax/color/default
   completion/colorer/pie-cc-esv
 
 language
@@ -35,16 +35,17 @@ colorer
   operator    : operator
   layout      : comment
 
-  ID          : varid
-  
-  QID         : classid
+  VALID       : varid
+  MODID       : varid
+  ANYID       : varid
+
   TYPEID      : classid
   PIEQTYPEID  : classid
   JAVAQTYPEID : classid
-  
+
   FUNCID      : funcid
   JAVAFUNCID  : funcid
-  
+
   STRING      : string
   _.StrLit    : string
   StrChars    : string
@@ -52,13 +53,13 @@ colorer
   PathChars   : string
 
 menus
-  
+
   menu: "Syntax" (openeditor)
-    
+
     action: "Format"          = editor-format (source)
     action: "Show parsed AST" = debug-show-aterm (source)
 
 views
-  
+
   outline view: editor-outline (source)
     expand to level: 3

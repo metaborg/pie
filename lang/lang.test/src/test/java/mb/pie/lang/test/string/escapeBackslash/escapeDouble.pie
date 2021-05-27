@@ -1,0 +1,6 @@
+module mb:pie:lang:test:string:escapeBackslash
+
+func main_escapeBackslash() -> string = {
+  val foo = "valueOfFoo";
+  "\\$foo"
+}

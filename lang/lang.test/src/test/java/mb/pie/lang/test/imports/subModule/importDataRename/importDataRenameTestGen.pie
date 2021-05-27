@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importDataRename
+
+import mb:pie:lang:test:imports:subModule:a:b:c:Foo as SomeData
+
+func main_importDataRename() -> unit = {
+  val foo: SomeData? = null;
+  unit
+}

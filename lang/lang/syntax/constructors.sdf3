@@ -1,0 +1,76 @@
+module constructors
+
+imports
+
+  lex/literal
+  pie
+//  statix/API // use for Stx-Scope
+
+// A semantic type (as opposed to the lexical, non-all caps Type)
+context-free start-symbols TYPE // For type hint on editor mouseover
+context-free sorts TYPE
+context-free syntax
+
+  TYPE.UnitType = [unit]
+  TYPE.BoolType = [bool]
+  TYPE.IntType = [int]
+  TYPE.StrType = [string]
+  TYPE.PathType = [path]
+  TYPE.NullType = [null]
+  TYPE.TopType = [TOP]
+
+  TYPE.NullableType = [[TYPE]?]
+  TYPE.ListType = [[TYPE]*]
+  TYPE.EmptyListType = [ANY*]
+  TYPE.TupleType = [([{TYPE ", "}+])]
+  TYPE.SupplierType = [supplier([TYPE])]
+
+  TYPE.FuncType = [func([{TYPE ", "}+]) -> [TYPE]]
+//  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
+
+// Boolean values. Used in Statix logic.
+context-free sorts BOOLEAN
+context-free syntax
+
+  BOOLEAN.TRUE = [TRUE]
+  BOOLEAN.FALSE = [FALSE]
+
+// Import sorts and constructors. Used by Statix to handle imports.
+context-free sorts Renaming NormalizedImport
+context-free syntax
+
+  Renaming.Renaming = [[{STRING ":"}*] -> [{STRING ":"}*]]
+  NormalizedImport.NormalizedImport = [normalized import: [Renaming]]
+
+// The kind of a Function. Used by code generation.
+context-free sorts FuncImplKind
+context-free syntax
+
+  FuncImplKind.JavaForeignFuncKind = [foreign java func]
+  FuncImplKind.JavaForeignConstructorKind = [foreign java constructor]
+  FuncImplKind.PieForeignFuncKind = [foreign pie func]
+  FuncImplKind.PieFuncKind = [pie func]
+
+// The kind of a value. Used by code generation.
+context-free sorts ValKind
+context-free syntax
+
+  ValKind.LocalValKind = [local val]
+  ValKind.InputValKind = [input val]
+
+// The kind of a data type.
+context-free sorts TypeKind
+context-free syntax
+
+  TypeKind.JavaTypeKind = [java type]
+
+// context values that are saved in the scope graph
+context-free sorts CONTEXT
+context-free syntax
+
+  CONTEXT.ContextType = [context type: [TYPE]]
+  CONTEXT.ContextName = [context name: [STRING]]
+  CONTEXT.ContextModule = [context module: { [Module] }]
+
+lexical sorts STRING
+lexical syntax STRING = ~[]*

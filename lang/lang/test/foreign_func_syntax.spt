@@ -14,11 +14,11 @@ test foreign task snake_case [[ foreign org.example.Class_with_underscores ]] pa
 test foreign task missing identifier [[ foreign ]] parse to PieFuncImpl(Ref("foreign"), None()) // foreign is parsed as a variable name
 test foreign task missing keyword [[ org.example.DoSomething ]] parse fails
 test foreign task identifier starts with period [[ foreign .example.DoSomething ]] parse fails
-test foreign task identifier ends with period [[ foreign org.example. ]] parse succeeds // todo: should fail
-test foreign task identifier contains double period [[ foreign org..example.DoSomething ]] parse succeeds // todo: should fail
+test foreign task identifier ends with period [[ foreign org.example. ]] parse fails
+test foreign task identifier contains double period [[ foreign org..example.DoSomething ]] parse fails
 test foreign task with parameters [[ foreign org.example.DoSomething(int) ]] parse fails
 test foreign task layout in keyword [[ fore ign org.example.DoSomething ]] parse fails
-test foreign task missing layout after keyword [[ foreignorg.example.DoSomething ]] parse succeeds // todo: should fail
+test foreign task missing layout after keyword [[ foreignorg.example.DoSomething ]] parse fails
 test foreign task capitalization in keyword [[ Foreign org.example.DoSomething ]] parse fails
 test foreign task identifier has number [[ foreign org.example.Do1Something ]] parse succeeds
 test foreign task disallowed character ` [[ foreign org.example.Do`Something ]] parse fails
@@ -67,14 +67,14 @@ test foreign function missing function [[ foreign java Finagle# ]] parse fails
 test foreign function missing function and separator [[ foreign java Finagle ]] parse fails
 test foreign function identifier starts with period [[ foreign java .example.DoSomething ]] parse fails
 test foreign function identifier ends with period [[ foreign java org.example. ]] parse fails
-test foreign function identifier contains double period [[ foreign java org..example.SomeClass#doSomething ]] parse succeeds // todo: should fail
+test foreign function identifier contains double period [[ foreign java org..example.SomeClass#doSomething ]] parse fails
 test foreign function identifier contains double hash [[ foreign java org.example.SomeClass##doSomething ]] parse fails
 test foreign function identifier contains multiple hashes [[ foreign java org.example.SomeClass#Subclass#doSomething ]] parse fails
 test SomeClass#doreign function with parameters [[ foreign java org.example.SomeClass#doSomething(int) ]] parse fails
 test foreign function layout in keyword foreign [[ fore ign org.example.SomeClass#doSomething ]] parse fails
 test foreign function layout in keyword java [[ foreign jav a org.example.SomeClass#doSomething ]] parse fails
-test foreign function missing layout after keyword foreign [[ foreignjava org.example.SomeClass#doSomething ]] parse succeeds // todo: should fail
-test foreign function missing layout after keyword java [[ foreign javaorg.example.SomeClass#doSomething ]] parse succeeds // todo: should fail
+test foreign function missing layout after keyword foreign [[ foreignjava org.example.SomeClass#doSomething ]] parse fails
+test foreign function missing layout after keyword java [[ foreign javaorg.example.SomeClass#doSomething ]] parse fails
 test foreign function capitalization in keyword foreign [[ Foreign java org.example.SomeClass#doSomething ]] parse fails
 test foreign function capitalization in keyword java [[ foreign Java org.example.SomeClass#doSomething ]] parse fails // todo: give suggestion for fix
 test foreign function identifier has number [[ foreign org.example.Do1Something ]] parse succeeds
@@ -148,15 +148,15 @@ test foreign java constructor missing keyword java [[ foreign constructor org.ex
 test foreign java constructor missing keyword constructor [[ foreign java org.example.DoSomething ]] parse fails
 test foreign java constructor missing identifier [[ foreign java constructor ]] parse fails
 test foreign java constructor identifier starts with period [[ foreign java constructor .example.DoSomething ]] parse fails
-test foreign java constructor identifier ends with period [[ foreign java constructor org.example. ]] parse succeeds // todo: should fail
-test foreign java constructor identifier contains double period [[ foreign java constructor org..example.DoSomething ]] parse succeeds // todo: should fail
+test foreign java constructor identifier ends with period [[ foreign java constructor org.example. ]] parse fails
+test foreign java constructor identifier contains double period [[ foreign java constructor org..example.DoSomething ]] parse fails
 test foreign java constructor with parameters [[ foreign java constructor org.example.DoSomething(int) ]] parse fails
 test foreign java constructor layout in keyword foreign [[ forei gn java constructor org.example.DoSomething ]] parse fails
 test foreign java constructor layout in keyword java [[ foreign j ava constructor org.example.DoSomething ]] parse fails
 test foreign java constructor layout in keyword constructor [[ foreign java const ructor org.example.DoSomething ]] parse fails
-test foreign java constructor missing layout after keyword foreign [[ foreignjava constructor org.example.DoSomething ]] parse succeeds // todo: should fail
-test foreign java constructor missing layout after keyword java [[ foreign javaconstructor org.example.DoSomething ]] parse succeeds // todo: should fail
-test foreign java constructor missing layout after keyword constructor [[ foreign java constructororg.example.DoSomething ]] parse succeeds // todo: should fail
+test foreign java constructor missing layout after keyword foreign [[ foreignjava constructor org.example.DoSomething ]] parse fails
+test foreign java constructor missing layout after keyword java [[ foreign javaconstructor org.example.DoSomething ]] parse fails
+test foreign java constructor missing layout after keyword constructor [[ foreign java constructororg.example.DoSomething ]] parse fails
 test foreign java constructor capitalization in keyword foreign [[ Foreign java constructor org.example.DoSomething ]] parse fails
 test foreign java constructor capitalization in keyword java [[ foreign Java constructor org.example.DoSomething ]] parse fails // todo: give suggestion for fix
 test foreign java constructor capitalization in keyword constructor [[ foreign java Constructor org.example.DoSomething ]] parse fails

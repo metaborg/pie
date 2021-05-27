@@ -3,6 +3,18 @@ module type
 imports
 
   lex/literal
+  common
+
+template options
+
+  keyword -/- [a-zA-Z0-9\-\_]
+
+context-free sorts
+
+  BaseType
+  DataTy
+  TypeMod
+  Type
 
 context-free syntax
 
@@ -11,11 +23,12 @@ context-free syntax
   BaseType.IntTy      = <int>
   BaseType.StrTy      = <string>
   BaseType.PathTy     = <path>
-  BaseType.DataTy     = <<TYPEID>> {avoid}
-  BaseType.ImportTy   = <<{MODID ":"}+>:<TYPEID>>
   BaseType.TupleTy    = <(<{Type ", "}+>)>
   BaseType.ListTy     = <<Type>*>
   BaseType.SupplierTy = <supplier\<<Type>\>>
+
+  DataTy.DataTy = <<ModuleList><TYPEID>>
+  BaseType = DataTy
 
   TypeMod.NullableTy = <<BaseType>?>
 

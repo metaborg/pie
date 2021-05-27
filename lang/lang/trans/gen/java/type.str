@@ -5,57 +5,61 @@ imports
   libspoofax/stratego/debug
 
   src-gen/signatures/-
-  signatures/-
+  signatures/metaborg-java-sig
+  signatures/java/arrays/-
+  signatures/java/classes/-
+  signatures/java/interfaces/-
+  signatures/java/lexical/-
+  signatures/java/literals/-
+  signatures/java/names/-
+  signatures/java/packages/-
+  signatures/java/statements/-
+  signatures/java/types/-
+  signatures/java/expressions/-
 
-  statsem/pie
+  statics
 
   gen/idtype-tuples
   gen/util
   gen/java/ast-util
 
+signature
+  constructors
+    DataType : scope -> TYPE
+
 rules
 
-  p2j-ast-type-sig: UnitTy() -> ClassType([], Id("None"), None())
-  p2j-ast-type-sig: BoolTy() -> ClassType([], Id("Boolean"), None())
-  p2j-ast-type-sig: IntTy()  -> ClassType([], Id("Integer"), None())
-  p2j-ast-type-sig: StrTy()  -> ClassType([], Id("String"), None())
-  p2j-ast-type-sig: PathTy() -> ClassType([], Id("FSPath"), None())
+  p2j-ast-type-sig: UnitType() -> ClassType([], Id("None"), None())
+  p2j-ast-type-sig: BoolType() -> ClassType([], Id("Boolean"), None())
+  p2j-ast-type-sig: IntType()  -> ClassType([], Id("Integer"), None())
+  p2j-ast-type-sig: StrType()  -> ClassType([], Id("String"), None())
+  p2j-ast-type-sig: PathType() -> ClassType([], Id("FSPath"), None())
   with
     <add-import> "mb.resource.fs.FSPath"
-  p2j-ast-type-sig: TopTy()  -> ClassType([], Id("Object"), None())
-  p2j-ast-type-sig: NullTy() -> ClassType([], Id("Void"), None())
+  p2j-ast-type-sig: TopType()  -> ClassType([], Id("Object"), None())
+  p2j-ast-type-sig: NullType() -> ClassType([], Id("Void"), None())
 
   p2j-ast-type-sig:
-    DataTy(occ) -> ClassType([], Id(javaClassId), None())
+    DataType(scope) -> ClassType([], Id(javaClassId), None())
     where
-      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
-    ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
+      <pie-get-data-mods; not(collect-one(?Transient()))> scope
     with
-      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
-
-    p2j-ast-type-sig:
-    ImportTy(_, occ) -> ClassType([], Id(javaClassId), None())
-    where
-      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
-    ; <pie-prop(|"Type", "mods"); not(collect-one(?Transient()))> occ
-    with
-      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+      ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
 
   p2j-ast-type-sig:
-    DataTy(occ) -> ClassType(
+    DataType(scope) -> ClassType(
       [],
       Id("OutTransient"),
       Some(TypeArguments([ClassType([], Id(javaClassId), None())]))
     )
     where
-      JavaTypeKind() := <pie-prop(|"Type", "kind")> occ
-    ; <pie-prop(|"Type", "mods"); collect-one(?Transient())> occ
+      <pie-get-data-mods; collect-one(?Transient())> scope
     with
-      javaClassId := <pie-prop(|"Type", "javaClassId")> occ
+      ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
     ; <add-import> "mb.pie.api.OutTransient"
 
   p2j-ast-type-sig:
-    TupleTy(pieTypes) -> ClassType([], Id($[Tuple[length]]), Some(TypeArguments(javaTypes)))
+    TupleType(pieTypes) -> ClassType([], Id($[Tuple[length]]), Some(TypeArguments(javaTypes)))
     with
       length    := <length> pieTypes
     ; javaTypes := <map(p2j-ast-type-sig)> pieTypes
@@ -63,13 +67,19 @@ rules
     ; <add-import> "mb.pie.util.Util"
 
   p2j-ast-type-sig:
-    ListTy(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
+    ListType(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
     with
       <add-import> "java.util.ArrayList"
-  p2j-ast-type-sig: NullableTy(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
 
   p2j-ast-type-sig:
-    SupplierTy(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
+    t@EmptyListType() -> <error(|"Cannot generate code for empty list. Use a type hint to specify the type you need")> t
+    where
+      <ppdebugna(|"In emptylisttype! ")> t
+
+  p2j-ast-type-sig: NullableType(ty) -> <p2j-ast-type-sig> ty // Java types are always nullable
+
+  p2j-ast-type-sig:
+    SupplierType(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
     with
       <add-import> "mb.pie.api.Supplier"
 

@@ -2,7 +2,20 @@ module gen/java/ast-util
 
 imports
 
-  signatures/-
+  src-gen/signatures/-
+  signatures/metaborg-java-sig
+  signatures/java/arrays/-
+  signatures/java/classes/-
+  signatures/java/interfaces/-
+  signatures/java/lexical/-
+  signatures/java/literals/-
+  signatures/java/names/-
+  signatures/java/packages/-
+  signatures/java/statements/-
+  signatures/java/types/-
+  signatures/java/expressions/-
+
+  gen/util
 
 rules
 
@@ -61,7 +74,9 @@ rules
   // , Id("Foo")
   // )
   java-qualifiedClass-to-expressionName:
-    name -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
+    [name] -> ExpressionName(Id(name))
+  java-qualifiedClass-to-expressionName:
+    name@[_|_] -> ExpressionName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(fst))
     where
       [fst | rest] := <reverse> name
 
@@ -69,11 +84,55 @@ rules
   java-qualifiedClass-to-expressionName-after-reverse:
     [name|rest] -> AmbiguousName(<java-qualifiedClass-to-expressionName-after-reverse> rest, Id(name))
 
-  // concat-strings-separator(|sep): list -> string
-  //   Type: list of strings -> string
-  //   sep: string
-  // concatenates a list of strings with a separator
-  // Example: <concat-strings-separator(|"_")> ["mb", "pie", "lang", "Foo"] -> "mb_pie_lang_Foo"
-  concat-strings-separator(|sep): [] -> ""
-  concat-strings-separator(|sep): [last | []] -> last
-  concat-strings-separator(|sep): [first | rest] -> $[[first][sep][<concat-strings-separator(|sep)> rest]]
+rules // java class names
+
+  /**
+   * pie-func-name-to-javaClassId: name -> javaClassId
+   * Type: string -> string
+   *
+   * Transform a PIE function name to a fully qualified Java class name.
+   *
+   * name: The name of a PIE function. Needs to be from the AST.
+   */
+  pie-func-name-to-javaClassId:
+    name -> javaClassId
+    with
+      funcKind    := <pie-ast-ref-prop(|"kind")> name
+    ; javaClassId := <pie-get-javaClassId(|funcKind)> name
+
+    pie-get-javaClassId(|PieFuncKind()): name -> javaClassId
+    with
+      simpleJavaClassId        := <pie-func-name-to-simpleJavaClassId> name
+    ; fullyQualifiedModuleList := <pie-ast-ref-prop(|"qualifiedModule")> name
+    ; encompassingClassName    := <concat-strings-separator(|".")> fullyQualifiedModuleList
+    ; javaClassId              := $[[encompassingClassName].[simpleJavaClassId]]
+
+    pie-get-javaClassId(|PieForeignFuncKind()        ): name -> <pie-ast-ref-prop(|"javaClassId")> name
+    pie-get-javaClassId(|JavaForeignFuncKind()       ): name -> <pie-ast-ref-prop(|"javaClassId")> name
+    pie-get-javaClassId(|JavaForeignConstructorKind()): name -> <pie-ast-ref-prop(|"javaClassId")> name
+
+  /**
+   * pie-func-name-to-simpleJavaClassId: name -> simpleName
+   * Type: string -> string
+   *
+   * simpleJavaClassId is just the class name (not qualified)
+   * Transform a PIE function name to an unqualified Java class name.
+   *
+   * name: The name of a PIE function. Needs to be from the AST.
+   */
+  pie-func-name-to-simpleJavaClassId:
+    name -> simpleName
+    with
+      funcKind   := <pie-ast-ref-prop(|"kind")> name
+    ; simpleName := <pie-get-simpleJavaName(|funcKind)> name
+
+    pie-get-simpleJavaName(|PieFuncKind()): name -> <pie-sanitize-class-id> name
+    pie-get-simpleJavaName(|PieFuncKind()): name -> <pie-javaClassId-to-simpleName> <pie-func-name-to-javaClassId> name
+    pie-get-simpleJavaName(|PieFuncKind()): name -> <pie-javaClassId-to-simpleName> <pie-func-name-to-javaClassId> name
+    pie-get-simpleJavaName(|PieFuncKind()): name -> <pie-javaClassId-to-simpleName> <pie-func-name-to-javaClassId> name
+
+    pie-javaClassId-to-simpleName: javaClassId -> <last> <string-tokenize(|['.'])> javaClassId
+
+rules
+
+  pie-sanitize-class-id = string-replace(|"-", "_"); string-replace(|".", "_")

@@ -1,0 +1,62 @@
+module statics/func_def
+
+imports
+
+  signatures/constructors-sig
+  signatures/pie-sig
+  signatures/func_def-sig
+  statics/base
+  statics/type
+  statics/util
+  statics/func_body
+
+rules
+
+  funcDefOk : scope * FuncDef
+  funcDefOk(s_mod, func@FuncDef(func_head, impl)) :- {name s_func out_ty impl_kind ty}
+    typeOfFuncHead(s_mod, func_head) == (s_func, name, ty@FuncType(_, out_ty)),
+    declareFunc(s_mod, name, ty, impl_kind),
+    declareLocalFunc(s_mod, name, ty),
+    funcImplOk(s_func, impl, out_ty, name) == impl_kind,
+    @func.kind := impl_kind,
+    @func.type := ty.
+
+  typeOfFuncHead : scope * FuncHead -> (scope * string * TYPE)
+  typeOfFuncHead(s, FuncHead(name, Params(params), out_ty_exp)) = (s_func, name, FuncType(param_tys, out_ty)) :-
+    new s_func,
+    s_func -P-> s,
+    typeOfParams(s, s_func, params) == param_tys,
+    typeOf(s, out_ty_exp) == out_ty.
+
+  typeOfParam : scope * scope * Param -> TYPE
+  typeOfParams maps typeOfParam(*, *, list(*)) = list(*)
+
+  typeOfParam(s_mod, _, Param(lexical_type)) = semantic_type :-
+    typeOf(s_mod, lexical_type) == semantic_type.
+
+  typeOfParam(s_mod, s_func, p@NParam(name, lexical_type)) = semantic_type :-
+    typeOf(s_mod, lexical_type) == semantic_type,
+    declareVal(s_func, name, semantic_type, InputValKind()).
+
+  funcImplOk : scope * FuncImpl * TYPE * FUNCID -> FuncImplKind
+  funcImplOk(_, PieForeignFuncImpl(class_id), _, name) = PieForeignFuncKind() :-
+    @name.javaClassId := class_id.
+  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, name) = JavaForeignFuncKind() :-
+    @name.javaClassId := class_id,
+    @name.javaMethodId := java_name.
+  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, name) = JavaForeignConstructorKind() :-
+    @name.javaClassId := class_id.
+  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), expected_type, _) = PieFuncKind() :- {s_func_inner}
+    new s_func_inner,
+    s_func_inner -P-> s_func_outer,
+    setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
+    expectSubtype(s_func_inner, exp, expected_type) == _,
+    optionalKeyFuncOk(s_func_outer, keyFunc).
+
+  keyFuncOk : scope * PieKeyFunc
+  optionalKeyFuncOk maps keyFuncOk(*, list(*))
+
+  keyFuncOk(s_func_outer, PieKeyFunc(Exp2PieFuncBody(exp))) :- {s_keyfunc}
+    new s_keyfunc,
+    s_keyfunc -P-> s_func_outer,
+    typeOfExp(s_keyfunc, exp) == _.

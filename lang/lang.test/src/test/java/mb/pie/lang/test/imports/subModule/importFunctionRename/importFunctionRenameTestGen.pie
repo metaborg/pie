@@ -1,0 +1,8 @@
+module mb:pie:lang:test:imports:subModule:importFunctionRename
+
+import mb:pie:lang:test:imports:subModule:a:b:c:helper_function as no_op
+
+func main_importFunctionRename() -> unit = {
+  no_op();
+  unit
+}

@@ -6,6 +6,19 @@ imports
   type
   func_body
 
+template options
+
+  keyword -/- [a-zA-Z0-9\-\_]
+
+context-free sorts
+
+  FuncHead
+  Param
+  Params
+  FuncDef
+  FuncImpl
+  PieKeyFunc
+
 context-free syntax // Function head
 
   FuncHead.FuncHead = [[FUNCID]([Params]) -> [Type]]
