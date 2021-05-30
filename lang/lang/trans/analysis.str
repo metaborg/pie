@@ -10,7 +10,8 @@ imports
   injections/-
   src-gen/pp/constructors-pp
   libspoofax/sdf/pp
-  
+
+  desugar
   gen/java/type
   gen/util
 
@@ -23,8 +24,8 @@ rules // Analysis
   // multi-file analysis
   editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics/project", "projectOk", "programOk")
 
-  pre-analyze  = explicate-injections-pie-Start
-  post-analyze = implicate-injections-pie-Start
+  pre-analyze  = desugar-all; explicate-injections-pie-Start
+  post-analyze = implicate-injections-pie-Start; resugar-all
 
 rules // Editor Services
 
@@ -83,6 +84,11 @@ rules // Debugging
   debug-show-aterm: (selected, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path
        ; result   := selected
+
+  // Prints the desugared abstract syntax ATerm of a selection.
+  debug-show-desugared: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"desugared.aterm")> path
+       ; result   := <desugar-all> selected
 
   // Prints the pre-analyzed abstract syntax ATerm of a selection.
   debug-show-pre-analyzed: (selected, _, _, path, project-path) -> (filename, result)

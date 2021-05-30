@@ -12,13 +12,14 @@ imports
 rules
 
   dataDefOk : scope * DataDef
-  dataDefOk(s, DataDef(DataDefMods(mods), name, super, impl)) :- {s_data}
+  dataDefOk(s, DataDef(DataDefMods(mods), name, generic_params, super, impl)) :- {s_data}
     dataDefModsOk(mods),
     new s_data,
     !root[getRoot(s)] in s_data,
     setFileIfExists(s, s_data),
     setContext(s_data, "data_name_unqualified", ContextName(name)),
     !data_mods[mods] in s_data,
+    genericParamsOk(s, s_data, generic_params),
     declareData(s, name, s_data),
     declareLocalData(s, name, s_data),
     superOk(s, s_data, super, name),
@@ -29,7 +30,7 @@ rules
   dataDefModsOk([mod|mods1]) :- {mods2}
     dataDefModsOk_1(mods1, mod) == mods2,
     dataDefModsOk(mods2).
-    
+
     // checks that mods list does not contain a duplicate modifier
     // returns list with duplicates removed
     dataDefModsOk_1 : list(DataDefMod) * DataDefMod -> list(DataDefMod)
@@ -39,6 +40,26 @@ rules
       false | error $[Duplicate modifier [mod]] @mod.
     dataDefModsOk_1([mod1|mods], mod2) = [mod1|mods_out] :-
       dataDefModsOk_1(mods, mod2) == mods_out.
+
+  genericParamsOk : scope * scope * GenericParams
+  genericParamsOk(s, s_data, GenericParams(params)) :-
+    !generic_params[params] in s_data,
+    genericParamsOk_1(s, s_data, params).
+
+    genericParamOk : scope * scope * GenericParam
+    genericParamsOk_1 maps genericParamOk(*, *, list(*))
+    genericParamOk(s, s_data, GenericParam(name, upper_bound)) :-
+      {upper_bound_ty}
+      typeOfUpperBound(s, s_data, upper_bound) == upper_bound_ty,
+      declareGenericParam(s_data, name, upper_bound_ty),
+      try { resolveData(s, name) == [] } | warning $[Generic parameter [name] shadows data type [name]] @name.
+
+    typeOfUpperBound : scope * scope * UpperBound -> TYPE
+    typeOfUpperBound(_, _, NoUpperBound()) = TopType().
+    typeOfUpperBound(s, s_data, UpperBound(upper_bound)) = ty@typeOf(s, upper_bound) :-
+      try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
+      try { ty != ListType(_)  } | warning $[Nonsensical bound: list types do not have subtypes] @upper_bound,
+      try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound.
 
   superOk : scope * scope * SuperType * string
   superOk(s, s_data, NoSuperType(), name).
@@ -61,7 +82,7 @@ rules
     superOk_2s maps superOk_2(*, list(*), *)
     superOk_2(FuncType(param_tys, ty_out), (path, (name_super, FuncType(param_tys_super, ty_out_super))), name) :-
         superOk_3(isAllSubTypes(param_tys_super, param_tys), name, ty_out, name_super, ty_out_super).
-    
+
     superOk_3 : BOOLEAN * TYPEID * TYPE * TYPEID * TYPE
     superOk_3(FALSE(), _, _, _, _).
     superOk_3(TRUE(), name, ty_out, name_super, ty_out_super) :-
@@ -72,7 +93,7 @@ rules
   dataImplOk(s, s_data, JavaDataImpl(java_name, members)) :-
     setContext(s_data, "foreign_java_impl", ContextName(java_name)),
     javaDataMembersOk(s, s_data, members).
-  
+
   javaDataMemberOk : scope * scope * JavaDataMemb
   javaDataMembersOk maps javaDataMemberOk(*, *, list(*))
   javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {name ty}

@@ -111,8 +111,9 @@ test name contains close square bracket [[ data Foo]Bar = foreign java org.examp
 test name contains pipe [[ data Foo|Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains single quote [[ data Foo'Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains double quote [[ data Foo"Bar = foreign java org.example.test.Foo {} ]] parse fails
-test name contains colon [[ data Foo:Bar = foreign java org.example.test.Foo {} ]]
-  parse to DataDef(DataDefMods([]), "Foo", SuperType(DataTy(NoModuleList(), "Bar")), JavaDataImpl("org.example.test.Foo", []))
+test name contains colon [[
+  data Foo:Bar = foreign java org.example.test.Foo {}
+]] parse to DataDef(_, "Foo", _, SuperType(DataTy(NoModuleList(), "Bar")), _)
 test name contains semicolon [[ data Foo;Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains comma [[ data Foo,Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains period [[ data Foo.Bar = foreign java org.example.test.Foo {} ]] parse fails
@@ -126,6 +127,82 @@ test name surrounded by matching square brackets [[ data [Foo] = foreign java or
 test name surrounded by matching single quotes [[ data 'Foo' = foreign java org.example.test.Foo {} ]] parse fails
 test name surrounded by matching double quotes [[ data "Foo" = foreign java org.example.test.Foo {} ]] parse fails
 
+// generic parameters
+test generic parameters empty list [[ data Foo<> = foreign java Foo {} ]] parse succeeds
+test generic parameters single parameter without type bound [[ data Foo<T> = foreign java Foo {} ]] parse succeeds
+test generic parameters single parameter with type bound [[ data Foo<T: Foo> = foreign java Foo {} ]] parse succeeds
+test generic parameters qualified type bound [[ data Foo<T: a:b:c:Foo> = foreign java Foo {} ]] parse succeeds
+test generic parameters multi character name [[ data Foo<Elem> = foreign java Foo {} ]] parse succeeds
+test generic parameters lower case name [[ data Foo<t> = foreign java Foo {} ]] parse succeeds
+test generic parameters camelcase name [[ data Foo<GenericParameter> = foreign java Foo {} ]] parse succeeds
+test generic parameters all caps name [[ data Foo<PARAM> = foreign java Foo {} ]] parse succeeds
+test generic parameters underscore in name [[ data Foo<Generic_parameter> = foreign java Foo {} ]] parse succeeds
+test generic parameters name is underscore [[ data Foo<_> = foreign java Foo {} ]] parse succeeds // should fail?
+test generic parameters dash in name [[ data Foo<Generic-parameter> = foreign java Foo {} ]] parse succeeds
+test generic parameters number in name [[ data Foo<T1> = foreign java Foo {} ]] parse succeeds
+test generic parameters name is number [[ data Foo<12> = foreign java Foo {} ]] parse fails
+test generic parameters name starts with number [[ data Foo<1T> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ` [[ data Foo<Generic`Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ~ [[ data Foo<Generic~Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ! [[ data Foo<Generic!Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains @ [[ data Foo<Generic@Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains # [[ data Foo<Generic#Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains $ [[ data Foo<Generic$Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains % [[ data Foo<Generic%Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ^ [[ data Foo<Generic^Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains & [[ data Foo<Generic&Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains * [[ data Foo<Generic*Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ( [[ data Foo<Generic(Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ) [[ data Foo<Generic)Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains = [[ data Foo<Generic=Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains + [[ data Foo<Generic+Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains open square bracket [[ data Foo<Generic[Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ] [[ data Foo<Generic]Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains { [[ data Foo<Generic{Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains } [[ data Foo<Generic}Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains \ [[ data Foo<Generic\Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains | [[ data Foo<Generic|Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ; [[ data Foo<Generic;Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ' [[ data Foo<Generic'Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains " [[ data Foo<Generic"Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains . [[ data Foo<Generic.Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains < [[ data Foo<Generic<Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains > [[ data Foo<Generic>Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains / [[ data Foo<Generic/Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name contains ? [[ data Foo<Generic?Parameters> = foreign java Foo {} ]] parse fails
+test generic parameters name is built-in type [[ data Foo<[[bool]]> = foreign java Foo {} ]] parse fails
+//  todo: should parse but give an error
+//  1 error at #1
+//  run pie-get-type on #1 to TopType()
+//  error like "shadows built-in type"
+test generic parameters missing separator [[ data Foo<T: Command R: Command> = foreign java Foo {} ]] parse fails
+test generic parameters missing brackets [[ data Foo T = foreign java Foo {} ]] parse fails
+test generic parameters missing : [[ data Foo<T Command> = foreign java Foo {} ]] parse fails
+test generic parameters missing bound name [[ data Foo<T :> = foreign java Foo {} ]] parse fails
+test generic parameters double bound [[ data Foo<T : R : U> = foreign java Foo {} ]]
+  parse to DataDef(_, _, GenericParams([
+    GenericParam("T", UpperBound(DataTy(ModuleList(["R"]), "U")))
+  ]), _, _)
+test generic parameters qualified name [[ data Foo<a:b:c: T> = foreign java Foo {} ]]
+  parse to DataDef(_, _, GenericParams([
+    GenericParam("a", UpperBound(DataTy(ModuleList(["b", "c"]), "T")))
+  ]), _, _)
+test generic parameters brackets wrong way around [[ data Foo>T< = foreign java Foo {} ]] parse fails
+test generic parameters brackets wrong way around [[ data Foo>T< = foreign java Foo {} ]] parse fails
+test generic parameters two parameters without type bounds [[ data Foo<T, R> = foreign java Foo {} ]] parse succeeds
+test generic parameters two parameters first type bound [[ data Foo<T: Bar, R> = foreign java Foo {} ]] parse succeeds
+test generic parameters two parameters second type bound [[ data Foo<T, R: int> = foreign java Foo {} ]] parse succeeds
+test generic parameters two parameters both type bounds [[ data Foo<T: R, R: T> = foreign java Foo {} ]] parse succeeds
+test generic parameters three parameters mixed type bounds [[ data Foo<T: Map, R, Elem> = foreign java Foo {} ]] parse succeeds
+test generic parameters with supertype [[ data Result<T, E: Exception> : Object = foreign java Foo {} ]] parse succeeds
+test generic parameters allow built-in types [[ data Bar<T: bool, U: int, V: path> : Object = foreign java Foo {} ]] parse succeeds
+test generic parameters allow nullable type [[ data Bar<T: Command?> : Object = foreign java Foo {} ]] parse succeeds
+test generic parameters allow list type [[ data Foo<T: Bar*> : Object = foreign java Foo {} ]] parse succeeds
+test generic parameters allow tuple type [[ data Bar<T: (Foo, Bak)> : Object = foreign java Foo {} ]] parse succeeds
+test generic parameters allow supplier type [[ data Bar<T: supplier<Foo>> : Object = foreign java Foo {} ]] parse succeeds
+test generic parameters allow generic type bound [[ data Bar<T: Command<string>> : Object = foreign java Foo {} ]]
+  parse fails // todo: implement generic argument list on type references
+
 // supertype
 test no supertype [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
 test with supertype [[ data Foo : Bar = foreign java org.example.test.Foo {} ]] parse succeeds
@@ -134,7 +211,7 @@ test supertype missing name [[ data Foo : = foreign java org.example.test.Foo {}
 test supertype missing colon [[ data Foo Bar = foreign java org.example.test.Foo {} ]] parse fails
 test double supertype colon-separated [[
   data Foo : Bar : Baz = foreign java org.example.test.Foo {}
-]] parse to DataDef(DataDefMods([]), "Foo", SuperType(DataTy(ModuleList(["Bar"]), "Baz")), JavaDataImpl("org.example.test.Foo", []))
+]] parse to DataDef(_, "Foo", _, SuperType(DataTy(ModuleList(["Bar"]), "Baz")), _)
 test double supertype list [[ data Foo : [Bar, Baz] = foreign java org.example.test.Foo {} ]] parse fails
 test supertype no layout before colon [[ data Foo: Bar = foreign java org.example.test.Foo {} ]] parse succeeds
 test supertype no layout after colon [[ data Foo :Bar = foreign java org.example.test.Foo {} ]] parse succeeds

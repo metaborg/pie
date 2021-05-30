@@ -11,12 +11,20 @@ template options
 
 context-free sorts
 
+  TypeBound
+  GenericArgs
   BaseType
   DataTy
   TypeMod
   Type
 
 context-free syntax
+
+  TypeBound = Type
+  TypeBound.Unbound = <?>
+
+  GenericArgs.NoArgs = []
+  GenericArgs.GenericArgs = [<[{TypeBound ", "}*]>]
 
   BaseType.UnitTy     = <unit>
   BaseType.BoolTy     = <bool>

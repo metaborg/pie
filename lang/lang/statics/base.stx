@@ -94,6 +94,8 @@ signature
     data : TYPEID -> scope
     data_local : TYPEID -> scope
     data_mods : list(DataDefMod)
+    generic_params : list(GenericParam)
+    generic_param : TYPEID -> TYPE
     context : string -> CONTEXT
 
 signature
@@ -390,6 +392,33 @@ rules // Declararing and resolving
     new s_auxilary,
     !root[getRoot(s)] in s_auxilary,
     createPEdges(s_auxilary, scopes).
+
+
+  /**
+   * declareGenericParam(s, name, upper_bound)
+   * Declares a generic parameter [name] with upper bound [upper_bound] in [s].
+   * Checks for duplicates and sets the type on [name].
+   */
+  declareGenericParam : scope * TYPEID * TYPE
+  declareGenericParam(s, name, upper_bound) :-
+    !generic_param[name, upper_bound] in s,
+    resolveGenericParam(s, name) == [_]
+      | error $[Duplicate definition of generic parameter [name]],
+    @name.type := upper_bound.
+
+  /**
+   * resolveGenericParam(s, name) = occs
+   * Resolve a generic parameter [name] to its declaration(s) [occs] from scope
+   * [s].
+   * Does not check if the resolved declarations are unique.
+   */
+  resolveGenericParam : scope * TYPEID -> list((path * (TYPEID * TYPE)))
+  resolveGenericParam(s, name) = occs :-
+    query generic_param
+      filter P*
+         and { name' :- name' == name }
+         min and false
+          in s |-> occs.
 
   /**
    * setContext(s, name, context)

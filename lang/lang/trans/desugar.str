@@ -1,0 +1,13 @@
+module desugar
+
+imports
+
+  src-gen/signatures/data-sig
+
+rules
+
+  desugar-all = topdown(try(desugar))
+  resugar-all = topdown(try(resugar))
+
+  desugar: NoGenericParams() -> GenericParams([])
+  resugar: GenericParams([]) -> NoGenericParams()

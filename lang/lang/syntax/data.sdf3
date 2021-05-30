@@ -1,11 +1,11 @@
 module data
 
 imports
-  
+
   lex/literal
   func_def
   type
-  
+
 template options
 
   keyword -/- [a-zA-Z0-9\-\_]
@@ -15,17 +15,28 @@ context-free sorts
   DataDef
   DataDefMod
   DataDefMods
+  UpperBound
+  GenericParam
+  GenericParams
   SuperType
   DataImpl
   JavaDataMemb
 
 context-free syntax // Data definition
 
-  DataDef.DataDef = <<DataDefMods> data <TYPEID><SuperType> = <DataImpl>>
-  
+  DataDef.DataDef = <<DataDefMods> data <TYPEID><GenericParams><SuperType> = <DataImpl>>
+
   DataDefMod.Transient = <transient>
   DataDefMods.DataDefMods = <<{DataDefMod " "}*>>
-  
+
+  UpperBound.NoUpperBound = <>
+  UpperBound.UpperBound = < : <Type>>
+
+  GenericParam.GenericParam = <<TYPEID><UpperBound>>
+
+  GenericParams.NoGenericParams = [] // syntactic sugar for empty list
+  GenericParams.GenericParams = [<[{GenericParam ", "}*]>]
+
   SuperType.NoSuperType =
   SuperType.SuperType = < : <DataTy>>
 
