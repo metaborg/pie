@@ -43,6 +43,7 @@ class SerializingStoreTests {
     }
 
     // Serialize-deserialize roundtrip due to pie instance being closed.
+    taskDefs.clear() // Clear because InMemoryStoreTestCtx re-adds the same task definition
     pieBuilder.build().use { pie ->
       InMemoryStoreTestCtx(fileSystem, taskDefs, pie).run {
         val task = readDef.createTask(file)
@@ -58,6 +59,7 @@ class SerializingStoreTests {
     }
 
     // Serialize-deserialize roundtrip due to pie instance being closed.
+    taskDefs.clear() // Clear because InMemoryStoreTestCtx re-adds the same task definition
     pieBuilder.build().use { pie ->
       InMemoryStoreTestCtx(fileSystem, taskDefs, pie).run {
         val task = readDef.createTask(file)
