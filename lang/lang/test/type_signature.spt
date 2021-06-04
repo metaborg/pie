@@ -19,5 +19,5 @@ test list [[ path* ]] analysis succeeds
 test supplier [[ supplier<string> ]] analysis succeeds
 test data type local [[ Foo ]] analysis succeeds
 test data type imported [[ test:type_signature:Foo ]] analysis succeeds
-test data type undefined [[ Bar ]] analysis fails
+test data type undefined [[ Bar ]] 1 error  error like "Undefined data"
 test nullable [[ int? ]] analysis succeeds

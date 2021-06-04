@@ -12,18 +12,18 @@ imports
 rules
 
   dataDefOk : scope * DataDef
-  dataDefOk(s, DataDef(DataDefMods(mods), name, generic_params, super, impl)) :- {s_data}
+  dataDefOk(s, DataDef(DataDefMods(mods), name, generic_params, super, impl)) :- {s_data_def}
     dataDefModsOk(mods),
-    new s_data, // todo: rename to s_data_def
-    !root[getRoot(s)] in s_data,
-    setFileIfExists(s, s_data),
-    setContext(s_data, "data_name_unqualified", ContextName(name)),
-    !data_mods[mods] in s_data,
-    genericParamsOk(s, s_data, generic_params),
-    declareData(s, name, s_data),
-    declareLocalData(s, name, s_data),
-    superOk(s, s_data, super, name),
-    dataImplOk(s, s_data, impl).
+    new s_data_def,
+    !root[getRoot(s)] in s_data_def,
+    setFileIfExists(s, s_data_def),
+    setContext(s_data_def, "data_name_unqualified", ContextName(name)),
+    !data_mods[mods] in s_data_def,
+    genericParamsOk(s, s_data_def, generic_params),
+    declareData(s, name, s_data_def),
+    declareLocalData(s, name, s_data_def),
+    superOk(s, s_data_def, super, name),
+    dataImplOk(s, s_data_def, impl).
 
   dataDefModsOk : list(DataDefMod)
   dataDefModsOk([]).

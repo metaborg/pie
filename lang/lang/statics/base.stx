@@ -263,7 +263,7 @@ rules // Declararing and resolving
   resolveFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
   resolveFunc(s, name) = occs :-
     query func
-      filter P*|INHERIT*
+      filter (P|INHERIT)*
          and { name' :- name' == name }
          min $ < INHERIT
          and true
