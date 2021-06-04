@@ -14,7 +14,7 @@ rules
   dataDefOk : scope * DataDef
   dataDefOk(s, DataDef(DataDefMods(mods), name, generic_params, super, impl)) :- {s_data}
     dataDefModsOk(mods),
-    new s_data,
+    new s_data, // todo: rename to s_data_def
     !root[getRoot(s)] in s_data,
     setFileIfExists(s, s_data),
     setContext(s_data, "data_name_unqualified", ContextName(name)),
@@ -63,8 +63,9 @@ rules
 
   superOk : scope * scope * SuperType * string
   superOk(s, s_data, NoSuperType(), name).
-  superOk(s, s_data, SuperType(data_ty@DataTy(_, super_name)), name) :- {s_super occs}
+  superOk(s, s_data, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
     typeOfDataTy(s, data_ty) == DataType(s_super),
+    // todo: check that provided type arguments (type_args) are compatible with type parameters (super.
     s_data -INHERIT-> s_super,
     inherits(s_super, s_data) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
     query func filter e in s_data |-> occs,

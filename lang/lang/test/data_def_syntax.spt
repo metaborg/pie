@@ -113,7 +113,7 @@ test name contains single quote [[ data Foo'Bar = foreign java org.example.test.
 test name contains double quote [[ data Foo"Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains colon [[
   data Foo:Bar = foreign java org.example.test.Foo {}
-]] parse to DataDef(_, "Foo", _, SuperType(DataTy(NoModuleList(), "Bar")), _)
+]] parse to DataDef(_, "Foo", _, SuperType(DataTy(NoModuleList(), "Bar", _)), _)
 test name contains semicolon [[ data Foo;Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains comma [[ data Foo,Bar = foreign java org.example.test.Foo {} ]] parse fails
 test name contains period [[ data Foo.Bar = foreign java org.example.test.Foo {} ]] parse fails
@@ -181,11 +181,11 @@ test generic parameters missing : [[ data Foo<T Command> = foreign java Foo {} ]
 test generic parameters missing bound name [[ data Foo<T :> = foreign java Foo {} ]] parse fails
 test generic parameters double bound [[ data Foo<T : R : U> = foreign java Foo {} ]]
   parse to DataDef(_, _, GenericParams([
-    GenericParam("T", UpperBound(DataTy(ModuleList(["R"]), "U")))
+    GenericParam("T", UpperBound(DataTy(ModuleList(["R"]), "U", NoTypeArgs())))
   ]), _, _)
 test generic parameters qualified name [[ data Foo<a:b:c: T> = foreign java Foo {} ]]
   parse to DataDef(_, _, GenericParams([
-    GenericParam("a", UpperBound(DataTy(ModuleList(["b", "c"]), "T")))
+    GenericParam("a", UpperBound(DataTy(ModuleList(["b", "c"]), "T", NoTypeArgs())))
   ]), _, _)
 test generic parameters brackets wrong way around [[ data Foo>T< = foreign java Foo {} ]] parse fails
 test generic parameters brackets wrong way around [[ data Foo>T< = foreign java Foo {} ]] parse fails
@@ -201,7 +201,6 @@ test generic parameters allow list type [[ data Foo<T: Bar*> : Object = foreign 
 test generic parameters allow tuple type [[ data Bar<T: (Foo, Bak)> : Object = foreign java Foo {} ]] parse succeeds
 test generic parameters allow supplier type [[ data Bar<T: supplier<Foo>> : Object = foreign java Foo {} ]] parse succeeds
 test generic parameters allow generic type bound [[ data Bar<T: Command<string>> : Object = foreign java Foo {} ]]
-  parse fails // todo: implement generic argument list on type references
 
 // supertype
 test no supertype [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
@@ -211,7 +210,7 @@ test supertype missing name [[ data Foo : = foreign java org.example.test.Foo {}
 test supertype missing colon [[ data Foo Bar = foreign java org.example.test.Foo {} ]] parse fails
 test double supertype colon-separated [[
   data Foo : Bar : Baz = foreign java org.example.test.Foo {}
-]] parse to DataDef(_, "Foo", _, SuperType(DataTy(ModuleList(["Bar"]), "Baz")), _)
+]] parse to DataDef(_, "Foo", _, SuperType(DataTy(ModuleList(["Bar"]), "Baz", _)), _)
 test double supertype list [[ data Foo : [Bar, Baz] = foreign java org.example.test.Foo {} ]] parse fails
 test supertype no layout before colon [[ data Foo: Bar = foreign java org.example.test.Foo {} ]] parse succeeds
 test supertype no layout after colon [[ data Foo :Bar = foreign java org.example.test.Foo {} ]] parse succeeds

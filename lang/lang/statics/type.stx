@@ -8,7 +8,6 @@ imports
   statics/base
   statics/module
 
-
 rules // operations on types
 
   /**
@@ -19,9 +18,8 @@ rules // operations on types
    */
   inherits : scope * scope -> BOOLEAN
   inherits(s_sub, s_super) = inherits_1(paths) :-
-    query () filter INHERIT* and { s_data :- s_data == s_super } in s_sub |-> paths.
+    query () filter P? (INHERIT P)* INHERIT? and { s_data :- s_data == s_super } in s_sub |-> paths.
 
-    // Returns FALSE if the list is empty, TRUE otherwise.
     inherits_1 : list((path * scope)) -> BOOLEAN
     inherits_1([]) = FALSE().
     inherits_1([_|_]) = TRUE().
@@ -38,7 +36,8 @@ rules // operations on types
   subtype(T1, NullableType(T2)) :- subtype(T1, T2).
   subtype(NullableType(T1), NullableType(T2)) :- subtype(T1, T2).
   subtype(EmptyListType(), ListType(_)).
-  subtype(DataType(s_sub), DataType(s_super)) :- inherits(s_sub, s_super) == TRUE().
+  subtype(d1@DataType(_), d2@DataType(_)) :- isSubtype(d1, d2) == TRUE().
+  subtype(_, TopType()).
   subtype(T1, T2) :- T1 == T2.
 
   /**
@@ -51,11 +50,119 @@ rules // operations on types
   isSubtype(T1, NullableType(T2)) = isSubtype(T1, T2).
   isSubtype(NullableType(T1), NullableType(T2)) = isSubtype(T1, T2).
   isSubtype(EmptyListType(), ListType(_)) = TRUE().
-  isSubtype(DataType(s_sub), DataType(s_super)) = inherits(s_sub, s_super).
+  isSubtype(DataType(s_sub), DataType(s_super)) =
+    isSubtypeDataType(s_sub, s_super, inherits, type_args, s_super_def)
+  :-
+    inherits(s_sub, s_super_def) == inherits,
+    getTypeArgs(s_super) == type_args,
+    findGenericDef(s_super) == s_super_def.
+    
+      // Get generic definition of s_data. s_data can be either an instance or the generic def itself.
+      findGenericDef : scope -> scope
+      findGenericDef(s_data) = getScope(occ) :-
+        query () filter P? min P < $ in s_data |-> [occ].
+
+    isSubtypeDataType : scope * scope * BOOLEAN * list((TYPEID * TYPE)) * scope -> BOOLEAN
+    isSubtypeDataType(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
+    isSubtypeDataType(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
+    isSubtypeDataType(_, _, TRUE(), [], _) = TRUE().  // s_super is a generic defintion and s_sub inherits from it, s_sub is a subtype by definition
+    isSubtypeDataType(s_sub, s_super, TRUE(), [_|_], s_super_def) = isTypeArgsCompatible(s_sub_super_instance, s_super) :-
+      query ()
+        filter INHERIT? (P INHERIT)*
+           and { s :- getGenericDef(s) == s_super_def }
+            in s_sub |-> [(_, s_sub_super_instance)].
+      
+
+/*
+
+Steps:
+1. Make sure that they could be subtypes: inherits(s_sub, s_super)
+2. Case 1: equal instances: isTypeArgsCompatible(s_sub, s_super)
+3. Case 2: equal defs: s_sub == s_super
+4. Case 3: s_sub is an instance of s_super: (subtype by definition)
+5. Case 4: s_sub is strict subtype of s_super
+6. Case 4a: s_super is definition: (s_sub is subtype by definition)
+7. Case 4b: s_super is an instance of s_super_def:
+  7.1: get s_sub_super_instance by following INHERIT|P until the next P leads to s_super_def
+  7.2: isTypeArgsCompatible(s_sub_super_instance, s_super)
+
+
+Simplify:
+1. Make sure that they could be subtypes: if !inherits(s_sub, findGenericDef(s_super)) then FALSE()  <-- WRONG!!, only holds if s_super is a generic def!!
+2. If s_super is a definition, s_sub is a subtype by definition: if getTypeArgs(s_super) == [] then TRUE()
+3. Else: s_super is an instance. Find s_super_def by following P edge: getGenericDef(s_super) == s_super_def
+[note] s_sub is either an instance of s_super_def, or an instance or generic def of a strict subtype of s_super_def. 
+4. Get s_sub_super_instance by following INHERIT|P until the next P leads to s_super_def:
+     query ()
+       filter INHERIT? (P INHERIT)*
+          and { s :- getGenericDef(s) == s_super_def }
+           in s_sub |-> [(_, s_sub_super_instance)]
+5. Check if instances are compatible: isTypeArgsCompatible(s_sub_super_instance, s_super)
+
+inherits(s_sub, s_super):     checks that s_sub has a path to s_super via alternating INHERIT|P edges
+isTypeArgsCompatible(s1, s2): given two instances of the same data type, check if s1 is a subtype of s2
+getTypeArgs(s_data):          get all type arguments defined in s_data.
+getGenericDef(s_data):        Get generic definition of s_data. Requires that s_data is an instance.
+findGenericDef(s_data):       Get generic definition of s_data. s_data can be either an instance or the generic def itself.
+*/
+
+    // check if s1 is compatible with s2. Assumes s1 is an instance of data
+    // type dt and that s2 is either also an instance or the generic definition
+    isTypeArgsCompatible : scope * scope -> BOOLEAN
+    isTypeArgsCompatible(s1, s2) = isTypeArgsCompatible_1(s1, s2, getGenericDef(s1)).
+
+      // Get generic definition for instance.
+      getGenericDef : scope -> scope
+      getGenericDef(s_data_instance) = getScope(occ) :-
+        query () filter P in s_data_instance |-> [occ].
+
+      // s1 is an instance
+      // s2 is either an instance or a data definition.
+      // third argument is data definition
+      isTypeArgsCompatible_1 : scope * scope * scope -> BOOLEAN
+      isTypeArgsCompatible_1(s1, s2, s2) = TRUE().
+        // s2 is a generic data definition, s1 is an instance of it.
+        // s1 is a subtype by definition.
+
+      isTypeArgsCompatible_1(s1, s2, s_data_def) =
+        // s2 is an instance of s_data_def
+        allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2)).
+
+        getTypeArgs : scope -> list((TYPEID * TYPE))
+        getTypeArgs(s_data) = getArgTypes(occs) :-
+          query generic_arg in s_data |-> occs.
+
+          getArgType : (path * (TYPEID * TYPE)) -> (TYPEID * TYPE)
+          getArgTypes maps getArgType(list(*)) = list(*)
+          getArgType((path, arg_ty)) = arg_ty.
+
+      isTypeArgCompatible : (TYPEID * TYPE) * scope -> BOOLEAN
+      isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *) = list(*)
+      isTypeArgCompatible((name, ty1), s2) =
+        isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, name)).
+
+        isTypeArgCompatible_1 : TYPE * TYPE -> BOOLEAN
+        isTypeArgCompatible_1(ty, ty) = TRUE().
+        isTypeArgCompatible_1(DataType(s1), DataType(s2)) = isTypeEqual(s1, s2).
+        isTypeArgCompatible_1(T1, T2) = FALSE().
+
+        isTypeEqual : scope * scope -> BOOLEAN
+        isTypeEqual(s1, s2) = andB(isInstanceOf(s1, s2), isTypeArgsCompatible(s1, s2)).
+
+        isInstanceOf: scope * scope -> BOOLEAN
+        isInstanceOf(s1, s2) = isInstanceOf_listNonEmpty(occs) :-
+          query () filter P in s1 |-> occs.
+
+          isInstanceOf_listNonEmpty : list((path * scope)) -> BOOLEAN
+          isInstanceOf_listNonEmpty([]) = FALSE().
+          isInstanceOf_listNonEmpty([_|_]) = TRUE().
+
+  isSubtype(_, TopType()) = TRUE().
   isSubtype(T1, T2) = isSubtypeHelper(T1, T2).
 
   // this rule is here to prevent "overlapping rules" error
   // on isSubtype(T, NullableType(T))
+  // todo: can remove this now?
   isSubtypeHelper : TYPE * TYPE -> BOOLEAN
   isSubtypeHelper(T, T) = TRUE().
   isSubtypeHelper(_, _) = FALSE().
@@ -92,15 +199,6 @@ rules // operations on types
   makeNullable(T) = NullableType(T).
 
   /**
-   * dataTypeFromPathOrDefault(list, default)
-   * Returns the scope from the single pair in the list wrapped in a DataType
-   * or the default type if the list is empty.
-   */
-  dataTypeFromPathOrDefault : list((path * scope)) * TYPE -> TYPE
-  dataTypeFromPathOrDefault([], default) = default.
-  dataTypeFromPathOrDefault([(_, s)], _) = DataType(s).
-
-  /**
    * lub(T1, T2)
    * Returns the least upper bound of types [T1] and [T2].
    */
@@ -110,15 +208,39 @@ rules // operations on types
   lub(NullableType(T1), NullableType(T2)) = NullableType(lub(T1, T2)).
   lub(EmptyListType(), ListType(T)) = ListType(T).
   lub(ListType(T), EmptyListType()) = ListType(T).
-  lub(DataType(s1), DataType(s2)) = dataTypeFromPathOrDefault(paths, TopType()) :-
+  lub(DataType(s1), DataType(s2)) = lub_datatype(paths, s1, s2) :-
     // find all scopes from s1 that s2 inherits from, take the shortest one.
     query ()
       filter INHERIT* and { s_super :- inherits(s2, s_super) == TRUE() }
       min $ < INHERIT in s1 |-> paths.
+
+    lub_datatype : list((path * scope)) * scope * scope -> TYPE
+    lub_datatype([], _, _) = TopType().
+    lub_datatype([(_, s_data_common)], s1, s2) = DataType(emptyScope(s)) :-
+      false | error $[todo: lub for datatypes has not been implemented].
+      // todo: propagate both type arguments up to s, return the data type if
+      // eventual data types match, otherwise keep going up the type list until
+      // either the type arguments do match or there is no more supertype.
+      // pseudocode (outdated):
+      //   common_type_args1 == propagateTypeArgsToSupertypeUntil(s, s1),
+      //   common_type_args2 == propagateTypeArgsToSupertypeUntil(s, s2),
+      //   return_ty == returnIfCompatibleOrPropagateUntilTopType(s_data_common, common_type_args1, common_type_args2).
+      //
+      //   returnIfCompatibleOrPropagateUntilTopType(TRUE(), s_data, args1, args2) = firstTrueT(
+      //     (is_compatible, DataType(s_data, compatible_args)),
+      //     returnIfCompatibleOrPropagateUntilTopType_1(hasSuper(s_data), s_data, args1, args2))
+      //   :-
+      //     isCompatible(args1, args2) == (is_compatible, compatible_args).
+      //
+      //   returnIfCompatibleOrPropagateUntilTopType_1(FALSE(), _, _, _) = TopType().
+      //   returnIfCompatibleOrPropagateUntilTopType_1(TRUE(), s_data, args1, args2) =
+      //     returnIfCompatibleOrPropagateUntilTopType(getSuper(s_data), args1, args2).
+
   lub(T1, T2) = firstTrueT([
     (isSubtype(T1, T2), T2),
     (isSubtype(T2, T1), T1)],
     TopType()).
+
 
   /**
    * listLub(list)
@@ -168,9 +290,32 @@ rules
   typeOfBaseType(s, SupplierTy(ty)) = SupplierType(typeOf(s, ty)).
 
   typeOfDataTy : scope * DataTy -> TYPE
-  typeOfDataTy(s, DataTy(modules, name)) = DataType(s_data) :- {module_scopes}
+  typeOfDataTy(s, DataTy(modules, name, type_args)) = DataType(s_data) :-
+    {module_scopes}
+    new s_data,
+    !root[getRoot(s)] in s_data,
     resolveModuleListToFile(s, modules) == module_scopes,
-    resolveUniqueDataInScopes(s, module_scopes, name) == s_data.
+    genericArgsOk(s, s_data, type_args, resolveUniqueDataInScopes(s, module_scopes, name), name).
+
+    genericArgsOk : scope * scope * TypeArgs * (BOOLEAN * scope) * TYPEID
+    genericArgsOk(_, _, type_args, (FALSE(), _), name). // error generated by resolveUniqueDataInScopes
+    genericArgsOk(s, s_data, TypeArgs(type_args), (TRUE(), s_data_def), _) :-
+      s_data -P-> s_data_def,
+      genericArgsOk_1(s, s_data, getGenericParams(s_data_def), type_args).
+
+    genericArgOk : scope * scope * GenericParam * TypeBound
+    genericArgsOk_1 maps genericArgOk(*, *, list(*), list(*))
+    genericArgOk(s, s_data, GenericParam(name, upper_bound), arg) :-
+      {upper_bound_ty arg_ty}
+      typeOfUpperBound(s, s_data, upper_bound) == upper_bound_ty,
+      typeOfTypeBound(s, arg, upper_bound_ty) == arg_ty,
+      declareGenericArg(s_data, name, arg_ty).
+
+    typeOfTypeBound : scope * TypeBound * TYPE -> TYPE
+    typeOfTypeBound(s, Wildcard(), upper_bound) = upper_bound. // todo: incorrect, should use proper wildcard semantics
+    typeOfTypeBound(s, Type2TypeBound(arg), upper_bound_ty) = arg_ty :-
+      typeOf(s, arg) == arg_ty,
+      subtype(arg_ty, upper_bound_ty) | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound_ty]].
 
   /**
    * getScopeFromType(s, ty)

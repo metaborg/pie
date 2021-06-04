@@ -15,6 +15,8 @@ signature
   sorts
     ModuleTree
     MODULE
+    ParameterizedType
+    GenericParameter
 
   constructors
     /**
@@ -81,6 +83,7 @@ signature
     SUBMODULE : scope * list(MODID) -> MODULE
 
     DataType : scope -> TYPE
+    GenericParameter : scope * TYPEID -> GenericParameter // name + scope it is defined in
 
   relations
     root : scope
@@ -95,7 +98,9 @@ signature
     data_local : TYPEID -> scope
     data_mods : list(DataDefMod)
     generic_params : list(GenericParam)
-    generic_param : TYPEID -> TYPE
+    // todo: should allow wildcards in type bounds (?) and type arguments
+    generic_param : GenericParameter -> TYPE // generic parameter -> upper bound
+    generic_arg : TYPEID -> TYPE   // generic argument, name -> instantiated type // todo: also needs scope?
     context : string -> CONTEXT
 
 signature
@@ -367,32 +372,40 @@ rules // Declararing and resolving
   /**
    * resolveUniqueData(s, name) = s_data
    * Resolve data [name] to a unique data scope [s_data] in scope [s].
-   * Returns an empty scope if [name] could not be resolved to a unique data
-   * type.
+   * [resolved] is TRUE if [name] resolved to a unique data type. If not,
+   * [s_data] will be a dummy scope.
    */
-  resolveUniqueData : scope * TYPEID -> scope
+  resolveUniqueData : scope * TYPEID -> (BOOLEAN * scope)
   resolveUniqueData(s, name) = resolveUniqueData_1(s, resolveData(s, name), name).
 
-    resolveUniqueData_1 : scope * list((path * (TYPEID * scope))) * TYPEID -> scope
-    resolveUniqueData_1(s, [], name) = emptyScope(s) :- false | error $[Undefined data [name]] @name.
-    resolveUniqueData_1(_, [(_, (name', s_data))], name) = s_data :-
+    resolveUniqueData_1 : scope * list((path * (TYPEID * scope))) * TYPEID -> (BOOLEAN * scope)
+    resolveUniqueData_1(s, [], name) = (FALSE(), emptyScope(s)) :- false | error $[Undefined data [name]] @name.
+    resolveUniqueData_1(_, [(_, (name', s_data))], name) = (TRUE(), s_data) :-
       @name.ref := name',
       @name.type := DataType(s_data).
-    resolveUniqueData_1(s, [_,_|_], _) = emptyScope(s).
+    resolveUniqueData_1(s, [_,_|_], _) = (FALSE(), emptyScope(s)).
 
   /**
-   * resolveUniqueDataInScopes(s, scopes, name) = s_data
+   * resolveUniqueDataInScopes(s, scopes, name) = (resolved, s_data)
    * Resolve a unique data type [name] in [scopes] to a data scope [s_data].
    * Only one of the scopes can have this data type, so this does not look for
    * one data type in each scope.
+   * [resolved] is TRUE if [name] resolved to a unique data type. If not,
+   * [s_data] will be a dummy scope.
    * Scope [s] is used to set the root on an auxilary scope.
    */
-  resolveUniqueDataInScopes : scope * list(scope) * TYPEID -> scope
+  resolveUniqueDataInScopes : scope * list(scope) * TYPEID -> (BOOLEAN * scope)
   resolveUniqueDataInScopes(s, scopes, name) = resolveUniqueData(s_auxilary, name) :-
     new s_auxilary,
     !root[getRoot(s)] in s_auxilary,
     createPEdges(s_auxilary, scopes).
 
+
+  // todo: documentation
+  getGenericParams : scope -> list(GenericParam)
+  getGenericParams(s_data) = params :-
+    query generic_params filter P? in s_data |-> [(_, params)]
+      | error $[BUG: Could not get generic parameters from [s_data]].
 
   /**
    * declareGenericParam(s, name, upper_bound)
@@ -401,24 +414,52 @@ rules // Declararing and resolving
    */
   declareGenericParam : scope * TYPEID * TYPE
   declareGenericParam(s, name, upper_bound) :-
-    !generic_param[name, upper_bound] in s,
-    resolveGenericParam(s, name) == [_]
+    {param}
+    !generic_param[param@GenericParameter(s, name), upper_bound] in s,
+    resolveGenericParam(param) == [_]
       | error $[Duplicate definition of generic parameter [name]],
     @name.type := upper_bound.
 
   /**
-   * resolveGenericParam(s, name) = occs
+   * resolveGenericParam(param, name) = occs
    * Resolve a generic parameter [name] to its declaration(s) [occs] from scope
    * [s].
    * Does not check if the resolved declarations are unique.
    */
-  resolveGenericParam : scope * TYPEID -> list((path * (TYPEID * TYPE)))
-  resolveGenericParam(s, name) = occs :-
+  resolveGenericParam : GenericParameter -> list((path * (GenericParameter * TYPE)))
+  resolveGenericParam(param@GenericParameter(s,_)) = occs :-
     query generic_param
-      filter P*
-         and { name' :- name' == name }
+      filter e
+         and { param' :- param == param' }
          min and false
           in s |-> occs.
+
+  // todo: documentation
+  declareGenericArg : scope * TYPEID * TYPE
+  declareGenericArg(s, name, ty) :-
+    !generic_arg[name, ty] in s,
+    resolveGenericArg(s, name) == [_]
+      | error $[Duplicate definition of generic argument [name]],
+    @name.type := ty.
+
+  // todo: documentation
+  // todo: rename to resolveTypeArg
+  resolveGenericArg : scope * TYPEID -> list((path * (TYPEID * TYPE)))
+  resolveGenericArg(s, name) = occs :-
+    query generic_arg 
+      filter (P|INHERIT)*
+         and { name' :- name == name' }
+          in s |-> occs.
+
+  // todo: documentation
+  resolveUniqueTypeArg : scope * TYPEID * string -> TYPE
+  resolveUniqueTypeArg(s, name, error_node) = resolveUniqueTypeArg_1(name, resolveGenericArg(s, name), error_node).
+  
+    resolveUniqueTypeArg_1 : TYPEID * list((path * (TYPEID * TYPE))) * string -> TYPE
+    resolveUniqueTypeArg_1(name, [], error_node) = _ :- false | error $[Undefined type argument [name]] @error_node.
+    resolveUniqueTypeArg_1(_, [(_, (_, ty))], _) = ty.
+    resolveUniqueTypeArg_1(name, [_|_], error_node) = _ :- false | error $[Duplicate type argument [name]] @error_node.
+
 
   /**
    * setContext(s, name, context)

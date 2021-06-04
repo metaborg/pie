@@ -12,7 +12,7 @@ template options
 context-free sorts
 
   TypeBound
-  GenericArgs
+  TypeArgs
   BaseType
   DataTy
   TypeMod
@@ -23,8 +23,8 @@ context-free syntax
   TypeBound = Type
   TypeBound.Unbound = <?>
 
-  GenericArgs.NoArgs = []
-  GenericArgs.GenericArgs = [<[{TypeBound ", "}*]>]
+  TypeArgs.NoTypeArgs = []
+  TypeArgs.TypeArgs = [<[{TypeBound ", "}*]>]
 
   BaseType.UnitTy     = <unit>
   BaseType.BoolTy     = <bool>
@@ -35,7 +35,7 @@ context-free syntax
   BaseType.ListTy     = <<Type>*>
   BaseType.SupplierTy = <supplier\<<Type>\>>
 
-  DataTy.DataTy = <<ModuleList><TYPEID>>
+  DataTy.DataTy = <<ModuleList><TYPEID><TypeArgs>>
   BaseType = DataTy
 
   TypeMod.NullableTy = <<BaseType>?>
