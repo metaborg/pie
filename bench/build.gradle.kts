@@ -1,3 +1,4 @@
+import org.slf4j.LoggerFactory
 import ru.vyarus.gradle.plugin.python.task.PythonTask
 
 plugins {
@@ -43,53 +44,36 @@ application {
 
 val jmhReportDir = "$buildDir/reports/jmh/"
 val resultFile = "$jmhReportDir/result.json"
-val commonArgs = listOf(
-  "-foe", "true", // Fail early.
-  "-gc", "true", // Run GC between iterations, lowering noise.
-  "-prof", "mb.pie.bench.util.PieMetricsProfiler", // Enable PIE metrics profiler; required.
-  "-rf", "json", "-rff", resultFile // Write results to JSON file.
-)
-// Development settings
-val runTask = tasks.getByName<JavaExec>("run") {
-  description = "Runs benchmarks with quick development settings"
-  args("-f", "0") // Do not fork to allow debugging.
-  args("-wi", "0", "-i", "1")
-  args("-p", "loggerFactory=stdout_verbose")
-  args("-p", "serde=java")
-  args("-p", "store=in_memory")
-  args("-p", "layer=validation")
-  args("-p", "tracer=metrics")
-  args("-p", "language=calc")
-  args(commonArgs)
-  args("Spoofax3Bench.incrementalTopDown")
-  doFirst {
-    mkdir(jmhReportDir)
-  }
-}
-// Full benchmarking settings
-val layers = listOf("validation", "noop")
-val languages = listOf("chars", "calc")
-val benchmarkRegex = "Spoofax3Bench.*"
-val runFullTask = tasks.register<JavaExec>("runFull") {
-  // Copied from Gradle application plugin
-  description = "Runs benchmarks with full benchmarking settings"
-  group = ApplicationPlugin.APPLICATION_GROUP
-  val pluginConvention = project.convention.getPlugin(ApplicationPluginConvention::class.java)
-  val javaPluginConvention = project.convention.getPlugin(JavaPluginConvention::class.java)
-  classpath = javaPluginConvention.sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
-  conventionMapping.map("main") { pluginConvention.mainClassName }
-  conventionMapping.map("jvmArgs") { pluginConvention.applicationDefaultJvmArgs }
 
-  args("-f", "1") // Enable forking.
-  args("-wi", "5", "-i", "5") // 5 warmup and measurement iterations.
-  args("-p", "layer=${layers.joinToString(",")}") // Benchmark with different layers.
-  args("-p", "language=${languages.joinToString(",")}") // Benchmark with different languages.
-  args(commonArgs)
-  args(benchmarkRegex)
-  doFirst {
-    mkdir(jmhReportDir)
-  }
-}
+val benchBottomUpScheduling = registerRunTask(
+  "benchBottomUpSchedulingDev",
+  benchmarkRegex = "BottomUpSchedulingBench.*",
+  forking = false,
+  warmupIterations = 0,
+  measurementIterations = 1,
+  loggerFactory = "stdout_very_verbose",
+  tracer = "metrics",
+  additionalArgs = listOf("-p", "useDiskTemporaryDirectory=false")
+)
+
+val spoofax3CompilerBenchmarkRegex = "Spoofax3CompilerBench.*"
+val spoofax3CompilerLayers = listOf("validation", "noop")
+val spoofax3CompilerAdditionalArgs = listOf("-p", "language=${listOf("chars", "calc").joinToString(",")}")
+val benchSpoofax3CompilerDev = registerRunTask(
+  "benchSpoofax3CompilerDev",
+  benchmarkRegex = spoofax3CompilerBenchmarkRegex,
+  forking = false,
+  warmupIterations = 0,
+  measurementIterations = 1,
+  layers = spoofax3CompilerLayers,
+  additionalArgs = spoofax3CompilerAdditionalArgs
+)
+val benchSpoofax3CompilerFull = registerRunTask(
+  "benchSpoofax3CompilerFull",
+  benchmarkRegex = spoofax3CompilerBenchmarkRegex,
+  layers = spoofax3CompilerLayers,
+  additionalArgs = spoofax3CompilerAdditionalArgs
+)
 
 // Python configuration and plotting tasks.
 python {
@@ -100,12 +84,58 @@ python {
   pip("dash-bootstrap-components:0.10.7")
 }
 tasks.register<PythonTask>("plotToHtml") {
-  mustRunAfter(runTask, runFullTask)
+  mustRunAfter(benchSpoofax3CompilerDev, benchSpoofax3CompilerFull)
   command = "src/main/python/plot.py --input-file $resultFile export-html --output-file $jmhReportDir/result.html"
 }
 tasks.register<PythonTask>("plotInteractive") {
-  mustRunAfter(runTask, runFullTask)
+  mustRunAfter(benchSpoofax3CompilerDev, benchSpoofax3CompilerFull)
   command = "src/main/python/plot.py --input-file $resultFile dash"
+}
+
+
+fun registerRunTask(
+  name: String,
+  benchmarkRegex: String = "*",
+  additionalArgs: List<String> = listOf(),
+  description: String = "Runs benchmarks with certain settings",
+  forking: Boolean = true,
+  warmupIterations: Int = 5,
+  measurementIterations: Int = 5,
+  loggerFactory: String = "stdout_verbose",
+  serdes: List<String> = listOf("java"),
+  stores: List<String> = listOf("in_memory"),
+  layers: List<String> = listOf("validation"),
+  tracer: String = "metrics"
+): TaskProvider<JavaExec> {
+  return tasks.register<JavaExec>(name) {
+    // Copied from Gradle application plugin
+    this.description = description
+    group = ApplicationPlugin.APPLICATION_GROUP
+    val pluginConvention = project.convention.getPlugin(ApplicationPluginConvention::class.java)
+    val javaPluginConvention = project.convention.getPlugin(JavaPluginConvention::class.java)
+    classpath = javaPluginConvention.sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
+    conventionMapping.map("main") { pluginConvention.mainClassName }
+    conventionMapping.map("jvmArgs") { pluginConvention.applicationDefaultJvmArgs }
+
+    args("-f", if(forking) "1" else "0")
+    args("-wi", warmupIterations, "-i", measurementIterations)
+    args("-p", "loggerFactory=$loggerFactory")
+    args("-p", "serde=${serdes.joinToString(",")}")
+    args("-p", "store=${stores.joinToString(",")}")
+    args("-p", "layer=${layers.joinToString(",")}")
+    args("-p", "tracer=$tracer")
+    args(
+      "-foe", "true", // Fail early.
+      "-gc", "true", // Run GC between iterations, lowering noise.
+      "-prof", "mb.pie.bench.util.PieMetricsProfiler", // Enable PIE metrics profiler; required.
+      "-rf", "json", "-rff", resultFile // Write results to JSON file.
+    )
+    args(additionalArgs)
+    args(benchmarkRegex)
+    doFirst {
+      mkdir(jmhReportDir)
+    }
+  }
 }
 
 

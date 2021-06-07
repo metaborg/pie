@@ -33,6 +33,7 @@ import mb.pie.serde.kryo.KryoSerde;
 import mb.pie.store.lmdb.LMDBStore;
 import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
+import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
@@ -46,6 +47,18 @@ import java.util.function.Function;
 
 @State(Scope.Thread)
 public class PieState {
+    // Parameters
+
+    @Param({"java"}) public SerdeKind serde;
+    @Param({"in_memory"}) public StoreKind store;
+    /*@Param({"non_sharing"})*/ public ShareKind share = ShareKind.non_sharing;
+    /*@Param({"equals"})*/ private OutputStamperKind outputStamper = OutputStamperKind.equals;
+    @Param({"modified"}) private ResourceStamperKind requireResourceStamper;
+    @Param({"modified"}) private ResourceStamperKind provideResourceStamper;
+    @Param({"validation"}) public LayerKind layer;
+    @Param({"metrics"}) public TracerKind tracer;
+
+
     // Trial
 
     private @Nullable LoggerComponent loggerComponent;
@@ -54,7 +67,13 @@ public class PieState {
     private @Nullable Pie pie;
     private @Nullable MetricsTracer metricsTracer;
 
-    public PieState setupTrial(LoggerComponent loggerComponent, HierarchicalResource temporaryDirectory, TaskDefs taskDefs, Pie... ancestors) {
+    public PieState setupTrial(
+        LoggerComponent loggerComponent,
+        ResourceService resourceService,
+        HierarchicalResource temporaryDirectory,
+        TaskDefs taskDefs,
+        Pie... ancestors
+    ) {
         if(this.loggerComponent != null || this.temporaryDirectory != null || logger != null || pie != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
@@ -64,6 +83,7 @@ public class PieState {
         this.temporaryDirectory = temporaryDirectory;
         final PieBuilderImpl pieBuilder = new PieBuilderImpl();
         pieBuilder.withTaskDefs(taskDefs);
+        pieBuilder.withResourceService(resourceService);
         pieBuilder.withSerdeFactory(serde.get());
         pieBuilder.withStoreFactory(store.get(temporaryDirectory));
         pieBuilder.withShareFactory(share.get());
@@ -80,8 +100,13 @@ public class PieState {
         return this;
     }
 
-    public PieState setupTrial(LoggerComponent loggerComponent, HierarchicalResource temporaryDirectory, Pie... ancestors) {
-        return setupTrial(loggerComponent, temporaryDirectory, new NullTaskDefs(), ancestors);
+    public PieState setupTrial(
+        LoggerComponent loggerComponent,
+        ResourceService resourceService,
+        HierarchicalResource temporaryDirectory,
+        Pie... ancestors
+    ) {
+        return setupTrial(loggerComponent, resourceService, temporaryDirectory, new NullTaskDefs(), ancestors);
     }
 
     public void tearDownTrial() {
@@ -139,14 +164,7 @@ public class PieState {
     }
 
 
-    @Param({"java"}) public SerdeKind serde;
-    @Param({"in_memory"}) public StoreKind store;
-    /*@Param({"non_sharing"})*/ public ShareKind share = ShareKind.non_sharing;
-    /*@Param({"equals"})*/ private OutputStamperKind outputStamper = OutputStamperKind.equals;
-    @Param({"modified"}) private ResourceStamperKind requireResourceStamper;
-    @Param({"modified"}) private ResourceStamperKind provideResourceStamper;
-    @Param({"validation"}) public LayerKind layer;
-    @Param({"metrics"}) public TracerKind tracer;
+    // Parameter enums
 
     public enum SerdeKind {
         java {
