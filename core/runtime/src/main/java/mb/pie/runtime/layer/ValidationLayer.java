@@ -225,7 +225,7 @@ public class ValidationLayer implements Layer {
                 // No provider for resource.
             } else if(currentTaskKey.equals(provider)) {
                 // Required resource provided by current task.
-            } else if(!BottomUpShared.hasTransitiveTaskReq(currentTaskKey, provider, txn)) {
+            } else if(!txn.requiresTransitively(currentTaskKey, provider)) {
                 // Resource is required by current task, and resource is provided by task `provider`, thus the current task must (transitively) require task `provider`.
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Hidden dependency. Cause:\n");
@@ -246,7 +246,7 @@ public class ValidationLayer implements Layer {
             for(TaskKey requiree : requirees) {
                 if(currentTaskKey.equals(requiree)) {
                     // Required resource provided by current task.
-                } else if(!BottomUpShared.hasTransitiveTaskReq(requiree, currentTaskKey, txn)) {
+                } else if(!txn.requiresTransitively(requiree, currentTaskKey)) {
                     // Resource is provided by current task, and resource is required by task `requiree`, thus task `requiree` must (transitively) require the current task.
                     final StringBuilder sb = new StringBuilder();
                     sb.append("Hidden dependency. Cause:\n");

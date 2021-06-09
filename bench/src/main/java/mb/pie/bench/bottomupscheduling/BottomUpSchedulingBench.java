@@ -5,7 +5,9 @@ import mb.log.api.Logger;
 import mb.log.dagger.LoggerComponent;
 import mb.pie.api.LambdaTaskDef;
 import mb.pie.api.MapTaskDefs;
+import mb.pie.api.StatelessSerializableFunction;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.stamp.output.OutputStampers;
 import mb.pie.bench.state.ChangesState;
 import mb.pie.bench.state.LoggerState;
 import mb.pie.bench.state.PieState;
@@ -45,7 +47,9 @@ public class BottomUpSchedulingBench {
     // Parameters
 
     @Param({"40"}) public int numFrontFiles;
-    @Param({"1000"}) public int numFunctionsPerFrontFile;
+    @Param({"2000"}) public int numFunctionsPerFrontFile;
+    @Param({"4"}) public int changeFrontFileEvery;
+    @Param({"100"}) public int changeBackFileEvery;
 
 
     // Trial
@@ -55,7 +59,7 @@ public class BottomUpSchedulingBench {
     protected Logger logger;
     protected ResourcesState resourcesState;
     protected TemporaryDirectoryState temporaryDirectoryState;
-    protected LambdaTaskDef<ResourcePath, ListView<ResourceKey>> buildTaskDef;
+    protected LambdaTaskDef<ResourcePath, ListView<ResourcePath>> buildTaskDef;
     protected PieState pieState;
 
     @Setup(Level.Trial)
@@ -94,7 +98,7 @@ public class BottomUpSchedulingBench {
         taskDefs.add(checkFile);
 
         final LambdaTaskDef<ResourcePath, ListView<String>> resolve = new LambdaTaskDef<>("Resolve", (context, dir) -> {
-            try(final Stream<? extends HierarchicalResource> stream = context.require(dir.appendRelativePath("front")).walk((ResourceMatcher.ofFile()))) {
+            try(final Stream<? extends HierarchicalResource> stream = context.require(dir.appendRelativePath("front")).walk(ResourceMatcher.ofFile())) {
                 return ListView.of(stream.map(HierarchicalResource::getPath).flatMap(file -> context.require(front, file).stream()).collect(Collectors.toList()));
             } catch(IOException e) {
                 throw new UncheckedIOException(e);
@@ -107,8 +111,14 @@ public class BottomUpSchedulingBench {
         });
         taskDefs.add(check);
 
-        final LambdaTaskDef<BackInput, ResourceKey> back = new LambdaTaskDef<>("Back", (context, input) -> {
-            if(context.require(check, input.rootDirectory) <= 0) {
+        final StatelessSerializableFunction<Serializable, Serializable> checkLteZeroFunction = new StatelessSerializableFunction<Serializable, Serializable>() {
+            @Override public Serializable apply(Serializable checkResult) {
+                return (Integer)checkResult <= 0;
+            }
+        };
+
+        final LambdaTaskDef<BackInput, ResourcePath> back = new LambdaTaskDef<>("Back", (context, input) -> {
+            if(context.require(check, input.rootDirectory, OutputStampers.funcEquals(checkLteZeroFunction)) <= 0) {
                 return null;
             }
             final HierarchicalResource file = context.getHierarchicalResource(input.rootDirectory.appendRelativePath("back/" + input.function + ".back"));
@@ -122,8 +132,8 @@ public class BottomUpSchedulingBench {
         });
         taskDefs.add(back);
 
-        final LambdaTaskDef<ResourcePath, ListView<ResourceKey>> build = new LambdaTaskDef<>("Build", (context, dir) -> {
-            if(context.require(check, dir) <= 0) {
+        final LambdaTaskDef<ResourcePath, ListView<ResourcePath>> build = new LambdaTaskDef<>("Build", (context, dir) -> {
+            if(context.require(check, dir, OutputStampers.funcEquals(checkLteZeroFunction)) <= 0) {
                 return ListView.of();
             }
             final ListView<String> functions = context.require(resolve, dir);
@@ -152,10 +162,9 @@ public class BottomUpSchedulingBench {
 
     // Invocation
 
-
     protected ChangesState changesState;
     protected ResourcePath rootDirectory;
-    protected ArrayList<HierarchicalResource> evenFrontFiles = new ArrayList<>();
+    protected ArrayList<HierarchicalResource> frontFiles = new ArrayList<>();
 
     @Setup(Level.Invocation)
     public void setupInvocation(ChangesState changesState) throws Exception {
@@ -165,18 +174,17 @@ public class BottomUpSchedulingBench {
         this.changesState = changesState.setupInvocation(loggerComponent, temporaryDirectory);
         this.pieState.setupInvocation();
 
-        evenFrontFiles = new ArrayList<>();
+        // Create frontend files and store them in `frontFiles`.
+        frontFiles = new ArrayList<>();
         final HierarchicalResource frontDir = temporaryDirectory.appendAsRelativePath("front");
         for(int iFile = 0; iFile < numFrontFiles; iFile++) {
             final HierarchicalResource file = frontDir.appendAsRelativePath(iFile + ".front");
-            if((iFile % 2) == 0) {
-                evenFrontFiles.add(file);
-            }
+            frontFiles.add(file);
             final StringBuilder sb = new StringBuilder();
             for(int iFunction = 0; iFunction < numFunctionsPerFrontFile; iFunction++) {
                 sb
                     .append(iFile)
-                    .append("__function__")
+                    .append("f")
                     .append(iFunction)
                     .append('\n');
             }
@@ -197,17 +205,38 @@ public class BottomUpSchedulingBench {
 
     // Benchmarks
 
-    @SuppressWarnings("ConstantConditions")
     @Benchmark
-    public void bench(Blackhole blackhole) throws Exception {
-        blackhole.consume(pieState.requireTopDownInNewSession(buildTaskDef.createTask(rootDirectory), "0_initial"));
-
-        changesState.reset(); // Reset change maker to clear changed resources.
-        for(HierarchicalResource frontFile : evenFrontFiles) {
-            changesState.replaceAll(frontFile, "function", "functionfunction");
-        }
+    public void bottomUp(Blackhole blackhole) throws Exception {
+        final ListView<ResourcePath> output = pieState.requireTopDownInNewSession(buildTaskDef.createTask(rootDirectory), "0_initial");
+        makeChanges(output);
+        blackhole.consume(output);
         gc(); // Run garbage collection to make memory usage deterministic.
         pieState.requireBottomUpInNewSession(changesState.getChangedResources(), "1_change_front_file"); // Run build and measure.
+    }
+
+    @Benchmark
+    public void topDown(Blackhole blackhole) throws Exception {
+        final ListView<ResourcePath> output = pieState.requireTopDownInNewSession(buildTaskDef.createTask(rootDirectory), "0_initial");
+        makeChanges(output);
+        blackhole.consume(output);
+        gc(); // Run garbage collection to make memory usage deterministic.
+        blackhole.consume(pieState.requireTopDownInNewSession(buildTaskDef.createTask(rootDirectory), "1_change_front_file")); // Run build and measure.
+    }
+
+    private void makeChanges(ListView<ResourcePath> output) throws IOException {
+        changesState.reset(); // Reset change maker to clear changed resources.
+        // Delete some backend files.
+        for(int i = 0; i < output.size(); i++) {
+            if(i % changeBackFileEvery == 0) {
+                changesState.deleteFile(resourcesState.getResourceService().getHierarchicalResource(output.get(i)));
+            }
+        }
+        // Change some frontend files.
+        for(int i = 0; i < frontFiles.size(); i++) {
+            if(i % changeFrontFileEvery == 0) {
+                changesState.replaceAll(frontFiles.get(i), "f", "ff");
+            }
+        }
     }
 
 

@@ -177,8 +177,8 @@ public class BottomUpRunner implements RequireTask {
         // Task is in dependency graph, because we have stored data for it.
 
         if(storedData.taskObservability.isUnobserved()) {
-            // Task is detached (not observed) and therefore may not be consistent because detached tasks are not
-            // scheduled. Require the detached task it in a top-down manner to make it consistent.
+            // Task is unobserved and therefore may not be consistent because unobserved tasks are not scheduled.
+            // Require the unobserved task it in a top-down manner to make it consistent.
             return requireUnobserved(key, task, storedData, txn, cancel);
         }
 

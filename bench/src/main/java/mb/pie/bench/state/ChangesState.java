@@ -88,6 +88,12 @@ public class ChangesState {
     }
 
 
+    public void deleteFile(HierarchicalResource file) throws IOException {
+        file.delete(false);
+        markAsChanged(file.getKey());
+    }
+
+
     public void markAsChanged(ResourceKey key) {
         changedResources.add(key);
     }

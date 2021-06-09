@@ -24,6 +24,7 @@ import mb.pie.runtime.layer.NoopLayer;
 import mb.pie.runtime.layer.ValidationLayer;
 import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
+import mb.pie.runtime.store.NaiveInMemoryStore;
 import mb.pie.runtime.taskdefs.NullTaskDefs;
 import mb.pie.runtime.tracer.CompositeTracer;
 import mb.pie.runtime.tracer.LoggingTracer;
@@ -134,7 +135,7 @@ public class PieState {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public <O extends @Nullable Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
+    public <O extends Serializable> O requireTopDownInNewSession(Task<O> task, String name) throws ExecException, InterruptedException {
         try(final MixedSession session = pie.newSession()) {
             PieMetricsProfiler.getInstance(loggerComponent.getLoggerFactory(), metricsTracer).start(name);
             final O result = session.require(task);
@@ -186,6 +187,11 @@ public class PieState {
         in_memory {
             @Override public PieBuilder.StoreFactory get(HierarchicalResource temporaryDirectory) {
                 return (serde, resourceService, loggerFactory) -> new InMemoryStore();
+            }
+        },
+        in_memory_naive {
+            @Override public PieBuilder.StoreFactory get(HierarchicalResource temporaryDirectory) {
+                return (serde, resourceService, loggerFactory) -> new NaiveInMemoryStore();
             }
         },
         lmdb {

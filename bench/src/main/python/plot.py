@@ -38,7 +38,11 @@ def main():
     with open(args.input_file) as file:
         data = create_long_form_dataframe_from_json(file)
 
-    langs: [str] = data.language.unique()
+    if 'language' in data:
+        langs: [str] = data.language.unique()
+    else:
+        langs: [str] = []
+
     layers: [str] = data.layer.unique()
     if len(layers) > 1 and 'validation' in layers:
         default_layer = 'validation'
@@ -46,11 +50,18 @@ def main():
         default_layer = layers[0]
 
     figs = []
-    for lang in langs:
-        figs.append(create_incrementality_figure(data, lang, default_layer))
-    if len(layers) > 1:
+    if len(langs) > 0:
         for lang in langs:
-            figs.append(create_layer_figure(data, lang))
+            figs.append(create_incrementality_figure(data, lang, default_layer))
+    else:
+        figs.append(create_incrementality_figure(data, None, default_layer))
+
+    if len(layers) > 1:
+        if len(langs) > 0:
+            for lang in langs:
+                figs.append(create_layer_figure(data, lang))
+        else:
+            figs.append(create_layer_figure(data, None))
     figs.append(create_raw_data_figure(data))
 
     if args.subcommand == 'dash':
@@ -67,8 +78,12 @@ def create_long_form_dataframe_from_json(file: str) -> pd.DataFrame:
         benchmark: str = bench_obj['benchmark']
         series_dict['benchmark'] = benchmark.replace("mb.pie.bench.spoofax3.Spoofax3Bench.", "")
         params_obj = bench_obj['params']
-        series_dict['language'] = params_obj['language']
-        series_dict['layer'] = params_obj['layer']
+        if 'language' in params_obj:
+            series_dict['language'] = params_obj['language']
+        if 'layer' in params_obj:
+            series_dict['layer'] = params_obj['layer']
+        if 'store' in params_obj:
+            series_dict['store'] = params_obj['store']
         for (full_metrics_name, metrics_obj) in bench_obj['secondaryMetrics'].items():
             full_metrics_name: str
             metric_name_colon_index: int = full_metrics_name.find(':')
@@ -99,7 +114,7 @@ def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
     }
     variables_keys = list(variables.keys())
     fig = px.bar(
-        data.query('variable in @variables and language == @language and layer == @layer'),
+        data.query('variable in @variables and language == @language and layer == @layer' if language else 'variable in @variables and layer == @layer'),
         y='value',
         error_y='error',
         color='benchmark',
@@ -111,7 +126,7 @@ def create_incrementality_figure(data: pd.DataFrame, language: str, layer: str):
     fig.update_traces(texttemplate='%{value:.2f}s', row=0)
     fig.update_layout(
         barmode='group',
-        title='Incrementality comparison (language={}, layer={})'.format(language, layer),
+        title='Incrementality comparison (language={}, layer={})'.format(language, layer) if language else 'Incrementality comparison (layer={})'.format(layer),
         legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
     )
 
@@ -136,7 +151,7 @@ def create_layer_figure(data: pd.DataFrame, language: str):
     layers_keys = list(layers.keys())
     go.Bar
     fig = px.bar(
-        data.query('variable in @variables and language == @language'),
+        data.query('variable in @variables and language == @language' if language else 'variable in @variables'),
         y='value',
         error_y='error',
         color='benchmark',
@@ -147,7 +162,7 @@ def create_layer_figure(data: pd.DataFrame, language: str):
     fig.update_traces(texttemplate='%{value:.2f}s')
     fig.update_layout(
         barmode='group',
-        title='Layer comparison (language={})'.format(language),
+        title='Layer comparison (language={})'.format(language) if language else 'Layer comparison',
         legend=dict(title_text=None, orientation='h', yanchor='bottom', y=1.00, xanchor='right', x=1.00),
     )
 

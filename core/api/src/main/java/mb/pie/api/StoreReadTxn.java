@@ -5,7 +5,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -38,6 +37,18 @@ public interface StoreReadTxn extends StoreTxn {
      * @return callers of task [key].
      */
     Set<TaskKey> callersOf(TaskKey key);
+
+    /**
+     * @return {@code true} if task {@code caller} requires task {@code callee} directly or transitively. {@code false}
+     * otherwise.
+     */
+    boolean requiresTransitively(TaskKey caller, TaskKey callee);
+
+    /**
+     * @return {@code true} if task {@code caller} has dependency order before {@code callee}. {@code false}
+     * otherwise.
+     */
+    boolean hasDependencyOrderBefore(TaskKey caller, TaskKey callee);
 
 
     /**

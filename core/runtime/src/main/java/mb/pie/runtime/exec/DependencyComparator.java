@@ -18,7 +18,7 @@ class DependencyComparator implements Comparator<TaskKey> {
         if(key1.equals(key2)) {
             return 0;
         }
-        if(BottomUpShared.hasTransitiveTaskReq(key1, key2, txn)) {
+        if(txn.hasDependencyOrderBefore(key1, key2)) {
             return 1;
         }
         return -1;

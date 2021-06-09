@@ -33,7 +33,7 @@ public class TaskRequireDep implements Serializable {
     /**
      * @return `true` when this call requirement is consistent w.r.t. [output], `false` otherwise.
      */
-    public Boolean isConsistent(@Nullable Serializable output) {
+    public boolean isConsistent(@Nullable Serializable output) {
         final OutputStamp newStamp = stamp.getStamper().stamp(output);
         return stamp.equals(newStamp);
     }
@@ -41,7 +41,7 @@ public class TaskRequireDep implements Serializable {
     /**
      * @return `true` when this call requirement's callee is equal to [other], `false` otherwise.
      */
-    public Boolean calleeEqual(TaskKey other) {
+    public boolean calleeEqual(TaskKey other) {
         return other.equals(callee);
     }
 

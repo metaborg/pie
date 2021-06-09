@@ -9,6 +9,7 @@ import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.runtime.exec.BottomUpShared;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.lmdbjava.CursorIterable;
@@ -97,6 +98,14 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
 
     @Override public Set<TaskKey> callersOf(TaskKey key) {
         return shared.getMultiple(TaskKey.class, serializeUtil.serializeHashed(key), callersOfDb, callersOfValuesDb);
+    }
+
+    @Override public boolean requiresTransitively(TaskKey caller, TaskKey callee) {
+        return BottomUpShared.hasTransitiveTaskReq(caller, callee, this); // TODO: replace with more performant alternative.
+    }
+
+    @Override public boolean hasDependencyOrderBefore(TaskKey caller, TaskKey callee) {
+        return requiresTransitively(caller, callee); // TODO: replace with more performant alternative.
     }
 
 
