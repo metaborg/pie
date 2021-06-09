@@ -11,34 +11,52 @@ template options
 
 context-free sorts
 
-  TypeBound
-  TypeArgs
-  BaseType
-  DataTy
-  TypeMod
   Type
+  UpperBound
+  LowerBound
+  TypeArgs
+  DataTy
+  NullableMarker
 
 context-free syntax
 
-  TypeBound = Type
-  TypeBound.Unbound = <?>
+  Type = [([Type])] {bracket}
+
+  Type.UnitTy     = <unit>
+  Type.BoolTy     = <bool>
+  Type.IntTy      = <int>
+  Type.StrTy      = <string>
+  Type.PathTy     = <path>
+  Type.TupleTy    = <(<{Type ", "}+>)>
+  Type.ListTy     = <<Type>*>
+  Type.SupplierTy = <supplier\<<Type>\>>
 
   TypeArgs.NoTypeArgs = []
-  TypeArgs.TypeArgs = [<[{TypeBound ", "}*]>]
-
-  BaseType.UnitTy     = <unit>
-  BaseType.BoolTy     = <bool>
-  BaseType.IntTy      = <int>
-  BaseType.StrTy      = <string>
-  BaseType.PathTy     = <path>
-  BaseType.TupleTy    = <(<{Type ", "}+>)>
-  BaseType.ListTy     = <<Type>*>
-  BaseType.SupplierTy = <supplier\<<Type>\>>
+  TypeArgs.TypeArgs = [<[{Type ", "}*]>]
 
   DataTy.DataTy = <<ModuleList><TYPEID><TypeArgs>>
-  BaseType = DataTy
+  Type = DataTy
 
-  TypeMod.NullableTy = <<BaseType>?>
+  NullableMarker.NullableMarker = <?> // to allow warning on just question mark
+  Type.NullableTy = <<Type><NullableMarker>>
 
-  Type = BaseType
-  Type = TypeMod
+  UpperBound.NoUpperBound = <>
+  UpperBound.UpperBound = < : <Type>>
+
+  LowerBound.NoLowerBound = <>
+  LowerBound.LowerBound = < -: <Type>>
+
+  Type.Wildcard = <_<UpperBound><LowerBound>>
+
+context-free priorities
+
+  // Solves ambiguity between single element tuples and brackets
+  Type.TupleTy <1> .> {Type ","}+ = Type,
+
+  // todo: causes bug where _? fails to parse. See https://slde.slack.com/archives/C7254SF60/p1623169709196400
+  {
+    Type.ListTy
+    Type.NullableTy
+  } > {
+    Type.Wildcard
+  }

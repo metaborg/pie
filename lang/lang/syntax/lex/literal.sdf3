@@ -17,11 +17,14 @@ lexical syntax // Identifier
   ID  = ([a-zA-Z\_] | ("-" [0-9]* [a-zA-Z\-\_])) [a-zA-Z0-9\-\_]*
   QID = [a-zA-Z\-\_] ("."? [a-zA-Z0-9\-\_])*
 
+// todo: move rejections to type.sdf3
+  TYPEID      = "_" {reject}
   TYPEID      = ID
   PIEQTYPEID  = QID
   JAVAQTYPEID = QID
 
   VALID      = ID // VAL-ID, not the opposite of 'invalid'
+  MODID      = "_" {reject}
   MODID      = ID
   FUNCID     = VALID
   JAVAFUNCID = VALID

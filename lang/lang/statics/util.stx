@@ -85,26 +85,28 @@ rules
 
 
   /**
-   * expect Exp [exp] to be a subtype of type [expected_ty] in scope [s]
+   * expectAssignableTo(s1, exp, expected_ty) = s2
+   * expect Exp [exp] to be assignable to type [expected_ty] in scope [s1]
    * give an error otherwise
-   * returns the updated scope
+   * returns the updated scope [s2]
    */
-  expectSubtype : scope * Exp * TYPE -> scope
-  expectSubtype(s1, exp, expected_ty) = s2 :- {actual_ty}
+  expectAssignableTo : scope * Exp * TYPE -> scope
+  expectAssignableTo(s1, exp, expected_ty) = s2 :- {actual_ty}
     typeOfExp(s1, exp) == (s2, actual_ty),
-    subtype(actual_ty, expected_ty) | error $[Type mismatch: expected [expected_ty] type, got [actual_ty]] @exp.
+    assignableTo(actual_ty, expected_ty) | error $[Type mismatch: expected [expected_ty] type, got [actual_ty]] @exp.
 
   /**
+   * expectAssignableToPassScopes(s1, exps, types) = s2
    * Expect Exps [exps] to have types [tys]. This version passes along scopes
    * from one expression to the next.
    */
-  expectSubtypesPassScopes : scope * list(Exp) * list(TYPE) -> scope
-  expectSubtypesPassScopes(s, [], []) = s.
-  expectSubtypesPassScopes(s1, [exp | exps], [ty | tys]) = s3 :- {s2}
-    expectSubtype(s1, exp, ty) == s2,
-    expectSubtypesPassScopes(s2, exps, tys) == s3.
-  expectSubtypesPassScopes(s, [], types@[_|_]) = s :- false | error $[Unexpected number of arguments; remaining types: [types]].
-  expectSubtypesPassScopes(s, exps@[_|_],  []) = s :- false | error $[Unexpected number of arguments; remaining expressions: [exps]].
+  expectAssignableToPassScopes : scope * list(Exp) * list(TYPE) -> scope
+  expectAssignableToPassScopes(s, [], []) = s.
+  expectAssignableToPassScopes(s1, [exp | exps], [ty | tys]) = s3 :- {s2}
+    expectAssignableTo(s1, exp, ty) == s2,
+    expectAssignableToPassScopes(s2, exps, tys) == s3.
+  expectAssignableToPassScopes(s, [], types@[_|_]) = s :- false | error $[Unexpected number of arguments; remaining types: [types]].
+  expectAssignableToPassScopes(s, exps@[_|_],  []) = s :- false | error $[Unexpected number of arguments; remaining expressions: [exps]].
 
   /**
    * moduleToList(mod@Module(moduleList, name))

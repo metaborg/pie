@@ -2,7 +2,7 @@ module desugar
 
 imports
 
-  src-gen/signatures/data-sig
+  src-gen/signatures/-
 
 rules
 

@@ -97,9 +97,8 @@ signature
     data : TYPEID -> scope
     data_local : TYPEID -> scope
     data_mods : list(DataDefMod)
-    generic_params : list(GenericParam)
-    // todo: should allow wildcards in type bounds (?) and type arguments
-    generic_param : GenericParameter -> TYPE // generic parameter -> upper bound
+    generic_params : list((GenericParameter * TYPE * TYPE)) // GenericParameter, upper_bound, lower_bound
+    generic_param : GenericParameter -> (TYPE * TYPE) // generic parameter -> upper bound
     generic_arg : TYPEID -> TYPE   // generic argument, name -> instantiated type // todo: also needs scope?
     context : string -> CONTEXT
 
@@ -107,7 +106,11 @@ signature
   name-resolution
     labels
       INHERIT // Between data scopes
-      P // Scopes within functions, functions to file, files to root
+      DATA // merged scope to data scope. Is prioritized over P when looking up data types.
+      P // Multi-purpose "Parent" edge. Uses:
+        // - Scopes within functions (each declaration creates a new scope, as do list comprehensions)
+        // - Functions to file, files to root
+        // - data type with instantiated type parameters to data type with generic type parameters
       I // import module tree to root module tree
       FILE // module tree scope to file scope
       MODULE_TREE_ROOT // points to a module tree root. Starts in root scope for
@@ -290,26 +293,6 @@ rules // Declararing and resolving
     // If there are multiple, the declaration will give an error.
     resolveUniqueFunc_1(name, [_,_|_]) = (_, FALSE()).
 
-  /**
-   * resolveUniqueFuncInScopes(scopes, name) = (ty, resolved)
-   * Resolve a unique function [name] in [scopes] to a function type [ty].
-   * Only one of the scopes can have this function, so this does not look for
-   * one data type in each scope.
-   */
-  resolveUniqueFuncInScopes : list(scope) * FUNCID -> (TYPE * BOOLEAN)
-  resolveUniqueFuncInScopes(scopes, name) =
-    resolveUniqueFunc_1(name, flattenFuncOccurrences(resolveUniqueFuncInScopes_1(scopes, name))).
-
-    resolveUniqueFuncInScopes_1 maps resolveFunc(list(*), *) = list(*)
-
-    flattenFuncOccurrences : list(list((path * (FUNCID * TYPE)))) -> list((path * (FUNCID * TYPE)))
-    flattenFuncOccurrences([]) = [].
-    flattenFuncOccurrences([occs|rest]) = concatFuncOccurrences(occs, flattenFuncOccurrences(rest)).
-
-    concatFuncOccurrences : list((path * (FUNCID * TYPE))) * list((path * (FUNCID * TYPE))) -> list((path * (FUNCID * TYPE)))
-    concatFuncOccurrences([], rest) = rest.
-    concatFuncOccurrences([occ|occs], rest) = [occ|concatFuncOccurrences(occs, rest)].
-
 
   /**
    * declareData(s, name, s_data)
@@ -353,9 +336,9 @@ rules // Declararing and resolving
   resolveLocalData : scope * string -> list((path * (string * scope)))
   resolveLocalData(s, name) = occs :-
     query data_local
-      filter P*
+      filter DATA? P*
          and { name' :- name' == name }
-         min and false
+         min DATA < P and false // todo: should be true?
           in s |-> occs.
 
   /**
@@ -364,9 +347,9 @@ rules // Declararing and resolving
   resolveData : scope * string -> list((path * (string * scope)))
   resolveData(s, name) = occs :-
     query data
-      filter P*
+      filter DATA? P*
          and { name' :- name' == name }
-         min and false
+         min DATA < P and false // todo: should be true?
           in s |-> occs.
 
   /**
@@ -385,37 +368,47 @@ rules // Declararing and resolving
       @name.type := DataType(s_data).
     resolveUniqueData_1(s, [_,_|_], _) = (FALSE(), emptyScope(s)).
 
+// todo: move mergeScopes and mergeDataAndNormalScopes to a better spot
   /**
-   * resolveUniqueDataInScopes(s, scopes, name) = (resolved, s_data)
-   * Resolve a unique data type [name] in [scopes] to a data scope [s_data].
-   * Only one of the scopes can have this data type, so this does not look for
-   * one data type in each scope.
-   * [resolved] is TRUE if [name] resolved to a unique data type. If not,
-   * [s_data] will be a dummy scope.
-   * Scope [s] is used to set the root on an auxilary scope.
+   * mergeScopes(s, scopes) = s_merged
+   * "Merges" [scopes] into one by creating an auxilary scope [s_merged] that
+   * points to all the provided scopes.
+   * [s] is not merged, it is needed to set the root for [s_merged]
    */
-  resolveUniqueDataInScopes : scope * list(scope) * TYPEID -> (BOOLEAN * scope)
-  resolveUniqueDataInScopes(s, scopes, name) = resolveUniqueData(s_auxilary, name) :-
-    new s_auxilary,
-    !root[getRoot(s)] in s_auxilary,
-    createPEdges(s_auxilary, scopes).
+  mergeScopes : scope * list(scope) -> scope
+  mergeScopes(s, scopes) = s_merged :-
+    new s_merged,
+    !root[getRoot(s)] in s_merged,
+    createPEdges(s_merged, scopes).
+
+  /**
+   * mergeDataAndNormalScopes(s_data, s) = s_merged
+   * "Merge" scopes [s_data] and [s] into a merged scope [s_merged].
+   * Uses a DATA edge to point to [s_data] and a P edge to point to [s].
+   */
+  mergeDataAndNormalScopes : scope * scope -> scope
+  mergeDataAndNormalScopes(s_data, s) = s_merged :-
+    new s_merged,
+    !root[getRoot(s)] in s_merged,
+    s_merged -DATA-> s_data,
+    s_merged -P-> s.
 
 
   // todo: documentation
-  getGenericParams : scope -> list(GenericParam)
+  getGenericParams : scope -> list((GenericParameter * TYPE * TYPE))
   getGenericParams(s_data) = params :-
     query generic_params filter P? in s_data |-> [(_, params)]
       | error $[BUG: Could not get generic parameters from [s_data]].
 
   /**
-   * declareGenericParam(s, name, upper_bound)
-   * Declares a generic parameter [name] with upper bound [upper_bound] in [s].
+   * declareGenericParam(s, name, upper_bound) = param
+   * Declares a generic parameter [param] constructed from [name] and [s] with
+   * upper bound [upper_bound] in [s].
    * Checks for duplicates and sets the type on [name].
    */
-  declareGenericParam : scope * TYPEID * TYPE
-  declareGenericParam(s, name, upper_bound) :-
-    {param}
-    !generic_param[param@GenericParameter(s, name), upper_bound] in s,
+  declareGenericParam : scope * TYPEID * TYPE * TYPE -> GenericParameter
+  declareGenericParam(s, name, upper_bound, lower_bound) = param :-
+    !generic_param[param@GenericParameter(s, name), (upper_bound, lower_bound)] in s,
     resolveGenericParam(param) == [_]
       | error $[Duplicate definition of generic parameter [name]],
     @name.type := upper_bound.
@@ -426,7 +419,7 @@ rules // Declararing and resolving
    * [s].
    * Does not check if the resolved declarations are unique.
    */
-  resolveGenericParam : GenericParameter -> list((path * (GenericParameter * TYPE)))
+  resolveGenericParam : GenericParameter -> list((path * (GenericParameter * (TYPE * TYPE))))
   resolveGenericParam(param@GenericParameter(s,_)) = occs :-
     query generic_param
       filter e
@@ -436,6 +429,7 @@ rules // Declararing and resolving
 
   // todo: documentation
   declareGenericArg : scope * TYPEID * TYPE
+  declareGenericArgs maps declareGenericArg(*, list(*), list(*))
   declareGenericArg(s, name, ty) :-
     !generic_arg[name, ty] in s,
     resolveGenericArg(s, name) == [_]
@@ -446,15 +440,16 @@ rules // Declararing and resolving
   // todo: rename to resolveTypeArg
   resolveGenericArg : scope * TYPEID -> list((path * (TYPEID * TYPE)))
   resolveGenericArg(s, name) = occs :-
-    query generic_arg 
+    query generic_arg
       filter (P|INHERIT)*
          and { name' :- name == name' }
           in s |-> occs.
 
   // todo: documentation
   resolveUniqueTypeArg : scope * TYPEID * string -> TYPE
+  resolveUniqueTypeArgs maps resolveUniqueTypeArg(*, list(*), *) = list(*)
   resolveUniqueTypeArg(s, name, error_node) = resolveUniqueTypeArg_1(name, resolveGenericArg(s, name), error_node).
-  
+
     resolveUniqueTypeArg_1 : TYPEID * list((path * (TYPEID * TYPE))) * string -> TYPE
     resolveUniqueTypeArg_1(name, [], error_node) = _ :- false | error $[Undefined type argument [name]] @error_node.
     resolveUniqueTypeArg_1(_, [(_, (_, ty))], _) = ty.

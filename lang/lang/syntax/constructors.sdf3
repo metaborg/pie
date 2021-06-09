@@ -8,7 +8,7 @@ imports
 
 // A semantic type (as opposed to the lexical, non-all caps Type)
 context-free start-symbols TYPE // For type hint on editor mouseover
-context-free sorts TYPE
+context-free sorts TYPE UpperBoundType LowerBoundType
 context-free syntax
 
   TYPE.UnitType = [unit]
@@ -18,6 +18,7 @@ context-free syntax
   TYPE.PathType = [path]
   TYPE.NullType = [null]
   TYPE.TopType = [TOP]
+  TYPE.BottomType = [BOTTOM]
 
   TYPE.NullableType = [[TYPE]?]
   TYPE.ListType = [[TYPE]*]
@@ -27,6 +28,40 @@ context-free syntax
 
   TYPE.FuncType = [func([{TYPE ", "}+]) -> [TYPE]]
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
+
+  UpperBoundType.NoUpperBoundType = < [no upper bound] >
+  UpperBoundType.UpperBoundType = < : <TYPE>>
+
+  LowerBoundType.NoLowerBoundType = < [no lower bound] >
+  LowerBoundType.LowerBoundType = < -: <TYPE>>
+
+  TYPE.WildcardType = [_[UpperBoundType][LowerBoundType]]
+
+// TODO: remove
+// Semantic type bounds.
+context-free sorts TYPEBOUND
+context-free syntax
+
+  TYPEBOUND.UnitTypeBound = [unit]
+  TYPEBOUND.BoolTypeBound = [bool]
+  TYPEBOUND.IntTypeBound = [int]
+  TYPEBOUND.StrTypeBound = [string]
+  TYPEBOUND.PathTypeBound = [path]
+  TYPEBOUND.NullTypeBound = [null]
+  TYPEBOUND.TopTypeBound = [TOP]
+
+  TYPEBOUND.NullableTypeBound = [[TYPEBOUND]?]
+  TYPEBOUND.ListTypeBound = [[TYPEBOUND]*]
+  TYPEBOUND.EmptyListTypeBound = [ANY*]
+  TYPEBOUND.TupleTypeBound = [([{TYPEBOUND ", "}+])]
+  TYPEBOUND.SupplierTypeBound = [supplier([TYPEBOUND])]
+
+  TYPEBOUND.FuncTypeBound = [func([{TYPEBOUND ", "}+]) -> [TYPEBOUND]]
+//  TYPEBOUND.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
+
+  TYPEBOUND.WildcardTypeBound = [_]
+  TYPEBOUND.UpperBoundedWildcardTypeBound = [_ : [TYPEBOUND]]
+  TYPEBOUND.LowerBoundedWildcardTypeBound = [_ -: [TYPEBOUND]]
 
 // Boolean values. Used in Statix logic.
 context-free sorts BOOLEAN

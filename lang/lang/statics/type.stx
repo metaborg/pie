@@ -6,7 +6,9 @@ imports
   signatures/data-sig
   signatures/type-sig
   statics/base
+  statics/util
   statics/module
+  statics/data // todo: remove
 
 rules // operations on types
 
@@ -30,48 +32,51 @@ rules // operations on types
    * Fails with error if T1 is not a subtype of T2.
    * Will unify unbound variables if possible.
    */
-  subtype : TYPE * TYPE
-  subtypes maps subtype(list(*), list(*))
-  subtype(NullType(), NullableType(_)).
-  subtype(T1, NullableType(T2)) :- subtype(T1, T2).
-  subtype(NullableType(T1), NullableType(T2)) :- subtype(T1, T2).
-  subtype(EmptyListType(), ListType(_)).
-  subtype(d1@DataType(_), d2@DataType(_)) :- isSubtype(d1, d2) == TRUE().
-  subtype(_, TopType()).
-  subtype(T1, T2) :- T1 == T2.
+  assignableTo : TYPE * TYPE
+  listAssignableTo maps assignableTo(list(*), list(*))
+  assignableTo(NullType(), NullableType(_)).
+  assignableTo(T1, NullableType(T2)) :- assignableTo(T1, T2).
+  assignableTo(NullableType(T1), NullableType(T2)) :- assignableTo(T1, T2).
+  assignableTo(EmptyListType(), ListType(_)).
+  assignableTo(d1@DataType(_), d2@DataType(_)) :- isAssignableTo(d1, d2) == TRUE().
+  assignableTo(_, TopType()).
+  assignableTo(BottomType(), _).
+  assignableTo(T1@WildcardType(_, _), T2) :- isAssignableTo(T1, T2) == TRUE().
+  assignableTo(T1, T2@WildcardType(_, _)) :- isAssignableTo(T1, T2) == TRUE().
+  assignableTo(T1, T2) :- T1 == T2.
 
   /**
-   * isSubtype(T1, T2)
+   * isAssignableTo(T1, T2) = bool
    * Returns TRUE() if type T1 is a non-strict subtype of type T2, FALSE() otherwise.
    * May fail on unbound variables.
    */
-  isSubtype : TYPE * TYPE -> BOOLEAN
-  isSubtype(NullType(), NullableType(_)) = TRUE().
-  isSubtype(T1, NullableType(T2)) = isSubtype(T1, T2).
-  isSubtype(NullableType(T1), NullableType(T2)) = isSubtype(T1, T2).
-  isSubtype(EmptyListType(), ListType(_)) = TRUE().
-  isSubtype(DataType(s_sub), DataType(s_super)) =
-    isSubtypeDataType(s_sub, s_super, inherits, type_args, s_super_def)
+  isAssignableTo : TYPE * TYPE -> BOOLEAN
+  isAssignableTo(NullType(), NullableType(_)) = TRUE().
+  isAssignableTo(T1, NullableType(T2)) = isAssignableTo(T1, T2).
+  isAssignableTo(NullableType(T1), NullableType(T2)) = isAssignableTo(T1, T2).
+  isAssignableTo(EmptyListType(), ListType(_)) = TRUE().
+  isAssignableTo(DataType(s_sub), DataType(s_super)) =
+    isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def)
   :-
     inherits(s_sub, s_super_def) == inherits,
     getTypeArgs(s_super) == type_args,
     findGenericDef(s_super) == s_super_def.
-    
+
       // Get generic definition of s_data. s_data can be either an instance or the generic def itself.
       findGenericDef : scope -> scope
       findGenericDef(s_data) = getScope(occ) :-
         query () filter P? min P < $ in s_data |-> [occ].
 
-    isSubtypeDataType : scope * scope * BOOLEAN * list((TYPEID * TYPE)) * scope -> BOOLEAN
-    isSubtypeDataType(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
-    isSubtypeDataType(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
-    isSubtypeDataType(_, _, TRUE(), [], _) = TRUE().  // s_super is a generic defintion and s_sub inherits from it, s_sub is a subtype by definition
-    isSubtypeDataType(s_sub, s_super, TRUE(), [_|_], s_super_def) = isTypeArgsCompatible(s_sub_super_instance, s_super) :-
+    isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((TYPEID * TYPE)) * scope -> BOOLEAN
+    isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
+    isAssignableTo_dataTypes(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
+    isAssignableTo_dataTypes(_, _, TRUE(), [], _) = TRUE().  // s_super is a generic definition and s_sub inherits from it, s_sub is a subtype by definition
+    isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def) = isTypeArgsCompatible(s_sub_super_instance, s_super) :-
       query ()
         filter INHERIT? (P INHERIT)*
            and { s :- getGenericDef(s) == s_super_def }
             in s_sub |-> [(_, s_sub_super_instance)].
-      
+
 
 /*
 
@@ -91,7 +96,7 @@ Simplify:
 1. Make sure that they could be subtypes: if !inherits(s_sub, findGenericDef(s_super)) then FALSE()  <-- WRONG!!, only holds if s_super is a generic def!!
 2. If s_super is a definition, s_sub is a subtype by definition: if getTypeArgs(s_super) == [] then TRUE()
 3. Else: s_super is an instance. Find s_super_def by following P edge: getGenericDef(s_super) == s_super_def
-[note] s_sub is either an instance of s_super_def, or an instance or generic def of a strict subtype of s_super_def. 
+[note] s_sub is either an instance of s_super_def, or an instance or generic def of a strict subtype of s_super_def.
 4. Get s_sub_super_instance by following INHERIT|P until the next P leads to s_super_def:
      query ()
        filter INHERIT? (P INHERIT)*
@@ -157,28 +162,66 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
           isInstanceOf_listNonEmpty([]) = FALSE().
           isInstanceOf_listNonEmpty([_|_]) = TRUE().
 
-  isSubtype(_, TopType()) = TRUE().
-  isSubtype(T1, T2) = isSubtypeHelper(T1, T2).
+  isAssignableTo(_, TopType()) = TRUE().
+  isAssignableTo(BottomType(), _) = TRUE().
 
-  // this rule is here to prevent "overlapping rules" error
-  // on isSubtype(T, NullableType(T))
-  // todo: can remove this now?
-  isSubtypeHelper : TYPE * TYPE -> BOOLEAN
-  isSubtypeHelper(T, T) = TRUE().
-  isSubtypeHelper(_, _) = FALSE().
+/*
+
+Given isAssignableTo(Wildcard(upper(Apple)), Fruit) -> yes, any type with upper bound apple could be assigned to fruit.
+Given isAssignableTo(Wildcard(upper(Fruit)), Apple) -> maybe, wildcard could be Apple. Reject
+isAssignableTo(Wildcard(lower(Fruit)), Apple) -> no, Apple is outside lower bound
+isAssignableTo(Wildcard(lower(Fruit)), Food) -> maybe, Food is higher than Fruit. Reject
+isAssignableTo(Food, Wildcard(lower(Fruit))) -> yes
+isAssignableTo(Food, Wildcard(upper(Fruit))) -> no
+isAssignableTo(Apple, Wildcard(upper(Fruit))) -> yes
+
+isAssignableTo(Wildcard(upper(Apple)), Wildcard(upper(Fruit))) -> maybe -> reject
+isAssignableTo(Wildcard(upper(Food)), Wildcard(upper(Fruit))) -> maybe -> reject
+isAssignableTo(Wildcard(upper(Food)), Wildcard(lower(Fruit))) -> maybe -> reject
+isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
+
+*/
+
+  isAssignableTo(WildcardType(upper_bound, lower_bound), T) =
+    andB(isUpperBoundAssignableTo(upper_bound, T), isLowerBoundAssignableTo(lower_bound, T)).
+
+    isUpperBoundAssignableTo : UpperBoundType * TYPE -> BOOLEAN
+    isUpperBoundAssignableTo(NoUpperBoundType(), _) = TRUE().
+    isUpperBoundAssignableTo(UpperBoundType(upper_bound), T) = isAssignableTo(upper_bound, T).
+
+    isLowerBoundAssignableTo : LowerBoundType * TYPE -> BOOLEAN
+    isLowerBoundAssignableTo(NoLowerBoundType(), _) = TRUE().
+    isLowerBoundAssignableTo(LowerBoundType(_), TopType()) = TRUE().
+    isLowerBoundAssignableTo(LowerBoundType(_), _) = FALSE().
+
+  isAssignableTo(T, WildcardType(upper_bound, lower_bound)) =
+    andB(isAssignableToUpperBound(T, upper_bound), isAssignableToLowerBound(T, lower_bound)).
+
+    isAssignableToUpperBound : TYPE * UpperBoundType -> BOOLEAN
+    isAssignableToUpperBound(_, NoUpperBoundType()) = TRUE().
+    isAssignableToUpperBound(BottomType(), UpperBoundType(_)) = TRUE().
+    isAssignableToUpperBound(_, UpperBoundType(_)) = FALSE().
+
+    isAssignableToLowerBound : TYPE * LowerBoundType -> BOOLEAN
+    isAssignableToLowerBound(_, NoLowerBoundType()) = TRUE().
+    isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(lower_bound, T).
+
+  isAssignableTo(T, T) = TRUE().
+  isAssignableTo(_, _) = FALSE().
 
   /**
-   * isAllSubTypes(T1s, T2s)
+   * isAllAssignableTo(T1s, T2s) -> bool
    * Returns TRUE if the types in [T1s] are pairwise subtypes of [T2s], FALSE
    * otherwise. Also returns FALSE if the lists don't have the same length.
    * This is useful for comparing parameter lists of functions.
    * Delegates to isSubtype.
    */
-  isAllSubTypes : list(TYPE) * list(TYPE) -> BOOLEAN
-  isAllSubTypes([], []) = TRUE().
-  isAllSubTypes(Ts@[_|_], []) = FALSE().
-  isAllSubTypes([], Ts@[_|_]) = FALSE().
-  isAllSubTypes([T1|T1s], [T2|T2s]) = andB(isSubtype(T1, T2), isAllSubTypes(T1s, T2s)).
+  isAllAssignableTo : list(TYPE) * list(TYPE) -> BOOLEAN
+  isAllAssignableTo([], []) = TRUE().
+  isAllAssignableTo(Ts@[_|_], []) = FALSE().
+  isAllAssignableTo([], Ts@[_|_]) = FALSE().
+  isAllAssignableTo([T1|T1s], [T2|T2s]) = andB(isAssignableTo(T1, T2), isAllAssignableTo(T1s, T2s)).
+
 
   /**
    * Returns the first element in the list that is TRUE(), or the default otherwise.
@@ -203,42 +246,67 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
    * Returns the least upper bound of types [T1] and [T2].
    */
   lub : TYPE * TYPE -> TYPE
+  lubs maps lub(list(*), list(*)) = list(*)
   lub(NullType(), T) = makeNullable(T).
   lub(T, NullType()) = makeNullable(T).
   lub(NullableType(T1), NullableType(T2)) = NullableType(lub(T1, T2)).
   lub(EmptyListType(), ListType(T)) = ListType(T).
   lub(ListType(T), EmptyListType()) = ListType(T).
-  lub(DataType(s1), DataType(s2)) = lub_datatype(paths, s1, s2) :-
+  lub(T1@DataType(s1), T2@DataType(s2)) = firstTrueT([
+    (isAssignableTo(T1, T2), T2),
+    (isAssignableTo(T2, T1), T1)],
+    lub_datatype(maybe_s_common, s1, s2))
+  :-
     // find all scopes from s1 that s2 inherits from, take the shortest one.
+    // This is guaranteed to be a generic definition unless one of the two is a subtype of the other,
+    // or they do not have an explicit common super type.
+    // them being subtypes is already covered by firstTrueT
     query ()
-      filter INHERIT* and { s_super :- inherits(s2, s_super) == TRUE() }
-      min $ < INHERIT in s1 |-> paths.
+      filter (P|INHERIT)* and { s_super :- inherits(s2, s_super) == TRUE() }
+         min $ < INHERIT, $ < P in s1 |-> maybe_s_common.
 
+    // list contains either no scopes or single scope s_data_common, which is a definition
     lub_datatype : list((path * scope)) * scope * scope -> TYPE
     lub_datatype([], _, _) = TopType().
-    lub_datatype([(_, s_data_common)], s1, s2) = DataType(emptyScope(s)) :-
-      false | error $[todo: lub for datatypes has not been implemented].
-      // todo: propagate both type arguments up to s, return the data type if
-      // eventual data types match, otherwise keep going up the type list until
-      // either the type arguments do match or there is no more supertype.
-      // pseudocode (outdated):
-      //   common_type_args1 == propagateTypeArgsToSupertypeUntil(s, s1),
-      //   common_type_args2 == propagateTypeArgsToSupertypeUntil(s, s2),
-      //   return_ty == returnIfCompatibleOrPropagateUntilTopType(s_data_common, common_type_args1, common_type_args2).
-      //
-      //   returnIfCompatibleOrPropagateUntilTopType(TRUE(), s_data, args1, args2) = firstTrueT(
-      //     (is_compatible, DataType(s_data, compatible_args)),
-      //     returnIfCompatibleOrPropagateUntilTopType_1(hasSuper(s_data), s_data, args1, args2))
-      //   :-
-      //     isCompatible(args1, args2) == (is_compatible, compatible_args).
-      //
-      //   returnIfCompatibleOrPropagateUntilTopType_1(FALSE(), _, _, _) = TopType().
-      //   returnIfCompatibleOrPropagateUntilTopType_1(TRUE(), s_data, args1, args2) =
-      //     returnIfCompatibleOrPropagateUntilTopType(getSuper(s_data), args1, args2).
+    lub_datatype([(_, s_common)], s1, s2) = DataType(s_common_instance) :-
+      {s3 s4 type_arg_names type_arg_tys merged_type_args}
+      new s_common_instance,
+      !root[getRoot(s_common)] in s_common_instance,
+      s_common_instance -P-> s_common,
+      query ()
+        filter (P|INHERIT)*
+           and { s3_candidate :- isInstanceOf(s3_candidate, s_common) == TRUE() }
+           min $ < INHERIT, $ < P in s1 |-> [(_, s3)],
+      query ()
+        filter (P|INHERIT)*
+           and { s4_candidate :- isInstanceOf(s4_candidate, s_common) == TRUE() }
+           min $ < INHERIT, $ < P in s2 |-> [(_, s4)],
+      unzipTypeArgs(getTypeArgs(s3)) == (type_arg_names, type_arg_tys),
+      // next line is incorrect, should use unbounded wildcard
+      lubs(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_names, "no error node")) == merged_type_args,
+      declareGenericArgs(s_common_instance, type_arg_names, merged_type_args).
 
+        unzipTypeArgs : list((TYPEID * TYPE)) -> (list(TYPEID) * list(TYPE))
+        unzipTypeArgs([]) = ([], []).
+        unzipTypeArgs([(name, type)|type_args]) = ([name|names], [type|types]) :-
+          unzipTypeArgs(type_args) == (names, types).
+
+/*
+
+Problem: given s1 and s2, find s_common such that either:
+- inherits(s1, s3), inherits(s2, s4), typeArgsCompatible(s3, s_common) and typeArgsCompatible(s4, s_common) // s_common is an instance
+- inherits(s1, s_common) and inherits(s2, s_common) // s_common is a generic definition
+
+Solution for instances: find s_common_def, use lub on generic parameters
+*/
+
+  lub(TopType(), T) = TopType().
+  lub(T, TopType()) = TopType().
+  lub(BottomType(), T) = T.
+  lub(T, BottomType()) = T.
   lub(T1, T2) = firstTrueT([
-    (isSubtype(T1, T2), T2),
-    (isSubtype(T2, T1), T1)],
+    (isAssignableTo(T1, T2), T2),
+    (isAssignableTo(T2, T1), T1)],
     TopType()).
 
 
@@ -247,7 +315,7 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
    * Returns the least upper bound of a list of types.
    */
   listLub : list(TYPE) -> TYPE
-  listLub([]) = TopType() :- false | error "listLub is not well-defined for an empty list".
+  listLub([]) = BottomType() :- try { false } | warning "BUG?: called listLub with empty list".
   listLub([T]) = T.
   listLub([T1|[T2|[]]]) = lub(T1, T2).
   listLub([T1|[T2|rest]]) = listLub([lub(T1, T2) | rest]).
@@ -262,64 +330,122 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
   comparable(TupleType(T1s), TupleType(T2s)) :- listComparable(T1s, T2s).
   comparable(ListType(T1), ListType(T2)) :- comparable(T1, T2).
   comparable(SupplierType(T1), SupplierType(T2)) :- comparable(T1, T2).
-  comparable(T1, T2) :- orB(isSubtype(T1, T2), isSubtype(T2, T1)) == TRUE().
+  comparable(T1, T2) :- orB(isAssignableTo(T1, T2), isAssignableTo(T2, T1)) == TRUE().
 
 rules
 
+  /**
+   * typeOf(s, ty) = type
+   * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
+   * If you have a scope with type arguments, use typeOfWithTypeArgScope
+   */
   typeOf : scope * Type -> TYPE
   typesOf maps typeOf(*, list(*)) = list(*)
+  typeOf(s, ty) = typeOfWithTypeArgScope(s, emptyScope(s), ty).
 
-  typeOf(s, injector@BaseType2Type(base_type)) = ty@typeOfBaseType(s, base_type) :-
-    @base_type.type := ty,
-    @injector.type := ty.
+  /**
+   * typeOfWithTypeArgScope(s, s_type_args, ty) = type
+   * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
+   * If you have a scope with type arguments, use typeOfWithTypeArgScope
+   */
+  typeOfWithTypeArgScope : scope * scope * Type -> TYPE
+  typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope(*, *, list(*)) = list(*)
+  typeOfWithTypeArgScope(s, s_type_args, ty) = type@typeOfWithTypeArgScope_1(s, s_type_args, ty) :-
+    @ty.type := type.
 
-  typeOf(s, tm@TypeMod2Type(nt@NullableTy(ty))) = type@NullableType(typeOfBaseType(s, ty)) :-
-    @nt.type := type,
-    @tm.type := type.
+  typeOfWithTypeArgScope_1 : scope * scope * Type -> TYPE
+  typeOfWithTypeArgScope_1(_, _, UnitTy()) = UnitType().
+  typeOfWithTypeArgScope_1(_, _, BoolTy()) = BoolType().
+  typeOfWithTypeArgScope_1(_, _, IntTy())  = IntType().
+  typeOfWithTypeArgScope_1(_, _, StrTy())  = StrType().
+  typeOfWithTypeArgScope_1(_, _, PathTy()) = PathType().
+  typeOfWithTypeArgScope_1(s, s_type_args, DataTy2Type(data_ty)) = typeOfDataTy(s, s_type_args, data_ty).
+  typeOfWithTypeArgScope_1(s, s_type_args, TupleTy(tys)) = TupleType(typesOfWithTypeArgScope_1(s, s_type_args, tys)).
+  typeOfWithTypeArgScope_1(s, s_type_args, ListTy(ty)) = ListType(typeOfWithTypeArgScope_1(s, s_type_args, ty)).
+  typeOfWithTypeArgScope_1(s, s_type_args, SupplierTy(ty)) = SupplierType(typeOfWithTypeArgScope_1(s, s_type_args, ty)).
+  typeOfWithTypeArgScope_1(s, s_type_args, NullableTy(ty, marker)) = NullableType(typeOfWithTypeArgScope_1(s, s_type_args, ty)) :-
+    try { ty != NullableTy(_, _) } | warning $[No-op: double nullable has no effect] @marker.
+  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound)) = WildcardType(upper_bound_ty, lower_bound_ty) :-
+    {upper_error_node lower_error_node}
+    typeOfUpperBound(s, s_type_args, upper_bound) == upper_bound_ty,
+    typeOfLowerBound(s, s_type_args, lower_bound) == lower_bound_ty,
+    bothBoundsOk(upper_bound, lower_bound).
 
-  typeOfBaseType : scope * BaseType -> TYPE
-  typeOfBaseType(_, UnitTy()) = UnitType().
-  typeOfBaseType(_, BoolTy()) = BoolType().
-  typeOfBaseType(_, IntTy())  = IntType().
-  typeOfBaseType(_, StrTy())  = StrType().
-  typeOfBaseType(_, PathTy()) = PathType().
-  typeOfBaseType(s, DataTy2BaseType(data_ty)) = ty@typeOfDataTy(s, data_ty) :-
-    @data_ty.type := ty.
-  typeOfBaseType(s, TupleTy(tys)) = TupleType(typesOf(s, tys)).
-  typeOfBaseType(s, ListTy(ty)) = ListType(typeOf(s, ty)).
-  typeOfBaseType(s, SupplierTy(ty)) = SupplierType(typeOf(s, ty)).
+      bothBoundsOk : UpperBound * LowerBound
+      bothBoundsOk(_, _).
+      bothBoundsOk(u@UpperBound(_), l@LowerBound(_)) :-
+        false | error $[Cannot have both an upper and lower bound] @u,
+        false | error $[Cannot have both an upper and lower bound] @l.
 
-  typeOfDataTy : scope * DataTy -> TYPE
-  typeOfDataTy(s, DataTy(modules, name, type_args)) = DataType(s_data) :-
-    {module_scopes}
-    new s_data,
-    !root[getRoot(s)] in s_data,
-    resolveModuleListToFile(s, modules) == module_scopes,
-    genericArgsOk(s, s_data, type_args, resolveUniqueDataInScopes(s, module_scopes, name), name).
+      typeOfUpperBound : scope * scope * UpperBound -> UpperBoundType
+      typeOfUpperBound(_, _, NoUpperBound()) = NoUpperBoundType().
+      typeOfUpperBound(s, s_data_def, UpperBound(upper_bound)) =
+        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_data_def, upper_bound))
+      :-
+        try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
+        try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
+        try { ty != ListType(_)  } | warning $[Nonsensical bound: list types do not have subtypes] @upper_bound,
+        try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound,
+        try { ty != BottomType() } | warning $[Nonsensical bound: BOTTOM is the only matching type] @upper_bound.
 
-    genericArgsOk : scope * scope * TypeArgs * (BOOLEAN * scope) * TYPEID
-    genericArgsOk(_, _, type_args, (FALSE(), _), name). // error generated by resolveUniqueDataInScopes
-    genericArgsOk(s, s_data, TypeArgs(type_args), (TRUE(), s_data_def), _) :-
-      s_data -P-> s_data_def,
-      genericArgsOk_1(s, s_data, getGenericParams(s_data_def), type_args).
+      typeOfLowerBound : scope * scope * LowerBound -> LowerBoundType
+      typeOfLowerBound(_, _, NoLowerBound()) = NoLowerBoundType().
+      typeOfLowerBound(s, s_data_def, LowerBound(lower_bound)) =
+        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_data_def, lower_bound))
+      :-
+        try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
+        try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
 
-    genericArgOk : scope * scope * GenericParam * TypeBound
-    genericArgsOk_1 maps genericArgOk(*, *, list(*), list(*))
-    genericArgOk(s, s_data, GenericParam(name, upper_bound), arg) :-
-      {upper_bound_ty arg_ty}
-      typeOfUpperBound(s, s_data, upper_bound) == upper_bound_ty,
-      typeOfTypeBound(s, arg, upper_bound_ty) == arg_ty,
-      declareGenericArg(s_data, name, arg_ty).
+  typeOfDataTy : scope * scope * DataTy -> TYPE
+  typeOfDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args)) = type@DataType(s_data_instance) :-
+    {s_merged}
+    new s_data_instance,
+    !root[getRoot(s)] in s_data_instance,
+    mergeDataAndNormalScopes(s_type_args, mergeScopes(s, resolveModuleListToFile(s, modules))) == s_merged,
+    genericArgsOk(s, s_type_args, s_data_instance, type_args, resolveUniqueData(s_merged, name), name),
+    @data_ty.type := type.
 
-    typeOfTypeBound : scope * TypeBound * TYPE -> TYPE
-    typeOfTypeBound(s, Wildcard(), upper_bound) = upper_bound. // todo: incorrect, should use proper wildcard semantics
-    typeOfTypeBound(s, Type2TypeBound(arg), upper_bound_ty) = arg_ty :-
-      typeOf(s, arg) == arg_ty,
-      subtype(arg_ty, upper_bound_ty) | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound_ty]].
+    // s: current function/module scope
+    // s_type_args: scope for looking up defined data types
+    // s_data_instance: scope for the instance that we are typing right now
+    // s_data_def: definition for s_data_instance
+    genericArgsOk : scope * scope * scope * TypeArgs * (BOOLEAN * scope) * TYPEID
+    genericArgsOk(_, _, _, _, (FALSE(), _), _). // error generated by resolveUniqueDataInScopes
+    genericArgsOk(s, s_type_args, s_data_instance, TypeArgs(type_args), (TRUE(), s_data_def), _) :-
+      s_data_instance -P-> s_data_def,
+      genericArgsOk_1(s, s_type_args, s_data_instance, getGenericParams(s_data_def), type_args).
+
+    genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * list(Type)
+    genericArgsOk_1(s, s_type_args, s_data_instance, params, arg_types) :-
+      genericArgsOk_2(s, s_type_args, s_data_instance, params, arg_types, sameLength(params, arg_types)).
+
+      sameLength : list((GenericParameter * TYPE * TYPE)) * list(Type) -> (list(TYPEID) * list(Type))
+      sameLength([], []) = ([], []).
+      sameLength([(GenericParameter(_, name), _, _)|params], []) = ([name|names], []) :-
+        sameLength(params, []) == (names, []).
+      sameLength([], remaining@[_|_]) = ([], remaining).
+      sameLength([_|params], [_|type_args]) = sameLength(params, type_args).
+    genericArgsOk_2 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * list(Type) * (list(TYPEID) * list(Type))
+    genericArgsOk_2(_, _, _, _, arg_types, (remaining@[_|_], [])) :-
+      false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @arg_types.
+    genericArgsOk_2(_, _, _, _, arg_types, ([], remaining@[_|_])) :-
+      false | error $[Too many type arguments, unmatched type arguments: [remaining]] @arg_types.
+    genericArgsOk_2(s, s_type_args, s_data_instance, params, arg_types, ([], [])) :-
+      genericArgsOk_3(s, s_type_args, s_data_instance, params, arg_types).
+
+    genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type
+    genericArgsOk_3 maps genericArgOk(*, *, *, list(*), list(*))
+    genericArgOk(s, s_type_args, s_data_instance, (GenericParameter(_, name), upper_bound, lower_bound), arg) :-
+      {arg_ty}
+      typeOfWithTypeArgScope(s, s_type_args, arg) == arg_ty,
+      declareGenericArg(s_data_instance, name, arg_ty),
+      assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not assignable to upper bound [upper_bound]],
+      assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not assignable from lower bound [lower_bound]].
 
   /**
    * getScopeFromType(s, ty)
    * Returns the scope with methods associated with type [ty]
    */
   getScopeFromType : scope * TYPE -> scope
-  getScopeFromType(s, DataType(s_data)) = s_data.
+  getScopeFromType(_, DataType(s_data)) = s_data.
+  getScopeFromType(s, ty) = emptyScope(s).

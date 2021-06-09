@@ -42,33 +42,37 @@ rules
       dataDefModsOk_1(mods, mod2) == mods_out.
 
   genericParamsOk : scope * scope * GenericParams
-  genericParamsOk(s, s_data, GenericParams(params)) :-
-    !generic_params[params] in s_data,
-    genericParamsOk_1(s, s_data, params).
+  genericParamsOk(s, s_data_def, GenericParams(params)) :-
+    {parameters}
+    typeOfgenericParams(s, s_data_def, params) == parameters,
+    !generic_params[parameters] in s_data_def.
 
-    genericParamOk : scope * scope * GenericParam
-    genericParamsOk_1 maps genericParamOk(*, *, list(*))
-    genericParamOk(s, s_data, GenericParam(name, upper_bound)) :-
-      {upper_bound_ty}
-      typeOfUpperBound(s, s_data, upper_bound) == upper_bound_ty,
-      declareGenericParam(s_data, name, upper_bound_ty),
-      try { resolveData(s, name) == [] } | warning $[Generic parameter [name] shadows data type [name]] @name.
+    typeOfgenericParam : scope * scope * GenericParam -> (GenericParameter * TYPE * TYPE)
+    typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
+    typeOfgenericParam(s, s_data_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
+      {upper_error_node lower_error_node}
+      bothBoundsOk(upper_bound, lower_bound),
+      typeOrTopType(typeOfUpperBound(s, s_data_def, upper_bound)) == upper_bound_ty,
+      typeOrBottomType(typeOfLowerBound(s, s_data_def, lower_bound)) == lower_bound_ty,
+      declareGenericParam(s_data_def, name, upper_bound_ty, lower_bound_ty) == param,
+      try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
 
-    typeOfUpperBound : scope * scope * UpperBound -> TYPE
-    typeOfUpperBound(_, _, NoUpperBound()) = TopType().
-    typeOfUpperBound(s, s_data, UpperBound(upper_bound)) = ty@typeOf(s, upper_bound) :-
-      try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
-      try { ty != ListType(_)  } | warning $[Nonsensical bound: list types do not have subtypes] @upper_bound,
-      try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound.
+      typeOrTopType : UpperBoundType -> TYPE
+      typeOrTopType(NoUpperBoundType()) = TopType().
+      typeOrTopType(UpperBoundType(ty)) = ty.
+
+      typeOrBottomType : LowerBoundType -> TYPE
+      typeOrBottomType(NoLowerBoundType()) = BottomType().
+      typeOrBottomType(LowerBoundType(ty)) = ty.
 
   superOk : scope * scope * SuperType * string
-  superOk(s, s_data, NoSuperType(), name).
-  superOk(s, s_data, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
-    typeOfDataTy(s, data_ty) == DataType(s_super),
+  superOk(s, s_data_def, NoSuperType(), name).
+  superOk(s, s_data_def, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
+    typeOfDataTy(s, s_data_def, data_ty) == DataType(s_super),
     // todo: check that provided type arguments (type_args) are compatible with type parameters (super.
-    s_data -INHERIT-> s_super,
-    inherits(s_super, s_data) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
-    query func filter e in s_data |-> occs,
+    s_data_def -INHERIT-> s_super,
+    inherits(s_super, s_data_def) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
+    query func filter e in s_data_def |-> occs,
     superOk_1s(s_super, occs).
 
     // check that all functions of current are valid overrides of super.
@@ -82,13 +86,13 @@ rules
     superOk_2 : TYPE * (path * (FUNCID * TYPE)) * FUNCID
     superOk_2s maps superOk_2(*, list(*), *)
     superOk_2(FuncType(param_tys, ty_out), (path, (name_super, FuncType(param_tys_super, ty_out_super))), name) :-
-        superOk_3(isAllSubTypes(param_tys_super, param_tys), name, ty_out, name_super, ty_out_super).
+        superOk_3(isAllAssignableTo(param_tys_super, param_tys), name, ty_out, name_super, ty_out_super).
 
     superOk_3 : BOOLEAN * TYPEID * TYPE * TYPEID * TYPE
     superOk_3(FALSE(), _, _, _, _).
     superOk_3(TRUE(), name, ty_out, name_super, ty_out_super) :-
       @name.ref := name_super,
-      isSubtype(ty_out, ty_out_super) == TRUE() | error $[Type mismatch: incompatable return type for override] @name.
+      isAssignableTo(ty_out, ty_out_super) == TRUE() | error $[Type mismatch: incompatible return type for override] @name.
 
   dataImplOk : scope * scope * DataImpl
   dataImplOk(s, s_data, JavaDataImpl(java_name, members)) :-

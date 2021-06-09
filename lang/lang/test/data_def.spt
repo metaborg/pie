@@ -33,11 +33,10 @@ test generic parameters single param bound [[ data Foo<[[T]]: [[Command]]> = for
 test generic parameters shadow existing name [[ data Foo<[[Command]]> = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TopType()
-  1 warning at #1
-  warning like "shadows data type"
-test generic parameters reference own type [[ data [[Foo]]<[[T]]: [[Foo]]<[[T]]>> = foreign java Foo {} ]]
-  parse fails
-//  todo: allow generic types
+  1 note at #1
+  note like "shadows data type"
+// test disabled: Statix does not terminate on circular generic references
+//test generic parameters reference own type [[ data [[Foo]]<[[T]]: [[Foo]]<[[T]]>> = foreign java Foo {} ]]
 //  analysis succeeds
 //  run pie-get-type on #2 to DataType(_)
 //  resolve #3 to #1
@@ -84,10 +83,10 @@ test generic parameters two duplicate name [[ data Foo<[[T]], [[T]]> = foreign j
   run pie-get-type on #1 to TopType()
   run pie-get-type on #2 to TopType()
   error like "Duplicate definition of generic parameter"
-test generic parameters two params circular reference [[
-  data Foo<[[T]]: Foo<[[R]], [[R]]>, [[R]]: Foo<[[T]], [[R]]>> = foreign java Foo {}
-]] parse fails
-//   todo: implement generic argument list on type references
+// test disabled: Statix does not terminate on circular generic references
+//test generic parameters two params circular reference [[
+//  data Foo<[[T]]: Foo<[[R]], [[R]]>, [[R]]: Foo<[[T]], [[R]]>> = foreign java Foo {}
+//]]
 //   analysis succeeds
 //   run pie-get-type on #1 to DataType(_)
 //   run pie-get-type on #2 to DataType(_)
@@ -164,8 +163,8 @@ test supertype - overriding, incompatible methods - non-subtype return type [[
   data Bar : Foo = foreign java org.example.test.Bar {
     func [[get]]() -> Foo
   }
-]] 1 error at #2
-   error like "incompatable return type"
+]] 1 error
+   error like "incompatible return type"
    resolve #2 to #1
 test supertype - non-overriding methods - narrowing parameter [[
   data Bar = foreign java org.example.test.Bar {
@@ -276,3 +275,6 @@ test foreign java generic method parameter and return type [[
 //   analysis succeeds
 //   resolve #2 to #1
 //   resolve #3 to #1
+
+// todo: test that referencing generic parameter in supertype is not allowed:
+// data Foo<T> = ...; data Bar : Foo<int> = ... { func get() -> T }

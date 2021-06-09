@@ -130,14 +130,21 @@ test name surrounded by matching double quotes [[ data "Foo" = foreign java org.
 // generic parameters
 test generic parameters empty list [[ data Foo<> = foreign java Foo {} ]] parse succeeds
 test generic parameters single parameter without type bound [[ data Foo<T> = foreign java Foo {} ]] parse succeeds
-test generic parameters single parameter with type bound [[ data Foo<T: Foo> = foreign java Foo {} ]] parse succeeds
+test generic parameters single parameter with upper bound [[ data Foo<T: Foo> = foreign java Foo {} ]] parse succeeds
 test generic parameters qualified type bound [[ data Foo<T: a:b:c:Foo> = foreign java Foo {} ]] parse succeeds
+test generic parameters single parameter with lower bound [[ data Foo<T -: Apple> = foreign java Foo {} ]] parse succeeds
+test generic parameters single parameter qualified lower bound [[ data Foo<T -: a:b:c:Pear> = foreign java Foo {} ]] parse succeeds
+test generic parameters single parameter dash in name [[ data Foo<T-: Bar> = foreign java Foo {} ]]
+  parse to DataDef(_, "Foo", GenericParams([GenericParam("T-", UpperBound(_), NoLowerBound())]), _, _)
+test generic parameters single parameter with both lower and upper bound [[ data Foo<T : Bar -: string> = foreign java Foo {} ]] parse succeeds
+test generic parameters qualfied parameter name [[ data Foo<example:T -: string> = foreign java Foo {} ]]
+  parse to DataDef(_, "Foo", GenericParams([GenericParam("example", UpperBound(DataTy(_, "T", _)), LowerBound(StrTy()))]), _, _)
 test generic parameters multi character name [[ data Foo<Elem> = foreign java Foo {} ]] parse succeeds
 test generic parameters lower case name [[ data Foo<t> = foreign java Foo {} ]] parse succeeds
 test generic parameters camelcase name [[ data Foo<GenericParameter> = foreign java Foo {} ]] parse succeeds
 test generic parameters all caps name [[ data Foo<PARAM> = foreign java Foo {} ]] parse succeeds
 test generic parameters underscore in name [[ data Foo<Generic_parameter> = foreign java Foo {} ]] parse succeeds
-test generic parameters name is underscore [[ data Foo<_> = foreign java Foo {} ]] parse succeeds // should fail?
+test generic parameters name is underscore [[ data Foo<_> = foreign java Foo {} ]] parse fails // parse should succeed with error from statics?
 test generic parameters dash in name [[ data Foo<Generic-parameter> = foreign java Foo {} ]] parse succeeds
 test generic parameters number in name [[ data Foo<T1> = foreign java Foo {} ]] parse succeeds
 test generic parameters name is number [[ data Foo<12> = foreign java Foo {} ]] parse fails
@@ -181,11 +188,11 @@ test generic parameters missing : [[ data Foo<T Command> = foreign java Foo {} ]
 test generic parameters missing bound name [[ data Foo<T :> = foreign java Foo {} ]] parse fails
 test generic parameters double bound [[ data Foo<T : R : U> = foreign java Foo {} ]]
   parse to DataDef(_, _, GenericParams([
-    GenericParam("T", UpperBound(DataTy(ModuleList(["R"]), "U", NoTypeArgs())))
+    GenericParam("T", UpperBound(DataTy(ModuleList(["R"]), "U", NoTypeArgs())), NoLowerBound())
   ]), _, _)
 test generic parameters qualified name [[ data Foo<a:b:c: T> = foreign java Foo {} ]]
   parse to DataDef(_, _, GenericParams([
-    GenericParam("a", UpperBound(DataTy(ModuleList(["b", "c"]), "T", NoTypeArgs())))
+    GenericParam("a", UpperBound(DataTy(ModuleList(["b", "c"]), "T", NoTypeArgs())), NoLowerBound())
   ]), _, _)
 test generic parameters brackets wrong way around [[ data Foo>T< = foreign java Foo {} ]] parse fails
 test generic parameters brackets wrong way around [[ data Foo>T< = foreign java Foo {} ]] parse fails

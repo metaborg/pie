@@ -15,7 +15,6 @@ context-free sorts
   DataDef
   DataDefMod
   DataDefMods
-  UpperBound
   GenericParam
   GenericParams
   SuperType
@@ -29,10 +28,7 @@ context-free syntax // Data definition
   DataDefMod.Transient = <transient>
   DataDefMods.DataDefMods = <<{DataDefMod " "}*>>
 
-  UpperBound.NoUpperBound = <>
-  UpperBound.UpperBound = < : <Type>>
-
-  GenericParam.GenericParam = <<TYPEID><UpperBound>>
+  GenericParam.GenericParam = <<TYPEID><UpperBound><LowerBound>>
 
   GenericParams.NoGenericParams = [] // syntactic sugar for empty list
   GenericParams.GenericParams = [<[{GenericParam ", "}*]>]
