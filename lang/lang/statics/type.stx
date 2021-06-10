@@ -27,7 +27,8 @@ rules // operations on types
     inherits_1([_|_]) = TRUE().
 
   /**
-   * subtype(T1, T2)
+   * assignableTo(T1, T2)
+   * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
    * Holds if type T1 is a non-strict subtype of type T2.
    * Fails with error if T1 is not a subtype of T2.
    * Will unify unbound variables if possible.
@@ -47,7 +48,12 @@ rules // operations on types
 
   /**
    * isAssignableTo(T1, T2) = bool
-   * Returns TRUE() if type T1 is a non-strict subtype of type T2, FALSE() otherwise.
+   * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
+   * Returns TRUE() if:
+   * - type T1 is a non-strict subtype of type T2
+   * - T1 is a wildcard and its upper bound can be assigned to T2
+   * - T2 is a wildcard and T1
+   * returns FALSE() otherwise.
    * May fail on unbound variables.
    */
   isAssignableTo : TYPE * TYPE -> BOOLEAN
@@ -186,13 +192,9 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
     andB(isUpperBoundAssignableTo(upper_bound, T), isLowerBoundAssignableTo(lower_bound, T)).
 
     isUpperBoundAssignableTo : UpperBoundType * TYPE -> BOOLEAN
-    isUpperBoundAssignableTo(NoUpperBoundType(), _) = TRUE().
+    isUpperBoundAssignableTo(NoUpperBoundType(), TopType()) = TRUE().
+    isUpperBoundAssignableTo(NoUpperBoundType(), _) = FALSE().
     isUpperBoundAssignableTo(UpperBoundType(upper_bound), T) = isAssignableTo(upper_bound, T).
-
-    isLowerBoundAssignableTo : LowerBoundType * TYPE -> BOOLEAN
-    isLowerBoundAssignableTo(NoLowerBoundType(), _) = TRUE().
-    isLowerBoundAssignableTo(LowerBoundType(_), TopType()) = TRUE().
-    isLowerBoundAssignableTo(LowerBoundType(_), _) = FALSE().
 
   isAssignableTo(T, WildcardType(upper_bound, lower_bound)) =
     andB(isAssignableToUpperBound(T, upper_bound), isAssignableToLowerBound(T, lower_bound)).

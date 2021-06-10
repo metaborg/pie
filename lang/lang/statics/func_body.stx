@@ -118,19 +118,23 @@ rules
     try { ty != TopType()               } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type],
     try { ty != NullableType(TopType()) } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type].
 
-  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) = (s1, ListType(ty_map)) :- {s2 s3 ty_list expected_ty arg_ty}
+  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) =
+    (s1, ListType(ty_map))
+  :-
+    {s2 s3 ty_list expected_ty arg_ty}
     typeOfExp(s1, exp_list) == (s2, ty_list),
     typeOfExpImplListComprehension(s3, ty_list, exp_list) == arg_ty,
     new s3,
+    !root[getRoot(s1)] in s3,
     s3 -P-> s2,
     typeOfBinder(s3, arg_ty, binder) == _,
     typeOfExp(s3, exp_map) == (_, ty_map).
 
     typeOfExpImplListComprehension : scope * TYPE * Exp -> TYPE
     typeOfExpImplListComprehension(s3, ListType(elem_ty), _) = elem_ty.
-    typeOfExpImplListComprehension(s3, EmptyListType(), exp_list) = _ :-
+    typeOfExpImplListComprehension(s3, EmptyListType(), exp_list) = BottomType() :-
       try { false } | warning $[Dead code: list comprehension over empty list] @exp_list.
-    typeOfExpImplListComprehension(s3, actual_ty, exp_list) = _ :-
+    typeOfExpImplListComprehension(s3, actual_ty, exp_list) = BottomType() :-
       false | error $[Type mismatch: expected a list, got [actual_ty]] @exp_list.
 
 // Value declaration and use.
