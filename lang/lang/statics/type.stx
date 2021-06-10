@@ -113,6 +113,8 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
 
     // check if s1 is compatible with s2. Assumes s1 is an instance of data
     // type dt and that s2 is either also an instance or the generic definition
+    // "Compatible" means that the types are equal, or the second one is a
+    // wildcard and the first one falls within the bounds
     isTypeArgsCompatible : scope * scope -> BOOLEAN
     isTypeArgsCompatible(s1, s2) = isTypeArgsCompatible_1(s1, s2, getGenericDef(s1)).
 
