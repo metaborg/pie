@@ -252,18 +252,22 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
   lub(NullableType(T1), NullableType(T2)) = NullableType(lub(T1, T2)).
   lub(EmptyListType(), ListType(T)) = ListType(T).
   lub(ListType(T), EmptyListType()) = ListType(T).
-  lub(T1@DataType(s1), T2@DataType(s2)) = firstTrueT([
-    (isAssignableTo(T1, T2), T2),
-    (isAssignableTo(T2, T1), T1)],
-    lub_datatype(maybe_s_common, s1, s2))
-  :-
-    // find all scopes from s1 that s2 inherits from, take the shortest one.
-    // This is guaranteed to be a generic definition unless one of the two is a subtype of the other,
-    // or they do not have an explicit common super type.
-    // them being subtypes is already covered by firstTrueT
-    query ()
-      filter (P|INHERIT)* and { s_super :- inherits(s2, s_super) == TRUE() }
-         min $ < INHERIT, $ < P in s1 |-> maybe_s_common.
+  lub(T1@DataType(_), T2@DataType(_)) = lub_dataTypeGuard(isAssignableTo(T1, T2), isAssignableTo(T2, T1), T1, T2).
+  
+    lub_dataTypeGuard : BOOLEAN * BOOLEAN * TYPE * TYPE -> TYPE
+    lub_dataTypeGuard(TRUE(), _, _, T2) = T2.
+    lub_dataTypeGuard(_, TRUE(), T1, _) = T1.
+    lub_dataTypeGuard(FALSE(), FALSE(), T1@DataType(s1), T2@DataType(s2)) =
+      lub_datatype(maybe_s_common, s1, s2)
+    :-
+      // find all scopes from s1 that s2 inherits from, take the shortest one.
+      // This is guaranteed to be a generic definition unless one of the two is a subtype of the other,
+      // or they do not have an explicit common super type.
+      // them being subtypes is already covered by lub_dataTypeGuard
+      query ()
+        filter (P|INHERIT)*
+           and { s_common_candidate :- inherits(s2, s_common_candidate) == TRUE() }
+           min $ < INHERIT, $ < P in s1 |-> maybe_s_common.
 
     // list contains either no scopes or single scope s_data_common, which is a definition
     lub_datatype : list((path * scope)) * scope * scope -> TYPE
