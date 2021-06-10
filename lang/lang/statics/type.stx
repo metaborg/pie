@@ -382,8 +382,8 @@ rules
 
       typeOfUpperBound : scope * scope * UpperBound -> UpperBoundType
       typeOfUpperBound(_, _, NoUpperBound()) = NoUpperBoundType().
-      typeOfUpperBound(s, s_data_def, UpperBound(upper_bound)) =
-        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_data_def, upper_bound))
+      typeOfUpperBound(s, s_type_args, UpperBound(upper_bound)) =
+        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound))
       :-
         try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
         try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
@@ -393,8 +393,8 @@ rules
 
       typeOfLowerBound : scope * scope * LowerBound -> LowerBoundType
       typeOfLowerBound(_, _, NoLowerBound()) = NoLowerBoundType().
-      typeOfLowerBound(s, s_data_def, LowerBound(lower_bound)) =
-        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_data_def, lower_bound))
+      typeOfLowerBound(s, s_type_args, LowerBound(lower_bound)) =
+        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound))
       :-
         try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
