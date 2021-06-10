@@ -409,7 +409,7 @@ rules // Declararing and resolving
   declareGenericParam : scope * TYPEID * TYPE * TYPE -> GenericParameter
   declareGenericParam(s, name, upper_bound, lower_bound) = param :-
     !generic_param[param@GenericParameter(s, name), (upper_bound, lower_bound)] in s,
-    resolveGenericParam(param) == [_]
+    resolveGenericParam(s, name) == [_]
       | error $[Duplicate definition of generic parameter [name]],
     @name.type := upper_bound.
 
@@ -419,11 +419,11 @@ rules // Declararing and resolving
    * [s].
    * Does not check if the resolved declarations are unique.
    */
-  resolveGenericParam : GenericParameter -> list((path * (GenericParameter * (TYPE * TYPE))))
-  resolveGenericParam(param@GenericParameter(s,_)) = occs :-
+  resolveGenericParam : scope * TYPEID -> list((path * (GenericParameter * (TYPE * TYPE))))
+  resolveGenericParam(s, name) = occs :-
     query generic_param
-      filter e
-         and { param' :- param == param' }
+      filter P?
+         and { param' :- GenericParameter(_, name) == param' }
          min and false
           in s |-> occs.
 
@@ -441,7 +441,7 @@ rules // Declararing and resolving
   resolveGenericArg : scope * TYPEID -> list((path * (TYPEID * TYPE)))
   resolveGenericArg(s, name) = occs :-
     query generic_arg
-      filter (P|INHERIT)*
+      filter P*
          and { name' :- name == name' }
           in s |-> occs.
 
