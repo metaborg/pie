@@ -252,7 +252,7 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
   lub(EmptyListType(), ListType(T)) = ListType(T).
   lub(ListType(T), EmptyListType()) = ListType(T).
   lub(T1@DataType(_), T2@DataType(_)) = lub_dataTypeGuard(isAssignableTo(T1, T2), isAssignableTo(T2, T1), T1, T2).
-  
+
     lub_dataTypeGuard : BOOLEAN * BOOLEAN * TYPE * TYPE -> TYPE
     lub_dataTypeGuard(TRUE(), _, _, T2) = T2.
     lub_dataTypeGuard(_, TRUE(), T1, _) = T1.
@@ -288,6 +288,15 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
       // next line is incorrect, should use unbounded wildcard
       lubs(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_names, "no error node")) == merged_type_args,
       declareGenericArgs(s_common_instance, type_arg_names, merged_type_args).
+
+        isInstanceOf: scope * scope -> BOOLEAN
+        isInstanceOf(s1, s2) = isInstanceOf_listContains(occs, s2) :-
+          query () filter P in s1 |-> occs.
+
+          isInstanceOf_listContains : list((path * scope)) * scope -> BOOLEAN
+          isInstanceOf_listContains([], _) = FALSE().
+          isInstanceOf_listContains([(_, s)|_], s) = TRUE().
+          isInstanceOf_listContains([(_, s')|rest], s) = isInstanceOf_listContains(rest, s).
 
         unzipTypeArgs : list((TYPEID * TYPE)) -> (list(TYPEID) * list(TYPE))
         unzipTypeArgs([]) = ([], []).
