@@ -199,8 +199,7 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
 
     isAssignableToUpperBound : TYPE * UpperBoundType -> BOOLEAN
     isAssignableToUpperBound(_, NoUpperBoundType()) = TRUE().
-    isAssignableToUpperBound(BottomType(), UpperBoundType(_)) = TRUE().
-    isAssignableToUpperBound(_, UpperBoundType(_)) = FALSE().
+    isAssignableToUpperBound(T, UpperBoundType(upper_bound)) = isAssignableTo(T, upper_bound).
 
     isAssignableToLowerBound : TYPE * LowerBoundType -> BOOLEAN
     isAssignableToLowerBound(_, NoLowerBoundType()) = TRUE().
