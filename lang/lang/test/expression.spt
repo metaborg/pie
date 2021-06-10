@@ -14,9 +14,25 @@ fixture [[
     func set(Foo) -> unit
   }
   data Bak : Foo = foreign java org.example.test.expression.Bak {}
+  data Baar : Foo = foreign java org.example.test.expression.Baar {}
   data Bok = foreign java org.example.test.expression.Bok {}
+  
+  data Generic<T: Foo, U: Foo, V> = foreign java org.example.test.expression.Generic {}
+  data GenericSub<T: Bar, U: Baar> : Generic<T, U, string> = foreign java org.example.test.expression.GenericSub {}
 
-  func main(name: string, comment: string?, enableFinagle: bool, value: int, foo: Foo, bar: Bar, bak: Bak, bok: Bok) -> unit = {
+  func main(
+    name: string,
+    comment: string?,
+    enableFinagle: bool,
+    value: int,
+    foo: Foo,
+    bar: Bar,
+    bak: Bak,
+    bok: Bok,
+    generic1: Generic<Foo, Baar, string>,
+    generic2: Generic<Bak, Baar, int>,
+    genericSub: GenericSub<Bar, Baar>
+  ) -> unit = {
     [[...]];
 
     unit
@@ -150,6 +166,10 @@ test ifelse true branch subtype nullable [[ [[ if (comment != null) bak? else fo
 test ifelse true branch subtype [[ [[ if (value == 0) bar else foo ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 // test ifelse false branch subtype [[ [[ if (value == 0) foo else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
 // test ifelse branches least upperbound [[ [[ if (value == 0) bar else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse branches equal with type arguments [[ [[ val res: Generic<Foo, Baar, string> = if (value == 0) generic1 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic<_ : Foo, Baar, _> = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse true branch subtype with different type arguments [[ [[ val res: Generic<_ : Foo, Baar, _> = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse false branch subtype with different type arguments [[ [[ val res: Generic<_ : Foo, Baar, _> = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
 test ifelse branch type mismatch [[ if (value == 0) "hello" else 10 ]] 1 error
 test ifelse branch type mismatch datatypes [[ if (value == 0) bak else bok ]] 1 error error like "Type mismatch"
 test ifelse branch type mismatch nullable datatypes [[ if (value == 0) foo? else bok? ]] 1 error error like "Type mismatch"
