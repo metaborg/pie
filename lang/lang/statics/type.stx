@@ -304,6 +304,9 @@ Solution for instances: find s_common_def, use lub on generic parameters
   lub(T, TopType()) = TopType().
   lub(BottomType(), T) = T.
   lub(T, BottomType()) = T.
+  lub(WildcardType(upper_bound, _), T) = lub(typeOrTopType(upper_bound), T).
+  lub(T, WildcardType(upper_bound, _)) = lub(T, typeOrTopType(upper_bound)).
+  lub(T, T) = T.
   lub(T1, T2) = firstTrueT([
     (isAssignableTo(T1, T2), T2),
     (isAssignableTo(T2, T1), T1)],
