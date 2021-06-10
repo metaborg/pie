@@ -58,9 +58,9 @@ rules // operations on types
   isAssignableTo(DataType(s_sub), DataType(s_super)) =
     isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def)
   :-
+    findGenericDef(s_super) == s_super_def,
     inherits(s_sub, s_super_def) == inherits,
-    getTypeArgs(s_super) == type_args,
-    findGenericDef(s_super) == s_super_def.
+    getTypeArgs(s_super) == type_args.
 
       // Get generic definition of s_data. s_data can be either an instance or the generic def itself.
       findGenericDef : scope -> scope
