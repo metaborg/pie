@@ -143,6 +143,7 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
           getArgTypes maps getArgType(list(*)) = list(*)
           getArgType((path, arg_ty)) = arg_ty.
 
+      // Checks if a type argument in s1 is compatible with s2.
       isTypeArgCompatible : (TYPEID * TYPE) * scope -> BOOLEAN
       isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *) = list(*)
       isTypeArgCompatible((name, ty1), s2) =
@@ -150,19 +151,16 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
 
         isTypeArgCompatible_1 : TYPE * TYPE -> BOOLEAN
         isTypeArgCompatible_1(ty, ty) = TRUE().
-        isTypeArgCompatible_1(DataType(s1), DataType(s2)) = isTypeEqual(s1, s2).
+        isTypeArgCompatible_1(DataType(s1), DataType(s2)) = andB(
+            isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
+            isTypeArgsCompatible(s1, s2)
+          ).
+        // todo: add Wildcards
         isTypeArgCompatible_1(T1, T2) = FALSE().
 
-        isTypeEqual : scope * scope -> BOOLEAN
-        isTypeEqual(s1, s2) = andB(isInstanceOf(s1, s2), isTypeArgsCompatible(s1, s2)).
-
-        isInstanceOf: scope * scope -> BOOLEAN
-        isInstanceOf(s1, s2) = isInstanceOf_listNonEmpty(occs) :-
-          query () filter P in s1 |-> occs.
-
-          isInstanceOf_listNonEmpty : list((path * scope)) -> BOOLEAN
-          isInstanceOf_listNonEmpty([]) = FALSE().
-          isInstanceOf_listNonEmpty([_|_]) = TRUE().
+          isScopeEqual : scope * scope -> BOOLEAN
+          isScopeEqual(s, s) = TRUE().
+          isScopeEqual(s1, s2) = FALSE().
 
   isAssignableTo(_, TopType()) = TRUE().
   isAssignableTo(BottomType(), _) = TRUE().
