@@ -29,13 +29,13 @@ context-free syntax
   TYPE.FuncType = [func([{TYPE ", "}+]) -> [TYPE]]
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
 
-  UpperBoundType.NoUpperBoundType = < [no upper bound] >
+  UpperBoundType.NoUpperBoundType = < [no upper bound]>
   UpperBoundType.UpperBoundType = < : <TYPE>>
 
-  LowerBoundType.NoLowerBoundType = < [no lower bound] >
+  LowerBoundType.NoLowerBoundType = < [no lower bound]>
   LowerBoundType.LowerBoundType = < -: <TYPE>>
 
-  TYPE.WildcardType = [_[UpperBoundType][LowerBoundType]]
+  TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType]]
 
 // TODO: remove
 // Semantic type bounds.
