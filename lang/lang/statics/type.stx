@@ -197,15 +197,11 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
     isUpperBoundAssignableTo(UpperBoundType(upper_bound), T) = isAssignableTo(upper_bound, T).
 
   isAssignableTo(T, WildcardType(upper_bound, lower_bound)) =
-    andB(isAssignableToUpperBound(T, upper_bound), isAssignableToLowerBound(T, lower_bound)).
-
-    isAssignableToUpperBound : TYPE * UpperBoundType -> BOOLEAN
-    isAssignableToUpperBound(_, NoUpperBoundType()) = TRUE().
-    isAssignableToUpperBound(T, UpperBoundType(upper_bound)) = isAssignableTo(T, upper_bound).
+    isAssignableToLowerBound(T, lower_bound).
 
     isAssignableToLowerBound : TYPE * LowerBoundType -> BOOLEAN
     isAssignableToLowerBound(_, NoLowerBoundType()) = TRUE().
-    isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(lower_bound, T).
+    isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(T, lower_bound).
 
   isAssignableTo(T, T) = TRUE().
   isAssignableTo(_, _) = FALSE().
