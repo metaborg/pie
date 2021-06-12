@@ -48,8 +48,8 @@ test nullable [[ int? ]] analysis succeeds
 test double nullable [[ path?[[?]] ]] analysis succeeds  1 warning at #1  warning like "double nullable has no effect"
 test triple nullable [[ string?[[?]][[?]] ]] analysis succeeds  2 warnings at #1, #2  warning like "double nullable has no effect"
 
-test wildcard [[ _ ]] 1 error  error like "Cannot use wildcard"
-test wildcard upperbound [[ _ : Foo ]] 1 error  error like "Cannot use wildcard"
-test wildcard lowerbound [[ _ -: Pear ]] 1 error  error like "Cannot use wildcard"
+test wildcard [[ [[ _ ]] ]] analysis succeeds  1 warning at #1  warning like "Wildcard return type simplifies to its implicit upper bound"
+test wildcard upperbound [[ [[ _ : Foo ]] ]] analysis succeeds  1 warning at #1  warning like "Wildcard return type simplifies to its upper bound"
+test wildcard lowerbound [[ [[ _ -: Pear ]] ]] analysis succeeds  1 warning at #1  warning like "Wildcard return type simplifies to its implicit upper bound"
 
 // todo: add tests for other places where wildcards are invalid

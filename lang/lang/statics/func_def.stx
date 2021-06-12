@@ -26,7 +26,15 @@ rules
     new s_func,
     s_func -P-> s,
     typeOfParams(s, s_func, params) == param_tys,
-    typeOf(s, out_ty_exp) == out_ty.
+    getUpperBound(typeOf(s, out_ty_exp), out_ty_exp) == out_ty.
+
+    getUpperBound : TYPE * Type -> TYPE
+    getUpperBound(WildcardType(NoUpperBoundType(), _), w@Wildcard(_, _)) = ty@TopType() :-
+      try { false } | warning $[Wildcard return type simplifies to its implicit upper bound [ty]] @w.
+    getUpperBound(WildcardType(UpperBoundType(upper_bound), _), Wildcard(UpperBound(ub), _)) =
+      getUpperBound(upper_bound, ub) :-
+        try { false } | warning $[Wildcard return type simplifies to its upper bound [upper_bound]] @ub.
+    getUpperBound(ty, _) = ty.
 
   typeOfParam : scope * scope * Param -> TYPE
   typeOfParams maps typeOfParam(*, *, list(*)) = list(*)
