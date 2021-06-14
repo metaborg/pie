@@ -76,7 +76,7 @@ rules // operations on types
     isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((TYPEID * TYPE)) * scope -> BOOLEAN
     isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
     isAssignableTo_dataTypes(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
-    isAssignableTo_dataTypes(_, _, TRUE(), [], _) = TRUE().  // s_super is a generic definition and s_sub inherits from it, s_sub is a subtype by definition
+    isAssignableTo_dataTypes(_, _, TRUE(), [], _) = TRUE().  // s_super does not have type arguments and s_sub inherits from s_super_def
     isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def) = isTypeArgsCompatible(s_sub_super_instance, s_super) :-
       query ()
         filter INHERIT? (P INHERIT)*
