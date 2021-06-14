@@ -161,7 +161,10 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
             isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
             isTypeArgsCompatible(s1, s2)
           ).
-        isTypeArgCompatible_1(T1, T2@WildcardType(_, _)) = isAssignableTo(T1, T2).
+        isTypeArgCompatible_1(T, WildcardType(ub, lb)) = andB(
+            isAssignableTo(T, typeOrTopType(ub)),
+            isAssignableTo(typeOrBottomType(lb), T)
+          ).
         isTypeArgCompatible_1(T1, T2) = FALSE().
 
           isScopeEqual : scope * scope -> BOOLEAN
