@@ -35,12 +35,11 @@ test generic parameters shadow existing name [[ data Foo<[[Command]]> = foreign 
   run pie-get-type on #1 to TopType()
   1 note at #1
   note like "shadows data type"
-// test disabled: Statix does not terminate on circular generic references
-//test generic parameters reference own type [[ data [[Foo]]<[[T]]: [[Foo]]<[[T]]>> = foreign java Foo {} ]]
-//  analysis succeeds
-//  run pie-get-type on #2 to DataType(_)
-//  resolve #3 to #1
-//  resolve #4 to #2
+test generic parameters reference own type [[ data [[Foo]]<[[T]]: [[Foo]]<[[T]]>> = foreign java Foo {} ]]
+  analysis succeeds
+  run pie-get-type on #2 to DataType(_)
+  resolve #3 to #1
+  resolve #4 to #2
 test generic parameters bound is unit [[ data Foo<[[T]]: [[unit]]> = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to UnitType()
