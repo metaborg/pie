@@ -4,6 +4,7 @@ import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
+import mb.pie.api.Observability;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.PieChildBuilder;
@@ -97,10 +98,27 @@ public class PieImpl implements Pie {
         }
     }
 
-
     @Override public boolean isObserved(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
             return txn.taskObservability(key).isObserved();
+        }
+    }
+
+    @Override public boolean isExplicitlyObserved(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.taskObservability(key) == Observability.ExplicitObserved;
+        }
+    }
+
+    @Override public void setImplicitToExplicitlyObserved(TaskKey key) {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            final Observability observability = txn.taskObservability(key);
+            if(observability.isUnobserved()) {
+                throw new IllegalArgumentException("Cannot set task with key '" + key + "' to explicitly observed, because it is unobserved");
+            }
+            if(observability != Observability.ExplicitObserved) {
+                txn.setTaskObservability(key, Observability.ExplicitObserved);
+            }
         }
     }
 

@@ -13,7 +13,6 @@ import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -78,28 +77,28 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     }
 
     private TopDownSession createSessionAfterBottomUp() {
-        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store, tracer, providedResources);
+        return new TopDownSessionImpl(bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources);
     }
 
 
     @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
         return require(task, NullCancelableToken.instance);
     }
 
-    @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+    @SuppressWarnings("ConstantConditions") @Override
+    public <O extends Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("require");
         return handleException(() -> topDownRunner.requireInitial(task, true, cancel));
     }
 
     @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
         return requireWithoutObserving(task, NullCancelableToken.instance);
     }
 
-    @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+    @SuppressWarnings("ConstantConditions") @Override
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("requireWithoutObserving");
         return handleException(() -> topDownRunner.requireInitial(task, false, cancel));
     }

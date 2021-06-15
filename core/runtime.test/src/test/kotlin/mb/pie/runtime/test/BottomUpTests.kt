@@ -98,10 +98,10 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerRevObserved)
       val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
-        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-        verify(bottomUpSession).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
         verify(bottomUpSession).require(eq(lowerRevKey), eq(lowerRevTask), any(), any(), anyC())
-        verify(bottomUpSession).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
       }
     }
 
@@ -118,9 +118,9 @@ class BottomUpTests {
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
       val bottomUpSession = session.bottomUpRunner
-      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
     }
 
     // Change required file in such a way that the file changes (modified date), but the output of [readTask] does not.
@@ -139,11 +139,11 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerRevObserved)
       val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
-        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
       }
-      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
       verify(bottomUpSession, never()).require(eq(lowerRevKey), eq(lowerRevTask), any(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
     }
   }
 
@@ -265,8 +265,8 @@ class BottomUpTests {
     newSession().use { session ->
       session.updateAffectedBy(hashSetOf(file.key))
       val bottomUpSession = session.bottomUpRunner
-      verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), any(), anyC())
-      verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), any(), anyC())
+      verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), any(), any(), anyC())
     }
   }
 }

@@ -69,6 +69,24 @@ public abstract class SessionImpl implements Session {
         }
     }
 
+    @Override public boolean isExplicitlyObserved(TaskKey key) {
+        try(final StoreReadTxn txn = store.readTxn()) {
+            return txn.taskObservability(key) == Observability.ExplicitObserved;
+        }
+    }
+
+    @Override public void setImplicitToExplicitlyObserved(TaskKey key) {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            final Observability observability = txn.taskObservability(key);
+            if(observability.isUnobserved()) {
+                throw new IllegalArgumentException("Cannot set task with key '" + key + "' to explicitly observed, because it is unobserved");
+            }
+            if(observability != Observability.ExplicitObserved) {
+                txn.setTaskObservability(key, Observability.ExplicitObserved);
+            }
+        }
+    }
+
     @Override public void unobserve(TaskKey key) {
         try(final StoreWriteTxn txn = store.writeTxn()) {
             Observability.explicitUnobserve(txn, key, tracer);

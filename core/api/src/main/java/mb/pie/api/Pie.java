@@ -1,5 +1,7 @@
 package mb.pie.api;
 
+import com.sun.nio.sctp.IllegalReceiveException;
+
 import java.io.Serializable;
 import java.util.function.Consumer;
 
@@ -39,7 +41,7 @@ public interface Pie extends AutoCloseable {
 
 
     /**
-     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build) or implicitly observed
+     * Checks whether {@code task} is observed, either explicitly (by requiring it with a top-down build) or implicitly
      * (when another observed task requires it).
      *
      * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
@@ -50,13 +52,57 @@ public interface Pie extends AutoCloseable {
     }
 
     /**
-     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or
-     * implicitly observed (when another observed task requires it).
+     * Checks whether task with given {@code key} is observed, either explicitly (by requiring it with a top-down build)
+     * or implicitly (when another observed task requires it).
      *
      * @param key Key of task to check.
      * @return True if task is observed, false otherwise.
      */
     boolean isObserved(TaskKey key);
+
+
+    /**
+     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build).
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task is explicitly observed, false otherwise.
+     */
+    default boolean isExplicitlyObserved(Task<?> task) {
+        return isExplicitlyObserved(task.key());
+    }
+
+    /**
+     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build).
+     *
+     * @param key Key of task to check.
+     * @return True if task is explicitly observed, false otherwise.
+     */
+    boolean isExplicitlyObserved(TaskKey key);
+
+
+    /**
+     * Sets the observability of {@code task} to {@link Observability#ExplicitObserved explicitly observed} if it is
+     * {@link Observability#ImplicitObserved implicitly observed}. Does nothing if already {@link
+     * Observability#ExplicitObserved explicitly observed}. Throws if {@link Observability#Unobserved unobserved}. Use
+     * {@link Session#require} to explicitly observe an unobserved task.
+     *
+     * @param task Task to explicitly observe.
+     * @throws IllegalReceiveException when {@code} task is not observed.
+     */
+    default void setImplicitToExplicitlyObserved(Task<?> task) {
+        setImplicitToExplicitlyObserved(task.key());
+    }
+
+    /**
+     * Sets the observability of task with given {@code key} to {@link Observability#ExplicitObserved explicitly
+     * observed} if it is {@link Observability#ImplicitObserved implicitly observed}. Does nothing if already {@link
+     * Observability#ExplicitObserved explicitly observed}. Throws if {@link Observability#Unobserved unobserved}. Use
+     * {@link Session#require} to explicitly observe an unobserved task.
+     *
+     * @param key Key of task to explicitly observe.
+     * @throws IllegalReceiveException when {@code} task is not observed.
+     */
+    void setImplicitToExplicitlyObserved(TaskKey key);
 
 
     /**

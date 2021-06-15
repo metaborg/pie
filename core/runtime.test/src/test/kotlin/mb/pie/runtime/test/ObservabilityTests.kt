@@ -365,8 +365,8 @@ class ObservabilityTests {
       // Both tasks are executed because they are observable.
       val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
-        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-        verify(bottomUpSession).exec(eq(callKey), eq(callTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession).exec(eq(callKey), eq(callTask), anyER(), any(), any(), anyC())
       }
     }
   }
@@ -393,8 +393,8 @@ class ObservabilityTests {
       session.updateAffectedBy(setOf(resource.key))
       // Both tasks are NOT executed because they are unobservable.
       val bottomUpSession = session.bottomUpRunner
-      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), any(), any(), anyC())
     }
   }
 
@@ -419,8 +419,8 @@ class ObservabilityTests {
       session.updateAffectedBy(setOf(resource.key))
       // Both tasks are NOT executed because they are unobservable.
       val bottomUpSession = session.bottomUpRunner
-      verify(bottomUpSession, never()).exec(eq(writeKey), eq(writeTask), anyER(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(writeKey), eq(writeTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(callKey), eq(callTask), anyER(), any(), any(), anyC())
     }
   }
 
@@ -465,9 +465,9 @@ class ObservabilityTests {
       inOrder(bottomUpSession) {
         // `read2Task` is not scheduled nor executed yet, despite its resource being changed, because it is unobserved. Consequently, `callRead2Task` will also not be scheduled yet.
         // `read1Task` gets executed because it is observed and its resource changed.
-        verify(bottomUpSession).exec(eq(read1Key), eq(read1Task), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(read1Key), eq(read1Task), anyER(), any(), any(), anyC())
         // This in turn affects `callMainTask`, so it gets executed.
-        verify(bottomUpSession).exec(eq(callMainKey), eq(callMainTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(callMainKey), eq(callMainTask), anyER(), any(), any(), anyC())
         // `callMainTask` requires `read1Task`.
         verify(bottomUpSession).require(eq(read1Key), eq(read1Task), any(), any(), anyC())
         // But `read1Task` has already been executed, so it will not be executed again.
@@ -476,9 +476,9 @@ class ObservabilityTests {
         // While checking if `callRead2Task` must be executed, it requires unobserved task `read2Task`.
         verify(bottomUpSession).require(eq(read2Key), eq(read2Task), any(), any(), anyC())
         // `read2Task` then gets executed despite being unobserved, because it is required and not consistent yet because `resource2` has changed.
-        verify(bottomUpSession).exec(eq(read2Key), eq(read2Task), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(read2Key), eq(read2Task), anyER(), any(), any(), anyC())
         // `callRead2Task` then gets executed despite being unobserved, because the result of required task `read2Task` changed.
-        verify(bottomUpSession).exec(eq(callRead2Key), eq(callRead2Task), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(callRead2Key), eq(callRead2Task), anyER(), any(), any(), anyC())
       }
       session.store.readTxn().use { txn ->
         // Because `callMainTask` depends on `callRead2Task`, which depends on `read2Task`, they become implicitly observed.
@@ -506,18 +506,18 @@ class ObservabilityTests {
       inOrder(bottomUpSession) {
         // `read2Task` is not scheduled or executed because its resource did not change. Consequently, `callRead2Task` is also not scheduled.
         // `read1Task` gets executed because it is observed and its resource changed.
-        verify(bottomUpSession).exec(eq(read1Key), eq(read1Task), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(read1Key), eq(read1Task), anyER(), any(), any(), anyC())
         // This in turn affects `callMainTask`, so it gets executed.
-        verify(bottomUpSession).exec(eq(callMainKey), eq(callMainTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(callMainKey), eq(callMainTask), anyER(), any(), any(), anyC())
         // `callMainTask` now requires `callRead2Task`, because `read1Task` returns a string with 'galaxy' in it.
         verify(bottomUpSession).require(eq(callRead2Key), eq(callRead2Task), any(), any(), anyC())
         // While checking if `callRead2Task` must be executed, it requires unobserved task `read2Task`.
         verify(bottomUpSession).require(eq(read2Key), eq(read2Task), any(), any(), anyC())
       }
       // However, `read2Task` does not get executed, because none of its dependencies are inconsistent.
-      verify(bottomUpSession, never()).exec(eq(read2Key), eq(read2Task), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(read2Key), eq(read2Task), anyER(), any(), any(), anyC())
       // Consequently, `callRead2Task` also does not get executed.
-      verify(bottomUpSession, never()).exec(eq(callRead2Key), eq(callRead2Task), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(callRead2Key), eq(callRead2Task), anyER(), any(), any(), anyC())
       session.store.readTxn().use { txn ->
         // Despite not being executed, because `callTask` depends on `callRead2Task`, which depends on `read2Task`, it does become implicitly observed again.
         assertEquals(Observability.ImplicitObserved, txn.taskObservability(callRead2Key))
@@ -606,18 +606,18 @@ class ObservabilityTests {
       newSession().use { session ->
         session.updateAffectedBy(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet())
         val bottomUpSession = session.bottomUpRunner
-        verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(dTask.key()), eq(dTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(fTask.key()), eq(fTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(iTask.key()), eq(iTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(jTask.key()), eq(jTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(kTask.key()), eq(kTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(lTask.key()), eq(lTask), anyER(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(dTask.key()), eq(dTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(fTask.key()), eq(fTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(iTask.key()), eq(iTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(jTask.key()), eq(jTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(kTask.key()), eq(kTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(lTask.key()), eq(lTask), anyER(), any(), any(), anyC())
       }
     }
 
@@ -638,18 +638,18 @@ class ObservabilityTests {
         // Then build and confirm that the exact same tasks are executed.
         session.updateAffectedBy(listOf(file0, file1, file2, file3, file4, file5).map { it.key }.toSet())
         val bottomUpSession = session.bottomUpRunner
-        verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(dTask.key()), eq(dTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(fTask.key()), eq(fTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), any(), anyC())
-        verify(bottomUpSession, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(iTask.key()), eq(iTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(jTask.key()), eq(jTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(kTask.key()), eq(kTask), anyER(), any(), anyC())
-        verify(bottomUpSession, never()).exec(eq(lTask.key()), eq(lTask), anyER(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(aTask.key()), eq(aTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(bTask.key()), eq(bTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(cTask.key()), eq(cTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(dTask.key()), eq(dTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(eTask.key()), eq(eTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(fTask.key()), eq(fTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(gTask.key()), eq(gTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, times(1)).exec(eq(hTask.key()), eq(hTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(iTask.key()), eq(iTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(jTask.key()), eq(jTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(kTask.key()), eq(kTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession, never()).exec(eq(lTask.key()), eq(lTask), anyER(), any(), any(), anyC())
       }
     }
   }
