@@ -440,7 +440,7 @@ rules
     // data type
     isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, _, [_,_|_]) = DataType(emptyScope(s)) :-
       false | error $[Duplicate datatype [name]] @name.
-    isGenericParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, TypeArgs(type_args)), _, _, [(_, (name', s_data_def))]) = type@DataType(s_data_instance) :-
+    isGenericParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), _, _, [(_, (name', s_data_def))]) = type@DataType(s_data_instance) :-
       new s_data_instance,
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
@@ -453,9 +453,9 @@ rules
       // s_data_instance: scope for the instance that we are typing right now
       // s_data_def: definition for s_data_instance
 
-      genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * list(Type)
-      genericArgsOk(s, s_type_args, s_data_instance, params, arg_types) :-
-        genericArgsOk_1(s, s_type_args, s_data_instance, params, arg_types, sameLength(params, arg_types)).
+      genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs
+      genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types)) :-
+        genericArgsOk_1(s, s_type_args, s_data_instance, params, type_args, sameLength(params, arg_types)).
 
         sameLength : list((GenericParameter * TYPE * TYPE)) * list(Type) -> (list(TYPEID) * list(Type))
         sameLength([], []) = ([], []).
@@ -464,13 +464,13 @@ rules
         sameLength([], remaining@[_|_]) = ([], remaining).
         sameLength([_|params], [_|type_args]) = sameLength(params, type_args).
 
-      genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * list(Type) * (list(TYPEID) * list(Type))
-      genericArgsOk_1(_, _, _, _, arg_types, (remaining@[_|_], [])) :-
-        false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @arg_types.
-      genericArgsOk_1(_, _, _, _, arg_types, ([], remaining@[_|_])) :-
-        false | error $[Too many type arguments, unmatched type arguments: [remaining]] @arg_types.
-      genericArgsOk_1(s, s_type_args, s_data_instance, params, arg_types, ([], [])) :-
-        genericArgsOk_2(s, s_type_args, s_data_instance, params, arg_types).
+      genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * (list(TYPEID) * list(Type))
+      genericArgsOk_1(_, _, _, _, type_args, (remaining@[_|_], [])) :-
+        false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @type_args.
+      genericArgsOk_1(_, _, _, _, type_args, ([], remaining@[_|_])) :-
+        false | error $[Too many type arguments, unmatched type arguments: [remaining]] @type_args.
+      genericArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), ([], [])) :-
+        genericArgsOk_2(s, s_type_args, s_data_instance, params, type_args).
 
       genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type
       genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*))
