@@ -1,6 +1,5 @@
 package mb.pie.api;
 
-import com.sun.nio.sctp.IllegalReceiveException;
 import mb.pie.api.exec.CancelToken;
 import mb.resource.ResourceKey;
 import mb.resource.hierarchical.HierarchicalResource;
@@ -148,7 +147,7 @@ public interface Session {
      * {@link #require} to explicitly observe an unobserved task.
      *
      * @param task Task to explicitly observe.
-     * @throws IllegalReceiveException when {@code} task is not observed.
+     * @throws IllegalArgumentException when {@code} task is not observed.
      */
     default void setImplicitToExplicitlyObserved(Task<?> task) {
         setImplicitToExplicitlyObserved(task.key());
@@ -161,7 +160,7 @@ public interface Session {
      * {@link #require} to explicitly observe an unobserved task.
      *
      * @param key Key of task to explicitly observe.
-     * @throws IllegalReceiveException when {@code} task is not observed.
+     * @throws IllegalArgumentException when {@code} task is not observed.
      */
     void setImplicitToExplicitlyObserved(TaskKey key);
 
