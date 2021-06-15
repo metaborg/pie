@@ -34,4 +34,5 @@ rules
     typeOf(s, expected_ty_exp) == expected_ty,
     assignableTo(actual_ty, expected_ty) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty]] @expected_ty_exp,
     declareVal(s, name, expected_ty, LocalValKind()),
-    @b.type := expected_ty.
+    @b.type := expected_ty,
+    try { expected_ty != WildcardType(_, _) } | error $[Cannot use a wildcard as type hint. Use the upper bound or omit the type hint] @expected_ty_exp.
