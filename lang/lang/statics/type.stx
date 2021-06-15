@@ -421,7 +421,7 @@ rules
 
     isGenericParamOrDataTy : scope * scope * DataTy * ModuleList *
       list((path * (GenericParameter * (TYPE * TYPE)))) * list((path * (TYPEID * scope))) -> TYPE
-    isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, [], []) = DataType(emptyScope(s)) :-
+    isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, _, _) = DataType(emptyScope(s)) :-
       false | error $[Undefined datatype [name]] @name.
 
     // generic parameter
