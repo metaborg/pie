@@ -20,6 +20,14 @@ fixture [[
   data Generic<T: Foo, U: Foo, V> = foreign java org.example.test.expression.Generic {}
   data GenericSub<T: Bar, U: Baar> : Generic<T, U, string> = foreign java org.example.test.expression.GenericSub {}
 
+  data Animal = foreign java org.example.test.expression.Animal {}
+  data Mammal : Animal = foreign java org.example.test.expression.Mammal {}
+  data Dog : Mammal = foreign java org.example.test.expression.Dog {}
+  data Fish : Animal = foreign java org.example.test.expression.Fish {}
+
+  data Fuz<T : Animal> = foreign java Foo {}
+  data Faz<T> = foreign java Foo {}
+
   func main(
     name: string,
     comment: string?,
@@ -31,7 +39,9 @@ fixture [[
     bok: Bok,
     generic1: Generic<Foo, Baar, string>,
     generic2: Generic<Bak, Baar, int>,
-    genericSub: GenericSub<Bar, Baar>
+    genericSub: GenericSub<Bar, Baar>,
+    fuz: Fuz<Mammal>,
+    faz: Faz<Mammal>
   ) -> unit = {
     [[...]];
 
@@ -243,6 +253,26 @@ test val declaration tuple bind with wildcard type hints [[
    error like "Cannot use a wildcard"
 test val declaration assign single to tuple bind [[ val (x, y) = [1, 2] ]] analysis fails
 test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1
+
+// value assignment with generics
+test assign equal type [[ val res: Fuz<Mammal> = fuz ]] analysis succeeds
+test assign super type [[ val res: [[Fuz<Animal>]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign sub type [[ val res: [[Fuz<Dog>]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign different type [[ val res: [[Fuz<Fish>]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type without upperbounded type parameter with wildcard unbounded [[ val res: Faz<_> = faz ]] analysis succeeds
+test assign to type with upperbounded type parameter with wildcard unbounded [[ val res: Fuz<[[_>]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is equal [[ val res: Fuz<_ : Mammal> = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is higher  [[ val res: Fuz<_ : Animal> = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is lower [[ val res: [[Fuz<_ : Dog>]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is different [[ val res: [[Fuz<_ : Fish>]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is equal [[ val res: Faz<_ -: Mammal> = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is lower [[ val res: Faz<_ -: Dog> = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is higher [[ val res: [[Faz<_ -: Animal>]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is different [[ val res: [[Faz<_ -: Fish>]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper and lower bound [[
+  val res: Fuz<_[[ : Animal<>]][[ -: Dog<>]]> = fuz
+]] 2 errors at #1, #2
+   error like "Cannot have both an upper and lower bound"
 
 test reference defined [[ [[name]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test reference undefined [[ [[nope]] ]] 1 error at #1
