@@ -328,6 +328,78 @@ test assign type with unbounded wildcard type argument to type with lower bounde
 ]] 1 error at #1
    error like "Type mismatch"
 
+test assign type with upper bounded wildcard type argument to type with unbounded wildcard [[
+  val res: Faz<_> = fazWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal [[
+  val res: Faz<_ : Mammal> = fazWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard higher [[
+  val res: Faz<_ : Animal> = fazWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard lower [[
+  val res: [[Faz<_ : Dog>]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard different [[
+  val res: [[Faz<_ : Fish>]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard equal [[
+  val res: [[Faz<_ -: Mammal>]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard higher [[
+  val res: [[Faz<_ -: Animal>]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard lower [[
+  val res: [[Faz<_ -: Dog>]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard different [[
+  val res: [[Faz<_ -: Fish>]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+
+test assign type with lower bounded wildcard type argument to specific type [[
+  val res: [[Faz<Mammal>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with unbounded wildcard [[
+  val res: Faz<_> = fazWildcardLowerBounded
+]] analysis succeeds
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard equal [[
+  val res: [[Faz<_ : Mammal>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard higher [[
+  val res: [[Faz<_ : Animal>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard lower [[
+  val res: [[Faz<_ : Dog>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard different [[
+  val res: [[Faz<_ : Fish>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard equal [[
+  val res: Faz<_ -: Mammal> = fazWildcardLowerBounded
+]] analysis succeeds
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard higher [[
+  val res: [[Faz<_ -: Animal>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard lower [[
+  val res: Faz<_ -: Dog> = fazWildcardLowerBounded
+]] analysis succeeds
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard different [[
+  val res: [[Faz<_ -: Fish>]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+
 test reference defined [[ [[name]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test reference undefined [[ [[nope]] ]] 1 error at #1
 
