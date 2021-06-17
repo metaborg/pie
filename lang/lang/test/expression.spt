@@ -75,15 +75,16 @@ test list literal with null [[ val x: int?* = [1, null, 3] ]] analysis succeeds
 
 // simple expressions
 test empty block [[ {} ]] analysis succeeds
-test block 1 element [[ val fuz: int = { 5 } ]] analysis succeeds
+test block 1 element [[ val buk: int = { 5 } ]] analysis succeeds
 test block 2 elements [[
-  val fuz: string = {
-    val baz: int = 8;
-    "value: $baz"
+  val buk: string = {
+    val [[baz]]: int = 8;
+    "value: $[[baz]]"
   }
 ]] analysis succeeds
+   resolve #2 to #1
 test nested block [[
-  val fuz: bool = {{
+  val buk: bool = {{
     val [[baz]] = ./values;
     {
       exists [[baz]]
@@ -452,14 +453,16 @@ test list with filter pattern    [[ list /tmp/test/ with pattern "test" ]] analy
 test list with filter patterns   [[ list /tmp/test/ with patterns ["test", "attempt"] ]] analysis succeeds
 test list with filter extension  [[ list /tmp/test/ with extension "pie" ]] analysis succeeds
 test list with filter extensions [[ list /tmp/test/ with extensions ["c", "cpp"] ]] analysis succeeds
-test list list expression not a path [[ list [["./foo"]] ]] 1 error at #1 // error like "Type mismatch"
-test list regex not a string [[ list /a with regex [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test list pattern not a string [[ list /a with pattern [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test list patterns not a list [[ list /a with patterns [["result"]] ]] error like "Type mismatch" at #1
-test list patterns not a string list [[ list /a with patterns [[ [2019, 2020] ]] ]] error like "Type mismatch" at #1
-test list extension not a string [[ list /a with extension [[2020]] ]] 1 error at #1 // error like "Type mismatch"
-test list extensions not a list [[ list /a with extensions [["txt"]] ]] error like "Type mismatch" at #1
-test list extensions not a string list [[ list /a with extensions [[("h", "hpp")]] ]] error like "Type mismatch" at #1
+test list list expression not a path [[ list [["./foo"]] ]] 1 error at #1  error like "Type mismatch"
+test list regex not a string [[ list /a with regex [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test list pattern not a string [[ list /a with pattern [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test list patterns not a list [[ list /a with patterns [["result"]] ]] 1 error at #1  error like "Type mismatch"
+test list patterns not a string list [[ list /a with patterns [[ [2019, 2020] ]] ]] 1 error at #1 // error like "Type mismatch"
+test list patterns tuple instead of list [[ list /a with patterns [[ ("passed", "failed") ]] ]] 1 error at #1  error like "Type mismatch"
+test list extension not a string [[ list /a with extension [[2020]] ]] 1 error at #1  error like "Type mismatch"
+test list extensions not a list [[ list /a with extensions [["txt"]] ]] 1 error at #1  error like "Type mismatch"
+test list extensions not a string list [[ list /a with extensions [[("h", "hpp")]] ]] 1 error at #1  error like "Type mismatch"
+test list extensions tuple instead of list [[ list /a with extensions [[("h", "hpp")]] ]] 1 error at #1  error like "Type mismatch"
 
 test walk without filter [[ [[ walk ./example/ ]] ]] analysis succeeds run pie-ast-type on #1 to ListType(PathType())
 test walk with filter regex      [[ walk /tmp/test/ with regex "file[0-9]+" ]] analysis succeeds
@@ -467,14 +470,16 @@ test walk with filter pattern    [[ walk /tmp/test/ with pattern "test" ]] analy
 test walk with filter patterns   [[ walk /tmp/test/ with patterns ["test", "attempt"] ]] analysis succeeds
 test walk with filter extension  [[ walk /tmp/test/ with extension "pie" ]] analysis succeeds
 test walk with filter extensions [[ walk /tmp/test/ with extensions ["c", "cpp"] ]] analysis succeeds
-test walk walk expression not a path [[ walk [["./foo"]] ]] 1 error at #1 // error like "Type mismatch"
-test walk regex not a string [[ walk /a with regex [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test walk pattern not a string [[ walk /a with pattern [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test walk patterns not a list [[ walk /a with patterns [["result"]] ]] error like "Type mismatch" at #1
-test walk patterns not a string list [[ walk /a with patterns [[ [2019, 2020] ]] ]] error like "Type mismatch" at #1
-test walk extension not a string [[ walk /a with extension [[2020]] ]] 1 error at #1 // error like "Type mismatch"
-test walk extensions not a list [[ walk /a with extensions [["txt"]] ]] error like "Type mismatch" at #1
-test walk extensions not a string list [[ walk /a with extensions [[("h", "hpp")]] ]] error like "Type mismatch" at #1
+test walk walk expression not a path [[ walk [["./foo"]] ]] 1 error at #1  error like "Type mismatch"
+test walk regex not a string [[ walk /a with regex [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test walk pattern not a string [[ walk /a with pattern [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test walk patterns not a list [[ walk /a with patterns [["result"]] ]] 1 error at #1  error like "Type mismatch" at #1
+test walk patterns not a string list [[ walk /a with patterns [[ [2019, 2020] ]] ]] 1 error at #1 // error like "Type mismatch"
+test walk patterns tuple instead of list [[ walk /a with patterns [[ ("passed", "failed") ]] ]] 1 error at #1  error like "Type mismatch"
+test walk extension not a string [[ walk /a with extension [[2020]] ]] 1 error at #1  error like "Type mismatch"
+test walk extensions not a list [[ walk /a with extensions [["txt"]] ]] 1 error at #1  error like "Type mismatch"
+test walk extensions not a string list [[ walk /a with extensions [[ [/.txt] ]] ]] 1 error at #1 // error like "Type mismatch"
+test walk extensions tuple instead of list [[ walk /a with extensions [[("h", "hpp")]] ]] 1 error at #1  error like "Type mismatch"
 
 test read [[ [[ read ./config.txt ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(StrType())
 test read not a path type [[ read [["./config"]] ]] 1 error at #1 // error like "Type mismatch"
