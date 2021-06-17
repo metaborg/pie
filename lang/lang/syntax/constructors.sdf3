@@ -37,32 +37,6 @@ context-free syntax
 
   TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType]]
 
-// TODO: remove
-// Semantic type bounds.
-context-free sorts TYPEBOUND
-context-free syntax
-
-  TYPEBOUND.UnitTypeBound = [unit]
-  TYPEBOUND.BoolTypeBound = [bool]
-  TYPEBOUND.IntTypeBound = [int]
-  TYPEBOUND.StrTypeBound = [string]
-  TYPEBOUND.PathTypeBound = [path]
-  TYPEBOUND.NullTypeBound = [null]
-  TYPEBOUND.TopTypeBound = [TOP]
-
-  TYPEBOUND.NullableTypeBound = [[TYPEBOUND]?]
-  TYPEBOUND.ListTypeBound = [[TYPEBOUND]*]
-  TYPEBOUND.EmptyListTypeBound = [ANY*]
-  TYPEBOUND.TupleTypeBound = [([{TYPEBOUND ", "}+])]
-  TYPEBOUND.SupplierTypeBound = [supplier([TYPEBOUND])]
-
-  TYPEBOUND.FuncTypeBound = [func([{TYPEBOUND ", "}+]) -> [TYPEBOUND]]
-//  TYPEBOUND.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
-
-  TYPEBOUND.WildcardTypeBound = [_]
-  TYPEBOUND.UpperBoundedWildcardTypeBound = [_ : [TYPEBOUND]]
-  TYPEBOUND.LowerBoundedWildcardTypeBound = [_ -: [TYPEBOUND]]
-
 // Boolean values. Used in Statix logic.
 context-free sorts BOOLEAN
 context-free syntax
