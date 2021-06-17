@@ -163,13 +163,19 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
           ).
         isTypeArgCompatible_1(T, WildcardType(ub, lb)) = andB(
             isAssignableTo(T, typeOrTopType(ub)),
-            isAssignableTo(typeOrBottomType(lb), T)
+            isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb))
           ).
         isTypeArgCompatible_1(T1, T2) = FALSE().
 
           isScopeEqual : scope * scope -> BOOLEAN
           isScopeEqual(s, s) = TRUE().
           isScopeEqual(s1, s2) = FALSE().
+
+          // Checks that Type T does not include TYPEs below lower bound lb
+          isTypeEntirelyAboveLowerBound : TYPE * TYPE -> BOOLEAN
+          isTypeEntirelyAboveLowerBound(WildcardType(_, lb1), lb2) =
+            isAssignableTo(lb2, typeOrBottomType(lb1)).
+          isTypeEntirelyAboveLowerBound(T, lb) = isAssignableTo(lb, T).
 
   isAssignableTo(_, TopType()) = TRUE().
   isAssignableTo(BottomType(), _) = TRUE().

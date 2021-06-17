@@ -319,6 +319,14 @@ test assign type with unbounded wildcard type argument to type with upper bounde
   val res: [[Faz<_ : Animal>]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
+test assign type with unbounded wildcard type argument to type with lower bounded wildcard [[
+  val res: [[Faz<_ -: Animal>]] = fazWildcardUnbounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with unbounded wildcard type argument to type with lower bounded wildcard lowest currently defined [[
+  val res: [[Faz<_ -: Dog>]] = fazWildcardUnbounded
+]] 1 error at #1
+   error like "Type mismatch"
 
 test reference defined [[ [[name]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test reference undefined [[ [[nope]] ]] 1 error at #1
