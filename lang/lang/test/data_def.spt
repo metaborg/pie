@@ -267,15 +267,14 @@ test foreign java generic method return type [[
   data Foo<[[T]]> = foreign java org.example.test.Foo {
     func get() -> [[T]]
   }
-]] 1 error at #2
+]] analysis succeeds
 //   todo: implement resolution of generic parameters
-//   analysis succeeds
 //   resolve #2 to #1
 test foreign java generic method parameter and return type [[
   data Foo<[[T]]> = foreign java org.example.test.Foo {
     func duplicate(original: [[T]]) -> [[T]]
   }
-]] 2 errors at #2, #3
+]] 1 error at #2
 //   todo: implement resolution of generic parameters
 //   analysis succeeds
 //   resolve #2 to #1

@@ -84,6 +84,7 @@ signature
 
     DataType : scope -> TYPE
     GenericParameter : scope * TYPEID -> GenericParameter // name + scope it is defined in
+    GenericParameter2TYPE : GenericParameter -> TYPE
 
   relations
     root : scope

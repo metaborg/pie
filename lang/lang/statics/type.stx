@@ -431,14 +431,16 @@ rules
       false | error $[Undefined datatype [name]] @name.
 
     // generic parameter
-    isGenericParamOrDataTy(s, s_type_args, DataTy(_, name, type_args), NoModuleList(), [(_, (GenericParameter(_, name'), (upper_bound, _)))], _) = type :-
-      genericParamToType(resolveGenericArg(s_type_args, name), upper_bound) == type,
+    isGenericParamOrDataTy(s, s_type_args, DataTy(_, name, type_args), NoModuleList(), [(_, (param@GenericParameter(_, name'), (_, _)))], _) = type :-
+      genericParamToType(resolveGenericArg(s_type_args, name), param) == type,
       @name.ref := name',
       @name.type := type.
 
-      genericParamToType : list((path * (TYPEID * TYPE))) * TYPE -> TYPE
-      genericParamToType([], upper_bound) = upper_bound.
+      genericParamToType : list((path * (TYPEID * TYPE))) * GenericParameter -> TYPE
+      genericParamToType([], param) = GenericParameter2TYPE(param).
       genericParamToType([(_, (_, ty))], _) = ty.
+      genericParamToType([(_, (name, _)),_|_], GenericParameter(s, _)) = DataType(emptyScope(s)) :-
+        false | error $[BUG: resolved multiple type arguments named [name]].
 
     isGenericParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _) = DataType(emptyScope(s)) :-
       false | error $[Duplicate declarations for generic parameter [name]] @name.
@@ -486,6 +488,31 @@ rules
         declareGenericArg(s_data_instance, name, arg_ty),
         assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not assignable to upper bound [upper_bound]],
         assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not assignable from lower bound [lower_bound]].
+
+  instantiateTypeArgs : scope * TYPE -> TYPE
+  instantiateTypeArgsInAll maps instantiateTypeArgs(*, list(*)) = list(*)
+  instantiateTypeArgs(_, T) = T.
+  instantiateTypeArgs(s, TupleType(tys)) = TupleType(instantiateTypeArgsInAll(s, tys)).
+  instantiateTypeArgs(s, ListType(ty)) = ListType(instantiateTypeArgs(s, ty)).
+  instantiateTypeArgs(s, SupplierType(ty)) = SupplierType(instantiateTypeArgs(s, ty)).
+  instantiateTypeArgs(s, NullableType(ty)) = NullableType(instantiateTypeArgs(s, ty)).
+  instantiateTypeArgs(s, WildcardType(upper_bound, lower_bound)) =
+    WildcardType(
+      instantiateTypeArgs_wildcardUpperbound(s, upper_bound),
+      instantiateTypeArgs_wildcardLowerbound(s, lower_bound)
+    ).
+
+    instantiateTypeArgs_wildcardUpperbound : scope * UpperBoundType -> UpperBoundType
+    instantiateTypeArgs_wildcardUpperbound(_, T@NoUpperBoundType()) = T.
+    instantiateTypeArgs_wildcardUpperbound(s, UpperBoundType(ub)) = UpperBoundType(instantiateTypeArgs(s, ub)).
+
+    instantiateTypeArgs_wildcardLowerbound : scope * LowerBoundType -> LowerBoundType
+    instantiateTypeArgs_wildcardLowerbound(_, T@NoLowerBoundType()) = T.
+    instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb)) = LowerBoundType(instantiateTypeArgs(s, lb)).
+
+  instantiateTypeArgs(s, GenericParameter2TYPE(GenericParameter(_, name))) = ty :-
+    resolveGenericArg(s, name) == [(_, (_, ty))] | error $[BUG: resolved multiple type arguments named [name]].
+    // todo: split into multiple things
 
   /**
    * getScopeFromType(s, ty)

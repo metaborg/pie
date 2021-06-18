@@ -26,6 +26,10 @@ imports
 signature
   constructors
     DataType : scope -> TYPE
+    GenericParameter2TYPE : GenericParameter -> TYPE
+
+  sorts GenericParameter constructors
+    GenericParameter : scope * string -> GenericParameter
 
 rules
 
