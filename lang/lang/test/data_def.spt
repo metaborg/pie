@@ -110,7 +110,7 @@ test supertype - non-overriding methods - different parameters types [[
   }
 ]] analysis succeeds
 
-test supertype - generic parameter does not resolve from subtype [[
+test supertype - generic return type does not resolve from subtype [[
   data Bar<F : Food> = foreign java org.example.test.Bar { }
   data Foo : Bar<Food> = foreign java org.example.test.Foo {
     func get() -> [[F]]
