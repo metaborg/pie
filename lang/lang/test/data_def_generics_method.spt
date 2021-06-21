@@ -1,0 +1,173 @@
+module data_def_generics_method
+language pie
+
+fixture [[
+  module test:dataDef:generics
+  
+  data Food = foreign java test.dataDef.generics.Food {}
+  data Fruit : Food = foreign java test.dataDef.generics.Fruit {}
+  data Apple : Fruit = foreign java test.dataDef.generics.Apple {}
+  
+  [[...]]
+]]
+
+test supertype - generic return type does not resolve from subtype [[
+  data Bar<F : Food> = foreign java org.example.test.Bar { }
+  data Foo : Bar<Food> = foreign java org.example.test.Foo {
+    func get() -> [[F]]
+  }
+]] 1 error at #1
+   error like "Undefined datatype"
+
+test supertype - overriding methods - sub generic return type [[
+  data Bar = foreign java org.example.test.Bar {
+    func [[get]]() -> Food
+  }
+  data Foo<F : Food> : Bar = foreign java org.example.test.Foo {
+    func [[get]]() -> F
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - sub generic return type outside bound [[
+  data Bar = foreign java org.example.test.Bar {
+    func [[get]]() -> Fruit
+  }
+  data Foo<F : Food> : Bar = foreign java org.example.test.Foo {
+    func [[get]]() -> F
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+
+test supertype - overriding methods - super generic return type - argument is upper bound, return type is equal to argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> Fruit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is upper bound, return type is higher than argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> Food
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is upper bound, return type is lower than argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> Apple
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is lower than upper bound, return type is equal to argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo : Bar<Apple> = foreign java org.example.test.Foo {
+    func [[get]]() -> Apple
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is lower than upper bound, return type is higher than argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo : Bar<Apple> = foreign java org.example.test.Foo {
+    func [[get]]() -> Fruit
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is lower than upper bound, return type is lower than argument [[
+  data Bar<F : Food> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> Apple
+  }
+]] analysis succeeds
+   resolve #2 to #1
+
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound equal to argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Fruit> : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound higher then argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Food> : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound lower then argument [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Apple> : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument lower than super upper bound, sub upper bound equal to argument [[
+  data Bar<F : Food> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Fruit> : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument lower than super upper bound, sub upper bound higher than argument [[
+  data Bar<F : Food> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Food> : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument lower than super upper bound, sub upper bound lower than argument [[
+  data Bar<F : Food> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Apple> : Bar<Fruit> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+
+test supertype - overriding methods - both generic return types - argument is generic parameter, sub upper bound equal to super upper bound [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Fruit> : Bar<G> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument is generic parameter, sub upper bound lower than super upper bound [[
+  data Bar<F : Fruit> = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo<G : Apple> : Bar<G> = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
