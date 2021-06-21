@@ -268,8 +268,7 @@ test foreign java generic method return type [[
     func get() -> [[T]]
   }
 ]] analysis succeeds
-//   todo: implement resolution of generic parameters
-//   resolve #2 to #1
+   resolve #2 to #1
 test foreign java generic method parameter and return type [[
   data Foo<[[T]]> = foreign java org.example.test.Foo {
     func duplicate(original: [[T]]) -> [[T]]
@@ -278,7 +277,8 @@ test foreign java generic method parameter and return type [[
 //   todo: implement resolution of generic parameters
 //   analysis succeeds
 //   resolve #2 to #1
-//   resolve #3 to #1
+   resolve #3 to #1
+
 
 // todo: test that referencing generic parameter in supertype is not allowed:
 // data Foo<T> = ...; data Bar : Foo<int> = ... { func get() -> T }

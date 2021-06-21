@@ -26,7 +26,7 @@ rules
     new s_func,
     s_func -P-> s,
     typeOfParams(s, s_func, params) == param_tys,
-    typeOfWithTypeArgScope(s, s_type_args, out_ty_exp) == out_ty,
+    typeOfWithTypeArgScope(s, s_type_args, out_ty_exp, TRUE()) == out_ty,
     try { out_ty != WildcardType(_, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 
   typeOfParam : scope * scope * Param -> TYPE
