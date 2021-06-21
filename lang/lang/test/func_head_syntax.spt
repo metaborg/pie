@@ -1,5 +1,4 @@
-module func_head
-
+module func_head_syntax
 language pie
 
 fixture [[
@@ -51,6 +50,7 @@ test missing return type [[test() -> ]] parse fails
 test missing return type missing arrow [[test()]] parse fails
 test missing arrow [[test() int]] parse fails
 test return type typescript notation [[test(): int]] parse fails
+test return type Java notation [[int test()]] parse fails
 test return type int [[test() -> int]]
 test return type string [[test() -> string]]
 test return type bool [[test() -> bool]]
@@ -58,4 +58,4 @@ test return type unit [[test() -> unit]]
 test return type custom type [[test() -> CustomType]]
 test return type tuple type [[test() -> (int, string)]]
 // void is not a type in pie, but it is parsed as a custom data type
-test return type void [[test() -> void]] parse succeeds
+test return type void [[test() -> void]] parse to FuncHead(_, _, DataTy(_, "void", _))
