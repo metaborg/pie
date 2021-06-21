@@ -1,4 +1,4 @@
-module type_signature
+module data_def_generics
 language pie
 
 fixture [[
