@@ -105,7 +105,7 @@ test supertype - overriding methods - both generic return types - argument equal
   }
 ]] analysis succeeds
    resolve #2 to #1
-test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound higher then argument [[
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound higher than argument [[
   data Bar<F : Fruit> = foreign java org.example.test.Bar {
     func [[get]]() -> F
   }
@@ -115,7 +115,7 @@ test supertype - overriding methods - both generic return types - argument equal
 ]] 1 error at #2
    error like "incompatible return type"
    resolve #2 to #1
-test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound lower then argument [[
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound lower than argument [[
   data Bar<F : Fruit> = foreign java org.example.test.Bar {
     func [[get]]() -> F
   }
