@@ -89,14 +89,22 @@ rules
       instantiateTypeArgsInAll(s_super, param_tys_super) == instantiated_super_params,
       instantiateTypeArgsInAll(s_data_def, param_tys) == instantiated_params,
       isAllInvariant(instantiated_super_params, instantiated_params) == isAllInvariant,
-      superOk_3(isAllInvariant, s_data_def, s_super, name, ty_out, name_super, ty_out_super).
+      superOk_3(isAllInvariant, s_data_def, s_super, name, instantiated_params, ty_out, name_super, param_tys_super, ty_out_super).
 
-    superOk_3 : BOOLEAN * scope * scope * TYPEID * TYPE * TYPEID * TYPE
-    superOk_3(FALSE(), _, _, _, _, _, _).
-    superOk_3(TRUE(), s_data_def, s_super, name, ty_out, name_super, ty_out_super) :-
+    // if function is an override, require return type to be compatible.
+    // if function is not an override, check that it doesn't collide with
+    // another function after erasure.
+    superOk_3 : BOOLEAN * scope * scope * TYPEID * list(TYPE) * TYPE * TYPEID * list(TYPE) * TYPE
+    superOk_3(TRUE(), s_data_def, s_super, name, _, ty_out, name_super, _, ty_out_super) :-
       @name.ref := name_super,
       assignableTo(instantiateTypeArgs(s_data_def, ty_out), instantiateTypeArgs(s_super, ty_out_super))
         | error $[Type mismatch: incompatible return type for override] @name.
+    superOk_3(FALSE(), _, s_super, name, instantiated_params, _, _, super_params, _) :-
+      {erased_params erased_super_params}
+      eraseTypes(instantiated_params) == erased_params,
+      eraseTypes(instantiateTypeArgsInAll(getGenericDef(s_super), super_params)) == erased_super_params,
+      isAllInvariant(erased_params, erased_super_params) == FALSE()
+        | error $[[name] collides with method in super type: this method does not override method in supertype but has the same signature after type erasure].
 
   dataImplOk : scope * scope * DataImpl
   dataImplOk(s, s_data, JavaDataImpl(java_name, members)) :-

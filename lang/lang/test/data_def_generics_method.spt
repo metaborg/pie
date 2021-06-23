@@ -227,13 +227,13 @@ test supertype - non-overriding methods - super generic parameter - super type a
 ]] analysis succeeds
 test supertype - non-overriding, colliding methods - both generic parameters - super type argument is equal to super generic param upper bound, subtype method paramater is generic parameter with upper bound equal to argument [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
-    func addPiece(piece: F) -> unit
+    func [[addPiece]](piece: F) -> unit
   }
   data FruitBowl2<F : Fruit> : FruitBowl<Fruit> = foreign java org.example.test.FruitBowl2 {
-    func [[addPiece]](piece: F) -> bool // use different return type to check that this method does not override
+    func [[addPiece]](piece: F) -> unit
   }
-]] 1 error at #1
-   error like "Colliding methods"
+]] analysis succeeds
+   resolve #2 to #1
 test supertype - non-overriding methods - both generic parameters - super type argument is equal to super generic param upper bound, subtype method paramater is generic parameter with upper bound higher than argument [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -265,9 +265,10 @@ test supertype - non-overriding methods - super generic parameter - super type a
     func addPiece(piece: F) -> unit
   }
   data FruitBowl2 : FruitBowl<Fruit> = foreign java org.example.test.FruitBowl2 {
-    func addPiece(piece: Food) -> bool // use different return type to check that this method does not override
+    func [[addPiece]](piece: Food) -> bool // use different return type to check that this method does not override
   }
-]] analysis succeeds
+]] 1 error at #1
+   error like "collides with method in super type"
 test supertype - non-overriding methods - super generic parameter - super type argument is lower than super generic param upper bound, subtype method paramater is lower than argument [[
   data FruitBowl<F : Food> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -293,7 +294,7 @@ test supertype - non-overriding, colliding methods - both generic parameters - s
     func [[addPiece]](piece: F) -> bool // use different return type to check that this method does not override
   }
 ]] 1 error at #1
-   error like "Colliding methods"
+   error like "collides with method in super type"
 test supertype - non-overriding methods - both generic parameters - super type argument is lower than super generic param upper bound, subtype method paramater is generic parameter with upper bound lower than argument [[
   data FruitBowl<F : Food> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -303,15 +304,14 @@ test supertype - non-overriding methods - both generic parameters - super type a
   }
 ]] analysis succeeds
 
-test supertype - overriding, colliding methods - super generic parameter - super type argument is generic parameter with upper bound equal to super generic param upper bound, subtype method paramater is equal to upper bounds [[
+test supertype - overriding methods - super generic parameter - super type argument is generic parameter with upper bound equal to super generic param upper bound, subtype method paramater is equal to upper bounds [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func [[addPiece]](piece: F) -> unit
   }
   data FruitBowl2<F : Fruit> : FruitBowl<F> = foreign java org.example.test.FruitBowl2 {
     func [[addPiece]](piece: Fruit) -> unit
   }
-]] 1 error at #2
-   error like "Colliding methods"
+]] analysis succeeds
    resolve #2 to #1
 test supertype - non-overriding methods - super generic parameter - super type argument is generic parameter with upper bound equal to super generic param upper bound, subtype method paramater is higher than upper bounds [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
@@ -345,7 +345,7 @@ test supertype - non-overriding, colliding methods - super generic parameter - s
     func [[addPiece]](piece: Fruit) -> bool // use different return type to check that this method does not override
   }
 ]] 1 error at #1
-   error like "Colliding methods"
+   error like "collides with method in super type"
 test supertype - non-overriding methods - super generic parameter - super type argument is generic parameter with upper bound lower than super generic param upper bound, subtype method paramater is between super upper bound and subtype upper bound [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -354,15 +354,14 @@ test supertype - non-overriding methods - super generic parameter - super type a
     func addPiece(piece: Apple) -> bool // use different return type to check that this method does not override
   }
 ]] analysis succeeds
-test supertype - overriding, colliding methods - super generic parameter - super type argument is generic parameter with upper bound lower than super generic param upper bound, subtype method paramater is equal to subtype upper bound [[
+test supertype - overriding methods - super generic parameter - super type argument is generic parameter with upper bound lower than super generic param upper bound, subtype method paramater is equal to subtype upper bound [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func [[addPiece]](piece: F) -> unit
   }
   data FruitBowl2<F : GrannySmith> : FruitBowl<F> = foreign java org.example.test.FruitBowl2 {
     func [[addPiece]](piece: GrannySmith) -> unit
   }
-]] 1 error at #2
-   error like "Colliding methods"
+]] analysis succeeds
    resolve #2 to #1
 test supertype - non-overriding methods - super generic parameter - super type argument is generic parameter with upper bound lower than super generic param upper bound, subtype method paramater is lower than subtype upper bound [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
@@ -391,15 +390,14 @@ test supertype - overriding methods - both generic parameter - super type argume
 ]] 1 error at #2
    error like "incompatible return type"
    resolve #2 to #1
-test supertype - overriding, colliding methods - both generic parameter - super type argument is generic parameter with upper bound lower than super generic param upper bound, subtype method paramater is generic parameter [[
+test supertype - overriding methods - both generic parameter - super type argument is generic parameter with upper bound lower than super generic param upper bound, subtype method paramater is generic parameter [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func [[addPiece]](piece: F) -> unit
   }
   data FruitBowl2<F : Fruit> : FruitBowl<F> = foreign java org.example.test.FruitBowl2 {
     func [[addPiece]](piece: F) -> unit
   }
-]] 1 error at #2
-   error like "Colliding methods"
+]] analysis succeeds
    resolve #2 to #1
 
 
@@ -420,7 +418,7 @@ test supertype - overriding methods - generic parameter and return type [[
   }
 ]] analysis succeeds
    resolve #2 to #1
-test supertype - overriding methods - generic parameter and return type [[
+test supertype - overriding methods - generic parameter and incompatible return type [[
   data Foo<T : Food> = foreign java org.example.test.Foo {
     func [[test]](value: T) -> T
   }
