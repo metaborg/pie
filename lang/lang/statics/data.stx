@@ -91,7 +91,7 @@ rules
     superOk_3(FALSE(), _, _, _, _, _, _).
     superOk_3(TRUE(), s_data_def, s_super, name, ty_out, name_super, ty_out_super) :-
       @name.ref := name_super,
-      isAssignableTo(instantiateTypeArgs(s_data_def, ty_out), instantiateTypeArgs(s_super, ty_out_super)) == TRUE()
+      assignableTo(instantiateTypeArgs(s_data_def, ty_out), instantiateTypeArgs(s_super, ty_out_super))
         | error $[Type mismatch: incompatible return type for override] @name.
 
   dataImplOk : scope * scope * DataImpl
