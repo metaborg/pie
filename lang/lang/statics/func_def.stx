@@ -25,19 +25,19 @@ rules
   typeOfFuncHead(s, s_type_args, FuncHead(name, Params(params), out_ty_exp)) = (s_func, name, FuncType(param_tys, out_ty)) :-
     new s_func,
     s_func -P-> s,
-    typeOfParams(s, s_func, params) == param_tys,
+    typeOfParams(s, s_type_args, s_func, params) == param_tys,
     typeOfWithTypeArgScope(s, s_type_args, out_ty_exp, TRUE()) == out_ty,
     try { out_ty != WildcardType(_, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 
-  typeOfParam : scope * scope * Param -> TYPE
-  typeOfParams maps typeOfParam(*, *, list(*)) = list(*)
+  typeOfParam : scope * scope * scope * Param -> TYPE
+  typeOfParams maps typeOfParam(*, *, *, list(*)) = list(*)
 
-  typeOfParam(s_mod, _, Param(lexical_type)) = semantic_type :-
-    typeOf(s_mod, lexical_type) == semantic_type,
+  typeOfParam(s_mod, s_type_args, _, Param(lexical_type)) = semantic_type :-
+    typeOfWithTypeArgScope(s_mod, s_type_args, lexical_type, TRUE()) == semantic_type,
     try { semantic_type != WildcardType(_, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  typeOfParam(s_mod, s_func, p@NParam(name, lexical_type)) = semantic_type :-
-    typeOf(s_mod, lexical_type) == semantic_type,
+  typeOfParam(s_mod, s_type_args, s_func, p@NParam(name, lexical_type)) = semantic_type :-
+    typeOfWithTypeArgScope(s_mod, s_type_args, lexical_type, TRUE()) == semantic_type,
     declareVal(s_func, name, semantic_type, InputValKind()),
     try { semantic_type != WildcardType(_, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
