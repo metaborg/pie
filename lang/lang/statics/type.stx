@@ -368,7 +368,12 @@ rules
   /**
    * typeOfWithTypeArgScope(s, s_type_args, ty) = type
    * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
-   * If you have a scope with type arguments, use typeOfWithTypeArgScope
+   * If you don't have a scope with type arguments, use typeOf
+   * If keep_uninstantiated is TRUE, generic parameters that are not 
+   * instantiated by a generic argument are returned as a 
+   * GenericParameter2TYPE(param@GenericParameter(scope, name)). If
+   * keep_uninstantiated is FALSE generic parameters without matching arguments
+   * return their upper bound.
    */
   typeOfWithTypeArgScope : scope * scope * Type * BOOLEAN -> TYPE
   typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope(*, *, list(*), *) = list(*)
