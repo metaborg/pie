@@ -228,6 +228,17 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
   isAllAssignableTo([], Ts@[_|_]) = FALSE().
   isAllAssignableTo([T1|T1s], [T2|T2s]) = andB(isAssignableTo(T1, T2), isAllAssignableTo(T1s, T2s)).
 
+  /**
+   * isAllInvariant(T1s, T2s) = res
+   * Checks that all types in lists [T1s] and [T2s] are pairwise invariant.
+   * Returns FALSE() if [T1s] and [T2s] have different lengths.
+   */
+  isAllInvariant : list(TYPE) * list(TYPE) -> BOOLEAN
+  isAllInvariant([], []) = TRUE().
+  isAllInvariant([_|_], []) = FALSE().
+  isAllInvariant([], [_|_]) = FALSE().
+  isAllInvariant([T1|T1s], [T2|T2s]) =
+    andB(isTypeArgCompatible_1(T1, T2), isAllInvariant(T1s, T2s)).
 
   /**
    * Returns the first element in the list that is TRUE(), or the default otherwise.

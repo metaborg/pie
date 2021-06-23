@@ -101,6 +101,14 @@ test supertype - non-overriding methods - narrowing parameter [[
     func get(Foo) -> int // does not override get(Bar) above
   }
 ]] analysis succeeds
+test supertype - non-overriding methods - widening parameter [[
+  data Bar = foreign java org.example.test.Bar {
+    func get(Apple) -> int
+  }
+  data Foo : Bar = foreign java org.example.test.Foo {
+    func get(Food) -> bool // does not override get(Apple)
+  }
+]] analysis succeeds
 test supertype - non-overriding methods - different parameters types [[
   data Bar = foreign java org.example.test.Bar {
     func get(Bar, int) -> int
