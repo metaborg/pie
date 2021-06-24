@@ -68,7 +68,7 @@ rules
   superOk : scope * scope * SuperType * string
   superOk(s, s_data_def, NoSuperType(), name).
   superOk(s, s_data_def, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
-    typeOfDataTy(s, s_data_def, data_ty,  FALSE()) == DataType(s_super),
+    typeOfDataTy(s, s_data_def, data_ty,  TRUE()) == DataType(s_super),
     s_data_def -INHERIT-> s_super,
     inherits(s_super, s_data_def) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
     query func filter e in s_data_def |-> occs,
@@ -84,12 +84,12 @@ rules
     // Check that function is either a valid override or not an override
     superOk_2 : scope * scope * TYPE * (path * (FUNCID * TYPE)) * FUNCID
     superOk_2s maps superOk_2(*, *, *, list(*), *)
-    superOk_2(s_data_def, s_super, FuncType(param_tys, ty_out), (path, (name_super, FuncType(param_tys_super, ty_out_super))), name) :-
-      {instantiated_super_params instantiated_params isAllInvariant}
-      instantiateTypeArgsInAll(s_super, param_tys_super) == instantiated_super_params,
-      instantiateTypeArgsInAll(s_data_def, param_tys) == instantiated_params,
-      isAllInvariant(instantiated_super_params, instantiated_params) == isAllInvariant,
-      superOk_3(isAllInvariant, s_data_def, s_super, name, instantiated_params, ty_out, name_super, param_tys_super, ty_out_super).
+    superOk_2(s_data_def, s_super, FuncType(param_tys, ty_out), (_, (name_super, FuncType(param_tys_super, ty_out_super))), name) :-
+      {super_params params isAllInvariant}
+      eraseTypes(instantiateTypeArgsInAll(s_super, param_tys_super)) == super_params,
+      eraseTypes(instantiateTypeArgsInAll(s_data_def, param_tys)) == params,
+      isAllInvariant(super_params, params) == isAllInvariant,
+      superOk_3(isAllInvariant, s_data_def, s_super, name, params, ty_out, name_super, param_tys_super, ty_out_super).
 
     // if function is an override, require return type to be compatible.
     // if function is not an override, check that it doesn't collide with
@@ -99,9 +99,8 @@ rules
       @name.ref := name_super,
       assignableTo(instantiateTypeArgs(s_data_def, ty_out), instantiateTypeArgs(s_super, ty_out_super))
         | error $[Type mismatch: incompatible return type for override] @name.
-    superOk_3(FALSE(), _, s_super, name, instantiated_params, _, _, super_params, _) :-
-      {erased_params erased_super_params}
-      eraseTypes(instantiated_params) == erased_params,
+    superOk_3(FALSE(), _, s_super, name, erased_params, _, _, super_params, _) :-
+      {erased_super_params}
       eraseTypes(instantiateTypeArgsInAll(getGenericDef(s_super), super_params)) == erased_super_params,
       isAllInvariant(erased_params, erased_super_params) == FALSE()
         | error $[[name] collides with method in super type: this method does not override method in supertype but has the same signature after type erasure].

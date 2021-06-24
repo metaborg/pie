@@ -94,7 +94,7 @@ test single parameter refers to itself [[
 test single parameter upperbound is own data type [[
   data [[Foo]]<T: [[Foo]]<[[_>]]> = foreign java test.dataDef.generics.Foo {}
 ]] 1 error at #3
-   error like "not assignable to upper bound"
+   error like "is not within upper bound"
    resolve #2 to #1
 test two parameters [[ data Foo<T: string, R: bool> = foreign java Foo {} ]] analysis succeeds
 test second parameter references both [[

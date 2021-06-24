@@ -149,6 +149,10 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
           getArgTypes maps getArgType(list(*)) = list(*)
           getArgType((path, arg_ty)) = arg_ty.
 
+        getTypeArgType : (TYPEID * TYPE) -> TYPE
+        getTypeArgTypes maps getTypeArgType(list(*)) = list(*)
+        getTypeArgType((_, ty)) = ty.
+
       // Checks if a type argument in s1 is compatible with s2.
       isTypeArgCompatible : (TYPEID * TYPE) * scope -> BOOLEAN
       isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *) = list(*)
@@ -212,6 +216,17 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
     isAssignableToLowerBound(_, NoLowerBoundType()) = TRUE().
     isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(T, lower_bound).
 
+  isAssignableTo(T, GenericParameter2TYPE(GenericParameter(s, name))) =
+    tmp2@andB(isAssignableTo(T, upper_bound), isTypeEntirelyAboveLowerBound(T, lower_bound))
+  :-
+    {tmp1 tmp3 tmp4}
+    tmp1 == ppTYPE(T),
+    tmp3 == ppTYPE(upper_bound),
+    tmp4 == ppTYPE(lower_bound),
+    try{false}|note$[DBEUG - [tmp1] ([T]) is assignable to generic parameter [name]: [tmp2]. upper bound: [tmp3] ([upper_bound]), lower bound: [tmp4] ([lower_bound])],
+    resolveGenericParam(s, name) == [(_, (_, (upper_bound, lower_bound)))].
+
+
   isAssignableTo(T, T) = TRUE().
   isAssignableTo(_, _) = FALSE().
 
@@ -229,6 +244,35 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
   isAllAssignableTo([T1|T1s], [T2|T2s]) = andB(isAssignableTo(T1, T2), isAllAssignableTo(T1s, T2s)).
 
   /**
+   * isInvariant(T1, T2) = res
+   * Checks if T1 and T2 are invariant, which means that T1 and T2 are equal
+   * (T1 is a subtype of T2, T2 is a subtype of T1)
+   */
+  isInvariant : TYPE * TYPE -> BOOLEAN
+  isInvariant(T1, T2) = andB(isInvariant_1(ub1, ub2), isInvariant_1(lb1, lb2)) :-
+    getBounds(T1) == (ub1, lb1),
+    getBounds(T2) == (ub2, lb2).
+
+    getBounds : TYPE -> (TYPE * TYPE)
+    getBounds(WildcardType(ub, lb)) = (typeOrTopType(ub), typeOrBottomType(lb)).
+    getBounds(GenericParameter2TYPE(GenericParameter(s, name))) = (ub, lb) :-
+      resolveGenericParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
+    getBounds(T) = (T, T).
+
+    isInvariant_1 : TYPE * TYPE -> BOOLEAN
+    isInvariant_1s maps isInvariant_1(list(*), list(*)) = list(*)
+    isInvariant_1(T, T) = TRUE().
+    isInvariant_1(NullableType(T1), NullableType(T2)) = isInvariant_1(T1, T2).
+    isInvariant_1(ListType(T1), ListType(T2)) = isInvariant_1(T1, T2).
+    isInvariant_1(TupleType(T1s), TupleType(T2s)) = allTrue(isInvariant_1s(T1s, T2s)).
+    isInvariant_1(SupplierType(T1), SupplierType(T2)) = isInvariant_1(T1, T2).
+    isInvariant_1(DataType(s1), DataType(s2)) = andB(
+      isScopeEqual(findGenericDef(s1), findGenericDef(s2)),
+      isAllInvariant(getTypeArgTypes(getTypeArgs(s1)), getTypeArgTypes(getTypeArgs(s2)))
+    ).
+    isInvariant_1(T1, T2) = FALSE().
+
+  /**
    * isAllInvariant(T1s, T2s) = res
    * Checks that all types in lists [T1s] and [T2s] are pairwise invariant.
    * Returns FALSE() if [T1s] and [T2s] have different lengths.
@@ -238,7 +282,7 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
   isAllInvariant([_|_], []) = FALSE().
   isAllInvariant([], [_|_]) = FALSE().
   isAllInvariant([T1|T1s], [T2|T2s]) =
-    andB(isTypeArgCompatible_1(T1, T2), isAllInvariant(T1s, T2s)).
+    andB(isInvariant(T1, T2), isAllInvariant(T1s, T2s)).
 
   /**
    * Returns the first element in the list that is TRUE(), or the default otherwise.
@@ -364,6 +408,33 @@ Solution for instances: find s_common_def, use lub on generic parameters
   comparable(ListType(T1), ListType(T2)) :- comparable(T1, T2).
   comparable(SupplierType(T1), SupplierType(T2)) :- comparable(T1, T2).
   comparable(T1, T2) :- orB(isAssignableTo(T1, T2), isAssignableTo(T2, T1)) == TRUE().
+
+  /**
+   * eraseType(T) = erased_type
+   * erases TYPE [T] to TYPE [erased_type].
+   * This removes all generic arguments and makes it nullable.
+   * This also takes the upper bound of generic variables and wildcard.
+   * Because there are no specific erased types, this just replaces everything
+   * with UnitType if outright removing it is not possible.
+   */
+  eraseType : TYPE -> TYPE
+  eraseTypes maps eraseType(list(*)) = list(*)
+  eraseType(T) = makeNullable(eraseType_1(T)).
+
+    eraseType_1 : TYPE -> TYPE
+    eraseType_1(T) = T.
+    eraseType_1(DataType(s_data)) = DataType(findGenericDef(s_data)).
+    eraseType_1(NullableType(T)) = NullableType(eraseType_1(T)).
+    eraseType_1(ListType(T)) = ListType(UnitType()).
+    eraseType_1(TupleType(Ts)) = TupleType(replaceWithUnit(Ts)).
+      getUnit : TYPE -> TYPE
+      replaceWithUnit maps getUnit(list(*)) = list(*)
+      getUnit(_) = UnitType().
+    eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
+    eraseType_1(FuncType(_, _)) = FuncType([UnitType()], UnitType()).
+    eraseType_1(WildcardType(ub, lb)) = typeOrTopType(ub).
+    eraseType_1(T@GenericParameter2TYPE(_)) = eraseType(ub) :-
+      getBounds(T) == (ub, _).
 
 rules
 
@@ -502,7 +573,7 @@ rules
         sameLength([], remaining@[_|_]) = ([], remaining).
         sameLength([_|params], [_|type_args]) = sameLength(params, type_args).
 
-      genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * 
+      genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) *
         TypeArgs * BOOLEAN * (list(TYPEID) * list(Type))
       genericArgsOk_1(_, _, _, _, type_args, _, (remaining@[_|_], [])) :-
         false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @type_args.
@@ -517,8 +588,17 @@ rules
         {arg_ty}
         typeOfWithTypeArgScope(s, s_type_args, arg, keep_uninstantiated) == arg_ty,
         declareGenericArg(s_data_instance, name, arg_ty),
-        assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not assignable to upper bound [upper_bound]],
-        assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not assignable from lower bound [lower_bound]].
+        withinBounds(arg_ty, upper_bound, lower_bound).
+
+        withinBounds : TYPE * TYPE * TYPE
+        withinBounds(GenericParameter2TYPE(GenericParameter(s, name)), upper_bound, lower_bound) :-
+          {ub lb}
+          resolveGenericParam(s, name) == [(_, (_, (ub, lb)))],
+          assignableTo(ub, upper_bound) | error $[Type mismatch: generic parameter [name] is not within upper bound [upper_bound]],
+          assignableTo(lower_bound, lb) | error $[Type mismatch: generic parameter [name] is not within lower bound [lower_bound]].
+        withinBounds(ty, upper_bound, lower_bound) :-
+          assignableTo(ty, upper_bound) | error $[Type mismatch: [ty] is not within upper bound [upper_bound]],
+          assignableTo(lower_bound, ty) | error $[Type mismatch: [ty] is not within lower bound [lower_bound]].
 
   /**
    * instantiateTypeArgs(s, type) = instantiated_type
@@ -550,10 +630,12 @@ rules
 
   instantiateTypeArgs(s, GenericParameter2TYPE(param@GenericParameter(_, name))) =
     instantiateTypeArgs_genericParameter(resolveGenericArg(s, name), param).
-    
+
     instantiateTypeArgs_genericParameter : list((path * (TYPEID * TYPE))) * GenericParameter -> TYPE
-    instantiateTypeArgs_genericParameter([], GenericParameter(s, name)) = upper_bound :-
-      resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
+    instantiateTypeArgs_genericParameter([], GenericParameter(s, name)) =
+      WildcardType(UpperBoundType(upper_bound), LowerBoundType(lower_bound))
+    :-
+      resolveGenericParam(s, name) == [(_, (_, (upper_bound, lower_bound)))].
     instantiateTypeArgs_genericParameter([(_, (_, ty))], _) = ty.
     instantiateTypeArgs_genericParameter([_,_|_], GenericParameter(s, name)) = DataType(emptyScope(s)) :-
       false | error $[BUG: resolved multiple type arguments named [name]].
