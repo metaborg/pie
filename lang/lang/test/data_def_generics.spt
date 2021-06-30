@@ -136,6 +136,17 @@ test cyclic reference indirect [[
    resolve #4 to #1
    // todo: should give a better error message. error like "cyclic reference"
 
+test deeper supertype relationship [[
+  data T1<A> = foreign java Whatever {
+    func get() -> A
+  }
+  data T2<B> : T1<B> = foreign java Whatever {}
+  data T3<C> : T1<C> = foreign java Whatever {}
+  data T4<D> : T1<D> = foreign java Whatever {}
+
+  func test(t: T4<string>) -> string = t.get()
+]] analysis succeeds
+
 // List of cases where Statix analysis does not terminate.
 // Don't know if this is a bug in Statix or just unbounded recursion in Statix spec.
 // Most of them I also don't know if they even should be allowed, since it

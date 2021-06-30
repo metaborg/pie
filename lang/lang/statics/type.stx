@@ -601,44 +601,95 @@ rules
           assignableTo(lower_bound, ty) | error $[Type mismatch: [ty] is not within lower bound [lower_bound]].
 
   /**
-   * instantiateTypeArgs(s, type) = instantiated_type
-   * instantiate [type] to a type [instantiated_type].
-   * This recursively replaces every GenericParameter2TYPE(_). If an argument
-   * with that name exists in [s], its type will be returned. If no type
-   * argument exists it will use the upper bound of the type parameter.
+   * instantiateTypeArgs(s, s_decl, T) = instantiated_type
+   * instantiate [T] to a type [instantiated_type].
+   * This recursively replaces every GenericParameter2TYPE(_). This will
+   * replace every generic parameter in [s_decl] with its type argument if it
+   * exists, then go to the next scope towards [s] and repeat until reaching
+   * [s]. If no type argument exists it will use the upper bound of the type
+   * parameter.
    */
-  instantiateTypeArgs : scope * TYPE -> TYPE
-  instantiateTypeArgsInAll maps instantiateTypeArgs(*, list(*)) = list(*)
-  instantiateTypeArgs(_, T) = T.
-  instantiateTypeArgs(s, TupleType(tys)) = TupleType(instantiateTypeArgsInAll(s, tys)).
-  instantiateTypeArgs(s, ListType(ty)) = ListType(instantiateTypeArgs(s, ty)).
-  instantiateTypeArgs(s, SupplierType(ty)) = SupplierType(instantiateTypeArgs(s, ty)).
-  instantiateTypeArgs(s, NullableType(ty)) = NullableType(instantiateTypeArgs(s, ty)).
-  instantiateTypeArgs(s, WildcardType(upper_bound, lower_bound)) =
-    WildcardType(
-      instantiateTypeArgs_wildcardUpperbound(s, upper_bound),
-      instantiateTypeArgs_wildcardLowerbound(s, lower_bound)
-    ).
+  instantiateTypeArgs : scope * scope * TYPE -> TYPE
+  instantiateTypeArgsInAll maps instantiateTypeArgs(*, *, list(*)) = list(*)
+  instantiateTypeArgs(s, s, T) = instantiateTypeArgs_1(s, T, []).
+  instantiateTypeArgs(s, s_decl, T) = res :-
+    {s_cur instantiated possibly_s_next}
+    query ()
+      filter (INHERIT|P)*
+         and { s_cur' :-
+                 {matches}
+                 query ()
+                   filter P?
+                       in s_cur' |-> matches,
+                 containsScope(getScopes(matches), s_decl)
+             }
+         min $ < P
+          in s |-> [(_, s_cur)],
+    instantiateTypeArgs_1(s_cur, T, []) == instantiated,
+    query ()
+      filter (INHERIT|P)*
+         and { s_next' :- query () filter P INHERIT in s_next' |-> [(_, s_cur)] }
+          in s |-> possibly_s_next,
+    instantiateTypeArgs_2(possibly_s_next, s, s_cur, instantiated) == res.
 
-    instantiateTypeArgs_wildcardUpperbound : scope * UpperBoundType -> UpperBoundType
-    instantiateTypeArgs_wildcardUpperbound(_, T@NoUpperBoundType()) = T.
-    instantiateTypeArgs_wildcardUpperbound(s, UpperBoundType(ub)) = UpperBoundType(instantiateTypeArgs(s, ub)).
+      containsScope : list(scope) * scope
+      containsScope([], _) :- false.
+      containsScope([s|_], s).
+      containsScope([s'|rest], s) :- containsScope(rest, s).
 
-    instantiateTypeArgs_wildcardLowerbound : scope * LowerBoundType -> LowerBoundType
-    instantiateTypeArgs_wildcardLowerbound(_, T@NoLowerBoundType()) = T.
-    instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb)) = LowerBoundType(instantiateTypeArgs(s, lb)).
+    instantiateTypeArgs_1 : scope * TYPE * list(GenericParameter) -> TYPE
+    instantiateTypeArgsInAll_1 maps instantiateTypeArgs_1(*, list(*), *) = list(*)
+    instantiateTypeArgs_1(_, T, _) = T.
+    instantiateTypeArgs_1(s, TupleType(tys), params) = TupleType(instantiateTypeArgsInAll_1(s, tys, params)).
+    instantiateTypeArgs_1(s, ListType(ty), params) = ListType(instantiateTypeArgs_1(s, ty, params)).
+    instantiateTypeArgs_1(s, SupplierType(ty), params) = SupplierType(instantiateTypeArgs_1(s, ty, params)).
+    instantiateTypeArgs_1(s, NullableType(ty), params) = NullableType(instantiateTypeArgs_1(s, ty, params)).
+    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound), params) =
+      WildcardType(
+        instantiateTypeArgs_wildcardUpperbound(s, upper_bound, params),
+        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, params)
+      ).
 
-  instantiateTypeArgs(s, GenericParameter2TYPE(param@GenericParameter(_, name))) =
-    instantiateTypeArgs_genericParameter(resolveGenericArg(s, name), param).
+      instantiateTypeArgs_wildcardUpperbound : scope * UpperBoundType * list(GenericParameter) -> UpperBoundType
+      instantiateTypeArgs_wildcardUpperbound(_, T@NoUpperBoundType(), _) = T.
+      instantiateTypeArgs_wildcardUpperbound(s, UpperBoundType(ub), params) = UpperBoundType(instantiateTypeArgs_1(s, ub, params)).
 
-    instantiateTypeArgs_genericParameter : list((path * (TYPEID * TYPE))) * GenericParameter -> TYPE
-    instantiateTypeArgs_genericParameter([], GenericParameter(s, name)) =
-      WildcardType(UpperBoundType(upper_bound), LowerBoundType(lower_bound))
+      instantiateTypeArgs_wildcardLowerbound : scope * LowerBoundType * list(GenericParameter) -> LowerBoundType
+      instantiateTypeArgs_wildcardLowerbound(_, T@NoLowerBoundType(), _) = T.
+      instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb), params) = LowerBoundType(instantiateTypeArgs_1(s, lb, params)).
+
+    instantiateTypeArgs_1(s, GenericParameter2TYPE(param@GenericParameter(s_param, name)), params) =
+      instantiateTypeArgs_genericParameter(s, scope_equal, resolved_arg, param, [param|params], seen)
     :-
-      resolveGenericParam(s, name) == [(_, (_, (upper_bound, lower_bound)))].
-    instantiateTypeArgs_genericParameter([(_, (_, ty))], _) = ty.
-    instantiateTypeArgs_genericParameter([_,_|_], GenericParameter(s, name)) = DataType(emptyScope(s)) :-
-      false | error $[BUG: resolved multiple type arguments named [name]].
+      isScopeEqual(findGenericDef(s), s_param) == scope_equal,
+      resolveGenericArg(s, name) == resolved_arg,
+      containsGenericParam(params, param) == seen.
+
+      containsGenericParam : list(GenericParameter) * GenericParameter -> BOOLEAN
+      containsGenericParam([], _) = FALSE().
+      containsGenericParam([param|_], param) = TRUE().
+      containsGenericParam([param'|params], param) = containsGenericParam(params, param).
+
+      instantiateTypeArgs_genericParameter : scope * BOOLEAN * list((path * (TYPEID * TYPE))) * 
+        GenericParameter * list(GenericParameter) * BOOLEAN -> TYPE
+      instantiateTypeArgs_genericParameter(_, FALSE(), _, param, _, _) = GenericParameter2TYPE(param).
+      instantiateTypeArgs_genericParameter(_, TRUE(), [], _, _, TRUE()) =
+        WildcardType(NoUpperBoundType(), NoLowerBoundType()). // incorrect, but don't have to the time to do it right (requires constraint solving?)
+      instantiateTypeArgs_genericParameter(s, TRUE(), [], GenericParameter(s_param, name), params, FALSE()) =
+        WildcardType(UpperBoundType(instantiated_upper_bound), LowerBoundType(instantiated_lower_bound))
+      :-
+        {upper_bound lower_bound}
+        resolveGenericParam(s_param, name) == [(_, (_, (upper_bound, lower_bound)))],
+        instantiateTypeArgs_1(s, upper_bound, params) == instantiated_upper_bound,
+        instantiateTypeArgs_1(s, lower_bound, params) == instantiated_lower_bound.
+      instantiateTypeArgs_genericParameter(s, TRUE(), [(_, (_, T))], _, params, containsGenericParam) = instantiateTypeArgs_1(s, T, params) :-
+        containsGenericParam == FALSE() | error $[bug: assumption that generic parameter with type argument has not been seen before is wrong].
+      instantiateTypeArgs_genericParameter(s, TRUE(), [_,_|_], GenericParameter(_, name), _, _) = DataType(emptyScope(s)) :-
+        false | error $[BUG: resolved multiple type arguments named [name]].
+
+    instantiateTypeArgs_2 : list((path * scope)) * scope * scope * TYPE -> TYPE
+    instantiateTypeArgs_2([], s, s_decl, T) = T.
+    instantiateTypeArgs_2([(_, s_next)], s, s_decl, T) = instantiateTypeArgs(s, s_next, T).
 
   /**
    * getScopeFromType(s, ty)

@@ -274,25 +274,31 @@ rules // Declararing and resolving
           in s |-> occs.
 
   /**
-   * resolve a function [name] to a unique declaration in scope [s]
+   * resolveUniqueFunc(s, name) = (resolved, type, s_decl)
+   * resolve a function [name] to a unique declaration from scope [s]
    * The boolean represents whether the function resolved (if it didn't, don't
    * check for argument number/types etc.)
    */
-  resolveUniqueFunc : scope * FUNCID -> (TYPE * BOOLEAN)
+  resolveUniqueFunc : scope * FUNCID -> (BOOLEAN * TYPE * scope)
   resolveUniqueFunc(s, name) = resolveUniqueFunc_1(name, resolveFunc(s, name)).
 
     // This function exists so that the result of resolveFunc is not
     // prematurely matched to a single occurrence
-    resolveUniqueFunc_1 : FUNCID * list((path * (FUNCID * TYPE))) -> (TYPE * BOOLEAN)
-    resolveUniqueFunc_1(name, []) = (_, FALSE()) :-
+    resolveUniqueFunc_1 : FUNCID * list((path * (FUNCID * TYPE))) -> (BOOLEAN * TYPE * scope)
+    resolveUniqueFunc_1(name, []) = (FALSE(), _, _) :-
       false | error $[Undefined function [name]] @name.
 
-    resolveUniqueFunc_1(name, [(_, (name', ty))]) = (ty, TRUE()) :-
+    resolveUniqueFunc_1(name, [(path, (name', ty))]) = (TRUE(), ty, s) :-
+      getDeclaringScope(path) == s,
       @name.ref := name',
       @name.type := ty.
 
+      getDeclaringScope : path -> scope
+      getDeclaringScope(_PathEmpty(s)) = s.
+      getDeclaringScope(_PathStep(_, _, s)) = s.
+
     // If there are multiple, the declaration will give an error.
-    resolveUniqueFunc_1(name, [_,_|_]) = (_, FALSE()).
+    resolveUniqueFunc_1(name, [_,_|_]) = (FALSE(), _, _).
 
 
   /**

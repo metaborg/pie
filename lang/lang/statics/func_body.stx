@@ -163,16 +163,16 @@ rules
   typeOfCall(s, s_def, name, arg_exps) =
     typeOfCall_1(s, s_def, arg_exps, resolveUniqueFunc(s_def, name)).
 
-    typeOfCall_1 : scope * scope * list(Exp) * (TYPE * BOOLEAN) -> (scope * TYPE)
-    typeOfCall_1(s1, s_def, arg_exps, (FuncType(param_tys, ret_ty), TRUE())) = (s2, ty) :-
+    typeOfCall_1 : scope * scope * list(Exp) * (BOOLEAN * TYPE * scope) -> (scope * TYPE)
+    typeOfCall_1(s1, s_def, arg_exps, (TRUE(), FuncType(param_tys, ret_ty), s_decl)) = (s2, ty) :-
       {instantiated_param_tys}
-      instantiateTypeArgsInAll(s_def, param_tys) == instantiated_param_tys,
+      instantiateTypeArgsInAll(s_def, s_decl, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys) == s2,
-      instantiateTypeArgs(s_def, ret_ty) == ty.
+      instantiateTypeArgs(s_def, s_decl, ret_ty) == ty.
 
     // Function didn't resolve. No need to check arguments.
     // Errors for non-resolving are created by resolveUniqueFunc.
-    typeOfCall_1(s, _, _, (_, FALSE())) = (s, DataType(emptyScope(s))).
+    typeOfCall_1(s, _, _, (FALSE(), _, _)) = (s, DataType(emptyScope(s))).
 
   typeOfExpImpl(s, Call(moduleList, name, arg_exps)) =
     typeOfCall(s, mergeScopes(s, resolveModuleListToFile(s, moduleList)), name, arg_exps).
