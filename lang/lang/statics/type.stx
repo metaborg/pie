@@ -77,12 +77,35 @@ rules // operations on types
     isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
     isAssignableTo_dataTypes(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
     isAssignableTo_dataTypes(_, _, TRUE(), [], _) = TRUE().  // s_super does not have type arguments and s_sub inherits from s_super_def
-    isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def) = isTypeArgsCompatible(s_sub_super_instance, s_super) :-
+    isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def) =
+      isTypeArgsCompatible(instantiated_s_sub_super_instance, s_super)
+    :-
+      {s_sub_super_instance}
       query ()
         filter INHERIT? (P INHERIT)*
            and { s :- getGenericDef(s) == s_super_def }
-            in s_sub |-> [(_, s_sub_super_instance)].
+            in s_sub |-> [(_, s_sub_super_instance)],
+      instantiateGenericParams(s_sub, s_sub_super_instance) == instantiated_s_sub_super_instance.
 
+      // instantiate generic parameters in instance s2 with the type arguments of s1
+      instantiateGenericParams : scope * scope -> scope
+      instantiateGenericParams(s1, s2) = s_data_instance_instantiated :-
+        {instantiated}
+        new s_data_instance_instantiated,
+        !root[getRoot(s2)] in s_data_instance_instantiated,
+        s_data_instance_instantiated -P-> getGenericDef(s2),
+        instantiateNamedTypeArgs(s1, s2, getTypeArgs(s2)) == instantiated,
+        declareGenericArgsFromTuples(s_data_instance_instantiated, instantiated).
+
+        instantiateNamedTypeArg : scope * scope * (TYPEID * TYPE) -> (TYPEID * TYPE)
+        instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*)) = list(*)
+        instantiateNamedTypeArg(s1, s2, (name, T)) = (name, instantiateTypeArgs_1(s1, T, [])).
+
+        declareGenericArgsFromTuples : scope * list((TYPEID * TYPE))
+        declareGenericArgsFromTuples(_, []).
+        declareGenericArgsFromTuples(s, [(name, T)|args]) :-
+          declareGenericArgWithoutSettingType(s, name, T),
+          declareGenericArgsFromTuples(s, args).
 
 /*
 
@@ -131,7 +154,7 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
 
       // s1 is an instance
       // s2 is either an instance or a data definition.
-      // third argument is data definition
+      // third argument (s2/s_data_def) is data definition
       isTypeArgsCompatible_1 : scope * scope * scope -> BOOLEAN
       isTypeArgsCompatible_1(s1, s2, s2) = TRUE().
         // s2 is a generic data definition, s1 is an instance of it.
@@ -143,7 +166,7 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
 
         getTypeArgs : scope -> list((TYPEID * TYPE))
         getTypeArgs(s_data) = getArgTypes(occs) :-
-          query generic_arg in s_data |-> occs.
+          query generic_arg filter e in s_data |-> occs.
 
           getArgType : (path * (TYPEID * TYPE)) -> (TYPEID * TYPE)
           getArgTypes maps getArgType(list(*)) = list(*)
@@ -217,13 +240,8 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
     isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(T, lower_bound).
 
   isAssignableTo(T, GenericParameter2TYPE(GenericParameter(s, name))) =
-    tmp2@andB(isAssignableTo(T, upper_bound), isTypeEntirelyAboveLowerBound(T, lower_bound))
+    andB(isAssignableTo(T, upper_bound), isTypeEntirelyAboveLowerBound(T, lower_bound))
   :-
-    {tmp1 tmp3 tmp4}
-    tmp1 == ppTYPE(T),
-    tmp3 == ppTYPE(upper_bound),
-    tmp4 == ppTYPE(lower_bound),
-    try{false}|note$[DBEUG - [tmp1] ([T]) is assignable to generic parameter [name]: [tmp2]. upper bound: [tmp3] ([upper_bound]), lower bound: [tmp4] ([lower_bound])],
     resolveGenericParam(s, name) == [(_, (_, (upper_bound, lower_bound)))].
 
 
@@ -640,6 +658,8 @@ rules
     instantiateTypeArgs_1 : scope * TYPE * list(GenericParameter) -> TYPE
     instantiateTypeArgsInAll_1 maps instantiateTypeArgs_1(*, list(*), *) = list(*)
     instantiateTypeArgs_1(_, T, _) = T.
+    instantiateTypeArgs_1(s, DataType(s_data), params) =
+      DataType(instantiateGenericParams(s, s_data)).
     instantiateTypeArgs_1(s, TupleType(tys), params) = TupleType(instantiateTypeArgsInAll_1(s, tys, params)).
     instantiateTypeArgs_1(s, ListType(ty), params) = ListType(instantiateTypeArgs_1(s, ty, params)).
     instantiateTypeArgs_1(s, SupplierType(ty), params) = SupplierType(instantiateTypeArgs_1(s, ty, params)).
@@ -670,18 +690,10 @@ rules
       containsGenericParam([param|_], param) = TRUE().
       containsGenericParam([param'|params], param) = containsGenericParam(params, param).
 
-      instantiateTypeArgs_genericParameter : scope * BOOLEAN * list((path * (TYPEID * TYPE))) * 
+      instantiateTypeArgs_genericParameter : scope * BOOLEAN * list((path * (TYPEID * TYPE))) *
         GenericParameter * list(GenericParameter) * BOOLEAN -> TYPE
       instantiateTypeArgs_genericParameter(_, FALSE(), _, param, _, _) = GenericParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(_, TRUE(), [], _, _, TRUE()) =
-        WildcardType(NoUpperBoundType(), NoLowerBoundType()). // incorrect, but don't have to the time to do it right (requires constraint solving?)
-      instantiateTypeArgs_genericParameter(s, TRUE(), [], GenericParameter(s_param, name), params, FALSE()) =
-        WildcardType(UpperBoundType(instantiated_upper_bound), LowerBoundType(instantiated_lower_bound))
-      :-
-        {upper_bound lower_bound}
-        resolveGenericParam(s_param, name) == [(_, (_, (upper_bound, lower_bound)))],
-        instantiateTypeArgs_1(s, upper_bound, params) == instantiated_upper_bound,
-        instantiateTypeArgs_1(s, lower_bound, params) == instantiated_lower_bound.
+      instantiateTypeArgs_genericParameter(_, _, [], param, _, _) = GenericParameter2TYPE(param).
       instantiateTypeArgs_genericParameter(s, TRUE(), [(_, (_, T))], _, params, containsGenericParam) = instantiateTypeArgs_1(s, T, params) :-
         containsGenericParam == FALSE() | error $[bug: assumption that generic parameter with type argument has not been seen before is wrong].
       instantiateTypeArgs_genericParameter(s, TRUE(), [_,_|_], GenericParameter(_, name), _, _) = DataType(emptyScope(s)) :-

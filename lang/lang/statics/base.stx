@@ -435,12 +435,18 @@ rules // Declararing and resolving
           in s |-> occs.
 
   // todo: documentation
+  declareGenericArgWithoutSettingType : scope * TYPEID * TYPE
+  declareGenericArgsWithoutSettingType maps declareGenericArgWithoutSettingType(*, list(*), list(*))
+  declareGenericArgWithoutSettingType(s, name, ty) :-
+    !generic_arg[name, ty] in s,
+    resolveGenericArg(s, name) == [_]
+      | error $[Duplicate definition of generic argument [name]].
+
+  // todo: documentation
   declareGenericArg : scope * TYPEID * TYPE
   declareGenericArgs maps declareGenericArg(*, list(*), list(*))
   declareGenericArg(s, name, ty) :-
-    !generic_arg[name, ty] in s,
-    resolveGenericArg(s, name) == [_]
-      | error $[Duplicate definition of generic argument [name]],
+    declareGenericArgWithoutSettingType(s, name, ty),
     @name.type := ty.
 
   // todo: documentation
