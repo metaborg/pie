@@ -31,20 +31,10 @@ rules // operations on types
    * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
    * Holds if type T1 is a non-strict subtype of type T2.
    * Fails with error if T1 is not a subtype of T2.
-   * Will unify unbound variables if possible.
    */
   assignableTo : TYPE * TYPE
   listAssignableTo maps assignableTo(list(*), list(*))
-  assignableTo(NullType(), NullableType(_)).
-  assignableTo(T1, NullableType(T2)) :- assignableTo(T1, T2).
-  assignableTo(NullableType(T1), NullableType(T2)) :- assignableTo(T1, T2).
-  assignableTo(EmptyListType(), ListType(_)).
-  assignableTo(d1@DataType(_), d2@DataType(_)) :- isAssignableTo(d1, d2) == TRUE().
-  assignableTo(_, TopType()).
-  assignableTo(BottomType(), _).
-  assignableTo(T1@WildcardType(_, _), T2) :- isAssignableTo(T1, T2) == TRUE().
-  assignableTo(T1, T2@WildcardType(_, _)) :- isAssignableTo(T1, T2) == TRUE().
-  assignableTo(T1, T2) :- T1 == T2.
+  assignableTo(T1, T2) :- isAssignableTo(T1, T2) == TRUE().
 
   /**
    * isAssignableTo(T1, T2) = bool
@@ -239,11 +229,21 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
     isAssignableToLowerBound(_, NoLowerBoundType()) = TRUE().
     isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(T, lower_bound).
 
-  isAssignableTo(T, GenericParameter2TYPE(GenericParameter(s, name))) =
-    andB(isAssignableTo(T, upper_bound), isTypeEntirelyAboveLowerBound(T, lower_bound))
-  :-
-    resolveGenericParam(s, name) == [(_, (_, (upper_bound, lower_bound)))].
+  isAssignableTo(param@GenericParameter2TYPE(_), T) = isAssignableTo_genericParam(T, param).
 
+    // swaps arguments so that equal generic parameters takes priority over a
+    // generic param with inequal other type
+    isAssignableTo_genericParam : TYPE * TYPE -> BOOLEAN
+    isAssignableTo_genericParam(param, param) = TRUE().
+    isAssignableTo_genericParam(T, GenericParameter2TYPE(GenericParameter(s, name))) =
+      isAssignableTo(upper_bound, T)
+    :-
+      resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
+
+  isAssignableTo(T, GenericParameter2TYPE(GenericParameter(s, name))) =
+    isAssignableTo(T, lower_bound)
+  :-
+    resolveGenericParam(s, name) == [(_, (_, (_, lower_bound)))].
 
   isAssignableTo(T, T) = TRUE().
   isAssignableTo(_, _) = FALSE().
