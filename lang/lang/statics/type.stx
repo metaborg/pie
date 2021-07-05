@@ -85,17 +85,17 @@ rules // operations on types
         !root[getRoot(s2)] in s_data_instance_instantiated,
         s_data_instance_instantiated -P-> getGenericDef(s2),
         instantiateNamedTypeArgs(s1, s2, getTypeArgs(s2)) == instantiated,
-        declareGenericArgsFromTuples(s_data_instance_instantiated, instantiated).
+        declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated).
 
         instantiateNamedTypeArg : scope * scope * (TYPEID * TYPE) -> (TYPEID * TYPE)
         instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*)) = list(*)
         instantiateNamedTypeArg(s1, s2, (name, T)) = (name, instantiateTypeArgs_1(s1, T, [])).
 
-        declareGenericArgsFromTuples : scope * list((TYPEID * TYPE))
-        declareGenericArgsFromTuples(_, []).
-        declareGenericArgsFromTuples(s, [(name, T)|args]) :-
-          declareGenericArgWithoutSettingType(s, name, T),
-          declareGenericArgsFromTuples(s, args).
+        declareTypeArgsFromTuples : scope * list((TYPEID * TYPE))
+        declareTypeArgsFromTuples(_, []).
+        declareTypeArgsFromTuples(s, [(name, T)|args]) :-
+          declareTypeArg(s, name, T),
+          declareTypeArgsFromTuples(s, args).
 
 /*
 
@@ -197,23 +197,6 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
   isAssignableTo(_, TopType()) = TRUE().
   isAssignableTo(BottomType(), _) = TRUE().
 
-/*
-
-Given isAssignableTo(Wildcard(upper(Apple)), Fruit) -> yes, any type with upper bound apple could be assigned to fruit.
-Given isAssignableTo(Wildcard(upper(Fruit)), Apple) -> maybe, wildcard could be Apple. Reject
-isAssignableTo(Wildcard(lower(Fruit)), Apple) -> no, Apple is outside lower bound
-isAssignableTo(Wildcard(lower(Fruit)), Food) -> maybe, Food is higher than Fruit. Reject
-isAssignableTo(Food, Wildcard(lower(Fruit))) -> yes
-isAssignableTo(Food, Wildcard(upper(Fruit))) -> no
-isAssignableTo(Apple, Wildcard(upper(Fruit))) -> yes
-
-isAssignableTo(Wildcard(upper(Apple)), Wildcard(upper(Fruit))) -> maybe -> reject
-isAssignableTo(Wildcard(upper(Food)), Wildcard(upper(Fruit))) -> maybe -> reject
-isAssignableTo(Wildcard(upper(Food)), Wildcard(lower(Fruit))) -> maybe -> reject
-isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
-
-*/
-
   isAssignableTo(WildcardType(upper_bound, lower_bound), T) =
     isUpperBoundAssignableTo(upper_bound, T).
 
@@ -253,7 +236,7 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
    * Returns TRUE if the types in [T1s] are pairwise subtypes of [T2s], FALSE
    * otherwise. Also returns FALSE if the lists don't have the same length.
    * This is useful for comparing parameter lists of functions.
-   * Delegates to isSubtype.
+   * Delegates to isAssignableTo.
    */
   isAllAssignableTo : list(TYPE) * list(TYPE) -> BOOLEAN
   isAllAssignableTo([], []) = TRUE().
@@ -367,7 +350,7 @@ isAssignableTo(Wildcard(upper(Apple)), Wildcard(lower(Fruit))) -> yes
       unzipTypeArgs(getTypeArgs(s3)) == (type_arg_names, type_arg_tys),
       // next line is incorrect, should use unbounded wildcard
       lubs(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_names, "no error node")) == merged_type_args,
-      declareGenericArgs(s_common_instance, type_arg_names, merged_type_args).
+      declareTypeArgs(s_common_instance, type_arg_names, merged_type_args).
 
         isInstanceOf: scope * scope -> BOOLEAN
         isInstanceOf(s1, s2) = isInstanceOf_listContains(occs, s2) :-
@@ -469,8 +452,8 @@ rules
    * typeOfWithTypeArgScope(s, s_type_args, ty) = type
    * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
    * If you don't have a scope with type arguments, use typeOf
-   * If keep_uninstantiated is TRUE, generic parameters that are not 
-   * instantiated by a generic argument are returned as a 
+   * If keep_uninstantiated is TRUE, generic parameters that are not
+   * instantiated by a generic argument are returned as a
    * GenericParameter2TYPE(param@GenericParameter(scope, name)). If
    * keep_uninstantiated is FALSE generic parameters without matching arguments
    * return their upper bound.
@@ -528,8 +511,8 @@ rules
    * typeOfDataTy(s, s_type_args, data_ty, keep_uninstantiated) = data_type
    * Get the Semantic type [data_type] of a synactic type [data_ty].
    * Uses [s] to resolve types and [s_type_args] to resolve type arguments.
-   * If keep_uninstantiated is TRUE, generic parameters that are not 
-   * instantiated by a generic argument are returned as a 
+   * If keep_uninstantiated is TRUE, generic parameters that are not
+   * instantiated by a generic argument are returned as a
    * GenericParameter2TYPE(param@GenericParameter(scope, name)). If
    * keep_uninstantiated is FALSE generic parameters without matching arguments
    * return their upper bound.
@@ -549,7 +532,7 @@ rules
     // generic parameter
     isGenericParamOrDataTy(s, s_type_args, DataTy(_, name, type_args), NoModuleList(),
       [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, keep_uninstantiated) = type :-
-      genericParamToType(resolveGenericArg(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
+      genericParamToType(resolveTypeArg(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
       @name.ref := name',
       @name.type := type.
 
@@ -605,7 +588,7 @@ rules
       genericArgOk(s, s_type_args, s_data_instance, (GenericParameter(_, name), upper_bound, lower_bound), arg, keep_uninstantiated) :-
         {arg_ty}
         typeOfWithTypeArgScope(s, s_type_args, arg, keep_uninstantiated) == arg_ty,
-        declareGenericArg(s_data_instance, name, arg_ty),
+        declareTypeArg(s_data_instance, name, arg_ty),
         withinBounds(arg_ty, upper_bound, lower_bound).
 
         withinBounds : TYPE * TYPE * TYPE
@@ -682,7 +665,7 @@ rules
       instantiateTypeArgs_genericParameter(s, scope_equal, resolved_arg, param, [param|params], seen)
     :-
       isScopeEqual(findGenericDef(s), s_param) == scope_equal,
-      resolveGenericArg(s, name) == resolved_arg,
+      resolveTypeArg(s, name) == resolved_arg,
       containsGenericParam(params, param) == seen.
 
       containsGenericParam : list(GenericParameter) * GenericParameter -> BOOLEAN

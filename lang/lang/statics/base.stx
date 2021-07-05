@@ -401,7 +401,11 @@ rules // Declararing and resolving
     s_merged -P-> s.
 
 
-  // todo: documentation
+  /**
+   * getGenericParams(s_data) = params
+   * Get the list of generic parameters of datatype scope [s_data].
+   * [s_data] can be the generic definition or an instance.
+   */
   getGenericParams : scope -> list((GenericParameter * TYPE * TYPE))
   getGenericParams(s_data) = params :-
     query generic_params filter P? in s_data |-> [(_, params)]
@@ -434,34 +438,40 @@ rules // Declararing and resolving
          min and false
           in s |-> occs.
 
-  // todo: documentation
-  declareGenericArgWithoutSettingType : scope * TYPEID * TYPE
-  declareGenericArgsWithoutSettingType maps declareGenericArgWithoutSettingType(*, list(*), list(*))
-  declareGenericArgWithoutSettingType(s, name, ty) :-
+  /**
+   * declareTypeArg(s, name, ty)
+   * Declare a type argument [name] with type [ty] in scope [s].
+   * This checks for and gives a [BUG] error on duplicates type arguments.
+   * This does not set the type on [name].
+   */
+  declareTypeArg : scope * TYPEID * TYPE
+  declareTypeArgs maps declareTypeArg(*, list(*), list(*))
+  declareTypeArg(s, name, ty) :-
     !generic_arg[name, ty] in s,
-    resolveGenericArg(s, name) == [_]
+    resolveTypeArg(s, name) == [_]
       | error $[Duplicate definition of generic argument [name]].
 
-  // todo: documentation
-  declareGenericArg : scope * TYPEID * TYPE
-  declareGenericArgs maps declareGenericArg(*, list(*), list(*))
-  declareGenericArg(s, name, ty) :-
-    declareGenericArgWithoutSettingType(s, name, ty),
-    @name.type := ty.
-
-  // todo: documentation
-  // todo: rename to resolveTypeArg
-  resolveGenericArg : scope * TYPEID -> list((path * (TYPEID * TYPE)))
-  resolveGenericArg(s, name) = occs :-
+  /**
+   * resolveTypeArg(s, name) = occs
+   * Resolve [name] to type argument occurences [occs] in [s].
+   * May return any number of type arguments. Follows P edges.
+   */
+  resolveTypeArg : scope * TYPEID -> list((path * (TYPEID * TYPE)))
+  resolveTypeArg(s, name) = occs :-
     query generic_arg
       filter P*
          and { name' :- name == name' }
           in s |-> occs.
 
-  // todo: documentation
+  /**
+   * resolveUniqueTypeArg(s, name, error_node) = instantiation
+   * Resolve type argument [name] to its instantiated type [instantiation] in
+   * [s]. Gives an error if the type argument is undefined or if there are
+   * multiple type arguments.
+   */
   resolveUniqueTypeArg : scope * TYPEID * string -> TYPE
   resolveUniqueTypeArgs maps resolveUniqueTypeArg(*, list(*), *) = list(*)
-  resolveUniqueTypeArg(s, name, error_node) = resolveUniqueTypeArg_1(name, resolveGenericArg(s, name), error_node).
+  resolveUniqueTypeArg(s, name, error_node) = resolveUniqueTypeArg_1(name, resolveTypeArg(s, name), error_node).
 
     resolveUniqueTypeArg_1 : TYPEID * list((path * (TYPEID * TYPE))) * string -> TYPE
     resolveUniqueTypeArg_1(name, [], error_node) = _ :- false | error $[Undefined type argument [name]] @error_node.
