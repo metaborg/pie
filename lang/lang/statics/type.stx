@@ -209,7 +209,8 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
     isAssignableToLowerBound(T, lower_bound).
 
     isAssignableToLowerBound : TYPE * LowerBoundType -> BOOLEAN
-    isAssignableToLowerBound(_, NoLowerBoundType()) = TRUE().
+    isAssignableToLowerBound(BottomType(), NoLowerBoundType()) = TRUE().
+    isAssignableToLowerBound(_, NoLowerBoundType()) = FALSE().
     isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(T, lower_bound).
 
   isAssignableTo(param@GenericParameter2TYPE(_), T) = isAssignableTo_genericParam(T, param).

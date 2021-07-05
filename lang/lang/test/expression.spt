@@ -212,9 +212,9 @@ test list comprehension single binder on tuple [[
    resolve #1 to #2
    run pie-ast-type on #2 to TupleType([StrType(), IntType()])
    run pie-ast-type on #1 to TupleType([StrType(), IntType()])
-test list comprehension single binder type hint is wildcard [[
+test list comprehension tuple binder type hint is wildcard [[
   ["Hello $first_name $surname!" | (first_name: [[_,]] surname) <- [("Charlie", "Chaplin")] ]
-]] 1 error at #1  error like "Cannot use a wildcard"
+]] 2 errors at #1  error like "Cannot use a wildcard"
 test list comprehension not a list [[ ["$x * 3 = ${x+x+x}" | x <- [[ (1, 2, 3) ]] ] ]] error like "expected a list" at #1
 test list comprehension empty list [[ ["$x * 3 = ${x+x+x}" | x: int <- [[ [] ]] ] ]] 0 errors 1 warning warning like "empty list" at #1
 test list comprehension binder type mismatch [[ ["$x * 3 = ${x+x+x}" | x: [[string]] <- [1, 2, 3] ] ]] error like "Type mismatch" at #1
@@ -229,8 +229,8 @@ test val declaration single bind assign nullable subtype [[val [[x]]: Foo? = bar
 test val declaration single bind assign non-nullable subtype to nullable [[val [[x]]: Foo? = bak ]] analysis succeeds run pie-ast-type on #1 to NullableType(DataType(_))
 test val declaration single bind type mismatch [[ val x: [[string]] = null ]] 1 error error like "Type mismatch" at #1
 test val declaration assign tuple to single bind [[ val [[tup]] = ("left", "right") ]] analysis succeeds run pie-ast-type on #1 to TupleType([StrType(), StrType()])
-test val declaration type is wildcard [[val x: [[_ =]] true ]] 1 error at #1  error like "Cannot use a wildcard"
-test val declaration type is wildcard with upper bound [[val x: [[_ : int =]] 7 ]] 1 error at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard [[val x: [[_ =]] true ]] 2 errors at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with upper bound [[val x: [[_ : int =]] 7 ]] 2 errors at #1  error like "Cannot use a wildcard"
 test val declaration type is wildcard with lower bound [[val x: [[_ -: Foo  =]] bar ]] 1 error at #1  error like "Cannot use a wildcard"
 test val declaration type is wildcard with equal lower bound [[val x: [[_ -: Foo  =]] foo ]] 1 error at #1  error like "Cannot use a wildcard"
 test val declaration type is wildcard with upper and lower bound [[
@@ -254,7 +254,7 @@ test val declaration tuple bind mixed typed/untyped [[
    run pie-ast-type on #2 to ListType(IntType())
 test val declaration tuple bind with wildcard type hints [[
   val (test_name, test_time_ms: int, test_result: [[_)]] = ("t25-10-sample_01", 13425, "err_no 127")
-]] 1 error at #1
+]] 2 errors at #1
    error like "Cannot use a wildcard"
 test val declaration assign single to tuple bind [[ val (x, y) = [1, 2] ]] analysis fails
 test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1

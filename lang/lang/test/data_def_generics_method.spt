@@ -13,6 +13,23 @@ fixture [[
   [[...]]
 ]]
 
+test pass to parameter with bound wildcard parameter [[
+  data List<T> = foreign java java.util.List {
+    func add(T) -> unit
+  }
+
+  func test(list: List<_ -: Fruit>, apple: Apple) -> unit = list.add(apple)
+]] analysis succeeds
+test pass to parameter with bound wildcard parameter [[
+  data List<T> = foreign java java.util.List {
+    func add(T) -> unit
+  }
+
+  // Adding Apple is not allowed because it could be List<Banana>
+  func test(list: List<_ : Fruit>, apple: Apple) -> unit = list.add([[apple]])
+]] 1 error at #1
+   error like "Type mismatch"
+
 test supertype - generic return type does not resolve from subtype [[
   data Bar<F : Food> = foreign java org.example.test.Bar { }
   data Foo : Bar<Food> = foreign java org.example.test.Foo {
