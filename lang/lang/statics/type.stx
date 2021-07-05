@@ -198,20 +198,9 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
   isAssignableTo(BottomType(), _) = TRUE().
 
   isAssignableTo(WildcardType(upper_bound, lower_bound), T) =
-    isUpperBoundAssignableTo(upper_bound, T).
-
-    isUpperBoundAssignableTo : UpperBoundType * TYPE -> BOOLEAN
-    isUpperBoundAssignableTo(NoUpperBoundType(), TopType()) = TRUE().
-    isUpperBoundAssignableTo(NoUpperBoundType(), _) = FALSE().
-    isUpperBoundAssignableTo(UpperBoundType(upper_bound), T) = isAssignableTo(upper_bound, T).
-
+    isAssignableTo(typeOrTopType(upper_bound), T).
   isAssignableTo(T, WildcardType(upper_bound, lower_bound)) =
-    isAssignableToLowerBound(T, lower_bound).
-
-    isAssignableToLowerBound : TYPE * LowerBoundType -> BOOLEAN
-    isAssignableToLowerBound(BottomType(), NoLowerBoundType()) = TRUE().
-    isAssignableToLowerBound(_, NoLowerBoundType()) = FALSE().
-    isAssignableToLowerBound(T, LowerBoundType(lower_bound)) = isAssignableTo(T, lower_bound).
+    isAssignableTo(T, typeOrBottomType(lower_bound)).
 
   isAssignableTo(param@GenericParameter2TYPE(_), T) = isAssignableTo_genericParam(T, param).
 
