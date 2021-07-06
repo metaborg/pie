@@ -182,21 +182,14 @@ rules // operations on types
   isAssignableTo(T, WildcardType(upper_bound, lower_bound)) =
     isAssignableTo(T, typeOrBottomType(lower_bound)).
 
-  isAssignableTo(param@GenericParameter2TYPE(_), T) = isAssignableTo_genericParam(T, param).
-
-    // swaps arguments so that equal generic parameters takes priority over a
-    // generic param with inequal other type
-    isAssignableTo_genericParam : TYPE * TYPE -> BOOLEAN
-    isAssignableTo_genericParam(param, param) = TRUE().
-    isAssignableTo_genericParam(T, GenericParameter2TYPE(GenericParameter(s, name))) =
-      isAssignableTo(upper_bound, T)
-    :-
+  isAssignableTo(GenericParameter2TYPE(GenericParameter(s, name)),
+    GenericParameter2TYPE(GenericParameter(s, name))) = TRUE().
+  isAssignableTo(GenericParameter2TYPE(GenericParameter(s, name)), T) =
+    isAssignableTo(upper_bound, T) :-
       resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
-
   isAssignableTo(T, GenericParameter2TYPE(GenericParameter(s, name))) =
-    isAssignableTo(T, lower_bound)
-  :-
-    resolveGenericParam(s, name) == [(_, (_, (_, lower_bound)))].
+    isAssignableTo(T, lower_bound) :-
+      resolveGenericParam(s, name) == [(_, (_, (_, lower_bound)))].
 
   isAssignableTo(T, T) = TRUE().
   isAssignableTo(_, _) = FALSE().
