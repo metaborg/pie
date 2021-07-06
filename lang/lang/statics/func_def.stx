@@ -7,7 +7,7 @@ imports
   signatures/func_def-sig
   statics/base
   statics/type
-  statics/util
+  statics/common
   statics/func_body
 
 rules

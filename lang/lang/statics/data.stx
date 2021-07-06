@@ -6,7 +6,8 @@ imports
   signatures/data-sig
   statics/base
   statics/type
-  statics/util
+  statics/type_common
+  statics/common
   statics/func_def
 
 rules
@@ -56,14 +57,6 @@ rules
       typeOrBottomType(typeOfLowerBound(s, s_data_def, lower_bound, FALSE())) == lower_bound_ty,
       declareGenericParam(s_data_def, name, upper_bound_ty, lower_bound_ty) == param,
       try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
-
-      typeOrTopType : UpperBoundType -> TYPE
-      typeOrTopType(NoUpperBoundType()) = TopType().
-      typeOrTopType(UpperBoundType(ty)) = ty.
-
-      typeOrBottomType : LowerBoundType -> TYPE
-      typeOrBottomType(NoLowerBoundType()) = BottomType().
-      typeOrBottomType(LowerBoundType(ty)) = ty.
 
   superOk : scope * scope * SuperType * string
   superOk(s, s_data_def, NoSuperType(), name).

@@ -6,7 +6,8 @@ imports
   signatures/func_body-sig
   statics/base
   statics/type
-  statics/util
+  statics/type_common
+  statics/common
   statics/module
   statics/binder
 

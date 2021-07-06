@@ -6,9 +6,9 @@ imports
   signatures/data-sig
   signatures/type-sig
   statics/base
-  statics/util
+  statics/common
+  statics/type_common
   statics/module
-  statics/data // todo: remove
 
 rules // operations on types
 
@@ -56,11 +56,6 @@ rules // operations on types
     findGenericDef(s_super) == s_super_def,
     inherits(s_sub, s_super_def) == inherits,
     getTypeArgs(s_super) == type_args.
-
-      // Get generic definition of s_data. s_data can be either an instance or the generic def itself.
-      findGenericDef : scope -> scope
-      findGenericDef(s_data) = getScope(occ) :-
-        query () filter P? min P < $ in s_data |-> [occ].
 
     /*
      * Explanation of implementation
@@ -116,11 +111,6 @@ rules // operations on types
     isTypeArgsCompatible : scope * scope -> BOOLEAN
     isTypeArgsCompatible(s1, s2) = isTypeArgsCompatible_1(s1, s2, getGenericDef(s1)).
 
-      // Get generic definition for instance.
-      getGenericDef : scope -> scope
-      getGenericDef(s_data_instance) = getScope(occ) :-
-        query () filter P in s_data_instance |-> [occ].
-
       // s1 is an instance
       // s2 is either an instance or a data definition.
       // third argument (s2/s_data_def) is data definition
@@ -132,19 +122,6 @@ rules // operations on types
       isTypeArgsCompatible_1(s1, s2, s_data_def) =
         // s2 is an instance of s_data_def
         allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2)).
-
-        // get all type arguments defined in s_data.
-        getTypeArgs : scope -> list((TYPEID * TYPE))
-        getTypeArgs(s_data) = getArgTypes(occs) :-
-          query generic_arg filter e in s_data |-> occs.
-
-          getArgType : (path * (TYPEID * TYPE)) -> (TYPEID * TYPE)
-          getArgTypes maps getArgType(list(*)) = list(*)
-          getArgType((path, arg_ty)) = arg_ty.
-
-        getTypeArgType : (TYPEID * TYPE) -> TYPE
-        getTypeArgTypes maps getTypeArgType(list(*)) = list(*)
-        getTypeArgType((_, ty)) = ty.
 
       // Checks if a type argument in s1 is compatible with s2.
       isTypeArgCompatible : (TYPEID * TYPE) * scope -> BOOLEAN
@@ -648,11 +625,3 @@ rules
     instantiateTypeArgs_2 : list((path * scope)) * scope * scope * TYPE -> TYPE
     instantiateTypeArgs_2([], s, s_decl, T) = T.
     instantiateTypeArgs_2([(_, s_next)], s, s_decl, T) = instantiateTypeArgs(s, s_next, T).
-
-  /**
-   * getScopeFromType(s, ty)
-   * Returns the scope with methods associated with type [ty]
-   */
-  getScopeFromType : scope * TYPE -> scope
-  getScopeFromType(_, DataType(s_data)) = s_data.
-  getScopeFromType(s, ty) = emptyScope(s).

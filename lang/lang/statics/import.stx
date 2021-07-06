@@ -5,7 +5,7 @@ imports
   signatures/constructors-sig
   signatures/pie-sig
   statics/base
-  statics/util
+  statics/common
   statics/module
 
 rules

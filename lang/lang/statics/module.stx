@@ -4,7 +4,7 @@ imports
 
   signatures/constructors-sig
   statics/base
-  statics/util
+  statics/common
 
 rules
 

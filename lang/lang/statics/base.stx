@@ -5,7 +5,7 @@ imports
   signatures/constructors-sig
   signatures/lex/literal-sig
   signatures/pie-sig
-  statics/util
+  statics/common
   statics/type
 
 // These sorts/constructors are declared here and not in
@@ -374,31 +374,6 @@ rules // Declararing and resolving
       @name.ref := name',
       @name.type := DataType(s_data).
     resolveUniqueData_1(s, [_,_|_], _) = (FALSE(), emptyScope(s)).
-
-// todo: move mergeScopes and mergeDataAndNormalScopes to a better spot
-  /**
-   * mergeScopes(s, scopes) = s_merged
-   * "Merges" [scopes] into one by creating an auxilary scope [s_merged] that
-   * points to all the provided scopes.
-   * [s] is not merged, it is needed to set the root for [s_merged]
-   */
-  mergeScopes : scope * list(scope) -> scope
-  mergeScopes(s, scopes) = s_merged :-
-    new s_merged,
-    !root[getRoot(s)] in s_merged,
-    createPEdges(s_merged, scopes).
-
-  /**
-   * mergeDataAndNormalScopes(s_data, s) = s_merged
-   * "Merge" scopes [s_data] and [s] into a merged scope [s_merged].
-   * Uses a DATA edge to point to [s_data] and a P edge to point to [s].
-   */
-  mergeDataAndNormalScopes : scope * scope -> scope
-  mergeDataAndNormalScopes(s_data, s) = s_merged :-
-    new s_merged,
-    !root[getRoot(s)] in s_merged,
-    s_merged -DATA-> s_data,
-    s_merged -P-> s.
 
 
   /**
