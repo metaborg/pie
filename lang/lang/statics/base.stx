@@ -98,8 +98,8 @@ signature
     data : TYPEID -> scope
     data_local : TYPEID -> scope
     data_mods : list(DataDefMod)
-    generic_params : list((GenericParameter * TYPE * TYPE)) // GenericParameter, upper_bound, lower_bound
-    generic_param : GenericParameter -> (TYPE * TYPE) // generic parameter -> upper bound
+    generic_params : list((GenericParameter * TYPE * TYPE)) // GenericParameter, upper bound, lower bound
+    generic_param : GenericParameter -> (TYPE * TYPE) // generic parameter -> upper bound, lower bound
     generic_arg : TYPEID -> TYPE   // generic argument, name -> instantiated type
     context : string -> CONTEXT
 
