@@ -127,7 +127,7 @@ rules // operations on types
       isTypeArgCompatible : (TYPEID * TYPE) * scope -> BOOLEAN
       isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *) = list(*)
       isTypeArgCompatible((name, ty1), s2) =
-        isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, name)).
+        isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, "no error node")).
 
         isTypeArgCompatible_1 : TYPE * TYPE -> BOOLEAN
         isTypeArgCompatible_1(ty, ty) = TRUE().
