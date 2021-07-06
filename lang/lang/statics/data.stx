@@ -52,8 +52,8 @@ rules
     typeOfgenericParam(s, s_data_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
       {upper_error_node lower_error_node}
       bothBoundsOk(upper_bound, lower_bound),
-      typeOrTopType(typeOfUpperBound(s, s_data_def, upper_bound, FALSE())) == upper_bound_ty, // todo: should pass FALSE?
-      typeOrBottomType(typeOfLowerBound(s, s_data_def, lower_bound, FALSE())) == lower_bound_ty, // todo: should pass FALSE?
+      typeOrTopType(typeOfUpperBound(s, s_data_def, upper_bound, FALSE())) == upper_bound_ty,
+      typeOrBottomType(typeOfLowerBound(s, s_data_def, lower_bound, FALSE())) == lower_bound_ty,
       declareGenericParam(s_data_def, name, upper_bound_ty, lower_bound_ty) == param,
       try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
 
