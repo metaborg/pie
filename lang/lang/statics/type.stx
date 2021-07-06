@@ -338,8 +338,7 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
            and { s4_candidate :- isInstanceOf(s4_candidate, s_common) == TRUE() }
            min $ < INHERIT, $ < P in s2 |-> [(_, s4)],
       unzipTypeArgs(getTypeArgs(s3)) == (type_arg_names, type_arg_tys),
-      // next line is incorrect, should use unbounded wildcard
-      lubs(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_names, "no error node")) == merged_type_args,
+      lubs_type_args(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_names, "no error node")) == merged_type_args,
       declareTypeArgs(s_common_instance, type_arg_names, merged_type_args).
 
         isInstanceOf: scope * scope -> BOOLEAN
@@ -355,6 +354,25 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
         unzipTypeArgs([]) = ([], []).
         unzipTypeArgs([(name, type)|type_args]) = ([name|names], [type|types]) :-
           unzipTypeArgs(type_args) == (names, types).
+
+        lub_type_arg : TYPE * TYPE -> TYPE
+        lubs_type_args maps lub_type_arg(list(*), list(*)) = list(*)
+        lub_type_arg(T1, T2) = lub_type_arg_1(T1, T2, compatible1, compatible2) :-
+          isTypeArgCompatible_1(T2, T1) == compatible1,
+          isTypeArgCompatible_1(T1, T2) == compatible2.
+
+          lub_type_arg_1 : TYPE * TYPE * BOOLEAN * BOOLEAN -> TYPE
+          lub_type_arg_1(T, T, _, _) = T.
+          lub_type_arg_1(T1, _, TRUE(), _) = T1.
+          lub_type_arg_1(_, T2, _, TRUE()) = T2.
+          lub_type_arg_1(T1, T2, FALSE(), FALSE()) =
+            WildcardType(UpperBoundType(lub(getUpperBound(T1), getUpperBound(T2))), NoLowerBoundType()).
+
+          getUpperBound : TYPE -> TYPE
+          getUpperBound(GenericParameter2TYPE(GenericParameter(s, name))) = upper_bound :-
+            resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
+          getUpperBound(WildcardType(upper_bound, _)) = typeOrTopType(upper_bound).
+          getUpperBound(T) = T.
 
 /*
 

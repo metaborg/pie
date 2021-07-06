@@ -1,0 +1,6 @@
+resolve {res} res == test(4)
+
+rules
+
+  test : int -> int
+  test(i) = i.
