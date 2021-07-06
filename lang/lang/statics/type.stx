@@ -597,17 +597,8 @@ rules
         {arg_ty}
         typeOfWithTypeArgScope(s, s_type_args, arg, keep_uninstantiated) == arg_ty,
         declareTypeArg(s_data_instance, name, arg_ty),
-        withinBounds(arg_ty, upper_bound, lower_bound).
-
-        withinBounds : TYPE * TYPE * TYPE
-        withinBounds(GenericParameter2TYPE(GenericParameter(s, name)), upper_bound, lower_bound) :-
-          {ub lb}
-          resolveGenericParam(s, name) == [(_, (_, (ub, lb)))],
-          assignableTo(ub, upper_bound) | error $[Type mismatch: generic parameter [name] is not within upper bound [upper_bound]],
-          assignableTo(lower_bound, lb) | error $[Type mismatch: generic parameter [name] is not within lower bound [lower_bound]].
-        withinBounds(ty, upper_bound, lower_bound) :-
-          assignableTo(ty, upper_bound) | error $[Type mismatch: [ty] is not within upper bound [upper_bound]],
-          assignableTo(lower_bound, ty) | error $[Type mismatch: [ty] is not within lower bound [lower_bound]].
+        assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound]],
+        assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound]].
 
   /**
    * instantiateTypeArgs(s, s_decl, T) = instantiated_type
