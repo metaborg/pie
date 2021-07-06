@@ -14,9 +14,8 @@ rules // operations on types
 
   /**
    * inherits(s_sub, s_super) -> res
-   * Returns TRUE() if s_sub inherits from (can be reached by only
-   * following INHERIT edges from) s_super or is equal to s_super,
-   * FALSE() otherwise.
+   * Returns TRUE() if s_sub inherits from (can be reached by only following
+   * INHERIT|P edges from) s_super or is equal to s_super, FALSE() otherwise.
    */
   inherits : scope * scope -> BOOLEAN
   inherits(s_sub, s_super) = inherits_1(paths) :-
@@ -37,12 +36,12 @@ rules // operations on types
   assignableTo(T1, T2) :- isAssignableTo(T1, T2) == TRUE().
 
   /**
-   * isAssignableTo(T1, T2) = bool
+   * isAssignableTo(T1, T2) = res
    * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
    * Returns TRUE() if:
    * - type T1 is a non-strict subtype of type T2
    * - T1 is a wildcard and its upper bound can be assigned to T2
-   * - T2 is a wildcard and T1
+   * - T2 is a wildcard and T1 can be assigned to the lower bound of T2
    * returns FALSE() otherwise.
    * May fail on unbound variables.
    */
@@ -63,6 +62,19 @@ rules // operations on types
       findGenericDef(s_data) = getScope(occ) :-
         query () filter P? min P < $ in s_data |-> [occ].
 
+    /*
+     * Explanation of implementation
+     * 1. Make sure that they could be subtypes: if !inherits(s_sub, findGenericDef(s_super)) then FALSE()
+     * 2. If s_super is a definition, s_sub is a subtype by definition: if getTypeArgs(s_super) == [] then TRUE()
+     * 3. Else: s_super is an instance. Find s_super_def by following P edge: getGenericDef(s_super) == s_super_def
+     *    [note] s_sub is either an instance of s_super_def, or an instance or generic def of a strict subtype of s_super_def.
+     * 4. Get s_sub_super_instance by following INHERIT|P until the next P leads to s_super_def:
+     *    query ()
+     *      filter INHERIT? (P INHERIT)*
+     *         and { s :- getGenericDef(s) == s_super_def }
+     *          in s_sub |-> [(_, s_sub_super_instance)]
+     * 5. Check if instances are compatible: isTypeArgsCompatible(s_sub_super_instance, s_super)
+     */
     isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((TYPEID * TYPE)) * scope -> BOOLEAN
     isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
     isAssignableTo_dataTypes(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
@@ -97,39 +109,6 @@ rules // operations on types
           declareTypeArg(s, name, T),
           declareTypeArgsFromTuples(s, args).
 
-/*
-
-Steps:
-1. Make sure that they could be subtypes: inherits(s_sub, s_super)
-2. Case 1: equal instances: isTypeArgsCompatible(s_sub, s_super)
-3. Case 2: equal defs: s_sub == s_super
-4. Case 3: s_sub is an instance of s_super: (subtype by definition)
-5. Case 4: s_sub is strict subtype of s_super
-6. Case 4a: s_super is definition: (s_sub is subtype by definition)
-7. Case 4b: s_super is an instance of s_super_def:
-  7.1: get s_sub_super_instance by following INHERIT|P until the next P leads to s_super_def
-  7.2: isTypeArgsCompatible(s_sub_super_instance, s_super)
-
-
-Simplify:
-1. Make sure that they could be subtypes: if !inherits(s_sub, findGenericDef(s_super)) then FALSE()  <-- WRONG!!, only holds if s_super is a generic def!!
-2. If s_super is a definition, s_sub is a subtype by definition: if getTypeArgs(s_super) == [] then TRUE()
-3. Else: s_super is an instance. Find s_super_def by following P edge: getGenericDef(s_super) == s_super_def
-[note] s_sub is either an instance of s_super_def, or an instance or generic def of a strict subtype of s_super_def.
-4. Get s_sub_super_instance by following INHERIT|P until the next P leads to s_super_def:
-     query ()
-       filter INHERIT? (P INHERIT)*
-          and { s :- getGenericDef(s) == s_super_def }
-           in s_sub |-> [(_, s_sub_super_instance)]
-5. Check if instances are compatible: isTypeArgsCompatible(s_sub_super_instance, s_super)
-
-inherits(s_sub, s_super):     checks that s_sub has a path to s_super via alternating INHERIT|P edges
-isTypeArgsCompatible(s1, s2): given two instances of the same data type, check if s1 is a subtype of s2
-getTypeArgs(s_data):          get all type arguments defined in s_data.
-getGenericDef(s_data):        Get generic definition of s_data. Requires that s_data is an instance.
-findGenericDef(s_data):       Get generic definition of s_data. s_data can be either an instance or the generic def itself.
-*/
-
     // check if s1 is compatible with s2. Assumes s1 is an instance of data
     // type dt and that s2 is either also an instance or the generic definition
     // "Compatible" means that the types are equal, or the second one is a
@@ -154,6 +133,7 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
         // s2 is an instance of s_data_def
         allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2)).
 
+        // get all type arguments defined in s_data.
         getTypeArgs : scope -> list((TYPEID * TYPE))
         getTypeArgs(s_data) = getArgTypes(occs) :-
           query generic_arg filter e in s_data |-> occs.
@@ -373,15 +353,6 @@ findGenericDef(s_data):       Get generic definition of s_data. s_data can be ei
             resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
           getUpperBound(WildcardType(upper_bound, _)) = typeOrTopType(upper_bound).
           getUpperBound(T) = T.
-
-/*
-
-Problem: given s1 and s2, find s_common such that either:
-- inherits(s1, s3), inherits(s2, s4), typeArgsCompatible(s3, s_common) and typeArgsCompatible(s4, s_common) // s_common is an instance
-- inherits(s1, s_common) and inherits(s2, s_common) // s_common is a generic definition
-
-Solution for instances: find s_common_def, use lub on generic parameters
-*/
 
   lub(TopType(), T) = TopType().
   lub(T, TopType()) = TopType().
