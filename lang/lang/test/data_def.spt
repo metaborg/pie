@@ -208,7 +208,3 @@ test foreign java generic method parameter and return type [[
 ]] analysis succeeds
    resolve #2 to #1
    resolve #3 to #1
-
-
-// todo: test that referencing generic parameter in supertype is not allowed:
-// data Foo<T> = ...; data Bar : Foo<int> = ... { func get() -> T }
