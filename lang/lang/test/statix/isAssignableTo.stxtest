@@ -1,0 +1,8 @@
+resolve {s_data}
+  new s_data,
+  isAssignableTo(DataType(s_data), DataType(s_data)) == TRUE(),
+  assignableTo(DataType(s_data), DataType(s_data))
+
+imports
+
+  statics/type
