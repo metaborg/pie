@@ -98,11 +98,11 @@ rules
   typeOfAdd(PathType()     , PathType()     , _) = PathType().
   typeOfAdd(PathType()     , StrType()      , _) = PathType().
   typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- assignableTo(T2, T1) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
-  typeOfAdd(ListType(T)    , EmptyListType(), _) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op].
+  typeOfAdd(ListType(T)    , EmptyListType(), e) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op] @e.
   typeOfAdd(ListType(T)    , NullType()     , _) = ListType(makeNullable(T)).
   typeOfAdd(ListType(T1)   , T2             , e) = ListType(T1) :- assignableTo(T2, T1) | error $[Type mismatch: cannot add element [T1] to list [T2]] @e.
   typeOfAdd(EmptyListType(), ListType(T)    , _) = ListType(T).
-  typeOfAdd(EmptyListType(), EmptyListType(), _) = EmptyListType() :- try {false} | warning $[concatenating an empty list is a no-op].
+  typeOfAdd(EmptyListType(), EmptyListType(), e) = EmptyListType() :- try {false} | warning $[concatenating an empty list is a no-op] @e.
   typeOfAdd(EmptyListType(), T              , _) = ListType(T).
 
 // Control flow
