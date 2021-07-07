@@ -23,46 +23,47 @@ test name ends with underscore [[foo_() -> int]]
 test name everything [[-helloW0rld_I_am-a-function4() -> int]]
 
 // function generic parameters
-test generic parameters empty list [[a<>() -> int]] parse fails // todo
+test generic parameters empty list [[a<>() -> int]]
 test generic parameters omitted list [[f() -> int]]
 test generic parameters missing closing bracket [[h<() -> int]] parse fails
 test generic parameters missing opening bracket [[j>() -> int]] parse fails
 test generic parameters multiple lists [[j<><>() -> int]] parse fails
 
-test generic parameters single uppercase letter [[a<T>() -> int]] parse fails // todo
-test generic parameters single lowercase letter [[a<t>() -> int]] parse fails // todo
-test generic parameters multi-letter all lowercase [[a<type>() -> int]] parse fails // todo
-test generic parameters multi-letter all uppercase [[a<THING>() -> unit]] parse fails // todo
-test generic parameters multi-letter [[a<Kind>() -> Kind]] parse fails // todo
-test generic parameters camelcase [[a<SomeParam>() -> int]] parse fails // todo
-test generic parameters dash in name [[a<some-name>() -> int]] parse fails // todo
-test generic parameters start with dash [[a<-hello>() -> int]] parse fails
-test generic parameters end with dash [[a<hello->() -> int]] parse fails // todo
-test generic parameters underscore in name [[a<Some_Name>() -> int]] parse fails // todo
-test generic parameters start with underscore [[a<_hello>() -> int]] parse fails // todo
-test generic parameters end with underscore [[a<hello_>() -> int]] parse fails // todo
-test generic parameters number in name [[a<hello2world>() -> int]] parse fails // todo
+test generic parameters single uppercase letter [[a<T>() -> int]]
+test generic parameters single lowercase letter [[a<t>() -> int]]
+test generic parameters multi-letter all lowercase [[a<type>() -> int]]
+test generic parameters multi-letter all uppercase [[a<THING>() -> unit]]
+test generic parameters multi-letter [[a<Kind>() -> Kind]]
+test generic parameters camelcase [[a<SomeParam>() -> int]]
+test generic parameters dash in name [[a<some-name>() -> int]]
+test generic parameters start with dash [[a<-hello>() -> int]]
+test generic parameters end with dash [[a<hello->() -> int]]
+test generic parameters underscore in name [[a<Some_Name>() -> int]]
+test generic parameters start with underscore [[a<_hello>() -> int]]
+test generic parameters end with underscore [[a<hello_>() -> int]]
+test generic parameters number in name [[a<hello2world>() -> int]]
 test generic parameters start with number [[a<4world>() -> int]] parse fails
-test generic parameters end with number [[a<world9>() -> int]] parse fails // todo
+test generic parameters end with number [[a<world9>() -> int]]
 test generic parameters ampersand in name [[a<hello&world>() -> int]] parse fails
 
 test generic parameters one parameter missing brackets [[resultOfOk T(value: T) -> Result<T, _ : Exception>]] parse fails
-test generic parameters one parameter no bounds [[resultOfOk<T>(value: T) -> Result<T, _ : Exception>]] parse fails // todo
-test generic parameters one parameter upper bound [[resultOfErr<E : Exception>(error: E) -> Result<_, E>]] parse fails // todo
-test generic parameters one parameter lower bound [[addToList<C -: Cat>(list: C*, cat: Cat) -> unit]] parse fails // todo
-test generic parameters one parameter both bounds [[doTheThing<C : Animal -: Cat>(list: C*) -> unit]] parse fails // todo
+test generic parameters one parameter no bounds [[resultOfOk<T>(value: T) -> Result<T, _ : Exception>]]
+test generic parameters one parameter upper bound [[resultOfErr<E : Exception>(error: E) -> Result<_, E>]]
+test generic parameters one parameter lower bound [[addToList<C -: Cat>(list: C*, cat: Cat) -> unit]]
+test generic parameters one parameter both bounds [[doTheThing<C : Animal -: Cat>(list: C*) -> unit]]
 test generic parameters one parameter both bounds reverse order [[
   doTheThing<C -: Cat : Animal>(list: C*) -> unit
-]] parse fails
-   // todo: parse to FuncDef(_, GenericParams(GenericParam("C", NoUpperBound(), LowerBound(DataTy(ModuleList(["Cat"]), "Animal", _)))), _, _)
+]] parse to FuncHead(_, GenericParams([
+       GenericParam("C", NoUpperBound(), LowerBound(DataTy(ModuleList(["Cat"]), "Animal", _)))
+     ]), _, _)
 
 test generic parameters two parameters missing separator [[a<T E>() -> int]] parse fails
-test generic parameters two parameters no bounds [[kweh<A, B>() -> bool]] parse fails // todo
+test generic parameters two parameters no bounds [[kweh<A, B>() -> bool]]
 test generic parameters two parameters upper bound on second [[
   resultOfOkWithExplicitErrorType<T, E : Exception>(value: T) -> Result<T, E>
-]] parse fails // todo
-test generic parameters three parameters [[kweh<A, B, C>() -> bool]] parse fails // todo
-test generic parameters four parameters [[kweh<A, B, C, D>() -> bool]] parse fails // todo
+]]
+test generic parameters three parameters [[kweh<A, B, C>() -> bool]]
+test generic parameters four parameters [[kweh<A, B, C, D>() -> bool]]
 
 // function params
 test missing brackets [[test -> int]] parse fails
@@ -100,4 +101,4 @@ test return type unit [[test() -> unit]]
 test return type custom type [[test() -> CustomType]]
 test return type tuple type [[test() -> (int, string)]]
 // void is not a type in pie, but it is parsed as a custom data type
-test return type void [[test() -> void]] parse to FuncHead(_, _, DataTy(_, "void", _))
+test return type void [[test() -> void]] parse to FuncHead(_, _, _, DataTy(_, "void", _))
