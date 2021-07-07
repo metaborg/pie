@@ -175,9 +175,11 @@ rules
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys) == s2,
       instantiateTypeArgs(s_def, s_decl, ret_ty) == ty.
 
-    // Function didn't resolve. No need to check arguments.
+    // Function didn't resolve. Type check arguments, but don't check if they
+    // match the parameters.
     // Errors for non-resolving are created by resolveUniqueFunc.
-    typeOfCall_1(s, _, _, (FALSE(), _, _)) = (s, DataType(emptyScope(s))).
+    typeOfCall_1(s, _, arg_exps, (FALSE(), _, _)) = (s, DataType(emptyScope(s))) :-
+      typeOfExpsPassScopes(s, arg_exps) == _.
 
   typeOfExpImpl(s, Call(moduleList, name, arg_exps)) =
     typeOfCall(s, mergeScopes(s, resolveModuleListToFile(s, moduleList)), name, arg_exps).
