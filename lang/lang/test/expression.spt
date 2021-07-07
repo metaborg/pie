@@ -16,7 +16,7 @@ fixture [[
   data Bak : Foo = foreign java org.example.test.expression.Bak {}
   data Baar : Foo = foreign java org.example.test.expression.Baar {}
   data Bok = foreign java org.example.test.expression.Bok {}
-  
+
   data Generic<T: Foo, U: Foo, V> = foreign java org.example.test.expression.Generic {}
   data GenericSub<T: Bar, U: Baar> : Generic<T, U, string> = foreign java org.example.test.expression.GenericSub {}
 
