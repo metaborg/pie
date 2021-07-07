@@ -1,14 +1,14 @@
-module data_def_generics_method
+module generics_inheritance
 language pie
 
 fixture [[
-  module test:dataDef:generics
+  module test:generics:inheritance
 
-  data Food = foreign java test.dataDef.generics.Food {}
-  data Fruit : Food = foreign java test.dataDef.generics.Fruit {}
-  data Apple : Fruit = foreign java test.dataDef.generics.Apple {}
-  data GrannySmith : Apple = foreign java test.dataDef.generics.GrammySmith {}
-  data SubtypeOfGrannySmith : GrannySmith = foreign java test.dataDef.generics.SubtypeOfGrannySmith {}
+  data Food = foreign java test.generics.inheritance.Food {}
+  data Fruit : Food = foreign java test.generics.inheritance.Fruit {}
+  data Apple : Fruit = foreign java test.generics.inheritance.Apple {}
+  data GrannySmith : Apple = foreign java test.generics.inheritance.GrammySmith {}
+  data SubtypeOfGrannySmith : GrannySmith = foreign java test.generics.inheritance.SubtypeOfGrannySmith {}
 
   [[...]]
 ]]
