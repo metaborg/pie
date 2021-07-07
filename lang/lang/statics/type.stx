@@ -479,11 +479,12 @@ rules
       false | error $[Undefined datatype [name]] @name.
 
     // generic parameter
-    isGenericParamOrDataTy(s, s_type_args, DataTy(_, name, type_args), NoModuleList(),
+    isGenericParamOrDataTy(s, s_type_args, DataTy(NoModuleList(), name, type_args), NoModuleList(),
       [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, keep_uninstantiated) = type :-
       genericParamToType(resolveTypeArg(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
       @name.ref := name',
-      @name.type := type.
+      @name.type := type,
+      try { type_args == TypeArgs([]) } | error $[Generic parameter [name] does not take type arguments] @type_args.
 
       genericParamToType : list((path * (TYPEID * TYPE))) * BOOLEAN * GenericParameter * TYPE -> TYPE
       genericParamToType([], TRUE(), param, _) = GenericParameter2TYPE(param).

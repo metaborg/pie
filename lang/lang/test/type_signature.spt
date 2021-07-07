@@ -11,7 +11,9 @@ fixture [[
   data Pear : Fruit = foreign java org.example.test.type.Pear {}
 
   data Bar<T, R : Fruit> = foreign java org.example.test.type.Bar {}
-  data Foo = foreign java org.example.test.type.Foo {
+  data A<B> = foreign java org.example.test.type.A {}
+
+  data Foo<A> = foreign java org.example.test.type.Foo {
     func bar() -> [[...]]
   }
 ]]
@@ -25,7 +27,7 @@ test tuple [[ (path, string?) ]] analysis succeeds
 test list [[ path* ]] analysis succeeds
 test supplier [[ supplier<string> ]] analysis succeeds
 
-test data type local [[ Foo ]] analysis succeeds
+test data type local [[ Food ]] analysis succeeds
 test data type with type arguments [[ Bar<int, Fruit> ]] analysis succeeds
 test data type type arguments missing arguments [[ Bar[[<int>]] ]] 1 error at #1  error like "Not enough type arguments"
 test data type type arguments too many arguments [[ Bar[[<int, Pear, path*>]] ]] 1 error at #1  error like "Too many type arguments"
@@ -41,13 +43,15 @@ test data type type argument wildcard invalid lower bound [[ Bar<int, [[_ -: Foo
 test data type type argument wildcard lower bound wildcard [[ Bar<int, _ -: _> ]] 2 errors  error like "Cannot use wildcard"  error like "Type mismatch"
 test data type type argument nullable wildcard [[ Bar<int, [[(_)?]]> ]] 1 error at #1  error like "Type mismatch"
 test data type type argument nullable wildcard [[ Bar<int, _?> ]] parse fails // todo: asked question: https://slde.slack.com/archives/C7254SF60/p1623169709196400
-test data type imported [[ test:type_signature:Foo ]] analysis succeeds
+test data type imported [[ test:type_signature:Food ]] analysis succeeds
 test data type undefined [[ Bak ]] 1 error  error like "Undefined data"
+test generic parameter [[ A ]] analysis succeeds
+test generic parameter with type arguments [[ A[[<string>]] ]] 1 error at #1  error like "does not take type arguments"
 
 test nullable [[ int? ]] analysis succeeds
 test double nullable [[ path?[[?]] ]] analysis succeeds  1 warning at #1  warning like "double nullable has no effect"
 test triple nullable [[ string?[[?]][[?]] ]] analysis succeeds  2 warnings at #1, #2  warning like "double nullable has no effect"
 
 test wildcard [[ [[ _ ]] ]] 1 error at #1  error like "Cannot use a wildcard"
-test wildcard upperbound [[ [[ _ : Foo ]] ]] 1 error at #1  error like "Cannot use a wildcard"
+test wildcard upperbound [[ [[ _ : Food ]] ]] 1 error at #1  error like "Cannot use a wildcard"
 test wildcard lowerbound [[ [[ _ -: Pear ]] ]] 1 error at #1  error like "Cannot use a wildcard"
