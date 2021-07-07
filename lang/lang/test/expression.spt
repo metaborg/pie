@@ -257,7 +257,7 @@ test val declaration tuple bind with wildcard type hints [[
 ]] 2 errors at #1
    error like "Cannot use a wildcard"
 test val declaration assign single to tuple bind [[ val (x, y) = [1, 2] ]] analysis fails
-test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1
+test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1  error like "Cannot resolve"
 
 // value assignment with generics
 test assign equal type [[ val res: Fuz<Mammal> = fuz ]] analysis succeeds
