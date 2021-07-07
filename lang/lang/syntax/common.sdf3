@@ -3,12 +3,21 @@ module common
 imports
 
   lex/literal
+  type
 
 context-free sorts
 
   ModuleList
+  GenericParam
+  GenericParams
 
 context-free syntax
 
   ModuleList.NoModuleList = <>
   ModuleList.ModuleList = <<{MODID ":"}+>:>
+
+  GenericParam.GenericParam = <<TYPEID><UpperBound><LowerBound>>
+
+  GenericParams.NoGenericParams = [] // syntactic sugar for empty list
+  GenericParams.GenericParams = [<[{GenericParam ", "}*]>]
+

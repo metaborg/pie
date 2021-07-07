@@ -5,6 +5,7 @@ imports
   lex/literal
   func_def
   type
+  common
 
 template options
 
@@ -15,8 +16,6 @@ context-free sorts
   DataDef
   DataDefMod
   DataDefMods
-  GenericParam
-  GenericParams
   SuperType
   DataImpl
   JavaDataMemb
@@ -27,11 +26,6 @@ context-free syntax // Data definition
 
   DataDefMod.Transient = <transient>
   DataDefMods.DataDefMods = <<{DataDefMod " "}*>>
-
-  GenericParam.GenericParam = <<TYPEID><UpperBound><LowerBound>>
-
-  GenericParams.NoGenericParams = [] // syntactic sugar for empty list
-  GenericParams.GenericParams = [<[{GenericParam ", "}*]>]
 
   SuperType.NoSuperType =
   SuperType.SuperType = < : <DataTy>>
