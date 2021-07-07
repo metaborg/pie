@@ -271,7 +271,7 @@ rules
     separateProxyModules : list(scope) -> (list(scope) * list(scope))
     separateProxyModules([]) = ([], []).
     separateProxyModules([s|rest]) = separateProxyModules_1(s, occs, separateProxyModules(rest)) :-
-      query is_proxy_module in s |-> occs.
+      query is_proxy_module filter e in s |-> occs.
 
     separateProxyModules_1 : scope * list((path * ())) * (list(scope) * list(scope)) -> (list(scope) * list(scope))
     separateProxyModules_1(s, [], (proper_module_scopes, proxy_scopes)) = ([s|proper_module_scopes], proxy_scopes).
