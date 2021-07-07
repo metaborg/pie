@@ -146,9 +146,13 @@ rules
     s3 -P-> s2,
     typeOfBinder(s3, actual_ty, binder) == declared_ty.
 
-  typeOfExpImpl(s, Ref2Exp(r@Ref(name))) = (s, ty) :-
-    resolveUniqueVal(s, name) == (ty, _),
-    @r.type := ty.
+  typeOfExpImpl(s, Ref2Exp(ref@Ref(name))) =
+    (s, ty@typeOfExpImpl_ref(s, resolveUniqueVal(s, name))) :-
+      @ref.type := ty.
+
+    typeOfExpImpl_ref : scope * (TYPE * BOOLEAN) -> TYPE
+    typeOfExpImpl_ref(s, (_, FALSE())) = DataType(emptyScope(s)).
+    typeOfExpImpl_ref(s, (ty, TRUE())) = ty.
 
 // Calls
 
