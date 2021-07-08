@@ -555,3 +555,132 @@ test supertype - non-overriding methods - generic return type - subtype return t
    error like "incompatible return type"
    resolve #3 to #1
    resolve #4 to #2
+
+test generic method - single param, same name [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<T>(T) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<T>(T) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test generic method - single param, different name [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<T>(T) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<P>(P) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test generic method - single param, different bound [[
+  data Foo = foreign java org.example.test.Foo {
+    func test<T>(T) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func test<T : Food>(T) -> bool // use different return type to check that this method does not override
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+
+test generic method - multiple params [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<A, B>(A, B, A) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<A, B>(A, B, A) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test generic method - multiple params, different names [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<A, B>(A, B, A) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<B, A>(B, A, B) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test generic method - multiple params, declaration order switched [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<A, B>(A, B, A) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<B, A>(A, B, A) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test generic method - multiple params, no override, same erasure [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<A, B>(A, B, A) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<B, A>(A, B, B) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+
+test generic method - super 1 unused param, sub no params [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<T>() -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<>() -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test generic method - sub 1 unused param, super no params [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]]<>() -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func [[test]]<T>() -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test generic method - super defines on datatype, sub defines on method, super for sub has wildcard [[
+  data Foo<T> = foreign java org.example.test.Foo {
+    func [[test]]<>(T) -> int
+  }
+  data Bar<> : Foo<_> = foreign java org.example.test.Bar {
+    func [[test]]<T>(T) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test generic method - super defines on datatype, sub defines on method, super for sub has specific type [[
+  data Foo<T> = foreign java org.example.test.Foo {
+    func [[test]]<>(T) -> int
+  }
+  data Bar<> : Foo<Food> = foreign java org.example.test.Bar {
+    func [[test]]<T>(T) -> bool // use different return type to check that this method does not override
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+test generic method - super defines on method, sub defines on datatype [[
+  data Foo<> = foreign java org.example.test.Foo {
+    func [[test]]<T>(T) -> int
+  }
+  data Bar<T> : Foo = foreign java org.example.test.Bar {
+    func [[test]]<T>(T) -> int
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1

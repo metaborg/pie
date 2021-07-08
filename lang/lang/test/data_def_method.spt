@@ -71,22 +71,85 @@ test foreign java wildcard as parameter type [[
 ]] 1 error at #1
    error like "Cannot use a wildcard"
 
-test foreign java generic method parameter [[
+test foreign java generic data type method parameter [[
   data Foo<[[T]]> = foreign java org.example.test.Foo {
     func set([[T]]) -> unit
   }
 ]] analysis succeeds
    resolve #2 to #1
-test foreign java generic method return type [[
+test foreign java generic data type method return type [[
   data Foo<[[T]]> = foreign java org.example.test.Foo {
     func get() -> [[T]]
   }
 ]] analysis succeeds
    resolve #2 to #1
-test foreign java generic method parameter and return type [[
+test foreign java generic data type method parameter and return type [[
   data Foo<[[T]]> = foreign java org.example.test.Foo {
     func duplicate(original: [[T]]) -> [[T]]
   }
 ]] analysis succeeds
    resolve #2 to #1
    resolve #3 to #1
+
+
+test foreign java generic method - method parameter [[
+  data Foo = foreign java org.example.test.Foo {
+    func set<[[T]]>([[T]]) -> unit
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test foreign java generic method - method return type [[
+  data Foo = foreign java org.example.test.Foo {
+    func get<[[T]]>() -> [[T]]
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+test foreign java generic method - method parameter and return type [[
+  data Foo = foreign java org.example.test.Foo {
+    func duplicate<[[T]]>(original: [[T]]) -> [[T]]
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #2 to #1
+//   resolve #3 to #1
+
+test foreign java generic data type and method - duplicate name [[
+  data Foo<A> = foreign java org.example.test.Foo {
+    func duplicate<[[A]]>() -> unit
+  }
+]] analysis succeeds
+//   todo
+//   1 error at #1
+//   error like "duplicate generic parameter"
+test foreign java generic data type and method - method parameter [[
+  data Foo<[[A]]> = foreign java org.example.test.Foo {
+    func set<[[B]]>([[A]], [[B]]) -> bool
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #3 to #1
+//   resolve #4 to #2
+test foreign java generic data type and method - method return type [[
+  data Foo<[[A]]> = foreign java org.example.test.Foo {
+    func get<[[B]]>() -> ([[B]], [[A]])
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #3 to #2
+//   resolve #4 to #1
+test foreign java generic data type and method - method parameter and return type [[
+  data Foo<[[A]]> = foreign java org.example.test.Foo {
+    func set<[[B]]>([[A]]) -> [[B]]
+  }
+]] analysis fails
+//   todo
+//   analysis succeeds
+//   resolve #3 to #1
+//   resolve #4 to #2
