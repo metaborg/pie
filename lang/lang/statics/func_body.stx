@@ -181,22 +181,24 @@ rules
     typeOfCall_1(s, _, arg_exps, (FALSE(), _, _)) = (s, DataType(emptyScope(s))) :-
       typeOfExpsPassScopes(s, arg_exps) == _.
 
-  typeOfExpImpl(s, Call(moduleList, name, arg_exps)) =
+  typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
     typeOfCall(s, mergeScopes(s, resolveModuleListToFile(s, moduleList)), name, arg_exps).
 
-  typeOfExpImpl(s1, QCall(exp, name, arg_exps)) = (s3, ty) :- {s2 exp_ty s_data}
+  typeOfExpImpl(s1, QCall(exp, name, type_args, arg_exps)) = (s3, ty) :- {s2 exp_ty s_data}
+    // todo: check for built-in methods
     typeOfExp(s1, exp) == (s2, exp_ty),
     getScopeFromType(s2, exp_ty) == s_data,
     typeOfCall(s2, s_data, name, arg_exps) == (s3, ty).
 
-  typeOfExpImpl(s1, CreateSupplier(exp)) = (s2, SupplierType(ty)) :-
+  typeOfExpImpl(s1, CreateSupplier(type_args, [exp])) = (s2, SupplierType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty).
+  typeOfExpImpl(s, CreateSupplier(type_args, [])) = (s, DataType(emptyScope(s))) :-
+    false | error $[Not enough arguments. Expected one argument, but got zero].
+  typeOfExpImpl(s, CreateSupplier(type_args, [_,_|_])) = (s, DataType(emptyScope(s))) :-
+    false | error $[Too many arguments. Expected one argument, but got multiple].
 
-  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, args)) = (s2, SupplierType(ty)) :-
+  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, type_args, args)) = (s2, SupplierType(ty)) :-
     typeOfCall(s1, mergeScopes(s1, resolveModuleListToFile(s1, moduleList)), func_name, args) == (s2, ty).
-
-  typeOfExpImpl(s1, SupplierGet(exp)) = (s2, ty) :-
-    typeOfExp(s1, exp) == (s2, SupplierType(ty)) | error $[Type mismatch: cannot call 'get<>()'. Expected a Supplier, got a [ty]].
 
 // Path operations
 

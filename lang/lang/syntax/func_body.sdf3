@@ -74,12 +74,11 @@ context-free syntax // References
   Ref.Ref = <<VALID>> {avoid}
   Exp     = Ref
 
-  Exp.Call  = <<ModuleList><FUNCID>(<{Exp ", "}*>)> {left}
-  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)>       {left}
+  Exp.Call  = <<ModuleList><FUNCID><TypeArgs>(<{Exp ", "}*>)> {left}
+  Exp.QCall = <<Exp>.<FUNCID><TypeArgs>(<{Exp ", "}*>)>       {left}
 
-  Exp.CreateSupplier = <supplier (<Exp>)>
-  Exp.TaskSupplier   = <<ModuleList><FUNCID>.supplier(<{Exp ", "}*>)>
-  Exp.SupplierGet    = <<Exp>.get\<\>()>
+  Exp.CreateSupplier = <supplier<TypeArgs>(<{Exp ", "}*>)>
+  Exp.TaskSupplier   = <<ModuleList><FUNCID>.supplier<TypeArgs>(<{Exp ", "}*>)>
 
 context-free syntax // Paths
 
