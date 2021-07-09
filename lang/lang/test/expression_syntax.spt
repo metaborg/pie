@@ -126,18 +126,18 @@ test reference reserved keyword true  [[ true  ]] parse to BoolLit(True())
 test reference reserved keyword false [[ false ]] parse to BoolLit(False())
 
 test call simple [[ someFunc() ]] parse succeeds
-test call empty type argument list [[ someFunc<>() ]] parse fails // todo
+test call empty type argument list [[ someFunc<>() ]]
 test call missing opening bracket type arguments [[ someFunc>() ]] parse fails
 test call missing closing bracket type arguments [[ someFunc<() ]] parse fails
 test call missing separator type arguments [[ someFunc<int int>() ]] parse fails
-test call one type argument [[ someFunc<int>() ]] parse fails // todo
+test call one type argument [[ someFunc<int>() ]]
 test call type argument with upper bound [[
   someFunc<T : Food>()
-]] parse fails // todo parse to Call(_, _, TypeArgs([DataTy(ModuleList(["T"]), "Food", _)]), _)
+]] parse to Call(_, _, TypeArgs([DataTy(ModuleList(["T"]), "Food", _)]), _)
 test call type argument with lower bound [[ someFunc<T -: Food>() ]] parse fails
-test call two type arguments [[ someFunc<Food, string>() ]] parse fails // todo
-test call three type arguments [[ someFunc<int, path, (string, bool)>() ]] parse fails // todo
-test call three type arguments [[ someFunc<int, path, (string, bool)>() ]] parse fails // todo
+test call two type arguments [[ someFunc<Food, string>() ]]
+test call three type arguments [[ someFunc<int, path, (string, bool)>() ]]
+test call three type arguments [[ someFunc<int, path, (string, bool)>() ]]
 
 test call missing brackets [[ someFunc ]] parse succeeds parse to Ref("someFunc")
 test call 1 param [[ otherFunc(67) ]] parse succeeds
@@ -158,7 +158,7 @@ test call missing open bracket [[ double 4) ]] parse fails
 test call missing close bracket [[ double (6 ]] parse fails
 test call missing commas [[ argsFunc(1 3 "no") ]] parse fails
 test simple call with layout [[ anotherFunc  (  ) ]] parse succeeds
-test fully qualified call [[ foo:bar:baz() ]] parse to Call(ModuleList(["foo", "bar"]), "baz", [])
+test fully qualified call [[ foo:bar:baz() ]] parse to Call(ModuleList(["foo", "bar"]), "baz", NoTypeArgs(), [])
 test fully qualified call with layout between [[ foo : bar : baz ( ) ]] parse succeeds
 test fully qualified call missing module name start [[ :bar:baz:fun() ]] parse fails
 test fully qualified call missing module name middle [[ foo::baz:fun() ]] parse fails
@@ -173,16 +173,16 @@ test create supplier no space within brackets [[ supplier( [1, 2] ) ]] parse suc
 test create supplier space within keyword [[ sup plier(42) ]] parse fails
 test create supplier missing argument [[ supplier() ]] parse fails // todo: parsing should succeed with error from analysis
 test create supplier multiple arguments [[ supplier(2, 0) ]] parse fails // todo: parsing should succeed with error from analysis
-test create supplier with empty type argument list [[ supplier<>(0) ]] parse fails // todo: should be allowed
-test create supplier with type argument [[ supplier<int>(0) ]] parse fails // todo: parsing should succeed with error from analysis
-test create supplier capitalized [[ Supplier(0) ]] parse to Call(NoModuleList(), "Supplier", [IntLit("0")])
-test create supplier random capital [[ supplIer(0) ]] parse to Call(NoModuleList(), "supplIer", [IntLit("0")])
-test create supplier all caps [[ SUPPLIER(0) ]] parse to Call(NoModuleList(), "SUPPLIER", [IntLit("0")])
+test create supplier with empty type argument list [[ supplier<>(0) ]]
+test create supplier with type argument [[ supplier<int>(0) ]]
+test create supplier capitalized [[ Supplier(0) ]] parse to Call(NoModuleList(), "Supplier", NoTypeArgs(), [IntLit("0")])
+test create supplier random capital [[ supplIer(0) ]] parse to Call(NoModuleList(), "supplIer", NoTypeArgs(), [IntLit("0")])
+test create supplier all caps [[ SUPPLIER(0) ]] parse to Call(NoModuleList(), "SUPPLIER", NoTypeArgs(), [IntLit("0")])
 
 test task supplier no arguments [[ parse.supplier() ]] parse succeeds
-test task supplier with empty type argument list [[ parse.supplier<>() ]] parse fails // todo
-test task supplier with one type argument [[ parse.supplier<int>() ]] parse fails // todo
-test task supplier with two type arguments [[ parse.supplier<int, string>() ]] parse fails // todo
+test task supplier with empty type argument list [[ parse.supplier<>() ]]
+test task supplier with one type argument [[ parse.supplier<int>() ]]
+test task supplier with two type arguments [[ parse.supplier<int, string>() ]]
 test task supplier one argument [[ parse.supplier(true) ]] parse succeeds
 test task supplier two arguments [[ parse.supplier("no", [some_value]) ]] parse succeeds
 test task supplier qualified task name [[ example:test:expression:parse.supplier(ast) ]] parse succeeds
@@ -190,21 +190,21 @@ test task supplier spaces around brackets [[ parse.supplier ( ) ]] parse succeed
 test task supplier space before period [[ parse .supplier() ]] parse succeeds
 test task supplier space after period [[ parse. supplier() ]] parse succeeds
 test task supplier space in keyword [[ parse.suppl ier() ]] parse fails
-test task supplier capitalized keyword [[ parse.Supplier() ]] parse to QCall(Ref("parse"), "Supplier", [])
+test task supplier capitalized keyword [[ parse.Supplier() ]] parse to QCall(Ref("parse"), "Supplier", NoTypeArgs(), [])
 
 test supplier get [[ supp.get<>() ]] parse succeeds
-test supplier get with type argument [[ supp.get<string>() ]] parse fails // todo: parsing should succeed with error from analysis
-test supplier get with argument [[ supp.get<>("yes") ]] parse fails // todo: parsing should succeed with error from analysis
+test supplier get with type argument [[ supp.get<string>() ]]
+test supplier get with argument [[ supp.get<>("yes") ]]
 test supplier get space before period [[ supp .get<>() ]] parse succeeds
 test supplier get space after period [[ supp. get<>() ]] parse succeeds
 test supplier get space after get [[ supp.get <>() ]] parse succeeds
 test supplier get space in diamond [[ supp.get< >() ]] parse succeeds
 test supplier get space after diamond [[ supp.get<> () ]] parse succeeds
 test supplier get space within brackets [[ supp.get<>( ) ]] parse succeeds
-test supplier get missing diamond [[ supp.get( ) ]] parse to QCall(Ref("supp"), "get", [])
-test supplier get capitalized [[ supp.Get<>( ) ]] parse fails // todo: parse to QCall(Ref("supp"), "Get", TypeArgs([]), [])
-test supplier get random capitalized [[ supp.gEt<>( ) ]] parse fails // todo: parse to QCall(Ref("supp"), "gEt", TypeArgs([]), [])
-test supplier get all caps [[ supp.GET<>( ) ]] parse fails // todo: parse to QCall(Ref("supp"), "GET", TypeArgs([]), [])
+test supplier get missing diamond [[ supp.get( ) ]] parse to QCall(Ref("supp"), "get", NoTypeArgs(), [])
+test supplier get capitalized [[ supp.Get<>( ) ]] parse to QCall(Ref("supp"), "Get", TypeArgs([]), [])
+test supplier get random capitalized [[ supp.gEt<>( ) ]] parse to QCall(Ref("supp"), "gEt", TypeArgs([]), [])
+test supplier get all caps [[ supp.GET<>( ) ]] parse to QCall(Ref("supp"), "GET", TypeArgs([]), [])
 
 test list absolute path literal [[ list /foo ]] parse succeeds
 test list relative path literal [[ list ./foo ]] parse succeeds
@@ -272,7 +272,7 @@ test return no layout between followed by open bracket in tuple [[ return(5, 9) 
 test return no layout between followed by open square bracket in list literal [[ return[1, 2] ]] parse fails
 test return no layout between followed by open square bracket in list comprehension [[ return[double(x) | x <- [1, 2, 3] ] ]] parse fails
 test return no layout between followed by letter in variable [[ returnfile ]] parse to Ref("returnfile")
-test return no layout between followed by letter in function [[ returnsomeFunc() ]] parse to Call(NoModuleList(), "returnsomeFunc", [])
+test return no layout between followed by letter in function [[ returnsomeFunc() ]] parse to Call(NoModuleList(), "returnsomeFunc", NoTypeArgs(), [])
 test return no layout between followed by digit [[ return5 ]] parse to Ref("return5")
 test return no layout between followed by underscore [[ return_foo ]] parse to Ref("return_foo")
 test return no layout between followed by dash [[ return-5 ]] parse to Ref("return-5")
@@ -289,7 +289,8 @@ test fail no layout between followed by open bracket in tuple [[ fail(5, 9) ]] /
 test fail no layout between followed by open square bracket in list literal [[ fail[1, 2] ]] parse fails
 test fail no layout between followed by open square bracket in list comprehension [[ fail[double(x) | x <- [1, 2, 3] ] ]] parse fails
 test fail no layout between followed by letter in variable [[ failfile ]] parse to Ref("failfile")
-test fail no layout between followed by letter in function [[ failsomeFunc() ]] parse to Call(NoModuleList(), "failsomeFunc", [])
+test fail no layout between followed by letter in function [[ failsomeFunc() ]] parse to Call(NoModuleList(), "failsomeFunc", NoTypeArgs(), [])
+test fail no layout between followed by letter in built-in [[ failread file ]] parse fails
 test fail no layout between followed by digit [[ fail5 ]] parse to Ref("fail5")
 test fail no layout between followed by underscore [[ fail_foo ]] parse to Ref("fail_foo")
 test fail no layout between followed by dash [[ fail-5 ]] parse to Ref("fail-5")
