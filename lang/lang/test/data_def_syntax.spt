@@ -281,3 +281,7 @@ test datadef three methods [[ data Foo = foreign java org.example.test.Foo {
   func set(int) -> unit
   func getAndSet(int) -> int
 } ]] parse succeeds
+
+test datadef method with type parameters [[ data Foo = foreign java org.example.test.Foo {
+  func create<P : path, E : Exception>() -> path
+} ]] parse succeeds
