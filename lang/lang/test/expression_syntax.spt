@@ -148,7 +148,7 @@ test call reserved name requires  [[ requires()  ]] parse fails
 test call reserved name generates [[ generates() ]] parse fails
 test call reserved name list      [[ list()      ]] parse fails
 test call reserved name walk      [[ walk()      ]] parse fails
-test call reserved name supplier  [[ supplier()  ]] parse to CreateSupplier(NoTypeArgs(), [])
+test call reserved name supplier  [[ supplier()  ]] parse to CreateSupplier(_, NoTypeArgs(), [])
 test call reserved name unit      [[ unit()      ]] parse fails
 test call reserved name null      [[ null()      ]] parse fails
 test call reserved name true      [[ true()      ]] parse fails

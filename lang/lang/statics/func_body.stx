@@ -196,15 +196,13 @@ rules
       getScopeFromType(s2, exp_ty) == s_data,
       typeOfCall(s1, s_data, name, arg_exps) == (s2, ty).
 
-  typeOfExpImpl(s1, CreateSupplier(type_args, [exp])) = (s2, SupplierType(ty)) :-
+  typeOfExpImpl(s1, CreateSupplier(_, type_args, [exp])) = (s2, SupplierType(ty)) :-
     // todo: use type_args
     typeOfExp(s1, exp) == (s2, ty).
-  typeOfExpImpl(s, supplier@CreateSupplier(type_args, args@[])) = (s, DataType(emptyScope(s))) :-
+  typeOfExpImpl(s, CreateSupplier(name, type_args, args)) = (s, DataType(emptyScope(s))) :-
     // todo: use type_args
-    false | error $[Not enough arguments. Expected one argument, but got zero] @supplier.
-  typeOfExpImpl(s, supplier@CreateSupplier(type_args, [_,_|_])) = (s, DataType(emptyScope(s))) :-
-    // todo: use type_args
-    false | error $[Too many arguments. Expected one argument, but got multiple] @supplier.
+    try { args != [] } | error $[Not enough arguments. Expected one argument, but got zero] @name,
+    try { args != [_,_|_] } | error $[Too many arguments. Expected one argument, but got multiple] @name.
 
   typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, type_args, args)) = (s2, SupplierType(ty)) :-
     // todo: use type_args

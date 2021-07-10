@@ -19,6 +19,7 @@ context-free sorts
   Binder
   Bind
   Ref
+  SupplierKeyword
   StamperPart
   StampKind
   FilterPart
@@ -77,7 +78,8 @@ context-free syntax // References
   Exp.Call  = <<ModuleList><FUNCID><TypeArgs>(<{Exp ", "}*>)> {left}
   Exp.QCall = <<Exp>.<FUNCID><TypeArgs>(<{Exp ", "}*>)>       {left}
 
-  Exp.CreateSupplier = <supplier<TypeArgs>(<{Exp ", "}*>)>
+  SupplierKeyword.SupplierKeyword = <supplier>
+  Exp.CreateSupplier = <<SupplierKeyword><TypeArgs>(<{Exp ", "}*>)>
   Exp.TaskSupplier   = <<ModuleList><FUNCID>.supplier<TypeArgs>(<{Exp ", "}*>)>
 
 context-free syntax // Paths
