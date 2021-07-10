@@ -444,19 +444,20 @@ test method call undefined func [[ bar.[[nope]]() ]] 1 error at #1  error like "
 test method call incorrect arg count [[ foo.set(foo, 8) ]] >= 1 error
 test method call incorrect arg type [[ foo.set([[bok]]) ]] >= 1 error at #1
 
-test built-in method supplier get from supplier literal [[ [[ supplier("hello").get() ]] ]] analysis fails  error like "Undefined function" // todo analysis succeeds run pie-ast-type on #1 to StrType()
-test built-in method supplier get with type argument list [[ [[ supplier(./src/test/resources/example1.txt).get<>() ]] ]] analysis fails  error like "Undefined function" // todo analysis succeeds run pie-ast-type on #1 to PathType()
-test built-in method supplier get with type argument [[ supplier("hello").get[[<int>]]() ]] analysis fails  error like "Undefined function" // todo 1 error at #1  error like "too many type arguments"
-test built-in method supplier get from function supplier [[ [[ double.supplier(78).get() ]] ]] analysis fails  error like "Undefined function" // todo analysis succeeds run pie-ast-type on #1 to IntType()
-test built-in method supplier get nested supplier [[ [[ supplier(double.supplier(-3)).get() ]] ]] analysis fails  error like "Undefined function" // todo analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test built-in method supplier get from supplier literal [[ [[ supplier("hello").get() ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
+test built-in method supplier get with type argument list [[ [[ supplier(./src/test/resources/example1.txt).get<>() ]] ]] analysis succeeds run pie-ast-type on #1 to PathType()
+test built-in method supplier get with type argument [[ supplier("hello").get[[<int>]]() ]] 1 error at #1  error like "Too many type arguments"
+test built-in method supplier get from function supplier [[ [[ double.supplier(78).get() ]] ]] analysis succeeds run pie-ast-type on #1 to IntType()
+test built-in method supplier get nested supplier [[ [[ supplier(double.supplier(-3)).get() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 
 test create supplier [[ [[ supplier(42) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test create supplier, supplier as argument [[ [[ supplier(supplier(42)) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(SupplierType(IntType()))
 test create supplier with empty type argument list [[ supplier[[<>]]("test") ]] analysis succeeds // todo 1 error at #1  error like "not enough type arguments"
 test create supplier with one type argument [[ [[ supplier<int>(8) ]] ]] analysis succeeds // todo analysis succeeds run pie-ast-type on #1 to SupplierType(intType())
 test create supplier with two type arguments [[ supplier[[<int, string>]](9) ]] analysis succeeds // todo 1 error at #1  error like "too many type arguments"
-test create supplier missing argument [[ [[supplier]]() ]] analysis fails // todo 1 error at #1  error like "not enough arguments"
-test create supplier two arguments [[ [[supplier]](12, "twelve") ]] analysis fails // todo 1 error at #1  error like "too many arguments"
+test create supplier with wrong argument type [[ supplier<path>([[true]]) ]] analysis succeeds // todo 1 error at #1  error like "Type mismatch"
+test create supplier missing argument [[ [[supplier()]] ]] 1 error at #1  error like "Not enough arguments"
+test create supplier two arguments [[ [[supplier(12, "twelve")]] ]] 1 error at #1  error like "Too many arguments"
 
 test task supplier [[ [[ anotherFunc.supplier() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test task supplier with empty type arguments list [[ [[ anotherFunc.supplier<>() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())

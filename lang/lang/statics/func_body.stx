@@ -182,22 +182,32 @@ rules
       typeOfExpsPassScopes(s, arg_exps) == _.
 
   typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
+    // todo: use type_args
     typeOfCall(s, mergeScopes(s, resolveModuleListToFile(s, moduleList)), name, arg_exps).
 
-  typeOfExpImpl(s1, QCall(exp, name, type_args, arg_exps)) = (s3, ty) :- {s2 exp_ty s_data}
-    // todo: check for built-in methods
-    typeOfExp(s1, exp) == (s2, exp_ty),
-    getScopeFromType(s2, exp_ty) == s_data,
-    typeOfCall(s2, s_data, name, arg_exps) == (s3, ty).
+  typeOfExpImpl(s, qCall@QCall(exp, _, _, _)) = typeOfQCall(typeOfExp(s, exp), qCall).
+
+    typeOfQCall : (scope * TYPE) * Exp -> (scope * TYPE)
+    typeOfQCall((s, SupplierType(inner_ty)), QCall(_, "get", type_args, arg_exps)) = (s, inner_ty) :-
+      type_args == TypeArgs([]) | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
+      arg_exps == [] | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps.
+    typeOfQCall((s1, exp_ty), QCall(exp, name, type_args, arg_exps)) = (s2, ty) :- {s_data}
+      // todo: use type_args
+      getScopeFromType(s2, exp_ty) == s_data,
+      typeOfCall(s1, s_data, name, arg_exps) == (s2, ty).
 
   typeOfExpImpl(s1, CreateSupplier(type_args, [exp])) = (s2, SupplierType(ty)) :-
+    // todo: use type_args
     typeOfExp(s1, exp) == (s2, ty).
-  typeOfExpImpl(s, CreateSupplier(type_args, [])) = (s, DataType(emptyScope(s))) :-
-    false | error $[Not enough arguments. Expected one argument, but got zero].
-  typeOfExpImpl(s, CreateSupplier(type_args, [_,_|_])) = (s, DataType(emptyScope(s))) :-
-    false | error $[Too many arguments. Expected one argument, but got multiple].
+  typeOfExpImpl(s, supplier@CreateSupplier(type_args, args@[])) = (s, DataType(emptyScope(s))) :-
+    // todo: use type_args
+    false | error $[Not enough arguments. Expected one argument, but got zero] @supplier.
+  typeOfExpImpl(s, supplier@CreateSupplier(type_args, [_,_|_])) = (s, DataType(emptyScope(s))) :-
+    // todo: use type_args
+    false | error $[Too many arguments. Expected one argument, but got multiple] @supplier.
 
   typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, type_args, args)) = (s2, SupplierType(ty)) :-
+    // todo: use type_args
     typeOfCall(s1, mergeScopes(s1, resolveModuleListToFile(s1, moduleList)), func_name, args) == (s2, ty).
 
 // Path operations
