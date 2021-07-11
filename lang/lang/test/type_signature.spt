@@ -46,7 +46,7 @@ test data type type argument nullable wildcard [[ Bar<int, _?> ]] parse fails //
 test data type imported [[ test:type_signature:Food ]] analysis succeeds
 test data type undefined [[ Bak ]] 1 error  error like "Undefined data"
 test generic parameter [[ A ]] analysis succeeds
-test generic parameter with type arguments [[ A[[<string>]] ]] 1 error at #1  error like "does not take type arguments"
+test generic parameter with type arguments [[ A[[<string>]] ]] 1 error at #1  error like "Generic parameters do not take type arguments"
 
 test nullable [[ int? ]] analysis succeeds
 test double nullable [[ path?[[?]] ]] analysis succeeds  1 warning at #1  warning like "double nullable has no effect"

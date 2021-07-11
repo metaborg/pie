@@ -452,10 +452,10 @@ test built-in method supplier get nested supplier [[ [[ supplier(double.supplier
 
 test create supplier [[ [[ supplier(42) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test create supplier, supplier as argument [[ [[ supplier(supplier(42)) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(SupplierType(IntType()))
-test create supplier with empty type argument list [[ supplier[[<>]]("test") ]] analysis succeeds // todo 1 error at #1  error like "not enough type arguments"
+test create supplier with empty type argument list [[ supplier[[<>]]("test") ]] 1 error at #1  error like "Not enough type arguments"
 test create supplier with one type argument [[ [[ supplier<int>(8) ]] ]] analysis succeeds // todo analysis succeeds run pie-ast-type on #1 to SupplierType(intType())
-test create supplier with two type arguments [[ supplier[[<int, string>]](9) ]] analysis succeeds // todo 1 error at #1  error like "too many type arguments"
-test create supplier with wrong argument type [[ supplier<path>([[true]]) ]] analysis succeeds // todo 1 error at #1  error like "Type mismatch"
+test create supplier with two type arguments [[ supplier[[<int, string>]](9) ]] 1 error at #1  error like "Too many type arguments"
+test create supplier with wrong argument type [[ supplier<path>([[true]]) ]] 1 error at #1  error like "Type mismatch"
 test create supplier missing argument [[ [[supplier]]() ]] 1 error at #1  error like "Not enough arguments"
 test create supplier two arguments [[ [[supplier]](12, "twelve") ]] 1 error at #1  error like "Too many arguments"
 

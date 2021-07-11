@@ -36,6 +36,15 @@ rules
   typeOrBottomType(LowerBoundType(ty)) = ty.
 
   /**
+   * getTypeArgsList(type_args) = type_args_list
+   * Gets the list of type arguments from a TypeArgs.
+   * Returns an empty list for NoTypeArgs().
+   */
+  getTypeArgsList : TypeArgs -> list(Type)
+  getTypeArgsList(NoTypeArgs()) = [].
+  getTypeArgsList(TypeArgs(type_args)) = type_args.
+
+  /**
    * findGenericDef(s_data) -> s_data_def
    * Finds the generic definition of a data type [s_data].
    * [s_data] can be a generic definition, in which case it itself will be

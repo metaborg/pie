@@ -189,20 +189,32 @@ rules
 
     typeOfQCall : (scope * TYPE) * Exp -> (scope * TYPE)
     typeOfQCall((s, SupplierType(inner_ty)), QCall(_, "get", type_args, arg_exps)) = (s, inner_ty) :-
-      type_args == TypeArgs([]) | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
+      getTypeArgsList(type_args) == [] | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
       arg_exps == [] | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps.
     typeOfQCall((s1, exp_ty), QCall(exp, name, type_args, arg_exps)) = (s2, ty) :- {s_data}
       // todo: use type_args
       getScopeFromType(s2, exp_ty) == s_data,
       typeOfCall(s1, s_data, name, arg_exps) == (s2, ty).
 
-  typeOfExpImpl(s1, CreateSupplier(_, type_args, [exp])) = (s2, SupplierType(ty)) :-
-    // todo: use type_args
+  typeOfExpImpl(s1, CreateSupplier(_, NoTypeArgs(), [exp])) = (s2, SupplierType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty).
+  typeOfExpImpl(s1, CreateSupplier(_, TypeArgs([arg_ty_lex]), [exp])) = (s2, SupplierType(arg_ty)) :-
+    {exp_ty}
+    typeOf(s1, arg_ty_lex) == arg_ty,
+    typeOfExp(s1, exp) == (s2, exp_ty),
+    assignableTo(exp_ty, arg_ty) | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
   typeOfExpImpl(s, CreateSupplier(name, type_args, args)) = (s, DataType(emptyScope(s))) :-
-    // todo: use type_args
+    typeOfCreateSupplier_1(type_args, args),
     try { args != [] } | error $[Not enough arguments. Expected one argument, but got zero] @name,
     try { args != [_,_|_] } | error $[Too many arguments. Expected one argument, but got multiple] @name.
+
+    typeOfCreateSupplier_1 : TypeArgs * list(Exp)
+    typeOfCreateSupplier_1(NoTypeArgs(), _).
+    typeOfCreateSupplier_1(type_args@TypeArgs([]), args) :-
+      false | error $[Not enough type arguments. Expected one type argument, got zero. To infer the type argument, omit the type argument list: `supplier([args])`] @type_args.
+    typeOfCreateSupplier_1(type_args@TypeArgs([_]), _).
+    typeOfCreateSupplier_1(type_args@TypeArgs([_,_|_]), _) :-
+      false | error $[Too many type arguments. Expected one argument, got multiple] @type_args.
 
   typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, type_args, args)) = (s2, SupplierType(ty)) :-
     // todo: use type_args

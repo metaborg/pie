@@ -484,7 +484,7 @@ rules
       genericParamToType(resolveTypeArg(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
       @name.ref := name',
       @name.type := type,
-      try { type_args == TypeArgs([]) } | error $[Generic parameter [name] does not take type arguments] @type_args.
+      try { getTypeArgsList(type_args) == [] } | error "Generic parameters do not take type arguments" @type_args.
 
       genericParamToType : list((path * (TYPEID * TYPE))) * BOOLEAN * GenericParameter * TYPE -> TYPE
       genericParamToType([], TRUE(), param, _) = GenericParameter2TYPE(param).
@@ -514,6 +514,8 @@ rules
       // s_data_def: definition for s_data_instance
 
       genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN
+      genericArgsOk(_, _, _, params, type_args@NoTypeArgs(), _) :-
+        params == [] | error $[Cannot derive type arguments. Provide type arguments explicitly for parameters [params]] @type_args.
       genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), keep_uninstantiated) :-
         genericArgsOk_1(s, s_type_args, s_data_instance, params, type_args, keep_uninstantiated, sameLength(params, arg_types)).
 

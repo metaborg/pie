@@ -11,6 +11,3 @@ rules
 
   desugar: NoGenericParams() -> GenericParams([])
   resugar: GenericParams([]) -> NoGenericParams()
-
-  desugar: NoTypeArgs() -> TypeArgs([])
-  resugar: TypeArgs([]) -> NoTypeArgs()
