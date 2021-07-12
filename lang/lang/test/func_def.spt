@@ -22,23 +22,19 @@ test omitted generic parameter list [[func test() -> bool = false]] analysis suc
 
 test generic param single param [[
   func test<[[T]]>(elem: [[T]]) -> [[T]] = elem
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #2 to #1
-//   resolve #3 to #1
+]] analysis succeeds
+   resolve #2 to #1
+   resolve #3 to #1
 test generic param three params [[
   func test<[[A]], [[B]]>(param1: [[B]], param2: [[A]], param3: [[A]]) -> [[A]] = param2
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #3 to #2
-//   resolve #4 to #1
-//   resolve #5 to #1
-//   resolve #6 to #1
+]] analysis succeeds
+   resolve #3 to #2
+   resolve #4 to #1
+   resolve #5 to #1
+   resolve #6 to #1
 test generic param with upper bound [[
   func test<F : Food>(food: F) -> F = food
-]] analysis fails // todo  analysis succeeds
+]] analysis succeeds
 test generic param with upper bound, used with self [[
   func test<F : Fruit>(fruit: F) -> F = test(fruit)
 ]] analysis fails // todo  analysis succeeds

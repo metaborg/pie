@@ -608,7 +608,7 @@ rules // PIE function calls
     (name, javaExpr) -> (stmts, exp)
     with
       callResultName                    := <newname> "callResult"
-    ; FuncType(_, outputType) := <pie-ast-type> name
+    ; FuncType(typeArgs, _, outputType) := <pie-ast-type> name
       // todo: use typeArgs
     ; ty                                := <p2j-ast-type-sig> outputType
     ; stmts                             := [

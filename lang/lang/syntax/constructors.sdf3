@@ -8,8 +8,14 @@ imports
 
 // A semantic type (as opposed to the lexical, non-all caps Type)
 context-free start-symbols TYPE // For type hint on editor mouseover
-context-free sorts TYPE UpperBoundType LowerBoundType
+context-free sorts TYPE UpperBoundType LowerBoundType GenericParamType
 context-free syntax
+
+  UpperBoundType.NoUpperBoundType = < [no upper bound]>
+  UpperBoundType.UpperBoundType = < : <TYPE>>
+
+  LowerBoundType.NoLowerBoundType = < [no lower bound]>
+  LowerBoundType.LowerBoundType = < -: <TYPE>>
 
   TYPE.UnitType = [unit]
   TYPE.BoolType = [bool]
@@ -26,14 +32,10 @@ context-free syntax
   TYPE.TupleType = [([{TYPE ", "}+])]
   TYPE.SupplierType = [supplier([TYPE])]
 
-  TYPE.FuncType = [func([{TYPE ", "}+]) -> [TYPE]]
+  GenericParamType.GenericParamType = [[TYPEID][UpperBoundType][LowerBoundType]]
+  TYPE.FuncType = [func<[{GenericParamType ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
+
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
-
-  UpperBoundType.NoUpperBoundType = < [no upper bound]>
-  UpperBoundType.UpperBoundType = < : <TYPE>>
-
-  LowerBoundType.NoLowerBoundType = < [no lower bound]>
-  LowerBoundType.LowerBoundType = < -: <TYPE>>
 
   TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType]]
 

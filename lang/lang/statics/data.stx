@@ -20,7 +20,7 @@ rules
     setFileIfExists(s, s_data_def),
     setContext(s_data_def, "data_name_unqualified", ContextName(name)),
     !data_mods[mods] in s_data_def,
-    genericParamsOk(s, s_data_def, generic_params),
+    genericParamsOk(s, s_data_def, generic_params) == _,
     declareData(s, name, s_data_def),
     declareLocalData(s, name, s_data_def),
     superOk(s, s_data_def, super, name),
@@ -42,22 +42,6 @@ rules
     dataDefModsOk_1([mod1|mods], mod2) = [mod1|mods_out] :-
       dataDefModsOk_1(mods, mod2) == mods_out.
 
-  genericParamsOk : scope * scope * GenericParams
-  genericParamsOk(s, s_data_def, GenericParams(params)) :-
-    {parameters}
-    typeOfgenericParams(s, s_data_def, params) == parameters,
-    !generic_params[parameters] in s_data_def.
-
-    typeOfgenericParam : scope * scope * GenericParam -> (GenericParameter * TYPE * TYPE)
-    typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
-    typeOfgenericParam(s, s_data_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
-      {upper_error_node lower_error_node}
-      bothBoundsOk(upper_bound, lower_bound),
-      typeOrTopType(typeOfUpperBound(s, s_data_def, upper_bound, FALSE())) == upper_bound_ty,
-      typeOrBottomType(typeOfLowerBound(s, s_data_def, lower_bound, FALSE())) == lower_bound_ty,
-      declareGenericParam(s_data_def, name, upper_bound_ty, lower_bound_ty) == param,
-      try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
-
   superOk : scope * scope * SuperType * string
   superOk(s, s_data_def, NoSuperType(), name).
   superOk(s, s_data_def, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
@@ -68,17 +52,18 @@ rules
     superOk_1s(s_data_def, s_super, occs).
 
     // check that all functions of current are valid overrides of super.
-    superOk_1 : scope * scope * (path * (FUNCID * TYPE))
+    superOk_1 : scope * scope * (path * (FUNCID * (scope * TYPE)))
     superOk_1s maps superOk_1(*, *, list(*))
     superOk_1(s_data_def, s_super, (_, (name, func_ty))) :- {occs}
       resolveFunc(s_super, name) == occs,
       superOk_2s(s_data_def, s_super, func_ty, occs, name).
 
     // Check that function is either a valid override or not an override
-    superOk_2 : scope * scope * TYPE * (path * (FUNCID * TYPE)) * FUNCID
+    superOk_2 : scope * scope * (scope * TYPE) * (path * (FUNCID * (scope * TYPE))) * FUNCID
     superOk_2s maps superOk_2(*, *, *, list(*), *)
-    superOk_2(s_data_def, s_super, FuncType(param_tys, ty_out), (_, (name_super, FuncType(param_tys_super, ty_out_super))), name) :-
+    superOk_2(s_data_def, s_super, (s_func, FuncType(type_params, param_tys, ty_out)), (_, (name_super, (s_func_super, FuncType(type_params_super, param_tys_super, ty_out_super)))), name) :-
       {super_params params isAllInvariant}
+      // todo: use type_params, type_params_super, s_func, s_func_super
       eraseTypes(instantiateTypeArgsInAll(s_super, s_super, param_tys_super)) == super_params,
       eraseTypes(instantiateTypeArgsInAll(s_data_def, s_data_def, param_tys)) == params,
       isAllInvariant(super_params, params) == isAllInvariant,
@@ -106,9 +91,9 @@ rules
 
   javaDataMemberOk : scope * scope * JavaDataMemb
   javaDataMembersOk maps javaDataMemberOk(*, *, list(*))
-  javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {name ty}
-    typeOfFuncHead(s, s_data, func_head) == (_, name, ty),
-    declareFunc(s_data, name, ty, JavaForeignFuncKind()).
+  javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {s_func name ty} 
+    typeOfFuncHead(s, s_data, func_head) == (s_func, name, ty),
+    declareFunc(s_data, name, (s_func, ty), JavaForeignFuncKind()).
 
 
   getDataName : scope -> TYPEID

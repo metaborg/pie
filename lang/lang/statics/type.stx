@@ -381,7 +381,7 @@ rules // operations on types
       replaceWithUnit maps getUnit(list(*)) = list(*)
       getUnit(_) = UnitType().
     eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
-    eraseType_1(FuncType(_, _)) = FuncType([UnitType()], UnitType()).
+    eraseType_1(FuncType(_, params, _)) = FuncType([], replaceWithUnit(params), UnitType()).
     eraseType_1(WildcardType(ub, lb)) = typeOrTopType(ub).
     eraseType_1(T@GenericParameter2TYPE(_)) = eraseType(ub) :-
       getBounds(T) == (ub, _).

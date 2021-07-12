@@ -10,6 +10,30 @@ imports
 rules
 
   /**
+   * genericParamsOk(s, s_data_def, GenericParams(params))
+   * todo
+   */
+  genericParamsOk : scope * scope * GenericParams -> list(GenericParamType)
+  genericParamsOk(s, s_def, GenericParams(params)) = wrapBounds(parameters) :-
+    typeOfgenericParams(s, s_def, params) == parameters,
+    !generic_params[parameters] in s_def.
+    
+    wrapBound : (GenericParameter * TYPE * TYPE) -> GenericParamType
+    wrapBounds maps wrapBound(list(*)) = list(*)
+    wrapBound((GenericParameter(_, name), upper_bound, lower_bound)) =
+      GenericParamType(name, typeToUpperBoundType(upper_bound), typeToLowerBoundType(lower_bound)).
+
+    typeOfgenericParam : scope * scope * GenericParam -> (GenericParameter * TYPE * TYPE)
+    typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
+    typeOfgenericParam(s, s_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
+      {upper_error_node lower_error_node}
+      bothBoundsOk(upper_bound, lower_bound),
+      typeOrTopType(typeOfUpperBound(s, s_def, upper_bound, FALSE())) == upper_bound_ty,
+      typeOrBottomType(typeOfLowerBound(s, s_def, lower_bound, FALSE())) == lower_bound_ty,
+      declareGenericParam(s_def, name, upper_bound_ty, lower_bound_ty) == param,
+      try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
+
+  /**
    * getScopeFromType(s, ty)
    * Returns the scope with methods associated with type [ty]
    */
@@ -34,6 +58,24 @@ rules
   typeOrBottomType : LowerBoundType -> TYPE
   typeOrBottomType(NoLowerBoundType()) = BottomType().
   typeOrBottomType(LowerBoundType(ty)) = ty.
+
+  /**
+   * typeToUpperBoundType(ty) = upper_bount_type
+   * Returns NoUpperBoundType for TopType, otherwise ty wrapped in
+   * UpperBoundType.
+   */
+  typeToUpperBoundType : TYPE -> UpperBoundType
+  typeToUpperBoundType(TopType()) = NoUpperBoundType().
+  typeToUpperBoundType(ty) = UpperBoundType(ty).
+
+  /**
+   * typeToLowerBoundType(ty) = lower_bount_type
+   * Returns NoLowerBoundType for BottomType, otherwise ty wrapped in
+   * LowerBoundType.
+   */
+  typeToLowerBoundType : TYPE -> LowerBoundType
+  typeToLowerBoundType(BottomType()) = NoLowerBoundType().
+  typeToLowerBoundType(ty) = LowerBoundType(ty).
 
   /**
    * getTypeArgsList(type_args) = type_args_list
