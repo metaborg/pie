@@ -180,29 +180,3 @@ rules
   splitLast([]) = res :- false | error "BUG: called splitLast with empty list.".
   splitLast([str]) = ([], str).
   splitLast([str|strs]) = ([str|rest], last) :- splitLast(strs) == (rest, last).
-
-  /**
-   * ppTYPE(type) -> name
-   * get the name of a type
-   * Does not work with composite types, only use for debugging!
-   */
-  ppTYPE : TYPE -> string
-  ppTYPEs maps ppTYPE(list(*)) = list(*)
-  ppTYPES maps ppTYPE(list(*)) = list(*)
-  ppTYPE(UnitType()) = "unit".
-  ppTYPE(BoolType()) = "bool".
-  ppTYPE(IntType()) = "int".
-  ppTYPE(StrType()) = "string".
-  ppTYPE(PathType()) = "path".
-  ppTYPE(NullType()) = "null".
-  ppTYPE(TopType()) = "top".
-  ppTYPE(BottomType()) = "bottom".
-  ppTYPE(NullableType(T)) = "nullable".
-  ppTYPE(ListType(T)) = "list".
-  ppTYPE(EmptyListType()) = "[]".
-  ppTYPE(TupleType(Ts)) = "tuple".
-  ppTYPE(SupplierType(T)) = "supplier".
-  ppTYPE(FuncType(in, out)) = "func".
-  ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
-  ppTYPE(WildcardType(ub, lb)) = "wildcard".
-  ppTYPE(GenericParameter2TYPE(GenericParameter(_, name))) = name.
