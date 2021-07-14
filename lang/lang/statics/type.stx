@@ -501,10 +501,12 @@ rules
       false | error $[Duplicate datatype [name]] @name.
     isGenericParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), _, _,
       [(_, (name', s_data_def))], keep_uninstantiated) = type@DataType(s_data_instance) :-
+      {params}
       new s_data_instance,
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
-      genericArgsOk(s, s_type_args, s_data_instance, getGenericParams(s_data_def), type_args, keep_uninstantiated),
+      getGenericParams(s_data_def) == params,
+      genericArgsOk(s, s_type_args, s_data_instance, params, type_args, keep_uninstantiated, name),
       @name.ref := name',
       @name.type := type.
 
@@ -513,10 +515,18 @@ rules
       // s_data_instance: scope for the instance that we are typing right now
       // s_data_def: definition for s_data_instance
 
-  genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN
-  genericArgsOk(_, _, _, params, type_args@NoTypeArgs(), _) :-
-    params == [] | error $[Cannot derive type arguments. Provide type arguments explicitly for parameters [params]] @type_args.
-  genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), keep_uninstantiated) :-
+  genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string
+  genericArgsOk(_, _, _, [], NoTypeArgs(), _, _). // separate case to force unification of params before evaluating this.
+  genericArgsOk(_, _, _, params@[_|_], NoTypeArgs(), _, error_node) :-
+    {names}
+    getGenericParamNames(params) == names,
+    false | error $[Cannot derive type arguments. Provide type arguments explicitly for parameters [names]] @error_node.
+
+    getGenericParamName : (GenericParameter * TYPE * TYPE) -> string
+    getGenericParamNames maps getGenericParamName(list(*)) = list(*)
+    getGenericParamName((GenericParameter(_, name), _, _)) = name.
+
+  genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), keep_uninstantiated, _) :-
     genericArgsOk_1(s, s_type_args, s_data_instance, params, type_args, keep_uninstantiated, sameLength(params, arg_types)).
 
     sameLength : list((GenericParameter * TYPE * TYPE)) * list(Type) -> (list(TYPEID) * list(Type))

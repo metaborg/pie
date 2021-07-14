@@ -412,12 +412,12 @@ test simple call no args [[ [[anotherFunc]]() ]] analysis succeeds resolve #1
 test simple call with type arguments [[ [[anotherFunc<>()]] ]] analysis succeeds  run pie-ast-type on #1 to IntType()
 test simple call with one type argument [[ [[ useAnimal<Animal>(fish) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
 test simple call with two type arguments [[ [[ checkAnimals<Animal, Dog>(dog, dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to BoolType()
-test simple call omitted type argument list with type arguments expected [[ useAnima[[l(]]fish) ]] analysis fails // todo 1 error at #1  error like "not enough type arguments"
-test simple call not enough type arguments with empty type argument list [[ checkAnimals[[<>]](fish, dog) ]] analysis fails // todo 1 error at #1  error like "not enough type arguments"
-test simple call not enough type arguments with type argument list [[ checkAnimals[[<Animal>]](fish, fish) ]] analysis fails // todo 1 error at #1  error like "not enough type arguments"
-test simple call not enough type arguments with type argument out of bounds [[ checkAnimals[[<Baz>]](dog, fish) ]] analysis fails // todo 1 error at #1  error like "not enough type arguments"
-test simple call too many type arguments [[ useAnimals[[<Animal, Dog>]](dog) ]] analysis fails // todo 1 error at #1  error like "too many type arguments"
-test simple call argument of wrong type [[ checkAnimals<Animal, [[Faz<_>]]>(dog) ]] analysis fails // todo 1 error at #1  error like "not within bound"
+test simple call omitted type argument list with type arguments expected [[ [[useAnimal]](fish) ]] >= 1 error  error like "Cannot derive type arguments" at #1
+test simple call not enough type arguments with empty type argument list [[ checkAnimals[[<>]](fish, dog) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call not enough type arguments with type argument list [[ checkAnimals[[<Animal>]](fish, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call not enough type arguments with type argument out of bounds [[ checkAnimals[[<Baz>]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call too many type arguments [[ useAnimal[[<Animal, Dog>]](dog) ]] >= 1 error at #1  error like "Too many type arguments"
+test simple call argument of wrong type [[ checkAnimals<Animal, [[Faz<_>]]>(dog) ]] >= 1 error at #1  error like "not within upper bound"
 test simple call 1 arg [[ [[double]](4) ]] analysis succeeds resolve #1
 test simple call 3 args [[ [[argsFunc]](2, value, "yes") ]] analysis succeeds resolve #1
 test simple call undefined func [[ [[unknown]](true) ]] 1 error at #1  error like "Undefined function"
@@ -453,7 +453,7 @@ test built-in method supplier get nested supplier [[ [[ supplier(double.supplier
 test create supplier [[ [[ supplier(42) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test create supplier, supplier as argument [[ [[ supplier(supplier(42)) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(SupplierType(IntType()))
 test create supplier with empty type argument list [[ supplier[[<>]]("test") ]] 1 error at #1  error like "Not enough type arguments"
-test create supplier with one type argument [[ [[ supplier<int>(8) ]] ]] analysis succeeds // todo analysis succeeds run pie-ast-type on #1 to SupplierType(intType())
+test create supplier with one type argument [[ [[ supplier<int>(8) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test create supplier with two type arguments [[ supplier[[<int, string>]](9) ]] 1 error at #1  error like "Too many type arguments"
 test create supplier with wrong argument type [[ supplier<path>([[true]]) ]] 1 error at #1  error like "Type mismatch"
 test create supplier missing argument [[ [[supplier]]() ]] 1 error at #1  error like "Not enough arguments"
@@ -463,17 +463,17 @@ test task supplier [[ [[ anotherFunc.supplier() ]] ]] analysis succeeds run pie-
 test task supplier with empty type arguments list [[ [[ anotherFunc.supplier<>() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test task supplier with one type argument [[ [[ useAnimal.supplier<Dog>(dog) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(PathType())
 test task supplier with two type arguments [[ [[ checkAnimals.supplier<Dog, Fish>(dog, fish) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(BoolType())
-test task supplier with empty type argument list, not enough type arguments [[ checkAnimals.supplier[[<>]](dog, fish) ]] analysis fails // todo 1 error at #1  error like "not enough type arguments"
-test task supplier with omitted type argument list, not enough type arguments [[ useAnimal.supplie[[r(]]fish) ]] analysis fails // todo 1 error at #1  error like "not enough type arguments"
-test task supplier with too many type arguments [[ checkAnimals.supplier<Dog, Fish, Mammal>(dog, fish) ]] analysis fails // todo 1 error at #1  error like "too many type arguments"
-test task supplier type argument outside bound [[ useAnimal.supplier<[[Bar]]>(bar) ]] analysis fails // todo 1 error at #1  error like "not within upper bound"
+test task supplier with empty type argument list, not enough type arguments [[ checkAnimals.supplier[[<>]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test task supplier with omitted type argument list, not enough type arguments [[ [[useAnimal]].supplier(fish) ]] >= 1 error  error like "Cannot derive type arguments" at #1
+test task supplier with too many type arguments [[ checkAnimals.supplier[[<Dog, Fish, Mammal>]](dog, fish) ]] >= 1 error at #1  error like "Too many type arguments"
+test task supplier type argument outside bound [[ useAnimal.supplier<[[Bar>]](bar) ]] 1 error at #1  error like "not within upper bound"
 test task supplier one argument [[ [[ double.supplier(7) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test task supplier three arguments [[ [[ argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier qualified function [[ [[ test:expression:argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier undefined function [[ [[missing]].supplier() ]] 1 error at #1  error like "Undefined function"
 test task supplier not enough arguments [[ [[ double.supplier() ]] ]] 1 error at #1  error like "arguments"
 test task supplier too many arguments [[ [[ double.supplier(4, 6) ]] ]] 1 error at #1  error like "arguments"
-test task supplier argument with wrong type [[ argsFunc.supplier(8, [[ true ]], "Mandy") ]] 1 error at #1 // todo: error like "Type mismatch"
+test task supplier argument with wrong type [[ argsFunc.supplier(8, [[ true ]], "Mandy") ]] 1 error at #1  error like "Type mismatch"
 
 test list without filter [[ [[ list ./example/ ]] ]] analysis succeeds run pie-ast-type on #1 to ListType(PathType())
 test list with filter regex      [[ list /tmp/test/ with regex "file[0-9]+" ]] analysis succeeds

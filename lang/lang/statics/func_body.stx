@@ -167,14 +167,15 @@ rules
    */
   typeOfCall : scope * scope * scope * string * TypeArgs * list(Exp) -> (scope * TYPE)
   typeOfCall(s, s_def, s_type_args, name, type_args, arg_exps) =
-    typeOfCall_1(s, s_type_args, type_args, arg_exps, resolveUniqueFunc(s_def, name)).
+    typeOfCall_1(s, s_type_args, type_args, arg_exps, resolveUniqueFunc(s_def, name), name).
 
-    typeOfCall_1 : scope * scope * TypeArgs * list(Exp) * (BOOLEAN * TYPE * scope) -> (scope * TYPE)
-    typeOfCall_1(s1, s_type_args, type_args, arg_exps, (TRUE(), FuncType(_, param_tys, ret_ty), s_func)) = (s2, ty) :-
-      {s_func_instantiated instantiated_param_tys}
+    typeOfCall_1 : scope * scope * TypeArgs * list(Exp) * (BOOLEAN * TYPE * scope) * FUNCID -> (scope * TYPE)
+    typeOfCall_1(s1, s_type_args, type_args, arg_exps, (TRUE(), FuncType(_, param_tys, ret_ty), s_func), name) = (s2, ty) :-
+      {s_func_instantiated params instantiated_param_tys}
       new s_func_instantiated,
       s_func_instantiated -P-> s_func,
-      genericArgsOk(s1, s_type_args, s_func_instantiated, getGenericParams(s_func), type_args, TRUE()),
+      getGenericParams(s_func) == params,
+      genericArgsOk(s1, s_type_args, s_func_instantiated, params, type_args, TRUE(), name),
       instantiateTypeArgsInAll(s_func_instantiated, s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys) == s2,
       instantiateTypeArgs(s_func_instantiated, s_func_instantiated, ret_ty) == ty.
@@ -182,7 +183,7 @@ rules
     // Function didn't resolve. Type check arguments, but don't check if they
     // match the parameters.
     // Errors for non-resolving are created by resolveUniqueFunc.
-    typeOfCall_1(s, _, _, arg_exps, (FALSE(), _, _)) = (s, DataType(emptyScope(s))) :-
+    typeOfCall_1(s, _, _, arg_exps, (FALSE(), _, _), _) = (s, DataType(emptyScope(s))) :-
       typeOfExpsPassScopes(s, arg_exps) == _.
 
   typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
