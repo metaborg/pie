@@ -3,14 +3,14 @@ plugins {
   `maven-publish`
 }
 
-val logVersion = "0.5.2"
-val resourceVersion = "0.11.1"
-val commonVersion = "0.8.0"
+val logVersion = "0.5.3"
+val resourceVersion = "0.11.2"
+val commonVersion = "0.9.0"
 
-val checkerframeworkVersion = "3.10.0"
+val checkerframeworkVersion = "3.16.0"
 
 val immutablesVersion = "2.8.2"
-val daggerVersion = "2.34.1"
+val daggerVersion = "2.37"
 
 dependencies {
   constraints {
