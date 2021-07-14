@@ -196,7 +196,7 @@ rules
       getTypeArgsList(type_args) == [] | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
       arg_exps == [] | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps.
     typeOfQCall((s1, exp_ty), QCall(exp, name, type_args, arg_exps)) = (s2, ty) :- {s_data}
-      getScopeFromType(s2, exp_ty) == s_data,
+      getScopeFromType(s1, exp_ty) == s_data,
       typeOfCall(s1, s_data, s_data, name, type_args, arg_exps) == (s2, ty).
 
   typeOfExpImpl(s1, CreateSupplier(_, NoTypeArgs(), [exp])) = (s2, SupplierType(ty)) :-
