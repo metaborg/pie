@@ -96,27 +96,21 @@ test foreign java generic method - method parameter [[
   data Foo = foreign java org.example.test.Foo {
     func set<[[T]]>([[T]]) -> unit
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 test foreign java generic method - method return type [[
   data Foo = foreign java org.example.test.Foo {
     func get<[[T]]>() -> [[T]]
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #2 to #1
+]] analysis succeeds
+   resolve #2 to #1
 test foreign java generic method - method parameter and return type [[
   data Foo = foreign java org.example.test.Foo {
     func duplicate<[[T]]>(original: [[T]]) -> [[T]]
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #2 to #1
-//   resolve #3 to #1
+]] analysis succeeds
+   resolve #2 to #1
+   resolve #3 to #1
 
 test foreign java generic data type and method - duplicate name [[
   data Foo<A> = foreign java org.example.test.Foo {
@@ -130,26 +124,20 @@ test foreign java generic data type and method - method parameter [[
   data Foo<[[A]]> = foreign java org.example.test.Foo {
     func set<[[B]]>([[A]], [[B]]) -> bool
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #3 to #1
-//   resolve #4 to #2
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
 test foreign java generic data type and method - method return type [[
   data Foo<[[A]]> = foreign java org.example.test.Foo {
     func get<[[B]]>() -> ([[B]], [[A]])
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #3 to #2
-//   resolve #4 to #1
+]] analysis succeeds
+   resolve #3 to #2
+   resolve #4 to #1
 test foreign java generic data type and method - method parameter and return type [[
   data Foo<[[A]]> = foreign java org.example.test.Foo {
     func set<[[B]]>([[A]]) -> [[B]]
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #3 to #1
-//   resolve #4 to #2
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
