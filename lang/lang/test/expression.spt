@@ -425,6 +425,17 @@ test simple call argument of wrong type [[ checkAnimals<Animal, [[Faz<_>]]>(dog)
 test simple call 1 arg [[ [[double]](4) ]] analysis succeeds resolve #1
 test simple call 3 args [[ [[argsFunc]](2, value, "yes") ]] analysis succeeds resolve #1
 test simple call undefined func [[ [[unknown]](true) ]] 1 error at #1  error like "Undefined function"
+test simple call undefined func evaluates arguments [[
+  [[unknown]]([[1]] || true)
+]] 2 errors at #1, #2
+   error like "Undefined function" at #1
+   error like "Type mismatch" at #2
+test simple call undefined func passes along arguments scope [[
+  [[unknown]](val [[f]] = "Hello %s");
+  [[f]]
+]] 1 error at #1
+   error like "Undefined function" at #1
+   resolve #3 to #2
 test simple call provide subtype as argument [[ [[takesFoo]](bak) ]] analysis succeeds resolve #1
 test simple call incorrect arg count [[ double(3, 4) ]] error like "Unexpected number of arguments"
 test simple call incorrect arg type [[ double([[ [3, 4] ]]) ]] >= 1 error at #1 // error like "Type mismatch"
@@ -445,6 +456,17 @@ test method call subtype argument [[ bar.[[finagle]](true, bak) ]] analysis succ
 test method call super method [[ bar.[[get]]() ]] analysis succeeds  resolve #1
 test method call overridden method [[ bar.[[set]](bak) ]] analysis succeeds  resolve #1
 test method call undefined func [[ bar.[[nope]]() ]] 1 error at #1  error like "Undefined function"
+test method call undefined func evaluates arguments [[
+  bar.[[nope]](1 + [[true]])
+]] 2 errors at #1, #2
+   error like "Undefined function" at #1
+   error like "Type mismatch" at #2
+test method call undefined func passes arguments scope [[
+  bar.[[nope]](val [[x]] = 42);
+  [[x]]
+]] 1 error at #1
+   error like "Undefined function" at #1
+   resolve #3 to #2
 test method call incorrect arg count [[ foo.set(foo, 8) ]] >= 1 error
 test method call incorrect arg type [[ foo.set([[bok]]) ]] >= 1 error at #1
 
@@ -475,6 +497,17 @@ test task supplier one argument [[ [[ double.supplier(7) ]] ]] analysis succeeds
 test task supplier three arguments [[ [[ argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier qualified function [[ [[ test:expression:argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier undefined function [[ [[missing]].supplier() ]] 1 error at #1  error like "Undefined function"
+test task supplier undefined function evaluates arguments [[
+  [[missing]].supplier([[nope]])
+]] 2 errors at #1, #2
+   error like "Undefined function" at #1
+   error like "Cannot resolve" at #2
+test task supplier undefined function passes along argument scope [[
+  [[missing]].supplier(val [[file]] = ./missing.txt);
+  [[file]]
+]] 1 error at #1
+   error like "Undefined function" at #1
+   resolve #3 to #2
 test task supplier not enough arguments [[ [[ double.supplier() ]] ]] 1 error at #1  error like "arguments"
 test task supplier too many arguments [[ [[ double.supplier(4, 6) ]] ]] 1 error at #1  error like "arguments"
 test task supplier argument with wrong type [[ argsFunc.supplier(8, [[ true ]], "Mandy") ]] 1 error at #1  error like "Type mismatch"

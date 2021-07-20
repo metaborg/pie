@@ -183,8 +183,8 @@ rules
     // Function didn't resolve. Type check arguments, but don't check if they
     // match the parameters.
     // Errors for non-resolving are created by resolveUniqueFunc.
-    typeOfCall_1(s, _, _, arg_exps, (FALSE(), _, _), _) = (s, DataType(emptyScope(s))) :-
-      typeOfExpsPassScopes(s, arg_exps) == _.
+    typeOfCall_1(s1, _, _, arg_exps, (FALSE(), _, _), _) = (s2, DataType(emptyScope(s1))) :-
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _).
 
   typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
     typeOfCall(s, s, merged, name, type_args, arg_exps) :-
