@@ -108,7 +108,11 @@ test shadowing in block [[
 
 test toNullable [[ val x: int? = 8? ]] analysis succeeds
 test toNullable null [[ val x = null? ]] analysis succeeds
-test toNonNullable [[ val x: int = [[null!]] ]] 1 errors at #1    0 warnings    error like "Type mismatch"
+test toNonNullable [[ val x: int = [[null!]] ]]
+  analysis fails
+// Should parse to ToNonNullable(NullLit()).
+// see https://github.com/MeAmAnUsername/pie/issues/144
+// 1 errors at #1    0 warnings    error like "Type mismatch"
 test not [[ val b: bool = [[!enableFinagle]] ]] analysis succeeds
 
 test equals int [[ val b: bool = value == 5 ]] analysis succeeds
