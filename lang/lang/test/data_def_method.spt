@@ -116,10 +116,8 @@ test foreign java generic data type and method - duplicate name [[
   data Foo<A> = foreign java org.example.test.Foo {
     func duplicate<[[A]]>() -> unit
   }
-]] analysis succeeds
-//   todo
-//   1 error at #1
-//   error like "duplicate generic parameter"
+]] 1 error at #1
+   error like "Duplicate definition of generic parameter"
 test foreign java generic data type and method - method parameter [[
   data Foo<[[A]]> = foreign java org.example.test.Foo {
     func set<[[B]]>([[A]], [[B]]) -> bool

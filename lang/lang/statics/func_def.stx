@@ -15,20 +15,20 @@ rules
 
   funcDefOk : scope * FuncDef
   funcDefOk(s_mod, func@FuncDef(func_head, impl)) :- {name s_func out_ty impl_kind ty}
-    typeOfFuncHead(s_mod, emptyScope(s_mod), func_head) == (s_func, name, ty@FuncType(_, _, out_ty)),
+    typeOfFuncHead(s_mod, emptyScope(s_mod), s_mod, func_head) == (s_func, name, ty@FuncType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
     funcImplOk(s_func, impl, out_ty, name) == impl_kind,
     @func.kind := impl_kind,
     @func.type := ty.
 
-  typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
-  typeOfFuncHead(s, s_type_args, FuncHead(name, generic_params, Params(params), out_ty_exp)) =
+  typeOfFuncHead : scope * scope * scope * FuncHead -> (scope * string * TYPE)
+  typeOfFuncHead(s, s_type_args, s_parent, FuncHead(name, generic_params, Params(params), out_ty_exp)) =
     (s_func, name, FuncType(generic_param_tys, param_tys, out_ty))
   :-
     {merged}
     new s_func,
-    s_func -P-> s,
+    s_func -P-> s_parent,
     genericParamsOk(s, s_func, generic_params) == generic_param_tys,
     mergeScopes(s, [s_func, s_type_args]) == merged,
     typeOfParams(s, merged, s_func, params) == param_tys,
