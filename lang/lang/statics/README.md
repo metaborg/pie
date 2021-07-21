@@ -74,3 +74,13 @@ data Buz<A : Object> : Foo<A> = foreign java org.example.Buz {}
 ```
 `E` gets the implicit upper bound `Fruit` because it is passed to `Foo`.
 `A` fails because the upper bound `Object` is not compatible with the upper bound `Fruit` of `A` in `Foo<A>`.
+
+### Generic parameters
+Generic parameters contain the defining scope so that going up a type hierarchy is possible without ambiguities in what a generic argument refers to, for example:
+```
+data Box<A, B> = foreign java Box {}
+data Box2<A, B> : Box<B, A> = foreign java Box2 {}
+```
+Here, A and B exist in both data elements.
+Without the defining scope, type instantiating needs to go through the scopes one by one.
+With the defining scope, all type parameters can just be instantiated until everything is done.

@@ -70,7 +70,7 @@ rules // operations on types
      *          in s_sub |-> [(_, s_sub_super_instance)]
      * 5. Check if instances are compatible: isTypeArgsCompatible(s_sub_super_instance, s_super)
      */
-    isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((TYPEID * TYPE)) * scope -> BOOLEAN
+    isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((GenericParameter * TYPE)) * scope -> BOOLEAN
     isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
     isAssignableTo_dataTypes(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
     isAssignableTo_dataTypes(_, _, TRUE(), [], _) = TRUE().  // s_super does not have type arguments and s_sub inherits from s_super_def
@@ -94,11 +94,11 @@ rules // operations on types
         instantiateNamedTypeArgs(s1, s2, getTypeArgs(s2)) == instantiated,
         declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated).
 
-        instantiateNamedTypeArg : scope * scope * (TYPEID * TYPE) -> (TYPEID * TYPE)
+        instantiateNamedTypeArg : scope * scope * (GenericParameter * TYPE) -> (GenericParameter * TYPE)
         instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*)) = list(*)
         instantiateNamedTypeArg(s1, s2, (name, T)) = (name, instantiateTypeArgs_1(s1, T, [])).
 
-        declareTypeArgsFromTuples : scope * list((TYPEID * TYPE))
+        declareTypeArgsFromTuples : scope * list((GenericParameter * TYPE))
         declareTypeArgsFromTuples(_, []).
         declareTypeArgsFromTuples(s, [(name, T)|args]) :-
           declareTypeArg(s, name, T),
@@ -124,7 +124,7 @@ rules // operations on types
         allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2)).
 
       // Checks if a type argument in s1 is compatible with s2.
-      isTypeArgCompatible : (TYPEID * TYPE) * scope -> BOOLEAN
+      isTypeArgCompatible : (GenericParameter * TYPE) * scope -> BOOLEAN
       isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *) = list(*)
       isTypeArgCompatible((name, ty1), s2) =
         isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, "no error node")).
@@ -275,7 +275,7 @@ rules // operations on types
     lub_datatype : list((path * scope)) * scope * scope -> TYPE
     lub_datatype([], _, _) = TopType().
     lub_datatype([(_, s_common)], s1, s2) = DataType(s_common_instance) :-
-      {s3 s4 type_arg_names type_arg_tys merged_type_args}
+      {s3 s4 type_arg_params type_arg_tys merged_type_args}
       new s_common_instance,
       !root[getRoot(s_common)] in s_common_instance,
       s_common_instance -P-> s_common,
@@ -287,9 +287,9 @@ rules // operations on types
         filter (P|INHERIT)*
            and { s4_candidate :- isInstanceOf(s4_candidate, s_common) == TRUE() }
            min $ < INHERIT, $ < P in s2 |-> [(_, s4)],
-      unzipTypeArgs(getTypeArgs(s3)) == (type_arg_names, type_arg_tys),
-      lubs_type_args(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_names, "no error node")) == merged_type_args,
-      declareTypeArgs(s_common_instance, type_arg_names, merged_type_args).
+      unzipTypeArgs(getTypeArgs(s3)) == (type_arg_params, type_arg_tys),
+      lubs_type_args(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_params, "no error node")) == merged_type_args,
+      declareTypeArgs(s_common_instance, type_arg_params, merged_type_args).
 
         isInstanceOf: scope * scope -> BOOLEAN
         isInstanceOf(s1, s2) = isInstanceOf_listContains(occs, s2) :-
@@ -300,10 +300,10 @@ rules // operations on types
           isInstanceOf_listContains([(_, s)|_], s) = TRUE().
           isInstanceOf_listContains([(_, s')|rest], s) = isInstanceOf_listContains(rest, s).
 
-        unzipTypeArgs : list((TYPEID * TYPE)) -> (list(TYPEID) * list(TYPE))
+        unzipTypeArgs : list((GenericParameter * TYPE)) -> (list(GenericParameter) * list(TYPE))
         unzipTypeArgs([]) = ([], []).
-        unzipTypeArgs([(name, type)|type_args]) = ([name|names], [type|types]) :-
-          unzipTypeArgs(type_args) == (names, types).
+        unzipTypeArgs([(param, type)|type_args]) = ([param|params], [type|types]) :-
+          unzipTypeArgs(type_args) == (params, types).
 
         lub_type_arg : TYPE * TYPE -> TYPE
         lubs_type_args maps lub_type_arg(list(*), list(*)) = list(*)
@@ -481,16 +481,16 @@ rules
     // generic parameter
     isGenericParamOrDataTy(s, s_type_args, DataTy(NoModuleList(), name, type_args), NoModuleList(),
       [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, keep_uninstantiated) = type :-
-      genericParamToType(resolveTypeArg(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
+      genericParamToType(resolveTypeArgFromNameOnly(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
       @name.ref := name',
       @name.type := type,
       try { getTypeArgsList(type_args) == [] } | error "Generic parameters do not take type arguments" @type_args.
 
-      genericParamToType : list((path * (TYPEID * TYPE))) * BOOLEAN * GenericParameter * TYPE -> TYPE
+      genericParamToType : list((path * (GenericParameter * TYPE))) * BOOLEAN * GenericParameter * TYPE -> TYPE
       genericParamToType([], TRUE(), param, _) = GenericParameter2TYPE(param).
       genericParamToType([], FALSE(), _, upper_bound) = upper_bound. // should call instantiateTypeArgs?
       genericParamToType([(_, (_, ty))], _, _, _) = ty.
-      genericParamToType([(_, (name, _)),_|_], _, GenericParameter(s, _), _) = DataType(emptyScope(s)) :-
+      genericParamToType([(_, (GenericParameter(_, name), _)),_|_], _, GenericParameter(s, _), _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
 
     isGenericParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _, _) = DataType(emptyScope(s)) :-
@@ -547,12 +547,12 @@ rules
 
   genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type * BOOLEAN
   genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
-  genericArgOk(s, s_type_args, s_data_instance, (GenericParameter(_, name), upper_bound, lower_bound), arg, keep_uninstantiated) :-
+  genericArgOk(s, s_type_args, s_data_instance, (param@GenericParameter(_, name), upper_bound, lower_bound), arg, keep_uninstantiated) :-
     {arg_ty}
     typeOfWithTypeArgScope(s, s_type_args, arg, keep_uninstantiated) == arg_ty,
-    declareTypeArg(s_data_instance, name, arg_ty),
-    assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound]],
-    assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound]].
+    declareTypeArg(s_data_instance, param, arg_ty),
+    assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
+    assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound] for type parameter [name]].
 
   /**
    * instantiateTypeArgs(s, s_decl, T) = instantiated_type
@@ -614,11 +614,11 @@ rules
       instantiateTypeArgs_wildcardLowerbound(_, T@NoLowerBoundType(), _) = T.
       instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb), params) = LowerBoundType(instantiateTypeArgs_1(s, lb, params)).
 
-    instantiateTypeArgs_1(s, GenericParameter2TYPE(param@GenericParameter(s_param, name)), params) =
+    instantiateTypeArgs_1(s, GenericParameter2TYPE(param@GenericParameter(s_param, _)), params) =
       instantiateTypeArgs_genericParameter(s, scope_equal, resolved_arg, param, [param|params], seen)
     :-
       isScopeEqual(findGenericDef(s), s_param) == scope_equal,
-      resolveTypeArg(s, name) == resolved_arg,
+      resolveTypeArg(s, param) == resolved_arg,
       containsGenericParam(params, param) == seen.
 
       containsGenericParam : list(GenericParameter) * GenericParameter -> BOOLEAN
@@ -626,7 +626,7 @@ rules
       containsGenericParam([param|_], param) = TRUE().
       containsGenericParam([param'|params], param) = containsGenericParam(params, param).
 
-      instantiateTypeArgs_genericParameter : scope * BOOLEAN * list((path * (TYPEID * TYPE))) *
+      instantiateTypeArgs_genericParameter : scope * BOOLEAN * list((path * (GenericParameter * TYPE))) *
         GenericParameter * list(GenericParameter) * BOOLEAN -> TYPE
       instantiateTypeArgs_genericParameter(_, FALSE(), _, param, _, _) = GenericParameter2TYPE(param).
       instantiateTypeArgs_genericParameter(_, _, [], param, _, _) = GenericParameter2TYPE(param).

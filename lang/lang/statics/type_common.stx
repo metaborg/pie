@@ -111,11 +111,11 @@ rules
    * Get all type arguments defined in s_data.
    * Does not follow any edges.
    */
-  getTypeArgs : scope -> list((TYPEID * TYPE))
+  getTypeArgs : scope -> list((GenericParameter * TYPE))
   getTypeArgs(s_data) = getArgTypes(occs) :-
     query generic_arg filter e in s_data |-> occs.
 
-    getArgType : (path * (TYPEID * TYPE)) -> (TYPEID * TYPE)
+    getArgType : (path * (GenericParameter * TYPE)) -> (GenericParameter * TYPE)
     getArgTypes maps getArgType(list(*)) = list(*)
     getArgType((path, arg_ty)) = arg_ty.
 
@@ -124,7 +124,7 @@ rules
    * Gets the type of a type argument, i.e. the type that the type parameter is
    * bound to by this type argument.
    */
-  getTypeArgType : (TYPEID * TYPE) -> TYPE
+  getTypeArgType : (GenericParameter * TYPE) -> TYPE
   getTypeArgTypes maps getTypeArgType(list(*)) = list(*)
   getTypeArgType((_, ty)) = ty.
 
