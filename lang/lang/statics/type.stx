@@ -615,9 +615,8 @@ rules
       instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb), params) = LowerBoundType(instantiateTypeArgs_1(s, lb, params)).
 
     instantiateTypeArgs_1(s, GenericParameter2TYPE(param@GenericParameter(s_param, _)), params) =
-      instantiateTypeArgs_genericParameter(s, scope_equal, resolved_arg, param, [param|params], seen)
+      instantiateTypeArgs_genericParameter(s, resolved_arg, param, [param|params], seen)
     :-
-      isScopeEqual(findGenericDef(s), s_param) == scope_equal,
       resolveTypeArg(s, param) == resolved_arg,
       containsGenericParam(params, param) == seen.
 
@@ -626,13 +625,13 @@ rules
       containsGenericParam([param|_], param) = TRUE().
       containsGenericParam([param'|params], param) = containsGenericParam(params, param).
 
-      instantiateTypeArgs_genericParameter : scope * BOOLEAN * list((path * (GenericParameter * TYPE))) *
+      instantiateTypeArgs_genericParameter : scope * list((path * (GenericParameter * TYPE))) *
         GenericParameter * list(GenericParameter) * BOOLEAN -> TYPE
-      instantiateTypeArgs_genericParameter(_, FALSE(), _, param, _, _) = GenericParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(_, _, [], param, _, _) = GenericParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(s, TRUE(), [(_, (_, T))], _, params, containsGenericParam) = instantiateTypeArgs_1(s, T, params) :-
-        containsGenericParam == FALSE() | error $[bug: assumption that generic parameter with type argument has not been seen before is wrong].
-      instantiateTypeArgs_genericParameter(s, TRUE(), [_,_|_], GenericParameter(_, name), _, _) = DataType(emptyScope(s)) :-
+      instantiateTypeArgs_genericParameter(_, [], param, _, _) = GenericParameter2TYPE(param).
+      instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, TRUE()) = T :-
+        false | error $[bug: assumption that generic parameter with type argument has not been seen before is wrong].
+      instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, params).
+      instantiateTypeArgs_genericParameter(s, [_,_|_], GenericParameter(_, name), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
 
     instantiateTypeArgs_2 : list((path * scope)) * scope * scope * TYPE -> TYPE
