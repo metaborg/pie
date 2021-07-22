@@ -3,11 +3,11 @@ language pie
 
 fixture [[
   module test:dataDef:generics
-  
+
   data Food = foreign java test.dataDef.generics.Food {}
   data Fruit : Food = foreign java test.dataDef.generics.Fruit {}
   data Apple : Fruit = foreign java test.dataDef.generics.Apple {}
-  
+
   [[...]]
 ]]
 
@@ -125,16 +125,14 @@ test reference another parameter use before declaration [[
 ]] analysis succeeds
    resolve #1 to #2
 test cyclic reference self reference [[
-  data Foo<[[T]]: [[T>]] = foreign java Foo {}
-]] >= 1 error at #2
+  data Foo<[[T]]: [[T]]> = foreign java Foo {}
+]] analysis succeeds
    resolve #2 to #1
-   // todo: should give a better error message. error like "cyclic reference"
 test cyclic reference indirect [[
-  data Foo<[[T]]: [[R,]] [[R]]: [[T>]] = foreign java Foo {}
-]] >= 1 error at #2, #4
+  data Foo<[[T]]: [[R]], [[R]]: [[T]]> = foreign java Foo {}
+]] analysis succeeds
    resolve #2 to #3
    resolve #4 to #1
-   // todo: should give a better error message. error like "cyclic reference"
 
 test deeper supertype relationship [[
   data T1<A> = foreign java Whatever {

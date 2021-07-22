@@ -401,11 +401,7 @@ rules
    * typeOfWithTypeArgScope(s, s_type_args, ty) = type
    * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
    * If you don't have a scope with type arguments, use typeOf
-   * If keep_uninstantiated is TRUE, generic parameters that are not
-   * instantiated by a generic argument are returned as a
-   * GenericParameter2TYPE(param@GenericParameter(scope, name)). If
-   * keep_uninstantiated is FALSE generic parameters without matching arguments
-   * return their upper bound.
+   * [keep_uninstantiated] is unused.
    */
   typeOfWithTypeArgScope : scope * scope * Type * BOOLEAN -> TYPE
   typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope(*, *, list(*), *) = list(*)
@@ -458,13 +454,9 @@ rules
 
   /**
    * typeOfDataTy(s, s_type_args, data_ty, keep_uninstantiated) = data_type
-   * Get the Semantic type [data_type] of a synactic type [data_ty].
+   * Get the Semantic type [data_type] of a syntactic type [data_ty].
    * Uses [s] to resolve types and [s_type_args] to resolve type arguments.
-   * If keep_uninstantiated is TRUE, generic parameters that are not
-   * instantiated by a generic argument are returned as a
-   * GenericParameter2TYPE(param@GenericParameter(scope, name)). If
-   * keep_uninstantiated is FALSE generic parameters without matching arguments
-   * return their upper bound.
+   * [keep_uninstantiated] is unused.
    */
   typeOfDataTy : scope * scope * DataTy * BOOLEAN -> TYPE
   typeOfDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), keep_uninstantiated) = type :-
@@ -480,17 +472,16 @@ rules
 
     // generic parameter
     isGenericParamOrDataTy(s, s_type_args, DataTy(NoModuleList(), name, type_args), NoModuleList(),
-      [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, keep_uninstantiated) = type :-
-      genericParamToType(resolveTypeArgFromNameOnly(s_type_args, name), keep_uninstantiated, param, upper_bound) == type,
+      [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, _) = type :-
+      genericParamToType(resolveTypeArgFromNameOnly(s_type_args, name), param, upper_bound) == type,
       @name.ref := name',
       @name.type := type,
-      try { getTypeArgsList(type_args) == [] } | error "Generic parameters do not take type arguments" @type_args.
+      getTypeArgsList(type_args) == [] | error "Generic parameters do not take type arguments" @type_args.
 
-      genericParamToType : list((path * (GenericParameter * TYPE))) * BOOLEAN * GenericParameter * TYPE -> TYPE
-      genericParamToType([], TRUE(), param, _) = GenericParameter2TYPE(param).
-      genericParamToType([], FALSE(), _, upper_bound) = upper_bound. // should call instantiateTypeArgs?
-      genericParamToType([(_, (_, ty))], _, _, _) = ty.
-      genericParamToType([(_, (GenericParameter(_, name), _)),_|_], _, GenericParameter(s, _), _) = DataType(emptyScope(s)) :-
+      genericParamToType : list((path * (GenericParameter * TYPE))) * GenericParameter * TYPE -> TYPE
+      genericParamToType([], param, _) = GenericParameter2TYPE(param).
+      genericParamToType([(_, (_, ty))], _, _) = ty.
+      genericParamToType([(_, (GenericParameter(_, name), _)),_|_], GenericParameter(s, _), _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
 
     isGenericParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _, _) = DataType(emptyScope(s)) :-
