@@ -1,8 +1,11 @@
 package mb.pie.api;
 
 import mb.pie.api.exec.CancelToken;
+import mb.pie.api.exec.NullCancelableToken;
 import mb.resource.ResourceKey;
 
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -54,7 +57,9 @@ public interface MixedSession extends Session, AutoCloseable {
      *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
      *                               returned object to query task results or to execute new tasks.
      */
-    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException, InterruptedException;
+    default TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException, InterruptedException {
+        return updateAffectedBy(changedResources, NullCancelableToken.instance);
+    }
 
     /**
      * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
@@ -70,7 +75,46 @@ public interface MixedSession extends Session, AutoCloseable {
      *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
      *                               returned object to query task results or to execute new tasks.
      */
-    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException;
+    default TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+        return updateAffectedBy(changedResources, Collections.emptySet(), cancel);
+    }
+
+    /**
+     * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion. Only {@link
+     * Observability#ExplicitObserved explicitly observed} or {@link Observability#ImplicitObserved implicitly observed}
+     * tasks are considered.
+     *
+     * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
+     * @param tags             Set of tags that can influence whether an affected task is executed or deferred (via
+     *                         {@link TaskDef#shouldExecWhenAffected(Serializable, Set)}.
+     * @throws ExecException         When a task throws an {@link Exception}.
+     * @throws InterruptedException  When execution is cancelled.
+     * @throws RuntimeException      When a task throws a {@link RuntimeException}.
+     * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy} or {@link #require}. Only
+     *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
+     *                               returned object to query task results or to execute new tasks.
+     */
+    default TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, Set<?> tags) throws ExecException, InterruptedException {
+        return updateAffectedBy(changedResources, tags, NullCancelableToken.instance);
+    }
+
+    /**
+     * Make up-to-date all tasks (transitively) affected by {@code changedResources} in a bottom-up fashion, using given
+     * {@code cancel} checker. Only {@link Observability#ExplicitObserved explicitly observed} or {@link
+     * Observability#ImplicitObserved implicitly observed} tasks are considered.
+     *
+     * @param changedResources Set of {@link ResourceKey resource key}s which have been changed.
+     * @param tags             Set of tags that can influence whether an affected task is executed or deferred (via
+     *                         {@link TaskDef#shouldExecWhenAffected(Serializable, Set)}.
+     * @param cancel           Cancel checker to use.
+     * @throws ExecException         When a task throws an {@link Exception}.
+     * @throws InterruptedException  When execution is cancelled.
+     * @throws RuntimeException      When a task throws a {@link RuntimeException}.
+     * @throws IllegalStateException When executed after a call to {@link #updateAffectedBy} or {@link #require}. Only
+     *                               one {@link #updateAffectedBy bottom-up build} may be executed per session. Use the
+     *                               returned object to query task results or to execute new tasks.
+     */
+    TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, Set<?> tags, CancelToken cancel) throws ExecException, InterruptedException;
 
 
     /**

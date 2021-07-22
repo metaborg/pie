@@ -237,6 +237,12 @@ public class CompositeTracer implements Tracer {
         }
     }
 
+    @Override public void deferTask(TaskKey key) {
+        for(Tracer tracer : tracers) {
+            tracer.deferTask(key);
+        }
+    }
+
     @Override
     public void requireScheduledNowStart(TaskKey key) {
         for(Tracer tracer : tracers) {

@@ -51,18 +51,12 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         store.sync();
     }
 
-
     @Override
-    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException, InterruptedException {
-        return updateAffectedBy(changedResources, NullCancelableToken.instance);
-    }
-
-    @Override
-    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, Set<?> tags, CancelToken cancel) throws ExecException, InterruptedException {
         checkUpdateAffectedBy();
         if(changedResources.isEmpty())
             return createSessionAfterBottomUp();
-        handleException(() -> bottomUpRunner.requireInitial(changedResources, cancel));
+        handleException(() -> bottomUpRunner.requireInitial(changedResources, tags, cancel));
         return createSessionAfterBottomUp();
     }
 

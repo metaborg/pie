@@ -263,6 +263,22 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     }
 
 
+    @Override public Set<TaskKey> deferredTasks() {
+        // TODO: implement
+        throw new UnsupportedOperationException("deferredTasks has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void addDeferredTask(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("addDeferredTask has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void removeDeferredTask(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("removeDeferredTask has not been implemented for LMDB yet, sorry");
+    }
+
+
     @Override public void drop() {
         inputDb.drop(txn);
         outputDb.drop(txn);

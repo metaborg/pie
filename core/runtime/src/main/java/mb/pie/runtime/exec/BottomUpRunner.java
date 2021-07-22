@@ -41,7 +41,7 @@ public class BottomUpRunner implements RequireTask {
     private final Callbacks callbacks;
 
     private final HashMap<TaskKey, TaskData> visited;
-    private @MonotonicNonNull DistinctTaskKeyPriorityQueue queue;
+    private @MonotonicNonNull DistinctTaskKeyPriorityQueue scheduled;
 
     public BottomUpRunner(
         TaskDefs taskDefs,
@@ -67,12 +67,20 @@ public class BottomUpRunner implements RequireTask {
     }
 
 
-    public void requireInitial(Set<? extends ResourceKey> changedResources, CancelToken cancel) {
+    public void requireInitial(Set<? extends ResourceKey> changedResources, Set<?> tags, CancelToken cancel) {
         tracer.requireBottomUpInitialStart(changedResources);
         try(final StoreWriteTxn txn = store.writeTxn()) {
-            queue = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(txn);
+            scheduled = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(txn);
+            for(TaskKey deferred : txn.deferredTasks()) {
+                // Schedule deferred tasks that are observable and should not be deferred again.
+                final Task<?> task = deferred.toTask(taskDefs, txn);
+                if(txn.taskObservability(deferred).isObserved() && task.taskDef.shouldExecWhenAffected(task.input, tags)) {
+                    tracer.scheduleTask(deferred);
+                    scheduled.add(deferred);
+                }
+            }
             scheduleAffectedByResources(changedResources.stream(), txn);
-            execScheduled(true, txn, cancel); // Always modify observability in bottom-up build.
+            execScheduled(tags, true, txn, cancel); // Always modify observability in bottom-up build.
         } finally {
             tracer.requireBottomUpInitialEnd();
         }
@@ -102,12 +110,17 @@ public class BottomUpRunner implements RequireTask {
     /**
      * Executes scheduled tasks (and schedules affected tasks) until queue is empty.
      */
-    private void execScheduled(boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
-        while(queue.isNotEmpty()) {
+    private void execScheduled(Set<?> tags, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
+        while(scheduled.isNotEmpty()) {
             cancel.throwIfCanceled();
-            final TaskKey key = queue.poll();
+            final TaskKey key = scheduled.poll();
             final Task<?> task = key.toTask(taskDefs, txn);
-            execAndSchedule(key, task, new AffectedExecReason(), modifyObservability, txn, cancel);
+            if(task.taskDef.shouldExecWhenAffected(task.input, tags)) {
+                execAndSchedule(key, task, new AffectedExecReason(), modifyObservability, txn, cancel);
+            } else {
+                tracer.deferTask(key);
+                txn.addDeferredTask(key);
+            }
         }
     }
 
@@ -115,10 +128,14 @@ public class BottomUpRunner implements RequireTask {
      * Executes given task, and schedules new tasks based on given task's output.
      */
     private TaskData execAndSchedule(TaskKey key, Task<?> task, ExecReason reason, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
-        final TaskData data = exec(key, task, reason, modifyObservability, txn, cancel);
-        scheduleAffectedByRequiredTask(key, data.output, txn);
-        scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key), txn);
-        return data;
+        try {
+            final TaskData data = exec(key, task, reason, modifyObservability, txn, cancel);
+            scheduleAffectedByRequiredTask(key, data.output, txn);
+            scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key), txn);
+            return data;
+        } finally {
+            txn.removeDeferredTask(key);
+        }
     }
 
     /**
@@ -127,7 +144,7 @@ public class BottomUpRunner implements RequireTask {
     private void scheduleAffectedByResources(Stream<? extends ResourceKey> resources, StoreReadTxn txn) {
         BottomUpShared.directlyAffectedByResources(resources, resourceService, txn, tracer, (key) -> {
             tracer.scheduleTask(key);
-            queue.add(key);
+            scheduled.add(key);
         });
     }
 
@@ -139,7 +156,7 @@ public class BottomUpRunner implements RequireTask {
             tracer.scheduleAffectedByResourceStart(changedResource);
             BottomUpShared.directlyAffectedByRequiredResource(changedResource, resourceService, txn, tracer, (key) -> {
                 tracer.scheduleTask(key);
-                queue.add(key);
+                scheduled.add(key);
             });
             tracer.scheduleAffectedByResourceEnd(changedResource);
         });
@@ -151,7 +168,7 @@ public class BottomUpRunner implements RequireTask {
     private void scheduleAffectedByRequiredTask(TaskKey requiree, @Nullable Serializable output, StoreReadTxn txn) {
         BottomUpShared.directlyAffectedByRequiredTask(requiree, output, txn, tracer, (key) -> {
             tracer.scheduleTask(key);
-            queue.add(key);
+            scheduled.add(key);
         });
     }
 
@@ -332,9 +349,9 @@ public class BottomUpRunner implements RequireTask {
      */
     private @Nullable TaskData requireScheduledNow(TaskKey key, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
         tracer.requireScheduledNowStart(key);
-        while(queue.isNotEmpty()) {
+        while(scheduled.isNotEmpty()) {
             cancel.throwIfCanceled();
-            final @Nullable TaskKey minTaskKey = queue.pollLeastTaskWithDepTo(key, txn);
+            final @Nullable TaskKey minTaskKey = scheduled.pollLeastTaskWithDepTo(key, txn);
             if(minTaskKey == null) {
                 break;
             }

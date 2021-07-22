@@ -56,6 +56,12 @@ public class DistinctTaskKeyPriorityQueue {
         set.add(key);
     }
 
+    public void addAll(Iterable<TaskKey> keys) {
+        for(TaskKey key : keys) {
+            add(key);
+        }
+    }
+
     @Override public String toString() {
         return queue.toString();
     }

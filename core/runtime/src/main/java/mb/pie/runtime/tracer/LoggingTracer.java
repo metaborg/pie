@@ -37,6 +37,7 @@ import java.util.function.Consumer;
  * <li>¿: indicates that a resource or task's affected tasks are being checked for scheduling (increases indentation until checking has completed).</li>
  * <li>☐: indicates that a dependency check has been skipped, because the task is unobserved.</li>
  * <li>↑: indicates that a task has been scheduled for execution (if it has not already been scheduled).</li>
+ * <li>↓: indicates that a scheduled task has been deferred.</li>
  * <li>⇒: indicates that the observability of a task has changed from one to another.</li>
  *   <ul>
  *       <li>‼: explicitly observed</li>
@@ -275,6 +276,10 @@ public class LoggingTracer extends EmptyTracer {
         logBottomUp("↑ " + key);
     }
 
+    @Override public void deferTask(TaskKey key) {
+        if(isBottomUpDisabled()) return;
+        logBottomUp("↓ " + key);
+    }
 
     @Override
     public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {

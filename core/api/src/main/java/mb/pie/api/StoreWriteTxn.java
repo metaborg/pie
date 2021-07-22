@@ -39,6 +39,7 @@ public interface StoreWriteTxn extends StoreReadTxn {
      */
     void setResourceProvides(TaskKey key, Collection<ResourceProvideDep> resourceProvides);
 
+
     /**
      * Sets the output and dependencies for task [key] to [data].
      */
@@ -51,6 +52,12 @@ public interface StoreWriteTxn extends StoreReadTxn {
      * @return deleted task data, or null if no data was deleted.
      */
     @Nullable TaskData deleteData(TaskKey key);
+
+
+    void addDeferredTask(TaskKey key);
+
+    void removeDeferredTask(TaskKey key);
+
 
     /**
      * Removes all data from (drops) the store.

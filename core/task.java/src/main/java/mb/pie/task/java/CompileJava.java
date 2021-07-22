@@ -26,8 +26,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Value.Enclosing
@@ -107,6 +109,8 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
 
         List<Supplier<?>> originTasks();
+
+        Set<Serializable> shouldExecWhenAffectedTags();
 
         Optional<Serializable> key();
     }
@@ -230,6 +234,10 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         provideFilesInDirectoryOfExtension(context, classFileOutputDir, "class");
 
         return messagesBuilder.build();
+    }
+
+    @Override public boolean shouldExecWhenAffected(Input input, Set<?> tags) {
+        return tags.isEmpty() || input.shouldExecWhenAffectedTags().isEmpty() || !Collections.disjoint(input.shouldExecWhenAffectedTags(), tags);
     }
 
     @Override public Serializable key(Input input) {

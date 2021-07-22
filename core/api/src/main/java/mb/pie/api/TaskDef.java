@@ -1,6 +1,7 @@
 package mb.pie.api;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * Definition of an incremental task which takes objects of type {@code I} and produces objects of type {@code O} when
@@ -67,6 +68,22 @@ public interface TaskDef<I extends Serializable, O extends Serializable> {
      * @throws Exception When execution of the task fails unexpectedly.
      */
     O exec(ExecContext context, I input) throws Exception;
+
+    /**
+     * Gets whether task with given {@code input} should be executed when it is affected (and thus scheduled) in a
+     * bottom-up build, based on the {@code tags} that were activated. If false, the task will not be executed and will
+     * be deferred until the next bottom-up build, where it will be scheduled again. Defaults to {@code true}.
+     *
+     * In top-down builds, or in bottom-up builds where the task is directly required, this method is not used, and
+     * tasks will not be deferred.
+     *
+     * @param input Input object of the task.
+     * @param tags  Tags that were activated in the bottom-up build.
+     * @return True to execute the task, false to defer it.
+     */
+    default boolean shouldExecWhenAffected(I input, Set<?> tags) {
+        return true;
+    }
 
 
     /**

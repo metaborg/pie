@@ -47,6 +47,8 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     protected final HashMap<TaskKey, Collection<ResourceProvideDep>> resourceProvides = new HashMap<>();
     protected final HashMap<ResourceKey, TaskKey> providerOf = new HashMap<>();
 
+    protected final HashSet<TaskKey> deferredTasks = new HashSet<>();
+
 
     @Override public @Nullable Serializable input(TaskKey key) {
         return taskInputs.get(key);
@@ -178,7 +180,6 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         return new TaskData(input, output.output, taskObservability, taskRequires, resourceRequires, resourceProvides);
     }
 
-
     @Override public void setData(TaskKey key, TaskData data) {
         setInput(key, data.input);
         setOutput(key, data.output);
@@ -186,6 +187,9 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         setTaskRequires(key, data.taskRequires);
         setResourceRequires(key, data.resourceRequires);
         setResourceProvides(key, data.resourceProvides);
+        // TODO: is this correct? setData is called by TaskExecutor after it executed a task, so the deferred task has
+        //  been executed, so it should be sound?
+        removeDeferredTask(key);
     }
 
     @Override public @Nullable TaskData deleteData(TaskKey key) {
@@ -227,6 +231,8 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
             }
         }
 
+        deferredTasks.remove(key);
+
         return new TaskData(
             input,
             output.output,
@@ -235,6 +241,19 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
             removedResourceRequires != null ? removedResourceRequires : new LinkedHashSet<>(),
             removedResourceProvides != null ? removedResourceProvides : new LinkedHashSet<>()
         );
+    }
+
+
+    @Override public Set<TaskKey> deferredTasks() {
+        return deferredTasks;
+    }
+
+    @Override public void addDeferredTask(TaskKey key) {
+        deferredTasks.add(key);
+    }
+
+    @Override public void removeDeferredTask(TaskKey key) {
+        deferredTasks.remove(key);
     }
 
 
@@ -269,6 +288,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         requireesOf.clear();
         resourceProvides.clear();
         providerOf.clear();
+        deferredTasks.clear();
     }
 
 

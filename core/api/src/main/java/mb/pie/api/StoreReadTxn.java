@@ -79,6 +79,8 @@ public interface StoreReadTxn extends StoreTxn {
     @Nullable TaskData data(TaskKey key);
 
 
+    Set<TaskKey> deferredTasks();
+
     /**
      * @return task keys for all tasks that have no callers.
      */
