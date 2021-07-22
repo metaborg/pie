@@ -649,14 +649,13 @@ test generic method - super defines on datatype, sub defines on method, super fo
    resolve #2 to #1
 test generic method - super defines on datatype, sub defines on method, super for sub has specific type [[
   data Foo<T> = foreign java org.example.test.Foo {
-    func [[test]]<>(T) -> int
+    func test<>(T) -> int
   }
   data Bar<> : Foo<Food> = foreign java org.example.test.Bar {
     func [[test]]<T>(T) -> bool // use different return type to check that this method does not override
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
+]] 1 error at #1
+   error like "collides with method in super type"
 test generic method - super defines on method, sub defines on datatype [[
   data Foo<> = foreign java org.example.test.Foo {
     func [[test]]<T>(T) -> int
