@@ -424,23 +424,38 @@ rules // Declararing and resolving
     resolveTypeArg(s, param) == [_]
       | error $[BUG: multiple arguments for type parameter [name]].
 
-  resolveTypeArgFromNameOnly : scope * TYPEID -> list((path * (GenericParameter * TYPE)))
-  resolveTypeArgFromNameOnly(s, name) = occs :-
+  /**
+   * resolveTypeArgFromNameOnly(s, name, follow_inherit) = occs
+   * Resolve [name] to type argument occurences [occs] in [s].
+   * May return any number of type arguments.
+   * If [follow_inherit] is TRUE it follows both P and INHERIT edges, otherwise
+   * only P edges.
+   */
+  resolveTypeArgFromNameOnly : scope * TYPEID * BOOLEAN -> list((path * (GenericParameter * TYPE)))
+  resolveTypeArgFromNameOnly(s, name, FALSE()) = occs :-
     query generic_arg
       filter P*
          and { GenericParameter(_, name') :- name == name' }
+         min $ < P
+          in s |-> occs.
+  resolveTypeArgFromNameOnly(s, name, TRUE()) = occs :-
+    query generic_arg
+      filter (INHERIT|P)*
+         and { GenericParameter(_, name') :- name == name' }
+         min $ < P, $ < INHERIT
           in s |-> occs.
 
   /**
    * resolveTypeArg(s, name) = occs
    * Resolve [name] to type argument occurences [occs] in [s].
-   * May return any number of type arguments. Follows P edges.
+   * May return any number of type arguments. Follows P and INHERIT edges.
    */
   resolveTypeArg : scope * GenericParameter -> list((path * (GenericParameter * TYPE)))
   resolveTypeArg(s, param) = occs :-
     query generic_arg
-      filter P*
+      filter (INHERIT|P)*
          and { param' :- param == param' }
+         min $ < P, $ < INHERIT
           in s |-> occs.
 
   /**

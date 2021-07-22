@@ -134,7 +134,24 @@ test cyclic reference indirect [[
    resolve #2 to #3
    resolve #4 to #1
 
-test deeper supertype relationship [[
+test method call inherited from supertype [[
+  data T1<A> = foreign java Whatever {
+    func get() -> A
+  }
+  data T2<B> : T1<B> = foreign java Whatever {}
+
+  func test(t: T2<string>) -> string = t.get()
+]] analysis succeeds
+test method call inherited from supertype wrong return type [[
+  data T1<A> = foreign java Whatever {
+    func get() -> A
+  }
+  data T2<B> : T1<B> = foreign java Whatever {}
+
+  func test(t: T2<bool>) -> int = [[t.get()]]
+]] 1 error at #1
+   error like "Type mismatch"
+test method call inherited from transitive supertype [[
   data T1<A> = foreign java Whatever {
     func get() -> A
   }

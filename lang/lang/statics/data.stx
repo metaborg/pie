@@ -45,7 +45,7 @@ rules
   superOk : scope * scope * SuperType * string
   superOk(s, s_data_def, NoSuperType(), name).
   superOk(s, s_data_def, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
-    typeOfDataTy(s, s_data_def, data_ty,  TRUE()) == DataType(s_super),
+    typeOfDataTy(s, s_data_def, data_ty, FALSE()) == DataType(s_super),
     s_data_def -INHERIT-> s_super,
     inherits(s_super, s_data_def) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
     query func filter e in s_data_def |-> occs,
@@ -64,8 +64,8 @@ rules
     superOk_2(s_data_def, s_super, (s_func, FuncType(type_params, param_tys, ty_out)), (_, (name_super, (s_func_super, FuncType(type_params_super, param_tys_super, ty_out_super)))), name) :-
       {super_params params isAllInvariant}
       // todo: use type_params, type_params_super, s_func, s_func_super
-      eraseTypes(instantiateTypeArgsInAll(s_super, s_super, param_tys_super)) == super_params,
-      eraseTypes(instantiateTypeArgsInAll(s_data_def, s_data_def, param_tys)) == params,
+      eraseTypes(instantiateTypeArgsInAll(s_super, param_tys_super)) == super_params,
+      eraseTypes(instantiateTypeArgsInAll(s_data_def, param_tys)) == params,
       isAllInvariant(super_params, params) == isAllInvariant,
       superOk_3(isAllInvariant, s_data_def, s_super, name, params, ty_out, name_super, param_tys_super, ty_out_super).
 
@@ -75,12 +75,12 @@ rules
     superOk_3 : BOOLEAN * scope * scope * TYPEID * list(TYPE) * TYPE * TYPEID * list(TYPE) * TYPE
     superOk_3(TRUE(), s_data_def, s_super, name, _, ty_out, name_super, _, ty_out_super) :-
       @name.ref := name_super,
-      assignableTo(instantiateTypeArgs(s_data_def, s_data_def, ty_out), instantiateTypeArgs(s_data_def, s_super, ty_out_super))
+      assignableTo(instantiateTypeArgs(s_data_def, ty_out), instantiateTypeArgs(s_data_def, ty_out_super))
         | error $[Type mismatch: incompatible return type for override] @name.
     superOk_3(FALSE(), _, s_super, name, erased_params, _, _, super_params, _) :-
       {generic_def erased_super_params}
       getGenericDef(s_super) == generic_def,
-      eraseTypes(instantiateTypeArgsInAll(generic_def, generic_def, super_params)) == erased_super_params,
+      eraseTypes(instantiateTypeArgsInAll(generic_def, super_params)) == erased_super_params,
       isAllInvariant(erased_params, erased_super_params) == FALSE()
         | error $[[name] collides with method in super type: this method does not override method in supertype but has the same signature after type erasure].
 
