@@ -154,3 +154,22 @@ rules
   ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
   ppTYPE(WildcardType(ub, lb)) = "wildcard".
   ppTYPE(GenericParameter2TYPE(GenericParameter(_, name))) = name.
+
+  /**
+   * ppScope(s) -> name
+   * get the name of a scope
+   * returns "unknown scope" if it is not a type.
+   */
+  ppScope : scope -> string
+  ppScope(s) = ppScope_1(s, occs) :-
+    query context
+      filter P*
+         and {name :- "data_name_unqualified" == name}
+         min $ < P
+         and {x1, x2 :- x1 == x2}
+          in s |-> occs.
+
+    ppScope_1 : scope * list((path * (string * CONTEXT))) -> string
+    ppScope_1(s, []) = "unknown scope".
+    ppScope_1(_, [(_, (_, ContextName(name)))]) = name.
+    ppScope_1(s, [_,_|_]) = "unknown scope" :- false | error $[BUG: resolved multiple context values for "data_name_unqualified" in [s]].
