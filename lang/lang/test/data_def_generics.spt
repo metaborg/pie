@@ -139,8 +139,8 @@ test deeper supertype relationship [[
     func get() -> A
   }
   data T2<B> : T1<B> = foreign java Whatever {}
-  data T3<C> : T1<C> = foreign java Whatever {}
-  data T4<D> : T1<D> = foreign java Whatever {}
+  data T3<C> : T2<C> = foreign java Whatever {}
+  data T4<D> : T3<D> = foreign java Whatever {}
 
   func test(t: T4<string>) -> string = t.get()
 ]] analysis succeeds
