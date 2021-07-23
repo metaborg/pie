@@ -90,7 +90,7 @@ rules // operations on types
         {instantiated}
         new s_data_instance_instantiated,
         !root[getRoot(s2)] in s_data_instance_instantiated,
-        s_data_instance_instantiated -P-> getGenericDef(s2),
+        s_data_instance_instantiated -P-> findGenericDef(s2),
         instantiateNamedTypeArgs(s1, s2, getTypeArgs(s2)) == instantiated,
         declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated).
 
@@ -190,9 +190,7 @@ rules // operations on types
    * (T1 is a subtype of T2, T2 is a subtype of T1)
    */
   isInvariant : TYPE * TYPE -> BOOLEAN
-  isInvariant(T1, T2) = andB(isInvariant_1(ub1, ub2), isInvariant_1(lb1, lb2)) :-
-    getBounds(T1) == (ub1, lb1),
-    getBounds(T2) == (ub2, lb2).
+  isInvariant(T1, T2) = isInvariant_1(T1, T2). // todo: inline
 
     getBounds : TYPE -> (TYPE * TYPE)
     getBounds(WildcardType(ub, lb)) = (typeOrTopType(ub), typeOrBottomType(lb)).

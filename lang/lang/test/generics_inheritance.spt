@@ -227,13 +227,13 @@ test supertype - non-overriding methods - super generic parameter - super type a
 ]] analysis succeeds
 test supertype - non-overriding, colliding methods - both generic parameters - super type argument is equal to super generic param upper bound, subtype method paramater is generic parameter with upper bound equal to argument [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
-    func [[addPiece]](piece: F) -> unit
+    func addPiece(piece: F) -> unit
   }
   data FruitBowl2<F : Fruit> : FruitBowl<Fruit> = foreign java org.example.test.FruitBowl2 {
     func [[addPiece]](piece: F) -> unit
   }
-]] analysis succeeds
-   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"
 test supertype - non-overriding methods - both generic parameters - super type argument is equal to super generic param upper bound, subtype method paramater is generic parameter with upper bound higher than argument [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -282,10 +282,9 @@ test supertype - non-overriding methods - both generic parameters - super type a
     func [[addPiece]](piece: F) -> unit
   }
   data FruitBowl2<F : Fruit> : FruitBowl<Fruit> = foreign java org.example.test.FruitBowl2 {
-    func [[addPiece]](piece: F) -> unit
+    func [[addPiece]](piece: F) -> bool // use different return type to check that this method does not override
   }
 ]] analysis succeeds
-   resolve #2 to #1
 test supertype - non-overriding, colliding methods - both generic parameters - super type argument is lower than super generic param upper bound, subtype method paramater is generic parameter with upper bound higher than argument [[
   data FruitBowl<F : Food> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -304,15 +303,15 @@ test supertype - non-overriding methods - both generic parameters - super type a
   }
 ]] analysis succeeds
 
-test supertype - overriding methods - super generic parameter - super type argument is generic parameter with upper bound equal to super generic param upper bound, subtype method paramater is equal to upper bounds [[
+test supertype - non-overriding, colliding methods - super generic parameter - super type argument is generic parameter with upper bound equal to super generic param upper bound, subtype method paramater is equal to upper bounds [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
-    func [[addPiece]](piece: F) -> unit
+    func addPiece(piece: F) -> unit
   }
   data FruitBowl2<F : Fruit> : FruitBowl<F> = foreign java org.example.test.FruitBowl2 {
     func [[addPiece]](piece: Fruit) -> unit
   }
-]] analysis succeeds
-   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"
 test supertype - non-overriding methods - super generic parameter - super type argument is generic parameter with upper bound equal to super generic param upper bound, subtype method paramater is higher than upper bounds [[
   data FruitBowl<F : Fruit> = foreign java org.example.test.FruitBowl {
     func addPiece(piece: F) -> unit
@@ -603,22 +602,22 @@ test generic method - multiple params, different names [[
    resolve #2 to #1
 test generic method - multiple params, declaration order switched [[
   data Foo = foreign java org.example.test.Foo {
-    func [[test]]<A, B>(A, B, A) -> int
+    func test<A, B>(A, B, A) -> int
   }
   data Bar : Foo = foreign java org.example.test.Bar {
-    func [[test]]<B, A>(A, B, A) -> int
+    func [[test]]<B, A>(A, B, A) -> bool
   }
-]] analysis succeeds
-   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"
 test generic method - multiple params, no override, same erasure [[
   data Foo = foreign java org.example.test.Foo {
-    func [[test]]<A, B>(A, B, A) -> int
+    func test<A, B>(A, B, A) -> int
   }
   data Bar : Foo = foreign java org.example.test.Bar {
-    func [[test]]<B, A>(A, B, B) -> int
+    func [[test]]<B, A>(A, B, B) -> bool
   }
-]] analysis succeeds
-   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"
 
 test generic method - super 1 unused param, sub no params [[
   data Foo = foreign java org.example.test.Foo {
@@ -631,22 +630,22 @@ test generic method - super 1 unused param, sub no params [[
    resolve #2 to #1
 test generic method - sub 1 unused param, super no params [[
   data Foo = foreign java org.example.test.Foo {
-    func [[test]]<>() -> int
+    func test<>() -> int
   }
   data Bar : Foo = foreign java org.example.test.Bar {
-    func [[test]]<T>() -> int
+    func [[test]]<T>() -> bool
   }
-]] analysis succeeds
-   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"
 test generic method - super defines on datatype, sub defines on method, super for sub has wildcard [[
   data Foo<T> = foreign java org.example.test.Foo {
-    func [[test]]<>(T) -> int
+    func test<>(T) -> int
   }
   data Bar<> : Foo<_> = foreign java org.example.test.Bar {
-    func [[test]]<T>(T) -> int
+    func [[test]]<T>(T) -> bool
   }
-]] analysis succeeds
-   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"
 test generic method - super defines on datatype, sub defines on method, super for sub has specific type [[
   data Foo<T> = foreign java org.example.test.Foo {
     func test<>(T) -> int
@@ -658,12 +657,10 @@ test generic method - super defines on datatype, sub defines on method, super fo
    error like "collides with method in super type"
 test generic method - super defines on method, sub defines on datatype [[
   data Foo<> = foreign java org.example.test.Foo {
-    func [[test]]<T>(T) -> int
+    func test<T>(T) -> int
   }
   data Bar<T> : Foo = foreign java org.example.test.Bar {
-    func [[test]]<T>(T) -> int
+    func [[test]]<>(T) -> bool // use different return type to check that this method does not override
   }
-]] analysis fails
-//   todo
-//   analysis succeeds
-//   resolve #2 to #1
+]] 1 error at #1
+   error like "collides with method in super type"

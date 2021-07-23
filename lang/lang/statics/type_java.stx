@@ -1,0 +1,94 @@
+module statics/type_java
+
+imports
+
+  statics/base
+  statics/type
+  statics/type_common
+  statics/common
+
+rules
+
+  /**
+   * isSubsignature(s_renamings, signature1, signature2) = is_subsignature
+   * Checks if [signature1] is a subsignature of [signature2].
+   * Implementation of the definition from
+   * https://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.4.2
+   * [s_renamings] maps some type parameters from [signature2] to something
+   * else. This can be used for e.g. renaming type parameters that are defined
+   * by a data type instead of the function.
+   */
+  isSubsignature : scope * scope * TYPE * scope * TYPE -> BOOLEAN
+  isSubsignature(s_renamings, s_func1, signature1@FuncType(_, _, _), s_func2, signature2@FuncType(_, _, _)) =
+    orB(isSignatureEqual(s_renamings, s_func1, signature1, s_func2, signature2),
+      isSignatureEqual(s_renamings, s_func1, signature1, s_func2, eraseSignature(signature2))).
+  isSubsignature(_, _, _, _, _) = FALSE() :-
+    false | error $[BUG: cannot call isSubsignature with types other than two FuncTypes].
+
+
+  /**
+   * isSignatureEqual(s, signature1, signature2) = is_signature_equal
+   * Checks if two signatures are equal.
+   * Implementation of the definition from
+   * https://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.4.2
+   * [s_renamings] maps some type parameters from [signature2] to something
+   * else. This can be used for e.g. renaming type parameters that are defined
+   * by a data type instead of the function.
+   */
+  isSignatureEqual : scope * scope * TYPE * scope * TYPE -> BOOLEAN
+  isSignatureEqual(s_renamings, s_func1, signature1@FuncType(type_params1, formal_params1, _),
+    s_func2, signature2@FuncType(type_params2, formal_params2, _)) =
+      isSignatureEqual_1(type_params_equal_bounds, s_renamings, s_func1, signature1, s_func2, signature2) :-
+        isTypeParameterBoundsEqual(type_params1, type_params2) == type_params_equal_bounds.
+
+    isSignatureEqual_1 : BOOLEAN * scope * scope * TYPE * scope * TYPE -> BOOLEAN
+    isSignatureEqual_1(FALSE(), _, _, _, _, _) = FALSE().
+    isSignatureEqual_1(TRUE(), s_renamings, s_func1, tmp1@FuncType(type_params1, formal_params1, _),
+      s_func2, tmp2@FuncType(type_params2, formal_params2, _)) = params_equal :-
+      {s_renamings_all renamed_params2}
+      try{false}|note$[DEBUG - isSignatureEqual_1 - [params_equal] <- [tmp1] == [renamed_params2] <- [tmp2]],
+      renameAll(s_renamings, s_func2, type_params2, s_func1, type_params1) == s_renamings_all,
+      instantiateTypeArgsInAll(s_renamings_all, formal_params2) == renamed_params2,
+      isAllInvariant(formal_params1, renamed_params2) == params_equal.
+
+    isTypeParameterBoundsEqual : list(GenericParamType) * list(GenericParamType) -> BOOLEAN
+    isTypeParameterBoundsEqual([], []) = TRUE().
+    isTypeParameterBoundsEqual([_|_], []) = FALSE().
+    isTypeParameterBoundsEqual([], [_|_]) = FALSE().
+    isTypeParameterBoundsEqual([param1|params1], [param2|params2]) = andB(
+      isTypeParameterBoundEqual(param1, param2),
+      isTypeParameterBoundsEqual(params1, params2)
+    ).
+
+    isTypeParameterBoundEqual : GenericParamType * GenericParamType -> BOOLEAN
+    isTypeParameterBoundEqual(GenericParamType(_, ub1, lb1), GenericParamType(_, ub2, lb2)) =
+      andB(
+        isInvariant(typeOrTopType(ub1), typeOrTopType(ub2)),
+        isInvariant(typeOrBottomType(lb1), typeOrBottomType(lb2))).
+
+    // create a scope s_renaming that maps generic parameters from type_params1 to type_params2
+    // Overrides renamings of s_pre_existing.
+    // requires that both lists have the same lengths
+    renameAll : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
+    renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2, type_params2) = s_renaming :-
+      new s_renaming,
+      s_renaming -P-> s_pre_existing,
+      renameAll_1(s_renaming, s_type_params1, type_params1, s_type_params2, type_params2).
+
+      rename : scope * scope * GenericParamType * scope * GenericParamType
+      renameAll_1 maps rename(*, *, list(*), *, list(*))
+      rename(s, s_param1, GenericParamType(name1, _, _), s_param2, GenericParamType(name2, _, _)) :-
+        {type}
+        type == GenericParameter2TYPE(GenericParameter(s_param2, name2)),
+        declareTypeArg(s, GenericParameter(s_param1, name1), type).
+
+
+  /**
+   * eraseSignature(FuncType(type_params, formal_params, return_type))
+   * Type erase a function signature.
+   */
+  eraseSignature : TYPE -> TYPE
+  eraseSignature(FuncType(type_params, formal_params, return_type)) =
+    FuncType([], eraseTypes(formal_params), eraseType(return_type)).
+  eraseSignature(_) = FuncType([], [], BottomType()) :-
+    false | error $[BUG: cannot call eraseSignature with types other than FuncType].
