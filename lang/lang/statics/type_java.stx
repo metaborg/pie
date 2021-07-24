@@ -47,7 +47,6 @@ rules
     isSignatureEqual_1(TRUE(), s_renamings, s_func1, tmp1@FuncType(type_params1, formal_params1, _),
       s_func2, tmp2@FuncType(type_params2, formal_params2, _)) = params_equal :-
       {s_renamings_all renamed_params2}
-      try{false}|note$[DEBUG - isSignatureEqual_1 - [params_equal] <- [tmp1] == [renamed_params2] <- [tmp2]],
       renameAll(s_renamings, s_func2, type_params2, s_func1, type_params1) == s_renamings_all,
       instantiateTypeArgsInAll(s_renamings_all, formal_params2) == renamed_params2,
       isAllInvariant(formal_params1, renamed_params2) == params_equal.
@@ -102,12 +101,7 @@ rules
     isSignatureEqualToErased_1 : BOOLEAN * scope * list(TYPE) * list(TYPE) -> BOOLEAN
     isSignatureEqualToErased_1(FALSE(), _, _, _) = FALSE().
     isSignatureEqualToErased_1(TRUE(), s_renamings, formal_params1, formal_params2) =
-      allTrue(tmp2@isTypesEqualToErased(formal_params1, tmp1@instantiateTypeArgsInAll(s_renamings, formal_params2))) :-
-	    {tmp3 tmp4 tmp5}
-	    tmp3 == ppTYPEs(formal_params1),
-	    tmp4 == ppTYPEs(formal_params2),
-	    tmp5 == ppTYPEs(tmp1),
-	    try{false}|note$[DEBUG - isSignatureEqualToErased: [tmp2] - [tmp3] == [tmp5] <-- [tmp4] ---- [formal_params1] == [tmp1] <-- [formal_params2]].
+      allTrue(isTypesEqualToErased(formal_params1, instantiateTypeArgsInAll(s_renamings, formal_params2))).
 
     isTypeEqualToErased : TYPE * TYPE -> BOOLEAN
     isTypesEqualToErased maps isTypeEqualToErased(list(*), list(*)) = list(*)

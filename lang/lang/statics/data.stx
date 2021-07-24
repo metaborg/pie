@@ -64,7 +64,6 @@ rules
     superOk_2s maps superOk_2(*, *, *, list(*), *)
     superOk_2(s_data_def, s_super, (s_func, signature), (_, (name_super, (s_func_super, signature_super))), name) :-
       {is_subsignature}
-      try{false}|note$[DEBUG - override check - [is_subsignature] <- [signature], [signature_super]],
       isSubsignature(s_data_def, s_func, signature, s_func_super, signature_super) == is_subsignature,
       superOk_3(is_subsignature, s_data_def, name, s_func, signature, name_super, s_func_super, signature_super).
 
@@ -92,7 +91,6 @@ rules
 
     superOk_3(FALSE(), _, name, _, FuncType(_, params, _), _, _, FuncType(_, super_params, _)) :-
       {erased_params erased_super_params}
-      try{false}|note$[DEBUG - non-overriding - [params] --> [erased_params] == [erased_super_params] <-- [erased_params]] @name,
       eraseTypes(params) == erased_params,
       eraseTypes(super_params) == erased_super_params,
       isAllInvariant(erased_params, erased_super_params) == FALSE()
