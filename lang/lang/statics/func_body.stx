@@ -189,7 +189,7 @@ rules
       typeOfExpsPassScopes(s1, arg_exps) == (s2, _).
 
   typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
-    typeOfCall(s, s, merged, name, type_args, arg_exps) :-
+    typeOfCall(s, merged, s, name, type_args, arg_exps) :-
       mergeScopes(s, resolveModuleListToFile(s, moduleList)) == merged.
 
   typeOfExpImpl(s, qCall@QCall(exp, _, _, _)) = typeOfQCall(typeOfExp(s, exp), qCall).
@@ -225,7 +225,7 @@ rules
   typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, type_args, args)) = (s2, SupplierType(ty)) :-
     {merged}
     mergeScopes(s1, resolveModuleListToFile(s1, moduleList)) == merged,
-    typeOfCall(s1, s1, merged, func_name, type_args, args) == (s2, ty).
+    typeOfCall(s1, merged, s1, func_name, type_args, args) == (s2, ty).
 
 // Path operations
 
