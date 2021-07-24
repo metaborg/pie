@@ -36,6 +36,7 @@ context-free syntax
   TYPE.FuncType = [func<[{GenericParamType ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
 
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
+//  TYPE.GenericParameter2TYPE = GenericParameter
 
   TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType]]
 
