@@ -627,7 +627,7 @@ test generic method - super 1 unused param, sub no params [[
     func [[test]]<>() -> int
   }
 ]] analysis succeeds
-   resolve #2 to #1
+   resolve #2 to #1 // overrides after erasure
 test generic method - sub 1 unused param, super no params [[
   data Foo = foreign java org.example.test.Foo {
     func test<>() -> int
@@ -670,5 +670,14 @@ test generic method - different bound [[
   }
   data Bar : Foo = foreign java org.example.test.Bar {
     func test<T : int>(T) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+
+test generic method - return type is generic parameter [[
+  data Bar = foreign java org.example.test.Bar {
+    func get<A>() -> A
+  }
+  data Foo : Bar = foreign java org.example.test.Foo {
+    func get<B>() -> B
   }
 ]] analysis succeeds

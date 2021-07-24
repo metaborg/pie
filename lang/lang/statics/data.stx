@@ -66,18 +66,31 @@ rules
       {is_subsignature}
       try{false}|note$[DEBUG - override check - [is_subsignature] <- [signature], [signature_super]],
       isSubsignature(s_data_def, s_func, signature, s_func_super, signature_super) == is_subsignature,
-      superOk_3(is_subsignature, s_data_def, s_super, name, signature, name_super, signature_super).
+      superOk_3(is_subsignature, s_data_def, name, s_func, signature, name_super, s_func_super, signature_super).
 
 
     // if function is an override, require return type to be compatible.
     // if function is not an override, check that it doesn't collide with
     // another function after erasure.
-    superOk_3 : BOOLEAN * scope * scope * TYPEID * TYPE * TYPEID * TYPE
-    superOk_3(TRUE(), s_data_def, _, name, FuncType(_, _, ty_out), name_super, FuncType(_, _, ty_out_super)) :-
-      @name.ref := name_super,
-      assignableTo(instantiateTypeArgs(s_data_def, ty_out), instantiateTypeArgs(s_data_def, ty_out_super))
-        | error $[Type mismatch: incompatible return type for override] @name.
-    superOk_3(FALSE(), _, _, name, FuncType(_, params, _), _, FuncType(_, super_params, _)) :-
+    superOk_3 : BOOLEAN * scope * TYPEID * scope * TYPE * TYPEID * scope * TYPE
+    superOk_3(TRUE(), s_data_def, name, s_func, FuncType(type_params, _, ret_ty),
+        name_super, s_func_super, FuncType(type_params_super, _, ret_ty_super)) :-
+      {s_renamings instantiated_ret_ty_super}
+      superOk_3_rename_if_not_erased(s_data_def, s_func, type_params, s_func_super, type_params_super) == s_renamings,
+      instantiateTypeArgs(s_renamings, ret_ty_super) == instantiated_ret_ty_super,
+      assignableTo(ret_ty, instantiated_ret_ty_super)
+        | error $[Type mismatch: incompatible return type for override] @name,
+      @name.ref := name_super.
+
+      // renames super method type parameters to sub method type parameters
+      // unless the sub method has no type parameers, in which case it may have
+      // been classified as an override due to type erasing the super method.
+      superOk_3_rename_if_not_erased : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
+      superOk_3_rename_if_not_erased(s_data_def, _, [], _, _) = s_data_def.
+      superOk_3_rename_if_not_erased(s_data_def, s_func, type_params@[_|_], s_func_super, type_params_super) =
+        renameAll(s_data_def, s_func_super, type_params_super, s_func, type_params).
+
+    superOk_3(FALSE(), _, name, _, FuncType(_, params, _), _, _, FuncType(_, super_params, _)) :-
       {erased_params erased_super_params}
       try{false}|note$[DEBUG - non-overriding - [params] --> [erased_params] == [erased_super_params] <-- [erased_params]] @name,
       eraseTypes(params) == erased_params,
