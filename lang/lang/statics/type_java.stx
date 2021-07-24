@@ -19,9 +19,10 @@ rules
    * by a data type instead of the function.
    */
   isSubsignature : scope * scope * TYPE * scope * TYPE -> BOOLEAN
-  isSubsignature(s_renamings, s_func1, signature1@FuncType(_, _, _), s_func2, signature2@FuncType(_, _, _)) =
-    orB(isSignatureEqual(s_renamings, s_func1, signature1, s_func2, signature2),
-      isSignatureEqual(s_renamings, s_func1, signature1, s_func2, eraseSignature(signature2))).
+  isSubsignature(s_renamings, s_func1, signature1@FuncType(type_params1, formal_params1, return_type1),
+    s_func2, signature2@FuncType(type_params2, formal_params2, return_type2)) =
+      orB(isSignatureEqual(s_renamings, s_func1, signature1, s_func2, signature2),
+        isSignatureEqualToErased(s_renamings, signature1, signature2)).
   isSubsignature(_, _, _, _, _) = FALSE() :-
     false | error $[BUG: cannot call isSubsignature with types other than two FuncTypes].
 
@@ -82,13 +83,68 @@ rules
         type == GenericParameter2TYPE(GenericParameter(s_param2, name2)),
         declareTypeArg(s, GenericParameter(s_param1, name1), type).
 
-
   /**
-   * eraseSignature(FuncType(type_params, formal_params, return_type))
-   * Type erase a function signature.
+   * isSignatureEqualToErased(s_renamings, signature1@FuncType,
+   *   signature2@FuncType) = is_equal
+   * Checks if [signature1] is equal to [signature2] after erasure of
+   * [signature2].
+   * Attention: [signature2] should _not_ be erased before calling this
+   * function.
    */
-  eraseSignature : TYPE -> TYPE
-  eraseSignature(FuncType(type_params, formal_params, return_type)) =
-    FuncType([], eraseTypes(formal_params), eraseType(return_type)).
-  eraseSignature(_) = FuncType([], [], BottomType()) :-
-    false | error $[BUG: cannot call eraseSignature with types other than FuncType].
+  isSignatureEqualToErased : scope * TYPE * TYPE -> BOOLEAN
+  isSignatureEqualToErased(_, FuncType([_|_], _, _), _) = FALSE().
+  isSignatureEqualToErased(s_renamings, FuncType([], formal_params1, _), FuncType(_, formal_params2, _)) =
+    isSignatureEqualToErased_1(param_counts_equal, s_renamings, formal_params1, formal_params2) :-
+      typeListsLengthsEqual(formal_params1, formal_params2) == param_counts_equal.
+  isSignatureEqualToErased(_, _, _) = FALSE() :-
+    false | error $[BUG: Cannot call isSignatureEqualToErased with types other than two FuncTypes].
+
+    isSignatureEqualToErased_1 : BOOLEAN * scope * list(TYPE) * list(TYPE) -> BOOLEAN
+    isSignatureEqualToErased_1(FALSE(), _, _, _) = FALSE().
+    isSignatureEqualToErased_1(TRUE(), s_renamings, formal_params1, formal_params2) =
+      allTrue(tmp2@isTypesEqualToErased(formal_params1, tmp1@instantiateTypeArgsInAll(s_renamings, formal_params2))) :-
+	    {tmp3 tmp4 tmp5}
+	    tmp3 == ppTYPEs(formal_params1),
+	    tmp4 == ppTYPEs(formal_params2),
+	    tmp5 == ppTYPEs(tmp1),
+	    try{false}|note$[DEBUG - isSignatureEqualToErased: [tmp2] - [tmp3] == [tmp5] <-- [tmp4] ---- [formal_params1] == [tmp1] <-- [formal_params2]].
+
+    isTypeEqualToErased : TYPE * TYPE -> BOOLEAN
+    isTypesEqualToErased maps isTypeEqualToErased(list(*), list(*)) = list(*)
+    isTypeEqualToErased(UnitType(), UnitType()) = TRUE().
+    isTypeEqualToErased(BoolType(), BoolType()) = TRUE().
+    isTypeEqualToErased(IntType(), IntType()) = TRUE().
+    isTypeEqualToErased(StrType(), StrType()) = TRUE().
+    isTypeEqualToErased(PathType(), PathType()) = TRUE().
+    isTypeEqualToErased(NullType(), NullType()) = TRUE() :-
+      false | error $[BUG?: checking if null type is equal to an erased null type].
+    isTypeEqualToErased(TopType(), TopType()) = TRUE() :-
+      false | error $[BUG?: checking if top type is equal to an erased top type].
+    isTypeEqualToErased(BottomType(), BottomType()) = TRUE() :-
+      false | error $[BUG?: checking if bottom type is equal to an erased bottom type].
+    isTypeEqualToErased(NullableType(T1), NullableType(T2)) = isTypeEqualToErased(T1, T2).
+    isTypeEqualToErased(NullableType(T1), T2) = isTypeEqualToErased(T1, T2).
+    isTypeEqualToErased(T1, NullableType(T2)) = isTypeEqualToErased(T1, T2).
+    isTypeEqualToErased(ListType(_), ListType(_)) = TRUE().
+    isTypeEqualToErased(EmptyListType(), EmptyListType()) = TRUE() :-
+      false | error $[BUG?: checking if empty list type is equal to an erased empty list type].
+    isTypeEqualToErased(TupleType(Ts1), TupleType(Ts2)) =
+      typeListsLengthsEqual(Ts1, Ts2).
+    isTypeEqualToErased(FuncType(_, params1, _), FuncType(_, params2, _)) =
+      typeListsLengthsEqual(params1, params2) :-
+        false | error $[BUG?: checking if function type is equal to an erased function type].
+    isTypeEqualToErased(DataType(s_data1), DataType(s_data2)) =
+      isTypeEqualToErased_dataTypeEqual(s_data_def1, s_data_def2, getTypeArgs(s_data1)) :-
+        findGenericDef(s_data1) == s_data_def1,
+        findGenericDef(s_data2) == s_data_def2.
+    isTypeEqualToErased(T, param@GenericParameter2TYPE(_)) =
+      isTypeEqualToErased(T, upper_bound) :-
+        getBounds(param) == (upper_bound, _).
+    isTypeEqualToErased(T, WildcardType(upper_bound, _)) = isTypeEqualToErased(T, typeOrTopType(upper_bound)) :-
+      false | error $[BUG?: checking if [T] is equal to an erased wildcard].
+    isTypeEqualToErased(T1, T2) = FALSE().
+
+    // only equal if generic defs are the same and the first instance has no type arguments.
+    isTypeEqualToErased_dataTypeEqual : scope * scope * list((GenericParameter * TYPE)) -> BOOLEAN
+    isTypeEqualToErased_dataTypeEqual(s, s, []) = TRUE().
+    isTypeEqualToErased_dataTypeEqual(_, _, _) = FALSE().
