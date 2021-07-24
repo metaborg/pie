@@ -185,31 +185,21 @@ rules // operations on types
   isAllAssignableTo([T1|T1s], [T2|T2s]) = andB(isAssignableTo(T1, T2), isAllAssignableTo(T1s, T2s)).
 
   /**
-   * isInvariant(T1, T2) = res
+   * isInvariant(T1, T2) = is_invariant
    * Checks if T1 and T2 are invariant, which means that T1 and T2 are equal
    * (T1 is a subtype of T2, T2 is a subtype of T1)
    */
   isInvariant : TYPE * TYPE -> BOOLEAN
-  isInvariant(T1, T2) = isInvariant_1(T1, T2). // todo: inline
-
-    getBounds : TYPE -> (TYPE * TYPE)
-    getBounds(WildcardType(ub, lb)) = (typeOrTopType(ub), typeOrBottomType(lb)).
-    getBounds(GenericParameter2TYPE(GenericParameter(s, name))) = (ub, lb) :-
-      resolveGenericParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
-    getBounds(T) = (T, T).
-
-    isInvariant_1 : TYPE * TYPE -> BOOLEAN
-    isInvariant_1s maps isInvariant_1(list(*), list(*)) = list(*)
-    isInvariant_1(T, T) = TRUE().
-    isInvariant_1(NullableType(T1), NullableType(T2)) = isInvariant_1(T1, T2).
-    isInvariant_1(ListType(T1), ListType(T2)) = isInvariant_1(T1, T2).
-    isInvariant_1(TupleType(T1s), TupleType(T2s)) = allTrue(isInvariant_1s(T1s, T2s)).
-    isInvariant_1(SupplierType(T1), SupplierType(T2)) = isInvariant_1(T1, T2).
-    isInvariant_1(DataType(s1), DataType(s2)) = andB(
-      isScopeEqual(findGenericDef(s1), findGenericDef(s2)),
-      isAllInvariant(getTypeArgTypes(getTypeArgs(s1)), getTypeArgTypes(getTypeArgs(s2)))
-    ).
-    isInvariant_1(T1, T2) = FALSE().
+  isInvariant(T, T) = TRUE().
+  isInvariant(NullableType(T1), NullableType(T2)) = isInvariant(T1, T2).
+  isInvariant(ListType(T1), ListType(T2)) = isInvariant(T1, T2).
+  isInvariant(TupleType(T1s), TupleType(T2s)) = isAllInvariant(T1s, T2s).
+  isInvariant(SupplierType(T1), SupplierType(T2)) = isInvariant(T1, T2).
+  isInvariant(DataType(s1), DataType(s2)) = andB(
+    isScopeEqual(findGenericDef(s1), findGenericDef(s2)),
+    isAllInvariant(getTypeArgTypes(getTypeArgs(s1)), getTypeArgTypes(getTypeArgs(s2)))
+  ).
+  isInvariant(T1, T2) = FALSE().
 
   /**
    * isAllInvariant(T1s, T2s) = res

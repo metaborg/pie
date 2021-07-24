@@ -78,6 +78,19 @@ rules
   typeToLowerBoundType(ty) = LowerBoundType(ty).
 
   /**
+   * getBounds(T) -> (upper_bound, lower_bound)
+   * Gets the upper and lower bound of a type [T]. The bounds for generic
+   * parameters and wildcards are taken as is, for other types the bounds are
+   * simply that same type.
+   */
+  getBounds : TYPE -> (TYPE * TYPE)
+  getBounds(WildcardType(ub, lb)) = (typeOrTopType(ub), typeOrBottomType(lb)).
+  getBounds(GenericParameter2TYPE(GenericParameter(s, name))) = (ub, lb) :-
+    resolveGenericParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
+  getBounds(T) = (T, T).
+
+
+  /**
    * getTypeArgsList(type_args) = type_args_list
    * Gets the list of type arguments from a TypeArgs.
    * Returns an empty list for NoTypeArgs().
