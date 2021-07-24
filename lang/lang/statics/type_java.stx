@@ -66,22 +66,6 @@ rules
         isInvariant(typeOrTopType(ub1), typeOrTopType(ub2)),
         isInvariant(typeOrBottomType(lb1), typeOrBottomType(lb2))).
 
-    // create a scope s_renaming that maps generic parameters from type_params1 to type_params2
-    // Overrides renamings of s_pre_existing.
-    // requires that both lists have the same lengths
-    renameAll : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
-    renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2, type_params2) = s_renaming :-
-      new s_renaming,
-      s_renaming -P-> s_pre_existing,
-      renameAll_1(s_renaming, s_type_params1, type_params1, s_type_params2, type_params2).
-
-      rename : scope * scope * GenericParamType * scope * GenericParamType
-      renameAll_1 maps rename(*, *, list(*), *, list(*))
-      rename(s, s_param1, GenericParamType(name1, _, _), s_param2, GenericParamType(name2, _, _)) :-
-        {type}
-        type == GenericParameter2TYPE(GenericParameter(s_param2, name2)),
-        declareTypeArg(s, GenericParameter(s_param1, name1), type).
-
   /**
    * isSignatureEqualToErased(s_renamings, signature1@FuncType,
    *   signature2@FuncType) = is_equal

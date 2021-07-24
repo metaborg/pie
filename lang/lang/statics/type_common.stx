@@ -142,6 +142,32 @@ rules
   getTypeArgType((_, ty)) = ty.
 
   /**
+   * renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2,
+   *   type_params2) = s_renaming
+   * Renames all type parameters from [type_params1] to [type_params2]
+   * Renamings are returned as the scope [s_renaming]
+   * Overrides the renamings from [s_pre_existing], but type parameters from
+   * [s_pre_existing] that are not a type parameter in [type_params1] keep
+   * their original value.
+   * [s_type_params1] and [s_type_params2] are the scopes for the type
+   * parameters of [type_params1] and [type_params2] respectively.
+   * Fails without message when [type_params1] and [type_params2] have
+   * different lengths.
+   */
+  renameAll : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
+  renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2, type_params2) = s_renaming :-
+    new s_renaming,
+    s_renaming -P-> s_pre_existing,
+    renameAll_1(s_renaming, s_type_params1, type_params1, s_type_params2, type_params2).
+
+    rename : scope * scope * GenericParamType * scope * GenericParamType
+    renameAll_1 maps rename(*, *, list(*), *, list(*))
+    rename(s, s_param1, GenericParamType(name1, _, _), s_param2, GenericParamType(name2, _, _)) :-
+      {type}
+      type == GenericParameter2TYPE(GenericParameter(s_param2, name2)),
+      declareTypeArg(s, GenericParameter(s_param1, name1), type).
+
+  /**
    * typeListsLengthsEqual(Ts1, Ts2) = equal_lengths
    * Checks if the length of the two lists is equal
    */
