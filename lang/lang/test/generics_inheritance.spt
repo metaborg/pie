@@ -664,3 +664,11 @@ test generic method - super defines on method, sub defines on datatype [[
   }
 ]] 1 error at #1
    error like "collides with method in super type"
+test generic method - different bound [[
+  data Foo<> = foreign java org.example.test.Foo {
+    func test<T>(T) -> int
+  }
+  data Bar : Foo = foreign java org.example.test.Bar {
+    func test<T : int>(T) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
