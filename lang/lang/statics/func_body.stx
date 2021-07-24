@@ -49,7 +49,8 @@ rules
 
   typeOfExpImpl(s1, ToNullable(exp)) = (s2, NullableType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty),
-    ty != NullableType(_) | error $[Type mismatch: cannot make [ty] nullable] @exp.
+    ty != NullableType(_) | error $[Type mismatch: cannot make [ty] nullable again] @exp,
+    ty != TopType() | error $[Type mismatch: cannot make top type nullable, it is already nullable] @exp.
 
   typeOfExpImpl(s1, ToNonNullable(exp)) = (s2, ty) :-
     typeOfExp(s1, exp) == (s2, NullableType(ty)) | error $[Type mismatch: cannot make [ty] non-nullable] @exp.

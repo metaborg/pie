@@ -229,6 +229,7 @@ rules // operations on types
   makeNullable : TYPE -> TYPE
   makeNullable(NullType()) = NullType().
   makeNullable(T@NullableType(_)) = T.
+  makeNullable(TopType()) = TopType().
   makeNullable(T) = NullableType(T).
 
   /**
