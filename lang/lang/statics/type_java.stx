@@ -148,3 +148,30 @@ rules
     isTypeEqualToErased_dataTypeEqual : scope * scope * list((GenericParameter * TYPE)) -> BOOLEAN
     isTypeEqualToErased_dataTypeEqual(s, s, []) = TRUE().
     isTypeEqualToErased_dataTypeEqual(_, _, _) = FALSE().
+
+  /**
+   * eraseType(T) = erased_type
+   * erases TYPE [T] to TYPE [erased_type].
+   * This removes all generic arguments and makes it nullable.
+   * This also takes the upper bound of generic variables and wildcard.
+   * Because there are no specific erased types, this just replaces everything
+   * with UnitType if outright removing it is not possible.
+   */
+  eraseType : TYPE -> TYPE
+  eraseTypes maps eraseType(list(*)) = list(*)
+  eraseType(T) = makeNullable(eraseType_1(T)).
+
+    eraseType_1 : TYPE -> TYPE
+    eraseType_1(T) = T.
+    eraseType_1(DataType(s_data)) = DataType(findGenericDef(s_data)).
+    eraseType_1(NullableType(T)) = NullableType(eraseType_1(T)).
+    eraseType_1(ListType(T)) = ListType(UnitType()).
+    eraseType_1(TupleType(Ts)) = TupleType(replaceWithUnit(Ts)).
+      getUnit : TYPE -> TYPE
+      replaceWithUnit maps getUnit(list(*)) = list(*)
+      getUnit(_) = UnitType().
+    eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
+    eraseType_1(FuncType(_, params, _)) = FuncType([], replaceWithUnit(params), UnitType()).
+    eraseType_1(WildcardType(ub, lb)) = typeOrTopType(ub).
+    eraseType_1(T@GenericParameter2TYPE(_)) = eraseType(ub) :-
+      getBounds(T) == (ub, _).
