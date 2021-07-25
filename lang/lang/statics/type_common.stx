@@ -33,6 +33,31 @@ rules
       declareGenericParam(s_def, name, upper_bound_ty, lower_bound_ty) == param,
       try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
 
+      bothBoundsOk : UpperBound * LowerBound
+      bothBoundsOk(_, _).
+      bothBoundsOk(u@UpperBound(_), l@LowerBound(_)) :-
+        false | error $[Cannot have both an upper and lower bound] @u,
+        false | error $[Cannot have both an upper and lower bound] @l.
+
+      typeOfUpperBound : scope * scope * UpperBound * BOOLEAN -> UpperBoundType
+      typeOfUpperBound(_, _, NoUpperBound(), _) = NoUpperBoundType().
+      typeOfUpperBound(s, s_type_args, UpperBound(upper_bound), resolve_in_super_types) =
+        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound, resolve_in_super_types))
+      :-
+        try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
+        try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
+        try { ty != ListType(_)  } | warning $[Nonsensical bound: list types do not have subtypes] @upper_bound,
+        try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound,
+        try { ty != BottomType() } | warning $[Nonsensical bound: BOTTOM is the only matching type] @upper_bound.
+
+      typeOfLowerBound : scope * scope * LowerBound * BOOLEAN -> LowerBoundType
+      typeOfLowerBound(_, _, NoLowerBound(), _) = NoLowerBoundType().
+      typeOfLowerBound(s, s_type_args, LowerBound(lower_bound), resolve_in_super_types) =
+        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound, resolve_in_super_types))
+      :-
+        try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
+        try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
+
   /**
    * getScopeFromType(s, ty)
    * Returns the scope with methods associated with type [ty]
