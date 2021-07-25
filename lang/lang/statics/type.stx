@@ -559,8 +559,7 @@ rules
       instantiateTypeArgs_genericParameter : scope * list((path * (GenericParameter * TYPE))) *
         GenericParameter * list(GenericParameter) * BOOLEAN -> TYPE
       instantiateTypeArgs_genericParameter(_, [], param, _, _) = GenericParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, TRUE()) = T :-
-        false | error $[bug: assumption that generic parameter with type argument has not been seen before is wrong].
+      instantiateTypeArgs_genericParameter(s, [_], param, params, TRUE()) = GenericParameter2TYPE(param).
       instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, params).
       instantiateTypeArgs_genericParameter(s, [_,_|_], GenericParameter(_, name), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
