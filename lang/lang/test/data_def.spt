@@ -25,7 +25,10 @@ test duplicate name [[
 
 // data def mods
 test transient datadef [[ transient data Foo = foreign java org.example.test.Foo {} ]] analysis succeeds
-test double transient [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] analysis fails
+test double transient [[
+  transient [[transient]] data Foo = foreign java org.example.test.Foo {}
+]] 1 error at #1
+   error like "Duplicate modifier"
 
 // supertypes
 test supertype declaration before use [[

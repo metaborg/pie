@@ -6,7 +6,7 @@ start symbol DataDef
 // data mods
 test no mods [[ data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
 test transient datadef [[ transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
-test datadef duplicate mods [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds // todo: This should probably parse but it should give some kind of error.
+test datadef duplicate mods [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] parse succeeds
 test layout within transient keyword [[ transi ent data Foo = foreign java org.example.test.Foo {} ]] parse fails
 test missing layout after transient keyword [[ transientdata Foo = foreign java org.example.test.Foo {} ]] parse fails
 test capitalized transient [[ Transient data Foo = foreign java org.example.test.Foo {} ]] parse fails
