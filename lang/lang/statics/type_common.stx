@@ -10,8 +10,17 @@ imports
 rules
 
   /**
-   * genericParamsOk(s, s_data_def, GenericParams(params))
-   * todo
+   * genericParamsOk(s, s_data_def, GenericParams(params)) = generic_params
+   * Checks that the declared type parameters are ok. Returns a list
+   * [generic_params] of the resolved type parameters with their bounds.
+   * - Declares the type parameters in [s_def].
+   * - Declares each individual type parameter in [s_def].
+   * - Checks that there are no duplicate names for the type parameters. This
+   *   includes declared type parameters in (parents of) scope [s]. Gives an
+   *   error if a name is a duplicate.
+   * - Checks that each parameter has at most one bound.
+   * - Resolves the type of each bound in scope [s].
+   * - Gives a note if the type parameter shadows a datatype name in [s].
    */
   genericParamsOk : scope * scope * GenericParams -> list(GenericParamType)
   genericParamsOk(s, s_def, GenericParams(params)) = wrapBounds(parameters) :-

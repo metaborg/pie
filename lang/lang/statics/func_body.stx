@@ -158,13 +158,23 @@ rules
 // Calls
 
   /**
-   * todo: update documentation
-   * typeOfCall(s1, s_type_args, name, arg_exps) = (s2, out_ty)
-   * Checks that a call is Ok, returns the return type [out_ty] of the function
-   * and the resulting scope [s2].
-   * - resolves function [name] in scope [s_def].
-   * - Check that [arg_exps] have the right types (resolved in scope [s])
+   * typeOfCall(s, s_def, s_type_args, name, type_args, arg_exps) = (s2, out_ty)
+   * Checks that a call to function [name] is Ok, returns the return type
+   * [out_ty] of the function and the resulting scope [s2].
    * This is a general function to check any type of call.
+   * - resolves function [name] in scope [s_def]. If the function does not
+   *   resolve, expressions are still checked but not matched against
+   *   parameters types.
+   * - Checks that type arguments [type_args] match the declared type
+   *   parameters.
+   * - Replaces parameter types and return type of the declaration with type
+   *   arguments [type_args] and the type arguments defined in [s_type_args].
+   *   There is no preference between these two, so it fails if both define the
+   *   same type argument. The computed return type is [out_ty]. 
+   * - Computes the types of the argument expressions [arg_exps], resolved in
+   *   scope [s].
+   * - Checks that the computed types for the type arguments are subtypes of
+   *   the declared types.
    */
   typeOfCall : scope * scope * scope * string * TypeArgs * list(Exp) -> (scope * TYPE)
   typeOfCall(s, s_def, s_type_args, name, type_args, arg_exps) =
