@@ -35,21 +35,59 @@ test generic param three params [[
 test generic param with upper bound [[
   func test<F : Food>(food: F) -> F = food
 ]] analysis succeeds
-test generic param with upper bound, used with self [[
-  func test<F : Fruit>(fruit: F) -> F = test(fruit)
-]] analysis fails // todo  analysis succeeds
-test generic param with upper bound, used with same as upper bound [[
-  func test<F : Fruit>(fruit: Fruit) -> F = test(fruit)
-]] analysis fails // todo  analysis succeeds
+test generic param with upper bound, arg with param type, recursive call with param arg [[
+  func test<[[F]] : Fruit>(fruit: F) -> F = test<[[F]]>(fruit)
+]] analysis succeeds
+   resolve #2 to #1
+test generic param with upper bound, arg with param type, recursive call with specific type arg [[
+  func test<F : Fruit>(fruit: F) -> F = [[test<Fruit>(fruit)]]
+]] 1 error at #1
+   error like "Type mismatch"
+test generic param with upper bound, arg with same type, recursive call with param type arg but specific arg [[
+  func test<F : Fruit>(fruit: Fruit) -> F = test<F>(fruit)
+]] analysis succeeds
+test generic param with upper bound, arg with same type, recursive call with specific type arg [[
+  func test<F : Fruit>(fruit: Fruit) -> F = [[test<Fruit>(fruit)]]
+]] 1 error at #1
+   error like "Type mismatch"
 test generic param with upper bound, used with lower than upper bound [[
-  func test<F : Fruit>(apple: Apple) -> F = test(apple)
-]] analysis fails // todo  analysis succeeds
-test generic param with upper bound, used with lower than upper bound [[
-  func test<F : Fruit>(food: Food) -> F = test([[food]])
-]] analysis fails
-//   todo
-//   1 error at #1
-//   error like "not within upper bound"
+  func test<F : Fruit>(apple: Apple) -> F = test<F>([[apple]])
+]] analysis succeeds
+test generic param with upper bound, used with higher than upper bound [[
+  func test<F : Fruit>(food: Food) -> F = test<F>([[food]])
+]] analysis succeeds
+test generic param with lower bound [[
+  func test<F -: Food>(food: F) -> F = food
+]] analysis succeeds
+test generic param with lower bound, arg with param type, recursive call with param arg [[
+  func test<F -: Fruit>(fruit: F) -> F = test<F>(fruit)
+]] analysis succeeds
+test generic param with lower bound, arg with same type, recursive call with param type arg but specific arg [[
+  func test<F -: Fruit>(fruit: Fruit) -> F = test<F>(fruit)
+]] analysis succeeds
+test generic param with lower bound, arg with same type, recursive call with specific type arg [[
+  func test<F -: Fruit>(fruit: Fruit) -> F = test<Fruit>(fruit)
+  // correct because actual type test<Fruit> == Fruit is assignable to the
+  // declared return type F.
+]] analysis succeeds
+test generic param with lower bound, used with lower than upper bound [[
+  func test<F -: Fruit>(apple: Apple) -> F = test<F>(apple)
+]] analysis succeeds
+test generic param with lower bound, used with lower than upper bound [[
+  func test<F -: Fruit>(apple: Apple) -> F = test<[[Apple>]](apple)
+]] 1 error at #1
+   error like "not within lower bound" at #1
+test generic param with lower bound, used with higher than upper bound [[
+  func test<F -: Fruit>(food: Food) -> F = test<F>(food)
+]] analysis succeeds
+test generic param with lower bound, used with higher than upper bound [[
+  func test<F -: Fruit>(food: Food) -> F = [[test<Food>(food)]]
+]] 1 error at #1
+   error like "Type mismatch"
+test generic param with lower bound, used with higher than upper bound [[
+  func test<F -: Fruit>(food: Food) -> F = [[test<Food>(food)]]
+]] 1 error at #1
+   error like "Type mismatch"
 
 
 test param with wildcard type [[func test(something: [[_)]] -> bool = true]] 1 error at #1  error like "Cannot use a wildcard"
