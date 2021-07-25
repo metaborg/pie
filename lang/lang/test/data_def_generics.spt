@@ -162,6 +162,20 @@ test method call inherited from transitive supertype [[
   func test(t: T4<string>) -> string = t.get()
 ]] analysis succeeds
 
+test nested generic parameters [[
+  data [[Box]]<[[T]]> = foreign java org.example.test.dataDef.generics.Box {}
+  data [[DoubleBox]]<[[E]], [[C]] : [[Box]]<[[E]]>> = foreign java org.example.test.dataDef.generics.DoubleBox {}
+
+  func test<[[E]], [[C]] : [[Box]]<[[E]]>>() -> [[DoubleBox]]<[[E]], [[C]]> = foreign java org.example.test.dataDef.generics.Main#test
+]] analysis succeeds
+   resolve #6 to #1
+   resolve #7 to #4
+   resolve #10 to #1
+   resolve #11 to # 8
+   resolve #12 to #3
+   resolve #13 to #8
+   resolve #14 to #9
+
 // List of cases where Statix analysis does not terminate.
 // Don't know if this is a bug in Statix or just unbounded recursion in Statix spec.
 // Most of them I also don't know if they even should be allowed, since it

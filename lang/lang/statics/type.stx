@@ -139,6 +139,11 @@ rules // operations on types
             isAssignableTo(T, typeOrTopType(ub)),
             isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb))
           ).
+        isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_)) = andB(
+            isAssignableTo(T1, ub),
+            isTypeEntirelyAboveLowerBound(T2, lb)
+          ) :-
+            getBounds(T2) == (ub, lb).
         isTypeArgCompatible_1(T1, T2) = FALSE().
 
           isScopeEqual : scope * scope -> BOOLEAN

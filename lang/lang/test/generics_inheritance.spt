@@ -489,8 +489,7 @@ test supertype - non-overriding methods - generic return type - subtype return t
   data ListView<T> : BaseCollectionView<T> = foreign java mb.common.util.ListView {
     func [[asCopy]]() -> Collection<_>
   }
-]] 1 error at #2
-   error like "incompatible return type"
+]] analysis succeeds
    resolve #2 to #1
 test supertype - overriding methods - generic return type - supertype return type wildcard [[
   data Collection<A> = foreign java java.util.Collection {}
@@ -533,8 +532,7 @@ test supertype - non-overriding methods - generic return type - generic paramete
     func [[asUnmodifiable]]() -> List<E>
     func [[asCopy]]() -> List<T>
   }
-]] 1 error at #3
-   error like "incompatible return type"
+]] analysis succeeds
    resolve #3 to #1
    resolve #4 to #2
 test supertype - non-overriding methods - generic return type - subtype return type is not a subtype of supertype return type [[
