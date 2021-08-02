@@ -56,7 +56,7 @@ rules
     typeOfExp(s1, exp) == (s2, NullableType(ty)) | error $[Type mismatch: cannot make [ty] non-nullable] @exp.
 
   typeOfExpImpl(s1, Not(exp)) = (s2, BoolType()) :-
-    expectAssignableTo(s1, exp, BoolType()) == s2.
+    expectAssignableTo(s1, exp, BoolType(), ExpressionKind()) == s2.
 
 // Binary expressions
 
@@ -75,12 +75,12 @@ rules
   typeOfExpImpl(s, e@Neq(l, r)) = comparableOk(s, l, r, e).
 
   typeOfExpImpl(s1, Lor(exp_left, exp_right)) = (s3, BoolType()) :- {s2 ty_left ty_right}
-    expectAssignableTo(s1, exp_left, BoolType()) == s2,
-    expectAssignableTo(s2, exp_right, BoolType()) == s3.
+    expectAssignableTo(s1, exp_left, BoolType(), ExpressionKind()) == s2,
+    expectAssignableTo(s2, exp_right, BoolType(), ExpressionKind()) == s3.
 
   typeOfExpImpl(s1, Land(exp_left, exp_right)) = (s3, BoolType()) :- {s2 ty_left ty_right}
-    expectAssignableTo(s1, exp_left, BoolType()) == s2,
-    expectAssignableTo(s2, exp_right, BoolType()) == s3.
+    expectAssignableTo(s1, exp_left, BoolType(), ExpressionKind()) == s2,
+    expectAssignableTo(s2, exp_right, BoolType(), ExpressionKind()) == s3.
 
   typeOfExpImpl(s1, Add(exp_left, exp_right)) = (s3, ty) :- {s2 ty_left ty_right}
     typeOfExp(s1, exp_left) == (s2, ty_left),
@@ -98,10 +98,10 @@ rules
   typeOfAdd(StrType()      , _              , _) = StrType().
   typeOfAdd(PathType()     , PathType()     , _) = PathType().
   typeOfAdd(PathType()     , StrType()      , _) = PathType().
-  typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- assignableTo(T2, T1) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
+  typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- assignableTo(T2, T1, ExpressionKind()) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
   typeOfAdd(ListType(T)    , EmptyListType(), e) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op] @e.
   typeOfAdd(ListType(T)    , NullType()     , _) = ListType(makeNullable(T)).
-  typeOfAdd(ListType(T1)   , T2             , e) = ListType(T1) :- assignableTo(T2, T1) | error $[Type mismatch: cannot add element [T1] to list [T2]] @e.
+  typeOfAdd(ListType(T1)   , T2             , e) = ListType(T1) :- assignableTo(T2, T1, ExpressionKind()) | error $[Type mismatch: cannot add element [T1] to list [T2]] @e.
   typeOfAdd(EmptyListType(), ListType(T)    , _) = ListType(T).
   typeOfAdd(EmptyListType(), EmptyListType(), e) = EmptyListType() :- try {false} | warning $[concatenating an empty list is a no-op] @e.
   typeOfAdd(EmptyListType(), T              , _) = ListType(T).
@@ -109,11 +109,11 @@ rules
 // Control flow
 
   typeOfExpImpl(s, If(exp_cond, exp_body)) = (s, UnitType()) :- {s_if}
-    expectAssignableTo(s, exp_cond, BoolType()) == s_if,
+    expectAssignableTo(s, exp_cond, BoolType(), ExpressionKind()) == s_if,
     typeOfExp(s_if, exp_body) == _.
 
   typeOfExpImpl(s, IfElse(exp_cond, exp_true, exp_false)) = (s, ty) :- {s_if ty_true ty_false}
-    expectAssignableTo(s, exp_cond, BoolType()) == s_if,
+    expectAssignableTo(s, exp_cond, BoolType(), ExpressionKind()) == s_if,
     typeOfExp(s_if, exp_true) == (_, ty_true),
     typeOfExp(s_if, exp_false) == (_, ty_false),
     lub(ty_true, ty_false) == ty,
@@ -189,7 +189,7 @@ rules
       getGenericParams(s_func) == type_params,
       genericArgsOk(s1, s_type_args, s_func_instantiated, type_params, type_args, TRUE(), name),
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
-      expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys) == s2,
+      expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ArgumentKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty.
 
     // Function didn't resolve. Type check arguments, but don't check if they
@@ -218,7 +218,7 @@ rules
     {exp_ty}
     typeOf(s1, arg_ty_lex) == arg_ty,
     typeOfExp(s1, exp) == (s2, exp_ty),
-    assignableTo(exp_ty, arg_ty) | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
+    assignableTo(exp_ty, arg_ty, ArgumentKind()) | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
   typeOfExpImpl(s, CreateSupplier(name, type_args, args)) = (s, DataType(emptyScope(s))) :-
     typeOfCreateSupplier_1(type_args, args),
     try { args != [] } | error $[Not enough arguments. Expected one argument, but got zero] @name,
@@ -252,44 +252,44 @@ rules
   optionalFilterOk(s, [FilterPart(filter)]) = filterOk(s, filter).
 
   filterOk : scope * Filter -> scope
-  filterOk(s, Regex(exp))      = expectAssignableTo(s, exp, StrType()).
-  filterOk(s, Pattern(exp))    = expectAssignableTo(s, exp, StrType()).
-  filterOk(s, Patterns(exp))   = expectAssignableTo(s, exp, ListType(StrType())).
-  filterOk(s, Extension(exp))  = expectAssignableTo(s, exp, StrType()).
-  filterOk(s, Extensions(exp)) = expectAssignableTo(s, exp, ListType(StrType())).
+  filterOk(s, Regex(exp))      = expectAssignableTo(s, exp, StrType(), ExpressionKind()).
+  filterOk(s, Pattern(exp))    = expectAssignableTo(s, exp, StrType(), ExpressionKind()).
+  filterOk(s, Patterns(exp))   = expectAssignableTo(s, exp, ListType(StrType()), ExpressionKind()).
+  filterOk(s, Extension(exp))  = expectAssignableTo(s, exp, StrType(), ExpressionKind()).
+  filterOk(s, Extensions(exp)) = expectAssignableTo(s, exp, ListType(StrType()), ExpressionKind()).
 
 
   typeOfExpImpl(s1, RequiresPath(exp, filter, stamper)) = (s4, UnitType()) :- {s2 s3 exp_ty}
-    expectAssignableTo(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalFilterOk(s2, filter) == s3,
     optionalStamperOk(s3, stamper) == s4.
 
   typeOfExpImpl(s1, GeneratesPath(exp, stamper)) = (s3, UnitType()) :- {s2}
-    expectAssignableTo(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalStamperOk(s2, stamper) == s3.
 
   typeOfExpImpl(s1, ListPath(exp, filter)) = (s3, ListType(PathType())) :- {s2}
-    expectAssignableTo(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalFilterOk(s2, filter) == s3.
 
   typeOfExpImpl(s1, WalkPath(exp, filter)) = (s3, ListType(PathType())) :- {s2}
-    expectAssignableTo(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalFilterOk(s2, filter) == s3.
 
   typeOfExpImpl(s1, ReadPath(exp)) = (s2, NullableType(StrType())) :-
-    expectAssignableTo(s1, exp, PathType()) == s2.
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2.
 
   typeOfExpImpl(s1, ExistsPath(exp)) = (s2, BoolType()) :-
-    expectAssignableTo(s1, exp, PathType()) == s2.
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2.
 
 // Early return and failure
 
   typeOfExpImpl(s1, Return(exp)) = (s2, UnitType()) :- {expected_ty}
     getContext(s1, "func_return_type") == ContextType(expected_ty),
-    expectAssignableTo(s1, exp, expected_ty) == s2.
+    expectAssignableTo(s1, exp, expected_ty, ExpressionKind()) == s2.
 
   typeOfExpImpl(s1, Fail(exp)) = (s2, UnitType()) :-
-    expectAssignableTo(s1, exp, StrType()) == s2.
+    expectAssignableTo(s1, exp, StrType(), ExpressionKind()) == s2.
 
 // literals
 

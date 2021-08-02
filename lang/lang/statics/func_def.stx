@@ -57,7 +57,7 @@ rules
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
     setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
-    expectAssignableTo(s_func_inner, exp, expected_type) == _,
+    expectAssignableTo(s_func_inner, exp, expected_type, ExpressionKind()) == _,
     optionalKeyFuncOk(s_func_outer, keyFunc).
 
   keyFuncOk : scope * PieKeyFunc

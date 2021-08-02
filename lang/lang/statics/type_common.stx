@@ -125,6 +125,17 @@ rules
 
 
   /**
+   * withinBounds((ub1, lb1), (ub2, lb2)) = within_bounds
+   * Returns TRUE iff the upper bound [ub1] is assignable to upper bound [ub2]
+   * and lower bound [lb2] is assignable to lower bound [lb1].
+   * Types are considered assignable to type parameters if they are within
+   * bounds.
+   */
+  withinBounds : (TYPE * TYPE) * (TYPE * TYPE) -> BOOLEAN
+  withinBounds((ub1, lb1), (ub2, lb2)) =
+    andB(isAssignableTo(ub1, ub2, TypeArgKind()), isAssignableTo(lb2, lb1, TypeArgKind())).
+
+  /**
    * getTypeArgsList(type_args) = type_args_list
    * Gets the list of type arguments from a TypeArgs.
    * Returns an empty list for NoTypeArgs().

@@ -109,28 +109,28 @@ rules
 
 
   /**
-   * expectAssignableTo(s1, exp, expected_ty) = s2
+   * expectAssignableTo(s1, exp, expected_ty, assignable_kind) = s2
    * expect Exp [exp] to be assignable to type [expected_ty] in scope [s1]
    * give an error otherwise
    * returns the updated scope [s2]
    */
-  expectAssignableTo : scope * Exp * TYPE -> scope
-  expectAssignableTo(s1, exp, expected_ty) = s2 :- {actual_ty}
+  expectAssignableTo : scope * Exp * TYPE * AssignableKind -> scope
+  expectAssignableTo(s1, exp, expected_ty, assignable_kind) = s2 :- {actual_ty}
     typeOfExp(s1, exp) == (s2, actual_ty),
-    assignableTo(actual_ty, expected_ty) | error $[Type mismatch: expected [expected_ty] type, got [actual_ty]] @exp.
+    assignableTo(actual_ty, expected_ty, assignable_kind) | error $[Type mismatch: expected [expected_ty] type, got [actual_ty]] @exp.
 
   /**
-   * expectAssignableToPassScopes(s1, exps, types) = s2
+   * expectAssignableToPassScopes(s1, exps, types, assignable_kind) = s2
    * Expect Exps [exps] to have types [tys]. This version passes along scopes
    * from one expression to the next.
    */
-  expectAssignableToPassScopes : scope * list(Exp) * list(TYPE) -> scope
-  expectAssignableToPassScopes(s, [], []) = s.
-  expectAssignableToPassScopes(s1, [exp | exps], [ty | tys]) = s3 :- {s2}
-    expectAssignableTo(s1, exp, ty) == s2,
-    expectAssignableToPassScopes(s2, exps, tys) == s3.
-  expectAssignableToPassScopes(s, [], types@[_|_]) = s :- false | error $[Unexpected number of arguments; remaining types: [types]].
-  expectAssignableToPassScopes(s, exps@[_|_],  []) = s :- false | error $[Unexpected number of arguments; remaining expressions: [exps]].
+  expectAssignableToPassScopes : scope * list(Exp) * list(TYPE)* AssignableKind  -> scope
+  expectAssignableToPassScopes(s, [], [], _) = s.
+  expectAssignableToPassScopes(s1, [exp | exps], [ty | tys], assignable_kind) = s3 :- {s2}
+    expectAssignableTo(s1, exp, ty, assignable_kind) == s2,
+    expectAssignableToPassScopes(s2, exps, tys, assignable_kind) == s3.
+  expectAssignableToPassScopes(s, [], types@[_|_], _) = s :- false | error $[Unexpected number of arguments; remaining types: [types]].
+  expectAssignableToPassScopes(s, exps@[_|_],  [], _) = s :- false | error $[Unexpected number of arguments; remaining expressions: [exps]].
 
   /**
    * moduleToList(mod@Module(moduleList, name))

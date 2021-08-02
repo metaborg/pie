@@ -26,18 +26,28 @@ rules // operations on types
     inherits_1([_|_]) = TRUE().
 
   /**
-   * assignableTo(T1, T2)
+   * assignableTo(T1, T2, assignableKind)
    * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
    * Holds if type T1 is a non-strict subtype of type T2.
    * Fails with error if T1 is not a subtype of T2.
    */
-  assignableTo : TYPE * TYPE
-  listAssignableTo maps assignableTo(list(*), list(*))
-  assignableTo(T1, T2) :- isAssignableTo(T1, T2) == TRUE().
+  assignableTo : TYPE * TYPE * AssignableKind
+  assignableTo(T1, T2, assignableKind) :-
+    isAssignableTo(T1, T2, assignableKind) == TRUE().
+
+signature
+  sorts AssignableKind constructors
+    InvariantKind : AssignableKind
+    TypeArgKind : AssignableKind
+    ArgumentKind : AssignableKind // todo: can merge with ExpressionKind?
+    ExpressionKind : AssignableKind
+
+rules
 
   /**
-   * isAssignableTo(T1, T2) = res
+   * isAssignableTo(T1, T2, assignableKind) = res
    * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
+   * todo: update
    * Returns TRUE() if:
    * - type T1 is a non-strict subtype of type T2
    * - T1 is a wildcard and its upper bound can be assigned to T2
@@ -45,14 +55,20 @@ rules // operations on types
    * returns FALSE() otherwise.
    * May fail on unbound variables.
    */
-  isAssignableTo : TYPE * TYPE -> BOOLEAN
-  isAssignableTo(NullType(), NullableType(_)) = TRUE().
-  isAssignableTo(T1, NullableType(T2)) = isAssignableTo(T1, T2).
-  isAssignableTo(NullableType(T1), NullableType(T2)) = isAssignableTo(T1, T2).
-  isAssignableTo(EmptyListType(), ListType(_)) = TRUE().
-  isAssignableTo(DataType(s_sub), DataType(s_super)) =
-    isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def)
+  isAssignableTo : TYPE * TYPE * AssignableKind -> BOOLEAN
+  isAssignableTo(NullType(), NullableType(_), _) = TRUE().
+  isAssignableTo(T1, NullableType(T2), assignableKind) =
+    isAssignableTo(T1, T2, assignableKind).
+  isAssignableTo(NullableType(T1), NullableType(T2), assignableKind) =
+    isAssignableTo(T1, T2, assignableKind).
+  isAssignableTo(EmptyListType(), ListType(_), assignableKind) = TRUE().
+  isAssignableTo(DataType(s_sub), DataType(s_super), assignableKind) =
+    out@isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignableKind)
   :-
+    {tmp1 tmp2}
+    tmp1 == ppScope(s_sub),
+    tmp2 == ppScope(s_super),
+    try{false}|note$[DEBUG - [tmp1] is assignable to [tmp2] == [out] == isAssignableTo_dataTypes([s_sub], [s_super], [inherits], [type_args], [s_super_def], [assignableKind])],
     findGenericDef(s_super) == s_super_def,
     inherits(s_sub, s_super_def) == inherits,
     getTypeArgs(s_super) == type_args.
@@ -70,12 +86,12 @@ rules // operations on types
      *          in s_sub |-> [(_, s_sub_super_instance)]
      * 5. Check if instances are compatible: isTypeArgsCompatible(s_sub_super_instance, s_super)
      */
-    isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((GenericParameter * TYPE)) * scope -> BOOLEAN
-    isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _) = TRUE(). // optimization: s_sub == s_super
-    isAssignableTo_dataTypes(_, _, FALSE(), _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
-    isAssignableTo_dataTypes(_, _, TRUE(), [], _) = TRUE().  // s_super does not have type arguments and s_sub inherits from s_super_def
-    isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def) =
-      isTypeArgsCompatible(instantiated_s_sub_super_instance, s_super)
+    isAssignableTo_dataTypes : scope * scope * BOOLEAN * list((GenericParameter * TYPE)) * scope * AssignableKind -> BOOLEAN
+    isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _, _) = TRUE(). // optimization: s_sub == s_super
+    isAssignableTo_dataTypes(_, _, FALSE(), _, _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
+    isAssignableTo_dataTypes(_, _, TRUE(), [], _, _) = TRUE().  // s_super does not have type arguments and s_sub inherits from s_super_def
+    isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def, assignableKind) =
+      isTypeArgsCompatible(instantiated_s_sub_super_instance, s_super, assignableKind)
     :-
       {s_sub_super_instance}
       query ()
@@ -108,86 +124,165 @@ rules // operations on types
     // type dt and that s2 is either also an instance or the generic definition
     // "Compatible" means that the types are equal, or the second one is a
     // wildcard and the first one falls within the bounds
-    isTypeArgsCompatible : scope * scope -> BOOLEAN
-    isTypeArgsCompatible(s1, s2) = isTypeArgsCompatible_1(s1, s2, getGenericDef(s1)).
+    isTypeArgsCompatible : scope * scope * AssignableKind -> BOOLEAN
+    isTypeArgsCompatible(s1, s2, assignableKind) =
+      isTypeArgsCompatible_1(s1, s2, getGenericDef(s1), assignableKind).
 
       // s1 is an instance
       // s2 is either an instance or a data definition.
       // third argument (s2/s_data_def) is data definition
-      isTypeArgsCompatible_1 : scope * scope * scope -> BOOLEAN
-      isTypeArgsCompatible_1(s1, s2, s2) = TRUE().
+      isTypeArgsCompatible_1 : scope * scope * scope * AssignableKind -> BOOLEAN
+      isTypeArgsCompatible_1(s1, s2, s2, _) = TRUE().
         // s2 is a generic data definition, s1 is an instance of it.
         // s1 is a subtype by definition.
 
-      isTypeArgsCompatible_1(s1, s2, s_data_def) =
+      isTypeArgsCompatible_1(s1, s2, s_data_def, assignableKind) =
         // s2 is an instance of s_data_def
-        allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2)).
+        allTrue(isTypeArgsCompatible_2(tmp1@getTypeArgs(s1), s2, assignableKind)) :-
+        {tmp2}
+        tmp2 == ppScope(s1),
+        try{false}|note$[DEBUG - type arguments in [tmp2]: [tmp1]].
 
       // Checks if a type argument in s1 is compatible with s2.
-      isTypeArgCompatible : (GenericParameter * TYPE) * scope -> BOOLEAN
-      isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *) = list(*)
-      isTypeArgCompatible((name, ty1), s2) =
-        isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, "no error node")).
+      isTypeArgCompatible : (GenericParameter * TYPE) * scope * AssignableKind -> BOOLEAN
+      isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *, *) = list(*)
+      isTypeArgCompatible((name, ty1), s2, assignableKind) =
+        out@isTypeArgCompatible_1(ty1, ty2@resolveUniqueTypeArg(s2, name, "no error node"), assignableKind) :-
+          try{false}|note$[DEBUG - type arg [ty1] for parameter [name] is compatible with [ty2] == [out]].
 
-        isTypeArgCompatible_1 : TYPE * TYPE -> BOOLEAN
-        isTypeArgCompatible_1(ty, ty) = TRUE().
-        isTypeArgCompatible_1(DataType(s1), DataType(s2)) = andB(
+        // todo: can be replaced with assignableTo(T1, T2, FALSE())?
+        isTypeArgCompatible_1 : TYPE * TYPE * AssignableKind -> BOOLEAN
+        isTypeArgCompatible_1(ty, ty, _) = TRUE().
+        isTypeArgCompatible_1(DataType(s1), DataType(s2), assignableKind) = andB(
             isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
-            isTypeArgsCompatible(s1, s2)
+            isTypeArgsCompatible(s1, s2, assignableKind)
           ).
-        isTypeArgCompatible_1(T, WildcardType(ub, lb)) = andB(
-            isAssignableTo(T, typeOrTopType(ub)),
-            isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb))
+        isTypeArgCompatible_1(T, WildcardType(ub, lb), assignableKind) = andB(
+            isAssignableTo(T, typeOrTopType(ub), requireExactTypeParamEquality),
+            isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
           ).
-        isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_)) = andB(
-            isAssignableTo(T1, ub),
-            isTypeEntirelyAboveLowerBound(T2, lb)
+        isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignableKind) = out@andB(
+            tmp1@isAssignableTo(T1, ub, assignableKind),
+            tmp2@isTypeEntirelyAboveLowerBound(T2, lb, assignableKind)
           ) :-
+            {tmp3} ppTYPE(T1) == tmp3,
+            {tmp4} ppTYPE(T2) == tmp4,
+            try{false}|note$[DEBUG - type argument [tmp3] compatible to [tmp4] == [out]. Bounds: ([ub], [lb]). Assignable to upper bound: [tmp1], above lower bound [tmp2]],
             getBounds(T2) == (ub, lb).
-        isTypeArgCompatible_1(T1, T2) = FALSE().
+        isTypeArgCompatible_1(T1, T2, _) = FALSE().
 
           isScopeEqual : scope * scope -> BOOLEAN
           isScopeEqual(s, s) = TRUE().
           isScopeEqual(s1, s2) = FALSE().
 
           // Checks that Type T does not include TYPEs below lower bound lb
-          isTypeEntirelyAboveLowerBound : TYPE * TYPE -> BOOLEAN
-          isTypeEntirelyAboveLowerBound(WildcardType(_, lb1), lb2) =
-            isAssignableTo(lb2, typeOrBottomType(lb1)).
-          isTypeEntirelyAboveLowerBound(T, lb) = isAssignableTo(lb, T).
+          isTypeEntirelyAboveLowerBound : TYPE * TYPE * AssignableKind -> BOOLEAN
+          isTypeEntirelyAboveLowerBound(WildcardType(_, lb1), lb2, assignableKind) =
+            isAssignableTo(lb2, typeOrBottomType(lb1), assignableKind).
+          isTypeEntirelyAboveLowerBound(T, lb, assignableKind) =
+            isAssignableTo(lb, T, assignableKind).
 
-  isAssignableTo(_, TopType()) = TRUE().
-  isAssignableTo(BottomType(), _) = TRUE().
+  isAssignableTo(_, TopType(), _) = TRUE().
+  isAssignableTo(BottomType(), _, _) = TRUE().
 
-  isAssignableTo(WildcardType(upper_bound, lower_bound), T) =
-    isAssignableTo(typeOrTopType(upper_bound), T).
-  isAssignableTo(T, WildcardType(upper_bound, lower_bound)) =
-    isAssignableTo(T, typeOrBottomType(lower_bound)).
+  isAssignableTo(WildcardType(upper_bound, lower_bound), T, assignableKind) =
+    isAssignableTo(typeOrTopType(upper_bound), T, assignableKind).
+  isAssignableTo(T@WildcardType(_, _), T@WildcardType(_, _), _) = TRUE().
+  isAssignableTo(T, WildcardType(upper_bound, lower_bound), TypeArgKind()) =
+    withinBounds(getBounds(T), (typeOrTopType(upper_bound), typeOrBottomType(lower_bound))).
+  isAssignableTo(T, WildcardType(upper_bound, _), ArgumentKind()) =
+    isAssignableTo(T, typeOrTopType(upper_bound), ArgumentKind()).
+  isAssignableTo(T, WildcardType(upper_bound, _), ExpressionKind()) =
+    isAssignableTo(T, typeOrTopType(upper_bound), ExpressionKind()).
 
-  isAssignableTo(GenericParameter2TYPE(GenericParameter(s, name)),
-    GenericParameter2TYPE(GenericParameter(s, name))) = TRUE().
-  isAssignableTo(GenericParameter2TYPE(GenericParameter(s, name)), T) =
-    isAssignableTo(upper_bound, T) :-
-      resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
-  isAssignableTo(T, GenericParameter2TYPE(GenericParameter(s, name))) =
-    isAssignableTo(T, lower_bound) :-
-      resolveGenericParam(s, name) == [(_, (_, (_, lower_bound)))].
+  isAssignableTo(T1@GenericParameter2TYPE(tmp3), T2, assignableKind) =
+    out@isAssignableTo(upper_bound, T2, assignableKind) :-
+      {s name} tmp3 == GenericParameter(s, name),
+      {tmp1} tmp1 == ppTYPE(upper_bound),
+      {tmp2} tmp2 == ppTYPE(T2),
+      try{false}|note$[DEBUG - generic parameter [name] in [s] with upper bound [tmp1] ([upper_bound]) is assignable to [tmp2] ([T2]) == [out]],
+      getBounds(T1) == (upper_bound, _).
+  isAssignableTo(T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_), _) = TRUE() :-
+    {name}
+    T == GenericParameter2TYPE(GenericParameter(_, name)),
+    try{false}|note$[DEBUG - generic parameter [name] is assignable to itself].
+  isAssignableTo(T1, T2@GenericParameter2TYPE(_), TypeArgKind()) =
+    out@withinBounds(tmp1@getBounds(T1), tmp2@getBounds(T2)) :-
+      {s name} T2 == GenericParameter2TYPE(GenericParameter(s, name)),
+      {ub1 lb1} (ub1, lb1) == tmp1,
+      {ub2 lb2} (ub2, lb2) == tmp2,
+      {tmp3} tmp3 == ppTYPE(ub1),
+      {tmp4} tmp4 == ppTYPE(lb1),
+      {tmp5} tmp5 == ppTYPE(ub2),
+      {tmp6} tmp6 == ppTYPE(lb2),
+      {tmp7} tmp7 == ppTYPE(T1),
+      try{false}|note$[DEBUG - [tmp7] ([T1]) is assignable to generic parameter [name] in [s] with upper bound [tmp5] ([ub1]) == [out]].
+  isAssignableTo(T1, T2@GenericParameter2TYPE(_), ArgumentKind()) =
+    isAssignableTo(T1, lower_bound, ArgumentKind()) :-
+      getBounds(T2) == (_, lower_bound).
+  isAssignableTo(T1, T2@GenericParameter2TYPE(_), ExpressionKind()) =
+    isAssignableTo(T1, lower_bound, ExpressionKind()) :-
+      getBounds(T2) == (_, lower_bound).
 
-  isAssignableTo(T, T) = TRUE().
-  isAssignableTo(_, _) = FALSE().
+// foo<T>(elem: T)
+
+// func bar1<F : Fruit>() -> {
+//   foo<F>(apple) // disallowed: F could be banana
+//                 // No argument type except bottom type would make this call legal
+// }
+// func bar2<F -: Fruit>() -> {
+//   foo<F>(apple) // allowed
+// }
+
+/*
+
+In one case, the type parameter is bound to a particular value, and assigning is only allowed if the argument is that particular value.
+In the other case, the type parameter is unbound, and the argument just has to fall within the bounds.
+Cases:
+- In all cases, a wildcard is just a type parameter that is not used anywhere else. (correct?)
+- override check: check if bounds for type parameters are compatible.
+  - Could have free type parameters from functions, sub datatype.
+  - All bounds should be exactly equal.
+  - type parameters considered equal if occurence equal after renaming.
+- override check: check if parameters are compatible.
+  - Could have free type parameters from functions, sub datatype.
+  - All parameters should be exactly equal.
+  - type parameters considered equal if occurence equal after renaming.
+- override check: check if return types are compatible.
+  - Could have free type parameters from functions, sub datatype.
+  - sub return type must be subtype of super return type.
+  - type parameters considered equal if occurence equal after renaming.
+- assign type argument (from call or type reference) to type parameter.
+  - Could have free type parameters from function type params or from datatype for super type declaration.
+  - argument should be compatible: argument upper and lower bound within parameter upper and lower bound.
+  - type parameters considered compatible if argument upper and lower bound within parameter upper and lower bound.
+- assign argument (from call) to parameter.
+  - Can have free type parameters from function that makes the call: func foo<T>() -> bar<T>()
+  - expression type should be compatible: expression type upper bound within declared type _lower_ bound or equal generic param occurence.
+  - type parameters considered compatible if expression type upper and lower bound within declared type upper and lower bound.
+- assign expression to value (valDec).
+  - Could have free type parameters from function type params.
+  - expression type should be compatible: expression type upper bound within declared type upper bound. (lower bound does not matter because of subtyping)
+  - type parameters considered compatible if expression type upper and lower bound within declared type upper and lower bound.
+
+*/
+
+  isAssignableTo(T, T, _) = TRUE().
+  isAssignableTo(_, _, _) = FALSE().
 
   /**
-   * isAllAssignableTo(T1s, T2s) -> bool
-   * Returns TRUE if the types in [T1s] are pairwise subtypes of [T2s], FALSE
+   * isAllAssignableTo(T1s, T2s, assignableKind) -> bool
+   * Returns TRUE if the types in [T1s] are pairwise assignable to [T2s], FALSE
    * otherwise. Also returns FALSE if the lists don't have the same length.
    * This is useful for comparing parameter lists of functions.
    * Delegates to isAssignableTo.
    */
-  isAllAssignableTo : list(TYPE) * list(TYPE) -> BOOLEAN
-  isAllAssignableTo([], []) = TRUE().
-  isAllAssignableTo(Ts@[_|_], []) = FALSE().
-  isAllAssignableTo([], Ts@[_|_]) = FALSE().
-  isAllAssignableTo([T1|T1s], [T2|T2s]) = andB(isAssignableTo(T1, T2), isAllAssignableTo(T1s, T2s)).
+  isAllAssignableTo : list(TYPE) * list(TYPE) * AssignableKind -> BOOLEAN
+  isAllAssignableTo([], [], _) = TRUE().
+  isAllAssignableTo(Ts@[_|_], [], _) = FALSE().
+  isAllAssignableTo([], Ts@[_|_], _) = FALSE().
+  isAllAssignableTo([T1|T1s], [T2|T2s], assignableKind) =
+    andB(isAssignableTo(T1, T2, assignableKind), isAllAssignableTo(T1s, T2s, assignableKind)).
 
   /**
    * isInvariant(T1, T2) = is_invariant
@@ -248,7 +343,8 @@ rules // operations on types
   lub(NullableType(T1), NullableType(T2)) = NullableType(lub(T1, T2)).
   lub(EmptyListType(), ListType(T)) = ListType(T).
   lub(ListType(T), EmptyListType()) = ListType(T).
-  lub(T1@DataType(_), T2@DataType(_)) = lub_dataTypeGuard(isAssignableTo(T1, T2), isAssignableTo(T2, T1), T1, T2).
+  lub(T1@DataType(_), T2@DataType(_)) =
+    lub_dataTypeGuard(isAssignableTo(T1, T2, TypeArgKind()), isAssignableTo(T2, T1, TypeArgKind()), T1, T2).
 
     lub_dataTypeGuard : BOOLEAN * BOOLEAN * TYPE * TYPE -> TYPE
     lub_dataTypeGuard(TRUE(), _, _, T2) = T2.
@@ -302,8 +398,8 @@ rules // operations on types
         lub_type_arg : TYPE * TYPE -> TYPE
         lubs_type_args maps lub_type_arg(list(*), list(*)) = list(*)
         lub_type_arg(T1, T2) = lub_type_arg_1(T1, T2, compatible1, compatible2) :-
-          isTypeArgCompatible_1(T2, T1) == compatible1,
-          isTypeArgCompatible_1(T1, T2) == compatible2.
+          isTypeArgCompatible_1(T2, T1, TypeArgKind()) == compatible1,
+          isTypeArgCompatible_1(T1, T2, TypeArgKind()) == compatible2.
 
           lub_type_arg_1 : TYPE * TYPE * BOOLEAN * BOOLEAN -> TYPE
           lub_type_arg_1(T, T, _, _) = T.
@@ -326,8 +422,8 @@ rules // operations on types
   lub(T, WildcardType(upper_bound, _)) = lub(T, typeOrTopType(upper_bound)).
   lub(T, T) = T.
   lub(T1, T2) = firstTrueT([
-    (isAssignableTo(T1, T2), T2),
-    (isAssignableTo(T2, T1), T1)],
+    (isAssignableTo(T1, T2, ExpressionKind()), T2),
+    (isAssignableTo(T2, T1, ExpressionKind()), T1)],
     TopType()).
 
 
@@ -351,7 +447,8 @@ rules // operations on types
   comparable(TupleType(T1s), TupleType(T2s)) :- listComparable(T1s, T2s).
   comparable(ListType(T1), ListType(T2)) :- comparable(T1, T2).
   comparable(SupplierType(T1), SupplierType(T2)) :- comparable(T1, T2).
-  comparable(T1, T2) :- orB(isAssignableTo(T1, T2), isAssignableTo(T2, T1)) == TRUE().
+  comparable(T1, T2) :-
+    orB(isAssignableTo(T1, T2, ExpressionKind()), isAssignableTo(T2, T1, ExpressionKind())) == TRUE().
 
 rules
 
@@ -486,10 +583,16 @@ rules
   genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
   genericArgOk(s, s_type_args, s_data_instance, (param@GenericParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) :-
     {arg_ty}
+    {tmp1} tmp1 == isAssignableTo(arg_ty, upper_bound, TypeArgKind()),
+    {tmp2} tmp2 == isAssignableTo(lower_bound, arg_ty, TypeArgKind()),
+    {tmp3 tmp4}
+    tmp3 == ppTYPE(upper_bound),
+    tmp4 == ppTYPE(lower_bound),
+    try{false}|note$[DEBUG - checking [arg] for param [name] --> [arg_ty]. Assignable to upper bound [tmp3] ([upper_bound]) == [tmp1], to lower bound [tmp4] ([lower_bound]) == [tmp2] --- s_type_args: [s_type_args]],
     typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types) == arg_ty,
     declareTypeArg(s_data_instance, param, arg_ty),
-    assignableTo(arg_ty, upper_bound) | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
-    assignableTo(lower_bound, arg_ty) | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound] for type parameter [name]].
+    try { tmp1 == TRUE() } | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
+    try { tmp2 == TRUE() } | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound] for type parameter [name]].
 
   /**
    * instantiateTypeArgs(s, T) = instantiated_type

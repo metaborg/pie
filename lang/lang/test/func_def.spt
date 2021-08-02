@@ -85,9 +85,8 @@ test generic param with lower bound, used with higher than upper bound [[
 ]] 1 error at #1
    error like "Type mismatch"
 test generic param with lower bound, used with higher than upper bound [[
-  func test<F -: Fruit>(food: Food) -> F = [[test<Food>(food)]]
-]] 1 error at #1
-   error like "Type mismatch"
+  func test<F -: Fruit>(food: Food) -> F = test<F>(food)
+]] analysis succeeds
 
 
 test param with wildcard type [[func test(something: [[_)]] -> bool = true]] 1 error at #1  error like "Cannot use a wildcard"

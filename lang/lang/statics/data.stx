@@ -77,12 +77,12 @@ rules
       {s_renamings instantiated_ret_ty_super}
       superOk_3_rename_if_not_erased(s_data_def, s_func, type_params, s_func_super, type_params_super) == s_renamings,
       instantiateTypeArgs(s_renamings, ret_ty_super) == instantiated_ret_ty_super,
-      assignableTo(ret_ty, instantiated_ret_ty_super)
+      assignableTo(ret_ty, instantiated_ret_ty_super, ArgumentKind())
         | error $[Type mismatch: incompatible return type for override] @name,
       @name.ref := name_super.
 
       // renames super method type parameters to sub method type parameters
-      // unless the sub method has no type parameers, in which case it may have
+      // unless sub method has no type parameters, in which case it may have
       // been classified as an override due to type erasing the super method.
       superOk_3_rename_if_not_erased : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
       superOk_3_rename_if_not_erased(s_data_def, _, [], _, _) = s_data_def.
