@@ -61,7 +61,7 @@ rules
     isAssignableTo(T1, T2, assignableKind).
   isAssignableTo(NullableType(T1), NullableType(T2), assignableKind) =
     isAssignableTo(T1, T2, assignableKind).
-  isAssignableTo(EmptyListType(), ListType(_), assignableKind) = TRUE().
+  isAssignableTo(EmptyListType(), ListType(_), _) = TRUE().
   isAssignableTo(DataType(s_sub), DataType(s_super), assignableKind) =
     out@isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignableKind)
   :-
