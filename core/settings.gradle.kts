@@ -25,6 +25,7 @@ includeProject("runtime.test")
 includeProject("share.coroutine")
 
 includeProject("serde.kryo")
+includeProject("serde.fst")
 
 includeProject("store.lmdb")
 

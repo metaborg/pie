@@ -82,9 +82,9 @@ public class Main {
         // We pass in the TaskDefs object we created.
         pieBuilder.withTaskDefs(taskDefs);
         // For storing build results and the dependency graph, we will serialize the in-memory store on exit at build/store.
-        pieBuilder.withStoreFactory((serde, resourceService, logger) -> {
+        pieBuilder.withStoreFactory((serde, resourceService, loggerFactory) -> {
             try {
-                return new SerializingStore<>(serde, resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), InMemoryStore::new, InMemoryStore.class);
+                return new SerializingStore<>(serde, loggerFactory, resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), InMemoryStore::new, InMemoryStore.class);
             } catch(IOException e) {
                 throw new UncheckedIOException(e);
             }
