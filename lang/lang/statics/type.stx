@@ -158,13 +158,13 @@ rules
             isTypeArgsCompatible(s1, s2, assignableKind)
           ).
         isTypeArgCompatible_1(T, WildcardType(_, lb, Unset()), assignableKind) =
-            isAssignableTo(T, typeOrBottomType(lb), requireExactTypeParamEquality).
+            isAssignableTo(T, typeOrBottomType(lb), assignableKind).
         isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignableKind) = andB(
-            isAssignableTo(T, typeOrTopType(ub), requireExactTypeParamEquality),
+            isAssignableTo(T, typeOrTopType(ub), assignableKind),
             isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
           ).
         isTypeArgCompatible_1(T, WildcardType(_, lb, Bound()), assignableKind) =
-            isAssignableTo(T, typeOrBottomType(lb), requireExactTypeParamEquality).
+            isAssignableTo(T, typeOrBottomType(lb), assignableKind).
         isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignableKind) = out@andB(
             tmp1@isAssignableTo(T1, ub, assignableKind),
             tmp2@isTypeEntirelyAboveLowerBound(T2, lb, assignableKind)
