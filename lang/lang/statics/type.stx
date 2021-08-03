@@ -98,21 +98,21 @@ rules
         filter INHERIT? (P INHERIT)*
            and { s :- getGenericDef(s) == s_super_def }
             in s_sub |-> [(_, s_sub_super_instance)],
-      instantiateGenericParams(s_sub, s_sub_super_instance) == instantiated_s_sub_super_instance.
+      instantiateGenericParams(s_sub, s_sub_super_instance, Bound()) == instantiated_s_sub_super_instance.
 
       // instantiate generic parameters in instance s2 with the type arguments of s1
-      instantiateGenericParams : scope * scope -> scope
-      instantiateGenericParams(s1, s2) = s_data_instance_instantiated :-
+      instantiateGenericParams : scope * scope * CaptureState -> scope
+      instantiateGenericParams(s1, s2, capture_state) = s_data_instance_instantiated :-
         {instantiated}
         new s_data_instance_instantiated,
         !root[getRoot(s2)] in s_data_instance_instantiated,
         s_data_instance_instantiated -P-> findGenericDef(s2),
-        instantiateNamedTypeArgs(s1, s2, getTypeArgs(s2)) == instantiated,
+        instantiateNamedTypeArgs(s1, s2, capture_state, getTypeArgs(s2)) == instantiated,
         declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated).
 
-        instantiateNamedTypeArg : scope * scope * (GenericParameter * TYPE) -> (GenericParameter * TYPE)
-        instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*)) = list(*)
-        instantiateNamedTypeArg(s1, s2, (name, T)) = (name, instantiateTypeArgs_1(s1, T, [])).
+        instantiateNamedTypeArg : scope * scope * CaptureState * (GenericParameter * TYPE) -> (GenericParameter * TYPE)
+        instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, *, list(*)) = list(*)
+        instantiateNamedTypeArg(s1, s2, capture_state, (name, T)) = (name, instantiateTypeArgs_1(s1, T, capture_state, [])).
 
         declareTypeArgsFromTuples : scope * list((GenericParameter * TYPE))
         declareTypeArgsFromTuples(_, []).
@@ -607,33 +607,55 @@ rules
    */
   instantiateTypeArgs : scope * TYPE -> TYPE
   instantiateTypeArgsInAll maps instantiateTypeArgs(*, list(*)) = list(*)
-  instantiateTypeArgs(s, T) = instantiateTypeArgs_1(s, T, []).
+  instantiateTypeArgs(s, T) = instantiateTypeArgs_1(s, T, Free(), []).
 
-    instantiateTypeArgs_1 : scope * TYPE * list(GenericParameter) -> TYPE
-    instantiateTypeArgsInAll_1 maps instantiateTypeArgs_1(*, list(*), *) = list(*)
-    instantiateTypeArgs_1(_, T, _) = T.
-    instantiateTypeArgs_1(s, DataType(s_data), params) =
-      DataType(instantiateGenericParams(s, s_data)).
-    instantiateTypeArgs_1(s, TupleType(tys), params) = TupleType(instantiateTypeArgsInAll_1(s, tys, params)).
-    instantiateTypeArgs_1(s, ListType(ty), params) = ListType(instantiateTypeArgs_1(s, ty, params)).
-    instantiateTypeArgs_1(s, SupplierType(ty), params) = SupplierType(instantiateTypeArgs_1(s, ty, params)).
-    instantiateTypeArgs_1(s, NullableType(ty), params) = NullableType(instantiateTypeArgs_1(s, ty, params)).
-    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, TODO), params) =
+    instantiateTypeArgs_1 : scope * TYPE * CaptureState * list(GenericParameter) -> TYPE
+    instantiateTypeArgsInAll_1 maps instantiateTypeArgs_1(*, list(*), *, *) = list(*)
+    instantiateTypeArgs_1(_, UnitType(), _, _) = UnitType().
+    instantiateTypeArgs_1(_, BoolType(), _, _) = BoolType().
+    instantiateTypeArgs_1(_, IntType(), _, _) = IntType().
+    instantiateTypeArgs_1(_, StrType(), _, _) = StrType().
+    instantiateTypeArgs_1(_, PathType(), _, _) = PathType().
+    instantiateTypeArgs_1(_, NullType(), _, _) = NullType().
+    instantiateTypeArgs_1(_, TopType(), _, _) = TopType().
+    instantiateTypeArgs_1(_, BottomType(), _, _) = BottomType().
+    instantiateTypeArgs_1(s, DataType(s_data), capture_state, params) =
+      DataType(instantiateGenericParams(s, s_data, capture_state)).
+    instantiateTypeArgs_1(s, TupleType(tys), capture_state, params) = TupleType(instantiateTypeArgsInAll_1(s, tys, capture_state, params)).
+    instantiateTypeArgs_1(s, ListType(ty), capture_state, params) = ListType(instantiateTypeArgs_1(s, ty, capture_state, params)).
+    instantiateTypeArgs_1(_, EmptyListType(), _, _) = EmptyListType().
+    instantiateTypeArgs_1(s, SupplierType(ty), capture_state, params) = SupplierType(instantiateTypeArgs_1(s, ty, capture_state, params)).
+    instantiateTypeArgs_1(s, NullableType(ty), capture_state, params) = NullableType(instantiateTypeArgs_1(s, ty, capture_state, params)).
+    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, Unset()), capture_state, params) =
       WildcardType(
-        instantiateTypeArgs_wildcardUpperbound(s, upper_bound, params),
-        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, params),
-        TODO
+        instantiateTypeArgs_wildcardUpperbound(s, upper_bound, capture_state, params),
+        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, capture_state, params),
+        capture_state
+      ).
+    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, Free()), capture_state, params) =
+      WildcardType(
+        instantiateTypeArgs_wildcardUpperbound(s, upper_bound, capture_state, params),
+        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, capture_state, params),
+        capture_state
+      ).
+    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, Bound()), _, params) =
+      WildcardType(
+        instantiateTypeArgs_wildcardUpperbound(s, upper_bound, Bound(), params),
+        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, Bound(), params),
+        Bound()
       ).
 
-      instantiateTypeArgs_wildcardUpperbound : scope * UpperBoundType * list(GenericParameter) -> UpperBoundType
-      instantiateTypeArgs_wildcardUpperbound(_, T@NoUpperBoundType(), _) = T.
-      instantiateTypeArgs_wildcardUpperbound(s, UpperBoundType(ub), params) = UpperBoundType(instantiateTypeArgs_1(s, ub, params)).
+      instantiateTypeArgs_wildcardUpperbound : scope * UpperBoundType * CaptureState * list(GenericParameter) -> UpperBoundType
+      instantiateTypeArgs_wildcardUpperbound(_, T@NoUpperBoundType(), _, _) = T.
+      instantiateTypeArgs_wildcardUpperbound(s, UpperBoundType(ub), capture_state, params) =
+        UpperBoundType(instantiateTypeArgs_1(s, ub, capture_state, params)).
 
-      instantiateTypeArgs_wildcardLowerbound : scope * LowerBoundType * list(GenericParameter) -> LowerBoundType
-      instantiateTypeArgs_wildcardLowerbound(_, T@NoLowerBoundType(), _) = T.
-      instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb), params) = LowerBoundType(instantiateTypeArgs_1(s, lb, params)).
+      instantiateTypeArgs_wildcardLowerbound : scope * LowerBoundType * CaptureState * list(GenericParameter) -> LowerBoundType
+      instantiateTypeArgs_wildcardLowerbound(_, T@NoLowerBoundType(), _, _) = T.
+      instantiateTypeArgs_wildcardLowerbound(s, LowerBoundType(lb), capture_state, params) =
+        LowerBoundType(instantiateTypeArgs_1(s, lb, capture_state, params)).
 
-    instantiateTypeArgs_1(s, GenericParameter2TYPE(param@GenericParameter(s_param, _)), params) =
+    instantiateTypeArgs_1(s, GenericParameter2TYPE(param@GenericParameter(s_param, _)), _, params) =
       instantiateTypeArgs_genericParameter(s, resolved_arg, param, [param|params], seen)
     :-
       resolveTypeArg(s, param) == resolved_arg,
@@ -648,6 +670,6 @@ rules
         GenericParameter * list(GenericParameter) * BOOLEAN -> TYPE
       instantiateTypeArgs_genericParameter(_, [], param, _, _) = GenericParameter2TYPE(param).
       instantiateTypeArgs_genericParameter(s, [_], param, params, TRUE()) = GenericParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, params).
+      instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, Bound(), params).
       instantiateTypeArgs_genericParameter(s, [_,_|_], GenericParameter(_, name), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
