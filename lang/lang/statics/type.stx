@@ -157,8 +157,10 @@ rules
             isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
             isTypeArgsCompatible(s1, s2, assignableKind)
           ).
-        isTypeArgCompatible_1(T, WildcardType(_, lb, Unset()), assignableKind) =
-            isAssignableTo(T, typeOrBottomType(lb), assignableKind).
+        isTypeArgCompatible_1(T, WildcardType(ub, lb, Unset()), assignableKind) = andB(
+            isAssignableTo(T, typeOrTopType(ub), assignableKind),
+            isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
+          ).
         isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignableKind) = andB(
             isAssignableTo(T, typeOrTopType(ub), assignableKind),
             isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
@@ -194,13 +196,13 @@ rules
   isAssignableTo(T@WildcardType(_, _, _), T@WildcardType(_, _, Free()), _) = TRUE().
   isAssignableTo(T, WildcardType(upper_bound, lower_bound, _), TypeArgKind()) =
     withinBounds(getBounds(T), (typeOrTopType(upper_bound), typeOrBottomType(lower_bound))).
-  isAssignableTo(T, WildcardType(upper_bound, _, Free()), ArgumentKind()) =
+  isAssignableTo(T, WildcardType(upper_bound, _, _), ArgumentKind()) =
     isAssignableTo(T, typeOrTopType(upper_bound), ArgumentKind()).
-  isAssignableTo(T, WildcardType(_, lower_bound, _), ArgumentKind()) =
+  isAssignableTo(T, WildcardType(_, lower_bound, Bound()), ArgumentKind()) =
     isAssignableTo(T, typeOrBottomType(lower_bound), ArgumentKind()).
-  isAssignableTo(T, WildcardType(upper_bound, _, Free()), ExpressionKind()) =
+  isAssignableTo(T, WildcardType(upper_bound, _, _), ExpressionKind()) =
     isAssignableTo(T, typeOrTopType(upper_bound), ExpressionKind()).
-  isAssignableTo(T, WildcardType(_, lower_bound, _), ExpressionKind()) =
+  isAssignableTo(T, WildcardType(_, lower_bound, Bound()), ExpressionKind()) =
     isAssignableTo(T, typeOrBottomType(lower_bound), ExpressionKind()).
 
   isAssignableTo(T1@GenericParameter2TYPE(tmp3), T2, assignableKind) =
