@@ -118,7 +118,7 @@ rules
     isTypeEqualToErased(T, param@GenericParameter2TYPE(_)) =
       isTypeEqualToErased(T, upper_bound) :-
         getBounds(param) == (upper_bound, _).
-    isTypeEqualToErased(T, WildcardType(upper_bound, _)) = isTypeEqualToErased(T, typeOrTopType(upper_bound)) :-
+    isTypeEqualToErased(T, WildcardType(upper_bound, _, _)) = isTypeEqualToErased(T, typeOrTopType(upper_bound)) :-
       false | error $[BUG?: checking if [T] is equal to an erased wildcard].
     isTypeEqualToErased(T1, T2) = FALSE().
 
@@ -150,6 +150,6 @@ rules
       getUnit(_) = UnitType().
     eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
     eraseType_1(FuncType(_, params, _)) = FuncType([], replaceWithUnit(params), UnitType()).
-    eraseType_1(WildcardType(ub, lb)) = typeOrTopType(ub).
+    eraseType_1(WildcardType(ub, _, _)) = typeOrTopType(ub).
     eraseType_1(T@GenericParameter2TYPE(_)) = eraseType(ub) :-
       getBounds(T) == (ub, _).

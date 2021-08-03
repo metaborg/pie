@@ -8,7 +8,7 @@ imports
 
 // A semantic type (as opposed to the lexical, non-all caps Type)
 context-free start-symbols TYPE // For type hint on editor mouseover
-context-free sorts TYPE UpperBoundType LowerBoundType GenericParamType
+context-free sorts TYPE UpperBoundType LowerBoundType CaptureState GenericParamType
 context-free syntax
 
   UpperBoundType.NoUpperBoundType = < [no upper bound]>
@@ -38,7 +38,10 @@ context-free syntax
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
 //  TYPE.GenericParameter2TYPE = GenericParameter
 
-  TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType]]
+  CaptureState.Unset = [not set]
+  CaptureState.Free = [free]
+  CaptureState.Bound = [bound]
+  TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType] (capture state: [CaptureState])]
 
 // Boolean values. Used in Statix logic.
 context-free sorts BOOLEAN

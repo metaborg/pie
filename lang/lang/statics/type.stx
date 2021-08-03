@@ -157,10 +157,14 @@ rules
             isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
             isTypeArgsCompatible(s1, s2, assignableKind)
           ).
-        isTypeArgCompatible_1(T, WildcardType(ub, lb), assignableKind) = andB(
+        isTypeArgCompatible_1(T, WildcardType(_, lb, Unset()), assignableKind) =
+            isAssignableTo(T, typeOrBottomType(lb), requireExactTypeParamEquality).
+        isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignableKind) = andB(
             isAssignableTo(T, typeOrTopType(ub), requireExactTypeParamEquality),
             isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
           ).
+        isTypeArgCompatible_1(T, WildcardType(_, lb, Bound()), assignableKind) =
+            isAssignableTo(T, typeOrBottomType(lb), requireExactTypeParamEquality).
         isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignableKind) = out@andB(
             tmp1@isAssignableTo(T1, ub, assignableKind),
             tmp2@isTypeEntirelyAboveLowerBound(T2, lb, assignableKind)
@@ -177,7 +181,7 @@ rules
 
           // Checks that Type T does not include TYPEs below lower bound lb
           isTypeEntirelyAboveLowerBound : TYPE * TYPE * AssignableKind -> BOOLEAN
-          isTypeEntirelyAboveLowerBound(WildcardType(_, lb1), lb2, assignableKind) =
+          isTypeEntirelyAboveLowerBound(WildcardType(_, lb1, _), lb2, assignableKind) =
             isAssignableTo(lb2, typeOrBottomType(lb1), assignableKind).
           isTypeEntirelyAboveLowerBound(T, lb, assignableKind) =
             isAssignableTo(lb, T, assignableKind).
@@ -185,15 +189,19 @@ rules
   isAssignableTo(_, TopType(), _) = TRUE().
   isAssignableTo(BottomType(), _, _) = TRUE().
 
-  isAssignableTo(WildcardType(upper_bound, lower_bound), T, assignableKind) =
+  isAssignableTo(WildcardType(upper_bound, _, _), T, assignableKind) =
     isAssignableTo(typeOrTopType(upper_bound), T, assignableKind).
-  isAssignableTo(T@WildcardType(_, _), T@WildcardType(_, _), _) = TRUE().
-  isAssignableTo(T, WildcardType(upper_bound, lower_bound), TypeArgKind()) =
+  isAssignableTo(T@WildcardType(_, _, _), T@WildcardType(_, _, Free()), _) = TRUE().
+  isAssignableTo(T, WildcardType(upper_bound, lower_bound, _), TypeArgKind()) =
     withinBounds(getBounds(T), (typeOrTopType(upper_bound), typeOrBottomType(lower_bound))).
-  isAssignableTo(T, WildcardType(upper_bound, _), ArgumentKind()) =
+  isAssignableTo(T, WildcardType(upper_bound, _, Free()), ArgumentKind()) =
     isAssignableTo(T, typeOrTopType(upper_bound), ArgumentKind()).
-  isAssignableTo(T, WildcardType(upper_bound, _), ExpressionKind()) =
+  isAssignableTo(T, WildcardType(_, lower_bound, _), ArgumentKind()) =
+    isAssignableTo(T, typeOrBottomType(lower_bound), ArgumentKind()).
+  isAssignableTo(T, WildcardType(upper_bound, _, Free()), ExpressionKind()) =
     isAssignableTo(T, typeOrTopType(upper_bound), ExpressionKind()).
+  isAssignableTo(T, WildcardType(_, lower_bound, _), ExpressionKind()) =
+    isAssignableTo(T, typeOrBottomType(lower_bound), ExpressionKind()).
 
   isAssignableTo(T1@GenericParameter2TYPE(tmp3), T2, assignableKind) =
     out@isAssignableTo(upper_bound, T2, assignableKind) :-
@@ -406,20 +414,16 @@ Cases:
           lub_type_arg_1(T1, _, TRUE(), _) = T1.
           lub_type_arg_1(_, T2, _, TRUE()) = T2.
           lub_type_arg_1(T1, T2, FALSE(), FALSE()) =
-            WildcardType(UpperBoundType(lub(getUpperBound(T1), getUpperBound(T2))), NoLowerBoundType()).
-
-          getUpperBound : TYPE -> TYPE
-          getUpperBound(GenericParameter2TYPE(GenericParameter(s, name))) = upper_bound :-
-            resolveGenericParam(s, name) == [(_, (_, (upper_bound, _)))].
-          getUpperBound(WildcardType(upper_bound, _)) = typeOrTopType(upper_bound).
-          getUpperBound(T) = T.
+            WildcardType(UpperBoundType(lub(ub1, ub2)), NoLowerBoundType(), Unset()) :-
+              getBounds(T1) == (ub1, _),
+              getBounds(T2) == (ub2, _).
 
   lub(TopType(), T) = TopType().
   lub(T, TopType()) = TopType().
   lub(BottomType(), T) = T.
   lub(T, BottomType()) = T.
-  lub(WildcardType(upper_bound, _), T) = lub(typeOrTopType(upper_bound), T).
-  lub(T, WildcardType(upper_bound, _)) = lub(T, typeOrTopType(upper_bound)).
+  lub(WildcardType(upper_bound, _, _), T) = lub(typeOrTopType(upper_bound), T).
+  lub(T, WildcardType(upper_bound, _, _)) = lub(T, typeOrTopType(upper_bound)).
   lub(T, T) = T.
   lub(T1, T2) = firstTrueT([
     (isAssignableTo(T1, T2, ExpressionKind()), T2),
@@ -487,7 +491,7 @@ rules
   typeOfWithTypeArgScope_1(s, s_type_args, SupplierTy(ty), resolve_in_super_types) = SupplierType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)).
   typeOfWithTypeArgScope_1(s, s_type_args, NullableTy(ty, marker), resolve_in_super_types) = NullableType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)) :-
     try { ty != NullableTy(_, _) } | warning $[No-op: double nullable has no effect] @marker.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound), resolve_in_super_types) = WildcardType(upper_bound_ty, lower_bound_ty) :-
+  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound), resolve_in_super_types) = WildcardType(upper_bound_ty, lower_bound_ty, Unset()) :-
     {upper_error_node lower_error_node}
     typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types) == upper_bound_ty,
     typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types) == lower_bound_ty,
@@ -614,10 +618,11 @@ rules
     instantiateTypeArgs_1(s, ListType(ty), params) = ListType(instantiateTypeArgs_1(s, ty, params)).
     instantiateTypeArgs_1(s, SupplierType(ty), params) = SupplierType(instantiateTypeArgs_1(s, ty, params)).
     instantiateTypeArgs_1(s, NullableType(ty), params) = NullableType(instantiateTypeArgs_1(s, ty, params)).
-    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound), params) =
+    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, TODO), params) =
       WildcardType(
         instantiateTypeArgs_wildcardUpperbound(s, upper_bound, params),
-        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, params)
+        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, params),
+        TODO
       ).
 
       instantiateTypeArgs_wildcardUpperbound : scope * UpperBoundType * list(GenericParameter) -> UpperBoundType

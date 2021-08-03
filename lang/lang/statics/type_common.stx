@@ -53,7 +53,7 @@ rules
       typeOfUpperBound(s, s_type_args, UpperBound(upper_bound), resolve_in_super_types) =
         UpperBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound, resolve_in_super_types))
       :-
-        try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
+        try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
         try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
         try { ty != ListType(_)  } | warning $[Nonsensical bound: list types do not have subtypes] @upper_bound,
         try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound,
@@ -64,7 +64,7 @@ rules
       typeOfLowerBound(s, s_type_args, LowerBound(lower_bound), resolve_in_super_types) =
         LowerBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound, resolve_in_super_types))
       :-
-        try { ty != WildcardType(_, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
+        try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
 
   /**
@@ -118,7 +118,7 @@ rules
    * simply that same type.
    */
   getBounds : TYPE -> (TYPE * TYPE)
-  getBounds(WildcardType(ub, lb)) = (typeOrTopType(ub), typeOrBottomType(lb)).
+  getBounds(WildcardType(ub, lb, _)) = (typeOrTopType(ub), typeOrBottomType(lb)).
   getBounds(GenericParameter2TYPE(GenericParameter(s, name))) = (ub, lb) :-
     resolveGenericParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
   getBounds(T) = (T, T).
@@ -246,7 +246,9 @@ rules
   ppTYPE(SupplierType(T)) = "supplier".
   ppTYPE(FuncType(type_params, in, out)) = "func".
   ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
-  ppTYPE(WildcardType(ub, lb)) = "wildcard".
+  ppTYPE(WildcardType(ub, lb, Unset())) = "wildcard (capture state: not set)".
+  ppTYPE(WildcardType(ub, lb, Free())) = "wildcard (capture state: free)".
+  ppTYPE(WildcardType(ub, lb, Bound())) = "wildcard (capture state: bound)".
   ppTYPE(GenericParameter2TYPE(GenericParameter(_, name))) = name.
 
   /**
