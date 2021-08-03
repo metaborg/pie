@@ -40,3 +40,16 @@ test Cannot assign lub(List<Fruit>, List<Pear>) to List<Fruit> [[
     [[if (true) fruit else pears]]
 ]] 1 error at #1
    error like "Type mismatch"
+
+// free vs bound wildcard
+test free wildcard [[
+  data Thing = foreign java test.wildcard.Box {
+    func doStuff(List<_ : Fruit>) -> unit
+  }
+  func test(thing: Thing, list: List<Apple>) -> unit = thing.doStuff(list)
+]] analysis succeeds
+test bound wildcard [[
+  // not allowed, list could be List<Banana>
+  func test(list: List<_ : Fruit>, apple: Apple) -> unit = list.add([[apple]])
+]] 1 error at #1
+   error like "Type mismatch"
