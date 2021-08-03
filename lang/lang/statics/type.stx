@@ -626,13 +626,7 @@ rules
     instantiateTypeArgs_1(_, EmptyListType(), _, _) = EmptyListType().
     instantiateTypeArgs_1(s, SupplierType(ty), capture_state, params) = SupplierType(instantiateTypeArgs_1(s, ty, capture_state, params)).
     instantiateTypeArgs_1(s, NullableType(ty), capture_state, params) = NullableType(instantiateTypeArgs_1(s, ty, capture_state, params)).
-    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, Unset()), capture_state, params) =
-      WildcardType(
-        instantiateTypeArgs_wildcardUpperbound(s, upper_bound, capture_state, params),
-        instantiateTypeArgs_wildcardLowerbound(s, lower_bound, capture_state, params),
-        capture_state
-      ).
-    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, Free()), capture_state, params) =
+    instantiateTypeArgs_1(s, WildcardType(upper_bound, lower_bound, _), capture_state, params) =
       WildcardType(
         instantiateTypeArgs_wildcardUpperbound(s, upper_bound, capture_state, params),
         instantiateTypeArgs_wildcardLowerbound(s, lower_bound, capture_state, params),
