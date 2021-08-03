@@ -476,12 +476,13 @@ rules
    * edges. Otherwise, it will only follow P edges.
    */
   typeOfWithTypeArgScope : scope * scope * Type * BOOLEAN -> TYPE
-  typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope(*, *, list(*), *) = list(*)
+  typesOfWithTypeArgScope maps typeOfWithTypeArgScope(*, *, list(*), *) = list(*)
   typeOfWithTypeArgScope(s, s_type_args, ty, resolve_in_super_types) =
     type@typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types) :-
     @ty.type := type.
 
   typeOfWithTypeArgScope_1 : scope * scope * Type * BOOLEAN -> TYPE
+  typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope_1(*, *, list(*), *) = list(*)
   typeOfWithTypeArgScope_1(_, _, UnitTy(), _) = UnitType().
   typeOfWithTypeArgScope_1(_, _, BoolTy(), _) = BoolType().
   typeOfWithTypeArgScope_1(_, _, IntTy(), _)  = IntType().

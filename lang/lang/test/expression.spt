@@ -469,6 +469,19 @@ test method call undefined func passes arguments scope [[
    resolve #3 to #2
 test method call incorrect arg count [[ foo.set(foo, 8) ]] >= 1 error
 test method call incorrect arg type [[ foo.set([[bok]]) ]] >= 1 error at #1
+test method call on nullable type [[
+  val maybe: Foo? = null;
+  maybe.[[get]]()
+]] 1 error at #1
+   0 warnings
+   error like "Cannot call method on nullable type"
+test method call on nullable type undefined [[
+  val maybe: Foo? = null;
+  maybe.[[nope]]()
+]] 1 error at #1
+   1 warning at #1
+   error like "Cannot call method on nullable type"
+   warning like "Undefined function"
 
 test built-in method supplier get from supplier literal [[ [[ supplier("hello").get() ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test built-in method supplier get with type argument list [[ [[ supplier(./src/test/resources/example1.txt).get<>() ]] ]] analysis succeeds run pie-ast-type on #1 to PathType()
