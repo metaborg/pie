@@ -96,4 +96,5 @@ test param with wildcard type [[
   func test(something: _[[ : Fruit<>]][[ -: Apple<>]]) -> Fruit? = null
 ]] 3 errors at #1, #2
    error like "Cannot use a wildcard"
-   error like "Cannot have both an upper and lower bound"
+   error like "Cannot have both an upper and lower bound" at #1
+   error like "Cannot have both an upper and lower bound" at #2
