@@ -57,6 +57,15 @@ context-free syntax
   Renaming.Renaming = [[{STRING ":"}*] -> [{STRING ":"}*]]
   NormalizedImport.NormalizedImport = [normalized import: [Renaming]]
 
+// The kind of an Assignability check.
+// Used by Statix to discern different assignability checks.
+context-free sorts AssignableKind
+context-free syntax
+
+  AssignableKind.InvariantKind = [assignability check for invariant types]
+  AssignableKind.TypeArgKind = [assignability check for type argument types]
+  AssignableKind.ExpressionKind = [assignability check for expression types]
+
 // The kind of a Function. Used by code generation.
 context-free sorts FuncImplKind
 context-free syntax

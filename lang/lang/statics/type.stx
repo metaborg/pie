@@ -35,12 +35,6 @@ rules // operations on types
   assignableTo(T1, T2, assignableKind) :-
     isAssignableTo(T1, T2, assignableKind) == TRUE().
 
-signature
-  sorts AssignableKind constructors
-    InvariantKind : AssignableKind
-    TypeArgKind : AssignableKind
-    ExpressionKind : AssignableKind
-
 rules
 
   /**
