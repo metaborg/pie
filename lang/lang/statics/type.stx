@@ -284,7 +284,11 @@ Cases:
   isInvariant : TYPE * TYPE -> BOOLEAN
   isInvariant(T, T) = TRUE().
   isInvariant(NullableType(T1), NullableType(T2)) = isInvariant(T1, T2).
+  isInvariant(NullableType(T1), T2) = isInvariant(T1, T2).
+  isInvariant(T1, NullableType(T2)) = isInvariant(T1, T2).
+  isInvariant(NullType(), NullableType(_)) = TRUE().
   isInvariant(ListType(T1), ListType(T2)) = isInvariant(T1, T2).
+  isInvariant(EmptyListType(), ListType(_)) = TRUE().
   isInvariant(TupleType(T1s), TupleType(T2s)) = isAllInvariant(T1s, T2s).
   isInvariant(SupplierType(T1), SupplierType(T2)) = isInvariant(T1, T2).
   isInvariant(DataType(s1), DataType(s2)) = andB(
