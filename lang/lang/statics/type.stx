@@ -409,6 +409,11 @@ Cases:
   lub(WildcardType(upper_bound, _, _), T) = lub(typeOrTopType(upper_bound), T).
   lub(T, WildcardType(upper_bound, _, _)) = lub(T, typeOrTopType(upper_bound)).
   lub(T, T) = T.
+  lub(T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) = T.
+  lub(T1@GenericParameter2TYPE(_), T2) = lub(ub, T2) :-
+    getBounds(T1) == (ub, _).
+  lub(T1, T2@GenericParameter2TYPE(_)) = lub(T1, ub) :-
+    getBounds(T2) == (ub, _).
   lub(T1, T2) = firstTrueT([
     (isAssignableTo(T1, T2, ExpressionKind()), T2),
     (isAssignableTo(T2, T1, ExpressionKind()), T1)],
