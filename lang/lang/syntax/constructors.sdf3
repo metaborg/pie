@@ -38,7 +38,6 @@ context-free syntax
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
 //  TYPE.GenericParameter2TYPE = GenericParameter
 
-  CaptureState.Unset = [not set]
   CaptureState.Free = [free]
   CaptureState.Bound = [bound]
   TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType] (capture state: [CaptureState])]

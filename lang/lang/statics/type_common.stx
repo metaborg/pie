@@ -246,7 +246,6 @@ rules
   ppTYPE(SupplierType(T)) = "supplier".
   ppTYPE(FuncType(type_params, in, out)) = "func".
   ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
-  ppTYPE(WildcardType(ub, lb, Unset())) = "wildcard (capture state: not set)".
   ppTYPE(WildcardType(ub, lb, Free())) = "wildcard (capture state: free)".
   ppTYPE(WildcardType(ub, lb, Bound())) = "wildcard (capture state: bound)".
   ppTYPE(GenericParameter2TYPE(GenericParameter(_, name))) = name.

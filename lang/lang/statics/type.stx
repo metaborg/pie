@@ -150,10 +150,6 @@ rules
             isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
             isTypeArgsCompatible(s1, s2, assignableKind)
           ).
-        isTypeArgCompatible_1(T, WildcardType(ub, lb, Unset()), assignableKind) = andB(
-            isAssignableTo(T, typeOrTopType(ub), assignableKind),
-            isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
-          ).
         isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignableKind) = andB(
             isAssignableTo(T, typeOrTopType(ub), assignableKind),
             isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
@@ -402,7 +398,7 @@ Cases:
           lub_type_arg_1(T1, _, TRUE(), _) = T1.
           lub_type_arg_1(_, T2, _, TRUE()) = T2.
           lub_type_arg_1(T1, T2, FALSE(), FALSE()) =
-            WildcardType(UpperBoundType(lub(ub1, ub2)), NoLowerBoundType(), Unset()) :-
+            WildcardType(UpperBoundType(lub(ub1, ub2)), NoLowerBoundType(), Free()) :-
               getBounds(T1) == (ub1, _),
               getBounds(T2) == (ub2, _).
 
@@ -480,7 +476,7 @@ rules
   typeOfWithTypeArgScope_1(s, s_type_args, SupplierTy(ty), resolve_in_super_types) = SupplierType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)).
   typeOfWithTypeArgScope_1(s, s_type_args, NullableTy(ty, marker), resolve_in_super_types) = NullableType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)) :-
     try { ty != NullableTy(_, _) } | warning $[No-op: double nullable has no effect] @marker.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound), resolve_in_super_types) = WildcardType(upper_bound_ty, lower_bound_ty, Unset()) :-
+  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound), resolve_in_super_types) = WildcardType(upper_bound_ty, lower_bound_ty, Free()) :-
     {upper_error_node lower_error_node}
     typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types) == upper_bound_ty,
     typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types) == lower_bound_ty,
