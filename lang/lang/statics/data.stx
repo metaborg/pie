@@ -77,7 +77,7 @@ rules
       {s_renamings instantiated_ret_ty_super}
       superOk_3_rename_if_not_erased(s_data_def, s_func, type_params, s_func_super, type_params_super) == s_renamings,
       instantiateTypeArgs(s_renamings, ret_ty_super) == instantiated_ret_ty_super,
-      assignableTo(ret_ty, instantiated_ret_ty_super, ArgumentKind())
+      assignableTo(ret_ty, instantiated_ret_ty_super, ExpressionKind())
         | error $[Type mismatch: incompatible return type for override] @name,
       @name.ref := name_super.
 

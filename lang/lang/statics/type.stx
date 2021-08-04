@@ -39,7 +39,6 @@ signature
   sorts AssignableKind constructors
     InvariantKind : AssignableKind
     TypeArgKind : AssignableKind
-    ArgumentKind : AssignableKind // todo: can merge with ExpressionKind?
     ExpressionKind : AssignableKind
 
 rules
@@ -196,10 +195,6 @@ rules
   isAssignableTo(T@WildcardType(_, _, _), T@WildcardType(_, _, Free()), _) = TRUE().
   isAssignableTo(T, WildcardType(upper_bound, lower_bound, _), TypeArgKind()) =
     withinBounds(getBounds(T), (typeOrTopType(upper_bound), typeOrBottomType(lower_bound))).
-  isAssignableTo(T, WildcardType(upper_bound, _, _), ArgumentKind()) =
-    isAssignableTo(T, typeOrTopType(upper_bound), ArgumentKind()).
-  isAssignableTo(T, WildcardType(_, lower_bound, Bound()), ArgumentKind()) =
-    isAssignableTo(T, typeOrBottomType(lower_bound), ArgumentKind()).
   isAssignableTo(T, WildcardType(upper_bound, _, _), ExpressionKind()) =
     isAssignableTo(T, typeOrTopType(upper_bound), ExpressionKind()).
   isAssignableTo(T, WildcardType(_, lower_bound, Bound()), ExpressionKind()) =
@@ -227,9 +222,6 @@ rules
       {tmp6} tmp6 == ppTYPE(lb2),
       {tmp7} tmp7 == ppTYPE(T1),
       try{false}|note$[DEBUG - [tmp7] ([T1]) is assignable to generic parameter [name] in [s] with upper bound [tmp5] ([ub1]) == [out]].
-  isAssignableTo(T1, T2@GenericParameter2TYPE(_), ArgumentKind()) =
-    isAssignableTo(T1, lower_bound, ArgumentKind()) :-
-      getBounds(T2) == (_, lower_bound).
   isAssignableTo(T1, T2@GenericParameter2TYPE(_), ExpressionKind()) =
     isAssignableTo(T1, lower_bound, ExpressionKind()) :-
       getBounds(T2) == (_, lower_bound).

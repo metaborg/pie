@@ -189,7 +189,7 @@ rules
       getGenericParams(s_func) == type_params,
       genericArgsOk(s1, s_type_args, s_func_instantiated, type_params, type_args, TRUE(), name),
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
-      expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ArgumentKind()) == s2,
+      expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty.
 
     // Function didn't resolve. Type check arguments, but don't check if they
@@ -231,7 +231,8 @@ rules
     {exp_ty}
     typeOf(s1, arg_ty_lex) == arg_ty,
     typeOfExp(s1, exp) == (s2, exp_ty),
-    assignableTo(exp_ty, arg_ty, ArgumentKind()) | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
+    assignableTo(exp_ty, arg_ty, ExpressionKind())
+      | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
   typeOfExpImpl(s, CreateSupplier(name, type_args, args)) = (s, DataType(emptyScope(s))) :-
     typeOfCreateSupplier_1(type_args, args),
     try { args != [] } | error $[Not enough arguments. Expected one argument, but got zero] @name,
