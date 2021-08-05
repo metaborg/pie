@@ -10,62 +10,24 @@ imports
 rules
 
   /**
-   * genericParamsOk(s, s_data_def, GenericParams(params)) = generic_params
-   * Checks that the declared type parameters are ok. Returns a list
-   * [generic_params] of the resolved type parameters with their bounds.
-   * - Declares the type parameters in [s_def].
-   * - Declares each individual type parameter in [s_def].
-   * - Checks that there are no duplicate names for the type parameters. This
-   *   includes declared type parameters in (parents of) scope [s]. Gives an
-   *   error if a name is a duplicate.
-   * - Checks that each parameter has at most one bound.
-   * - Resolves the type of each bound in scope [s].
-   * - Gives a note if the type parameter shadows a datatype name in [s].
+   * Returns the first element in the list that is TRUE(), or the default otherwise.
    */
-  genericParamsOk : scope * scope * GenericParams -> list(GenericParamType)
-  genericParamsOk(s, s_def, GenericParams(params)) = wrapBounds(parameters) :-
-    typeOfgenericParams(s, s_def, params) == parameters,
-    !generic_params[parameters] in s_def.
-    
-    wrapBound : (GenericParameter * TYPE * TYPE) -> GenericParamType
-    wrapBounds maps wrapBound(list(*)) = list(*)
-    wrapBound((GenericParameter(_, name), upper_bound, lower_bound)) =
-      GenericParamType(name, typeToUpperBoundType(upper_bound), typeToLowerBoundType(lower_bound)).
+  firstTrueT : list((BOOLEAN * TYPE)) * TYPE -> TYPE
+  firstTrueT([], T) = T.
+  firstTrueT([(FALSE(), _)|rest], T) = firstTrueT(rest, T).
+  firstTrueT([(TRUE(), T)|_], _) = T.
 
-    typeOfgenericParam : scope * scope * GenericParam -> (GenericParameter * TYPE * TYPE)
-    typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
-    typeOfgenericParam(s, s_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
-      {upper_error_node lower_error_node}
-      bothBoundsOk(upper_bound, lower_bound),
-      typeOrTopType(typeOfUpperBound(s, s_def, upper_bound, FALSE())) == upper_bound_ty,
-      typeOrBottomType(typeOfLowerBound(s, s_def, lower_bound, FALSE())) == lower_bound_ty,
-      declareGenericParam(s_def, name, upper_bound_ty, lower_bound_ty) == param,
-      try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
-
-      bothBoundsOk : UpperBound * LowerBound
-      bothBoundsOk(_, _).
-      bothBoundsOk(u@UpperBound(_), l@LowerBound(_)) :-
-        false | error $[Cannot have both an upper and lower bound] @u,
-        false | error $[Cannot have both an upper and lower bound] @l.
-
-      typeOfUpperBound : scope * scope * UpperBound * BOOLEAN -> UpperBoundType
-      typeOfUpperBound(_, _, NoUpperBound(), _) = NoUpperBoundType().
-      typeOfUpperBound(s, s_type_args, UpperBound(upper_bound), resolve_in_super_types) =
-        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound, resolve_in_super_types))
-      :-
-        try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
-        try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
-        try { ty != ListType(_)  } | warning $[Nonsensical bound: list types do not have subtypes] @upper_bound,
-        try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound,
-        try { ty != BottomType() } | warning $[Nonsensical bound: BOTTOM is the only matching type] @upper_bound.
-
-      typeOfLowerBound : scope * scope * LowerBound * BOOLEAN -> LowerBoundType
-      typeOfLowerBound(_, _, NoLowerBound(), _) = NoLowerBoundType().
-      typeOfLowerBound(s, s_type_args, LowerBound(lower_bound), resolve_in_super_types) =
-        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound, resolve_in_super_types))
-      :-
-        try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
-        try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
+  /**
+   * makeNullable(T)
+   * Make Type [T] nullable if it is not already.
+   * This returns NullType() or TopType() if [T] already was one of those and
+   * NullableType(_) otherwise
+   */
+  makeNullable : TYPE -> TYPE
+  makeNullable(NullType()) = NullType().
+  makeNullable(T@NullableType(_)) = T.
+  makeNullable(TopType()) = TopType().
+  makeNullable(T) = NullableType(T).
 
   /**
    * getScopeFromType(s, ty)
