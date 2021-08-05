@@ -231,7 +231,7 @@ rules // operations on types
       try{false}|note$[DEBUG - generic parameter [name] is assignable to itself],
       try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) is never called because it is caught by isAssignableTo(T, T, _)].
     isAssignableTo_1(TypeArgKind(), T2@GenericParameter2TYPE(_), T1) =
-      out@withinBounds(tmp1@getBounds(T1), tmp2@getBounds(T2)) :-
+      out@withinBounds(tmp1@getBounds(T1), tmp2@getBounds(T2), TypeArgKind()) :-
         {s name} T2 == GenericParameter2TYPE(GenericParameter(s, name)),
         {ub1 lb1} (ub1, lb1) == tmp1,
         {ub2 lb2} (ub2, lb2) == tmp2,
