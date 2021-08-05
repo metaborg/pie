@@ -12,6 +12,14 @@ imports
 rules
 
   /**
+   * isScopeEqual(s1, s2) = is_scope_equal
+   * Checks whether the two scopes [s1] and [s2] are equal.
+   */
+  isScopeEqual : scope * scope -> BOOLEAN
+  isScopeEqual(s, s) = TRUE().
+  isScopeEqual(s1, s2) = FALSE().
+
+  /**
    * getRoot(s)
    * Get the root scope. The root scope is the scope passed to
    * statics/project!projectOk.

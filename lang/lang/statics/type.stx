@@ -179,10 +179,6 @@ rules // operations on types
               withinBounds(getBounds(T1), getBounds(T2), assignable_kind).
           isTypeArgCompatible_1(T1, T2, _) = FALSE().
 
-            isScopeEqual : scope * scope -> BOOLEAN
-            isScopeEqual(s, s) = TRUE().
-            isScopeEqual(s1, s2) = FALSE().
-
     isAssignableTo_1(InvariantKind(), TopType(), TopType()) = TRUE() :-
       try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(InvariantKind(), TopType(), TopType()) is never called because it is caught by isAssignableTo(T, T, _)].
     isAssignableTo_1(InvariantKind(), TopType(), _) = FALSE().
