@@ -93,7 +93,7 @@ rules
       {erased_params erased_super_params}
       eraseTypes(params) == erased_params,
       eraseTypes(super_params) == erased_super_params,
-      isAllInvariant(erased_params, erased_super_params) == FALSE()
+      isAllAssignableTo(erased_params, erased_super_params, InvariantKind()) == FALSE()
         | error $[[name] collides with method in super type: this method does not override method in supertype but has the same signature after type erasure].
 
   dataImplOk : scope * scope * DataImpl

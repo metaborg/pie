@@ -49,7 +49,7 @@ rules
       {s_renamings_all renamed_params2}
       renameAll(s_renamings, s_func2, type_params2, s_func1, type_params1) == s_renamings_all,
       instantiateTypeArgsInAll(s_renamings_all, formal_params2) == renamed_params2,
-      isAllInvariant(formal_params1, renamed_params2) == params_equal.
+      isAllAssignableTo(formal_params1, renamed_params2, InvariantKind()) == params_equal.
 
     isTypeParameterBoundsEqual : list(GenericParamType) * list(GenericParamType) -> BOOLEAN
     isTypeParameterBoundsEqual([], []) = TRUE().
@@ -63,8 +63,9 @@ rules
     isTypeParameterBoundEqual : GenericParamType * GenericParamType -> BOOLEAN
     isTypeParameterBoundEqual(GenericParamType(_, ub1, lb1), GenericParamType(_, ub2, lb2)) =
       andB(
-        isInvariant(typeOrTopType(ub1), typeOrTopType(ub2)),
-        isInvariant(typeOrBottomType(lb1), typeOrBottomType(lb2))).
+        isAssignableTo(typeOrTopType(ub1), typeOrTopType(ub2), InvariantKind()),
+        isAssignableTo(typeOrBottomType(lb1), typeOrBottomType(lb2), InvariantKind())
+      ).
 
   /**
    * isSignatureEqualToErased(s_renamings, signature1@FuncType,
