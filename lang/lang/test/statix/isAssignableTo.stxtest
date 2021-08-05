@@ -2,11 +2,9 @@ resolve {s_data}
   new s_data,
   isAssignableTo(DataType(s_data), DataType(s_data), InvariantKind()) == TRUE(),
   isAssignableTo(DataType(s_data), DataType(s_data), TypeArgKind()) == TRUE(),
-  isAssignableTo(DataType(s_data), DataType(s_data), ArgumentKind()) == TRUE(),
   isAssignableTo(DataType(s_data), DataType(s_data), ExpressionKind()) == TRUE(),
   assignableTo(DataType(s_data), DataType(s_data), InvariantKind()),
   assignableTo(DataType(s_data), DataType(s_data), TypeArgKind()),
-  assignableTo(DataType(s_data), DataType(s_data), ArgumentKind()),
   assignableTo(DataType(s_data), DataType(s_data), ExpressionKind())
 
 imports
