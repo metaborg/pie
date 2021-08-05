@@ -48,7 +48,10 @@ rules // operations on types
    */
   isAssignableTo : TYPE * TYPE * AssignableKind -> BOOLEAN
   // todo: not true for InvariantKind
-  isAssignableTo(BottomType(), _, _) = TRUE(). // optimization: everything is assignable to bottom type
+  isAssignableTo(BottomType(), BottomType(), _) = TRUE().
+  isAssignableTo(BottomType(), _, InvariantKind()) = FALSE().
+  isAssignableTo(BottomType(), _, TypeArgKind()) = TRUE().
+  isAssignableTo(BottomType(), _, ExpressionKind()) = TRUE().
   isAssignableTo(T, T, _) = TRUE(). // optimization: a type is equal to itself, except for wildcards sometimes.
   isAssignableTo(T1@WildcardType(_, _, _), T2@WildcardType(_, _, _), assignable_kind) =
     // edge case for opimization: wildcards are tricky, do not use optimization.
@@ -64,7 +67,17 @@ rules // operations on types
       isAssignableTo(T1, T2, assignable_kind).
     isAssignableTo_1(assignable_kind, NullableType(T2), NullableType(T1)) =
       isAssignableTo(T1, T2, assignable_kind).
+    isAssignableTo_1(_, ListType(T2), ListType(T1)) =
+      isAssignableTo(T1, T2, InvariantKind()).
     isAssignableTo_1(_, ListType(_), EmptyListType()) = TRUE().
+    isAssignableTo_1(_, TupleType(T2s), TupleType(T1s)) =
+      isAllAssignableTo(T1s, T2s, InvariantKind()).
+    isAssignableTo_1(_, SupplierType(T2), SupplierType(T1)) =
+      isAssignableTo(T1, T2, InvariantKind()).
+    isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) = andB(
+      isScopeEqual(findGenericDef(s1), findGenericDef(s2)),
+      isAllAssignableTo(getTypeArgTypes(getTypeArgs(s1)), getTypeArgTypes(getTypeArgs(s2)), InvariantKind())
+    ).
     isAssignableTo_1(assignable_kind, DataType(s_super), DataType(s_sub)) =
       out@isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignable_kind)
     :-
@@ -187,10 +200,16 @@ rules // operations on types
             isTypeEntirelyAboveLowerBound(T, lb, assignableKind) =
               isAssignableTo(lb, T, assignableKind).
 
-    isAssignableTo_1(_, TopType(), _) = TRUE().
+    isAssignableTo_1(InvariantKind(), TopType(), TopType()) = TRUE() :-
+      try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(InvariantKind(), TopType(), TopType()) is never called because it is caught by isAssignableTo(T, T, _)].
+    isAssignableTo_1(InvariantKind(), TopType(), _) = FALSE().
+    isAssignableTo_1(TypeArgKind(), TopType(), _) = TRUE().
+    isAssignableTo_1(ExpressionKind(), TopType(), _) = TRUE().
 
     isAssignableTo_1(assignable_kind, T, WildcardType(upper_bound, _, _)) =
       isAssignableTo(typeOrTopType(upper_bound), T, assignable_kind).
+    isAssignableTo_1(InvariantKind(), T@WildcardType(_, _, _), T@WildcardType(_, _, _)) = FALSE() :-
+      false | error $[BUG: incorrect assumeption that isAssignableTo will never be called with a wildcard and InvariantKind].
     isAssignableTo_1(_, T@WildcardType(_, _, Free()), T@WildcardType(_, _, _)) = TRUE().
     isAssignableTo_1(TypeArgKind(), WildcardType(upper_bound, lower_bound, _), T) =
       // todo: is this correct when the wildcard is bound?
@@ -201,6 +220,7 @@ rules // operations on types
     isAssignableTo_1(ExpressionKind(), WildcardType(_, lower_bound, Bound()), T) =
       isAssignableTo(T, typeOrBottomType(lower_bound), ExpressionKind()).
 
+    isAssignableTo_1(InvariantKind(), _, GenericParameter2TYPE(_)) = FALSE().
     isAssignableTo_1(assignable_kind, T2, T1@GenericParameter2TYPE(tmp3)) =
       out@isAssignableTo(upper_bound, T2, assignable_kind) :-
         {s name} tmp3 == GenericParameter(s, name),
@@ -211,7 +231,8 @@ rules // operations on types
     isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) = TRUE() :-
       {name}
       T == GenericParameter2TYPE(GenericParameter(_, name)),
-      try{false}|note$[DEBUG - generic parameter [name] is assignable to itself].
+      try{false}|note$[DEBUG - generic parameter [name] is assignable to itself],
+      try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) is never called because it is caught by isAssignableTo(T, T, _)].
     isAssignableTo_1(TypeArgKind(), T2@GenericParameter2TYPE(_), T1) =
       out@withinBounds(tmp1@getBounds(T1), tmp2@getBounds(T2)) :-
         {s name} T2 == GenericParameter2TYPE(GenericParameter(s, name)),

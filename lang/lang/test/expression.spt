@@ -264,6 +264,63 @@ test val declaration tuple bind with wildcard type hints [[
   val (test_name, test_time_ms: int, test_result: [[_)]] = ("t25-10-sample_01", 13425, "err_no 127")
 ]] 1 errors at #1
    error like "Cannot use a wildcard"
+test val declaration assign list to list of nullable [[
+  val ints: int* = [8, 6];
+  val maybeInts: int?* = ints
+]] analysis succeeds
+test val declaration assign list of nullable to list [[
+  val maybeInts: int?* = [9, null];
+  val ints: [[int*]] = maybeInts
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign list to supertype list [[
+  val bars: Bar* = [bar];
+  val foos: [[Foo*]] = bars
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign list to supertype list [[
+  val foos: Foo* = [foo];
+  val bars: [[Bar*]] = foos
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign tuple to tuple of nullable [[
+  val tuple: (int, string) = (4, "yes");
+  val nullable: (int?, string?) = tuple
+]] analysis succeeds
+test val declaration assign tuple of nullable to tuple [[
+  val nullable: (int?, string?) = (4?, null);
+  val tuple: [[(int, string)]] = nullable
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign tuple to tuple with supertype [[
+  val foobar: (Foo, Bar) = (foo, bar);
+  val foofoo: [[(Foo, Foo)]] = foobar
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign tuple to tuple with supertype [[
+  val foofoo: (Foo, Foo) = (foo, foo);
+  val foobar: [[(Foo, Bar)]] = foofoo
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign supplier to supplier of nullable [[
+  val sup: supplier<int> = supplier(8);
+  val supNullable: supplier<int?> = sup
+]] analysis succeeds
+test val declaration assign supplier of nullable to supplier [[
+  val supNullable: supplier<int?> = supplier(null);
+  val sup: [[supplier<int>]] = supNullable
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign supplier to supertype supplier [[
+  val barSup: supplier<Bar> = supplier(bar);
+  val fooSup: [[supplier<Foo>]] = barSup
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign supplier to supertype supplier [[
+  val fooSup: supplier<Foo> = supplier(foo);
+  val barSup: [[supplier<Bar>]] = fooSup
+]] 1 error at #1
+   error like "Type mismatch"
 test val declaration assign single to tuple bind [[ val (x, y) = [1, 2] ]] analysis fails
 test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1  error like "Cannot resolve"
 
