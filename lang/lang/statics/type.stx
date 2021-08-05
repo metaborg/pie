@@ -171,32 +171,17 @@ rules // operations on types
               isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
               isTypeArgsCompatible(s1, s2, assignableKind)
             ).
-          isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignableKind) = andB(
-              isAssignableTo(T, typeOrTopType(ub), assignableKind),
-              isTypeEntirelyAboveLowerBound(T, typeOrBottomType(lb), assignableKind)
-            ).
+          isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignable_kind) =
+              withinBounds(getBounds(T), (typeOrTopType(ub), typeOrBottomType(lb)), assignable_kind).
           isTypeArgCompatible_1(T, WildcardType(_, lb, Bound()), assignableKind) =
               isAssignableTo(T, typeOrBottomType(lb), assignableKind).
-          isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignableKind) = out@andB(
-              tmp1@isAssignableTo(T1, ub, assignableKind),
-              tmp2@isTypeEntirelyAboveLowerBound(T2, lb, assignableKind)
-            ) :-
-              {tmp3} ppTYPE(T1) == tmp3,
-              {tmp4} ppTYPE(T2) == tmp4,
-              try{false}|note$[DEBUG - type argument [tmp3] compatible to [tmp4] == [out]. Bounds: ([ub], [lb]). Assignable to upper bound: [tmp1], above lower bound [tmp2]],
-              getBounds(T2) == (ub, lb).
+          isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignable_kind) =
+              withinBounds(getBounds(T1), getBounds(T2), assignable_kind).
           isTypeArgCompatible_1(T1, T2, _) = FALSE().
 
             isScopeEqual : scope * scope -> BOOLEAN
             isScopeEqual(s, s) = TRUE().
             isScopeEqual(s1, s2) = FALSE().
-
-            // Checks that Type T does not include TYPEs below lower bound lb
-            isTypeEntirelyAboveLowerBound : TYPE * TYPE * AssignableKind -> BOOLEAN
-            isTypeEntirelyAboveLowerBound(WildcardType(_, lb1, _), lb2, assignableKind) =
-              isAssignableTo(lb2, typeOrBottomType(lb1), assignableKind).
-            isTypeEntirelyAboveLowerBound(T, lb, assignableKind) =
-              isAssignableTo(lb, T, assignableKind).
 
     isAssignableTo_1(InvariantKind(), TopType(), TopType()) = TRUE() :-
       try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(InvariantKind(), TopType(), TopType()) is never called because it is caught by isAssignableTo(T, T, _)].
