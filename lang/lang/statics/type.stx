@@ -94,12 +94,8 @@ rules // operations on types
           isAssignableTo(T1, resolveUniqueTypeArg(s2, name, "no error node"), InvariantKind()).
 
     isAssignableTo_1(assignable_kind, DataType(s_super), DataType(s_sub)) =
-      out@isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignable_kind)
+      isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignable_kind)
     :-
-      {tmp1 tmp2}
-      tmp1 == ppScope(s_sub),
-      tmp2 == ppScope(s_super),
-      try{false}|note$[DEBUG - [tmp1] is assignable to [tmp2] == [out] == isAssignableTo_dataTypes([s_sub], [s_super], [inherits], [type_args], [s_super_def], [assignable_kind])],
       findGenericDef(s_super) == s_super_def,
       inherits(s_sub, s_super_def) == inherits,
       getTypeArgs(s_super) == type_args.
@@ -169,17 +165,13 @@ rules // operations on types
 
         isTypeArgsCompatible_1(s1, s2, s_data_def, assignable_kind) =
           // s2 is an instance of s_data_def
-          allTrue(isTypeArgsCompatible_2(tmp1@getTypeArgs(s1), s2, assignable_kind)) :-
-          {tmp2}
-          tmp2 == ppScope(s1),
-          try{false}|note$[DEBUG - type arguments in [tmp2]: [tmp1]].
+          allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2, assignable_kind)).
 
         // Checks if a type argument in s1 is compatible with s2.
         isTypeArgCompatible : (GenericParameter * TYPE) * scope * AssignableKind -> BOOLEAN
         isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *, *) = list(*)
         isTypeArgCompatible((name, ty1), s2, assignable_kind) =
-          out@isTypeArgCompatible_1(ty1, ty2@resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind) :-
-            try{false}|note$[DEBUG - type arg [ty1] for parameter [name] is compatible with [ty2] == [out]].
+          isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind).
 
           // note: not equivalent to assignableTo(T1, T2, TypeArgKind())
           // DataTypes are not allowed to be subtypes, they have to be equal or wildcards.
@@ -217,29 +209,13 @@ rules // operations on types
       isAssignableTo(T, typeOrBottomType(lower_bound), ExpressionKind()).
 
     isAssignableTo_1(InvariantKind(), _, GenericParameter2TYPE(_)) = FALSE().
-    isAssignableTo_1(assignable_kind, T2, T1@GenericParameter2TYPE(tmp3)) =
-      out@isAssignableTo(upper_bound, T2, assignable_kind) :-
-        {s name} tmp3 == GenericParameter(s, name),
-        {tmp1} tmp1 == ppTYPE(upper_bound),
-        {tmp2} tmp2 == ppTYPE(T2),
-        try{false}|note$[DEBUG - generic parameter [name] in [s] with upper bound [tmp1] ([upper_bound]) is assignable to [tmp2] ([T2]) == [out]],
+    isAssignableTo_1(assignable_kind, T2, T1@GenericParameter2TYPE(_)) =
+      isAssignableTo(upper_bound, T2, assignable_kind) :-
         getBounds(T1) == (upper_bound, _).
     isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) = TRUE() :-
-      {name}
-      T == GenericParameter2TYPE(GenericParameter(_, name)),
-      try{false}|note$[DEBUG - generic parameter [name] is assignable to itself],
       try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) is never called because it is caught by isAssignableTo(T, T, _)].
     isAssignableTo_1(TypeArgKind(), T2@GenericParameter2TYPE(_), T1) =
-      out@withinBounds(tmp1@getBounds(T1), tmp2@getBounds(T2), TypeArgKind()) :-
-        {s name} T2 == GenericParameter2TYPE(GenericParameter(s, name)),
-        {ub1 lb1} (ub1, lb1) == tmp1,
-        {ub2 lb2} (ub2, lb2) == tmp2,
-        {tmp3} tmp3 == ppTYPE(ub1),
-        {tmp4} tmp4 == ppTYPE(lb1),
-        {tmp5} tmp5 == ppTYPE(ub2),
-        {tmp6} tmp6 == ppTYPE(lb2),
-        {tmp7} tmp7 == ppTYPE(T1),
-        try{false}|note$[DEBUG - [tmp7] ([T1]) is assignable to generic parameter [name] in [s] with upper bound [tmp5] ([ub1]) == [out]].
+      withinBounds(getBounds(T1), getBounds(T2), TypeArgKind()).
     isAssignableTo_1(ExpressionKind(), T2@GenericParameter2TYPE(_), T1) =
       isAssignableTo(T1, lower_bound, ExpressionKind()) :-
         getBounds(T2) == (_, lower_bound).
@@ -616,16 +592,10 @@ rules
   genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
   genericArgOk(s, s_type_args, s_data_instance, (param@GenericParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) :-
     {arg_ty}
-    {tmp1} tmp1 == isAssignableTo(arg_ty, upper_bound, TypeArgKind()),
-    {tmp2} tmp2 == isAssignableTo(lower_bound, arg_ty, TypeArgKind()),
-    {tmp3 tmp4}
-    tmp3 == ppTYPE(upper_bound),
-    tmp4 == ppTYPE(lower_bound),
-    try{false}|note$[DEBUG - checking [arg] for param [name] --> [arg_ty]. Assignable to upper bound [tmp3] ([upper_bound]) == [tmp1], to lower bound [tmp4] ([lower_bound]) == [tmp2] --- s_type_args: [s_type_args]],
     typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types) == arg_ty,
     declareTypeArg(s_data_instance, param, arg_ty),
-    try { tmp1 == TRUE() } | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
-    try { tmp2 == TRUE() } | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound] for type parameter [name]].
+    try { assignableTo(arg_ty, upper_bound, TypeArgKind()) } | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
+    try { assignableTo(lower_bound, arg_ty, TypeArgKind()) } | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound] for type parameter [name]].
 
   /**
    * instantiateTypeArgs(s, T) = instantiated_type
