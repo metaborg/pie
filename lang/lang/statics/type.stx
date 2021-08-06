@@ -220,50 +220,6 @@ rules // operations on types
       isAssignableTo(T1, lower_bound, ExpressionKind()) :-
         getBounds(T2) == (_, lower_bound).
 
-  // todo: remove comments
-  // foo<T>(elem: T)
-
-  // func bar1<F : Fruit>() -> {
-  //   foo<F>(apple) // disallowed: F could be banana
-  //                 // No argument type except bottom type would make this call legal
-  // }
-  // func bar2<F -: Fruit>() -> {
-  //   foo<F>(apple) // allowed
-  // }
-
-  /*
-
-  In one case, the type parameter is bound to a particular value, and assigning is only allowed if the argument is that particular value.
-  In the other case, the type parameter is unbound, and the argument just has to fall within the bounds.
-  Cases:
-  - In all cases, a wildcard is just a type parameter that is not used anywhere else. (correct?)
-  - override check: check if bounds for type parameters are compatible.
-    - Could have free type parameters from functions, sub datatype.
-    - All bounds should be exactly equal.
-    - type parameters considered equal if occurence equal after renaming.
-  - override check: check if parameters are compatible.
-    - Could have free type parameters from functions, sub datatype.
-    - All parameters should be exactly equal.
-    - type parameters considered equal if occurence equal after renaming.
-  - override check: check if return types are compatible.
-    - Could have free type parameters from functions, sub datatype.
-    - sub return type must be subtype of super return type.
-    - type parameters considered equal if occurence equal after renaming.
-  - assign type argument (from call or type reference) to type parameter.
-    - Could have free type parameters from function type params or from datatype for super type declaration.
-    - argument should be compatible: argument upper and lower bound within parameter upper and lower bound.
-    - type parameters considered compatible if argument upper and lower bound within parameter upper and lower bound.
-  - assign argument (from call) to parameter.
-    - Can have free type parameters from function that makes the call: func foo<T>() -> bar<T>()
-    - expression type should be compatible: expression type upper bound within declared type _lower_ bound or equal generic param occurence.
-    - type parameters considered compatible if expression type upper and lower bound within declared type upper and lower bound.
-  - assign expression to value (valDec).
-    - Could have free type parameters from function type params.
-    - expression type should be compatible: expression type upper bound within declared type upper bound. (lower bound does not matter because of subtyping)
-    - type parameters considered compatible if expression type upper and lower bound within declared type upper and lower bound.
-
-  */
-
     isAssignableTo_1(_, _, _) = FALSE().
 
   /**
