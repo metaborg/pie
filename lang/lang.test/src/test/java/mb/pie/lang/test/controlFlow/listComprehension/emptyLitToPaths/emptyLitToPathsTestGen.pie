@@ -1,5 +1,5 @@
 module mb:pie:lang:test:controlFlow:listComprehension:emptyLitToPaths
 
 func main_emptyLitToPaths() -> path* = {
-  [elem | elem <- []]
+  [elem | elem: path <- []]
 }
