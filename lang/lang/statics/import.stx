@@ -38,7 +38,7 @@ rules
     renamingingToNormalizedImport(renaming) = NormalizedImport(renaming).
 
     carthesianProducts : list(list(Renaming)) -> list(Renaming)
-    carthesianProducts([]) = [] :- try {false} | note "BUG?: carthesianProducts called with empty list".
+    carthesianProducts([]) = [] :- try {false} | warning "BUG?: carthesianProducts called with empty list".
     carthesianProducts([list|[]]) = list.
     carthesianProducts([list|lists]) = carthesianProduct(list, carthesianProducts(lists)).
 
