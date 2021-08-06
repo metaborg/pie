@@ -36,15 +36,20 @@ rules // operations on types
     isAssignableTo(T1, T2, assignableKind) == TRUE().
 
   /**
-   * isAssignableTo(T1, T2, assignableKind) = res
-   * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
-   * todo: update
-   * Returns TRUE() if:
-   * - type T1 is a non-strict subtype of type T2
-   * - T1 is a wildcard and its upper bound can be assigned to T2
-   * - T2 is a wildcard and T1 can be assigned to the lower bound of T2
-   * returns FALSE() otherwise.
-   * May fail on unbound variables.
+   * isAssignableTo(T1, T2, assignable_kind) = is_assignable_to
+   * Checks if type [T1] can be assigned type [T2] with assignment kind
+   * [assignable_kind].
+   * Behaviors for each of the assignment kinds:
+   * - InvariantKind:  The types are exactly equal. This mostly requires exact
+   *                   equality, except for datatypes, which may be different
+   *                   instances of the same generic definition and invariant
+   *                   type arguments.
+   * - TypeArgKind:    Type [T1] is a subtype of [T2]. [T1] must be within the
+   *                   bounds of [T2] for type parameters and wildcards.
+   * - ExpressionKind: Type [T1] is a subtype of [T2]. [T1] must be assignable
+   *                   to the upper bound for type parameters and free
+   *                   wildcards. [T1] must be assignable to the lower bound
+   *                   for bound wildcards.
    */
   isAssignableTo : TYPE * TYPE * AssignableKind -> BOOLEAN
   isAssignableTo(BottomType(), BottomType(), _) = TRUE().
