@@ -176,6 +176,8 @@ rules // operations on types
           out@isTypeArgCompatible_1(ty1, ty2@resolveUniqueTypeArg(s2, name, "no error node"), assignableKind) :-
             try{false}|note$[DEBUG - type arg [ty1] for parameter [name] is compatible with [ty2] == [out]].
 
+          // note: not equivalent to assignableTo(T1, T2, TypeArgKind())
+          // DataTypes are not allowed to be subtypes, they have to be equal or wildcards.
           isTypeArgCompatible_1 : TYPE * TYPE * AssignableKind -> BOOLEAN
           isTypeArgCompatible_1(ty, ty, _) = TRUE().
           isTypeArgCompatible_1(DataType(s1), DataType(s2), assignableKind) = andB(
