@@ -27,9 +27,9 @@ rules // operations on types
 
   /**
    * assignableTo(T1, T2, assignableKind)
-   * Checks if an expression of type [T1] can be assigned to a variable of type [T2].
-   * Holds if type T1 is a non-strict subtype of type T2.
+   * Checks if type [T1] can be assigned to type [T2].
    * Fails with error if T1 is not a subtype of T2.
+   * See statics/type!isAssignableTo for the meaning of the assignment kinds.
    */
   assignableTo : TYPE * TYPE * AssignableKind
   assignableTo(T1, T2, assignableKind) :-
