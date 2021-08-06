@@ -28,7 +28,7 @@ rules // operations on types
   /**
    * assignableTo(T1, T2, assignable_kind)
    * Checks if type [T1] can be assigned to type [T2].
-   * Fails with error if T1 is not a subtype of T2.
+   * Fails without message if T1 is not a subtype of T2.
    * See statics/type!isAssignableTo for the meaning of the assignment kinds.
    */
   assignableTo : TYPE * TYPE * AssignableKind
