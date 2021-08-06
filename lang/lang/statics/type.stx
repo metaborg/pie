@@ -26,14 +26,14 @@ rules // operations on types
     inherits_1([_|_]) = TRUE().
 
   /**
-   * assignableTo(T1, T2, assignableKind)
+   * assignableTo(T1, T2, assignable_kind)
    * Checks if type [T1] can be assigned to type [T2].
    * Fails with error if T1 is not a subtype of T2.
    * See statics/type!isAssignableTo for the meaning of the assignment kinds.
    */
   assignableTo : TYPE * TYPE * AssignableKind
-  assignableTo(T1, T2, assignableKind) :-
-    isAssignableTo(T1, T2, assignableKind) == TRUE().
+  assignableTo(T1, T2, assignable_kind) :-
+    isAssignableTo(T1, T2, assignable_kind) == TRUE().
 
   /**
    * isAssignableTo(T1, T2, assignable_kind) = is_assignable_to
@@ -121,8 +121,8 @@ rules // operations on types
       isAssignableTo_dataTypes(s_data, s_data, TRUE(), _, _, _) = TRUE(). // optimization: s_sub == s_super
       isAssignableTo_dataTypes(_, _, FALSE(), _, _, _) = FALSE(). // s_sub does not inherit from the generic def of s_super, not subtypes
       isAssignableTo_dataTypes(_, _, TRUE(), [], _, _) = TRUE().  // s_super does not have type arguments and s_sub inherits from s_super_def
-      isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def, assignableKind) =
-        isTypeArgsCompatible(instantiated_s_sub_super_instance, s_super, assignableKind)
+      isAssignableTo_dataTypes(s_sub, s_super, TRUE(), [_|_], s_super_def, assignable_kind) =
+        isTypeArgsCompatible(instantiated_s_sub_super_instance, s_super, assignable_kind)
       :-
         {s_sub_super_instance}
         query ()
@@ -156,8 +156,8 @@ rules // operations on types
       // "Compatible" means that the types are equal, or the second one is a
       // wildcard and the first one falls within the bounds
       isTypeArgsCompatible : scope * scope * AssignableKind -> BOOLEAN
-      isTypeArgsCompatible(s1, s2, assignableKind) =
-        isTypeArgsCompatible_1(s1, s2, getGenericDef(s1), assignableKind).
+      isTypeArgsCompatible(s1, s2, assignable_kind) =
+        isTypeArgsCompatible_1(s1, s2, getGenericDef(s1), assignable_kind).
 
         // s1 is an instance
         // s2 is either an instance or a data definition.
@@ -167,9 +167,9 @@ rules // operations on types
           // s2 is a generic data definition, s1 is an instance of it.
           // s1 is a subtype by definition.
 
-        isTypeArgsCompatible_1(s1, s2, s_data_def, assignableKind) =
+        isTypeArgsCompatible_1(s1, s2, s_data_def, assignable_kind) =
           // s2 is an instance of s_data_def
-          allTrue(isTypeArgsCompatible_2(tmp1@getTypeArgs(s1), s2, assignableKind)) :-
+          allTrue(isTypeArgsCompatible_2(tmp1@getTypeArgs(s1), s2, assignable_kind)) :-
           {tmp2}
           tmp2 == ppScope(s1),
           try{false}|note$[DEBUG - type arguments in [tmp2]: [tmp1]].
@@ -177,22 +177,22 @@ rules // operations on types
         // Checks if a type argument in s1 is compatible with s2.
         isTypeArgCompatible : (GenericParameter * TYPE) * scope * AssignableKind -> BOOLEAN
         isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *, *) = list(*)
-        isTypeArgCompatible((name, ty1), s2, assignableKind) =
-          out@isTypeArgCompatible_1(ty1, ty2@resolveUniqueTypeArg(s2, name, "no error node"), assignableKind) :-
+        isTypeArgCompatible((name, ty1), s2, assignable_kind) =
+          out@isTypeArgCompatible_1(ty1, ty2@resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind) :-
             try{false}|note$[DEBUG - type arg [ty1] for parameter [name] is compatible with [ty2] == [out]].
 
           // note: not equivalent to assignableTo(T1, T2, TypeArgKind())
           // DataTypes are not allowed to be subtypes, they have to be equal or wildcards.
           isTypeArgCompatible_1 : TYPE * TYPE * AssignableKind -> BOOLEAN
           isTypeArgCompatible_1(ty, ty, _) = TRUE().
-          isTypeArgCompatible_1(DataType(s1), DataType(s2), assignableKind) = andB(
+          isTypeArgCompatible_1(DataType(s1), DataType(s2), assignable_kind) = andB(
               isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
-              isTypeArgsCompatible(s1, s2, assignableKind)
+              isTypeArgsCompatible(s1, s2, assignable_kind)
             ).
           isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignable_kind) =
               withinBounds(getBounds(T), (typeOrTopType(ub), typeOrBottomType(lb)), assignable_kind).
-          isTypeArgCompatible_1(T, WildcardType(_, lb, Bound()), assignableKind) =
-              isAssignableTo(T, typeOrBottomType(lb), assignableKind).
+          isTypeArgCompatible_1(T, WildcardType(_, lb, Bound()), assignable_kind) =
+              isAssignableTo(T, typeOrBottomType(lb), assignable_kind).
           isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignable_kind) =
               withinBounds(getBounds(T1), getBounds(T2), assignable_kind).
           isTypeArgCompatible_1(T1, T2, _) = FALSE().
@@ -291,7 +291,7 @@ rules // operations on types
     isAssignableTo_1(_, _, _) = FALSE().
 
   /**
-   * isAllAssignableTo(T1s, T2s, assignableKind) -> bool
+   * isAllAssignableTo(T1s, T2s, assignable_kind) -> bool
    * Returns TRUE if the types in [T1s] are pairwise assignable to [T2s], FALSE
    * otherwise. Also returns FALSE if the lists don't have the same length.
    * This is useful for comparing parameter lists of functions.
@@ -301,8 +301,8 @@ rules // operations on types
   isAllAssignableTo([], [], _) = TRUE().
   isAllAssignableTo(Ts@[_|_], [], _) = FALSE().
   isAllAssignableTo([], Ts@[_|_], _) = FALSE().
-  isAllAssignableTo([T1|T1s], [T2|T2s], assignableKind) =
-    andB(isAssignableTo(T1, T2, assignableKind), isAllAssignableTo(T1s, T2s, assignableKind)).
+  isAllAssignableTo([T1|T1s], [T2|T2s], assignable_kind) =
+    andB(isAssignableTo(T1, T2, assignable_kind), isAllAssignableTo(T1s, T2s, assignable_kind)).
 
   /**
    * lub(T1, T2)
@@ -540,7 +540,7 @@ rules
   genericParamsOk(s, s_def, GenericParams(params)) = wrapBounds(parameters) :-
     typeOfgenericParams(s, s_def, params) == parameters,
     !generic_params[parameters] in s_def.
-    
+
     wrapBound : (GenericParameter * TYPE * TYPE) -> GenericParamType
     wrapBounds maps wrapBound(list(*)) = list(*)
     wrapBound((GenericParameter(_, name), upper_bound, lower_bound)) =
