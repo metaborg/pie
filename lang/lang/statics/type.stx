@@ -73,10 +73,21 @@ rules // operations on types
       isAllAssignableTo(T1s, T2s, InvariantKind()).
     isAssignableTo_1(_, SupplierType(T2), SupplierType(T1)) =
       isAssignableTo(T1, T2, InvariantKind()).
-    isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) = andB(
-      isScopeEqual(findGenericDef(s1), findGenericDef(s2)),
-      isAllAssignableTo(getTypeArgTypes(getTypeArgs(s1)), getTypeArgTypes(getTypeArgs(s2)), InvariantKind())
-    ).
+    isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) =
+      isAssignableTo_invariantDataTypes(same_generic_def, type_args, s2) :-
+        isScopeEqual(findGenericDef(s1), findGenericDef(s2)) == same_generic_def,
+        getTypeArgs(s1) == type_args.
+
+      isAssignableTo_invariantDataTypes : BOOLEAN * list((GenericParameter * TYPE)) * scope -> BOOLEAN
+      isAssignableTo_invariantDataTypes(FALSE(), _, _) = FALSE().
+      isAssignableTo_invariantDataTypes(TRUE(), type_args, s2) =
+        allTrue(isAssignableTo_invariantDataTypes_1s(type_args, s2)).
+
+        isAssignableTo_invariantDataTypes_1 : (GenericParameter * TYPE) * scope -> BOOLEAN
+        isAssignableTo_invariantDataTypes_1s maps isAssignableTo_invariantDataTypes_1(list(*), *) = list(*)
+        isAssignableTo_invariantDataTypes_1((param, T1), s2) =
+          isAssignableTo(T1, resolveUniqueTypeArg(s2, name, "no error node"), InvariantKind()).
+
     isAssignableTo_1(assignable_kind, DataType(s_super), DataType(s_sub)) =
       out@isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignable_kind)
     :-
