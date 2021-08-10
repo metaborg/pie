@@ -88,6 +88,7 @@ public class BottomUpRunner implements RequireTask {
 
     public <O extends @Nullable Serializable> O requireInitial(Task<O> task, boolean modifyObservability, CancelToken cancel) {
         try(final StoreWriteTxn txn = store.writeTxn()) {
+            scheduled = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(txn);
             final TaskKey key = task.key();
             tracer.requireTopDownInitialStart(key, task);
             final O output = require(key, task, modifyObservability, txn, cancel);
