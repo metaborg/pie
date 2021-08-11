@@ -58,8 +58,8 @@ fixture [[
   func double(x: int) -> int = x+x
   func argsFunc(x: int, y: int, name: string) -> string = "not implemented"
   func takesFoo(foo: Foo) -> int = 17
-  func useAnimal<A : Animal>(animal: A) -> path = ./animals/animal.txt
-  func checkAnimals<A: Animal, B: Animal>(animal1: A, animal2: B) -> bool = false
+  func useAnimal<A : Animal>(animal: A) -> path = foreign test.expression.UseAnimal
+  func checkAnimals<A: Animal, B: Animal>(animal1: A, animal2: B) -> bool = foreign test.expression.CheckAnimals
 ]]
 
 

@@ -97,6 +97,15 @@ rules
     andB(isAssignableTo(ub1, ub2, assignable_kind), isAssignableTo(lb2, lb1, assignable_kind)).
 
   /**
+   * getTypeParamsList(type_params) = type_params_list
+   * Gets the list of type parameters from a GenericParams.
+   * Returns an empty list for NoGenericParams().
+   */
+  getTypeParamsList : GenericParams -> list(GenericParam)
+  getTypeParamsList(NoGenericParams()) = [].
+  getTypeParamsList(GenericParams(type_params)) = type_params.
+
+  /**
    * getTypeArgsList(type_args) = type_args_list
    * Gets the list of type arguments from a TypeArgs.
    * Returns an empty list for NoTypeArgs().

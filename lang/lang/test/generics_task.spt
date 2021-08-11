@@ -1,0 +1,107 @@
+module generics_task
+language pie
+
+fixture [[
+  module test:generics:task
+
+  data Food = foreign java test.generics.task.Food {}
+  data Fruit : Food = foreign java test.generics.task.Fruit {}
+  data Apple : Fruit = foreign java test.generics.task.Apple {}
+
+  [[...]]
+]]
+
+/********************************************************************\
+|***______________________________________________________________***|
+|**| Note: This is currently an error because the code generation |**|
+|**| has not been implemented yet, but it would be useful to keep |**|
+|**| it working for when the code generation is implemented.      |**|
+|**| See https://github.com/MeAmAnUsername/pie/issues/181         |**|
+|**\--------------------------------------------------------------/**|
+\********************************************************************/
+
+test generic param single param [[
+  func test<[[T]]>(elem: [[T]]) -> [[T]] = elem
+]] 1 error
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+   resolve #2 to #1
+   resolve #3 to #1
+test generic param three params [[
+  func test<[[A]], [[B]]>(param1: [[B]], param2: [[A]], param3: [[A]]) -> [[A]] = param2
+]] 1 error
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+   resolve #3 to #2
+   resolve #4 to #1
+   resolve #5 to #1
+   resolve #6 to #1
+test generic param with upper bound [[
+  func test[[<F : Food>]](food: F) -> F = food
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with upper bound, arg with param type, recursive call with param arg [[
+  func test<[[F]] : Fruit>(fruit: F) -> F = test<[[F]]>(fruit)
+]] 1 error
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+   resolve #2 to #1
+test generic param with upper bound, arg with param type, recursive call with specific type arg [[
+  func test[[<F : Fruit>]](fruit: F) -> F = [[test<Fruit>(fruit)]]
+]] 2 errors at #1, #2
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet" at #1
+   error like "Type mismatch" at #2
+test generic param with upper bound, arg with same type, recursive call with param type arg but specific arg [[
+  func test[[<F : Fruit>]](fruit: Fruit) -> F = test<F>(fruit)
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with upper bound, arg with same type, recursive call with specific type arg [[
+  func test[[<F : Fruit>]](fruit: Fruit) -> F = [[test<Fruit>(fruit)]]
+]] 2 errors at #1, #2
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet" at #1
+   error like "Type mismatch" at #2
+test generic param with upper bound, used with lower than upper bound [[
+  func test[[<F : Fruit>]](apple: Apple) -> F = test<F>([[apple]])
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with upper bound, used with higher than upper bound [[
+  func test[[<F : Fruit>]](food: Food) -> F = test<F>([[food]])
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound [[
+  func test[[<F -: Food>]](food: F) -> F = food
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound, arg with param type, recursive call with param arg [[
+  func test[[<F -: Fruit>]](fruit: F) -> F = test<F>(fruit)
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound, arg with same type, recursive call with param type arg but specific arg [[
+  func test[[<F -: Fruit>]](fruit: Fruit) -> F = test<F>(fruit)
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound, arg with same type, recursive call with specific type arg [[
+  func test[[<F -: Fruit>]](fruit: Fruit) -> F = test<Fruit>(fruit)
+  // correct because actual type test<Fruit> == Fruit is assignable to the
+  // declared return type F.
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound, used with lower than upper bound [[
+  func test[[<F -: Fruit>]](apple: Apple) -> F = test<F>(apple)
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound, used with lower than upper bound [[
+  func test[[<F -: Fruit>]](apple: Apple) -> F = test<[[Apple>]](apple)
+]] 2 errors at #1, #2
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet" at #1
+   error like "not within lower bound" at #2
+test generic param with lower bound, used with higher than upper bound [[
+  func test[[<F -: Fruit>]](food: Food) -> F = test<F>(food)
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+test generic param with lower bound, used with higher than upper bound [[
+  func test[[<F -: Fruit>]](food: Food) -> F = [[test<Food>(food)]]
+]] 2 errors at #1, #2
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet" at #1
+   error like "Type mismatch" at #2
+test generic param with lower bound, used with higher than upper bound [[
+  func test[[<F -: Fruit>]](food: Food) -> F = test<F>(food)
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"

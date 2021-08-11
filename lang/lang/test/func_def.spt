@@ -1,9 +1,9 @@
-module func_impl
+module func_def
 language pie
 
 fixture [[
   module test:func_def
-  
+
   data Food = foreign java test.func_def.Food {}
   data Fruit : Food = foreign java test.func_def.Fruit {}
   data Apple : Fruit = foreign java test.func_def.Apple {}
@@ -19,75 +19,11 @@ test duplicate function [[
 
 test empty generic parameter list [[func test<>() -> int = 8]] analysis succeeds
 test omitted generic parameter list [[func test() -> bool = false]] analysis succeeds
-
-test generic param single param [[
-  func test<[[T]]>(elem: [[T]]) -> [[T]] = elem
-]] analysis succeeds
-   resolve #2 to #1
-   resolve #3 to #1
-test generic param three params [[
-  func test<[[A]], [[B]]>(param1: [[B]], param2: [[A]], param3: [[A]]) -> [[A]] = param2
-]] analysis succeeds
-   resolve #3 to #2
-   resolve #4 to #1
-   resolve #5 to #1
-   resolve #6 to #1
-test generic param with upper bound [[
-  func test<F : Food>(food: F) -> F = food
-]] analysis succeeds
-test generic param with upper bound, arg with param type, recursive call with param arg [[
-  func test<[[F]] : Fruit>(fruit: F) -> F = test<[[F]]>(fruit)
-]] analysis succeeds
-   resolve #2 to #1
-test generic param with upper bound, arg with param type, recursive call with specific type arg [[
-  func test<F : Fruit>(fruit: F) -> F = [[test<Fruit>(fruit)]]
+// See https://github.com/MeAmAnUsername/pie/issues/181
+test with type parameter [[
+  func test[[<T>]]() -> path = ./test
 ]] 1 error at #1
-   error like "Type mismatch"
-test generic param with upper bound, arg with same type, recursive call with param type arg but specific arg [[
-  func test<F : Fruit>(fruit: Fruit) -> F = test<F>(fruit)
-]] analysis succeeds
-test generic param with upper bound, arg with same type, recursive call with specific type arg [[
-  func test<F : Fruit>(fruit: Fruit) -> F = [[test<Fruit>(fruit)]]
-]] 1 error at #1
-   error like "Type mismatch"
-test generic param with upper bound, used with lower than upper bound [[
-  func test<F : Fruit>(apple: Apple) -> F = test<F>([[apple]])
-]] analysis succeeds
-test generic param with upper bound, used with higher than upper bound [[
-  func test<F : Fruit>(food: Food) -> F = test<F>([[food]])
-]] analysis succeeds
-test generic param with lower bound [[
-  func test<F -: Food>(food: F) -> F = food
-]] analysis succeeds
-test generic param with lower bound, arg with param type, recursive call with param arg [[
-  func test<F -: Fruit>(fruit: F) -> F = test<F>(fruit)
-]] analysis succeeds
-test generic param with lower bound, arg with same type, recursive call with param type arg but specific arg [[
-  func test<F -: Fruit>(fruit: Fruit) -> F = test<F>(fruit)
-]] analysis succeeds
-test generic param with lower bound, arg with same type, recursive call with specific type arg [[
-  func test<F -: Fruit>(fruit: Fruit) -> F = test<Fruit>(fruit)
-  // correct because actual type test<Fruit> == Fruit is assignable to the
-  // declared return type F.
-]] analysis succeeds
-test generic param with lower bound, used with lower than upper bound [[
-  func test<F -: Fruit>(apple: Apple) -> F = test<F>(apple)
-]] analysis succeeds
-test generic param with lower bound, used with lower than upper bound [[
-  func test<F -: Fruit>(apple: Apple) -> F = test<[[Apple>]](apple)
-]] 1 error at #1
-   error like "not within lower bound" at #1
-test generic param with lower bound, used with higher than upper bound [[
-  func test<F -: Fruit>(food: Food) -> F = test<F>(food)
-]] analysis succeeds
-test generic param with lower bound, used with higher than upper bound [[
-  func test<F -: Fruit>(food: Food) -> F = [[test<Food>(food)]]
-]] 1 error at #1
-   error like "Type mismatch"
-test generic param with lower bound, used with higher than upper bound [[
-  func test<F -: Fruit>(food: Food) -> F = test<F>(food)
-]] analysis succeeds
-
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
 
 test param with wildcard type [[func test(something: [[_)]] -> bool = true]] 1 error at #1  error like "Cannot use a wildcard"
 test param with wildcard type [[func test(something: [[_ : Food)]] -> int = 9]] 1 error at #1  error like "Cannot use a wildcard"

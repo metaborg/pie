@@ -14,11 +14,11 @@ imports
 rules
 
   funcDefOk : scope * FuncDef
-  funcDefOk(s_mod, func@FuncDef(func_head, impl)) :- {name s_func out_ty impl_kind ty}
+  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _), impl)) :- {name s_func out_ty impl_kind ty}
     typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
-    funcImplOk(s_func, impl, out_ty, name) == impl_kind,
+    funcImplOk(s_func, impl, type_params, out_ty, name) == impl_kind,
     @func.kind := impl_kind,
     @func.type := ty.
 
@@ -45,20 +45,22 @@ rules
     declareVal(s_func, name, semantic_type, InputValKind()),
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  funcImplOk : scope * FuncImpl * TYPE * FUNCID -> FuncImplKind
-  funcImplOk(_, PieForeignFuncImpl(class_id), _, name) = PieForeignFuncKind() :-
+  funcImplOk : scope * FuncImpl * GenericParams * TYPE * FUNCID -> FuncImplKind
+  funcImplOk(_, PieForeignFuncImpl(class_id), _, _, name) = PieForeignFuncKind() :-
     @name.javaClassId := class_id.
-  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, name) = JavaForeignFuncKind() :-
+  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, _, name) = JavaForeignFuncKind() :-
     @name.javaClassId := class_id,
     @name.javaMethodId := java_name.
-  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, name) = JavaForeignConstructorKind() :-
+  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, _, name) = JavaForeignConstructorKind() :-
     @name.javaClassId := class_id.
-  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), expected_type, _) = PieFuncKind() :- {s_func_inner}
+  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, expected_type, name) = PieFuncKind() :- {s_func_inner}
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
     setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
     expectAssignableTo(s_func_inner, exp, instantiateTypeArgs(s_func_inner, expected_type), ExpressionKind()) == _,
-    optionalKeyFuncOk(s_func_outer, keyFunc).
+    optionalKeyFuncOk(s_func_outer, keyFunc),
+    // See https://github.com/MeAmAnUsername/pie/issues/181
+    try { getTypeParamsList(type_params) == [] } | error $[Code generation for PIE tasks with type parameters has not been implemented yet. Implement this task in Java and import it as foreign [name] instead] @type_params.
 
   keyFuncOk : scope * PieKeyFunc
   optionalKeyFuncOk maps keyFuncOk(*, list(*))

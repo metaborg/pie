@@ -4,10 +4,46 @@ language pie
 
 fixture [[
   module test:func:foreign
+  
+  data Test = foreign java test.func.foreign.Test {}
 
-  func main(args: string*) -> int = [[...]]
+  [[...]]
 ]]
 
-test foreign task [[ foreign test.func.foreign.Main ]] analysis succeeds
-test foreign function [[ foreign java test.func.foreign.Main#main ]] analysis succeeds
-test foreign constructor [[ foreign java constructor test.func.foreign.Main ]] analysis succeeds
+test foreign task [[
+  func main(args: string*) -> int = foreign test.func.foreign.Main
+]] analysis succeeds
+test foreign function [[
+  func main(args: string*) -> int = foreign java test.func.foreign.Main#main
+]] analysis succeeds
+test foreign constructor [[
+  func main(args: string*) -> int = foreign java constructor test.func.foreign.Main
+]] analysis succeeds
+
+test foreign pie task type parameters omitted [[
+  func test() -> bool = foreign test.func_def.ForeignTask
+]] analysis succeeds
+test foreign pie task type parameters empty [[
+  func test<>() -> bool = foreign test.func_def.ForeignTask
+]] analysis succeeds
+test foreign pie task with type parameter [[
+  func test<T>() -> bool = foreign test.func_def.ForeignTask
+]] analysis succeeds
+test foreign java static function type parameters omitted [[
+  func test() -> bool = foreign java test.func_def.Util#test
+]] analysis succeeds
+test foreign java static function type parameters empty [[
+  func test<>() -> bool = foreign java test.func_def.Util#test
+]] analysis succeeds
+test foreign java static function with type parameter [[
+  func test<T>() -> bool = foreign java test.func_def.Util#test
+]] analysis succeeds
+test foreign java constructor type parameters omitted [[
+  func test() -> Test = foreign java constructor test.func_def.Test
+]] analysis succeeds
+test foreign java constructor type parameters empty [[
+  func test<>() -> Test = foreign java constructor test.func_def.Test
+]] analysis succeeds
+test foreign java constructor with type parameter [[
+  func test<T>() -> Test = foreign java constructor test.func_def.Test
+]] analysis succeeds
