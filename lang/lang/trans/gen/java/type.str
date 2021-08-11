@@ -87,6 +87,18 @@ rules
     with
       <add-import> "mb.pie.api.Supplier"
 
+rules // type arguments
+
+  /**
+   * p2j-ast-type-args: typeArgs -> typeArguments
+   *   Type: list of PIE types -> java TypeArguments/1 constructor, or None()
+   * Converts the PIE types to Java types and then wraps it in a TypeArguments/1 constructor
+   */
+  p2j-ast-type-args: NoTypeArgs() -> None()
+  p2j-ast-type-args: TypeArgs(typeArgs) -> Some(TypeArguments(javaTypeArgs))
+    with
+      javaTypeArgs := <map(syntacticToSemanticType; p2j-ast-type-sig)> typeArgs
+
 rules
 
   // p2j-ast-type-generate-dataclass(|name):
