@@ -552,8 +552,9 @@ rules // Java foreign function calls
 rules // Qualified function calls
 
   p2j-ast-exp:
-    c@QCall(exp, name, typeArgs, argExps) -> (stmts, callExpr)
-    // todo: where kind == foreign java
+    call@QCall(exp, name, typeArgs, argExps) -> (stmts, callExpr)
+    where
+      JavaForeignMethodKind() := <pie-ast-ref-prop(|"kind")> call
     with
       (expStmts, expVal)          := <try-p2j-ast-exp> exp
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps

@@ -71,8 +71,10 @@ context-free syntax
 
   FuncImplKind.JavaForeignFuncKind = [foreign java func]
   FuncImplKind.JavaForeignConstructorKind = [foreign java constructor]
+  FuncImplKind.JavaForeignMethodKind = [foreign java method]
   FuncImplKind.PieForeignFuncKind = [foreign pie func]
   FuncImplKind.PieFuncKind = [pie func]
+  FuncImplKind.PieBuiltInFuncKind = [pie built-in func]
 
 // The kind of a value. Used by code generation.
 context-free sorts ValKind

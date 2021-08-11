@@ -205,10 +205,11 @@ rules
   typeOfExpImpl(s, qCall@QCall(exp, _, _, _)) = typeOfQCall(typeOfExp(s, exp), qCall).
 
     typeOfQCall : (scope * TYPE) * Exp -> (scope * TYPE)
-    typeOfQCall((s, SupplierType(inner_ty)), QCall(_, "get", type_args, arg_exps)) = (s, inner_ty) :-
+    typeOfQCall((s, SupplierType(inner_ty)), call@QCall(_, "get", type_args, arg_exps)) = (s, inner_ty) :-
       try { getTypeArgsList(type_args) == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
-      try { arg_exps == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps.
-    typeOfQCall((s1, exp_ty@NullableType(inner_ty)), QCall(_, name, type_args, arg_exps)) = (s2, DataType(emptyScope(s1))) :-
+      try { arg_exps == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps,
+      @call.kind := PieBuiltInFuncKind().
+    typeOfQCall((s1, exp_ty@NullableType(inner_ty)), call@QCall(_, name, type_args, arg_exps)) = (s2, DataType(emptyScope(s1))) :-
       {s_data s_nullable resolved}
       getScopeFromType(s1, inner_ty) == s_data,
       typesOfWithTypeArgScope(s1, s_data, getTypeArgsList(type_args), FALSE()) == _,
@@ -220,10 +221,12 @@ rules
       try { resolved == [_] }
         | error $[Cannot call method on nullable type [exp_ty], make it non-nullable first] @name,
       try { resolveFunc(s_data, name) == [_] }
-        | warning $[Undefined function [name] on inner data type DataType([s_data])] @name.
-    typeOfQCall((s1, exp_ty), QCall(exp, name, type_args, arg_exps)) = (s2, ty) :- {s_data}
+        | warning $[Undefined function [name] on inner data type DataType([s_data])] @name,
+      @call.kind := JavaForeignMethodKind().
+    typeOfQCall((s1, exp_ty), call@QCall(exp, name, type_args, arg_exps)) = (s2, ty) :- {s_data}
       getScopeFromType(s1, exp_ty) == s_data,
-      typeOfCall(s1, s_data, s_data, name, type_args, arg_exps) == (s2, ty).
+      typeOfCall(s1, s_data, s_data, name, type_args, arg_exps) == (s2, ty),
+      @call.kind := JavaForeignMethodKind().
 
   typeOfExpImpl(s1, CreateSupplier(_, NoTypeArgs(), [exp])) = (s2, SupplierType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty).
