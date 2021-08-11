@@ -498,3 +498,20 @@ rules // Declararing and resolving
           in s |-> occs,
     occs == [(_, (_, context))],
     try { occs != [] } | error $[cannot get context value [name] in [s]].
+
+  /**
+   * copyContext(s, name)
+   * Resolves context value [name] in the parent scopes of scope [s] and
+   * declares it in [s] as well.
+   */
+  copyContext : scope * string
+  copyContext(s, name) :-
+    {occs value}
+    query context
+      filter P+
+         and { name' :- name' == name }
+         min $ < P
+         and true
+          in s |-> occs,
+    occs == [(_, (_, value))] | error $[BUG: cannot get context value [name] from parents of [s]],
+    !context[name, value] in s.

@@ -449,7 +449,8 @@ rules
       getGenericParams(s_data_def) == params,
       genericArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name),
       @name.ref := name',
-      @name.type := type.
+      @name.type := type,
+      copyContext(s_data_instance, "foreign_java_impl").
 
       // s: current function/module scope
       // s_type_args: scope for looking up defined data types
