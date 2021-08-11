@@ -208,7 +208,7 @@ rules
     typeOfQCall((s, SupplierType(inner_ty)), call@QCall(_, "get", type_args, arg_exps)) = (s, inner_ty) :-
       try { getTypeArgsList(type_args) == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
       try { arg_exps == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps,
-      @call.kind := PieBuiltInFuncKind().
+      @call.kind := PieBuiltInFuncKind(SupplierGet()).
     typeOfQCall((s1, exp_ty@NullableType(inner_ty)), call@QCall(_, name, type_args, arg_exps)) = (s2, DataType(emptyScope(s1))) :-
       {s_data s_nullable resolved}
       getScopeFromType(s1, inner_ty) == s_data,

@@ -564,7 +564,37 @@ rules // Qualified function calls
     ; (callStmts, callExpr)       := <p2j-ast-exp-call> (name, javaExpr)
     ; stmts                       := <concat> [expStmts, <concat> argExpsStmts, callStmts]
 
-  // todo: add QCall with PieBuiltInFuncKind
+  p2j-ast-exp: call@QCall(exp, "get", _, argExps) -> result
+    where
+      PieBuiltInFuncKind(SupplierGet()) := <pie-ast-ref-prop(|"kind")> call
+    with
+      <add-import> "java.io.IOException"
+    ; (expStmts, expVal)  := <p2j-ast-exp> exp
+    ; SupplierType(pieTy) := <pie-ast-type> exp
+    ; ty                  := <p2j-ast-type-sig> pieTy
+    ; callResultName      := <newname> "callResult"
+    ; stmts               := <concat> [
+        expStmts,
+        [ LocVarDeclStm(LocalVarDecl(
+            [Final()]
+          , <java-classType-to-unannType> ty
+          , [VariableDecl(Id(callResultName))]
+          ))
+        , ExpressionStatement(Assign(
+            ExpressionName(Id(callResultName))
+          , InvokeQExp(
+              ExpressionName(Id("execContext"))
+            , None()
+            , Id("require")
+            , [ expVal ]
+            )
+          ))
+        ]
+        // Note: meaning of this AST:
+        //   final [ty] [callResultName];
+        //   [callResultName] = execContext.require([expVal]);
+      ]
+    ; result               := (stmts, callResultName)
 
 rules // PIE function calls
 
@@ -741,37 +771,6 @@ rules // PIE function calls
         $[_[safeJavaClassId]],
         ClassType([], Id("Provider"), Some(TypeArguments([ClassType([], Id(javaClassId), javaTypeArgs)])))
       ))
-
-// todo: convert to built-in QCall
-//  p2j-ast-exp: SupplierGet(exp) -> result
-//    with
-//      <add-import> "java.io.IOException"
-//    ; (expStmts, expVal)  := <p2j-ast-exp> exp
-//    ; SupplierType(pieTy) := <pie-ast-type> exp
-//    ; ty                  := <p2j-ast-type-sig> pieTy
-//    ; callResultName      := <newname> "callResult"
-//    ; stmts               := <concat> [
-//        expStmts,
-//        [ LocVarDeclStm(LocalVarDecl(
-//            [Final()]
-//          , <java-classType-to-unannType> ty
-//          , [VariableDecl(Id(callResultName))]
-//          ))
-//        , ExpressionStatement(Assign(
-//            ExpressionName(Id(callResultName))
-//          , InvokeQExp(
-//              ExpressionName(Id("execContext"))
-//            , None()
-//            , Id("require")
-//            , [ expVal ]
-//            )
-//          ))
-//        ]
-//        // Note: meaning of this AST:
-//        //   final [ty] [callResultName];
-//        //   [callResultName] = execContext.require([expVal]);
-//      ]
-//    ; result               := (stmts, callResultName)
 
 rules // Path operations
 
