@@ -47,7 +47,7 @@ rules
   // java-classType-to-unnanType: removes the list of annotations from a ClassType
   java-classType-to-unannType: ClassType(_, name, types) -> ClassType(name, types)
   java-classType-to-unannType:
-    ClassOrInterfaceTypeMember(toplevelclass, annotations, name, types) -> ClassOrInterfaceTypeMember(
+    ClassOrInterfaceTypeMember(toplevelclass, annotations, name, types) -> UnannClassOrInterfaceTypeMember(
       <java-classType-to-unannType> toplevelclass
     , annotations
     , name
