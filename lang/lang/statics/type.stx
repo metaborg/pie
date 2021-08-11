@@ -412,7 +412,8 @@ rules
     {resolved_params resolvedData}
     resolveGenericParam(s_type_args, name) == resolved_params,
     resolveData(mergeScopes(s, resolveModuleListToFile(s, modules)), name) == resolvedData,
-    isGenericParamOrDataTy(s, s_type_args, data_ty, modules, resolved_params, resolvedData, resolve_in_super_types) == type.
+    isGenericParamOrDataTy(s, s_type_args, data_ty, modules, resolved_params, resolvedData, resolve_in_super_types) == type,
+    @data_ty.type := type.
 
     isGenericParamOrDataTy : scope * scope * DataTy * ModuleList *
       list((path * (GenericParameter * (TYPE * TYPE)))) * list((path * (TYPEID * scope))) * BOOLEAN -> TYPE
