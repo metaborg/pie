@@ -214,7 +214,8 @@ rules
   ppTYPE(EmptyListType()) = "[]".
   ppTYPE(TupleType(Ts)) = "tuple".
   ppTYPE(SupplierType(T)) = "supplier".
-  ppTYPE(FuncType(type_params, in, out)) = "func".
+  ppTYPE(FuncDefType(type_params, in, out)) = "func def".
+  ppTYPE(FuncRefType(type_params, in, out)) = "func ref".
   ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
   ppTYPE(WildcardType(ub, lb, Free())) = "wildcard (capture state: free)".
   ppTYPE(WildcardType(ub, lb, Bound())) = "wildcard (capture state: bound)".

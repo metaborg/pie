@@ -19,8 +19,8 @@ rules
    * by a data type instead of the function.
    */
   isSubsignature : scope * scope * TYPE * scope * TYPE -> BOOLEAN
-  isSubsignature(s_renamings, s_func1, signature1@FuncType(type_params1, formal_params1, return_type1),
-    s_func2, signature2@FuncType(type_params2, formal_params2, return_type2)) =
+  isSubsignature(s_renamings, s_func1, signature1@FuncDefType(type_params1, formal_params1, return_type1),
+    s_func2, signature2@FuncDefType(type_params2, formal_params2, return_type2)) =
       orB(isSignatureEqual(s_renamings, s_func1, signature1, s_func2, signature2),
         isSignatureEqualToErased(s_renamings, signature1, signature2)).
   isSubsignature(_, _, _, _, _) = FALSE() :-
@@ -37,15 +37,15 @@ rules
    * by a data type instead of the function.
    */
   isSignatureEqual : scope * scope * TYPE * scope * TYPE -> BOOLEAN
-  isSignatureEqual(s_renamings, s_func1, signature1@FuncType(type_params1, formal_params1, _),
-    s_func2, signature2@FuncType(type_params2, formal_params2, _)) =
+  isSignatureEqual(s_renamings, s_func1, signature1@FuncDefType(type_params1, formal_params1, _),
+    s_func2, signature2@FuncDefType(type_params2, formal_params2, _)) =
       isSignatureEqual_1(type_params_equal_bounds, s_renamings, s_func1, signature1, s_func2, signature2) :-
         isTypeParameterBoundsEqual(type_params1, type_params2) == type_params_equal_bounds.
 
     isSignatureEqual_1 : BOOLEAN * scope * scope * TYPE * scope * TYPE -> BOOLEAN
     isSignatureEqual_1(FALSE(), _, _, _, _, _) = FALSE().
-    isSignatureEqual_1(TRUE(), s_renamings, s_func1, tmp1@FuncType(type_params1, formal_params1, _),
-      s_func2, tmp2@FuncType(type_params2, formal_params2, _)) = params_equal :-
+    isSignatureEqual_1(TRUE(), s_renamings, s_func1, tmp1@FuncDefType(type_params1, formal_params1, _),
+      s_func2, tmp2@FuncDefType(type_params2, formal_params2, _)) = params_equal :-
       {s_renamings_all renamed_params2}
       renameAll(s_renamings, s_func2, type_params2, s_func1, type_params1) == s_renamings_all,
       instantiateTypeArgsInAll(s_renamings_all, formal_params2) == renamed_params2,
@@ -68,16 +68,16 @@ rules
       ).
 
   /**
-   * isSignatureEqualToErased(s_renamings, signature1@FuncType,
-   *   signature2@FuncType) = is_equal
+   * isSignatureEqualToErased(s_renamings, signature1@FuncDefType,
+   *   signature2@FuncDefType) = is_equal
    * Checks if [signature1] is equal to [signature2] after erasure of
    * [signature2].
    * Attention: [signature2] should _not_ be erased before calling this
    * function.
    */
   isSignatureEqualToErased : scope * TYPE * TYPE -> BOOLEAN
-  isSignatureEqualToErased(_, FuncType([_|_], _, _), _) = FALSE().
-  isSignatureEqualToErased(s_renamings, FuncType([], formal_params1, _), FuncType(_, formal_params2, _)) =
+  isSignatureEqualToErased(_, FuncDefType([_|_], _, _), _) = FALSE().
+  isSignatureEqualToErased(s_renamings, FuncDefType([], formal_params1, _), FuncDefType(_, formal_params2, _)) =
     isSignatureEqualToErased_1(param_counts_equal, s_renamings, formal_params1, formal_params2) :-
       typeListsLengthsEqual(formal_params1, formal_params2) == param_counts_equal.
   isSignatureEqualToErased(_, _, _) = FALSE() :-
@@ -109,7 +109,7 @@ rules
       false | error $[BUG?: checking if empty list type is equal to an erased empty list type].
     isTypeEqualToErased(TupleType(Ts1), TupleType(Ts2)) =
       typeListsLengthsEqual(Ts1, Ts2).
-    isTypeEqualToErased(FuncType(_, params1, _), FuncType(_, params2, _)) =
+    isTypeEqualToErased(FuncDefType(_, params1, _), FuncDefType(_, params2, _)) =
       typeListsLengthsEqual(params1, params2) :-
         false | error $[BUG?: checking if function type is equal to an erased function type].
     isTypeEqualToErased(DataType(s_data1), DataType(s_data2)) =
@@ -150,7 +150,8 @@ rules
       replaceWithUnit maps getUnit(list(*)) = list(*)
       getUnit(_) = UnitType().
     eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
-    eraseType_1(FuncType(_, params, _)) = FuncType([], replaceWithUnit(params), UnitType()).
+    eraseType_1(FuncDefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
+    eraseType_1(FuncRefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
     eraseType_1(WildcardType(ub, _, _)) = typeOrTopType(ub).
     eraseType_1(T@GenericParameter2TYPE(_)) = eraseType(ub) :-
       getBounds(T) == (ub, _).

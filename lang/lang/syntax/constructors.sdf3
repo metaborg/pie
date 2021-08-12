@@ -33,7 +33,8 @@ context-free syntax
   TYPE.SupplierType = [supplier([TYPE])]
 
   GenericParamType.GenericParamType = [[TYPEID][UpperBoundType][LowerBoundType]]
-  TYPE.FuncType = [func<[{GenericParamType ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
+  TYPE.FuncDefType = [func<[{GenericParamType ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
+  TYPE.FuncRefType = [func<[{TYPE ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
 
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
 //  TYPE.GenericParameter2TYPE = GenericParameter
@@ -75,7 +76,7 @@ context-free syntax
   FuncImplKind.PieForeignFuncKind = [foreign pie func]
   FuncImplKind.PieFuncKind = [pie func]
   FuncImplKind.PieBuiltInFuncKind = [pie built-in func [BuiltInFunc]]
-  
+
   BuiltInFunc.SupplierGet = [supplier.get]
 
 // The kind of a value. Used by code generation.

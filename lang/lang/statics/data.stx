@@ -72,8 +72,8 @@ rules
     // if function is not an override, check that it doesn't collide with
     // another function after erasure.
     superOk_3 : BOOLEAN * scope * TYPEID * scope * TYPE * TYPEID * scope * TYPE
-    superOk_3(TRUE(), s_data_def, name, s_func, FuncType(type_params, _, ret_ty),
-        name_super, s_func_super, FuncType(type_params_super, _, ret_ty_super)) :-
+    superOk_3(TRUE(), s_data_def, name, s_func, FuncDefType(type_params, _, ret_ty),
+        name_super, s_func_super, FuncDefType(type_params_super, _, ret_ty_super)) :-
       {s_renamings instantiated_ret_ty_super}
       superOk_3_rename_if_not_erased(s_data_def, s_func, type_params, s_func_super, type_params_super) == s_renamings,
       instantiateTypeArgs(s_renamings, ret_ty_super) == instantiated_ret_ty_super,
@@ -89,7 +89,7 @@ rules
       superOk_3_rename_if_not_erased(s_data_def, s_func, type_params@[_|_], s_func_super, type_params_super) =
         renameAll(s_data_def, s_func_super, type_params_super, s_func, type_params).
 
-    superOk_3(FALSE(), _, name, _, FuncType(_, params, _), _, _, FuncType(_, super_params, _)) :-
+    superOk_3(FALSE(), _, name, _, FuncDefType(_, params, _), _, _, FuncDefType(_, super_params, _)) :-
       {erased_params erased_super_params}
       eraseTypes(params) == erased_params,
       eraseTypes(super_params) == erased_super_params,
