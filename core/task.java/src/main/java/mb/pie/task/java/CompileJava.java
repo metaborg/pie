@@ -5,6 +5,7 @@ import mb.common.message.KeyedMessagesBuilder;
 import mb.common.message.Severity;
 import mb.common.region.Region;
 import mb.common.result.Result;
+import mb.common.util.ListView;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
@@ -87,9 +88,24 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
         // Using File for classPath and annotationProcessorPath, as handling this with ResourcePath takes too much effort at the moment.
 
-        List<File> classPaths(); // If empty, passes no classpath, which makes javac use the current system classloader as the classpath.
+        List<Supplier<ListView<File>>> classPathSuppliers();
 
-        List<File> annotationProcessorPaths(); // If empty, passes no processorpath, which makes javac use the current system classloader as the processorpath.
+        /**
+         * Whether the paths from system property "java.class.path" are added to the class path. Defaults to false.
+         */
+        @Value.Default default boolean addEnvironmentToClassPaths() {
+            return false;
+        }
+
+        List<Supplier<ListView<File>>> annotationProcessorPathSuppliers();
+
+        /**
+         * Whether the paths from system property "java.class.path" are added to the annotation processor path. Defaults
+         * to false.
+         */
+        @Value.Default default boolean addEnvironmentToAnnotationProcessorPaths() {
+            return false;
+        }
 
 
         Optional<String> release();
@@ -209,14 +225,39 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
                 options.add(release);
             }
         });
-        if(!input.classPaths().isEmpty()) {
+
+        final ArrayList<String> classPaths = input.classPathSuppliers().stream()
+            .flatMap(s -> context.require(s).stream())
+            .map(File::toString)
+            .collect(Collectors.toCollection(ArrayList::new));
+        if(input.addEnvironmentToClassPaths()) {
+            final @Nullable String envClassPath = System.getProperty("java.class.path");
+            if(envClassPath != null) {
+                final String[] entries = envClassPath.split(File.pathSeparator);
+                Collections.addAll(classPaths, entries);
+            }
+        }
+        if(!classPaths.isEmpty()) {
             options.add("-classpath");
-            options.add(input.classPaths().stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
+            options.add(String.join(File.pathSeparator, classPaths));
         }
-        if(!input.annotationProcessorPaths().isEmpty()) {
+
+        final ArrayList<String> annotationProcessorPaths = input.annotationProcessorPathSuppliers().stream()
+            .flatMap(s -> context.require(s).stream())
+            .map(File::toString)
+            .collect(Collectors.toCollection(ArrayList::new));
+        if(input.addEnvironmentToAnnotationProcessorPaths()) {
+            final @Nullable String envClassPath = System.getProperty("java.class.path");
+            if(envClassPath != null) {
+                final String[] entries = envClassPath.split(File.pathSeparator);
+                Collections.addAll(annotationProcessorPaths, entries);
+            }
+        }
+        if(!annotationProcessorPaths.isEmpty()) {
             options.add("-processorpath");
-            options.add(input.annotationProcessorPaths().stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
+            options.add(String.join(File.pathSeparator, annotationProcessorPaths));
         }
+
         if(!input.reportWarnings()) {
             options.add("-nowarn");
         }
@@ -224,8 +265,8 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
             options.add("-g:none");
         }
         options.addAll(input.additionalOptions());
-        final CompilationTask compilationTask = compiler.getTask(null, fileManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
 
+        final CompilationTask compilationTask = compiler.getTask(null, fileManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
         compilationTask.call();
 
         // Provide generated Java source files.
@@ -238,10 +279,6 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
     @Override public boolean shouldExecWhenAffected(Input input, Set<?> tags) {
         return tags.isEmpty() || input.shouldExecWhenAffectedTags().isEmpty() || !Collections.disjoint(input.shouldExecWhenAffectedTags(), tags);
-    }
-
-    @Override public Serializable key(Input input) {
-        return input.key().orElse(input);
     }
 
 
