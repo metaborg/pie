@@ -37,7 +37,7 @@ public class FstSerde implements Serde {
         try(final FSTObjectInput input = new FSTObjectInput(inputStream, configuration)) {
             @SuppressWarnings("unchecked") final T obj = (T)input.readObject(type);
             return obj;
-        } catch(Exception e) {
+        } catch(Exception | IncompatibleClassChangeError e) {
             throw new DeserializeRuntimeException(e);
         }
     }
@@ -60,7 +60,7 @@ public class FstSerde implements Serde {
         try(final FSTObjectInput input = new FSTObjectInput(inputStream, configuration)) {
             @SuppressWarnings("unchecked") final @Nullable T obj = (T)input.readObject(type);
             return obj;
-        } catch(Exception e) {
+        } catch(Exception | IncompatibleClassChangeError e) {
             throw new DeserializeRuntimeException(e);
         }
     }
@@ -79,7 +79,7 @@ public class FstSerde implements Serde {
     public @Nullable Object deserializeTypeAndObject(@Nullable ClassLoader classLoader, InputStream inputStream) {
         try(final FSTObjectInput input = new FSTObjectInput(inputStream, configuration)) {
             return input.readObject();
-        } catch(Exception e) {
+        } catch(Exception | IncompatibleClassChangeError e) {
             throw new DeserializeRuntimeException(e);
         }
     }
