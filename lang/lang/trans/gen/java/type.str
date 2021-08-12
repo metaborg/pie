@@ -44,22 +44,26 @@ rules
   p2j-ast-type-sig: NullType() -> ClassType([], Id("Void"), None())
 
   p2j-ast-type-sig:
-    DataType(scope) -> ClassType([], Id(javaClassId), None())
+    DataType(scope) -> ClassType([], Id(javaClassId), typeArguments)
     where
       <pie-get-data-mods; not(collect-one(?Transient()))> scope
     with
       ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
+    ; typeArgs                 := <pie-get-type-args> scope
+    ; typeArguments            := <p2j-ast-type-arg-list> typeArgs
 
   p2j-ast-type-sig:
     DataType(scope) -> ClassType(
       [],
       Id("OutTransient"),
-      Some(TypeArguments([ClassType([], Id(javaClassId), None())]))
+      Some(TypeArguments([ClassType([], Id(javaClassId), typeArguments)]))
     )
     where
       <pie-get-data-mods; collect-one(?Transient())> scope
     with
       ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
+    ; typeArgs                 := <pie-get-type-args> scope
+    ; typeArguments            := <p2j-ast-type-arg-list> typeArgs
     ; <add-import> "mb.pie.api.OutTransient"
 
   p2j-ast-type-sig:
@@ -91,13 +95,24 @@ rules // type arguments
 
   /**
    * p2j-ast-type-args: typeArgs -> typeArguments
-   *   Type: list of PIE types -> java TypeArguments/1 constructor, or None()
-   * Converts the PIE types to Java types and then wraps it in a TypeArguments/1 constructor
+   *   Type: PIE TypeArgs -> Some with java TypeArguments/1 constructor, or None()
+   * Converts the PIE syntactic types to Java types and then wraps it in a TypeArguments/1 constructor
    */
   p2j-ast-type-args: NoTypeArgs() -> None()
-  p2j-ast-type-args: TypeArgs(typeArgs) -> Some(TypeArguments(javaTypeArgs))
+  p2j-ast-type-args: TypeArgs(typeArgs) -> typeArguments
     with
-      javaTypeArgs := <map(syntacticToSemanticType; p2j-ast-type-sig)> typeArgs
+      types := <map(syntacticToSemanticType)> typeArgs
+    ; typeArguments := <p2j-ast-type-arg-list> types
+
+  /**
+   * p2j-ast-type-arg-list: typeArgs -> typeArguments
+   *   Type: list of PIE types -> Some with java TypeArguments/1 constructor, or None()
+   * Converts the PIE types to Java types and then wraps it in a TypeArguments/1 constructor
+   */
+  p2j-ast-type-arg-list: typeArgs@[_|_] -> Some(TypeArguments(javaTypeArgs))
+    with
+      javaTypeArgs := <map(p2j-ast-type-sig)> typeArgs
+  p2j-ast-type-arg-list: [] -> None()
 
 rules
 
