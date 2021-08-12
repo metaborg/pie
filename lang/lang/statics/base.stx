@@ -101,6 +101,7 @@ signature
     generic_params : list((GenericParameter * TYPE * TYPE)) // GenericParameter, upper bound, lower bound
     generic_param : GenericParameter -> (TYPE * TYPE) // generic parameter -> upper bound, lower bound
     generic_arg : GenericParameter -> TYPE   // generic argument, parameter -> instantiated type
+    type_args : list(TYPE)
     context : string -> CONTEXT
 
 signature
