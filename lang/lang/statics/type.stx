@@ -58,7 +58,7 @@ rules // operations on types
   isAssignableTo(BottomType(), _, ExpressionKind()) = TRUE().
   isAssignableTo(T, T, _) = TRUE(). // optimization: a type is equal to itself, except for wildcards sometimes.
   isAssignableTo(T1@WildcardType(_, _, _), T2@WildcardType(_, _, _), assignable_kind) =
-    // edge case for opimization: wildcards are tricky, do not use optimization.
+    // edge case for optimization: wildcards are tricky, do not use optimization.
     isAssignableTo_1(assignable_kind, T2, T1).
   isAssignableTo(T1, T2, assignable_kind) =
     isAssignableTo_1(assignable_kind, T2, T1).
