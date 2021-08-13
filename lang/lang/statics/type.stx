@@ -91,7 +91,7 @@ rules // operations on types
         isAssignableTo_invariantDataTypes_1 : (GenericParameter * TYPE) * scope -> BOOLEAN
         isAssignableTo_invariantDataTypes_1s maps isAssignableTo_invariantDataTypes_1(list(*), *) = list(*)
         isAssignableTo_invariantDataTypes_1((param, T1), s2) =
-          isAssignableTo(T1, resolveUniqueTypeArg(s2, name, "no error node"), InvariantKind()).
+          isAssignableTo(T1, resolveUniqueTypeArg(s2, param, "no error node"), InvariantKind()).
 
     isAssignableTo_1(assignable_kind, DataType(s_super), DataType(s_sub)) =
       isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignable_kind)
