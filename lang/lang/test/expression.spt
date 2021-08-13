@@ -341,8 +341,9 @@ test assign to type with wildcard argument lower bound is higher [[ val res: [[F
 test assign to type with wildcard argument lower bound is different [[ val res: [[Faz<_ -: Fish>]] = faz ]] 1 error at #1  error like "Type mismatch"
 test assign to type with wildcard argument upper and lower bound [[
   val res: Fuz<_[[ : Animal<>]][[ -: Dog<>]]> = fuz
-]] 2 errors at #1, #2
-   error like "Cannot have both an upper and lower bound"
+]] 4 errors at #1, #2
+   error like "Cannot have both an upper and lower bound" at #1
+   error like "Cannot have both an upper and lower bound" at #2
 test assign type with upper bounded wildcard type argument to specific type equal to bound [[
   val res: [[Fuz<Mammal>]] = fuzWildcardUpperBounded
 ]] 1 error at #1

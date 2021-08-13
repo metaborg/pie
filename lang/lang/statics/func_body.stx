@@ -189,17 +189,19 @@ rules
     typeOfCall_1(s1, s_type_args, type_args, arg_exps,
       [(_, (name', (s_func, FuncDefType(_, param_tys, ret_ty))))], name)
     = (s2, ty) :-
-      {s_func_instantiated type_params type_arg_tys instantiated_param_tys}
+      {s_func_instantiated type_params instantiated_param_tys type_arg_tys instantiated_type_args}
       new s_func_instantiated,
       s_func_instantiated -P-> s_func,
       s_func_instantiated -P-> s_type_args,
       getGenericParams(s_func) == type_params,
-      genericArgsOk(s1, s_type_args, s_func_instantiated, type_params, type_args, TRUE(), name) == type_arg_tys,
+      genericArgsOk(s1, s_type_args, s_func_instantiated, type_params, type_args, TRUE(), name),
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty,
+      typesOfWithTypeArgScope(s1, s_type_args, getTypeArgsList(type_args), FALSE()) == type_arg_tys,
+      instantiateTypeArgsInAll(s_func_instantiated, type_arg_tys) == instantiated_type_args,
       @name.ref := name',
-      @name.type := FuncRefType(type_arg_tys, instantiated_param_tys, ty).
+      @name.type := FuncRefType(instantiated_type_args, instantiated_param_tys, ty).
 
     typeOfCall_1(s1, _, _, arg_exps, [_,_|_], name) = (s2, DataType(emptyScope(s1))) :-
       typeOfExpsPassScopes(s1, arg_exps) == (s2, _),

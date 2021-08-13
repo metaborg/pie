@@ -442,13 +442,15 @@ rules
       false | error $[Duplicate datatype [name]] @name.
     isGenericParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), _, _,
       [(_, (name', s_data_def))], resolve_in_super_types) = type@DataType(s_data_instance) :-
-      {params type_arg_tys}
+      {params type_arg_tys instantiated_type_args}
       new s_data_instance,
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
       getGenericParams(s_data_def) == params,
-      genericArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name) == type_arg_tys,
-      !type_args[type_arg_tys] in s_data_instance,
+      genericArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name),
+      typesOfWithTypeArgScope(s, s_type_args, getTypeArgsList(type_args), resolve_in_super_types) == type_arg_tys,
+      instantiateTypeArgsInAll(s_data_instance, type_arg_tys) == instantiated_type_args,
+      !type_args[instantiated_type_args] in s_data_instance,
       @name.ref := name',
       @name.type := type,
       copyContext(s_data_instance, "foreign_java_impl").
@@ -517,9 +519,9 @@ rules
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
 
 
-  genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string -> list(TYPE)
-  genericArgsOk(_, _, _, [], NoTypeArgs(), _, _) = []. // separate case to force unification of params before evaluating this.
-  genericArgsOk(_, _, _, params@[_|_], NoTypeArgs(), _, error_node) = [] :-
+  genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string
+  genericArgsOk(_, _, _, [], NoTypeArgs(), _, _). // separate case to force unification of params before evaluating this.
+  genericArgsOk(_, _, _, params@[_|_], NoTypeArgs(), _, error_node) :-
     {names}
     getGenericParamNames(params) == names,
     false | error $[Cannot derive type arguments. Provide type arguments explicitly for parameters [names]] @error_node.
@@ -528,7 +530,7 @@ rules
     getGenericParamNames maps getGenericParamName(list(*)) = list(*)
     getGenericParamName((GenericParameter(_, name), _, _)) = name.
 
-  genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), resolve_in_super_types, _) =
+  genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), resolve_in_super_types, _) :-
     genericArgsOk_1(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, sameLength(params, arg_types)).
 
     sameLength : list((GenericParameter * TYPE * TYPE)) * list(Type) -> (list(TYPEID) * list(Type))
@@ -539,17 +541,18 @@ rules
     sameLength([_|params], [_|type_args]) = sameLength(params, type_args).
 
   genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) *
-    TypeArgs * BOOLEAN * (list(TYPEID) * list(Type)) -> list(TYPE)
-  genericArgsOk_1(_, _, _, _, type_args, _, (remaining@[_|_], [])) = [] :-
+    TypeArgs * BOOLEAN * (list(TYPEID) * list(Type))
+  genericArgsOk_1(_, _, _, _, type_args, _, (remaining@[_|_], [])) :-
     false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @type_args.
-  genericArgsOk_1(_, _, _, _, type_args, _, ([], remaining@[_|_])) = [] :-
+  genericArgsOk_1(_, _, _, _, type_args, _, ([], remaining@[_|_])) :-
     false | error $[Too many type arguments, unmatched type arguments: [remaining]] @type_args.
-  genericArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) =
+  genericArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) :-
     genericArgsOk_2(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types).
 
-  genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type * BOOLEAN -> TYPE
-  genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *) = list(*)
-  genericArgOk(s, s_type_args, s_data_instance, (param@GenericParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) = arg_ty :-
+  genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type * BOOLEAN
+  genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
+  genericArgOk(s, s_type_args, s_data_instance, (param@GenericParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) :-
+    {arg_ty}
     typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types) == arg_ty,
     declareTypeArg(s_data_instance, param, arg_ty),
     try { assignableTo(arg_ty, upper_bound, TypeArgKind()) } | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
