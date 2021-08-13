@@ -171,7 +171,7 @@ test nested generic parameters [[
    resolve #6 to #1
    resolve #7 to #4
    resolve #10 to #1
-   resolve #11 to # 8
+   resolve #11 to #8
    resolve #12 to #3
    resolve #13 to #8
    resolve #14 to #9
