@@ -42,7 +42,7 @@ test data type type argument wildcard with lower bound [[ Bar<int, _ -: Fruit> ]
 test data type type argument wildcard invalid lower bound [[ Bar<int, [[_ -: Food<>]]> ]] 1 error at #1  error like "Type mismatch"
 test data type type argument wildcard lower bound wildcard [[ Bar<int, _ -: _> ]] > 2 errors  error like "Cannot use wildcard"  error like "Type mismatch"
 test data type type argument nullable wildcard [[ Bar<int, [[(_)?]]> ]] 1 error at #1  error like "Type mismatch"
-test data type type argument nullable wildcard [[ Bar<int, _?> ]] parse fails // todo: asked question: https://slde.slack.com/archives/C7254SF60/p1623169709196400
+test data type type argument nullable wildcard [[ Bar<int, _?> ]] parse fails // See https://github.com/MeAmAnUsername/pie/issues/143
 test data type imported [[ test:type_signature:Food ]] analysis succeeds
 test data type undefined [[ Bak ]] 1 error  error like "Undefined data"
 test generic parameter [[ A ]] analysis succeeds
