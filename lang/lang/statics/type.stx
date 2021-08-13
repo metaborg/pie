@@ -81,7 +81,7 @@ rules // operations on types
     isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) =
       isAssignableTo_invariantDataTypes(same_generic_def, type_args, s2) :-
         isScopeEqual(findGenericDef(s1), findGenericDef(s2)) == same_generic_def,
-        getTypeArgs(s1) == type_args.
+        getTypeArgsUnordered(s1) == type_args. // todo: use getTypeArgsOrdered, reimplement isAssignableTo_invariantDataTypes
 
       isAssignableTo_invariantDataTypes : BOOLEAN * list((GenericParameter * TYPE)) * scope -> BOOLEAN
       isAssignableTo_invariantDataTypes(FALSE(), _, _) = FALSE().
@@ -98,7 +98,7 @@ rules // operations on types
     :-
       findGenericDef(s_super) == s_super_def,
       inherits(s_sub, s_super_def) == inherits,
-      getTypeArgs(s_super) == type_args.
+      getTypeArgsUnordered(s_super) == type_args.
 
       /*
        * Explanation of implementation
@@ -130,12 +130,15 @@ rules // operations on types
         // instantiate generic parameters in instance s2 with the type arguments of s1
         instantiateGenericParams : scope * scope * CaptureState -> scope
         instantiateGenericParams(s1, s2, capture_state) = s_data_instance_instantiated :-
-          {instantiated}
+          {type_args instantiated}
           new s_data_instance_instantiated,
           !root[getRoot(s2)] in s_data_instance_instantiated,
           s_data_instance_instantiated -P-> findGenericDef(s2),
-          instantiateNamedTypeArgs(s1, s2, capture_state, getTypeArgs(s2)) == instantiated,
-          declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated).
+          getTypeArgsOrdered(s2) == type_args,
+          instantiateNamedTypeArgs(s1, s2, capture_state, type_args) == instantiated,
+          declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
+          copyContext(s_data_instance_instantiated, "foreign_java_impl"),
+          !type_args[getTypeArgTypes(type_args)] in s_data_instance_instantiated.
 
           instantiateNamedTypeArg : scope * scope * CaptureState * (GenericParameter * TYPE) -> (GenericParameter * TYPE)
           instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, *, list(*)) = list(*)
@@ -165,13 +168,16 @@ rules // operations on types
 
         isTypeArgsCompatible_1(s1, s2, s_data_def, assignable_kind) =
           // s2 is an instance of s_data_def
-          allTrue(isTypeArgsCompatible_2(getTypeArgs(s1), s2, assignable_kind)).
+          // todo: use getTypeArgsOrdered for both s1 and s2, reimplement isTypeArgCompatible
+          allTrue(tmp2@isTypeArgsCompatible_2(tmp1@getTypeArgsUnordered(s1), s2, assignable_kind)) :-
+            try{false}|note$[DEBUG - type args s1: [tmp1], compatible: [tmp2]].
 
         // Checks if a type argument in s1 is compatible with s2.
         isTypeArgCompatible : (GenericParameter * TYPE) * scope * AssignableKind -> BOOLEAN
         isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *, *) = list(*)
         isTypeArgCompatible((name, ty1), s2, assignable_kind) =
-          isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind).
+          isTypeArgCompatible_1(ty1, tmp1@resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind) :-
+            try{false}|note$[DEBUG - name: [name], ty1: [ty1], ty2: [tmp1], s2: [s2]].
 
           // note: not equivalent to assignableTo(T1, T2, TypeArgKind())
           // DataTypes are not allowed to be subtypes, they have to be equal or wildcards.
@@ -281,7 +287,7 @@ rules // operations on types
         filter (P|INHERIT)*
            and { s4_candidate :- isInstanceOf(s4_candidate, s_common) == TRUE() }
            min $ < INHERIT, $ < P in s2 |-> [(_, s4)],
-      unzipTypeArgs(getTypeArgs(s3)) == (type_arg_params, type_arg_tys),
+      unzipTypeArgs(getTypeArgsUnordered(s3)) == (type_arg_params, type_arg_tys),
       lubs_type_args(type_arg_tys, resolveUniqueTypeArgs(s4, type_arg_params, "no error node")) == merged_type_args,
       declareTypeArgs(s_common_instance, type_arg_params, merged_type_args).
 

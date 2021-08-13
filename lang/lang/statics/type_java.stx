@@ -113,9 +113,10 @@ rules
       typeListsLengthsEqual(params1, params2) :-
         false | error $[BUG?: checking if function type is equal to an erased function type].
     isTypeEqualToErased(DataType(s_data1), DataType(s_data2)) =
-      isTypeEqualToErased_dataTypeEqual(s_data_def1, s_data_def2, getTypeArgs(s_data1)) :-
+      isTypeEqualToErased_dataTypeEqual(s_data_def1, s_data_def2, type_args) :-
         findGenericDef(s_data1) == s_data_def1,
-        findGenericDef(s_data2) == s_data_def2.
+        findGenericDef(s_data2) == s_data_def2,
+        getTypeArgsUnordered(s_data1) == type_args.
     isTypeEqualToErased(T, param@GenericParameter2TYPE(_)) =
       isTypeEqualToErased(T, upper_bound) :-
         getBounds(param) == (upper_bound, _).
