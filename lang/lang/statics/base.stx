@@ -441,6 +441,8 @@ rules // Declararing and resolving
    * Resolve type parameter [param] to its instantiated type [instantiation] in
    * [s]. Gives an error if the type argument is undefined or if there are
    * multiple type arguments.
+   * See https://github.com/MeAmAnUsername/pie/issues/187 for the string
+   * argument.
    */
   resolveUniqueTypeArg : scope * GenericParameter * string -> TYPE
   resolveUniqueTypeArgs maps resolveUniqueTypeArg(*, list(*), *) = list(*)
