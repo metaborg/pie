@@ -448,15 +448,15 @@ rules
       false | error $[Duplicate datatype [name]] @name.
     isGenericParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), _, _,
       [(_, (name', s_data_def))], resolve_in_super_types) = type@DataType(s_data_instance) :-
-      {params type_arg_tys instantiated_type_args}
+      {params}
       new s_data_instance,
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
       getGenericParams(s_data_def) == params,
       genericArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name),
-      typesOfWithTypeArgScope(s, s_type_args, getTypeArgsList(type_args), resolve_in_super_types) == type_arg_tys,
-      instantiateTypeArgsInAll(s_data_instance, type_arg_tys) == instantiated_type_args,
-      !type_args[instantiated_type_args] in s_data_instance,
+      // todo: return type args from genericArgsOk
+      // See commit 78a7f563638f06f2571f77ddd1a4c357169b7e3a, "Remove return value from genericArgsOk"
+      !type_args[getTypeArgTypes(getTypeArgsOrdered(s_data_instance))] in s_data_instance,
       @name.ref := name',
       @name.type := type,
       copyContext(s_data_instance, "foreign_java_impl").
