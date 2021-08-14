@@ -152,7 +152,7 @@ rules
    * getTypeArgsOrdered(s_data_instance) = type_args
    * Gets the type arguments in the same order as defined by the type
    * parameters.
-   * Follows P and INHERIT edges.
+   * Does not follow any edges.
    */
   getTypeArgsOrdered : scope -> list((GenericParameter * TYPE))
   getTypeArgsOrdered(s_data_instance) =
@@ -162,7 +162,20 @@ rules
     getTypeArgsOrdered_1 : scope * (GenericParameter * TYPE * TYPE) -> (GenericParameter * TYPE)
     getTypeArgsOrdered_1s maps getTypeArgsOrdered_1(*, list(*)) = list(*)
     getTypeArgsOrdered_1(s_data, (param, _, _)) =
-      (param, resolveUniqueTypeArg(s_data, param, "no error node")).
+      (param, getTypeArgsOrdered_2(s_data, param, occs)) :-
+      query generic_arg
+        filter e
+           and { param' :- param' == param }
+            in s_data |-> occs.
+
+    getTypeArgsOrdered_2 : scope * GenericParameter * list((path * (GenericParameter * TYPE))) -> TYPE
+    getTypeArgsOrdered_2(s_data, param, []) = upper_bound :-
+      getBounds(GenericParameter2TYPE(param)) == (upper_bound, _),
+      false | error $[BUG: no generic parameters found from [s_data]].
+    getTypeArgsOrdered_2(s_data, _, [(_, (param, val))]) = val.
+    getTypeArgsOrdered_2(s_data, param, [_,_|_]) = upper_bound :-
+      getBounds(GenericParameter2TYPE(param)) == (upper_bound, _),
+      false | error $[BUG: multiple declarations for generic parameters found from [s_data]].
 
   /**
    * getTypeArgType(type_arg) -> type
