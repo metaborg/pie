@@ -128,6 +128,7 @@ rules // operations on types
         instantiateGenericParams(s_sub, s_sub_super_instance, Bound()) == instantiated_s_sub_super_instance.
 
         // instantiate generic parameters in instance s2 with the type arguments of s1
+        // todo: move
         instantiateGenericParams : scope * scope * CaptureState -> scope
         instantiateGenericParams(s1, s2, capture_state) = s_data_instance_instantiated :-
           {type_args instantiated}
