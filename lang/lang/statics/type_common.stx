@@ -171,11 +171,11 @@ rules
     getTypeArgsOrdered_2 : scope * GenericParameter * list((path * (GenericParameter * TYPE))) -> TYPE
     getTypeArgsOrdered_2(s_data, param, []) = upper_bound :-
       getBounds(GenericParameter2TYPE(param)) == (upper_bound, _),
-      false | error $[BUG: no generic parameters found from [s_data]].
+      false | error $[BUG: no type arguments found from [s_data]].
     getTypeArgsOrdered_2(s_data, _, [(_, (param, val))]) = val.
     getTypeArgsOrdered_2(s_data, param, [_,_|_]) = upper_bound :-
       getBounds(GenericParameter2TYPE(param)) == (upper_bound, _),
-      false | error $[BUG: multiple declarations for generic parameters found from [s_data]].
+      false | error $[BUG: multiple declarations for type arguments found from [s_data]].
 
   /**
    * getTypeArgType(type_arg) -> type
