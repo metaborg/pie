@@ -528,8 +528,9 @@ rules
 
   genericArgsOk : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string
   genericArgsOk(_, _, _, [], NoTypeArgs(), _, _). // separate case to force unification of params before evaluating this.
-  genericArgsOk(_, _, _, params@[_|_], NoTypeArgs(), _, error_node) :-
+  genericArgsOk(_, _, s_data_instance, params@[_|_], NoTypeArgs(), _, error_node) :-
     {names}
+    declareInvalidTypeArgs(s_data_instance, params),
     getGenericParamNames(params) == names,
     false | error $[Cannot derive type arguments. Provide type arguments explicitly for parameters [names]] @error_node.
 
@@ -549,12 +550,19 @@ rules
 
   genericArgsOk_1 : scope * scope * scope * list((GenericParameter * TYPE * TYPE)) *
     TypeArgs * BOOLEAN * (list(TYPEID) * list(Type))
-  genericArgsOk_1(_, _, _, _, type_args, _, (remaining@[_|_], [])) :-
+  genericArgsOk_1(_, _, s_data_instance, params, type_args, _, (remaining@[_|_], [])) :-
+    declareInvalidTypeArgs(s_data_instance, params),
     false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @type_args.
-  genericArgsOk_1(_, _, _, _, type_args, _, ([], remaining@[_|_])) :-
+  genericArgsOk_1(_, _, s_data_instance, params, type_args, _, ([], remaining@[_|_])) :-
+    declareInvalidTypeArgs(s_data_instance, params),
     false | error $[Too many type arguments, unmatched type arguments: [remaining]] @type_args.
   genericArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) :-
     genericArgsOk_2(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types).
+
+    declareInvalidTypeArg : scope * (GenericParameter * TYPE * TYPE)
+    declareInvalidTypeArgs maps declareInvalidTypeArg(*, list(*))
+    declareInvalidTypeArg(s_data_instance, (name, upper_bound, _)) :-
+      declareTypeArg(s_data_instance, name, upper_bound).
 
   genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type * BOOLEAN
   genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
