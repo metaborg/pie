@@ -170,15 +170,13 @@ rules // operations on types
         isTypeArgsCompatible_1(s1, s2, s_data_def, assignable_kind) =
           // s2 is an instance of s_data_def
           // todo: use getTypeArgsOrdered for both s1 and s2, reimplement isTypeArgCompatible
-          allTrue(tmp2@isTypeArgsCompatible_2(tmp1@getTypeArgsUnordered(s1), s2, assignable_kind)) :-
-            try{false}|note$[DEBUG - type args s1: [tmp1], compatible: [tmp2]].
+          allTrue(isTypeArgsCompatible_2(getTypeArgsUnordered(s1), s2, assignable_kind)).
 
         // Checks if a type argument in s1 is compatible with s2.
         isTypeArgCompatible : (GenericParameter * TYPE) * scope * AssignableKind -> BOOLEAN
         isTypeArgsCompatible_2 maps isTypeArgCompatible(list(*), *, *) = list(*)
         isTypeArgCompatible((name, ty1), s2, assignable_kind) =
-          isTypeArgCompatible_1(ty1, tmp1@resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind) :-
-            try{false}|note$[DEBUG - name: [name], ty1: [ty1], ty2: [tmp1], s2: [s2]].
+          isTypeArgCompatible_1(ty1, resolveUniqueTypeArg(s2, name, "no error node"), assignable_kind).
 
           // note: not equivalent to assignableTo(T1, T2, TypeArgKind())
           // DataTypes are not allowed to be subtypes, they have to be equal or wildcards.

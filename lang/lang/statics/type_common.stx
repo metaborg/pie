@@ -156,8 +156,7 @@ rules
    */
   getTypeArgsOrdered : scope -> list((GenericParameter * TYPE))
   getTypeArgsOrdered(s_data_instance) =
-    getTypeArgsOrdered_1s(s_data_instance, tmp1@getGenericParams(s_data_instance)) :-
-      try{false}|note$[DEBUG: getTypeArgsOrdered - s_data_instance: [s_data_instance], params: [tmp1]].
+    getTypeArgsOrdered_1s(s_data_instance, getGenericParams(s_data_instance)).
 
     getTypeArgsOrdered_1 : scope * (GenericParameter * TYPE * TYPE) -> (GenericParameter * TYPE)
     getTypeArgsOrdered_1s maps getTypeArgsOrdered_1(*, list(*)) = list(*)
