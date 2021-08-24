@@ -60,7 +60,14 @@ public interface TopDownSession extends Session {
             if(!isExplicitlyObserved(task)) {
                 setImplicitToExplicitlyObserved(task);
             }
-            return getOutput(task);
+            final O output = getOutput(task);
+            if(output instanceof OutTransient<?>) {
+                final OutTransient<?> outTransient = (OutTransient<?>)output;
+                if(!outTransient.isConsistent()) {
+                    return require(task, cancel);
+                }
+            }
+            return output;
         }
     }
 }
