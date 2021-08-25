@@ -3,9 +3,9 @@ plugins {
   `maven-publish`
 }
 
-val logVersion = "0.5.4"
-val resourceVersion = "0.11.3"
-val commonVersion = "0.9.1"
+val logVersion = "0.5.5"
+val resourceVersion = "0.11.4"
+val commonVersion = "0.9.2"
 
 val checkerframeworkVersion = "3.16.0"
 
