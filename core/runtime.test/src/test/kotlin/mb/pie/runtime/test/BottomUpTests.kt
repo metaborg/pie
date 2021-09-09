@@ -2,6 +2,7 @@ package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.None
+import mb.pie.api.STask
 import mb.pie.api.Supplier
 import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.test.anyC
@@ -267,6 +268,67 @@ class BottomUpTests {
       val bottomUpSession = session.bottomUpRunner
       verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), any(), any(), anyC())
       verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), any(), any(), anyC())
+    }
+  }
+
+  @TestFactory
+  fun testProvidedFileSwap() = builder.test {
+    val compileChooser = resource("/compile.chooser")
+    write("1", compileChooser)
+
+    val back = taskDef<Triple<FSResource, FSResource, String>, FSResource?>("back") { (inputFile, outputFile, id) ->
+      require(inputFile)
+      require(compileChooser)
+      if(compileChooser.readString() == id) {
+        outputFile.writeString(inputFile.readString())
+        provide(outputFile)
+        outputFile
+      } else {
+        null
+      }
+    }
+    addTaskDef(back)
+
+    val inputFile1 = resource("/input1.str")
+    write("input1", inputFile1)
+    val inputFile2 = resource("/input2.str")
+    write("input2", inputFile2)
+    val outputFile = resource("/output.java")
+
+    val compileStratego = taskDef<None, ArrayList<FSResource>>("compileStratego") {
+      val outputFiles = ArrayList<FSResource>()
+      require(compileChooser)
+      val text = compileChooser.readString()
+      if(text.contains("1")) {
+        val file = require(back, Triple(inputFile1, outputFile, "1"))
+        if(file != null) outputFiles.add(file)
+      } else {
+        val file = require(back, Triple(inputFile2, outputFile, "2"))
+        if(file != null) outputFiles.add(file)
+      }
+      outputFiles
+    }
+    addTaskDef(compileStratego)
+
+    val compileJava = taskDef<STask<ArrayList<FSResource>>, None>("compileJava") { compileStrategoTask ->
+      val javaFiles = require(compileStrategoTask)
+      for(javaFile in javaFiles) {
+        require(javaFile)
+      }
+      None.instance
+    }
+    addTaskDef(compileJava)
+
+    newSession().use { session ->
+      session.require(compileJava.createTask(compileStratego.createSupplier(None.instance)))
+    }
+
+    write("2", compileChooser)
+    newSession().use { session ->
+      Assertions.assertThrows(ValidationException::class.java) {
+        session.updateAffectedBy(setOf(compileChooser.key))
+        Unit
+      }
     }
   }
 }
