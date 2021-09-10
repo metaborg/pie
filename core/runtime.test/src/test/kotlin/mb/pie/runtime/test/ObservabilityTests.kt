@@ -26,7 +26,7 @@ class ObservabilityTests {
       assertTrue(pie.isObserved(noopTask))
       assertTrue(pie.isObserved(noopKey))
       session.store.readTxn().use { txn ->
-        val observability = txn.taskObservability(noopKey)
+        val observability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.ExplicitObserved, observability)
         assertTrue(observability.isObserved)
         assertFalse(observability.isUnobserved)
@@ -46,13 +46,13 @@ class ObservabilityTests {
 
       session.store.readTxn().use { txn ->
         // `callNoopTask` is explicitly required, therefore it is explicitly observed.
-        val callNoopObservability = txn.taskObservability(callNoopKey)
+        val callNoopObservability = txn.getTaskObservability(callNoopKey)
         assertEquals(Observability.ExplicitObserved, callNoopObservability)
         assertTrue(callNoopObservability.isObserved)
         assertFalse(callNoopObservability.isUnobserved)
 
         // `noopTask` is required by `callNoopTask`, therefore it is implicitly observed.
-        val noopObservability = txn.taskObservability(noopKey)
+        val noopObservability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.ImplicitObserved, noopObservability)
         assertTrue(noopObservability.isObserved)
         assertFalse(noopObservability.isUnobserved)
@@ -66,14 +66,14 @@ class ObservabilityTests {
       session.require(callNoopTask)
       session.store.readTxn().use { txn ->
         // `noopTask` is required by `callNoopTask`, therefore it is implicitly observed.
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
 
       // We now explicitly require `noopTask`.
       session.require(noopTask)
       session.store.readTxn().use { txn ->
         // `noopTask` is explicitly required, therefore it is explicitly observed.
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -85,7 +85,7 @@ class ObservabilityTests {
       // implicitly observed.
       session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
 
@@ -95,7 +95,7 @@ class ObservabilityTests {
       // now unobserved.
       session.require(callNoopMaybeDef.createTask(false))
       session.store.readTxn().use { txn ->
-        val observability = txn.taskObservability(noopKey)
+        val observability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
         assertTrue(observability.isUnobserved)
         assertFalse(observability.isObserved)
@@ -107,7 +107,7 @@ class ObservabilityTests {
       // We call `callNoopMaybeTaskDef` with input `true` again, making `noopTask` implicitly observed again.
       session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -119,13 +119,13 @@ class ObservabilityTests {
       // implicitly observed.
       session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
 
       // We explicitly require `noopTask`, making `noopTask` explicitly observed
       session.require(noopTask)
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
 
@@ -135,7 +135,7 @@ class ObservabilityTests {
       // `noopTask` is explicitly observed, and it should stay that way.
       session.require(callNoopMaybeDef.createTask(false))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -155,12 +155,12 @@ class ObservabilityTests {
       assertFalse(pie.isObserved(callNoopKey))
 
       session.store.readTxn().use { txn ->
-        val callNoopObservability = txn.taskObservability(callNoopKey)
+        val callNoopObservability = txn.getTaskObservability(callNoopKey)
         assertEquals(Observability.Unobserved, callNoopObservability)
         assertTrue(callNoopObservability.isUnobserved)
         assertFalse(callNoopObservability.isObserved)
 
-        val noopObservability = txn.taskObservability(noopKey)
+        val noopObservability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.Unobserved, noopObservability)
         assertTrue(noopObservability.isUnobserved)
         assertFalse(noopObservability.isObserved)
@@ -182,7 +182,7 @@ class ObservabilityTests {
       // unobserved.
       session.requireWithoutObserving(callNoopMaybeDef.createTask(false))
       session.store.readTxn().use { txn ->
-        val observability = txn.taskObservability(noopKey)
+        val observability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
         assertTrue(observability.isUnobserved)
         assertFalse(observability.isObserved)
@@ -194,7 +194,7 @@ class ObservabilityTests {
       // We call `callNoopMaybeTaskDef` with input `true` again, but everything stays unobserved.
       session.requireWithoutObserving(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.Unobserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -205,9 +205,9 @@ class ObservabilityTests {
       // We first require with observing, explicitly observing `callNoopTask`, and implicitly observing `noopTask`.
       session.require(callNoopTask)
       session.store.readTxn().use { txn ->
-        val callNoopObservability = txn.taskObservability(callNoopKey)
+        val callNoopObservability = txn.getTaskObservability(callNoopKey)
         assertEquals(Observability.ExplicitObserved, callNoopObservability)
-        val noopObservability = txn.taskObservability(noopKey)
+        val noopObservability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.ImplicitObserved, noopObservability)
       }
     }
@@ -216,9 +216,9 @@ class ObservabilityTests {
       // Then we require without observing: observability status should stay the same.
       session.require(callNoopTask)
       session.store.readTxn().use { txn ->
-        val callNoopObservability = txn.taskObservability(callNoopKey)
+        val callNoopObservability = txn.getTaskObservability(callNoopKey)
         assertEquals(Observability.ExplicitObserved, callNoopObservability)
-        val noopObservability = txn.taskObservability(noopKey)
+        val noopObservability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.ImplicitObserved, noopObservability)
       }
     }
@@ -227,7 +227,7 @@ class ObservabilityTests {
       // When we require `noopTask` without observing, it stays implicitly observed.
       session.requireWithoutObserving(callNoopTask)
       session.store.readTxn().use { txn ->
-        val noopObservability = txn.taskObservability(noopKey)
+        val noopObservability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.ImplicitObserved, noopObservability)
       }
     }
@@ -240,7 +240,7 @@ class ObservabilityTests {
       // implicitly observed.
       session.require(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
 
@@ -250,7 +250,7 @@ class ObservabilityTests {
       // now unobserved.
       session.requireWithoutObserving(callNoopMaybeDef.createTask(false))
       session.store.readTxn().use { txn ->
-        val observability = txn.taskObservability(noopKey)
+        val observability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.Unobserved, observability)
         assertTrue(observability.isUnobserved)
         assertFalse(observability.isObserved)
@@ -263,7 +263,7 @@ class ObservabilityTests {
       // (explicitly) observed task `callNoopMaybeTaskDef` requires it, despite requiring without observability.
       session.requireWithoutObserving(callNoopMaybeDef.createTask(true))
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -276,14 +276,14 @@ class ObservabilityTests {
     newSession().use { session ->
       session.require(callNoopTask)
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
       session.unobserve(callNoopTask)
       session.store.readTxn().use { txn ->
         // After explicitly unobserving `callNoop`, the entire spine is unobserved.
-        assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.Unobserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -293,14 +293,14 @@ class ObservabilityTests {
     newSession().use { session ->
       session.require(callNoopTask)
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
       session.unobserve(noopTask)
       session.store.readTxn().use { txn ->
         // Explicitly unobserving `noop` does nothing, as it is still observed by `callNoop`.
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -311,14 +311,14 @@ class ObservabilityTests {
       session.require(callNoopTask)
       session.require(noopTask)
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(noopKey))
       }
       session.unobserve(callNoopTask)
       session.store.readTxn().use { txn ->
         // After explicitly unobserving `callNoop`, only `callNoop` is unobserved, as `noop` is still explicitly observed.
-        assertEquals(Observability.Unobserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -329,14 +329,14 @@ class ObservabilityTests {
       session.require(callNoopTask)
       session.require(noopTask)
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(noopKey))
       }
       session.unobserve(noopTask)
       session.store.readTxn().use { txn ->
         // Explicitly unobserving `noop` turns it into an implicitly observed task, as `callNoop` still observes it.
-        assertEquals(Observability.ExplicitObserved, txn.taskObservability(callNoopKey))
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(noopKey))
+        assertEquals(Observability.ExplicitObserved, txn.getTaskObservability(callNoopKey))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(noopKey))
       }
     }
   }
@@ -451,8 +451,8 @@ class ObservabilityTests {
       // Unobserve `callRead2Task`, making it and `read2Task` unobserved.
       session.unobserve(callRead2Task)
       session.store.readTxn().use { txn ->
-        assertEquals(Observability.Unobserved, txn.taskObservability(callRead2Key))
-        assertEquals(Observability.Unobserved, txn.taskObservability(read2Key))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(callRead2Key))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(read2Key))
       }
     }
 
@@ -482,8 +482,8 @@ class ObservabilityTests {
       }
       session.store.readTxn().use { txn ->
         // Because `callMainTask` depends on `callRead2Task`, which depends on `read2Task`, they become implicitly observed.
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(callRead2Key))
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(read2Key))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(callRead2Key))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(read2Key))
       }
     }
 
@@ -493,8 +493,8 @@ class ObservabilityTests {
       session.updateAffectedBy(setOf(resource1.key))
       session.store.readTxn().use { txn ->
         // Because `callMainTask` does not depend on `callRead2Task` any more, it and `read2Task` become unobserved again.
-        assertEquals(Observability.Unobserved, txn.taskObservability(callRead2Key))
-        assertEquals(Observability.Unobserved, txn.taskObservability(read2Key))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(callRead2Key))
+        assertEquals(Observability.Unobserved, txn.getTaskObservability(read2Key))
       }
     }
 
@@ -520,8 +520,8 @@ class ObservabilityTests {
       verify(bottomUpSession, never()).exec(eq(callRead2Key), eq(callRead2Task), anyER(), any(), any(), anyC())
       session.store.readTxn().use { txn ->
         // Despite not being executed, because `callTask` depends on `callRead2Task`, which depends on `read2Task`, it does become implicitly observed again.
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(callRead2Key))
-        assertEquals(Observability.ImplicitObserved, txn.taskObservability(read2Key))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(callRead2Key))
+        assertEquals(Observability.ImplicitObserved, txn.getTaskObservability(read2Key))
       }
     }
   }
@@ -545,17 +545,17 @@ class ObservabilityTests {
       newSession().use { session ->
         session.deleteUnobservedTasks({ true }, { _, _ -> true })
         session.store.readTxn().use { txn ->
-          assertNull(txn.input(aTask.key()))
-          assertNull(txn.input(bTask.key()))
-          assertNotNull(txn.input(cTask.key()))
-          assertNull(txn.input(dTask.key()))
-          assertNotNull(txn.input(eTask.key()))
-          assertNull(txn.input(fTask.key()))
-          assertNotNull(txn.input(gTask.key()))
-          assertNotNull(txn.input(hTask.key()))
-          assertNull(txn.input(iTask.key()))
-          assertNull(txn.input(jTask.key()))
-          assertNull(txn.input(kTask.key()))
+          assertNull(txn.getInput(aTask.key()))
+          assertNull(txn.getInput(bTask.key()))
+          assertNotNull(txn.getInput(cTask.key()))
+          assertNull(txn.getInput(dTask.key()))
+          assertNotNull(txn.getInput(eTask.key()))
+          assertNull(txn.getInput(fTask.key()))
+          assertNotNull(txn.getInput(gTask.key()))
+          assertNotNull(txn.getInput(hTask.key()))
+          assertNull(txn.getInput(iTask.key()))
+          assertNull(txn.getInput(jTask.key()))
+          assertNull(txn.getInput(kTask.key()))
           assertFalse(file0.exists()) // Deleted provided file
           assertTrue(file1.exists()) // Unobserved required file
           assertTrue(file2.exists()) // Observed provided file
@@ -574,18 +574,18 @@ class ObservabilityTests {
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> true })
         session.store.readTxn().use { txn ->
           for(key in listOf(aTask.key(), bTask.key(), dTask.key(), fTask.key(), iTask.key(), jTask.key(), kTask.key())) {
-            assertNull(txn.input(key))
-            assertNull(txn.output(key))
-            assertEquals(Observability.Unobserved, txn.taskObservability(key)) // Default value: Observability.Unobserved
-            assertTrue(txn.taskRequires(key).isEmpty()) // Default value: empty list
-            assertTrue(txn.callersOf(key).isEmpty()) // Default value: empty set
-            assertTrue(txn.resourceRequires(key).isEmpty()) // Default value: empty list
-            assertTrue(txn.resourceProvides(key).isEmpty()) // Default value: empty list
-            assertNull(txn.data(key))
+            assertNull(txn.getInput(key))
+            assertNull(txn.getOutput(key))
+            assertEquals(Observability.Unobserved, txn.getTaskObservability(key)) // Default value: Observability.Unobserved
+            assertTrue(txn.getTaskRequireDeps(key).isEmpty()) // Default value: empty list
+            assertTrue(txn.getCallersOf(key).isEmpty()) // Default value: empty set
+            assertTrue(txn.getResourceRequireDeps(key).isEmpty()) // Default value: empty list
+            assertTrue(txn.getResourceProvideDeps(key).isEmpty()) // Default value: empty list
+            assertNull(txn.getData(key))
           }
           for(key in listOf(file0.key, file3.key)) {
-            assertTrue(txn.requireesOf(key).isEmpty()) // Default value: empty set
-            assertNull(txn.providerOf(key))
+            assertTrue(txn.getRequirersOf(key).isEmpty()) // Default value: empty set
+            assertNull(txn.getProviderOf(key))
           }
         }
       }
@@ -660,17 +660,17 @@ class ObservabilityTests {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> false }, { _, _ -> true })
         session.store.readTxn().use { txn ->
-          assertNotNull(txn.input(aTask.key()))
-          assertNotNull(txn.input(bTask.key()))
-          assertNotNull(txn.input(cTask.key()))
-          assertNotNull(txn.input(dTask.key()))
-          assertNotNull(txn.input(eTask.key()))
-          assertNotNull(txn.input(fTask.key()))
-          assertNotNull(txn.input(gTask.key()))
-          assertNotNull(txn.input(hTask.key()))
-          assertNotNull(txn.input(iTask.key()))
-          assertNotNull(txn.input(jTask.key()))
-          assertNotNull(txn.input(kTask.key()))
+          assertNotNull(txn.getInput(aTask.key()))
+          assertNotNull(txn.getInput(bTask.key()))
+          assertNotNull(txn.getInput(cTask.key()))
+          assertNotNull(txn.getInput(dTask.key()))
+          assertNotNull(txn.getInput(eTask.key()))
+          assertNotNull(txn.getInput(fTask.key()))
+          assertNotNull(txn.getInput(gTask.key()))
+          assertNotNull(txn.getInput(hTask.key()))
+          assertNotNull(txn.getInput(iTask.key()))
+          assertNotNull(txn.getInput(jTask.key()))
+          assertNotNull(txn.getInput(kTask.key()))
           assertTrue(file0.exists()) // Kept provided file
           assertTrue(file1.exists()) // Unobserved required file
           assertTrue(file2.exists()) // Observed provided file
@@ -688,17 +688,17 @@ class ObservabilityTests {
       newSession().use { session ->
         session.deleteUnobservedTasks({ t -> t == aTask || t == dTask || t == iTask }, { _, _ -> true })
         session.store.readTxn().use { txn ->
-          assertNull(txn.input(aTask.key()))
-          assertNotNull(txn.input(bTask.key()))
-          assertNotNull(txn.input(cTask.key()))
-          assertNull(txn.input(dTask.key()))
-          assertNotNull(txn.input(eTask.key()))
-          assertNotNull(txn.input(fTask.key()))
-          assertNotNull(txn.input(gTask.key()))
-          assertNotNull(txn.input(hTask.key()))
-          assertNull(txn.input(iTask.key()))
-          assertNotNull(txn.input(jTask.key()))
-          assertNotNull(txn.input(kTask.key()))
+          assertNull(txn.getInput(aTask.key()))
+          assertNotNull(txn.getInput(bTask.key()))
+          assertNotNull(txn.getInput(cTask.key()))
+          assertNull(txn.getInput(dTask.key()))
+          assertNotNull(txn.getInput(eTask.key()))
+          assertNotNull(txn.getInput(fTask.key()))
+          assertNotNull(txn.getInput(gTask.key()))
+          assertNotNull(txn.getInput(hTask.key()))
+          assertNull(txn.getInput(iTask.key()))
+          assertNotNull(txn.getInput(jTask.key()))
+          assertNotNull(txn.getInput(kTask.key()))
           assertFalse(file0.exists()) // Deleted provided file
           assertTrue(file1.exists()) // Unobserved required file
           assertTrue(file2.exists()) // Observed provided file
@@ -716,17 +716,17 @@ class ObservabilityTests {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, _ -> false })
         session.store.readTxn().use { txn ->
-          assertNull(txn.input(aTask.key()))
-          assertNull(txn.input(bTask.key()))
-          assertNotNull(txn.input(cTask.key()))
-          assertNull(txn.input(dTask.key()))
-          assertNotNull(txn.input(eTask.key()))
-          assertNull(txn.input(fTask.key()))
-          assertNotNull(txn.input(gTask.key()))
-          assertNotNull(txn.input(hTask.key()))
-          assertNull(txn.input(iTask.key()))
-          assertNull(txn.input(jTask.key()))
-          assertNull(txn.input(kTask.key()))
+          assertNull(txn.getInput(aTask.key()))
+          assertNull(txn.getInput(bTask.key()))
+          assertNotNull(txn.getInput(cTask.key()))
+          assertNull(txn.getInput(dTask.key()))
+          assertNotNull(txn.getInput(eTask.key()))
+          assertNull(txn.getInput(fTask.key()))
+          assertNotNull(txn.getInput(gTask.key()))
+          assertNotNull(txn.getInput(hTask.key()))
+          assertNull(txn.getInput(iTask.key()))
+          assertNull(txn.getInput(jTask.key()))
+          assertNull(txn.getInput(kTask.key()))
           assertTrue(file0.exists()) // Kept provided file
           assertTrue(file1.exists()) // Unobserved required file
           assertTrue(file2.exists()) // Observed provided file
@@ -744,17 +744,17 @@ class ObservabilityTests {
       newSession().use { session ->
         session.deleteUnobservedTasks({ _ -> true }, { _, r -> r == file3 })
         session.store.readTxn().use { txn ->
-          assertNull(txn.input(aTask.key()))
-          assertNull(txn.input(bTask.key()))
-          assertNotNull(txn.input(cTask.key()))
-          assertNull(txn.input(dTask.key()))
-          assertNotNull(txn.input(eTask.key()))
-          assertNull(txn.input(fTask.key()))
-          assertNotNull(txn.input(gTask.key()))
-          assertNotNull(txn.input(hTask.key()))
-          assertNull(txn.input(iTask.key()))
-          assertNull(txn.input(jTask.key()))
-          assertNull(txn.input(kTask.key()))
+          assertNull(txn.getInput(aTask.key()))
+          assertNull(txn.getInput(bTask.key()))
+          assertNotNull(txn.getInput(cTask.key()))
+          assertNull(txn.getInput(dTask.key()))
+          assertNotNull(txn.getInput(eTask.key()))
+          assertNull(txn.getInput(fTask.key()))
+          assertNotNull(txn.getInput(gTask.key()))
+          assertNotNull(txn.getInput(hTask.key()))
+          assertNull(txn.getInput(iTask.key()))
+          assertNull(txn.getInput(jTask.key()))
+          assertNull(txn.getInput(kTask.key()))
           assertTrue(file0.exists()) // Kept provided file
           assertTrue(file1.exists()) // Unobserved required file
           assertTrue(file2.exists()) // Observed provided file

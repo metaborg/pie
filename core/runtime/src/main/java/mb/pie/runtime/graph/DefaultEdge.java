@@ -22,7 +22,7 @@ package mb.pie.runtime.graph;
  *
  * @author Barak Naveh
  */
-class DefaultEdge
+public class DefaultEdge
     extends
     IntrusiveEdge
 {

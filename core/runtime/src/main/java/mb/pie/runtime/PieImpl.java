@@ -94,25 +94,25 @@ public class PieImpl implements Pie {
 
     @Override public boolean hasBeenExecuted(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            return txn.output(key) != null;
+            return txn.getOutput(key) != null;
         }
     }
 
     @Override public boolean isObserved(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            return txn.taskObservability(key).isObserved();
+            return txn.getTaskObservability(key).isObserved();
         }
     }
 
     @Override public boolean isExplicitlyObserved(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            return txn.taskObservability(key) == Observability.ExplicitObserved;
+            return txn.getTaskObservability(key) == Observability.ExplicitObserved;
         }
     }
 
     @Override public void setImplicitToExplicitlyObserved(TaskKey key) {
         try(final StoreWriteTxn txn = store.writeTxn()) {
-            final Observability observability = txn.taskObservability(key);
+            final Observability observability = txn.getTaskObservability(key);
             if(observability.isUnobserved()) {
                 throw new IllegalArgumentException("Cannot set task with key '" + key + "' to explicitly observed, because it is unobserved");
             }

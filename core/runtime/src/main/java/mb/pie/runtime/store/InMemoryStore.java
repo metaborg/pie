@@ -1,13 +1,13 @@
 package mb.pie.runtime.store;
 
+import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
-import mb.pie.api.TaskRequireDep;
 import mb.pie.runtime.graph.DAG;
+import mb.pie.runtime.graph.DefaultEdge;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.ArrayList;
 
 /**
  * More optimized version of in-memory store. Overrides several methods from {@link InMemoryStoreBase} with more
@@ -17,62 +17,44 @@ public class InMemoryStore extends InMemoryStoreBase {
     private DAG<TaskKey> taskRequireGraph = new DAG<>();
 
     @Override public boolean hasDependencyOrderBefore(TaskKey caller, TaskKey callee) {
-        return taskRequireGraph.getTopologicalIndex(caller) < taskRequireGraph.getTopologicalIndex(callee);
+        return this.taskRequireGraph.getTopologicalIndex(caller) < this.taskRequireGraph.getTopologicalIndex(callee);
     }
 
-    @Override public void setTaskRequires(TaskKey caller, Collection<TaskRequireDep> newDeps) {
-        final HashSet<TaskKey> added = new HashSet<>();
-        final HashSet<TaskKey> removed = new HashSet<>();
 
-        // Remove old task requirements and fill `added` and `removed`.
-        final @Nullable Collection<TaskRequireDep> oldTaskDeps = this.taskRequires.remove(caller);
-        if(oldTaskDeps != null) {
-            for(TaskRequireDep newDep : newDeps) { // Add new deps to `added`.
-                added.add(newDep.callee);
-            }
-            for(TaskRequireDep oldDep : oldTaskDeps) {
-                final TaskKey oldCallee = oldDep.callee;
-                removed.add(oldCallee); // Add old deps to `removed`.
-                added.remove(oldCallee); // Remove old dep from `added`.
-                getOrPutEmptyHashSet(callersOf, oldCallee).remove(caller);
-            }
-            // `added` now contains all keys for tasks which `caller` newly depends on.
-            for(TaskRequireDep newDep : newDeps) { // Remove new deps from `removed`.
-                removed.remove(newDep.callee);
-            }
-            // `removed` now contains all keys for tasks which `caller` does not depend on any more.
-        } else {
-            for(TaskRequireDep dep : newDeps) {
-                added.add(dep.callee);
-            }
+    @Override public void resetTask(Task<?> task) {
+        final TaskKey key = task.key();
+        // A task that does not exist may be reset, so a vertex must be created to ensure there is one in the graph.
+        //
+        // `addVertex` returns `true` if the vertex is new. In that case, we can skip removing outgoing edges as a new
+        // vertex cannot have any edges.
+        if(!this.taskRequireGraph.addVertex(key)) {
+            // Remove all outgoing edges of vertex `key`, as they correspond to task require dependencies.
+            //
+            // Copy collection, as the collection returned by `outgoingEdgesOf` is live and will cause
+            // `ConcurrentModificationException`s when passed to `removeAllEdges` directly, because it iterates the
+            // collection while removing elements.
+            final ArrayList<DefaultEdge> outgoingEdges = new ArrayList<>(this.taskRequireGraph.outgoingEdgesOf(key));
+            this.taskRequireGraph.removeAllEdges(outgoingEdges);
         }
+        super.resetTask(task);
+    }
 
-        // Add new task requirements.
-        this.taskRequires.put(caller, newDeps);
-        for(TaskRequireDep taskRequire : newDeps) {
-            getOrPutEmptyHashSet(callersOf, taskRequire.callee).add(caller);
-        }
-
-        // Update dependency graph.
-        taskRequireGraph.addVertex(caller);
-        for(TaskKey callee : added) {
-            taskRequireGraph.addVertex(callee);
-            taskRequireGraph.addEdge(caller, callee);
-        }
-        for(TaskKey callee : removed) {
-            taskRequireGraph.removeEdge(caller, callee);
-        }
+    @Override public void addTaskRequire(TaskKey caller, TaskKey callee) {
+        this.taskRequireGraph.addVertex(callee);
+        this.taskRequireGraph.addEdge(caller, callee);
+        super.addTaskRequire(caller, callee);
     }
 
 
     @Override public @Nullable TaskData deleteData(TaskKey key) {
-        taskRequireGraph.removeVertex(key);
+        this.taskRequireGraph.removeVertex(key);
         return super.deleteData(key);
     }
 
+
     @Override public void drop() {
         super.drop();
-        taskRequireGraph = new DAG<>();
+        this.taskRequireGraph = new DAG<>();
     }
 
 

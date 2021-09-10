@@ -4,6 +4,7 @@ import mb.log.api.Logger;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Function;
+import mb.pie.api.Layer;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
@@ -30,46 +31,57 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 
 public class ExecContextImpl implements ExecContext {
+    private final TaskDefs taskDefs;
+    private final ResourceService resourceService;
+    private final DefaultStampers defaultStampers;
+    private final Layer layer;
+    private final LoggerFactory loggerFactory;
+    private final Tracer tracer;
+
+    private final TaskKey currentTaskKey;
+
     private final StoreWriteTxn txn;
     private final RequireTask requireTask;
     private final boolean modifyObservability;
     private final CancelToken cancel;
-    private final TaskDefs taskDefs;
-    private final ResourceService resourceService;
-    private final DefaultStampers defaultStampers;
-    private final LoggerFactory loggerFactory;
-    private final Tracer tracer;
 
-    // LinkedHashSet to remove duplicates while preserving insertion order.
+    // LinkedHashSet to remove duplicates and preserve insertion order.
     private final LinkedHashSet<TaskRequireDep> taskRequires = new LinkedHashSet<>();
     private final LinkedHashSet<ResourceRequireDep> resourceRequires = new LinkedHashSet<>();
     private final LinkedHashSet<ResourceProvideDep> resourceProvides = new LinkedHashSet<>();
 
 
     public ExecContextImpl(
-        StoreWriteTxn txn,
-        RequireTask requireTask,
-        boolean modifyObservability,
-        CancelToken cancel,
         TaskDefs taskDefs,
         ResourceService resourceService,
         DefaultStampers defaultStampers,
+        Layer layer,
         LoggerFactory loggerFactory,
-        Tracer tracer
+        Tracer tracer,
+
+        TaskKey currentTaskKey,
+
+        StoreWriteTxn txn,
+        RequireTask requireTask,
+        boolean modifyObservability,
+        CancelToken cancel
     ) {
+        this.taskDefs = taskDefs;
+        this.resourceService = resourceService;
+        this.defaultStampers = defaultStampers;
+        this.layer = layer;
+        this.loggerFactory = loggerFactory;
+        this.tracer = tracer;
+
+        this.currentTaskKey = currentTaskKey;
+
         this.txn = txn;
         this.requireTask = requireTask;
         this.modifyObservability = modifyObservability;
         this.cancel = cancel;
-        this.taskDefs = taskDefs;
-        this.resourceService = resourceService;
-        this.defaultStampers = defaultStampers;
-        this.loggerFactory = loggerFactory;
-        this.tracer = tracer;
     }
 
 
@@ -91,11 +103,18 @@ public class ExecContextImpl implements ExecContext {
     @Override
     public <O extends @Nullable Serializable> O require(Task<O> task, OutputStamper stamper) {
         cancel.throwIfCanceled();
-        final TaskKey key = task.key();
-        final O output = requireTask.require(key, task, modifyObservability, txn, cancel);
+        final TaskKey callee = task.key();
+        layer.validateTaskRequire(currentTaskKey, callee, txn);
+        txn.addTaskRequire(currentTaskKey, callee);
+
+        final O output = requireTask.require(callee, task, modifyObservability, txn, cancel);
         final OutputStamp stamp = stamper.stamp(output);
-        taskRequires.add(new TaskRequireDep(key, stamp));
+        final TaskRequireDep dep = new TaskRequireDep(callee, stamp);
+        if(taskRequires.contains(dep)) return output;
+
+        taskRequires.add(dep);
         tracer.requiredTask(task, stamper);
+        txn.addTaskRequireDep(currentTaskKey, dep);
         return output;
     }
 
@@ -141,15 +160,25 @@ public class ExecContextImpl implements ExecContext {
     @Override
     public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
-        resourceRequires.add(new ResourceRequireDep(resource.getKey(), stamp));
+        final ResourceRequireDep dep = new ResourceRequireDep(resource.getKey(), stamp);
+        if(resourceRequires.contains(dep)) return;
+
+        resourceRequires.add(dep);
         tracer.requiredResource(resource, stamper);
+        layer.validateResourceRequireDep(currentTaskKey, dep, txn);
+        txn.addResourceRequireDep(currentTaskKey, dep);
     }
 
     @Override
     public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
-        resourceProvides.add(new ResourceProvideDep(resource.getKey(), stamp));
+        final ResourceProvideDep dep = new ResourceProvideDep(resource.getKey(), stamp);
+        if(resourceProvides.contains(dep)) return;
+
+        resourceProvides.add(dep);
         tracer.providedResource(resource, stamper);
+        layer.validateResourceProvideDep(currentTaskKey, dep, txn);
+        txn.addResourceProvideDep(currentTaskKey, dep);
     }
 
 

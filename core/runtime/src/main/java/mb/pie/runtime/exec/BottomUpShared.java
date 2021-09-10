@@ -16,7 +16,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -32,10 +31,10 @@ public class BottomUpShared {
         Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
-        final @Nullable TaskKey provider = txn.providerOf(resource);
+        final @Nullable TaskKey provider = txn.getProviderOf(resource);
         if(provider != null) {
-            if(txn.taskObservability(provider).isObserved()) {
-                for(ResourceProvideDep dep : txn.resourceProvides(provider)) {
+            if(txn.getTaskObservability(provider).isObserved()) {
+                for(ResourceProvideDep dep : txn.getResourceProvideDeps(provider)) {
                     if(!dep.key.equals(resource)) continue;
                     final @Nullable InconsistentResourceProvide reason = dep.checkConsistency(resourceService);
                     tracer.checkAffectedByProvidedResource(provider, dep, reason);
@@ -60,9 +59,9 @@ public class BottomUpShared {
         Tracer tracer,
         Consumer<TaskKey> consumer
     ) {
-        for(TaskKey requirer : txn.requireesOf(resource)) {
-            if(txn.taskObservability(requirer).isObserved()) {
-                for(ResourceRequireDep dep : txn.resourceRequires(requirer)) {
+        for(TaskKey requirer : txn.getRequirersOf(resource)) {
+            if(txn.getTaskObservability(requirer).isObserved()) {
+                for(ResourceRequireDep dep : txn.getResourceRequireDeps(requirer)) {
                     if(!dep.key.equals(resource)) continue;
                     final @Nullable InconsistentResourceRequire reason = dep.checkConsistency(resourceService);
                     tracer.checkAffectedByRequiredResource(requirer, dep, reason);
@@ -106,9 +105,9 @@ public class BottomUpShared {
         Consumer<TaskKey> consumer
     ) {
         tracer.scheduleAffectedByTaskOutputStart(requiree, output);
-        for(TaskKey requirer : txn.callersOf(requiree)) {
-            if(txn.taskObservability(requirer).isObserved()) {
-                for(TaskRequireDep dep : txn.taskRequires(requirer)) {
+        for(TaskKey requirer : txn.getCallersOf(requiree)) {
+            if(txn.getTaskObservability(requirer).isObserved()) {
+                for(TaskRequireDep dep : txn.getTaskRequireDeps(requirer)) {
                     if(!dep.calleeEqual(requiree)) continue;
                     final @Nullable InconsistentTaskRequire reason = dep.checkConsistency(output);
                     tracer.checkAffectedByRequiredTask(requirer, dep, reason);
@@ -133,12 +132,12 @@ public class BottomUpShared {
         toCheckQueue.add(caller);
         while(!toCheckQueue.isEmpty()) {
             final TaskKey toCheck = toCheckQueue.poll();
-            final Collection<TaskRequireDep> taskReqDeps = txn.taskRequires(toCheck);
-            for(TaskRequireDep dep : taskReqDeps) {
-                if(dep.calleeEqual(callee)) {
+            final Collection<TaskKey> requiredTasks = txn.getRequiredTasks(toCheck);
+            for(TaskKey requiredTask : requiredTasks) {
+                if(requiredTask.equals(callee)) {
                     return true;
                 }
-                toCheckQueue.add(dep.callee);
+                toCheckQueue.add(requiredTask);
             }
         }
         return false;

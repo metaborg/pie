@@ -42,14 +42,14 @@ public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
     public <O extends Serializable> O getOutput(Task<O> task) {
         try(final StoreReadTxn txn = store.readTxn()) {
             final TaskKey key = task.key();
-            final @Nullable Serializable input = txn.input(key);
+            final @Nullable Serializable input = txn.getInput(key);
             if(input == null) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', it does not exist. Call require to execute this new task");
             }
             if(!input.equals(task.input)) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', its stored input '" + input + "' differs from given input '" + task.input + "'. Create a new session to execute this task");
             }
-            final @Nullable Output output = txn.output(key);
+            final @Nullable Output output = txn.getOutput(key);
             if(output == null) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', it has no output object. Call require to execute this new task");
             }

@@ -325,10 +325,8 @@ class BottomUpTests {
 
     write("2", compileChooser)
     newSession().use { session ->
-      Assertions.assertThrows(ValidationException::class.java) {
-        session.updateAffectedBy(setOf(compileChooser.key))
-        Unit
-      }
+      session.updateAffectedBy(setOf(compileChooser.key))
+      Unit
     }
   }
 }

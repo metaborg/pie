@@ -22,6 +22,7 @@ import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
@@ -98,15 +99,30 @@ public class TaskExecutor {
 
         // Store previous data for observability comparison.
         // Graceful: returns Observability.Unobserved if task has no observability status yet.
-        final Observability previousObservability = txn.taskObservability(key);
+        final Observability previousObservability = txn.getTaskObservability(key);
         // Graceful: returns empty list if task has no task require dependencies yet.
-        final HashSet<TaskKey> previousTaskRequires = txn.taskRequires(key).stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+        final Collection<TaskKey> previousCallees = txn.getRequiredTasks(key);
 
         // Execute the task.
-        final ExecContextImpl context = new ExecContextImpl(txn, requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, loggerFactory, tracer);
+        final ExecContextImpl context = new ExecContextImpl(
+            taskDefs,
+            resourceService,
+            defaultStampers,
+            layer,
+            loggerFactory,
+            tracer,
+
+            key,
+
+            txn,
+            requireTask,
+            modifyObservability || previousObservability.isObserved(),
+            cancel
+        );
         final @Nullable Serializable output;
         try {
             tracer.executeStart(key, task, reason);
+            txn.resetTask(task);
             output = task.exec(context);
         } catch(RuntimeException e) {
             tracer.executeEndFailed(key, task, reason, e);
@@ -138,21 +154,17 @@ public class TaskExecutor {
         final TaskData data = new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
         tracer.executeEndSuccess(key, task, reason, data);
 
-        // Validate well-formedness of the dependency graph, before writing.
-        layer.validatePreWrite(key, data, txn);
-
-        // Write output and dependencies to the store.
-        txn.setData(key, data);
-
-        // Validate well-formedness of the dependency graph, after writing.
-        layer.validatePostWrite(key, data, txn);
+        // Validate task output, then write the output and set the new observability.
+        layer.validateTaskOutput(key, output, txn);
+        txn.setOutput(key, output);
+        txn.setTaskObservability(key, newObservability);
 
         // Implicitly unobserve tasks which the executed task no longer depends on (if this task is observed).
         if(newObservability.isObserved()) {
-            final HashSet<TaskKey> newTaskRequires = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
-            previousTaskRequires.removeAll(newTaskRequires);
-            for(TaskKey removedTaskRequire : previousTaskRequires) {
-                Observability.implicitUnobserve(txn, removedTaskRequire, tracer);
+            final HashSet<TaskKey> newCallees = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+            previousCallees.removeAll(newCallees);
+            for(TaskKey previousCallee : previousCallees) {
+                Observability.implicitUnobserve(txn, previousCallee, tracer);
             }
         }
 

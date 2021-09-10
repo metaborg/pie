@@ -59,25 +59,25 @@ public abstract class SessionImpl implements Session {
 
     @Override public boolean hasBeenExecuted(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            return txn.output(key) != null;
+            return txn.getOutput(key) != null;
         }
     }
 
     @Override public boolean isObserved(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            return txn.taskObservability(key).isObserved();
+            return txn.getTaskObservability(key).isObserved();
         }
     }
 
     @Override public boolean isExplicitlyObserved(TaskKey key) {
         try(final StoreReadTxn txn = store.readTxn()) {
-            return txn.taskObservability(key) == Observability.ExplicitObserved;
+            return txn.getTaskObservability(key) == Observability.ExplicitObserved;
         }
     }
 
     @Override public void setImplicitToExplicitlyObserved(TaskKey key) {
         try(final StoreWriteTxn txn = store.writeTxn()) {
-            final Observability observability = txn.taskObservability(key);
+            final Observability observability = txn.getTaskObservability(key);
             if(observability.isUnobserved()) {
                 throw new IllegalArgumentException("Cannot set task with key '" + key + "' to explicitly observed, because it is unobserved");
             }
@@ -101,10 +101,10 @@ public abstract class SessionImpl implements Session {
     public void deleteUnobservedTasks(Predicate<Task<?>> shouldDeleteTask, BiPredicate<Task<?>, HierarchicalResource> shouldDeleteProvidedResource) throws IOException {
         try(final StoreWriteTxn txn = store.writeTxn()) {
             // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
-            final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.tasksWithoutCallers());
+            final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.getTasksWithoutCallers());
             while(!tasksToDelete.isEmpty()) {
                 final TaskKey key = tasksToDelete.pop();
-                if(!txn.taskObservability(key).isUnobserved()) {
+                if(!txn.getTaskObservability(key).isUnobserved()) {
                     // Do not delete observed tasks. This filters out ExplicitlyObserved tasks.
                     continue;
                 }
@@ -130,7 +130,7 @@ public abstract class SessionImpl implements Session {
                     deletedData.taskRequires
                         .stream()
                         // Filter out tasks that still have incoming callers.
-                        .filter((d) -> txn.callersOf(d.callee).isEmpty())
+                        .filter((d) -> txn.getCallersOf(d.callee).isEmpty())
                         // Push tasks onto the stack that have no incoming callers for deletion.
                         // The start of the while loop will ensure that only unobserved tasks will be deleted.
                         .forEach((d) -> tasksToDelete.push(d.callee));

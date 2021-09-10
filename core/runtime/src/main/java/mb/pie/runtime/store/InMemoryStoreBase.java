@@ -7,6 +7,7 @@ import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
+import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
@@ -38,28 +39,25 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
     protected final HashMap<TaskKey, Observability> taskObservability = new HashMap<>();
 
-    protected final HashMap<TaskKey, Collection<TaskRequireDep>> taskRequires = new HashMap<>();
+    protected final HashMap<TaskKey, Collection<TaskKey>> taskRequires = new HashMap<>();
+    protected final HashMap<TaskKey, Collection<TaskRequireDep>> taskRequireDeps = new HashMap<>();
     protected final HashMap<TaskKey, Set<TaskKey>> callersOf = new HashMap<>();
 
-    protected final HashMap<TaskKey, Collection<ResourceRequireDep>> resourceRequires = new HashMap<>();
+    protected final HashMap<TaskKey, Collection<ResourceRequireDep>> resourceRequireDeps = new HashMap<>();
     protected final HashMap<ResourceKey, Set<TaskKey>> requireesOf = new HashMap<>();
 
-    protected final HashMap<TaskKey, Collection<ResourceProvideDep>> resourceProvides = new HashMap<>();
+    protected final HashMap<TaskKey, Collection<ResourceProvideDep>> resourceProvideDeps = new HashMap<>();
     protected final HashMap<ResourceKey, TaskKey> providerOf = new HashMap<>();
 
     protected final HashSet<TaskKey> deferredTasks = new HashSet<>();
 
 
-    @Override public @Nullable Serializable input(TaskKey key) {
+    @Override public @Nullable Serializable getInput(TaskKey key) {
         return taskInputs.get(key);
     }
 
-    @Override public void setInput(TaskKey key, Serializable input) {
-        taskInputs.put(key, input);
-    }
 
-
-    @Override public @Nullable Output output(TaskKey key) {
+    @Override public @Nullable Output getOutput(TaskKey key) {
         final @Nullable Output wrapper = taskOutputs.get(key);
         if(wrapper != null) {
             return new Output(wrapper.output);
@@ -70,28 +68,32 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
     @Override public void setOutput(TaskKey key, @Nullable Serializable output) {
         // ConcurrentHashMap does not support null values, so wrap outputs (which can be null) into an Output object.
-        taskOutputs.put(key, new Output(output));
+        this.taskOutputs.put(key, new Output(output));
     }
 
 
-    @Override public Observability taskObservability(TaskKey key) {
-        return taskObservability.getOrDefault(key, Observability.Unobserved);
+    @Override public Observability getTaskObservability(TaskKey key) {
+        return this.taskObservability.getOrDefault(key, Observability.Unobserved);
     }
 
     @Override public void setTaskObservability(TaskKey key, Observability observability) {
-        taskObservability.put(key, observability);
+        this.taskObservability.put(key, observability);
     }
 
 
-    @Override public Collection<TaskRequireDep> taskRequires(TaskKey key) {
-        return getOrEmptyLinkedHashSet(taskRequires, key);
+    @Override public Collection<TaskRequireDep> getTaskRequireDeps(TaskKey caller) {
+        return getOrEmptyLinkedHashSet(this.taskRequireDeps, caller);
     }
 
-    @Override public Set<TaskKey> callersOf(TaskKey key) {
-        return getOrPutEmptyHashSet(callersOf, key);
+    @Override public Collection<TaskKey> getRequiredTasks(TaskKey caller) {
+        return getOrEmptyLinkedHashSet(this.taskRequires, caller);
     }
 
-    @Override public boolean requiresTransitively(TaskKey caller, TaskKey callee) {
+    @Override public Set<TaskKey> getCallersOf(TaskKey callee) {
+        return getOrPutEmptyHashSet(this.callersOf, callee);
+    }
+
+    @Override public boolean doesRequireTransitively(TaskKey caller, TaskKey callee) {
         return BottomUpShared.hasTransitiveTaskReq(caller, callee, this);
     }
 
@@ -100,96 +102,70 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         return BottomUpShared.hasTransitiveTaskReq(caller, callee, this);
     }
 
-    @Override public void setTaskRequires(TaskKey caller, Collection<TaskRequireDep> newDeps) {
-        // Remove old task requirements.
-        final @Nullable Collection<TaskRequireDep> oldTaskDeps = this.taskRequires.remove(caller);
-        if(oldTaskDeps != null) {
-            for(TaskRequireDep oldDep : oldTaskDeps) {
-                getOrPutEmptyHashSet(callersOf, oldDep.callee).remove(caller);
-            }
-        }
-        // Add new task requirements.
-        this.taskRequires.put(caller, newDeps);
-        for(TaskRequireDep taskRequire : newDeps) {
-            getOrPutEmptyHashSet(callersOf, taskRequire.callee).add(caller);
-        }
+
+    @Override public Collection<ResourceRequireDep> getResourceRequireDeps(TaskKey requirer) {
+        return getOrEmptyLinkedHashSet(resourceRequireDeps, requirer);
+    }
+
+    @Override public Set<TaskKey> getRequirersOf(ResourceKey requiree) {
+        return getOrPutEmptyHashSet(requireesOf, requiree);
     }
 
 
-    @Override public Collection<ResourceRequireDep> resourceRequires(TaskKey key) {
-        return getOrEmptyLinkedHashSet(resourceRequires, key);
+    @Override public Collection<ResourceProvideDep> getResourceProvideDeps(TaskKey provider) {
+        return getOrEmptyLinkedHashSet(resourceProvideDeps, provider);
     }
 
-    @Override public Set<TaskKey> requireesOf(ResourceKey key) {
-        return getOrPutEmptyHashSet(requireesOf, key);
-    }
-
-    @Override public void setResourceRequires(TaskKey key, Collection<ResourceRequireDep> resourceRequires) {
-        // Remove old resource requirements.
-        final @Nullable Collection<ResourceRequireDep> oldResourceRequires = this.resourceRequires.remove(key);
-        if(oldResourceRequires != null) {
-            for(ResourceRequireDep resourceRequire : oldResourceRequires) {
-                getOrPutEmptyHashSet(requireesOf, resourceRequire.key).remove(key);
-            }
-        }
-        // Add new resource requirements.
-        this.resourceRequires.put(key, resourceRequires);
-        for(ResourceRequireDep resourceRequire : resourceRequires) {
-            getOrPutEmptyHashSet(requireesOf, resourceRequire.key).add(key);
-        }
+    @Override public @Nullable TaskKey getProviderOf(ResourceKey providee) {
+        return providerOf.get(providee);
     }
 
 
-    @Override public Collection<ResourceProvideDep> resourceProvides(TaskKey key) {
-        return getOrEmptyLinkedHashSet(resourceProvides, key);
+    @Override public void resetTask(Task<?> task) {
+        final TaskKey key = task.key();
+        this.taskInputs.put(key, task.input);
+        this.taskOutputs.remove(key);
+        this.taskObservability.remove(key);
+        // Pass `false` to `removeTaskRequireDepsOf` to not remove `key` from the `callersOf` map, as we want to keep
+        // dependencies from other tasks to `key` intact.
+        removeTaskRequireDepsOf(key, false);
+        removeResourceRequireDepsOf(key);
+        removeResourceProvideDepsOf(key);
     }
 
-    @Override public @Nullable TaskKey providerOf(ResourceKey key) {
-        return providerOf.get(key);
+    @Override public void addTaskRequire(TaskKey caller, TaskKey callee) {
+        getOrPutEmptyLinkedHashSet(this.taskRequires, caller).add(callee);
+        getOrPutEmptyHashSet(this.callersOf, callee).add(caller);
     }
 
-    @Override public void setResourceProvides(TaskKey key, Collection<ResourceProvideDep> resourceProvides) {
-        // Remove old resource providers.
-        final @Nullable Collection<ResourceProvideDep> oldResourceProvides = this.resourceProvides.remove(key);
-        if(oldResourceProvides != null) {
-            for(ResourceProvideDep resourceProvide : oldResourceProvides) {
-                providerOf.remove(resourceProvide.key);
-            }
-        }
-        // Add new resource providers.
-        this.resourceProvides.put(key, resourceProvides);
-        for(ResourceProvideDep resourceProvide : resourceProvides) {
-            providerOf.put(resourceProvide.key, key);
-        }
+    @Override public void addTaskRequireDep(TaskKey caller, TaskRequireDep dep) {
+        getOrPutEmptyLinkedHashSet(this.taskRequireDeps, caller).add(dep);
     }
 
+    @Override public void addResourceRequireDep(TaskKey requiree, ResourceRequireDep dep) {
+        getOrPutEmptyLinkedHashSet(this.resourceRequireDeps, requiree).add(dep);
+        getOrPutEmptyHashSet(this.requireesOf, dep.key).add(requiree);
+    }
 
-    @Override public @Nullable TaskData data(TaskKey key) {
-        final @Nullable Serializable input = input(key);
+    @Override public void addResourceProvideDep(TaskKey provider, ResourceProvideDep dep) {
+        getOrPutEmptyLinkedHashSet(this.resourceProvideDeps, provider).add(dep);
+        this.providerOf.put(dep.key, provider);
+    }
+
+    @Override public @Nullable TaskData getData(TaskKey key) {
+        final @Nullable Serializable input = getInput(key);
         if(input == null) {
             return null;
         }
-        final @Nullable Output output = output(key);
+        final @Nullable Output output = getOutput(key);
         if(output == null) {
             return null;
         }
-        final Observability taskObservability = taskObservability(key);
-        final Collection<TaskRequireDep> taskRequires = taskRequires(key);
-        final Collection<ResourceRequireDep> resourceRequires = resourceRequires(key);
-        final Collection<ResourceProvideDep> resourceProvides = resourceProvides(key);
+        final Observability taskObservability = getTaskObservability(key);
+        final Collection<TaskRequireDep> taskRequires = getTaskRequireDeps(key);
+        final Collection<ResourceRequireDep> resourceRequires = getResourceRequireDeps(key);
+        final Collection<ResourceProvideDep> resourceProvides = getResourceProvideDeps(key);
         return new TaskData(input, output.output, taskObservability, taskRequires, resourceRequires, resourceProvides);
-    }
-
-    @Override public void setData(TaskKey key, TaskData data) {
-        setInput(key, data.input);
-        setOutput(key, data.output);
-        setTaskObservability(key, data.taskObservability);
-        setTaskRequires(key, data.taskRequires);
-        setResourceRequires(key, data.resourceRequires);
-        setResourceProvides(key, data.resourceProvides);
-        // TODO: is this correct? setData is called by TaskExecutor after it executed a task, so the deferred task has
-        //  been executed, so it should be sound?
-        removeDeferredTask(key);
     }
 
     @Override public @Nullable TaskData deleteData(TaskKey key) {
@@ -202,37 +178,12 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
             throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
         }
         final @Nullable Observability observability = taskObservability.remove(key);
-
-        final @Nullable Collection<TaskRequireDep> removedTaskRequires = taskRequires.remove(key);
-        if(removedTaskRequires != null) {
-            for(final TaskRequireDep taskRequire : removedTaskRequires) {
-                final @Nullable Set<TaskKey> callers = callersOf.get(taskRequire.callee);
-                if(callers != null) {
-                    callers.remove(key);
-                }
-            }
-        }
-        callersOf.remove(key);
-
-        final @Nullable Collection<ResourceRequireDep> removedResourceRequires = resourceRequires.remove(key);
-        if(removedResourceRequires != null) {
-            for(final ResourceRequireDep resourceRequire : removedResourceRequires) {
-                final @Nullable Set<TaskKey> requirees = requireesOf.get(resourceRequire.key);
-                if(requirees != null) {
-                    requirees.remove(key);
-                }
-            }
-        }
-
-        final @Nullable Collection<ResourceProvideDep> removedResourceProvides = resourceProvides.remove(key);
-        if(removedResourceProvides != null) {
-            for(final ResourceProvideDep resourceProvide : removedResourceProvides) {
-                providerOf.remove(resourceProvide.key);
-            }
-        }
-
+        // Pass `true` to `removeTaskRequireDepsOf` to remove `key` from the `callersOf` map, as `key` will be removed
+        // completely, thus it is not possible to call it any more.
+        final @Nullable Collection<TaskRequireDep> removedTaskRequires = removeTaskRequireDepsOf(key, true);
+        final @Nullable Collection<ResourceRequireDep> removedResourceRequires = removeResourceRequireDepsOf(key);
+        final @Nullable Collection<ResourceProvideDep> removedResourceProvides = removeResourceProvideDepsOf(key);
         deferredTasks.remove(key);
-
         return new TaskData(
             input,
             output.output,
@@ -244,7 +195,48 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     }
 
 
-    @Override public Set<TaskKey> deferredTasks() {
+    private @Nullable Collection<TaskRequireDep> removeTaskRequireDepsOf(TaskKey key, boolean removeFromCallersOf) {
+        this.taskRequires.remove(key);
+        final @Nullable Collection<TaskRequireDep> removedDeps = this.taskRequireDeps.remove(key);
+        if(removedDeps != null) {
+            for(final TaskRequireDep removedDep : removedDeps) {
+                final @Nullable Set<TaskKey> callers = this.callersOf.get(removedDep.callee);
+                if(callers != null) {
+                    callers.remove(key);
+                }
+            }
+        }
+        if(removeFromCallersOf) {
+            this.callersOf.remove(key);
+        }
+        return removedDeps;
+    }
+
+    private @Nullable Collection<ResourceRequireDep> removeResourceRequireDepsOf(TaskKey key) {
+        final @Nullable Collection<ResourceRequireDep> removedDeps = this.resourceRequireDeps.remove(key);
+        if(removedDeps != null) {
+            for(final ResourceRequireDep removedDep : removedDeps) {
+                final @Nullable Set<TaskKey> requirees = this.requireesOf.get(removedDep.key);
+                if(requirees != null) {
+                    requirees.remove(key);
+                }
+            }
+        }
+        return removedDeps;
+    }
+
+    private @Nullable Collection<ResourceProvideDep> removeResourceProvideDepsOf(TaskKey key) {
+        final @Nullable Collection<ResourceProvideDep> removedDeps = this.resourceProvideDeps.remove(key);
+        if(removedDeps != null) {
+            for(final ResourceProvideDep removedDep : removedDeps) {
+                this.providerOf.remove(removedDep.key);
+            }
+        }
+        return removedDeps;
+    }
+
+
+    @Override public Set<TaskKey> getDeferredTasks() {
         return deferredTasks;
     }
 
@@ -257,7 +249,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     }
 
 
-    @Override public Set<TaskKey> tasksWithoutCallers() {
+    @Override public Set<TaskKey> getTasksWithoutCallers() {
         return callersOf
             .entrySet()
             .stream()
@@ -267,7 +259,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     }
 
 
-    @Override public int numSourceFiles() {
+    @Override public int getNumSourceFiles() {
         int numSourceFiles = 0;
         for(ResourceKey file : requireesOf.keySet()) {
             if(!providerOf.containsKey(file)) {
@@ -283,10 +275,11 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         taskOutputs.clear();
         taskObservability.clear();
         taskRequires.clear();
+        taskRequireDeps.clear();
         callersOf.clear();
-        resourceRequires.clear();
+        resourceRequireDeps.clear();
         requireesOf.clear();
-        resourceProvides.clear();
+        resourceProvideDeps.clear();
         providerOf.clear();
         deferredTasks.clear();
     }
@@ -333,6 +326,10 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
     protected static <K, V> Set<V> getOrPutEmptyHashSet(HashMap<K, Set<V>> map, K key) {
         return map.computeIfAbsent(key, (k) -> new HashSet<>());
+    }
+
+    protected static <K, V> Collection<V> getOrPutEmptyLinkedHashSet(HashMap<K, Collection<V>> map, K key) {
+        return map.computeIfAbsent(key, (k) -> new LinkedHashSet<>());
     }
 
     protected static <K, V> Collection<V> getOrEmptyLinkedHashSet(HashMap<K, Collection<V>> map, K key) {
