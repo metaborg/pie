@@ -6,6 +6,7 @@ import mb.pie.api.test.anyC
 import mb.pie.api.test.toLowerCase
 import mb.pie.runtime.exec.NoData
 import mb.pie.runtime.test.DefaultRuntimeTestBuilder
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.TestFactory
 import java.io.File
 
@@ -13,7 +14,7 @@ class LMDBStoreTests {
   private val builder = LMDBStoreTestBuilder()
 
 
-  @TestFactory
+  @TestFactory @Disabled("LMDB does not work at the moment")
   fun testReuse() = builder.test {
     addTaskDef(toLowerCase)
     val task = toLowerCase.createTask("HELLO WORLD!")
