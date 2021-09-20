@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.common.concurrent.lock.CloseableReentrantReadWriteLock;
 import mb.log.api.LoggerFactory;
 import mb.log.noop.NoopLoggerFactory;
 import mb.pie.api.PieBuilder;
@@ -163,7 +164,8 @@ public class PieBuilderImpl implements PieBuilder {
             layerFactory,
             loggerFactory,
             tracerFactory,
-            new MapCallbacks()
+            new MapCallbacks(),
+            new CloseableReentrantReadWriteLock()
         );
     }
 }

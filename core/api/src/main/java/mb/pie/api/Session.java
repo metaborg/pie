@@ -11,9 +11,11 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 /**
- * A session is a temporary context in which PIE builds can be executed. Within a session, a task with the same {@link
- * Task#key() key} is never executed more than once. For sound incrementality, a new session must be started after
- * external changes have occurred. External changes include:
+ * A session is a temporary context in which PIE builds can be executed. All methods are thread-safe and reentrant by
+ * locking.
+ *
+ * Within a session, a task with the same {@link Task#key() key} is never executed more than once. For sound
+ * incrementality, a new session must be started after external changes have occurred. External changes include:
  * <ul>
  * <li>Change to the contents or metadata of a required or provided resource (e.g., file contents)</li>
  * <li>Change to the input of a required task, which does not influence its {@link Task#key() key}</li>

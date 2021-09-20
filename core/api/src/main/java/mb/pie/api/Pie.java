@@ -1,14 +1,19 @@
 package mb.pie.api;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * PIE entry point.
+ * PIE entry point. All methods are thread-safe and reentrant by locking. A child {@link Pie} uses the same lock as its
+ * parent. In other words, every tree of {@link Pie} objects uses the same lock.
  */
 public interface Pie extends AutoCloseable {
     /**
-     * Creates a new session for incrementally executing tasks.
+     * Creates a new session for (incrementally) executing tasks.
+     *
+     * Only one session may exist per {@link Pie} object tree. Calling this method while another session exists will
+     * result in this method waiting until that session is {@link MixedSession#close() closed} through locking.
      *
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
      * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
@@ -17,6 +22,21 @@ public interface Pie extends AutoCloseable {
      * @see MixedSession
      */
     MixedSession newSession();
+
+    /**
+     * Tries to create a new session for (incrementally) executing tasks, succeeding only if no other session exists for
+     * this {@link Pie} object tree.
+     *
+     * Only one session may exist per {@link Pie} object tree. Calling this method while another session exists will
+     * result in this method returning {@code Optional.empty()}.
+     *
+     * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
+     * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
+     *
+     * @return A new session if no other session exists, or empty if another session exists.
+     * @see MixedSession
+     */
+    Optional<MixedSession> tryNewSession();
 
 
     /**

@@ -1,5 +1,7 @@
 package mb.pie.runtime;
 
+import mb.common.concurrent.lock.CloseableReentrantReadWriteLock;
+import mb.common.concurrent.lock.LockHandle;
 import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
@@ -29,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -44,6 +47,7 @@ public class PieImpl implements Pie {
     protected final LoggerFactory loggerFactory;
     protected final Function<LoggerFactory, Tracer> tracerFactory;
     protected final Callbacks callbacks;
+    protected final CloseableReentrantReadWriteLock lock;
 
 
     public PieImpl(
@@ -57,7 +61,8 @@ public class PieImpl implements Pie {
         LayerFactory layerFactory,
         LoggerFactory loggerFactory,
         Function<LoggerFactory, Tracer> tracerFactory,
-        Callbacks callbacks
+        Callbacks callbacks,
+        CloseableReentrantReadWriteLock lock
     ) {
         this.isBase = ownsStore;
         this.taskDefs = taskDefs;
@@ -70,6 +75,7 @@ public class PieImpl implements Pie {
         this.loggerFactory = loggerFactory;
         this.tracerFactory = tracerFactory;
         this.callbacks = callbacks;
+        this.lock = lock;
     }
 
     @Override public void close() {
@@ -80,6 +86,14 @@ public class PieImpl implements Pie {
 
 
     @Override public MixedSession newSession() {
+        return createSession(lock.lockWrite());
+    }
+
+    @Override public Optional<MixedSession> tryNewSession() {
+        return lock.tryLockWrite().map(this::createSession);
+    }
+
+    private MixedSessionImpl createSession(LockHandle lockHandle) {
         final Layer layer = layerFactory.apply(taskDefs, loggerFactory, serde);
         final Tracer tracer = tracerFactory.apply(loggerFactory);
         final HashMap<TaskKey, TaskData> visited = new HashMap<>();
@@ -88,30 +102,30 @@ public class PieImpl implements Pie {
         final RequireShared requireShared = new RequireShared(taskDefs, resourceService, tracer, visited);
         final TopDownRunner topDownRunner = new TopDownRunner(store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         final BottomUpRunner bottomUpRunner = new BottomUpRunner(taskDefs, resourceService, store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
-        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources);
+        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources, lockHandle);
     }
 
 
     @Override public boolean hasBeenExecuted(TaskKey key) {
-        try(final StoreReadTxn txn = store.readTxn()) {
+        try(final LockHandle ignored = lock.lockRead(); final StoreReadTxn txn = store.readTxn()) {
             return txn.getOutput(key) != null;
         }
     }
 
     @Override public boolean isObserved(TaskKey key) {
-        try(final StoreReadTxn txn = store.readTxn()) {
+        try(final LockHandle ignored = lock.lockRead(); final StoreReadTxn txn = store.readTxn()) {
             return txn.getTaskObservability(key).isObserved();
         }
     }
 
     @Override public boolean isExplicitlyObserved(TaskKey key) {
-        try(final StoreReadTxn txn = store.readTxn()) {
+        try(final LockHandle ignored = lock.lockRead(); final StoreReadTxn txn = store.readTxn()) {
             return txn.getTaskObservability(key) == Observability.ExplicitObserved;
         }
     }
 
     @Override public void setImplicitToExplicitlyObserved(TaskKey key) {
-        try(final StoreWriteTxn txn = store.writeTxn()) {
+        try(final LockHandle ignored = lock.lockWrite(); final StoreWriteTxn txn = store.writeTxn()) {
             final Observability observability = txn.getTaskObservability(key);
             if(observability.isUnobserved()) {
                 throw new IllegalArgumentException("Cannot set task with key '" + key + "' to explicitly observed, because it is unobserved");
@@ -124,28 +138,38 @@ public class PieImpl implements Pie {
 
 
     @Override public <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function) {
-        callbacks.set(task, function);
+        try(final LockHandle ignored = lock.lockWrite()) {
+            callbacks.set(task, function);
+        }
     }
 
     @Override public void setCallback(TaskKey key, Consumer<@Nullable Serializable> function) {
-        callbacks.set(key, function);
+        try(final LockHandle ignored = lock.lockWrite()) {
+            callbacks.set(key, function);
+        }
     }
 
     @Override public void removeCallback(Task<?> task) {
-        callbacks.remove(task);
+        try(final LockHandle ignored = lock.lockWrite()) {
+            callbacks.remove(task);
+        }
     }
 
     @Override public void removeCallback(TaskKey key) {
-        callbacks.remove(key);
+        try(final LockHandle ignored = lock.lockWrite()) {
+            callbacks.remove(key);
+        }
     }
 
     @Override public void dropCallbacks() {
-        callbacks.clear();
+        try(final LockHandle ignored = lock.lockWrite()) {
+            callbacks.clear();
+        }
     }
 
 
     @Override public void dropStore() {
-        try(final StoreWriteTxn txn = store.writeTxn()) {
+        try(final LockHandle ignored = lock.lockWrite(); final StoreWriteTxn txn = store.writeTxn()) {
             txn.drop();
         }
     }

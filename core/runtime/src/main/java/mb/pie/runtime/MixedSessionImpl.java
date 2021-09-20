@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.common.concurrent.lock.LockHandle;
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Store;
@@ -26,6 +27,8 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     protected final ResourceService resourceService;
     protected final Store store;
 
+    protected final LockHandle lockHandle;
+
     private boolean updateAffectedByExecuted = false;
     private boolean requireExecuted = false;
 
@@ -37,18 +40,26 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         ResourceService resourceService,
         Store store,
         Tracer tracer,
-        HashSet<ResourceKey> providedResources
+
+        HashSet<ResourceKey> providedResources,
+
+        LockHandle lockHandle
     ) {
         super(taskDefs, resourceService, store, tracer, providedResources);
+
         this.topDownRunner = topDownRunner;
         this.bottomUpRunner = bottomUpRunner;
+
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
+
+        this.lockHandle = lockHandle;
     }
 
     @Override public void close() {
         store.sync();
+        lockHandle.close();
     }
 
     @Override

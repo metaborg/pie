@@ -52,7 +52,6 @@ public abstract class SessionImpl implements Session {
         this.resourceService = resourceService;
         this.store = store;
         this.tracer = tracer;
-
         this.providedResources = providedResources;
     }
 

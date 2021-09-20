@@ -6,8 +6,10 @@ import mb.pie.api.exec.NullCancelableToken;
 import java.io.Serializable;
 
 /**
- * Second stage of {@link MixedSession}, after running a bottom-up build with resource changes. This second stage is
- * used to get outputs of existing tasks or to execute new tasks using top-down builds.
+ * Second stage of {@link MixedSession}, after running a bottom-up build with resource changes. All methods are
+ * thread-safe and reentrant by locking.
+ *
+ * This second stage is used to get outputs of existing tasks or to execute new tasks using top-down builds.
  */
 public interface TopDownSession extends Session {
     /**

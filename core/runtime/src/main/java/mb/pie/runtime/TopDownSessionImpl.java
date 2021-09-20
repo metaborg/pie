@@ -30,6 +30,7 @@ public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
         ResourceService resourceService,
         Store store,
         Tracer tracer,
+
         HashSet<ResourceKey> providedResources
     ) {
         super(taskDefs, resourceService, store, tracer, providedResources);

@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * A session for incrementally executing PIE tasks, supporting two different traversal strategies:
+ * A session for incrementally executing PIE tasks. All methods are thread-safe and reentrant by locking.
+ *
+ * PIE supports two different traversal strategies:
  * <ul>
  * <li>
  * Bottom-up (change-driven): given a set of changed resources, schedule all directly affected tasks in a topologically
@@ -25,19 +27,19 @@ import java.util.Set;
  * task, indicating that it, and its transitive dependencies, should be kept up-to-date in bottom-up builds.
  * </li>
  * </ul>
- * <p>
+ *
  * When executing a new task, or changing the input to a task, top-down execution must be used, as bottom-up execution
  * can only detect changes which originate from resources. When changes to resources are known, prefer bottom-up
  * execution, as it only traverses the affected part of the dependency graph, which is more efficient than top-down
  * execution which traverses the entire dependency graph rooted at a given task.
- * <p>
+ *
  * When mixing a bottom-up build with top-down builds, a single {@link #updateAffectedBy bottom-up build} must be
- * executed first, which then returns a new session object of type {@link TopDownSession} which can be used to get task outputs or to execute new
- * tasks.
- * <p>
+ * executed first, which then returns a new session object of type {@link TopDownSession} which can be used to get task
+ * outputs or to execute new tasks.
+ *
  * Outputs of required tasks are observed by the observers {@link Pie#setCallback set} in the {@link Pie} object this
  * session was created from.
- * <p>
+ *
  * When using a {@link CancelToken cancel checker}, execution is cancelled between task executions by throwing an {@link
  * InterruptedException}.
  *

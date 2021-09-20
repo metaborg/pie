@@ -5,7 +5,7 @@ plugins {
 
 val logVersion = "0.5.5"
 val resourceVersion = "0.11.5"
-val commonVersion = "0.9.3"
+val commonVersion = "0.9.5"
 
 val checkerframeworkVersion = "3.16.0"
 
