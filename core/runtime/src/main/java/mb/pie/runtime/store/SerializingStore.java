@@ -1,24 +1,24 @@
 package mb.pie.runtime.store;
 
-import mb.log.api.LoggerFactory;
+import mb.common.result.ThrowingSupplier;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.serde.DeserializeRuntimeException;
 import mb.pie.api.serde.Serde;
-import mb.resource.ReadableResource;
-import mb.resource.WritableResource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class SerializingStore<S extends Store & Serializable> implements Store, Serializable {
+public class SerializingStore<S extends Store & Serializable> implements Store {
     private final Serde serde;
-    private final WritableResource resource;
+    private final ThrowingSupplier<BufferedOutputStream, IOException> outputStreamSupplier;
     private final S store;
     private final Consumer<Exception> serializeFailHandler;
     private final boolean serializeOnSync;
@@ -26,13 +26,13 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
 
     private SerializingStore(
         Serde serde,
-        WritableResource resource,
+        ThrowingSupplier<BufferedOutputStream, IOException> outputStreamSupplier,
         S store,
         Consumer<Exception> serializeFailHandler,
         boolean serializeOnSync
     ) {
         this.serde = serde;
-        this.resource = resource;
+        this.outputStreamSupplier = outputStreamSupplier;
         this.store = store;
         this.serializeFailHandler = serializeFailHandler;
         this.serializeOnSync = serializeOnSync;
@@ -41,7 +41,9 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
 
     public SerializingStore(
         Serde serde,
-        WritableResource resource,
+        ThrowingSupplier<Optional<BufferedInputStream>, IOException> inputStreamSupplier,
+        @Nullable ClassLoader deserializeClassLoader,
+        ThrowingSupplier<BufferedOutputStream, IOException> outputStreamSupplier,
         Supplier<S> storeSupplier,
         Class<S> storeType,
         Consumer<Exception> serializeFailHandler,
@@ -50,66 +52,10 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
     ) {
         this(
             serde,
-            resource,
-            deserialize(serde, resource, storeSupplier, storeType, deserializeFailHandler),
+            outputStreamSupplier,
+            deserialize(serde, inputStreamSupplier, deserializeClassLoader, storeSupplier, storeType, deserializeFailHandler),
             serializeFailHandler,
             serializeOnSync
-        );
-    }
-
-    public SerializingStore(
-        Serde serde,
-        WritableResource resource,
-        Supplier<S> storeSupplier,
-        Class<S> storeType,
-        Consumer<Exception> serializeFailHandler,
-        Consumer<Exception> deserializeFailHandler
-    ) {
-        this(
-            serde,
-            resource,
-            storeSupplier,
-            storeType,
-            serializeFailHandler,
-            deserializeFailHandler,
-            false
-        );
-    }
-
-    public SerializingStore(
-        Serde serde,
-        LoggerFactory loggerFactory,
-        WritableResource resource,
-        Supplier<S> storeSupplier,
-        Class<S> storeType,
-        Consumer<Exception> serializeFailHandler
-    ) {
-        this(
-            serde,
-            resource,
-            storeSupplier,
-            storeType,
-            serializeFailHandler,
-            e -> loggerFactory.create(SerializingStore.class).error("Deserialization failed", e),
-            false
-        );
-    }
-
-    public SerializingStore(
-        Serde serde,
-        LoggerFactory loggerFactory,
-        WritableResource resource,
-        Supplier<S> storeSupplier,
-        Class<S> storeType
-    ) {
-        this(
-            serde,
-            resource,
-            storeSupplier,
-            storeType,
-            e -> { throw new RuntimeException("Serializing store failed", e); },
-            e -> loggerFactory.create(SerializingStore.class).error("Deserializing store failed", e),
-            false
         );
     }
 
@@ -136,7 +82,7 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
 
 
     private void serialize() {
-        try(final BufferedOutputStream bufferedOutputStream = resource.openWriteBuffered()) {
+        try(final BufferedOutputStream bufferedOutputStream = outputStreamSupplier.get()) {
             serde.serialize(store, bufferedOutputStream);
             bufferedOutputStream.flush();
         } catch(IOException e) {
@@ -146,20 +92,24 @@ public class SerializingStore<S extends Store & Serializable> implements Store, 
 
     private static <S extends Store & Serializable> S deserialize(
         Serde serde,
-        ReadableResource resource,
+        ThrowingSupplier<Optional<BufferedInputStream>, IOException> inputStreamSupplier,
+        @Nullable ClassLoader classLoader,
         Supplier<S> storeSupplier,
         Class<S> storeType,
         Consumer<Exception> deserializeFailHandler
     ) {
+        final Optional<BufferedInputStream> option;
         try {
-            if(!resource.exists()) {
+            option = inputStreamSupplier.get();
+            if(!option.isPresent()) {
                 return storeSupplier.get();
             }
         } catch(IOException e) {
             return storeSupplier.get();
         }
-        try(final BufferedInputStream bufferedInputStream = resource.openReadBuffered()) {
-            return serde.deserialize(storeType, bufferedInputStream);
+
+        try(final BufferedInputStream bufferedInputStream = option.get()) {
+            return serde.deserialize(storeType, bufferedInputStream, classLoader);
         } catch(DeserializeRuntimeException | IOException e) {
             deserializeFailHandler.accept(e);
             return storeSupplier.get();

@@ -170,7 +170,7 @@ public class PieState {
     public enum SerdeKind {
         java {
             @Override public Function<LoggerFactory, Serde> get() {
-                return (loggerFactory) -> JavaSerde.createWithClassLoaderOverride(PieState.class.getClassLoader());
+                return (loggerFactory) -> new JavaSerde(PieState.class.getClassLoader());
             }
         },
         kryo {

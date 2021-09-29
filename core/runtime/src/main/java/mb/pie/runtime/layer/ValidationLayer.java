@@ -454,7 +454,7 @@ public class ValidationLayer implements Layer {
     @SuppressWarnings("unchecked")
     private <T extends Serializable> T deserialize(@Nullable ClassLoader classLoader, byte[] bytes) {
         try {
-            return (T)Objects.requireNonNull(serde.deserializeTypeAndObjectFromBytes(classLoader, bytes));
+            return (T)Objects.requireNonNull(serde.deserializeObjectOfUnknownTypeFromBytes(bytes, classLoader));
         } catch(DeserializeRuntimeException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
         }

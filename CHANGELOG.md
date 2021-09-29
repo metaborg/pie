@@ -3,6 +3,13 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Changed
+- `Serde` and implementations allow passing in `ClassLoader`s for all deserialization methods.
+- `SerializingStore` can now serialize/deserialize from `BufferedOutputStream`/`BufferedInputStream` instead of just resources.
+
+### Added
+- `SerializingStoreBuilder` to ease the creation of `SerializingStore`s and to reduce the number of its constructors.
+- In-memory buffer convenience to `SerializingStoreBuilder`.
 
 
 ## [0.16.8] - 2021-09-20

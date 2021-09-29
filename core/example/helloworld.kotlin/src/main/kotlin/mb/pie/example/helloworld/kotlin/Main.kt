@@ -1,14 +1,16 @@
 package mb.pie.example.helloworld.kotlin
 
+import mb.log.api.LoggerFactory
 import mb.log.stream.StreamLoggerFactory
 import mb.pie.api.ExecContext
 import mb.pie.api.MapTaskDefs
 import mb.pie.api.None
 import mb.pie.api.TaskDef
+import mb.pie.api.serde.Serde
 import mb.pie.runtime.PieBuilderImpl
-import mb.pie.runtime.store.InMemoryStore
-import mb.pie.runtime.store.SerializingStore
+import mb.pie.runtime.store.SerializingStoreBuilder
 import mb.resource.ResourceKeyString
+import mb.resource.ResourceService
 import mb.resource.fs.FSResource
 import mb.resource.hierarchical.ResourcePath
 
@@ -68,7 +70,12 @@ fun main(args: Array<String>) {
   // We pass in the TaskDefs object we created.
   pieBuilder.withTaskDefs(taskDefs)
   // For storing build results and the dependency graph, we will serialize the in-memory store on exit at build/store.
-  pieBuilder.withStoreFactory { serde, resourceService, loggerFactory -> SerializingStore(serde, loggerFactory, resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), { InMemoryStore() }, InMemoryStore::class.java) }
+  pieBuilder.withStoreFactory { serde: Serde?, resourceService: ResourceService, loggerFactory: LoggerFactory? ->
+    SerializingStoreBuilder.ofInMemoryStore(serde)
+      .withResourceStorage(resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")))
+      .withLoggingDeserializeFailHandler(loggerFactory)
+      .build()
+  }
   // For example purposes, we use very verbose logging which will output to stdout.
   pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose())
   // Then we build the PIE runtime.
@@ -84,8 +91,11 @@ fun main(args: Array<String>) {
 
       // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
       println("File contents: ${file.readString()}")
+
+      // The PIE session is closed to free its resources. Using a 'use' block as is done here is the best way to ensure
+      // that.
     }
   }
-  // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized. Using a
-  // 'use' block is the best way to ensure that.
+  // Finally, the PIE instance is closed to ensure the store has been fully serialized. Using a 'use' block as is done
+  // here is the best way to ensure that.
 }

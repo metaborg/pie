@@ -3,19 +3,20 @@ package mb.pie.runtime.test
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import com.nhaarman.mockitokotlin2.*
+import mb.log.api.LoggerFactory
 import mb.pie.api.InconsistentResourceRequire
 import mb.pie.api.MapTaskDefs
+import mb.pie.api.serde.Serde
 import mb.pie.api.test.anyC
 import mb.pie.api.test.anyER
 import mb.pie.api.test.readResource
 import mb.pie.runtime.exec.NoData
-import mb.pie.runtime.store.InMemoryStore
-import mb.pie.runtime.store.SerializingStore
+import mb.pie.runtime.store.SerializingStoreBuilder
+import mb.resource.ResourceService
 import mb.resource.fs.FSResource
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.nio.file.FileSystem
-import java.util.function.Supplier
 
 class SerializingStoreTests {
   @Test
@@ -23,7 +24,12 @@ class SerializingStoreTests {
     // Manually create PIE instance, as we need to control the serialization/deserialization of the InMemoryStore.
     val fileSystem = Jimfs.newFileSystem(Configuration.unix())
     val pieBuilder = TestPieBuilderImpl(true)
-    pieBuilder.withStoreFactory { serde, _, loggerFactory -> SerializingStore(serde, loggerFactory, FSResource(fileSystem.getPath("store")), Supplier { InMemoryStore() }, InMemoryStore::class.java) }
+    pieBuilder.withStoreFactory { serde: Serde?, resourceService: ResourceService, loggerFactory: LoggerFactory? ->
+      SerializingStoreBuilder.ofInMemoryStore(serde)
+        .withResourceStorage(FSResource(fileSystem.getPath("store")))
+        .withLoggingDeserializeFailHandler(loggerFactory)
+        .build()
+    }
     val taskDefs = MapTaskDefs()
     pieBuilder.withTaskDefs(taskDefs)
 

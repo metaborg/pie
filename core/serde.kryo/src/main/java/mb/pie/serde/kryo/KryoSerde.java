@@ -17,7 +17,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 
 public class KryoSerde implements Serde {
-    private final ClassLoader defaultClassLoader;
+    private final @Nullable ClassLoader defaultClassLoader;
     private final Kryo kryo;
     private final Output sharedStreamOutput;
     private final Input sharedStreamInput;
@@ -26,7 +26,7 @@ public class KryoSerde implements Serde {
     private final int byteBufferInitialSize;
     private final ByteBufferInput sharedByteBufferInput;
 
-    public KryoSerde(ClassLoader defaultClassLoader, Kryo kryo, int sharedBufferSize, int byteBufferInitialSize) {
+    public KryoSerde(@Nullable ClassLoader defaultClassLoader, Kryo kryo, int sharedBufferSize, int byteBufferInitialSize) {
         this.defaultClassLoader = defaultClassLoader;
         this.kryo = registerSerializers(kryo);
         this.sharedStreamOutput = new Output(sharedBufferSize, sharedBufferSize);
@@ -37,17 +37,16 @@ public class KryoSerde implements Serde {
         this.sharedByteBufferInput = new ByteBufferInput();
     }
 
-    public KryoSerde(ClassLoader defaultClassLoader) {
-        this(defaultClassLoader, createDefaultKryo(defaultClassLoader), 4096, 512);
+    public KryoSerde(@Nullable ClassLoader defaultClassLoader) {
+        this(defaultClassLoader, createDefaultKryo(), 4096, 512);
     }
 
     public KryoSerde() {
-        this(KryoSerde.class.getClassLoader());
+        this(null);
     }
 
-    private static Kryo createDefaultKryo(ClassLoader classLoader) {
+    private static Kryo createDefaultKryo() {
         final Kryo kryo = new Kryo();
-        kryo.setClassLoader(classLoader);
         kryo.setReferences(true);
 
         // Configure Kryo to serialize objects with Java serialization as fallback, but this does not provide good performance.
@@ -63,11 +62,6 @@ public class KryoSerde implements Serde {
         kryo.register(URI.class, new URISerializer());
         kryo.register(FSPath.class, new FSPathSerializer());
         return kryo;
-    }
-
-
-    public KryoSerde withClassLoader(ClassLoader classLoader) {
-        return new KryoSerde(classLoader);
     }
 
 
@@ -101,20 +95,23 @@ public class KryoSerde implements Serde {
 
 
     @Override
-    public <T> T deserialize(Class<T> type, InputStream inputStream) {
+    public <T> T deserialize(Class<T> type, InputStream inputStream, @Nullable ClassLoader classLoader) {
         sharedStreamInput.setInputStream(inputStream);
+        kryo.setClassLoader(getClassLoader(type, classLoader));
         return kryo.readObject(sharedStreamInput, type);
     }
 
     @Override
-    public <T> T deserializeFromBytes(Class<T> type, byte[] bytes) {
+    public <T> T deserializeFromBytes(Class<T> type, byte[] bytes, @Nullable ClassLoader classLoader) {
         sharedByteArrayInput.setBuffer(bytes);
+        kryo.setClassLoader(getClassLoader(type, classLoader));
         return kryo.readObject(sharedByteArrayInput, type);
     }
 
     @Override
-    public <T> T deserializeFromByteBuffer(Class<T> type, ByteBuffer bytes) {
+    public <T> T deserializeFromByteBuffer(Class<T> type, ByteBuffer bytes, @Nullable ClassLoader classLoader) {
         sharedByteBufferInput.setBuffer(bytes);
+        kryo.setClassLoader(getClassLoader(type, classLoader));
         return kryo.readObject(sharedByteBufferInput, type);
     }
 
@@ -149,20 +146,23 @@ public class KryoSerde implements Serde {
 
 
     @Override
-    public <T> @Nullable T deserializeNullable(Class<T> type, InputStream inputStream) {
+    public <T> @Nullable T deserializeNullable(Class<T> type, InputStream inputStream, @Nullable ClassLoader classLoader) {
         sharedStreamInput.setInputStream(inputStream);
+        kryo.setClassLoader(getClassLoader(type, classLoader));
         return kryo.readObjectOrNull(sharedStreamInput, type);
     }
 
     @Override
-    public <T> @Nullable T deserializeNullableFromBytes(Class<T> type, byte[] bytes) {
+    public <T> @Nullable T deserializeNullableFromBytes(Class<T> type, byte[] bytes, @Nullable ClassLoader classLoader) {
         sharedByteArrayInput.setBuffer(bytes);
+        kryo.setClassLoader(getClassLoader(type, classLoader));
         return kryo.readObjectOrNull(sharedByteArrayInput, type);
     }
 
     @Override
-    public <T> @Nullable T deserializeNullableFromByteBuffer(Class<T> type, ByteBuffer bytes) {
+    public <T> @Nullable T deserializeNullableFromByteBuffer(Class<T> type, ByteBuffer bytes, @Nullable ClassLoader classLoader) {
         sharedByteBufferInput.setBuffer(bytes);
+        kryo.setClassLoader(getClassLoader(type, classLoader));
         return kryo.readObjectOrNull(sharedByteBufferInput, type);
     }
 
@@ -197,35 +197,36 @@ public class KryoSerde implements Serde {
 
 
     @Override
-    public @Nullable Object deserializeTypeAndObject(@Nullable ClassLoader classLoader, InputStream inputStream) {
+    public @Nullable Object deserializeObjectOfUnknownType(InputStream inputStream, @Nullable ClassLoader classLoader) {
         sharedStreamInput.setInputStream(inputStream);
-        try {
-            if(classLoader != null) kryo.setClassLoader(classLoader);
-            return kryo.readClassAndObject(sharedStreamInput);
-        } finally {
-            if(classLoader != null) kryo.setClassLoader(defaultClassLoader);
-        }
+        kryo.setClassLoader(getClassLoader(classLoader));
+        return kryo.readClassAndObject(sharedStreamInput);
     }
 
     @Override
-    public @Nullable Object deserializeTypeAndObjectFromBytes(@Nullable ClassLoader classLoader, byte[] bytes) {
+    public @Nullable Object deserializeObjectOfUnknownTypeFromBytes(byte[] bytes, @Nullable ClassLoader classLoader) {
         sharedByteArrayInput.setBuffer(bytes);
-        try {
-            if(classLoader != null) kryo.setClassLoader(classLoader);
-            return kryo.readClassAndObject(sharedByteArrayInput);
-        } finally {
-            if(classLoader != null) kryo.setClassLoader(defaultClassLoader);
-        }
+        kryo.setClassLoader(getClassLoader(classLoader));
+        return kryo.readClassAndObject(sharedByteArrayInput);
     }
 
     @Override
-    public @Nullable Object deserializeTypeAndObjectFromByteBuffer(@Nullable ClassLoader classLoader, ByteBuffer bytes) {
+    public @Nullable Object deserializeObjectOfUnknownTypeFromByteBuffer(ByteBuffer bytes, @Nullable ClassLoader classLoader) {
         sharedByteBufferInput.setBuffer(bytes);
-        try {
-            if(classLoader != null) kryo.setClassLoader(classLoader);
-            return kryo.readClassAndObject(sharedByteBufferInput);
-        } finally {
-            if(classLoader != null) kryo.setClassLoader(defaultClassLoader);
-        }
+        kryo.setClassLoader(getClassLoader(classLoader));
+        return kryo.readClassAndObject(sharedByteBufferInput);
+    }
+
+
+    private ClassLoader getClassLoader(Class<?> type, @Nullable ClassLoader classLoader) {
+        if(classLoader != null) return classLoader;
+        if(defaultClassLoader != null) return defaultClassLoader;
+        return getClassLoader(type.getClassLoader());
+    }
+
+    private ClassLoader getClassLoader(@Nullable ClassLoader classLoader) {
+        if(classLoader != null) return classLoader;
+        if(defaultClassLoader != null) return defaultClassLoader;
+        return getClass().getClassLoader();
     }
 }
