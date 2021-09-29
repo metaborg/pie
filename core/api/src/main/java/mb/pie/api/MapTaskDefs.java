@@ -77,7 +77,7 @@ public class MapTaskDefs implements TaskDefs {
         final String id = taskDef.getId();
         final @Nullable TaskDef<?, ?> existing = taskDefs.put(id, taskDef);
         if(existing != null) {
-            throw new IllegalArgumentException("Task definition with ID '" + id + "' already exists: " + existing);
+            throw new IllegalArgumentException("Task definition with ID '" + id + "' (class " + taskDef.getClass().getName() + ") already exists: '" + existing + "' (class " + existing.getClass().getName() + ")");
         }
     }
 
