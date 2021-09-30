@@ -33,7 +33,7 @@ dependencies {
 }
 
 application {
-  mainClassName = "org.openjdk.jmh.Main"
+  mainClass.set("org.openjdk.jmh.Main")
   if(org.gradle.internal.jvm.Jvm.current().javaVersion?.isJava9Compatible == true) {
     // Disable illegal reflective access (caused by JMH) warnings on JRE9+.
     applicationDefaultJvmArgs = listOf("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")

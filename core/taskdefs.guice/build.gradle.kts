@@ -11,6 +11,6 @@ dependencies {
 
   compileOnly("org.checkerframework:checker-qual-android")
 
-  testCompile(project(":pie.runtime"))
+  testImplementation(project(":pie.runtime"))
   testCompileOnly("org.checkerframework:checker-qual-android")
 }

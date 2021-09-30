@@ -11,10 +11,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15, macos-11]
-        java: [8, 11]
-        gradle: [6.9.1]
-        experimental: [false]
+        os: [ ubuntu-20.04, windows-2019, macos-10.15, macos-11 ]
+        java: [ 8, 11 ]
+        gradle: [ 6.9.1 ]
+        experimental: [ false ]
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
     steps:
