@@ -10,6 +10,7 @@ All notable changes to this project are documented in this file, based on [Keep 
 ### Added
 - `SerializingStoreBuilder` to ease the creation of `SerializingStore`s and to reduce the number of its constructors.
 - In-memory buffer convenience to `SerializingStoreBuilder`.
+- `MockExecContext` to test methods that require an `ExecContext`, which just executes tasks and ignores dependencies.
 
 
 ## [0.16.8] - 2021-09-20

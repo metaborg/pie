@@ -20,7 +20,7 @@ import java.io.Serializable;
  * @see Task
  * @see STaskDef
  */
-public class STask<O extends @Nullable Serializable> implements Supplier<O>, Serializable {
+public class STask<O extends Serializable> implements Supplier<O>, Serializable {
     public final String id;
     public final Serializable input;
 
@@ -61,10 +61,10 @@ public class STask<O extends @Nullable Serializable> implements Supplier<O>, Ser
         return context.require(this);
     }
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
-        final STask sTask = (STask)o;
+        @SuppressWarnings("NullableProblems") final STask<?> sTask = (STask<?>)o;
         if(!id.equals(sTask.id)) return false;
         return input.equals(sTask.input);
     }
