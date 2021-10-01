@@ -3,9 +3,13 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+
+
+## [0.17.0] - 2021-10-01
 ### Changed
 - `Serde` and implementations allow passing in `ClassLoader`s for all deserialization methods.
 - `SerializingStore` can now serialize/deserialize from `BufferedOutputStream`/`BufferedInputStream` instead of just resources.
+- `common` requirement to 0.9.7.
 
 ### Added
 - `SerializingStoreBuilder` to ease the creation of `SerializingStore`s and to reduce the number of its constructors.
@@ -34,7 +38,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - Update common dependency to 0.9.3.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.16.8...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.17.0...HEAD
+[0.17.0]: https://github.com/metaborg/pie/compare/release-0.16.8...release-0.17.0
 [0.16.8]: https://github.com/metaborg/pie/compare/release-0.16.7...release-0.16.8
 [0.16.7]: https://github.com/metaborg/pie/compare/release-0.16.6...release-0.16.7
 [0.16.6]: https://github.com/metaborg/pie/compare/release-0.16.5...release-0.16.6
