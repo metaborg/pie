@@ -27,7 +27,7 @@ public class ResourcesState {
         }
         logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("{}.setupTrial", getClass().getName());
-        classLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", ResourcesState.class.getClassLoader(), new NoopClassLoaderUrlResolver());
+        classLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", ResourcesState.class.getClassLoader(), new NoopClassLoaderUrlResolver(), toNativeResolver);
         resourceServiceComponent = DaggerRootResourceServiceComponent.builder()
             .loggerComponent(loggerComponent)
             .rootResourceServiceModule(new RootResourceServiceModule(classLoaderResourceRegistry))
