@@ -10,52 +10,52 @@ public final class TaskData {
     public final Serializable input;
     public final @Nullable Serializable output;
     public final Observability taskObservability;
-    public final Collection<TaskRequireDep> taskRequires;
-    public final Collection<ResourceRequireDep> resourceRequires;
-    public final Collection<ResourceProvideDep> resourceProvides;
+    public final Collection<TaskRequireDep> taskRequireDeps;
+    public final Collection<ResourceRequireDep> resourceRequireDeps;
+    public final Collection<ResourceProvideDep> resourceProvideDeps;
 
 
     public TaskData(
         Serializable input,
         @Nullable Serializable output,
         Observability taskObservability,
-        Collection<TaskRequireDep> taskRequires,
-        Collection<ResourceRequireDep> resourceRequires,
-        Collection<ResourceProvideDep> resourceProvides
+        Collection<TaskRequireDep> taskRequireDeps,
+        Collection<ResourceRequireDep> resourceRequireDeps,
+        Collection<ResourceProvideDep> resourceProvideDeps
     ) {
         this.input = input;
         this.output = output;
         this.taskObservability = taskObservability;
-        this.taskRequires = taskRequires;
-        this.resourceRequires = resourceRequires;
-        this.resourceProvides = resourceProvides;
+        this.taskRequireDeps = taskRequireDeps;
+        this.resourceRequireDeps = resourceRequireDeps;
+        this.resourceProvideDeps = resourceProvideDeps;
     }
 
 
     public TaskData withTaskObservability(Observability taskObservability) {
-        return new TaskData(input, output, taskObservability, taskRequires, resourceRequires, resourceProvides);
+        return new TaskData(input, output, taskObservability, taskRequireDeps, resourceRequireDeps, resourceProvideDeps);
     }
 
 
-    @Override public boolean equals(Object o) {
+    @Override public boolean equals(@Nullable Object o) {
         if(this == o) return true;
         if(o == null || getClass() != o.getClass()) return false;
         final TaskData taskData = (TaskData)o;
         if(!input.equals(taskData.input)) return false;
         if(!Objects.equals(output, taskData.output)) return false;
         if(!taskObservability.equals(taskData.taskObservability)) return false;
-        if(!taskRequires.equals(taskData.taskRequires)) return false;
-        if(!resourceRequires.equals(taskData.resourceRequires)) return false;
-        return resourceProvides.equals(taskData.resourceProvides);
+        if(!taskRequireDeps.equals(taskData.taskRequireDeps)) return false;
+        if(!resourceRequireDeps.equals(taskData.resourceRequireDeps)) return false;
+        return resourceProvideDeps.equals(taskData.resourceProvideDeps);
     }
 
     @Override public int hashCode() {
         int result = input.hashCode();
         result = 31 * result + (output != null ? output.hashCode() : 0);
         result = 31 * result + taskObservability.hashCode();
-        result = 31 * result + taskRequires.hashCode();
-        result = 31 * result + resourceRequires.hashCode();
-        result = 31 * result + resourceProvides.hashCode();
+        result = 31 * result + taskRequireDeps.hashCode();
+        result = 31 * result + resourceRequireDeps.hashCode();
+        result = 31 * result + resourceProvideDeps.hashCode();
         return result;
     }
 
@@ -64,9 +64,9 @@ public final class TaskData {
             "  input             = " + input +
             ", output            = " + output +
             ", taskObservability = " + taskObservability +
-            ", taskRequires      = " + taskRequires +
-            ", resourceRequires  = " + resourceRequires +
-            ", resourceProvides  = " + resourceProvides +
+            ", taskRequires      = " + taskRequireDeps +
+            ", resourceRequires  = " + resourceRequireDeps +
+            ", resourceProvides  = " + resourceProvideDeps +
             ')';
     }
 }

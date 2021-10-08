@@ -5,6 +5,7 @@ import mb.log.api.LoggerFactory;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Function;
 import mb.pie.api.Layer;
+import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
@@ -12,6 +13,7 @@ import mb.pie.api.STaskDef;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Supplier;
 import mb.pie.api.Task;
+import mb.pie.api.TaskData;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
@@ -31,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 
 public class ExecContextImpl implements ExecContext {
@@ -42,6 +45,7 @@ public class ExecContextImpl implements ExecContext {
     private final Tracer tracer;
 
     private final TaskKey currentTaskKey;
+    private final @Nullable TaskData previousData;
 
     private final StoreWriteTxn txn;
     private final RequireTask requireTask;
@@ -63,6 +67,7 @@ public class ExecContextImpl implements ExecContext {
         Tracer tracer,
 
         TaskKey currentTaskKey,
+        @Nullable TaskData previousData,
 
         StoreWriteTxn txn,
         RequireTask requireTask,
@@ -77,6 +82,7 @@ public class ExecContextImpl implements ExecContext {
         this.tracer = tracer;
 
         this.currentTaskKey = currentTaskKey;
+        this.previousData = previousData;
 
         this.txn = txn;
         this.requireTask = requireTask;
@@ -158,27 +164,53 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override
-    public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {
+    public <R extends Resource> boolean require(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
         final ResourceRequireDep dep = new ResourceRequireDep(resource.getKey(), stamp);
-        if(resourceRequires.contains(dep)) return;
+        if(resourceRequires.contains(dep)) return hasResourceStampChanged(dep);
 
         resourceRequires.add(dep);
         tracer.requiredResource(resource, stamper);
         layer.validateResourceRequireDep(currentTaskKey, dep, txn);
         txn.addResourceRequireDep(currentTaskKey, dep);
+
+        return hasResourceStampChanged(dep);
+    }
+
+    private boolean hasResourceStampChanged(ResourceRequireDep dep) {
+        if(previousData == null) return true; // Task is new: dependency is new -> true
+        return previousData.resourceRequireDeps.stream()
+            .filter(previousDep -> previousDep.key.equals(dep.key))
+            .findFirst()
+            // Stamp is different: dependency has changed -> true, otherwise false.
+            .map(previousDep -> !previousDep.stamp.equals(dep.stamp))
+            // No previous dependency for resource: dependency is new -> true.
+            .orElse(true);
     }
 
     @Override
-    public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {
+    public <R extends Resource> boolean provide(R resource, ResourceStamper<R> stamper) throws IOException {
         @SuppressWarnings("unchecked") final ResourceStamp<Resource> stamp = (ResourceStamp<Resource>)stamper.stamp(resource);
         final ResourceProvideDep dep = new ResourceProvideDep(resource.getKey(), stamp);
-        if(resourceProvides.contains(dep)) return;
+        if(resourceProvides.contains(dep)) return hasResourceStampChanged(dep);
 
         resourceProvides.add(dep);
         tracer.providedResource(resource, stamper);
         layer.validateResourceProvideDep(currentTaskKey, dep, txn);
         txn.addResourceProvideDep(currentTaskKey, dep);
+
+        return hasResourceStampChanged(dep);
+    }
+
+    private boolean hasResourceStampChanged(ResourceProvideDep dep) {
+        if(previousData == null) return true; // Task is new: dependency is new -> true
+        return previousData.resourceProvideDeps.stream()
+            .filter(previousDep -> previousDep.key.equals(dep.key))
+            .findFirst()
+            // Stamp is different: dependency has changed -> true, otherwise false.
+            .map(previousDep -> !previousDep.stamp.equals(dep.stamp))
+            // No previous dependency for resource: dependency is new -> true.
+            .orElse(true);
     }
 
 
@@ -196,6 +228,44 @@ public class ExecContextImpl implements ExecContext {
 
     @Override public ResourceStamper<HierarchicalResource> getDefaultProvideHierarchicalResourceStamper() {
         return defaultStampers.provideHierarchicalResource;
+    }
+
+
+    @Override public @Nullable Serializable getInternalObject() {
+        return txn.getInternalObject(currentTaskKey);
+    }
+
+    @Override public void setInternalObject(@Nullable Serializable obj) {
+        txn.setInternalObject(currentTaskKey, obj);
+    }
+
+    @Override public void clearInternalObject() {
+        txn.clearInternalObject(currentTaskKey);
+    }
+
+
+    @Override public @Nullable Serializable getPreviousInput() {
+        return previousData != null ? previousData.input : null;
+    }
+
+    @Override public @Nullable Serializable getPreviousOutput() {
+        return previousData != null ? previousData.output : null;
+    }
+
+    @Override public @Nullable Observability getPreviousObservability() {
+        return previousData != null ? previousData.taskObservability : null;
+    }
+
+    @Override public Iterable<TaskRequireDep> getPreviousTaskRequireDeps() {
+        return previousData != null ? previousData.taskRequireDeps : Collections.emptySet();
+    }
+
+    @Override public Iterable<ResourceRequireDep> getPreviousResourceRequireDeps() {
+        return previousData != null ? previousData.resourceRequireDeps : Collections.emptySet();
+    }
+
+    @Override public Iterable<ResourceProvideDep> getPreviousResourceProvideDeps() {
+        return previousData != null ? previousData.resourceProvideDeps : Collections.emptySet();
     }
 
 

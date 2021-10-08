@@ -132,7 +132,7 @@ public class BottomUpRunner implements RequireTask {
         try {
             final TaskData data = exec(key, task, reason, modifyObservability, txn, cancel);
             scheduleAffectedByRequiredTask(key, data.output, txn);
-            scheduleAffectedByRequiredResources(data.resourceProvides.stream().map((d) -> d.key), txn);
+            scheduleAffectedByRequiredResources(data.resourceProvideDeps.stream().map((d) -> d.key), txn);
             return data;
         } finally {
             txn.removeDeferredTask(key);
@@ -289,7 +289,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Resource require consistency.
-            for(ResourceRequireDep resourceRequireDep : data.resourceRequires) {
+            for(ResourceRequireDep resourceRequireDep : data.resourceRequireDeps) {
                 final @Nullable InconsistentResourceRequire reason =
                     requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
                 if(reason != null) {
@@ -298,7 +298,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Resource provide consistency.
-            for(ResourceProvideDep resourceProvideDep : data.resourceProvides) {
+            for(ResourceProvideDep resourceProvideDep : data.resourceProvideDeps) {
                 final @Nullable InconsistentResourceProvide reason =
                     requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
                 if(reason != null) {
@@ -307,7 +307,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Task require consistency.
-            for(TaskRequireDep taskRequireDep : data.taskRequires) {
+            for(TaskRequireDep taskRequireDep : data.taskRequireDeps) {
                 final @Nullable InconsistentTaskRequire reason =
                     requireShared.checkTaskRequireDep(key, task, taskRequireDep, modifyObservability, txn, this, cancel);
                 if(reason != null) {

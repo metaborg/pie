@@ -12,20 +12,12 @@ import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.runtime.exec.BottomUpShared;
-import mb.resource.ReadableResource;
 import mb.resource.ResourceKey;
-import mb.resource.WritableResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -35,6 +27,7 @@ import java.util.stream.Collectors;
 
 public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWriteTxn, Serializable {
     protected final HashMap<TaskKey, Serializable> taskInputs = new HashMap<>();
+    protected final HashMap<TaskKey, @Nullable Serializable> taskInternalObjects = new HashMap<>();
     protected final HashMap<TaskKey, Output> taskOutputs = new HashMap<>();
 
     protected final HashMap<TaskKey, Observability> taskObservability = new HashMap<>();
@@ -54,6 +47,19 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
     @Override public @Nullable Serializable getInput(TaskKey key) {
         return taskInputs.get(key);
+    }
+
+
+    @Override public @Nullable Serializable getInternalObject(TaskKey key) {
+        return taskInternalObjects.get(key);
+    }
+
+    @Override public void setInternalObject(TaskKey key, @Nullable Serializable obj) {
+        taskInternalObjects.put(key, obj);
+    }
+
+    @Override public void clearInternalObject(TaskKey key) {
+        taskInternalObjects.remove(key);
     }
 
 
@@ -121,16 +127,27 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     }
 
 
-    @Override public void resetTask(Task<?> task) {
+    @Override public @Nullable TaskData resetTask(Task<?> task) {
         final TaskKey key = task.key();
-        this.taskInputs.put(key, task.input);
-        this.taskOutputs.remove(key);
-        this.taskObservability.remove(key);
+        final @Nullable Serializable previousInput = this.taskInputs.put(key, task.input);
+        final @Nullable Output previousOutput = this.taskOutputs.remove(key);
+        final @Nullable Observability previousTaskObservability = this.taskObservability.remove(key);
         // Pass `false` to `removeTaskRequireDepsOf` to not remove `key` from the `callersOf` map, as we want to keep
         // dependencies from other tasks to `key` intact.
-        removeTaskRequireDepsOf(key, false);
-        removeResourceRequireDepsOf(key);
-        removeResourceProvideDepsOf(key);
+        final @Nullable Collection<TaskRequireDep> previousTaskRequireDeps = removeTaskRequireDepsOf(key, false);
+        final @Nullable Collection<ResourceRequireDep> previousResourceRequireDeps = removeResourceRequireDepsOf(key);
+        final @Nullable Collection<ResourceProvideDep> previousResourceProvideDeps = removeResourceProvideDepsOf(key);
+        if(previousInput != null) {
+            return new TaskData(
+                previousInput,
+                previousOutput != null ? previousOutput.output : null,
+                previousTaskObservability != null ? previousTaskObservability : Observability.Unobserved,
+                previousTaskRequireDeps != null ? previousTaskRequireDeps : Collections.emptySet(),
+                previousResourceRequireDeps != null ? previousResourceRequireDeps : Collections.emptySet(),
+                previousResourceProvideDeps != null ? previousResourceProvideDeps : Collections.emptySet()
+            );
+        }
+        return null;
     }
 
     @Override public void addTaskRequire(TaskKey caller, TaskKey callee) {
@@ -173,6 +190,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         if(input == null) {
             return null;
         }
+        taskInternalObjects.remove(key);
         final @Nullable Output output = taskOutputs.remove(key);
         if(output == null) {
             throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
@@ -272,6 +290,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
     @Override public void drop() {
         taskInputs.clear();
+        taskInternalObjects.clear();
         taskOutputs.clear();
         taskObservability.clear();
         taskRequires.clear();
@@ -282,45 +301,6 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         resourceProvideDeps.clear();
         providerOf.clear();
         deferredTasks.clear();
-    }
-
-
-    public void serialize(ObjectOutputStream objectOutputStream) throws IOException {
-        objectOutputStream.writeObject(this);
-        objectOutputStream.flush();
-    }
-
-    public void serializeToBytes(OutputStream outputStream) throws IOException {
-        try(
-            final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)
-        ) {
-            serialize(objectOutputStream);
-            outputStream.flush();
-        }
-    }
-
-    public void serializeToResource(WritableResource resource) throws IOException {
-        try(final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(resource.openWrite())) {
-            serializeToBytes(bufferedOutputStream);
-            bufferedOutputStream.flush();
-        }
-    }
-
-
-    public static InMemoryStoreBase deserialize(ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException, ClassCastException {
-        return (InMemoryStoreBase)objectInputStream.readObject();
-    }
-
-    public static InMemoryStoreBase deserializeFromBytes(InputStream inputStream) throws IOException, ClassNotFoundException, ClassCastException {
-        try(final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)) {
-            return deserialize(objectInputStream);
-        }
-    }
-
-    public static InMemoryStoreBase deserializeFromResource(ReadableResource resource) throws IOException, ClassNotFoundException, ClassCastException {
-        try(final BufferedInputStream bufferedInputStream = new BufferedInputStream(resource.openRead())) {
-            return deserializeFromBytes(bufferedInputStream);
-        }
     }
 
 

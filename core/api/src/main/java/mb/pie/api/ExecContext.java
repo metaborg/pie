@@ -16,6 +16,7 @@ import mb.resource.fs.FSPath;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -214,7 +215,7 @@ public interface ExecContext {
 
 
     //
-    // Recording dependencies to resources.
+    // Getting resources.
     //
 
     /**
@@ -223,31 +224,6 @@ public interface ExecContext {
      * @return Resource service.
      */
     ResourceService getResourceService();
-
-    /**
-     * Marks given {@code resource} as required (read), using given {@code stamper}, creating a required resource
-     * dependency.
-     *
-     * @param <R>      Type of the resource.
-     * @param resource Resource to require.
-     * @param stamper  {@link ResourceStamper Resource stamper} to use.
-     * @throws IOException When stamping the resource fails unexpectedly.
-     */
-    <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException;
-
-    /**
-     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
-     * resource dependency.
-     * <p>
-     * The current contents of the resource may be used for change detection, so be sure to call this method *AFTER*
-     * modifying the resource.
-     *
-     * @param <R>      Type of the resource.
-     * @param resource Resource to provide.
-     * @param stamper  {@link ResourceStamper Resource stamper} to use.
-     * @throws IOException When stamping the resource fails unexpectedly.
-     */
-    <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException;
 
     /**
      * Gets resource for given key.
@@ -291,6 +267,62 @@ public interface ExecContext {
      */
     default HierarchicalResource getHierarchicalResource(ResourcePath path) {
         return getResourceService().getHierarchicalResource(path);
+    }
+
+
+    //
+    // Recording dependencies to resources.
+    //
+
+    /**
+     * Marks given {@code resource} as required (read), using given {@code stamper}, creating a required resource
+     * dependency.
+     *
+     * The current contents of the resource may be used for change detection, so be sure to call this method directly
+     * *BEFORE* reading the resource.
+     *
+     * @param <R>      Type of the resource.
+     * @param resource Resource to require.
+     * @param stamper  {@link ResourceStamper Resource stamper} to use.
+     * @return {@code true} if, compared to the previous execution of the task, the resource was changed (i.e., stamp
+     * has changed) or the dependency is new. {@code false} otherwise: if the dependency is not new and the resource was
+     * not changed.
+     * @throws IOException When stamping the resource fails unexpectedly.
+     */
+    <R extends Resource> boolean require(R resource, ResourceStamper<R> stamper) throws IOException;
+
+    /**
+     * Marks given {@code resource} as provided (written to/created), using given {@code stamper}, creating a provided
+     * resource dependency.
+     *
+     * The current contents of the resource may be used for change detection, so be sure to call this method *AFTER* all
+     * modifications to the resource.
+     *
+     * @param <R>      Type of the resource.
+     * @param resource Resource to provide.
+     * @param stamper  {@link ResourceStamper Resource stamper} to use.
+     * @return {@code true} if, compared to the previous execution of the task, the resource was changed (i.e., stamp
+     * has changed) or the dependency is new. {@code false} otherwise: if the dependency is not new and the resource was
+     * not changed.
+     * @throws IOException When stamping the resource fails unexpectedly.
+     */
+    <R extends Resource> boolean provide(R resource, ResourceStamper<R> stamper) throws IOException;
+
+
+    //
+    // Recording required (read) dependencies to readable resources.
+    //
+
+
+    /**
+     * Marks given {@code resource} as required (read), using the {@link #getDefaultRequireReadableResourceStamper
+     * default require resource stamper for readable resources}, creating a required resource dependency.
+     *
+     * @param resource {@link ReadableResource Readable resource} to create a require dependency for.
+     * @throws IOException When stamping the resource fails unexpectedly.
+     */
+    default boolean require(ReadableResource resource) throws IOException {
+        return require(resource, getDefaultRequireReadableResourceStamper());
     }
 
     /**
@@ -352,23 +384,6 @@ public interface ExecContext {
         return resource;
     }
 
-
-    //
-    // Recording required (read) dependencies to readable resources.
-    //
-
-
-    /**
-     * Marks given {@code resource} as required (read), using the {@link #getDefaultRequireReadableResourceStamper
-     * default require resource stamper for readable resources}, creating a required resource dependency.
-     *
-     * @param resource {@link ReadableResource Readable resource} to create a require dependency for.
-     * @throws IOException When stamping the resource fails unexpectedly.
-     */
-    default void require(ReadableResource resource) throws IOException {
-        require(resource, getDefaultRequireReadableResourceStamper());
-    }
-
     /**
      * Gets the default require resource stamper for {@link ReadableResource readable resources}.
      *
@@ -389,8 +404,8 @@ public interface ExecContext {
      * @param resource {@link ReadableResource Readable resource} to create a provide dependency for.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(ReadableResource resource) throws IOException {
-        provide(resource, getDefaultProvideReadableResourceStamper());
+    default boolean provide(ReadableResource resource) throws IOException {
+        return provide(resource, getDefaultProvideReadableResourceStamper());
     }
 
     /**
@@ -524,8 +539,8 @@ public interface ExecContext {
      * @param path Path of the resource to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(FSPath path) throws IOException {
-        provide(new FSResource(path), getDefaultProvideHierarchicalResourceStamper());
+    default boolean provide(FSPath path) throws IOException {
+        return provide(new FSResource(path), getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -536,8 +551,8 @@ public interface ExecContext {
      * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(FSPath path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
-        provide(new FSResource(path), stamper);
+    default boolean provide(FSPath path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
+        return provide(new FSResource(path), stamper);
     }
 
     /**
@@ -548,8 +563,8 @@ public interface ExecContext {
      * @param resource Resource to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(HierarchicalResource resource) throws IOException {
-        provide(resource, getDefaultProvideHierarchicalResourceStamper());
+    default boolean provide(HierarchicalResource resource) throws IOException {
+        return provide(resource, getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -560,8 +575,8 @@ public interface ExecContext {
      * @param path Path of the resource to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(Path path) throws IOException {
-        provide(new FSResource(path), getDefaultProvideHierarchicalResourceStamper());
+    default boolean provide(Path path) throws IOException {
+        return provide(new FSResource(path), getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -572,8 +587,8 @@ public interface ExecContext {
      * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(Path path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
-        provide(new FSResource(path), stamper);
+    default boolean provide(Path path, ResourceStamper<HierarchicalResource> stamper) throws IOException {
+        return provide(new FSResource(path), stamper);
     }
 
     /**
@@ -584,8 +599,8 @@ public interface ExecContext {
      * @param file File to provide.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(File file) throws IOException {
-        provide(new FSResource(file), getDefaultProvideHierarchicalResourceStamper());
+    default boolean provide(File file) throws IOException {
+        return provide(new FSResource(file), getDefaultProvideHierarchicalResourceStamper());
     }
 
     /**
@@ -596,8 +611,8 @@ public interface ExecContext {
      * @param stamper {@link ResourceStamper Resource stamper} to use.
      * @throws IOException When stamping the resource fails unexpectedly.
      */
-    default void provide(File file, ResourceStamper<HierarchicalResource> stamper) throws IOException {
-        provide(new FSResource(file), stamper);
+    default boolean provide(File file, ResourceStamper<HierarchicalResource> stamper) throws IOException {
+        return provide(new FSResource(file), stamper);
     }
 
     /**
@@ -606,6 +621,74 @@ public interface ExecContext {
      * @return Default provide resource stamper for {@link FSResource file system resources}.
      */
     ResourceStamper<HierarchicalResource> getDefaultProvideHierarchicalResourceStamper();
+
+
+    //
+    // Internal object storage.
+    //
+
+
+    /**
+     * Gets the stored internal object for the currently executing task, or {@code null} if no internal object was
+     * stored or when {@code null} was explicitly stored as the internal object.
+     *
+     * @return Internal object for the currently executing task
+     */
+    @Nullable Serializable getInternalObject();
+
+    /**
+     * Sets the stored internal object for the currently executing task to {@code obj}.
+     */
+    void setInternalObject(@Nullable Serializable obj);
+
+    /**
+     * Clears the stored internal object for the currently executing task.
+     */
+    void clearInternalObject();
+
+
+    //
+    // Task data from previous execution.
+    //
+
+
+    /**
+     * Returns the previous input of the currently executing task, or {@code null} if the task was not previously
+     * executed.
+     */
+    @Nullable Serializable getPreviousInput();
+
+    /**
+     * Returns the previous output of the currently executing task, or {@code null} if the task was not previously
+     * executed.
+     */
+    @Nullable Serializable getPreviousOutput();
+
+    /**
+     * Returns the previous observability of the currently executing task, or {@code null} if the task was not
+     * previously executed.
+     */
+    @Nullable Observability getPreviousObservability();
+
+    /**
+     * Returns the previous task require dependencies of the currently executing task. The returned {@link Iterable}
+     * will be empty if the task was not previously executed, or when it did not make any task require dependencies.
+     */
+    Iterable<TaskRequireDep> getPreviousTaskRequireDeps();
+
+    /**
+     * Returns the previous resource require dependencies of the currently executing task. The returned {@link Iterable}
+     * will be empty if the task was not previously executed, or when it did not make any resource require
+     * dependencies.
+     */
+    Iterable<ResourceRequireDep> getPreviousResourceRequireDeps();
+
+    /**
+     * Returns the previous resource provide dependencies of the currently executing task. The returned {@link Iterable}
+     * will be empty if the task was not previously executed, or when it did not make any resource provide
+     * dependencies.
+     */
+    Iterable<ResourceProvideDep> getPreviousResourceProvideDeps();
 
 
     //

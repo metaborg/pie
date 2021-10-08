@@ -10,6 +10,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.api.Tracer;
 import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CancelToken;
@@ -23,6 +24,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
@@ -97,11 +99,10 @@ public class TaskExecutor {
     ) {
         cancel.throwIfCanceled();
 
-        // Store previous data for observability comparison.
-        // Graceful: returns Observability.Unobserved if task has no observability status yet.
-        final Observability previousObservability = txn.getTaskObservability(key);
-        // Graceful: returns empty list if task has no task require dependencies yet.
-        final Collection<TaskKey> previousCallees = txn.getRequiredTasks(key);
+        // Reset task and obtain its previous data (or null if the task did not exist before)
+        final @Nullable TaskData previousData = txn.resetTask(task);
+        final Observability previousObservability = previousData != null ? previousData.taskObservability : Observability.Unobserved;
+        final Collection<TaskRequireDep> previousTaskRequireDeps = previousData != null ? previousData.taskRequireDeps : Collections.emptySet();
 
         // Execute the task.
         final ExecContextImpl context = new ExecContextImpl(
@@ -113,6 +114,7 @@ public class TaskExecutor {
             tracer,
 
             key,
+            previousData,
 
             txn,
             requireTask,
@@ -122,7 +124,6 @@ public class TaskExecutor {
         final @Nullable Serializable output;
         try {
             tracer.executeStart(key, task, reason);
-            txn.resetTask(task);
             output = task.exec(context);
         } catch(RuntimeException e) {
             tracer.executeEndFailed(key, task, reason, e);
@@ -161,10 +162,11 @@ public class TaskExecutor {
 
         // Implicitly unobserve tasks which the executed task no longer depends on (if this task is observed).
         if(newObservability.isObserved()) {
-            final HashSet<TaskKey> newCallees = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
-            previousCallees.removeAll(newCallees);
-            for(TaskKey previousCallee : previousCallees) {
-                Observability.implicitUnobserve(txn, previousCallee, tracer);
+            final HashSet<TaskKey> newRequiredTasks = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+            for(TaskRequireDep dep : previousTaskRequireDeps) {
+                if(!newRequiredTasks.contains(dep.callee)) {
+                    Observability.implicitUnobserve(txn, dep.callee, tracer);
+                }
             }
         }
 

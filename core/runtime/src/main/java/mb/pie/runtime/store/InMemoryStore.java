@@ -21,7 +21,7 @@ public class InMemoryStore extends InMemoryStoreBase {
     }
 
 
-    @Override public void resetTask(Task<?> task) {
+    @Override public @Nullable TaskData resetTask(Task<?> task) {
         final TaskKey key = task.key();
         // A task that does not exist may be reset, so a vertex must be created to ensure there is one in the graph.
         //
@@ -36,7 +36,7 @@ public class InMemoryStore extends InMemoryStoreBase {
             final ArrayList<DefaultEdge> outgoingEdges = new ArrayList<>(this.taskRequireGraph.outgoingEdgesOf(key));
             this.taskRequireGraph.removeAllEdges(outgoingEdges);
         }
-        super.resetTask(task);
+        return super.resetTask(task);
     }
 
     @Override public void addTaskRequire(TaskKey caller, TaskKey callee) {

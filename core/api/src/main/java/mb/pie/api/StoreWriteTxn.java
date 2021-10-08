@@ -10,9 +10,13 @@ import java.io.Serializable;
 public interface StoreWriteTxn extends StoreReadTxn {
     /**
      * Resets {@code task}, removing its output, observability, outgoing task require dependencies, and resource
-     * dependencies.
+     * dependencies. Sets the input of {@code task} to {@code task.input}. Does not remove its incoming task require
+     * dependencies, nor its internal object.
+     *
+     * @return {@link TaskData} containing the previous input of the task, along with all the data that was removed, or
+     * {@code null} if no data was stored for {@code task} (i.e., it did not exist).
      */
-    void resetTask(Task<?> task);
+    @Nullable TaskData resetTask(Task<?> task);
 
     /**
      * Adds a task require from task with key {@code caller} to task with key {@code callee}.
@@ -43,6 +47,16 @@ public interface StoreWriteTxn extends StoreReadTxn {
      * Sets the observability status of task with {@code key} to {@code observability}.
      */
     void setTaskObservability(TaskKey key, Observability observability);
+
+    /**
+     * Sets the internal object of task with {@code key} to {@code obj}.
+     */
+    void setInternalObject(TaskKey key, @Nullable Serializable obj);
+
+    /**
+     * Clears the internal object of task with {@code key}.
+     */
+    void clearInternalObject(TaskKey key);
 
 
     /**

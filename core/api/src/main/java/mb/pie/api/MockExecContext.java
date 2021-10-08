@@ -15,9 +15,11 @@ import mb.resource.Resource;
 import mb.resource.ResourceService;
 import mb.resource.fs.FSResourceRegistry;
 import mb.resource.hierarchical.HierarchicalResource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 
 /**
  * A mock execution context that just executes tasks and ignores dependencies.
@@ -26,6 +28,7 @@ public class MockExecContext implements ExecContext {
     private final TaskDefs taskDefs;
     private final ResourceService resourceService;
     private final Logger logger;
+    private @Nullable Serializable internalObject = null;
 
     public MockExecContext(TaskDefs taskDefs, ResourceService resourceService, Logger logger) {
         this.taskDefs = taskDefs;
@@ -103,9 +106,13 @@ public class MockExecContext implements ExecContext {
         return resourceService;
     }
 
-    @Override public <R extends Resource> void require(R resource, ResourceStamper<R> stamper) throws IOException {}
+    @Override public <R extends Resource> boolean require(R resource, ResourceStamper<R> stamper) throws IOException {
+        return true;
+    }
 
-    @Override public <R extends Resource> void provide(R resource, ResourceStamper<R> stamper) throws IOException {}
+    @Override public <R extends Resource> boolean provide(R resource, ResourceStamper<R> stamper) throws IOException {
+        return true;
+    }
 
     @Override public ResourceStamper<ReadableResource> getDefaultRequireReadableResourceStamper() {
         return ResourceStampers.modifiedFile();
@@ -122,6 +129,45 @@ public class MockExecContext implements ExecContext {
     @Override public ResourceStamper<HierarchicalResource> getDefaultProvideHierarchicalResourceStamper() {
         return ResourceStampers.modifiedFile();
     }
+
+
+    @Override public @Nullable Serializable getInternalObject() {
+        return internalObject;
+    }
+
+    @Override public void setInternalObject(@Nullable Serializable obj) {
+        internalObject = obj;
+    }
+
+    @Override public void clearInternalObject() {
+        internalObject = null;
+    }
+
+
+    @Override public @Nullable Serializable getPreviousInput() {
+        return null;
+    }
+
+    @Override public @Nullable Serializable getPreviousOutput() {
+        return null;
+    }
+
+    @Override public @Nullable Observability getPreviousObservability() {
+        return null;
+    }
+
+    @Override public Iterable<TaskRequireDep> getPreviousTaskRequireDeps() {
+        return Collections.emptySet();
+    }
+
+    @Override public Iterable<ResourceRequireDep> getPreviousResourceRequireDeps() {
+        return Collections.emptySet();
+    }
+
+    @Override public Iterable<ResourceProvideDep> getPreviousResourceProvideDeps() {
+        return Collections.emptySet();
+    }
+
 
     @Override public CancelToken cancelToken() {
         return NullCancelableToken.instance;

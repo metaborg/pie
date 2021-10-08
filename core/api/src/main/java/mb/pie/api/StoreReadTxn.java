@@ -17,10 +17,15 @@ public interface StoreReadTxn extends StoreTxn {
     @Nullable Serializable getInput(TaskKey key);
 
     /**
+     * @return internal object for task with {@code key}, or {@code null} if no internal object was stored or when
+     * {@code null} was explicitly stored as the internal object
+     */
+    @Nullable Serializable getInternalObject(TaskKey key);
+
+    /**
      * @return wrapper around output for task with {@code key}, or {@code null} if no output is stored.
      */
     @Nullable Output getOutput(TaskKey key);
-
 
     /**
      * @return observability of task with {@code key}.

@@ -3,6 +3,12 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Added
+- Tasks can get/set/clear an internal object with `getInternalObject`, `setInternalObject`, and `clearInternalObject` on `ExecContext`. Internal objects are stored and serialized along with the PIE store.
+- Tasks can inspect their previous input, output, and dependencies with `getPreviousInput`, `getPreviousOutput`,`getPreviousTaskRequireDeps`, `getPreviousResourceRequireDeps`, and `getPreviousResourceProvideDeps` in `ExecContext`.
+
+### Changed
+- The void resource dependency methods in `ExecContext` now return a boolean indicating whether the resource is changed or whether the dependency is new compared to the last execution of the task.
 
 
 ## [0.17.0] - 2021-10-01

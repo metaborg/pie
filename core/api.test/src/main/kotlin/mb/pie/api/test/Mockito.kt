@@ -3,11 +3,15 @@ package mb.pie.api.test
 import mb.log.api.Logger
 import mb.pie.api.ExecContext
 import mb.pie.api.Function
+import mb.pie.api.Observability
+import mb.pie.api.ResourceProvideDep
+import mb.pie.api.ResourceRequireDep
 import mb.pie.api.STask
 import mb.pie.api.STaskDef
 import mb.pie.api.Supplier
 import mb.pie.api.Task
 import mb.pie.api.TaskDef
+import mb.pie.api.TaskRequireDep
 import mb.pie.api.exec.CancelToken
 import mb.pie.api.exec.ExecReason
 import mb.pie.api.exec.NullCancelableToken
@@ -88,8 +92,8 @@ class NoExecContext : ExecContext {
   override fun getDefaultOutputStamper() = null!!
 
 
-  override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>) {}
-  override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>) {}
+  override fun <R : Resource> require(resource: R, stamper: ResourceStamper<R>): Boolean = true
+  override fun <R : Resource> provide(resource: R, stamper: ResourceStamper<R>): Boolean = true
 
 
   override fun getResourceService(): ResourceService {
@@ -127,10 +131,21 @@ class NoExecContext : ExecContext {
 
   override fun getDefaultRequireHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
 
-  override fun provide(path: FSPath) {}
-  override fun provide(path: FSPath, stamper: ResourceStamper<HierarchicalResource>) {}
+  override fun provide(path: FSPath): Boolean = true
+  override fun provide(path: FSPath, stamper: ResourceStamper<HierarchicalResource>): Boolean = true
 
   override fun getDefaultProvideHierarchicalResourceStamper(): ResourceStamper<HierarchicalResource> = null!!
+
+  override fun getInternalObject(): Serializable? = null
+  override fun setInternalObject(obj: Serializable?) {}
+  override fun clearInternalObject() {}
+
+  override fun getPreviousInput(): Serializable? = null
+  override fun getPreviousOutput(): Serializable? = null
+  override fun getPreviousObservability(): Observability? = null
+  override fun getPreviousTaskRequireDeps(): Iterable<TaskRequireDep> = setOf()
+  override fun getPreviousResourceRequireDeps(): Iterable<ResourceRequireDep> = setOf()
+  override fun getPreviousResourceProvideDeps(): Iterable<ResourceProvideDep> = setOf()
 
 
   override fun cancelToken(): CancelToken = null!!

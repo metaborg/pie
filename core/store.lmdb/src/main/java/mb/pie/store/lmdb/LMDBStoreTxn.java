@@ -84,6 +84,11 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         return De.orElseNull(shared.getOneObject(serializeUtil.serializeHashed(key), inputDb));
     }
 
+    @Override public @Nullable Serializable getInternalObject(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("getInternalObject has not been implemented for LMDB yet, sorry");
+    }
+
     @Override public @Nullable Output getOutput(TaskKey key) {
         return De.mapOrElseNull(shared.getOneObject(serializeUtil.serializeHashed(key), outputDb), Output::new);
     }
@@ -195,6 +200,16 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         shared.setOne(serializeUtil.serializeHashed(key), serializeUtil.serialize(observability), taskObservabilityDb);
     }
 
+    @Override public void setInternalObject(TaskKey key, @Nullable Serializable obj) {
+        // TODO: implement
+        throw new UnsupportedOperationException("setInternalObject has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void clearInternalObject(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("clearInternalObject has not been implemented for LMDB yet, sorry");
+    }
+
 //    @Override public void setTaskRequires(TaskKey key, Collection<TaskRequireDep> taskRequires) {
 //        // OPTO: reuse buffers? is that safe?
 //        final SerializedAndHashed serializedAndHashed = serializeUtil.serializeAndHash(key);
@@ -253,7 +268,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
 //    }
 
 
-    @Override public void resetTask(Task<?> task) {
+    @Override public @Nullable TaskData resetTask(Task<?> task) {
         // TODO: implement
         throw new UnsupportedOperationException("clearTaskOutputAndDeps has not been implemented for LMDB yet, sorry");
     }
