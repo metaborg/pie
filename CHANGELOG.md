@@ -9,6 +9,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 ### Changed
 - The void resource dependency methods in `ExecContext` now return a boolean indicating whether the resource is changed or whether the dependency is new compared to the last execution of the task.
+- `resource` requirement to `0.12.0`.
+- `common` requirement to `0.9.8`.
 
 
 ## [0.17.0] - 2021-10-01
