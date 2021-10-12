@@ -115,7 +115,7 @@ public abstract class SessionImpl implements Session {
                 final @Nullable TaskData deletedData = txn.deleteData(key);
                 if(deletedData != null) {
                     // Delete provided resources.
-                    for(ResourceProvideDep dep : deletedData.resourceProvideDeps) {
+                    for(ResourceProvideDep dep : deletedData.deps.resourceProvideDeps) {
                         final Resource resource = resourceService.getResource(dep.key);
                         if(resource instanceof HierarchicalResource) {
                             final HierarchicalResource hierarchicalResource = ((HierarchicalResource)resource);
@@ -126,7 +126,7 @@ public abstract class SessionImpl implements Session {
                     }
 
                     // Iterate the task requirements of the deleted task to continue deleting tasks.
-                    deletedData.taskRequireDeps
+                    deletedData.deps.taskRequireDeps
                         .stream()
                         // Filter out tasks that still have incoming callers.
                         .filter((d) -> txn.getCallersOf(d.callee).isEmpty())

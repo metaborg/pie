@@ -132,7 +132,7 @@ public class BottomUpRunner implements RequireTask {
         try {
             final TaskData data = exec(key, task, reason, modifyObservability, txn, cancel);
             scheduleAffectedByRequiredTask(key, data.output, txn);
-            scheduleAffectedByRequiredResources(data.resourceProvideDeps.stream().map((d) -> d.key), txn);
+            scheduleAffectedByRequiredResources(data.deps.resourceProvideDeps.stream().map((d) -> d.key), txn);
             return data;
         } finally {
             txn.removeDeferredTask(key);
@@ -289,7 +289,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Resource require consistency.
-            for(ResourceRequireDep resourceRequireDep : data.resourceRequireDeps) {
+            for(ResourceRequireDep resourceRequireDep : data.deps.resourceRequireDeps) {
                 final @Nullable InconsistentResourceRequire reason =
                     requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
                 if(reason != null) {
@@ -298,7 +298,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Resource provide consistency.
-            for(ResourceProvideDep resourceProvideDep : data.resourceProvideDeps) {
+            for(ResourceProvideDep resourceProvideDep : data.deps.resourceProvideDeps) {
                 final @Nullable InconsistentResourceProvide reason =
                     requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
                 if(reason != null) {
@@ -307,7 +307,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Task require consistency.
-            for(TaskRequireDep taskRequireDep : data.taskRequireDeps) {
+            for(TaskRequireDep taskRequireDep : data.deps.taskRequireDeps) {
                 final @Nullable InconsistentTaskRequire reason =
                     requireShared.checkTaskRequireDep(key, task, taskRequireDep, modifyObservability, txn, this, cancel);
                 if(reason != null) {

@@ -3,37 +3,32 @@ package mb.pie.api;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Objects;
 
 public final class TaskData {
     public final Serializable input;
+    public final @Nullable Serializable internalObject;
     public final @Nullable Serializable output;
     public final Observability taskObservability;
-    public final Collection<TaskRequireDep> taskRequireDeps;
-    public final Collection<ResourceRequireDep> resourceRequireDeps;
-    public final Collection<ResourceProvideDep> resourceProvideDeps;
+    public final TaskDeps deps;
 
 
     public TaskData(
         Serializable input,
+        @Nullable Serializable internalObject,
         @Nullable Serializable output,
         Observability taskObservability,
-        Collection<TaskRequireDep> taskRequireDeps,
-        Collection<ResourceRequireDep> resourceRequireDeps,
-        Collection<ResourceProvideDep> resourceProvideDeps
+        TaskDeps deps
     ) {
         this.input = input;
+        this.internalObject = internalObject;
         this.output = output;
         this.taskObservability = taskObservability;
-        this.taskRequireDeps = taskRequireDeps;
-        this.resourceRequireDeps = resourceRequireDeps;
-        this.resourceProvideDeps = resourceProvideDeps;
+        this.deps = deps;
     }
 
 
     public TaskData withTaskObservability(Observability taskObservability) {
-        return new TaskData(input, output, taskObservability, taskRequireDeps, resourceRequireDeps, resourceProvideDeps);
+        return new TaskData(input, internalObject, output, taskObservability, deps);
     }
 
 
@@ -42,31 +37,29 @@ public final class TaskData {
         if(o == null || getClass() != o.getClass()) return false;
         final TaskData taskData = (TaskData)o;
         if(!input.equals(taskData.input)) return false;
-        if(!Objects.equals(output, taskData.output)) return false;
-        if(!taskObservability.equals(taskData.taskObservability)) return false;
-        if(!taskRequireDeps.equals(taskData.taskRequireDeps)) return false;
-        if(!resourceRequireDeps.equals(taskData.resourceRequireDeps)) return false;
-        return resourceProvideDeps.equals(taskData.resourceProvideDeps);
+        if(internalObject != null ? !internalObject.equals(taskData.internalObject) : taskData.internalObject != null)
+            return false;
+        if(output != null ? !output.equals(taskData.output) : taskData.output != null) return false;
+        if(taskObservability != taskData.taskObservability) return false;
+        return deps.equals(taskData.deps);
     }
 
     @Override public int hashCode() {
         int result = input.hashCode();
+        result = 31 * result + (internalObject != null ? internalObject.hashCode() : 0);
         result = 31 * result + (output != null ? output.hashCode() : 0);
         result = 31 * result + taskObservability.hashCode();
-        result = 31 * result + taskRequireDeps.hashCode();
-        result = 31 * result + resourceRequireDeps.hashCode();
-        result = 31 * result + resourceProvideDeps.hashCode();
+        result = 31 * result + deps.hashCode();
         return result;
     }
 
     @Override public String toString() {
-        return "TaskData(" +
-            "  input             = " + input +
-            ", output            = " + output +
-            ", taskObservability = " + taskObservability +
-            ", taskRequires      = " + taskRequireDeps +
-            ", resourceRequires  = " + resourceRequireDeps +
-            ", resourceProvides  = " + resourceProvideDeps +
-            ')';
+        return "TaskData{" +
+            "input=" + input +
+            ", internalObject=" + internalObject +
+            ", output=" + output +
+            ", taskObservability=" + taskObservability +
+            ", deps=" + deps +
+            '}';
     }
 }

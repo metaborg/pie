@@ -106,14 +106,14 @@ public class LoggingTracer extends EmptyTracer {
     public void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e) {
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + StringUtil.toShortString(e.toString(), strLimit), e);
+        logExec("← exception: " + StringUtil.toShortString(e.toString(), strLimit), e);
     }
 
     @Override
     public void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e) {
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + StringUtil.toShortString(e.toString(), strLimit));
+        logExec("← interrupted: " + StringUtil.toShortString(e.toString(), strLimit));
     }
 
 

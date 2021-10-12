@@ -60,6 +60,14 @@ public interface StoreWriteTxn extends StoreReadTxn {
 
 
     /**
+     * Restores the data of task with {@code key} to {@code data}.
+     *
+     * @param key  Key of task to restore.
+     * @param data Data to restore.
+     */
+    void restoreData(TaskKey key, TaskData data);
+
+    /**
      * Deletes the data of task for {@code key}.
      *
      * @param key Key of task to delete data for.

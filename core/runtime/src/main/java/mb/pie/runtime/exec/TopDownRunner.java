@@ -158,7 +158,7 @@ public class TopDownRunner implements RequireTask {
             }
 
             // Resource require consistency.
-            for(ResourceRequireDep resourceRequireDep : storedData.resourceRequireDeps) {
+            for(ResourceRequireDep resourceRequireDep : storedData.deps.resourceRequireDeps) {
                 final @Nullable InconsistentResourceRequire reason = requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);
@@ -166,7 +166,7 @@ public class TopDownRunner implements RequireTask {
             }
 
             // Resource provide consistency.
-            for(ResourceProvideDep resourceProvideDep : storedData.resourceProvideDeps) {
+            for(ResourceProvideDep resourceProvideDep : storedData.deps.resourceProvideDeps) {
                 final @Nullable InconsistentResourceProvide reason = requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);
@@ -174,7 +174,7 @@ public class TopDownRunner implements RequireTask {
             }
 
             // Task require consistency.
-            for(TaskRequireDep taskRequireDep : storedData.taskRequireDeps) {
+            for(TaskRequireDep taskRequireDep : storedData.deps.taskRequireDeps) {
                 final @Nullable InconsistentTaskRequire reason = requireShared.checkTaskRequireDep(key, task, taskRequireDep, modifyObservability, txn, this, cancel);
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);

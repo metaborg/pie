@@ -9,6 +9,7 @@ import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskDeps;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.api.Tracer;
@@ -102,7 +103,7 @@ public class TaskExecutor {
         // Reset task and obtain its previous data (or null if the task did not exist before)
         final @Nullable TaskData previousData = txn.resetTask(task);
         final Observability previousObservability = previousData != null ? previousData.taskObservability : Observability.Unobserved;
-        final Collection<TaskRequireDep> previousTaskRequireDeps = previousData != null ? previousData.taskRequireDeps : Collections.emptySet();
+        final Collection<TaskRequireDep> previousTaskRequireDeps = previousData != null ? previousData.deps.taskRequireDeps : Collections.emptySet();
 
         // Execute the task.
         final ExecContextImpl context = new ExecContextImpl(
@@ -126,17 +127,27 @@ public class TaskExecutor {
             tracer.executeStart(key, task, reason);
             output = task.exec(context);
         } catch(RuntimeException e) {
+            if(previousData != null) { // Restore previous data on failure.
+                txn.restoreData(key, previousData);
+            }
             tracer.executeEndFailed(key, task, reason, e);
             // Propagate runtime exceptions, no need to wrap them.
             throw e;
         } catch(InterruptedException e) {
+            if(previousData != null) { // Restore previous data on interrupt.
+                txn.restoreData(key, previousData);
+            }
             tracer.executeEndInterrupted(key, task, reason, e);
+            Thread.currentThread().interrupt(); // Interrupt the current thread.
             // Turn InterruptedExceptions into UncheckedInterruptedException.
             throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
+            if(previousData != null) { // Restore previous data on failure.
+                txn.restoreData(key, previousData);
+            }
             tracer.executeEndFailed(key, task, reason, e);
-            // Wrap regular exceptions into an UncheckedExecException which is propagated up to the entry point, where it
-            // will be turned into an ExecException that must be handled by the caller.
+            // Wrap regular exceptions into an UncheckedExecException which is propagated up to the entry point, where
+            // it will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
         }
 
@@ -150,9 +161,9 @@ public class TaskExecutor {
             // Copy observability otherwise.
             newObservability = previousObservability;
         }
-        final ExecContextImpl.Deps deps = context.deps();
-        deps.resourceProvides.forEach(d -> providedResources.add(d.key));
-        final TaskData data = new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
+        final TaskDeps deps = context.getDeps();
+        deps.resourceProvideDeps.forEach(d -> providedResources.add(d.key));
+        final TaskData data = new TaskData(task.input, txn.getInternalObject(key), output, newObservability, deps);
         tracer.executeEndSuccess(key, task, reason, data);
 
         // Validate task output, then write the output and set the new observability.
@@ -162,7 +173,7 @@ public class TaskExecutor {
 
         // Implicitly unobserve tasks which the executed task no longer depends on (if this task is observed).
         if(newObservability.isObserved()) {
-            final HashSet<TaskKey> newRequiredTasks = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+            final HashSet<TaskKey> newRequiredTasks = deps.taskRequireDeps.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
             for(TaskRequireDep dep : previousTaskRequireDeps) {
                 if(!newRequiredTasks.contains(dep.callee)) {
                     Observability.implicitUnobserve(txn, dep.callee, tracer);

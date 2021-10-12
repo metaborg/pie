@@ -3,6 +3,7 @@ package mb.pie.runtime.store;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.runtime.graph.DAG;
 import mb.pie.runtime.graph.DefaultEdge;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -28,23 +29,39 @@ public class InMemoryStore extends InMemoryStoreBase {
         // `addVertex` returns `true` if the vertex is new. In that case, we can skip removing outgoing edges as a new
         // vertex cannot have any edges.
         if(!this.taskRequireGraph.addVertex(key)) {
-            // Remove all outgoing edges of vertex `key`, as they correspond to task require dependencies.
-            //
-            // Copy collection, as the collection returned by `outgoingEdgesOf` is live and will cause
-            // `ConcurrentModificationException`s when passed to `removeAllEdges` directly, because it iterates the
-            // collection while removing elements.
-            final ArrayList<DefaultEdge> outgoingEdges = new ArrayList<>(this.taskRequireGraph.outgoingEdgesOf(key));
-            this.taskRequireGraph.removeAllEdges(outgoingEdges);
+            removeOutgoingEdgesOf(key);
         }
         return super.resetTask(task);
     }
 
+    private void removeOutgoingEdgesOf(TaskKey key) {
+        // Remove all outgoing edges of vertex `key`, as they correspond to task require dependencies.
+        //
+        // Copy collection, as the collection returned by `outgoingEdgesOf` is live and will cause
+        // `ConcurrentModificationException`s when passed to `removeAllEdges` directly, because it iterates the
+        // collection while removing elements.
+        final ArrayList<DefaultEdge> outgoingEdges = new ArrayList<>(this.taskRequireGraph.outgoingEdgesOf(key));
+        this.taskRequireGraph.removeAllEdges(outgoingEdges);
+    }
+
     @Override public void addTaskRequire(TaskKey caller, TaskKey callee) {
-        this.taskRequireGraph.addVertex(callee);
-        this.taskRequireGraph.addEdge(caller, callee);
+        doAddTaskRequire(caller, callee);
         super.addTaskRequire(caller, callee);
     }
 
+    private void doAddTaskRequire(TaskKey caller, TaskKey callee) {
+        this.taskRequireGraph.addVertex(callee);
+        this.taskRequireGraph.addEdge(caller, callee);
+    }
+
+
+    @Override public void restoreData(TaskKey key, TaskData data) {
+        removeOutgoingEdgesOf(key);
+        for(TaskRequireDep dep : data.deps.taskRequireDeps) {
+            doAddTaskRequire(key, dep.callee);
+        }
+        super.restoreData(key, data);
+    }
 
     @Override public @Nullable TaskData deleteData(TaskKey key) {
         this.taskRequireGraph.removeVertex(key);

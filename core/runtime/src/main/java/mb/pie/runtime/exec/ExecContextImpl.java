@@ -16,6 +16,7 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDef;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskDeps;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.api.Tracer;
@@ -179,7 +180,7 @@ public class ExecContextImpl implements ExecContext {
 
     private boolean hasResourceStampChanged(ResourceRequireDep dep) {
         if(previousData == null) return true; // Task is new: dependency is new -> true
-        return previousData.resourceRequireDeps.stream()
+        return previousData.deps.resourceRequireDeps.stream()
             .filter(previousDep -> previousDep.key.equals(dep.key))
             .findFirst()
             // Stamp is different: dependency has changed -> true, otherwise false.
@@ -204,7 +205,7 @@ public class ExecContextImpl implements ExecContext {
 
     private boolean hasResourceStampChanged(ResourceProvideDep dep) {
         if(previousData == null) return true; // Task is new: dependency is new -> true
-        return previousData.resourceProvideDeps.stream()
+        return previousData.deps.resourceProvideDeps.stream()
             .filter(previousDep -> previousDep.key.equals(dep.key))
             .findFirst()
             // Stamp is different: dependency has changed -> true, otherwise false.
@@ -257,15 +258,15 @@ public class ExecContextImpl implements ExecContext {
     }
 
     @Override public Iterable<TaskRequireDep> getPreviousTaskRequireDeps() {
-        return previousData != null ? previousData.taskRequireDeps : Collections.emptySet();
+        return previousData != null ? previousData.deps.taskRequireDeps : Collections.emptySet();
     }
 
     @Override public Iterable<ResourceRequireDep> getPreviousResourceRequireDeps() {
-        return previousData != null ? previousData.resourceRequireDeps : Collections.emptySet();
+        return previousData != null ? previousData.deps.resourceRequireDeps : Collections.emptySet();
     }
 
     @Override public Iterable<ResourceProvideDep> getPreviousResourceProvideDeps() {
-        return previousData != null ? previousData.resourceProvideDeps : Collections.emptySet();
+        return previousData != null ? previousData.deps.resourceProvideDeps : Collections.emptySet();
     }
 
 
@@ -278,19 +279,7 @@ public class ExecContextImpl implements ExecContext {
     }
 
 
-    static class Deps {
-        final LinkedHashSet<TaskRequireDep> taskRequires;
-        final LinkedHashSet<ResourceRequireDep> resourceRequires;
-        final LinkedHashSet<ResourceProvideDep> resourceProvides;
-
-        Deps(LinkedHashSet<TaskRequireDep> taskRequires, LinkedHashSet<ResourceRequireDep> resourceRequires, LinkedHashSet<ResourceProvideDep> resourceProvides) {
-            this.taskRequires = taskRequires;
-            this.resourceRequires = resourceRequires;
-            this.resourceProvides = resourceProvides;
-        }
-    }
-
-    Deps deps() {
-        return new Deps(taskRequires, resourceRequires, resourceProvides);
+    TaskDeps getDeps() {
+        return new TaskDeps(taskRequires, resourceRequires, resourceProvides);
     }
 }

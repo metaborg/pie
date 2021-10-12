@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
+## [0.18.1] - 2021-10-12
+### Fixed
+- Incorrect task data after task execution fails (due to an exception) or is interrupted. The previous data of the task is now restored.
+
+
 ## [0.18.0] - 2021-10-11
 ### Added
 - Tasks can get/set/clear an internal object with `getInternalObject`, `setInternalObject`, and `clearInternalObject` on `ExecContext`. Internal objects are stored and serialized along with the PIE store.
@@ -49,7 +54,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - Update common dependency to 0.9.3.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.18.0...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.18.1...HEAD
+[0.18.1]: https://github.com/metaborg/pie/compare/release-0.18.0...release-0.18.1
 [0.18.0]: https://github.com/metaborg/pie/compare/release-0.17.0...release-0.18.0
 [0.17.0]: https://github.com/metaborg/pie/compare/release-0.16.8...release-0.17.0
 [0.16.8]: https://github.com/metaborg/pie/compare/release-0.16.7...release-0.16.8

@@ -9,6 +9,7 @@ import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
+import mb.pie.api.TaskDeps;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.runtime.exec.BottomUpShared;
@@ -46,25 +47,29 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
 
     @Override public @Nullable Serializable getInput(TaskKey key) {
-        return taskInputs.get(key);
+        return this.taskInputs.get(key);
+    }
+
+    private void setInput(TaskKey key, Serializable input) {
+        this.taskInputs.put(key, input);
     }
 
 
     @Override public @Nullable Serializable getInternalObject(TaskKey key) {
-        return taskInternalObjects.get(key);
+        return this.taskInternalObjects.get(key);
     }
 
     @Override public void setInternalObject(TaskKey key, @Nullable Serializable obj) {
-        taskInternalObjects.put(key, obj);
+        this.taskInternalObjects.put(key, obj);
     }
 
     @Override public void clearInternalObject(TaskKey key) {
-        taskInternalObjects.remove(key);
+        this.taskInternalObjects.remove(key);
     }
 
 
     @Override public @Nullable Output getOutput(TaskKey key) {
-        final @Nullable Output wrapper = taskOutputs.get(key);
+        final @Nullable Output wrapper = this.taskOutputs.get(key);
         if(wrapper != null) {
             return new Output(wrapper.output);
         } else {
@@ -110,41 +115,45 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
 
     @Override public Collection<ResourceRequireDep> getResourceRequireDeps(TaskKey requirer) {
-        return getOrEmptyLinkedHashSet(resourceRequireDeps, requirer);
+        return getOrEmptyLinkedHashSet(this.resourceRequireDeps, requirer);
     }
 
     @Override public Set<TaskKey> getRequirersOf(ResourceKey requiree) {
-        return getOrPutEmptyHashSet(requireesOf, requiree);
+        return getOrPutEmptyHashSet(this.requireesOf, requiree);
     }
 
 
     @Override public Collection<ResourceProvideDep> getResourceProvideDeps(TaskKey provider) {
-        return getOrEmptyLinkedHashSet(resourceProvideDeps, provider);
+        return getOrEmptyLinkedHashSet(this.resourceProvideDeps, provider);
     }
 
     @Override public @Nullable TaskKey getProviderOf(ResourceKey providee) {
-        return providerOf.get(providee);
+        return this.providerOf.get(providee);
     }
 
 
     @Override public @Nullable TaskData resetTask(Task<?> task) {
         final TaskKey key = task.key();
         final @Nullable Serializable previousInput = this.taskInputs.put(key, task.input);
+        final @Nullable Serializable previousInternalObject = getInternalObject(key);
         final @Nullable Output previousOutput = this.taskOutputs.remove(key);
         final @Nullable Observability previousTaskObservability = this.taskObservability.remove(key);
         // Pass `false` to `removeTaskRequireDepsOf` to not remove `key` from the `callersOf` map, as we want to keep
         // dependencies from other tasks to `key` intact.
-        final @Nullable Collection<TaskRequireDep> previousTaskRequireDeps = removeTaskRequireDepsOf(key, false);
+        final @Nullable Collection<TaskRequireDep> previousTaskRequireDeps = removeTaskRequiresAndDepsOf(key);
         final @Nullable Collection<ResourceRequireDep> previousResourceRequireDeps = removeResourceRequireDepsOf(key);
         final @Nullable Collection<ResourceProvideDep> previousResourceProvideDeps = removeResourceProvideDepsOf(key);
         if(previousInput != null) {
             return new TaskData(
                 previousInput,
+                previousInternalObject,
                 previousOutput != null ? previousOutput.output : null,
                 previousTaskObservability != null ? previousTaskObservability : Observability.Unobserved,
-                previousTaskRequireDeps != null ? previousTaskRequireDeps : Collections.emptySet(),
-                previousResourceRequireDeps != null ? previousResourceRequireDeps : Collections.emptySet(),
-                previousResourceProvideDeps != null ? previousResourceProvideDeps : Collections.emptySet()
+                new TaskDeps(
+                    previousTaskRequireDeps != null ? previousTaskRequireDeps : Collections.emptySet(),
+                    previousResourceRequireDeps != null ? previousResourceRequireDeps : Collections.emptySet(),
+                    previousResourceProvideDeps != null ? previousResourceProvideDeps : Collections.emptySet()
+                )
             );
         }
         return null;
@@ -169,20 +178,42 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         this.providerOf.put(dep.key, provider);
     }
 
+
     @Override public @Nullable TaskData getData(TaskKey key) {
         final @Nullable Serializable input = getInput(key);
         if(input == null) {
             return null;
         }
+        final @Nullable Serializable internalObject = getInternalObject(key);
         final @Nullable Output output = getOutput(key);
         if(output == null) {
             return null;
         }
         final Observability taskObservability = getTaskObservability(key);
-        final Collection<TaskRequireDep> taskRequires = getTaskRequireDeps(key);
-        final Collection<ResourceRequireDep> resourceRequires = getResourceRequireDeps(key);
-        final Collection<ResourceProvideDep> resourceProvides = getResourceProvideDeps(key);
-        return new TaskData(input, output.output, taskObservability, taskRequires, resourceRequires, resourceProvides);
+        final Collection<TaskRequireDep> taskRequireDeps = getTaskRequireDeps(key);
+        final Collection<ResourceRequireDep> resourceRequireDeps = getResourceRequireDeps(key);
+        final Collection<ResourceProvideDep> resourceProvideDeps = getResourceProvideDeps(key);
+        return new TaskData(input, internalObject, output.output, taskObservability, new TaskDeps(taskRequireDeps, resourceRequireDeps, resourceProvideDeps));
+    }
+
+    @Override public void restoreData(TaskKey key, TaskData data) {
+        setInput(key, data.input);
+        setInternalObject(key, data.internalObject);
+        setOutput(key, data.output);
+        setTaskObservability(key, data.taskObservability);
+        removeTaskRequiresAndDepsOf(key);
+        for(TaskRequireDep dep : data.deps.taskRequireDeps) {
+            addTaskRequire(key, dep.callee);
+            addTaskRequireDep(key, dep);
+        }
+        removeResourceRequireDepsOf(key);
+        for(ResourceRequireDep dep : data.deps.resourceRequireDeps) {
+            addResourceRequireDep(key, dep);
+        }
+        removeResourceProvideDepsOf(key);
+        for(ResourceProvideDep dep : data.deps.resourceProvideDeps) {
+            addResourceProvideDep(key, dep);
+        }
     }
 
     @Override public @Nullable TaskData deleteData(TaskKey key) {
@@ -190,7 +221,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         if(input == null) {
             return null;
         }
-        taskInternalObjects.remove(key);
+        final @Nullable Serializable internalObject = taskInternalObjects.remove(key);
         final @Nullable Output output = taskOutputs.remove(key);
         if(output == null) {
             throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
@@ -198,22 +229,26 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         final @Nullable Observability observability = taskObservability.remove(key);
         // Pass `true` to `removeTaskRequireDepsOf` to remove `key` from the `callersOf` map, as `key` will be removed
         // completely, thus it is not possible to call it any more.
-        final @Nullable Collection<TaskRequireDep> removedTaskRequires = removeTaskRequireDepsOf(key, true);
+        final @Nullable Collection<TaskRequireDep> removedTaskRequires = removeTaskRequiresAndDepsOf(key);
+        removeFromCallersOf(key);
         final @Nullable Collection<ResourceRequireDep> removedResourceRequires = removeResourceRequireDepsOf(key);
         final @Nullable Collection<ResourceProvideDep> removedResourceProvides = removeResourceProvideDepsOf(key);
         deferredTasks.remove(key);
         return new TaskData(
             input,
+            internalObject,
             output.output,
             observability != null ? observability : Observability.Unobserved,
-            removedTaskRequires != null ? removedTaskRequires : new LinkedHashSet<>(),
-            removedResourceRequires != null ? removedResourceRequires : new LinkedHashSet<>(),
-            removedResourceProvides != null ? removedResourceProvides : new LinkedHashSet<>()
+            new TaskDeps(
+                removedTaskRequires != null ? removedTaskRequires : Collections.emptySet(),
+                removedResourceRequires != null ? removedResourceRequires : Collections.emptySet(),
+                removedResourceProvides != null ? removedResourceProvides : Collections.emptySet()
+            )
         );
     }
 
 
-    private @Nullable Collection<TaskRequireDep> removeTaskRequireDepsOf(TaskKey key, boolean removeFromCallersOf) {
+    private @Nullable Collection<TaskRequireDep> removeTaskRequiresAndDepsOf(TaskKey key) {
         this.taskRequires.remove(key);
         final @Nullable Collection<TaskRequireDep> removedDeps = this.taskRequireDeps.remove(key);
         if(removedDeps != null) {
@@ -224,10 +259,11 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
                 }
             }
         }
-        if(removeFromCallersOf) {
-            this.callersOf.remove(key);
-        }
         return removedDeps;
+    }
+
+    private void removeFromCallersOf(TaskKey key) {
+        this.callersOf.remove(key);
     }
 
     private @Nullable Collection<ResourceRequireDep> removeResourceRequireDepsOf(TaskKey key) {

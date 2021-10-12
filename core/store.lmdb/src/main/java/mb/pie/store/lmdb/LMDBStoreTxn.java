@@ -8,6 +8,7 @@ import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
+import mb.pie.api.TaskDeps;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.runtime.exec.BottomUpShared;
@@ -157,7 +158,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         final ArrayList<TaskRequireDep> taskRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
         final ArrayList<ResourceRequireDep> resourceRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceRequiresDb), new ArrayList<>());
         final ArrayList<ResourceProvideDep> resourceProvides = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb), new ArrayList<>());
-        return new TaskData(input, output, taskObservability, taskRequires, resourceRequires, resourceProvides);
+        return new TaskData(input, getInternalObject(key), output, taskObservability, new TaskDeps(taskRequires, resourceRequires, resourceProvides));
     }
 
 
@@ -208,6 +209,11 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     @Override public void clearInternalObject(TaskKey key) {
         // TODO: implement
         throw new UnsupportedOperationException("clearInternalObject has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void restoreData(TaskKey key, TaskData data) {
+        // TODO: implement
+        throw new UnsupportedOperationException("restoreData has not been implemented for LMDB yet, sorry");
     }
 
 //    @Override public void setTaskRequires(TaskKey key, Collection<TaskRequireDep> taskRequires) {
