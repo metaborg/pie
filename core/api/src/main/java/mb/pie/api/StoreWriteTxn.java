@@ -88,6 +88,22 @@ public interface StoreWriteTxn extends StoreReadTxn {
 
 
     /**
+     * Sets the callback of task for {@code key} to {@code callback}.
+     */
+    void setCallback(TaskKey key, SerializableConsumer<Serializable> callback);
+
+    /**
+     * Removes the callback of task for {@code key}. Does nothing if it has no callback.
+     */
+    void removeCallback(TaskKey key);
+
+    /**
+     * Removes all callbacks.
+     */
+    void dropCallbacks();
+
+
+    /**
      * Removes all data from (drops) the store.
      */
     void drop();

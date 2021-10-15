@@ -1,6 +1,7 @@
 package mb.pie.runtime;
 
 import mb.pie.api.Callbacks;
+import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -9,11 +10,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class MapCallbacks implements Callbacks {
-    protected final ConcurrentHashMap<TaskKey, Consumer<Serializable>> map = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TaskKey, Consumer<Serializable>> map = new ConcurrentHashMap<>();
 
     @Override
-    public @Nullable Consumer<@Nullable Serializable> get(TaskKey key) {
-        return map.get(key);
+    public @Nullable Consumer<@Nullable Serializable> get(TaskKey key, StoreReadTxn txn) {
+        final @Nullable Consumer<Serializable> mapCallback = map.get(key);
+        final @Nullable Consumer<Serializable> storeCallback = txn.getCallback(key);
+        if(mapCallback != null && storeCallback != null) {
+            throw new RuntimeException("BUG: both a map callback '" + mapCallback + "' and a store callback '" + storeCallback + "' exists for task with key '" + key + "'");
+        }
+        if(mapCallback != null) {
+            return mapCallback;
+        }
+        if(storeCallback != null) {
+            return storeCallback;
+        }
+        return null;
     }
 
     @Override

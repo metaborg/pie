@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecException;
 import mb.pie.api.Output;
 import mb.pie.api.Store;
@@ -30,10 +31,11 @@ public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
         ResourceService resourceService,
         Store store,
         Tracer tracer,
+        Callbacks callbacks,
 
         HashSet<ResourceKey> providedResources
     ) {
-        super(taskDefs, resourceService, store, tracer, providedResources);
+        super(taskDefs, resourceService, store, tracer, callbacks, providedResources);
         this.bottomUpRunner = bottomUpRunner;
         this.store = store;
     }

@@ -39,22 +39,22 @@ class BottomUpTests {
     val combKey = combTask.key()
     var combOutput: String? = null
     var combObserved = 0
-    pie.setCallback(combTask) { s -> combOutput = s; ++combObserved }
 
     val readTask = readDef.createTask(file)
     val readKey = readTask.key()
     var readOutput: String? = null
     var readObserved = 0
-    pie.setCallback(readTask) { s -> readOutput = s; ++readObserved }
 
     val lowerTask = lowerDef.createTask(str)
     val lowerKey = lowerTask.key()
     var lowerOutput: String? = null
     var lowerObserved = 0
-    pie.setCallback(lowerTask) { s -> lowerOutput = s; ++lowerObserved }
 
     // Build [combineTask] in top-down fashion, observe rebuild of all.
     newSession().use { session ->
+      session.setCallback(combTask) { s -> combOutput = s; ++combObserved }
+      session.setCallback(readTask) { s -> readOutput = s; ++readObserved }
+      session.setCallback(lowerTask) { s -> lowerOutput = s; ++lowerObserved }
       val output = session.require(combTask)
       Assertions.assertEquals("hello world!", output)
       Assertions.assertEquals("hello world!", combOutput)
@@ -79,11 +79,11 @@ class BottomUpTests {
     val lowerRevKey = lowerRevTask.key()
     var lowerRevOutput: String? = null
     var lowerRevObserved = 0
-    pie.setCallback(lowerRevTask) { s -> lowerRevOutput = s; ++lowerRevObserved }
 
     // Notify of file change, observe bottom-up execution of directly affected [readTask], which then affects
     // [combTask], which in turn requires [lowerRevTask].
     newSession().use { session ->
+      session.setCallback(lowerRevTask) { s -> lowerRevOutput = s; ++lowerRevObserved }
       session.updateAffectedBy(setOf(file.key))
       // [combTask]'s key has not changed, since it is based on a file name that did not change.
       Assertions.assertEquals("!dlrow olleh", combOutput)

@@ -133,7 +133,7 @@ open class TestPieImpl(
       bottomUpSession = spy(bottomUpSession)
     }
 
-    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, tracer, providedResources, lockHandle)
+    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, tracer, callbacks, providedResources, lockHandle)
     if(shouldSpy) {
       session = spy(session)
     }
@@ -149,11 +149,12 @@ open class TestMixedSessionImpl(
   resourceService: ResourceService,
   store: Store,
   tracer: Tracer,
+  callbacks: Callbacks,
 
   providedResources: HashSet<ResourceKey>,
 
   lockHandle: LockHandle
-) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources, lockHandle) {
+) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, callbacks, providedResources, lockHandle) {
   // Make store available for testing.
   val store: Store get() = super.store
 

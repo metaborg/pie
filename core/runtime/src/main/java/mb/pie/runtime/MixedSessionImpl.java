@@ -1,6 +1,7 @@
 package mb.pie.runtime;
 
 import mb.common.concurrent.lock.LockHandle;
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Store;
@@ -40,12 +41,13 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         ResourceService resourceService,
         Store store,
         Tracer tracer,
+        Callbacks callbacks,
 
         HashSet<ResourceKey> providedResources,
 
         LockHandle lockHandle
     ) {
-        super(taskDefs, resourceService, store, tracer, providedResources);
+        super(taskDefs, resourceService, store, tracer, callbacks, providedResources);
 
         this.topDownRunner = topDownRunner;
         this.bottomUpRunner = bottomUpRunner;
@@ -82,7 +84,7 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     }
 
     private TopDownSession createSessionAfterBottomUp() {
-        return new TopDownSessionImpl(bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources);
+        return new TopDownSessionImpl(bottomUpRunner, taskDefs, resourceService, store, tracer, callbacks, providedResources);
     }
 
 

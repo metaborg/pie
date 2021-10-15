@@ -104,4 +104,10 @@ public interface StoreReadTxn extends StoreTxn {
      * @return number of source required resources for which there is no provider.
      */
     int getNumSourceFiles();
+
+
+    /**
+     * @return Callback for task with {@code key}, or {@code null} if it has no callback.
+     */
+    @Nullable SerializableConsumer<Serializable> getCallback(TaskKey key);
 }

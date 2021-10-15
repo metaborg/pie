@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -81,6 +82,75 @@ public interface Session {
      * @throws RuntimeException     When a task throws a {@link RuntimeException}.
      */
     <O extends Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException;
+
+
+    /**
+     * Sets {@code function} as the callback for outputs of {@code task}. Whenever {@code task} is required, its
+     * up-to-date output will be passed as an argument to the {@code function}. This callback is not stored, and will be
+     * lost when the {@link Pie} instance is closed.
+     *
+     * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
+     *                 which callback function to call when a task is required.
+     * @param function Function to call with up-to-date output as argument when {@code task} is required. Consumed value
+     *                 by the function may be {@code null} when a task returns {@code null}.
+     */
+    <O extends Serializable> void setCallback(Task<O> task, Consumer<O> function);
+
+    /**
+     * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
+     * required, its up-to-date output will be passed as an argument to the {@code function}. This callback is not
+     * stored, and will be lost when the {@link Pie} instance is closed.
+     *
+     * @param key      Key of task to set callback for.
+     * @param function Function to call with up-to-date output as argument when task is required. Consumed value by the
+     *                 function may be {@code null} when a task returns {@code null}.
+     */
+    void setCallback(TaskKey key, Consumer<Serializable> function);
+
+    /**
+     * Sets {@code function} as the callback for outputs of {@code task}. Whenever {@code task} is required, its
+     * up-to-date output will be passed as an argument to the {@code function}. The callback function must be {@link
+     * Serializable}. Therefore, if using a lambda or anonymous function, make sure that all captured state is
+     * serializable. This callback is stored in the {@link Store}.
+     *
+     * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
+     *                 which callback function to call when a task is required.
+     * @param function Function to call with up-to-date output as argument when {@code task} is required. Consumed value
+     *                 by the function may be {@code null} when a task returns {@code null}.
+     */
+    <O extends Serializable> void setSerializableCallback(Task<O> task, SerializableConsumer<O> function);
+
+    /**
+     * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
+     * required, its up-to-date output will be passed as an argument to the {@code function}. The callback function must
+     * be {@link Serializable}. Therefore, if using a lambda or anonymous function, make sure that all captured state is
+     * serializable. This callback is stored in the {@link Store}.
+     *
+     * @param key      Key of task to set callback for.
+     * @param function Function to call with up-to-date output as argument when task is required. Consumed value by the
+     *                 function may be {@code null} when a task returns {@code null}.
+     */
+    void setSerializableCallback(TaskKey key, SerializableConsumer<Serializable> function);
+
+    /**
+     * Removes the callback function for outputs of {@code task}.
+     *
+     * @param task Task to remove the callback for. The {@link Task#key()} of {@code task} will be used to identify
+     *             which callback function to remove.
+     */
+    void removeCallback(Task<?> task);
+
+    /**
+     * Removes the callback function for outputs of task with {@code key}.
+     *
+     * @param key Key of task to remove callback function for.
+     */
+    void removeCallback(TaskKey key);
+
+    /**
+     * Removes all callback functions.
+     */
+    void dropCallbacks();
 
 
     /**
@@ -211,4 +281,10 @@ public interface Session {
      * @return Read-only set of provided resources.
      */
     Set<ResourceKey> getProvidedResources();
+
+
+    /**
+     * Removes all data from the store.
+     */
+    void dropStore();
 }

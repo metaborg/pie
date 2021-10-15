@@ -6,7 +6,6 @@ import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
 import mb.pie.api.MixedSession;
-import mb.pie.api.Observability;
 import mb.pie.api.Pie;
 import mb.pie.api.PieBuilder.LayerFactory;
 import mb.pie.api.PieChildBuilder;
@@ -14,7 +13,6 @@ import mb.pie.api.Share;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
-import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
 import mb.pie.api.TaskKey;
@@ -26,13 +24,10 @@ import mb.pie.runtime.exec.TaskExecutor;
 import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class PieImpl implements Pie {
@@ -102,68 +97,13 @@ public class PieImpl implements Pie {
         final RequireShared requireShared = new RequireShared(taskDefs, resourceService, tracer, visited);
         final TopDownRunner topDownRunner = new TopDownRunner(store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
         final BottomUpRunner bottomUpRunner = new BottomUpRunner(taskDefs, resourceService, store, layer, tracer, taskExecutor, requireShared, callbacks, visited);
-        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources, lockHandle);
+        return new MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, callbacks, providedResources, lockHandle);
     }
 
 
     @Override public boolean hasBeenExecuted(TaskKey key) {
         try(final LockHandle ignored = lock.lockRead(); final StoreReadTxn txn = store.readTxn()) {
             return txn.getOutput(key) != null;
-        }
-    }
-
-    @Override public boolean isObserved(TaskKey key) {
-        try(final LockHandle ignored = lock.lockRead(); final StoreReadTxn txn = store.readTxn()) {
-            return txn.getTaskObservability(key).isObserved();
-        }
-    }
-
-    @Override public boolean isExplicitlyObserved(TaskKey key) {
-        try(final LockHandle ignored = lock.lockRead(); final StoreReadTxn txn = store.readTxn()) {
-            return txn.getTaskObservability(key) == Observability.ExplicitObserved;
-        }
-    }
-
-    @Override public void setImplicitToExplicitlyObserved(TaskKey key) {
-        try(final LockHandle ignored = lock.lockWrite(); final StoreWriteTxn txn = store.writeTxn()) {
-            final Observability observability = txn.getTaskObservability(key);
-            if(observability.isUnobserved()) {
-                throw new IllegalArgumentException("Cannot set task with key '" + key + "' to explicitly observed, because it is unobserved");
-            }
-            if(observability != Observability.ExplicitObserved) {
-                txn.setTaskObservability(key, Observability.ExplicitObserved);
-            }
-        }
-    }
-
-
-    @Override public <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function) {
-        try(final LockHandle ignored = lock.lockWrite()) {
-            callbacks.set(task, function);
-        }
-    }
-
-    @Override public void setCallback(TaskKey key, Consumer<@Nullable Serializable> function) {
-        try(final LockHandle ignored = lock.lockWrite()) {
-            callbacks.set(key, function);
-        }
-    }
-
-    @Override public void removeCallback(Task<?> task) {
-        try(final LockHandle ignored = lock.lockWrite()) {
-            callbacks.remove(task);
-        }
-    }
-
-    @Override public void removeCallback(TaskKey key) {
-        try(final LockHandle ignored = lock.lockWrite()) {
-            callbacks.remove(key);
-        }
-    }
-
-    @Override public void dropCallbacks() {
-        try(final LockHandle ignored = lock.lockWrite()) {
-            callbacks.clear();
         }
     }
 

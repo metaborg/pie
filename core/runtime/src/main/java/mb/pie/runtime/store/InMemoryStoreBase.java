@@ -4,6 +4,7 @@ import mb.pie.api.Observability;
 import mb.pie.api.Output;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.SerializableConsumer;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
@@ -44,6 +45,8 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     protected final HashMap<ResourceKey, TaskKey> providerOf = new HashMap<>();
 
     protected final HashSet<TaskKey> deferredTasks = new HashSet<>();
+
+    protected final HashMap<TaskKey, SerializableConsumer<Serializable>> callbacks = new HashMap<>();
 
 
     @Override public @Nullable Serializable getInput(TaskKey key) {
@@ -324,6 +327,23 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     }
 
 
+    @Override public @Nullable SerializableConsumer<Serializable> getCallback(TaskKey key) {
+        return callbacks.get(key);
+    }
+
+    @Override public void setCallback(TaskKey key, SerializableConsumer<Serializable> callback) {
+        callbacks.put(key, callback);
+    }
+
+    @Override public void removeCallback(TaskKey key) {
+        callbacks.remove(key);
+    }
+
+    @Override public void dropCallbacks() {
+        callbacks.clear();
+    }
+
+
     @Override public void drop() {
         taskInputs.clear();
         taskInternalObjects.clear();
@@ -337,6 +357,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         resourceProvideDeps.clear();
         providerOf.clear();
         deferredTasks.clear();
+        callbacks.clear();
     }
 
 

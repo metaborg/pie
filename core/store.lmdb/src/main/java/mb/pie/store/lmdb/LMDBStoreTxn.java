@@ -4,6 +4,7 @@ import mb.pie.api.Observability;
 import mb.pie.api.Output;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
+import mb.pie.api.SerializableConsumer;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
@@ -189,6 +190,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     }
 
 
+
 //    @Override public void setInput(TaskKey key, Serializable input) {
 //        shared.setOne(serializeUtil.serializeHashed(key), serializeUtil.serializeObject(input), inputDb);
 //    }
@@ -329,6 +331,27 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
     @Override public void removeDeferredTask(TaskKey key) {
         // TODO: implement
         throw new UnsupportedOperationException("removeDeferredTask has not been implemented for LMDB yet, sorry");
+    }
+
+
+    @Override public @Nullable SerializableConsumer<Serializable> getCallback(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("getCallback has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void setCallback(TaskKey key, SerializableConsumer<Serializable> callback) {
+        // TODO: implement
+        throw new UnsupportedOperationException("setCallback has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void removeCallback(TaskKey key) {
+        // TODO: implement
+        throw new UnsupportedOperationException("removeCallback has not been implemented for LMDB yet, sorry");
+    }
+
+    @Override public void dropCallbacks() {
+        // TODO: implement
+        throw new UnsupportedOperationException("dropCallbacks has not been implemented for LMDB yet, sorry");
     }
 
 

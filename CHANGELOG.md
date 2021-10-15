@@ -3,6 +3,20 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Added
+- `Session#setSerializableCallback` for setting a callback that is serializable, so it can be stored in the `Store` to survive recreating of the `Pie` instance.
+
+### Removed
+- `Pie#isObserved`, use `Session#isObserved` instead.
+- `Pie#isExplicitlyObserved`, use `Session#isExplicitlyObserved` instead.
+- `Pie#setImplicitToExplicitlyObserved`, use `Session#setImplicitToExplicitlyObserved` instead.
+- `Pie#setCallback`, use `Session#setCallback` instead.
+- `Pie#removeCallback`, use `Session#removeCallback` instead.
+- `Pie#dropCallbacks`, use `Session#dropCallbacks` instead.
+
+### Deprecated
+- `Pie#hasBeenExecuted`, use `Session#hasBeenExecuted` instead.
+- `Pie#dropStore`, use `Session#dropStore` instead.
 
 
 ## [0.18.1] - 2021-10-12

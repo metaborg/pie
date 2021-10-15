@@ -93,7 +93,7 @@ public class TopDownRunner implements RequireTask {
                 visited.put(key, data);
 
                 // Invoke callback, if any.
-                final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
+                final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key, txn);
                 if(callback != null) {
                     tracer.invokeCallbackStart(callback, key, output);
                     callback.accept(output);

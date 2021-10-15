@@ -23,8 +23,8 @@ class ObservabilityTests {
   fun testExplicitObserved() = builder.test {
     newSession().use { session ->
       session.require(noopTask)
-      assertTrue(pie.isObserved(noopTask))
-      assertTrue(pie.isObserved(noopKey))
+      assertTrue(session.isObserved(noopTask))
+      assertTrue(session.isObserved(noopKey))
       session.store.readTxn().use { txn ->
         val observability = txn.getTaskObservability(noopKey)
         assertEquals(Observability.ExplicitObserved, observability)
@@ -39,10 +39,10 @@ class ObservabilityTests {
     newSession().use { session ->
       session.require(callNoopTask)
 
-      assertTrue(pie.isObserved(noopTask))
-      assertTrue(pie.isObserved(noopKey))
-      assertTrue(pie.isObserved(callNoopTask))
-      assertTrue(pie.isObserved(callNoopKey))
+      assertTrue(session.isObserved(noopTask))
+      assertTrue(session.isObserved(noopKey))
+      assertTrue(session.isObserved(callNoopTask))
+      assertTrue(session.isObserved(callNoopKey))
 
       session.store.readTxn().use { txn ->
         // `callNoopTask` is explicitly required, therefore it is explicitly observed.
@@ -149,10 +149,10 @@ class ObservabilityTests {
       session.requireWithoutObserving(callNoopTask)
 
       // Because we are requiring without observing, everything is unobserved.
-      assertFalse(pie.isObserved(noopTask))
-      assertFalse(pie.isObserved(noopKey))
-      assertFalse(pie.isObserved(callNoopTask))
-      assertFalse(pie.isObserved(callNoopKey))
+      assertFalse(session.isObserved(noopTask))
+      assertFalse(session.isObserved(noopKey))
+      assertFalse(session.isObserved(callNoopTask))
+      assertFalse(session.isObserved(callNoopKey))
 
       session.store.readTxn().use { txn ->
         val callNoopObservability = txn.getTaskObservability(callNoopKey)

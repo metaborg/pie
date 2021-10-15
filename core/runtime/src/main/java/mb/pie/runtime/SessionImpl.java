@@ -1,8 +1,10 @@
 package mb.pie.runtime;
 
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecException;
 import mb.pie.api.Observability;
 import mb.pie.api.ResourceProvideDep;
+import mb.pie.api.SerializableConsumer;
 import mb.pie.api.Session;
 import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
@@ -29,6 +31,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -37,6 +40,7 @@ public abstract class SessionImpl implements Session {
     protected final ResourceService resourceService;
     protected final Store store;
     protected final Tracer tracer;
+    protected final Callbacks callbacks;
 
     protected final HashSet<ResourceKey> providedResources;
 
@@ -46,13 +50,68 @@ public abstract class SessionImpl implements Session {
         ResourceService resourceService,
         Store store,
         Tracer tracer,
+        Callbacks callbacks,
         HashSet<ResourceKey> providedResources
     ) {
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
         this.tracer = tracer;
+        this.callbacks = callbacks;
         this.providedResources = providedResources;
+    }
+
+
+    @Override public <O extends @Nullable Serializable> void setCallback(Task<O> task, Consumer<O> function) {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.removeCallback(task.key());
+        }
+        callbacks.set(task, function);
+    }
+
+    @Override public void setCallback(TaskKey key, Consumer<@Nullable Serializable> function) {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.removeCallback(key);
+        }
+        callbacks.set(key, function);
+    }
+
+    @Override
+    public <O extends Serializable> void setSerializableCallback(Task<O> task, SerializableConsumer<O> function) {
+        final TaskKey key = task.key();
+        callbacks.remove(key);
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            @SuppressWarnings("unchecked") final SerializableConsumer<Serializable> base = (SerializableConsumer<Serializable>)function;
+            txn.setCallback(key, base);
+        }
+    }
+
+    @Override public void setSerializableCallback(TaskKey key, SerializableConsumer<Serializable> function) {
+        callbacks.remove(key);
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.setCallback(key, function);
+        }
+    }
+
+    @Override public void removeCallback(Task<?> task) {
+        callbacks.remove(task);
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.removeCallback(task.key());
+        }
+    }
+
+    @Override public void removeCallback(TaskKey key) {
+        callbacks.remove(key);
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.removeCallback(key);
+        }
+    }
+
+    @Override public void dropCallbacks() {
+        callbacks.clear();
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.dropCallbacks();
+        }
     }
 
 
@@ -142,6 +201,14 @@ public abstract class SessionImpl implements Session {
     @Override public Set<ResourceKey> getProvidedResources() {
         return Collections.unmodifiableSet(this.providedResources);
     }
+
+
+    @Override public void dropStore() {
+        try(final StoreWriteTxn txn = store.writeTxn()) {
+            txn.drop();
+        }
+    }
+
 
     protected <T extends Serializable> T handleException(Supplier<T> supplier) throws ExecException, InterruptedException {
         try {
