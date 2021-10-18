@@ -3,6 +3,9 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+
+
+## [0.19.0] - 2021-10-18
 ### Added
 - `Session#setSerializableCallback` for setting a callback that is serializable, so it can be stored in the `Store` to survive recreating of the `Pie` instance.
 
@@ -18,6 +21,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `Pie#hasBeenExecuted`, use `Session#hasBeenExecuted` instead.
 - `Pie#dropStore`, use `Session#dropStore` instead.
 
+### Changed
+- `resource` requirement to `0.13.0`.
 
 ## [0.18.1] - 2021-10-12
 ### Fixed
@@ -68,7 +73,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - Update common dependency to 0.9.3.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.18.1...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.18.0...HEAD
+[0.19.0]: https://github.com/metaborg/pie/compare/release-0.18.1...release-0.19.0
 [0.18.1]: https://github.com/metaborg/pie/compare/release-0.18.0...release-0.18.1
 [0.18.0]: https://github.com/metaborg/pie/compare/release-0.17.0...release-0.18.0
 [0.17.0]: https://github.com/metaborg/pie/compare/release-0.16.8...release-0.17.0
