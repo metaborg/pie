@@ -127,6 +127,7 @@ public class TaskExecutor {
         try {
             tracer.executeStart(key, task, reason);
             output = task.exec(context);
+            cancel.throwIfCanceled();
         } catch(UncheckedInterruptedException e) {
             // Special case for UncheckedInterruptedException which can occur with nested execution.
             txn.restoreData(key, previousData); // Restore previous data on cancel.
