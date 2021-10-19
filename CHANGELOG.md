@@ -3,6 +3,9 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+
+
+## [0.19.1] - 2021-10-19
 ### Fixed
 - Tasks data for new tasks (i.e., tasks that have not been executed before) not being reset on cancel or failure.
 - Task data not being restored when task throws a `Throwable`.
@@ -77,7 +80,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - Update common dependency to 0.9.3.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.18.0...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.1...HEAD
+[0.19.1]: https://github.com/metaborg/pie/compare/release-0.19.0...release-0.19.1
 [0.19.0]: https://github.com/metaborg/pie/compare/release-0.18.1...release-0.19.0
 [0.18.1]: https://github.com/metaborg/pie/compare/release-0.18.0...release-0.18.1
 [0.18.0]: https://github.com/metaborg/pie/compare/release-0.17.0...release-0.18.0
