@@ -199,37 +199,49 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         return new TaskData(input, internalObject, output.output, taskObservability, new TaskDeps(taskRequireDeps, resourceRequireDeps, resourceProvideDeps));
     }
 
-    @Override public void restoreData(TaskKey key, TaskData data) {
-        setInput(key, data.input);
-        setInternalObject(key, data.internalObject);
-        setOutput(key, data.output);
-        setTaskObservability(key, data.taskObservability);
+    @Override public void restoreData(TaskKey key, @Nullable TaskData data) {
+        if(data != null) {
+            setInput(key, data.input);
+            setInternalObject(key, data.internalObject);
+            setOutput(key, data.output);
+            setTaskObservability(key, data.taskObservability);
+        } else {
+            clearInternalObject(key);
+            this.taskOutputs.remove(key);
+            this.taskObservability.remove(key);
+        }
         removeTaskRequiresAndDepsOf(key);
-        for(TaskRequireDep dep : data.deps.taskRequireDeps) {
-            addTaskRequire(key, dep.callee);
-            addTaskRequireDep(key, dep);
+        if(data != null) {
+            for(TaskRequireDep dep : data.deps.taskRequireDeps) {
+                addTaskRequire(key, dep.callee);
+                addTaskRequireDep(key, dep);
+            }
         }
         removeResourceRequireDepsOf(key);
-        for(ResourceRequireDep dep : data.deps.resourceRequireDeps) {
-            addResourceRequireDep(key, dep);
+        if(data != null) {
+            for(ResourceRequireDep dep : data.deps.resourceRequireDeps) {
+                addResourceRequireDep(key, dep);
+            }
         }
         removeResourceProvideDepsOf(key);
-        for(ResourceProvideDep dep : data.deps.resourceProvideDeps) {
-            addResourceProvideDep(key, dep);
+        if(data != null) {
+            for(ResourceProvideDep dep : data.deps.resourceProvideDeps) {
+                addResourceProvideDep(key, dep);
+            }
         }
     }
 
     @Override public @Nullable TaskData deleteData(TaskKey key) {
-        final @Nullable Serializable input = taskInputs.remove(key);
+        final @Nullable Serializable input = this.taskInputs.remove(key);
         if(input == null) {
             return null;
         }
-        final @Nullable Serializable internalObject = taskInternalObjects.remove(key);
-        final @Nullable Output output = taskOutputs.remove(key);
+        final @Nullable Serializable internalObject = this.taskInternalObjects.remove(key);
+        final @Nullable Output output = this.taskOutputs.remove(key);
         if(output == null) {
             throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
         }
-        final @Nullable Observability observability = taskObservability.remove(key);
+        final @Nullable Observability observability = this.taskObservability.remove(key);
         // Pass `true` to `removeTaskRequireDepsOf` to remove `key` from the `callersOf` map, as `key` will be removed
         // completely, thus it is not possible to call it any more.
         final @Nullable Collection<TaskRequireDep> removedTaskRequires = removeTaskRequiresAndDepsOf(key);

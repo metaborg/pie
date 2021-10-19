@@ -3,6 +3,10 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Fixed
+- Tasks data for new tasks (i.e., tasks that have not been executed before) not being reset on cancel or failure.
+- Task data not being restored when task throws a `Throwable`.
+- `UncheckedInterruptedException` and `CanceledException` not being handled as an interrupt/cancel.
 
 
 ## [0.19.0] - 2021-10-18

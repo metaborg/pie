@@ -15,6 +15,7 @@ import mb.pie.api.TaskRequireDep;
 import mb.pie.api.Tracer;
 import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CancelToken;
+import mb.pie.api.exec.CanceledException;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.api.exec.UncheckedInterruptedException;
 import mb.pie.runtime.DefaultStampers;
@@ -126,29 +127,36 @@ public class TaskExecutor {
         try {
             tracer.executeStart(key, task, reason);
             output = task.exec(context);
+        } catch(UncheckedInterruptedException e) {
+            // Special case for UncheckedInterruptedException which can occur with nested execution.
+            txn.restoreData(key, previousData); // Restore previous data on cancel.
+            tracer.executeEndInterrupted(key, task, reason, e.interruptedException);
+            Thread.currentThread().interrupt(); // Interrupt the current thread.
+            throw e; // Propagate UncheckedInterruptedExceptions, no need to wrap them.
+        } catch(CanceledException e) {
+            txn.restoreData(key, previousData); // Restore previous data on cancel.
+            // TODO: log cancel
+            throw e; // Propagate CanceledExceptions, no need to wrap them.
         } catch(RuntimeException e) {
-            if(previousData != null) { // Restore previous data on failure.
-                txn.restoreData(key, previousData);
-            }
+            txn.restoreData(key, previousData); // Restore previous data on failure.
             tracer.executeEndFailed(key, task, reason, e);
-            // Propagate runtime exceptions, no need to wrap them.
-            throw e;
+            throw e; // Propagate RuntimeExceptions, no need to wrap them.
         } catch(InterruptedException e) {
-            if(previousData != null) { // Restore previous data on interrupt.
-                txn.restoreData(key, previousData);
-            }
+            txn.restoreData(key, previousData); // Restore previous data on cancel.
             tracer.executeEndInterrupted(key, task, reason, e);
             Thread.currentThread().interrupt(); // Interrupt the current thread.
-            // Turn InterruptedExceptions into UncheckedInterruptedException.
+            // Turn InterruptedExceptions into UncheckedInterruptedException and propagate.
             throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
-            if(previousData != null) { // Restore previous data on failure.
-                txn.restoreData(key, previousData);
-            }
+            txn.restoreData(key, previousData); // Restore previous data on failure.
             tracer.executeEndFailed(key, task, reason, e);
             // Wrap regular exceptions into an UncheckedExecException which is propagated up to the entry point, where
             // it will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
+        } catch(Throwable e) {
+            txn.restoreData(key, previousData); // Restore previous data on failure.
+            // TODO: log throwable
+            throw e; // Propagate Throwables, no need to wrap them.
         }
 
         // Gather task data.

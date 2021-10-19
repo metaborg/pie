@@ -55,10 +55,12 @@ public class InMemoryStore extends InMemoryStoreBase {
     }
 
 
-    @Override public void restoreData(TaskKey key, TaskData data) {
+    @Override public void restoreData(TaskKey key, @Nullable TaskData data) {
         removeOutgoingEdgesOf(key);
-        for(TaskRequireDep dep : data.deps.taskRequireDeps) {
-            doAddTaskRequire(key, dep.callee);
+        if(data != null) {
+            for(TaskRequireDep dep : data.deps.taskRequireDeps) {
+                doAddTaskRequire(key, dep.callee);
+            }
         }
         super.restoreData(key, data);
     }
