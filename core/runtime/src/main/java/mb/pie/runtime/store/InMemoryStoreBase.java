@@ -150,7 +150,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
             return new TaskData(
                 previousInput,
                 previousInternalObject,
-                previousOutput != null ? previousOutput.output : null,
+                previousOutput,
                 previousTaskObservability != null ? previousTaskObservability : Observability.Unobserved,
                 new TaskDeps(
                     previousTaskRequireDeps != null ? previousTaskRequireDeps : Collections.emptySet(),
@@ -189,21 +189,22 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         }
         final @Nullable Serializable internalObject = getInternalObject(key);
         final @Nullable Output output = getOutput(key);
-        if(output == null) {
-            return null;
-        }
         final Observability taskObservability = getTaskObservability(key);
         final Collection<TaskRequireDep> taskRequireDeps = getTaskRequireDeps(key);
         final Collection<ResourceRequireDep> resourceRequireDeps = getResourceRequireDeps(key);
         final Collection<ResourceProvideDep> resourceProvideDeps = getResourceProvideDeps(key);
-        return new TaskData(input, internalObject, output.output, taskObservability, new TaskDeps(taskRequireDeps, resourceRequireDeps, resourceProvideDeps));
+        return new TaskData(input, internalObject, output, taskObservability, new TaskDeps(taskRequireDeps, resourceRequireDeps, resourceProvideDeps));
     }
 
     @Override public void restoreData(TaskKey key, @Nullable TaskData data) {
         if(data != null) {
             setInput(key, data.input);
             setInternalObject(key, data.internalObject);
-            setOutput(key, data.output);
+            if(data.hasOutput()) {
+                setOutput(key, data.getOutput());
+            } else {
+                this.taskOutputs.remove(key);
+            }
             setTaskObservability(key, data.taskObservability);
         } else {
             clearInternalObject(key);
@@ -252,7 +253,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         return new TaskData(
             input,
             internalObject,
-            output.output,
+            output,
             observability != null ? observability : Observability.Unobserved,
             new TaskDeps(
                 removedTaskRequires != null ? removedTaskRequires : Collections.emptySet(),

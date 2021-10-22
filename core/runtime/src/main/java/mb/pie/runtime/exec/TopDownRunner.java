@@ -79,7 +79,7 @@ public class TopDownRunner implements RequireTask {
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, txn, cancel);
             TaskData data = status.data;
-            @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
+            final O output = data.getOutputCasted();
             if(!status.executed) {
                 if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
@@ -151,7 +151,7 @@ public class TopDownRunner implements RequireTask {
 
             // Output consistency.
             {
-                final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(storedData.output);
+                final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(storedData.getOutput());
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);
                 }

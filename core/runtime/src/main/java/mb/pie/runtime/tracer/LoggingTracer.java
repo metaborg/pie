@@ -99,7 +99,7 @@ public class LoggingTracer extends EmptyTracer {
     public void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + outputToString(data.output));
+        logExec("← " + outputToString(data.getOutput()));
     }
 
     @Override

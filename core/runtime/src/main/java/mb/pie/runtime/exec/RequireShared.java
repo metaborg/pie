@@ -46,7 +46,7 @@ public class RequireShared {
     @Nullable TaskData dataFromVisited(TaskKey key) {
         tracer.checkVisitedStart(key);
         final @Nullable TaskData data = visited.get(key);
-        tracer.checkVisitedEnd(key, data != null ? data.output : null);
+        tracer.checkVisitedEnd(key, data != null ? data.getOutput() : null);
         return data;
     }
 
@@ -56,7 +56,7 @@ public class RequireShared {
     @Nullable TaskData dataFromStore(TaskKey key, StoreReadTxn txn) {
         tracer.checkStoredStart(key);
         final @Nullable TaskData data = txn.getData(key);
-        tracer.checkStoredEnd(key, data != null ? data.output : null);
+        tracer.checkStoredEnd(key, data != null ? data.getOutput() : null);
         return data;
     }
 

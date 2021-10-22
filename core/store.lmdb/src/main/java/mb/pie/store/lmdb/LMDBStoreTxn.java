@@ -159,7 +159,7 @@ public class LMDBStoreTxn implements StoreReadTxn, StoreWriteTxn {
         final ArrayList<TaskRequireDep> taskRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), taskRequiresDb), new ArrayList<>());
         final ArrayList<ResourceRequireDep> resourceRequires = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceRequiresDb), new ArrayList<>());
         final ArrayList<ResourceProvideDep> resourceProvides = De.orElse(shared.getOne(ArrayList.class, BufferUtil.toBuffer(keyHashedBytes), resourceProvidesDb), new ArrayList<>());
-        return new TaskData(input, getInternalObject(key), output, taskObservability, new TaskDeps(taskRequires, resourceRequires, resourceProvides));
+        return new TaskData(input, getInternalObject(key), new Output(output), taskObservability, new TaskDeps(taskRequires, resourceRequires, resourceProvides));
     }
 
 

@@ -4,6 +4,7 @@ import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
 import mb.pie.api.Observability;
+import mb.pie.api.Output;
 import mb.pie.api.Share;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
@@ -172,7 +173,7 @@ public class TaskExecutor {
         }
         final TaskDeps deps = context.getDeps();
         deps.resourceProvideDeps.forEach(d -> providedResources.add(d.key));
-        final TaskData data = new TaskData(task.input, txn.getInternalObject(key), output, newObservability, deps);
+        final TaskData data = new TaskData(task.input, txn.getInternalObject(key), new Output(output), newObservability, deps);
         tracer.executeEndSuccess(key, task, reason, data);
 
         // Validate task output, then write the output and set the new observability.

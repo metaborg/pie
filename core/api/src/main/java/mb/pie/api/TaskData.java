@@ -7,7 +7,7 @@ import java.io.Serializable;
 public final class TaskData {
     public final Serializable input;
     public final @Nullable Serializable internalObject;
-    public final @Nullable Serializable output;
+    private final @Nullable Output output;
     public final Observability taskObservability;
     public final TaskDeps deps;
 
@@ -15,7 +15,7 @@ public final class TaskData {
     public TaskData(
         Serializable input,
         @Nullable Serializable internalObject,
-        @Nullable Serializable output,
+        @Nullable Output output,
         Observability taskObservability,
         TaskDeps deps
     ) {
@@ -24,6 +24,39 @@ public final class TaskData {
         this.output = output;
         this.taskObservability = taskObservability;
         this.deps = deps;
+    }
+
+
+    /**
+     * Checks whether this task data has an output.
+     */
+    public boolean hasOutput() {
+        return output != null;
+    }
+
+    /**
+     * Gets the output, or throws {@link IllegalStateException} if this has no output ({@link #hasOutput()} returns
+     * {@code false}).
+     */
+    public @Nullable Serializable getOutput() {
+        if(!hasOutput()) throw new IllegalStateException("Cannot get output as " + this + " has no output");
+        return output.output;
+    }
+
+    /**
+     * Gets the output casted to {@link O} without checks, or throws {@link IllegalStateException} if this has no output
+     * ({@link #hasOutput()} returns {@code false}).
+     */
+    public <O extends @Nullable Serializable> O getOutputCasted() {
+        @SuppressWarnings({"unchecked"}) final O output = (O)getOutput();
+        return output;
+    }
+
+    /**
+     * Gets the wrapped {@link Output} object, or {@code null} if this has no output.
+     */
+    public @Nullable Output getWrappedOutput() {
+        return output;
     }
 
 

@@ -6,6 +6,7 @@ import mb.pie.api.ExecContext;
 import mb.pie.api.Function;
 import mb.pie.api.Layer;
 import mb.pie.api.Observability;
+import mb.pie.api.Output;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.STask;
@@ -249,8 +250,8 @@ public class ExecContextImpl implements ExecContext {
         return previousData != null ? previousData.input : null;
     }
 
-    @Override public @Nullable Serializable getPreviousOutput() {
-        return previousData != null ? previousData.output : null;
+    @Override public @Nullable Output getPreviousOutput() {
+        return previousData != null ? previousData.getWrappedOutput() : null;
     }
 
     @Override public @Nullable Observability getPreviousObservability() {

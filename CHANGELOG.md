@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
+## [0.19.2] - 2021-10-22
+### Fixed
+- `null` being set as the output of a new task that failed (due to an exception) or was interrupted, which was then subsequently returned as the output of that task.
+
+
 ## [0.19.1] - 2021-10-19
 ### Fixed
 - Tasks data for new tasks (i.e., tasks that have not been executed before) not being reset on cancel or failure.
@@ -80,7 +85,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - Update common dependency to 0.9.3.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.1...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.2...HEAD
+[0.19.2]: https://github.com/metaborg/pie/compare/release-0.19.1...release-0.19.2
 [0.19.1]: https://github.com/metaborg/pie/compare/release-0.19.0...release-0.19.1
 [0.19.0]: https://github.com/metaborg/pie/compare/release-0.18.1...release-0.19.0
 [0.18.1]: https://github.com/metaborg/pie/compare/release-0.18.0...release-0.18.1

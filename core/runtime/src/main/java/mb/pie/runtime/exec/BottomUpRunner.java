@@ -131,7 +131,7 @@ public class BottomUpRunner implements RequireTask {
     private TaskData execAndSchedule(TaskKey key, Task<?> task, ExecReason reason, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
         try {
             final TaskData data = exec(key, task, reason, modifyObservability, txn, cancel);
-            scheduleAffectedByRequiredTask(key, data.output, txn);
+            scheduleAffectedByRequiredTask(key, data.getOutput(), txn);
             scheduleAffectedByRequiredResources(data.deps.resourceProvideDeps.stream().map((d) -> d.key), txn);
             return data;
         } finally {
@@ -183,7 +183,7 @@ public class BottomUpRunner implements RequireTask {
         layer.requireTopDownStart(key, task.input);
         try {
             final TaskData data = getData(key, task, modifyObservability, txn, cancel);
-            @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
+            final O output = data.getOutputCasted();
             return output;
         } finally {
             layer.requireTopDownEnd(key);
@@ -242,7 +242,7 @@ public class BottomUpRunner implements RequireTask {
             }
 
             // Internal transient consistency output consistency.
-            final @Nullable Serializable output = storedData.output;
+            final @Nullable Serializable output = storedData.getOutput();
             {
                 final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(output);
                 if(reason != null) {
@@ -282,7 +282,7 @@ public class BottomUpRunner implements RequireTask {
             // Transient output consistency.
             {
                 final @Nullable InconsistentTransientOutput reason =
-                    requireShared.checkOutputConsistency(data.output);
+                    requireShared.checkOutputConsistency(data.getOutput());
                 if(reason != null) {
                     return exec(key, task, reason, modifyObservability, txn, cancel);
                 }
@@ -332,9 +332,10 @@ public class BottomUpRunner implements RequireTask {
         // Invoke callback, if any.
         final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key, txn);
         if(callback != null) {
-            tracer.invokeCallbackStart(callback, key, data.output);
-            callback.accept(data.output);
-            tracer.invokeCallbackEnd(callback, key, data.output);
+            final @Nullable Serializable output = data.getOutput();
+            tracer.invokeCallbackStart(callback, key, output);
+            callback.accept(output);
+            tracer.invokeCallbackEnd(callback, key, output);
         }
 
         tracer.upToDate(key, task);
