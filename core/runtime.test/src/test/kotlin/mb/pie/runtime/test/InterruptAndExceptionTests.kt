@@ -38,24 +38,23 @@ class InterruptAndExceptionTests {
     addTaskDef(sometimesThrows)
 
     val file = resource("/input1.str")
+    val task = sometimesThrows.createTask(file)
+    val key = task.key()
+
     write("test", file)
     newSession().use { session ->
-      val task = sometimesThrows.createTask(file)
-      val result1 = session.require(task)
-      assertEquals("test", result1)
+      val result = session.require(task)
+      assertEquals("test", result)
     }
 
     write("throw", file)
     newSession().use { session ->
-      val task = sometimesThrows.createTask(file)
       assertThrows(Exception::class.java) {
         session.require(task)
       }
     }
 
     newSession().use { session ->
-      val task = sometimesThrows.createTask(file)
-      val key = task.key()
       assertThrows(Exception::class.java) {
         session.require(task)
       }
@@ -71,6 +70,12 @@ class InterruptAndExceptionTests {
           }
         }, any(), any(), anyC())
       }
+    }
+
+    write("test", file)
+    newSession().use { session ->
+      val result = session.require(task)
+      assertEquals("test", result)
     }
   }
 
@@ -80,17 +85,17 @@ class InterruptAndExceptionTests {
     addTaskDef(sometimesThrows)
 
     val file = resource("/input1.str")
+    val task = sometimesThrows.createTask(file)
+    val key = task.key()
+
     write("throw", file)
     newSession().use { session ->
-      val task = sometimesThrows.createTask(file)
       assertThrows(Exception::class.java) {
         session.require(task)
       }
     }
 
     newSession().use { session ->
-      val task = sometimesThrows.createTask(file)
-      val key = task.key()
       assertThrows(Exception::class.java) {
         session.require(task)
       }
@@ -101,6 +106,12 @@ class InterruptAndExceptionTests {
         verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
       }
     }
+
+    write("test", file)
+    newSession().use { session ->
+      val result = session.require(task)
+      assertEquals("test", result)
+    }
   }
 
   @TestFactory
@@ -109,19 +120,19 @@ class InterruptAndExceptionTests {
     addTaskDef(sometimesInterrupts)
 
     val file = resource("/input1.str")
-    write("test", file)
+    val task = sometimesInterrupts.createTask(file)
+    val key = task.key()
 
-    Thread.interrupted() // Clear interrupted status.
+    Thread.interrupted() // Clear interrupted status before write, as it sleeps.
+    write("test", file)
     newSession().use { session ->
-      val task = sometimesInterrupts.createTask(file)
-      val result1 = session.require(task, InterruptCancelableToken())
-      assertEquals("test", result1)
+      val result = session.require(task, InterruptCancelableToken())
+      assertEquals("test", result)
     }
 
-    Thread.interrupted() // Clear interrupted status.
+    Thread.interrupted() // Clear interrupted status before write, as it sleeps.
     write("interrupt", file)
     newSession().use { session ->
-      val task = sometimesInterrupts.createTask(file)
       assertThrows(InterruptedException::class.java) {
         session.require(task, InterruptCancelableToken())
       }
@@ -129,8 +140,6 @@ class InterruptAndExceptionTests {
 
     Thread.interrupted() // Clear interrupted status.
     newSession().use { session ->
-      val task = sometimesInterrupts.createTask(file)
-      val key = task.key()
       assertThrows(InterruptedException::class.java) {
         session.require(task, InterruptCancelableToken())
       }
@@ -147,6 +156,13 @@ class InterruptAndExceptionTests {
         }, any(), any(), anyC())
       }
     }
+
+    Thread.interrupted() // Clear interrupted status before write, as it sleeps.
+    write("test", file)
+    newSession().use { session ->
+      val result = session.require(task, InterruptCancelableToken())
+      assertEquals("test", result)
+    }
   }
 
   @TestFactory
@@ -155,11 +171,12 @@ class InterruptAndExceptionTests {
     addTaskDef(sometimesInterrupts)
 
     val file = resource("/input1.str")
-    write("interrupt", file)
+    val task = sometimesInterrupts.createTask(file)
+    val key = task.key()
 
-    Thread.interrupted() // Clear interrupted status.
+    Thread.interrupted() // Clear interrupted status before write, as it sleeps.
+    write("interrupt", file)
     newSession().use { session ->
-      val task = sometimesInterrupts.createTask(file)
       assertThrows(InterruptedException::class.java) {
         session.require(task, InterruptCancelableToken())
       }
@@ -167,8 +184,6 @@ class InterruptAndExceptionTests {
 
     Thread.interrupted() // Clear interrupted status.
     newSession().use { session ->
-      val task = sometimesInterrupts.createTask(file)
-      val key = task.key()
       assertThrows(InterruptedException::class.java) {
         session.require(task, InterruptCancelableToken())
       }
@@ -178,6 +193,13 @@ class InterruptAndExceptionTests {
       inOrder(topDownSession, sometimesInterrupts) {
         verify(topDownSession, times(1)).exec(eq(key), eq(task), eq(NoData()), any(), any(), anyC())
       }
+    }
+
+    Thread.interrupted() // Clear interrupted status before write, as it sleeps.
+    write("test", file)
+    newSession().use { session ->
+      val result = session.require(task, InterruptCancelableToken())
+      assertEquals("test", result)
     }
   }
 }
