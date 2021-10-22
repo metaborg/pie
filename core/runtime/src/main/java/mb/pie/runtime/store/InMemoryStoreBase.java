@@ -189,6 +189,9 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
         }
         final @Nullable Serializable internalObject = getInternalObject(key);
         final @Nullable Output output = getOutput(key);
+        if(output == null) {
+            return null;
+        }
         final Observability taskObservability = getTaskObservability(key);
         final Collection<TaskRequireDep> taskRequireDeps = getTaskRequireDeps(key);
         final Collection<ResourceRequireDep> resourceRequireDeps = getResourceRequireDeps(key);
