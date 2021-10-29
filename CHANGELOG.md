@@ -18,9 +18,6 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [0.19.0] - 2021-10-18
-### Added
-- `Session#setSerializableCallback` for setting a callback that is serializable, so it can be stored in the `Store` to survive recreating of the `Pie` instance.
-
 ### Removed
 - `Pie#isObserved`, use `Session#isObserved` instead.
 - `Pie#isExplicitlyObserved`, use `Session#isExplicitlyObserved` instead.
@@ -29,12 +26,16 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `Pie#removeCallback`, use `Session#removeCallback` instead.
 - `Pie#dropCallbacks`, use `Session#dropCallbacks` instead.
 
+### Changed
+- `resource` requirement to `0.13.0`.
+
 ### Deprecated
 - `Pie#hasBeenExecuted`, use `Session#hasBeenExecuted` instead.
 - `Pie#dropStore`, use `Session#dropStore` instead.
 
-### Changed
-- `resource` requirement to `0.13.0`.
+### Added
+- `Session#setSerializableCallback` for setting a callback that is serializable, so it can be stored in the `Store` to survive recreating of the `Pie` instance.
+
 
 ## [0.18.1] - 2021-10-12
 ### Fixed
@@ -42,31 +43,31 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [0.18.0] - 2021-10-11
-### Added
-- Tasks can get/set/clear an internal object with `getInternalObject`, `setInternalObject`, and `clearInternalObject` on `ExecContext`. Internal objects are stored and serialized along with the PIE store.
-- Tasks can inspect their previous input, output, and dependencies with `getPreviousInput`, `getPreviousOutput`,`getPreviousTaskRequireDeps`, `getPreviousResourceRequireDeps`, and `getPreviousResourceProvideDeps` in `ExecContext`.
-
 ### Changed
 - The void resource dependency methods in `ExecContext` now return a boolean indicating whether the resource is changed or whether the dependency is new compared to the last execution of the task.
 - `resource` requirement to `0.12.0`.
 - `common` requirement to `0.9.8`.
 
+### Added
+- Tasks can get/set/clear an internal object with `getInternalObject`, `setInternalObject`, and `clearInternalObject` on `ExecContext`. Internal objects are stored and serialized along with the PIE store.
+- Tasks can inspect their previous input, output, and dependencies with `getPreviousInput`, `getPreviousOutput`,`getPreviousTaskRequireDeps`, `getPreviousResourceRequireDeps`, and `getPreviousResourceProvideDeps` in `ExecContext`.
+
 
 ## [0.17.0] - 2021-10-01
 ### Changed
 - `Serde` and implementations allow passing in `ClassLoader`s for all deserialization methods.
+- `SerializingStore` to be instantiated with a `SerializingStoreBuilder` to reduce the number of its constructors, easing its creation.
 - `SerializingStore` can now serialize/deserialize from `BufferedOutputStream`/`BufferedInputStream` instead of just resources.
-- `common` requirement to 0.9.7.
+- `common` requirement to `0.9.7`.
 
 ### Added
-- `SerializingStoreBuilder` to ease the creation of `SerializingStore`s and to reduce the number of its constructors.
 - In-memory buffer convenience to `SerializingStoreBuilder`.
 - `MockExecContext` to test methods that require an `ExecContext`, which just executes tasks and ignores dependencies.
 
 
 ## [0.16.8] - 2021-09-20
 ### Changed
-- Common to 0.9.5.
+- `common` requirement to `0.9.5`.
 - `Pie` to only allow a single session to guarantee thread-safety.
 
 ### Added
@@ -81,8 +82,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 ## [0.16.6] - 2021-09-01
 ### Changed
-- Update resource dependency to 0.11.5.
-- Update common dependency to 0.9.3.
+- `resource` requirement to `0.11.5`.
+- `common` requirement to `0.9.3`.
 
 
 [Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.2...HEAD
