@@ -3,6 +3,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Added
+- `requireMapping` overloads to `ExecContext` which require a task and then transform the output with a mapping function, which is also used as a function output stamper (`FuncEqualsOutputStamper`). These overloads make it convenient to depend on a subset of the output of a task.
 
 
 ## [0.19.2] - 2021-10-22
