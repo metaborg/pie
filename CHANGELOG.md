@@ -3,6 +3,12 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+
+
+## [0.19.3] - 2021-11-04
+### Changed
+- `common` requirement to `0.9.9`.
+
 ### Added
 - `requireMapping` overloads to `ExecContext` which require a task and then transform the output with a mapping function, which is also used as a function output stamper (`FuncEqualsOutputStamper`). These overloads make it convenient to depend on a subset of the output of a task.
 
@@ -88,7 +94,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `common` requirement to `0.9.3`.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.2...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.3...HEAD
+[0.19.3]: https://github.com/metaborg/pie/compare/release-0.19.2...release-0.19.3
 [0.19.2]: https://github.com/metaborg/pie/compare/release-0.19.1...release-0.19.2
 [0.19.1]: https://github.com/metaborg/pie/compare/release-0.19.0...release-0.19.1
 [0.19.0]: https://github.com/metaborg/pie/compare/release-0.18.1...release-0.19.0
