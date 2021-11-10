@@ -1,4 +1,4 @@
-package mb.pie.task.java;
+package mb.pie.task.java.jdk;
 
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;

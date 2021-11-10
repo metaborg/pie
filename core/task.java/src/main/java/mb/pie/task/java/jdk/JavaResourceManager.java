@@ -1,4 +1,4 @@
-package mb.pie.task.java;
+package mb.pie.task.java.jdk;
 
 import mb.resource.ResourceKeyString;
 import mb.resource.ResourceRuntimeException;
@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static mb.pie.task.java.Util.qualifiedNameToRelativePath;
-import static mb.pie.task.java.Util.relativePathToQualifiedName;
+import static mb.pie.task.java.jdk.Util.qualifiedNameToRelativePath;
+import static mb.pie.task.java.jdk.Util.relativePathToQualifiedName;
 
 public class JavaResourceManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
     private final ResourceService resourceService;
