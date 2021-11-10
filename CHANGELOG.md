@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
-## [0.19.4]
+## [0.19.4] - 2021-11-10
 ### Changed
 - Make it possible to implement a different Java compiler for the `CompileJava` task with the `JavaCompiler` interface.
 - `resource` requirement to `0.13.2`.
