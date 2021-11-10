@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
+## [0.19.4]
+### Changed
+- Make it possible to implement a different Java compiler for the `CompileJava` task with the `JavaCompiler` interface.
+- `resource` requirement to `0.13.2`.
+
+
 ## [0.19.3] - 2021-11-04
 ### Changed
 - `common` requirement to `0.9.9`.
@@ -94,7 +100,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `common` requirement to `0.9.3`.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.3...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.4...HEAD
+[0.19.4]: https://github.com/metaborg/pie/compare/release-0.19.3...release-0.19.4
 [0.19.3]: https://github.com/metaborg/pie/compare/release-0.19.2...release-0.19.3
 [0.19.2]: https://github.com/metaborg/pie/compare/release-0.19.1...release-0.19.2
 [0.19.1]: https://github.com/metaborg/pie/compare/release-0.19.0...release-0.19.1
