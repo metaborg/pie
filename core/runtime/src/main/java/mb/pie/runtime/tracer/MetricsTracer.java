@@ -6,6 +6,7 @@ import mb.pie.api.InconsistentTaskRequire;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.Task;
+import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
 import mb.pie.api.exec.ExecReason;
@@ -15,17 +16,19 @@ import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class MetricsTracer extends EmptyTracer {
     public static class Report {
         public long totalProvidedResources = 0;
-        public HashSet<ResourceKey> providedResources = new HashSet<>();
+        public final HashSet<ResourceKey> providedResources = new HashSet<>();
         public long totalRequiredResources = 0;
-        public HashMap<ResourceKey, Long> requiredPerResource = new HashMap<>();
+        public final HashMap<ResourceKey, Long> requiredPerResource = new HashMap<>();
         public long totalRequiredTasks = 0;
-        public HashMap<String, Long> requiredPerTaskDefinition = new HashMap<>();
+        public final HashMap<String, Long> requiredPerTaskDefinition = new HashMap<>();
 
         public boolean hasResourceBeenProvided(ResourceKey resourceKey) {
             return providedResources.contains(resourceKey);
@@ -48,19 +51,19 @@ public class MetricsTracer extends EmptyTracer {
         }
 
 
-        public long totalCheckedProvidedResourceDependencies = 0;
-        public HashMap<ResourceKey, Long> checkedProvidedPerResource = new HashMap<>();
-        public long totalCheckedRequiredResourceDependencies = 0;
-        public HashMap<ResourceKey, Long> checkedRequiredPerResource = new HashMap<>();
-        public long totalCheckedRequiredTaskDependencies = 0;
-        public HashMap<String, Long> checkedRequiredPerTaskDefinition = new HashMap<>();
+        public long totalCheckedProvidedResourceDependencyCount = 0;
+        public final HashMap<ResourceKey, Long> checkedProvidedCountPerResource = new HashMap<>();
+        public long totalCheckedRequiredResourceDependencyCount = 0;
+        public final HashMap<ResourceKey, Long> checkedRequiredCountPerResource = new HashMap<>();
+        public long totalCheckedRequiredTaskDependencyCount = 0;
+        public final HashMap<String, Long> checkedRequiredCountPerTaskDefinition = new HashMap<>();
 
-        public boolean hasResourceProvideDependnecyBeenChecked(ResourceKey resourceKey) {
+        public boolean hasResourceProvideDependencyBeenChecked(ResourceKey resourceKey) {
             return getResourceProvideDependencyCheckCount(resourceKey) != 0;
         }
 
         public long getResourceProvideDependencyCheckCount(ResourceKey resourceKey) {
-            return checkedProvidedPerResource.getOrDefault(resourceKey, 0L);
+            return checkedProvidedCountPerResource.getOrDefault(resourceKey, 0L);
         }
 
         public boolean hasResourceRequireDependencyBeenChecked(ResourceKey resourceKey) {
@@ -68,7 +71,7 @@ public class MetricsTracer extends EmptyTracer {
         }
 
         public long getResourceRequireDependencyCheckCount(ResourceKey resourceKey) {
-            return checkedRequiredPerResource.getOrDefault(resourceKey, 0L);
+            return checkedRequiredCountPerResource.getOrDefault(resourceKey, 0L);
         }
 
         public boolean hasTaskDefRequireDependencyBeenChecked(String taskDefId) {
@@ -80,15 +83,23 @@ public class MetricsTracer extends EmptyTracer {
         }
 
 
-        public long totalExecutedTasks = 0;
-        public HashMap<String, Long> executedPerTaskDefinition = new HashMap<>();
+        public long totalExecutionCount = 0;
+        public long totalExecutionSuccessCount = 0;
+        public long totalExecutionFailCount = 0;
+        public long totalExecutionInterruptedCount = 0;
+        public final HashMap<TaskKey, Long> executionCountPerTask = new HashMap<>();
+        public final HashMap<String, Long> executionCountPerTaskDefinition = new HashMap<>();
+        public final HashMap<TaskKey, Long> executionDurationPerTask = new HashMap<>();
+        public final HashMap<String, Long> executionDurationPerTaskDefinition = new HashMap<>();
+        private final Deque<TaskKey> executingTaskStack = new ArrayDeque<>();
+        private final HashMap<TaskKey, Long> executionTimestampPerTask = new HashMap<>();
 
         public boolean hasTaskDefExecuted(String taskDefId) {
-            return getTaskDefExecutedCount(taskDefId) != 0;
+            return getTaskDefExecutionCount(taskDefId) != 0;
         }
 
-        public long getTaskDefExecutedCount(String taskDefId) {
-            return executedPerTaskDefinition.getOrDefault(taskDefId, 0L);
+        public long getTaskDefExecutionCount(String taskDefId) {
+            return executionCountPerTaskDefinition.getOrDefault(taskDefId, 0L);
         }
 
 
@@ -108,28 +119,80 @@ public class MetricsTracer extends EmptyTracer {
         }
 
         private void checkProvidedResource(ResourceProvideDep dep) {
-            ++totalCheckedProvidedResourceDependencies;
-            checkedProvidedPerResource.merge(dep.key, 1L, Long::sum);
+            ++totalCheckedProvidedResourceDependencyCount;
+            checkedProvidedCountPerResource.merge(dep.key, 1L, Long::sum);
         }
 
         private void checkRequiredResource(ResourceRequireDep dep) {
-            ++totalCheckedRequiredResourceDependencies;
-            checkedRequiredPerResource.merge(dep.key, 1L, Long::sum);
+            ++totalCheckedRequiredResourceDependencyCount;
+            checkedRequiredCountPerResource.merge(dep.key, 1L, Long::sum);
         }
 
         private void checkRequiredTask(TaskRequireDep dep) {
-            ++totalCheckedRequiredTaskDependencies;
-            checkedRequiredPerTaskDefinition.merge(dep.callee.id, 1L, Long::sum);
+            ++totalCheckedRequiredTaskDependencyCount;
+            checkedRequiredCountPerTaskDefinition.merge(dep.callee.id, 1L, Long::sum);
         }
 
-        private void executeTask(Task<?> task) {
-            ++totalExecutedTasks;
-            executedPerTaskDefinition.merge(task.getId(), 1L, Long::sum);
+
+        private void executeTaskStart(TaskKey key) {
+            assert !executionTimestampPerTask.containsKey(key) : "executionTimestampPerTask already contains timestamp for executing task";
+            executionTimestampPerTask.put(key, System.nanoTime());
+            executingTaskStack.push(key);
+        }
+
+        private void requireTaskStart() {
+            final @Nullable TaskKey executingTask = executingTaskStack.peek();
+            assert executingTask != null : "executingTask is null";
+            storeDuration(executingTask);
+        }
+
+        private void requireTaskEnd() {
+            final @Nullable TaskKey executingTask = executingTaskStack.peek();
+            assert executingTask != null : "executingTask is null";
+            assert !executionTimestampPerTask.containsKey(executingTask) : "executionTimestampPerTask already contains timestamp for executing task";
+            executionTimestampPerTask.put(executingTask, System.nanoTime());
+        }
+
+        private void executeTaskEnd(TaskKey key) {
+            assert key.equals(executingTaskStack.peek()) : "task in executeTaskEnd does not equal executingTask";
+            storeDuration(key);
+            executionCountPerTask.merge(key, 1L, Long::sum);
+            executionCountPerTaskDefinition.merge(key.id, 1L, Long::sum);
+            ++totalExecutionCount;
+            executingTaskStack.pop();
+        }
+
+        private void executeTaskEndSuccess(TaskKey key) {
+            executeTaskEnd(key);
+            ++totalExecutionSuccessCount;
+        }
+
+        private void executeTaskEndFailed(TaskKey key) {
+            executeTaskEnd(key);
+            ++totalExecutionFailCount;
+        }
+
+        private void executeTaskEndInterrupted(TaskKey key) {
+            executeTaskEnd(key);
+            ++totalExecutionInterruptedCount;
+        }
+
+        private void storeDuration(TaskKey key) {
+            final Long timestamp = executionTimestampPerTask.remove(key);
+            assert timestamp != null : "timestamp is null";
+            final Long duration = System.nanoTime() - timestamp;
+            assert duration >= 0 : "duration is negative";
+            executionDurationPerTask.merge(key, duration, Long::sum);
+            executionDurationPerTaskDefinition.merge(key.id, duration, Long::sum);
         }
     }
 
     private Report report = new Report();
 
+
+    Report getReport() {
+        return report;
+    }
 
     public void reset() {
         this.report = new Report();
@@ -160,7 +223,19 @@ public class MetricsTracer extends EmptyTracer {
 
     @Override
     public void executeStart(TaskKey key, Task<?> task, ExecReason reason) {
-        report.executeTask(task);
+        report.executeTaskStart(key);
+    }
+
+    @Override public void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {
+        report.executeTaskEndSuccess(key);
+    }
+
+    @Override public void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e) {
+        report.executeTaskEndFailed(key);
+    }
+
+    @Override public void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e) {
+        report.executeTaskEndInterrupted(key);
     }
 
 

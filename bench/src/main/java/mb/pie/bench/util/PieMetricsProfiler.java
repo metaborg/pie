@@ -89,11 +89,11 @@ public class PieMetricsProfiler implements InternalProfiler {
                 results.add(measurement.createAvgScalarResult("requiredResources", measurement.report.totalRequiredResources, "resources"));
                 results.add(measurement.createAvgScalarResult("requiredTasks", measurement.report.totalRequiredTasks, "tasks"));
 
-                results.add(measurement.createAvgScalarResult("checkedProvidedResourceDependencies", measurement.report.totalCheckedProvidedResourceDependencies, "dependencies"));
-                results.add(measurement.createAvgScalarResult("checkedRequiredResourceDependencies", measurement.report.totalCheckedRequiredResourceDependencies, "dependencies"));
-                results.add(measurement.createAvgScalarResult("checkedRequiredTaskDependencies", measurement.report.totalCheckedRequiredTaskDependencies, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedProvidedResourceDependencies", measurement.report.totalCheckedProvidedResourceDependencyCount, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedRequiredResourceDependencies", measurement.report.totalCheckedRequiredResourceDependencyCount, "dependencies"));
+                results.add(measurement.createAvgScalarResult("checkedRequiredTaskDependencies", measurement.report.totalCheckedRequiredTaskDependencyCount, "dependencies"));
 
-                results.add(measurement.createAvgScalarResult("executedTasks", measurement.report.totalExecutedTasks, "tasks"));
+                results.add(measurement.createAvgScalarResult("executedTasks", measurement.report.totalExecutionCount, "tasks"));
             }
         }
         measurementsActive = false;

@@ -31,6 +31,11 @@ public interface Tracer {
     void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e);
 
 
+    void requireStart(TaskKey key, Task<?> task);
+
+    void requireEnd(TaskKey key, Task<?> task);
+
+
     void upToDate(TaskKey key, Task<?> task);
 
 

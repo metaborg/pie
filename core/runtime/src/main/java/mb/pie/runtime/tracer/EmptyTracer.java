@@ -46,6 +46,11 @@ class EmptyTracer implements Tracer {
     public void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e) {}
 
 
+    @Override public void requireStart(TaskKey key, Task<?> task) {}
+
+    @Override public void requireEnd(TaskKey key, Task<?> task) {}
+
+
     @Override
     public void upToDate(TaskKey key, Task<?> task) {}
 

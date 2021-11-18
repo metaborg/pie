@@ -181,11 +181,12 @@ public class BottomUpRunner implements RequireTask {
     public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
         cancel.throwIfCanceled();
         layer.requireTopDownStart(key, task.input);
+        tracer.requireStart(key, task);
         try {
             final TaskData data = getData(key, task, modifyObservability, txn, cancel);
-            final O output = data.getOutputCasted();
-            return output;
+            return data.getOutputCasted();
         } finally {
+            tracer.requireEnd(key, task);
             layer.requireTopDownEnd(key);
         }
     }
