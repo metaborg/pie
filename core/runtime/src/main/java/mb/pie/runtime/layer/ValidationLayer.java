@@ -14,7 +14,6 @@ import mb.pie.api.TaskKey;
 import mb.pie.api.serde.DeserializeRuntimeException;
 import mb.pie.api.serde.Serde;
 import mb.pie.api.serde.SerializeRuntimeException;
-import mb.pie.runtime.exec.BottomUpShared;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -137,7 +136,7 @@ public class ValidationLayer implements Layer {
     private final TaskDefs taskDefs;
     private final Logger logger;
     private final Serde serde;
-    private final HashSet<TaskKey> stack = new HashSet<>();
+    private final HashSet<TaskKey> executing = new HashSet<>();
 
 
     public ValidationLayer(ValidationOptions options, TaskDefs taskDefs, LoggerFactory loggerFactory, Serde serde) {
@@ -160,17 +159,8 @@ public class ValidationLayer implements Layer {
                     100) + "', but the ID of its task definition '" + taskDefId + "' has not been registered with the task definition collection");
         }
 
-        if(stack.contains(currentTask)) {
-            // Cyclic dependency.
-            final StringBuilder sb = new StringBuilder();
-            sb.append("Cyclic dependency. Cause:\n");
-            sb.append("requirement of task\n");
-            sb.append("  " + currentTask.toShortString(options.shortStringLength) + "\n");
-            sb.append("from requirements\n");
-            sb.append("  " + stack.stream().map((k) -> k.toShortString(options.shortStringLength)).collect(Collectors.joining(" -> ")));
-            error(sb.toString());
-        }
-        stack.add(currentTask);
+        checkForCycles(currentTask);
+        executing.add(currentTask);
 
         if(options.checkKeyObjects) {
             validateKey(currentTask);
@@ -181,7 +171,7 @@ public class ValidationLayer implements Layer {
     }
 
     @Override public void requireTopDownEnd(TaskKey key) {
-        stack.remove(key);
+        executing.remove(key);
     }
 
     @Override public void validateVisited(TaskKey currentTaskKey, Task<?> currentTask, TaskData visitedData) {
@@ -198,72 +188,74 @@ public class ValidationLayer implements Layer {
         }
     }
 
-    @Override public void validatePreWrite(TaskKey currentTaskKey, TaskData dataToStore, StoreReadTxn txn) {
-        for(ResourceProvideDep provideDep : dataToStore.resourceProvides) {
-            final ResourceKey resource = provideDep.key;
-            final @Nullable TaskKey provider = txn.providerOf(resource);
-            if(provider != null && !provider.equals(currentTaskKey)) {
-                // Overlapping provider tasks for resource.
+    @Override public void validateTaskRequire(TaskKey caller, TaskKey callee, StoreReadTxn txn) {
+        checkForCycles(callee);
+    }
+
+    @Override public void validateResourceRequireDep(TaskKey requirer, ResourceRequireDep dep, StoreReadTxn txn) {
+        final ResourceKey resource = dep.key;
+        final @Nullable TaskKey provider = txn.getProviderOf(resource);
+        if(provider == null) {
+            // No provider for resource.
+        } else if(requirer.equals(provider)) {
+            // Required resource provided by current task.
+        } else if(!txn.doesRequireTransitively(requirer, provider)) {
+            // Resource is required by current task, and resource is provided by task `provider`, thus the current task must (transitively) require task `provider`.
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Hidden dependency. Cause:\n");
+            sb.append("task\n");
+            sb.append("  " + requirer.toShortString(options.shortStringLength) + "\n");
+            sb.append("requires resource\n");
+            sb.append("  " + resource + "\n");
+            sb.append("provided by task\n");
+            sb.append("  " + provider.toShortString(options.shortStringLength) + "\n");
+            sb.append("without a (transitive) task dependency from the requirer to the provider");
+            error(sb.toString());
+        }
+    }
+
+    @Override public void validateResourceProvideDep(TaskKey provider, ResourceProvideDep dep, StoreReadTxn txn) {
+        final ResourceKey resource = dep.key;
+
+        // Check for overlapping provided resources.
+        final @Nullable TaskKey overlappingProvider = txn.getProviderOf(resource);
+        if(overlappingProvider != null && !overlappingProvider.equals(provider)) {
+            // Overlapping provider tasks for resource.
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Overlapping provider tasks for resource. Cause:\n");
+            sb.append("resource\n");
+            sb.append("  " + resource + "\n");
+            sb.append("was provided by task\n");
+            sb.append("  " + provider.toShortString(options.shortStringLength) + "\n");
+            sb.append("and task\n");
+            sb.append("  " + overlappingProvider.toShortString(options.shortStringLength));
+            error(sb.toString());
+        }
+
+        // Check for hidden dependencies.
+        final Set<TaskKey> requirers = txn.getRequirersOf(resource);
+        for(TaskKey requiree : requirers) {
+            if(provider.equals(requiree)) {
+                // Required resource provided by current task.
+            } else if(!txn.doesRequireTransitively(requiree, provider)) {
+                // Resource is provided by current task, and resource is required by task `requiree`, thus task `requiree` must (transitively) require the current task.
                 final StringBuilder sb = new StringBuilder();
-                sb.append("Overlapping provider tasks for resource. Cause:\n");
+                sb.append("Hidden dependency. Cause:\n");
                 sb.append("resource\n");
                 sb.append("  " + resource + "\n");
                 sb.append("was provided by task\n");
-                sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
-                sb.append("and task\n");
-                sb.append("  " + provider.toShortString(options.shortStringLength));
+                sb.append("  " + provider.toShortString(options.shortStringLength) + "\n");
+                sb.append("after being previously required by task\n");
+                sb.append("  " + requiree.toShortString(options.shortStringLength) + "\n");
+                sb.append("without a (transitive) task dependency from the requirer to the provider");
                 error(sb.toString());
             }
         }
     }
 
-    @Override public void validatePostWrite(TaskKey currentTaskKey, TaskData dataToStore, StoreReadTxn txn) {
-        for(ResourceRequireDep requireDep : dataToStore.resourceRequires) {
-            final ResourceKey resource = requireDep.key;
-            final @Nullable TaskKey provider = txn.providerOf(resource);
-            if(provider == null) {
-                // No provider for resource.
-            } else if(currentTaskKey.equals(provider)) {
-                // Required resource provided by current task.
-            } else if(!BottomUpShared.hasTransitiveTaskReq(currentTaskKey, provider, txn)) {
-                // Resource is required by current task, and resource is provided by task `provider`, thus the current task must (transitively) require task `provider`.
-                final StringBuilder sb = new StringBuilder();
-                sb.append("Hidden dependency. Cause:\n");
-                sb.append("task\n");
-                sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
-                sb.append("requires resource\n");
-                sb.append("  " + resource + "\n");
-                sb.append("provided by task\n");
-                sb.append("  " + provider.toShortString(options.shortStringLength) + "\n");
-                sb.append("without a (transitive) task dependency from the requirer to the provider");
-                error(sb.toString());
-            }
-        }
-
-        for(ResourceProvideDep provideDep : dataToStore.resourceProvides) {
-            final ResourceKey resource = provideDep.key;
-            final Set<TaskKey> requirees = txn.requireesOf(resource);
-            for(TaskKey requiree : requirees) {
-                if(currentTaskKey.equals(requiree)) {
-                    // Required resource provided by current task.
-                } else if(!BottomUpShared.hasTransitiveTaskReq(requiree, currentTaskKey, txn)) {
-                    // Resource is provided by current task, and resource is required by task `requiree`, thus task `requiree` must (transitively) require the current task.
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("Hidden dependency. Cause:\n");
-                    sb.append("resource\n");
-                    sb.append("  " + resource + "\n");
-                    sb.append("was provided by task\n");
-                    sb.append("  " + currentTaskKey.toShortString(options.shortStringLength) + "\n");
-                    sb.append("after being previously required by task\n");
-                    sb.append("  " + requiree.toShortString(options.shortStringLength) + "\n");
-                    sb.append("without a (transitive) task dependency from the requirer to the provider");
-                    error(sb.toString());
-                }
-            }
-        }
-
+    @Override public void validateTaskOutput(TaskKey currentTaskKey, @Nullable Serializable output, StoreReadTxn txn) {
         if(options.checkOutputObjects) {
-            validateOutput(dataToStore.output, currentTaskKey);
+            validateOutput(output, currentTaskKey);
         }
     }
 
@@ -302,6 +294,19 @@ public class ValidationLayer implements Layer {
                 sb.append("* " + error);
             }
             warn(sb.toString());
+        }
+    }
+
+    private void checkForCycles(TaskKey key) {
+        if(executing.contains(key)) {
+            // Cyclic dependency.
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Cyclic dependency. Cause:\n");
+            sb.append("requirement of task\n");
+            sb.append("  " + key.toShortString(options.shortStringLength) + "\n");
+            sb.append("from requirements\n");
+            sb.append("  " + executing.stream().map((k) -> k.toShortString(options.shortStringLength)).collect(Collectors.joining(" -> ")));
+            error(sb.toString());
         }
     }
 
@@ -449,7 +454,7 @@ public class ValidationLayer implements Layer {
     @SuppressWarnings("unchecked")
     private <T extends Serializable> T deserialize(@Nullable ClassLoader classLoader, byte[] bytes) {
         try {
-            return (T)Objects.requireNonNull(serde.deserializeTypeAndObjectFromBytes(classLoader, bytes));
+            return (T)Objects.requireNonNull(serde.deserializeObjectOfUnknownTypeFromBytes(bytes, classLoader));
         } catch(DeserializeRuntimeException e) {
             throw new ValidationException("Deserialization in validation failed unexpectedly", e);
         }

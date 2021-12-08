@@ -33,10 +33,20 @@ dependencies {
   testImplementation(project(":pie.lang.runtime.java"))
 }
 
+val pieGenSourcesDir = "build/generated/piesources/"
+
 sourceSets {
   test {
     java {
-      srcDir("build/generated/sources/")
+      srcDir(pieGenSourcesDir)
+    }
+  }
+}
+
+afterEvaluate {
+  tasks.named("spoofaxBuild").configure {
+    doFirst {
+      project.file(pieGenSourcesDir).mkdirs()
     }
   }
 }

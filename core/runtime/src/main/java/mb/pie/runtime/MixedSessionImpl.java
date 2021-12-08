@@ -1,5 +1,7 @@
 package mb.pie.runtime;
 
+import mb.common.concurrent.lock.LockHandle;
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecException;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Store;
@@ -13,7 +15,6 @@ import mb.pie.runtime.exec.BottomUpRunner;
 import mb.pie.runtime.exec.TopDownRunner;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -27,6 +28,8 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     protected final ResourceService resourceService;
     protected final Store store;
 
+    protected final LockHandle lockHandle;
+
     private boolean updateAffectedByExecuted = false;
     private boolean requireExecuted = false;
 
@@ -38,32 +41,35 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
         ResourceService resourceService,
         Store store,
         Tracer tracer,
-        HashSet<ResourceKey> providedResources
+        Callbacks callbacks,
+
+        HashSet<ResourceKey> providedResources,
+
+        LockHandle lockHandle
     ) {
-        super(taskDefs, resourceService, store, tracer, providedResources);
+        super(taskDefs, resourceService, store, tracer, callbacks, providedResources);
+
         this.topDownRunner = topDownRunner;
         this.bottomUpRunner = bottomUpRunner;
+
         this.taskDefs = taskDefs;
         this.resourceService = resourceService;
         this.store = store;
+
+        this.lockHandle = lockHandle;
     }
 
     @Override public void close() {
         store.sync();
-    }
-
-
-    @Override
-    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources) throws ExecException, InterruptedException {
-        return updateAffectedBy(changedResources, NullCancelableToken.instance);
+        lockHandle.close();
     }
 
     @Override
-    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, CancelToken cancel) throws ExecException, InterruptedException {
+    public TopDownSession updateAffectedBy(Set<? extends ResourceKey> changedResources, Set<?> tags, CancelToken cancel) throws ExecException, InterruptedException {
         checkUpdateAffectedBy();
         if(changedResources.isEmpty())
             return createSessionAfterBottomUp();
-        handleException(() -> bottomUpRunner.requireInitial(changedResources, cancel));
+        handleException(() -> bottomUpRunner.requireInitial(changedResources, tags, cancel));
         return createSessionAfterBottomUp();
     }
 
@@ -78,28 +84,28 @@ public class MixedSessionImpl extends SessionImpl implements MixedSession {
     }
 
     private TopDownSession createSessionAfterBottomUp() {
-        return new TopDownSessionImpl(topDownRunner, taskDefs, resourceService, store, tracer, providedResources);
+        return new TopDownSessionImpl(bottomUpRunner, taskDefs, resourceService, store, tracer, callbacks, providedResources);
     }
 
 
     @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
         return require(task, NullCancelableToken.instance);
     }
 
-    @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+    @SuppressWarnings("ConstantConditions") @Override
+    public <O extends Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("require");
         return handleException(() -> topDownRunner.requireInitial(task, true, cancel));
     }
 
     @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
         return requireWithoutObserving(task, NullCancelableToken.instance);
     }
 
-    @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+    @SuppressWarnings("ConstantConditions") @Override
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
         checkRequire("requireWithoutObserving");
         return handleException(() -> topDownRunner.requireInitial(task, false, cancel));
     }

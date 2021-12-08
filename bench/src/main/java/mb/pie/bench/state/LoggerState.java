@@ -14,6 +14,11 @@ import org.openjdk.jmh.annotations.State;
 
 @State(Scope.Thread)
 public class LoggerState {
+    // Parameters
+
+    @Param({"noop"}) public LoggerFactoryKind loggerFactory;
+
+
     // Trial
     private @Nullable LoggerComponent loggerComponent;
 
@@ -35,9 +40,7 @@ public class LoggerState {
     }
 
 
-    // Parameters
-
-    @Param({"noop"}) public LoggerFactoryKind loggerFactory;
+    // Parameter enums
 
     public enum LoggerFactoryKind {
         stdout_errors {

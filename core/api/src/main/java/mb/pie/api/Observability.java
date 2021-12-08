@@ -49,7 +49,7 @@ public enum Observability implements Serializable {
      * @param key Key of the task to unobsreve.
      */
     public static void explicitUnobserve(StoreWriteTxn txn, TaskKey key, Tracer tracer) {
-        final Observability previousObservability = txn.taskObservability(key);
+        final Observability previousObservability = txn.getTaskObservability(key);
         if(previousObservability == Observability.Unobserved) {
             // If task is already unobserved, there is no need to do anything.
             return;
@@ -66,8 +66,8 @@ public enum Observability implements Serializable {
             final Observability newObservability = Observability.Unobserved;
             tracer.setTaskObservability(key, previousObservability, newObservability);
             txn.setTaskObservability(key, newObservability);
-            for(TaskRequireDep taskRequire : txn.taskRequires(key)) {
-                implicitUnobserve(txn, taskRequire.callee, tracer);
+            for(TaskKey callee : txn.getRequiredTasks(key)) {
+                implicitUnobserve(txn, callee, tracer);
             }
         }
     }
@@ -81,7 +81,7 @@ public enum Observability implements Serializable {
      * @param key Key of the task to unobserve.
      */
     public static void implicitUnobserve(StoreWriteTxn txn, TaskKey key, Tracer tracer) {
-        final Observability previousObservability = txn.taskObservability(key);
+        final Observability previousObservability = txn.getTaskObservability(key);
         if(previousObservability != Observability.ImplicitObserved) {
             // If task is already unobserved, there is no need to do anything.
             // If task is explicitly observed, we may not implicitly unobserve it, so we stop.
@@ -93,13 +93,13 @@ public enum Observability implements Serializable {
         final Observability newObservability = Observability.Unobserved;
         tracer.setTaskObservability(key, previousObservability, newObservability);
         txn.setTaskObservability(key, newObservability);
-        for(TaskRequireDep taskRequire : txn.taskRequires(key)) {
-            implicitUnobserve(txn, taskRequire.callee, tracer);
+        for(TaskKey callee : txn.getRequiredTasks(key)) {
+            implicitUnobserve(txn, callee, tracer);
         }
     }
 
 
     private static boolean isObservedByCaller(StoreReadTxn txn, TaskKey key) {
-        return txn.callersOf(key).stream().map(txn::taskObservability).anyMatch(Observability::isObserved);
+        return txn.getCallersOf(key).stream().map(txn::getTaskObservability).anyMatch(Observability::isObserved);
     }
 }

@@ -1,8 +1,8 @@
 package mb.pie.task.java.ecj;
 
-import mb.pie.task.java.FileManagerFactory;
-import mb.pie.task.java.JavaFileObjectFactory;
-import mb.pie.task.java.JavaResourceManager;
+import mb.pie.task.java.jdk.FileManagerFactory;
+import mb.pie.task.java.jdk.JavaFileObjectFactory;
+import mb.pie.task.java.jdk.JavaResourceManager;
 import mb.resource.ResourceService;
 import mb.resource.hierarchical.HierarchicalResource;
 

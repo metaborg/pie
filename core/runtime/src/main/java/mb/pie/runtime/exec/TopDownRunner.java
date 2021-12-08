@@ -60,7 +60,7 @@ public class TopDownRunner implements RequireTask {
             if(modifyObservability) {
                 // OPTO: can we make `require` set the desired observability?
                 // Set task as explicitly observable when required initially in top-down fashion.
-                final Observability previousObservability = txn.taskObservability(key);
+                final Observability previousObservability = txn.getTaskObservability(key);
                 if(previousObservability != Observability.ExplicitObserved) {
                     final Observability newObservability = Observability.ExplicitObserved;
                     tracer.setTaskObservability(key, previousObservability, newObservability);
@@ -79,7 +79,7 @@ public class TopDownRunner implements RequireTask {
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, txn, cancel);
             TaskData data = status.data;
-            @SuppressWarnings({"unchecked"}) final O output = (O)data.output;
+            final O output = data.getOutputCasted();
             if(!status.executed) {
                 if(modifyObservability && data.taskObservability.isUnobserved()) {
                     // Force observability status to observed in task data, so that validation and the visited map contain a consistent TaskData object.
@@ -89,14 +89,11 @@ public class TopDownRunner implements RequireTask {
                     txn.setTaskObservability(key, newObservability);
                 }
 
-                // Validate well-formedness of the dependency graph.
-                layer.validatePostWrite(key, data, txn);
-
                 // Mark task as visited.
                 visited.put(key, data);
 
                 // Invoke callback, if any.
-                final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
+                final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key, txn);
                 if(callback != null) {
                     tracer.invokeCallbackStart(callback, key, output);
                     callback.accept(output);
@@ -154,14 +151,14 @@ public class TopDownRunner implements RequireTask {
 
             // Output consistency.
             {
-                final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(storedData.output);
+                final @Nullable InconsistentTransientOutput reason = requireShared.checkOutputConsistency(storedData.getOutput());
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);
                 }
             }
 
             // Resource require consistency.
-            for(ResourceRequireDep resourceRequireDep : storedData.resourceRequires) {
+            for(ResourceRequireDep resourceRequireDep : storedData.deps.resourceRequireDeps) {
                 final @Nullable InconsistentResourceRequire reason = requireShared.checkResourceRequireDep(key, task, resourceRequireDep);
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);
@@ -169,7 +166,7 @@ public class TopDownRunner implements RequireTask {
             }
 
             // Resource provide consistency.
-            for(ResourceProvideDep resourceProvideDep : storedData.resourceProvides) {
+            for(ResourceProvideDep resourceProvideDep : storedData.deps.resourceProvideDeps) {
                 final @Nullable InconsistentResourceProvide reason = requireShared.checkResourceProvideDep(key, task, resourceProvideDep);
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);
@@ -177,7 +174,7 @@ public class TopDownRunner implements RequireTask {
             }
 
             // Task require consistency.
-            for(TaskRequireDep taskRequireDep : storedData.taskRequires) {
+            for(TaskRequireDep taskRequireDep : storedData.deps.taskRequireDeps) {
                 final @Nullable InconsistentTaskRequire reason = requireShared.checkTaskRequireDep(key, task, taskRequireDep, modifyObservability, txn, this, cancel);
                 if(reason != null) {
                     return new DataAndExecutionStatus(exec(key, task, reason, modifyObservability, txn, cancel), true);

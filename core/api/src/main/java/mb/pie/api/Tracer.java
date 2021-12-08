@@ -75,6 +75,8 @@ public interface Tracer {
 
     void scheduleTask(TaskKey key);
 
+    void deferTask(TaskKey key);
+
     void requireScheduledNowStart(TaskKey key);
 
     void requireScheduledNowEnd(TaskKey key, @Nullable TaskData data);

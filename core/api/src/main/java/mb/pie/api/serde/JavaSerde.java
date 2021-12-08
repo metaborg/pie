@@ -12,35 +12,15 @@ import java.io.Serializable;
  * {@link Serde} implementation using Java serialization. All objects must implement {@link Serializable}.
  */
 public class JavaSerde implements Serde {
-    private final ClassLoader classLoaderFallback;
-    private final @Nullable ClassLoader classLoaderOverride;
+    private final @Nullable ClassLoader defaultClassLoader;
 
 
-    private JavaSerde(ClassLoader classLoaderFallback, @Nullable ClassLoader classLoaderOverride) {
-        this.classLoaderOverride = classLoaderOverride;
-        this.classLoaderFallback = classLoaderFallback;
+    public JavaSerde(@Nullable ClassLoader defaultClassLoader) {
+        this.defaultClassLoader = defaultClassLoader;
     }
 
     public JavaSerde() {
-        this(JavaSerde.class.getClassLoader(), null);
-    }
-
-
-    public static JavaSerde createWithClassLoaderOverride(ClassLoader classLoaderOverride) {
-        return new JavaSerde(JavaSerde.class.getClassLoader(), classLoaderOverride);
-    }
-
-    public static JavaSerde createWithClassLoaderFallback(ClassLoader classLoaderFallback) {
-        return new JavaSerde(classLoaderFallback, null);
-    }
-
-
-    public JavaSerde withClassLoaderOverride(@Nullable ClassLoader classLoaderOverride) {
-        return new JavaSerde(this.classLoaderFallback, classLoaderOverride);
-    }
-
-    public JavaSerde withClassLoaderFallback(ClassLoader classLoaderFallback) {
-        return new JavaSerde(classLoaderFallback, this.classLoaderOverride);
+        this(null);
     }
 
 
@@ -50,8 +30,8 @@ public class JavaSerde implements Serde {
     }
 
     @Override
-    public <T> T deserialize(Class<T> type, InputStream inputStream) {
-        final @Nullable Object deserialized = deserializeTypeAndObject(getClassLoader(type), inputStream);
+    public <T> T deserialize(Class<T> type, InputStream inputStream, @Nullable ClassLoader classLoader) {
+        final @Nullable Object deserialized = deserializeObjectOfUnknownType(inputStream, getClassLoader(type, classLoader));
         if(deserialized == null) {
             throw new DeserializeRuntimeException(new NullPointerException("Expected non-nullable deserialized object of type '" + type + "', but got null"));
         }
@@ -65,8 +45,8 @@ public class JavaSerde implements Serde {
     }
 
     @Override
-    public <T> @Nullable T deserializeNullable(Class<T> type, InputStream inputStream) {
-        final @Nullable Object deserialized = deserializeTypeAndObject(getClassLoader(type), inputStream);
+    public <T> @Nullable T deserializeNullable(Class<T> type, InputStream inputStream, @Nullable ClassLoader classLoader) {
+        final @Nullable Object deserialized = deserializeObjectOfUnknownType(inputStream, getClassLoader(type, classLoader));
         if(deserialized == null) {
             return null;
         }
@@ -94,7 +74,7 @@ public class JavaSerde implements Serde {
     }
 
     @Override
-    public @Nullable Object deserializeTypeAndObject(@Nullable ClassLoader classLoader, InputStream inputStream) {
+    public @Nullable Object deserializeObjectOfUnknownType(InputStream inputStream, @Nullable ClassLoader classLoader) {
         try(final ClassLoaderObjectInputStream objectInputStream = new ClassLoaderObjectInputStream(getClassLoader(classLoader), inputStream)) {
             return objectInputStream.readObject();
         } catch(IOException | ClassNotFoundException e) {
@@ -103,14 +83,15 @@ public class JavaSerde implements Serde {
     }
 
 
-    private ClassLoader getClassLoader(Class<?> type) {
-        if(classLoaderOverride != null) return classLoaderOverride;
+    private ClassLoader getClassLoader(Class<?> type, @Nullable ClassLoader classLoader) {
+        if(classLoader != null) return classLoader;
+        if(defaultClassLoader != null) return defaultClassLoader;
         return getClassLoader(type.getClassLoader());
     }
 
     private ClassLoader getClassLoader(@Nullable ClassLoader classLoader) {
-        if(classLoaderOverride != null) return classLoaderOverride;
         if(classLoader != null) return classLoader;
-        return this.classLoaderFallback;
+        if(defaultClassLoader != null) return defaultClassLoader;
+        return getClass().getClassLoader();
     }
 }

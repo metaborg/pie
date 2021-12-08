@@ -3,31 +3,23 @@ package mb.pie.task.java;
 import mb.common.message.KeyedMessages;
 import mb.common.message.KeyedMessagesBuilder;
 import mb.common.message.Severity;
-import mb.common.region.Region;
 import mb.common.result.Result;
+import mb.common.util.ListView;
 import mb.pie.api.ExecContext;
 import mb.pie.api.Supplier;
 import mb.pie.api.TaskDef;
-import mb.pie.api.stamp.resource.ResourceStampers;
-import mb.resource.hierarchical.HierarchicalResource;
+import mb.pie.task.java.jdk.JdkJavaCompiler;
 import mb.resource.hierarchical.ResourcePath;
-import mb.resource.hierarchical.match.ResourceMatcher;
-import mb.resource.hierarchical.match.path.PathMatcher;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
-import javax.tools.Diagnostic;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaCompiler.CompilationTask;
-import javax.tools.JavaFileManager;
-import javax.tools.JavaFileObject;
-import javax.tools.ToolProvider;
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Value.Enclosing
@@ -36,7 +28,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
     public interface Sources extends Serializable {
         class Builder extends CompileJavaData.Sources.Builder {}
 
-        static Builder builder() { return new Builder(); }
+        static Builder builder() {return new Builder();}
 
         /**
          * Java source files to compile (i.e., the compilation units). The Java compiler will start compiling from these
@@ -75,7 +67,7 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
     public interface Input extends Serializable {
         class Builder extends CompileJavaData.Input.Builder {}
 
-        static Builder builder() { return new Builder(); }
+        static Builder builder() {return new Builder();}
 
 
         Optional<Sources> sources();
@@ -85,9 +77,24 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
         // Using File for classPath and annotationProcessorPath, as handling this with ResourcePath takes too much effort at the moment.
 
-        List<File> classPaths(); // If empty, passes no classpath, which makes javac use the current system classloader as the classpath.
+        List<Supplier<ListView<File>>> classPathSuppliers();
 
-        List<File> annotationProcessorPaths(); // If empty, passes no processorpath, which makes javac use the current system classloader as the processorpath.
+        /**
+         * Whether the paths from system property "java.class.path" are added to the class path. Defaults to false.
+         */
+        @Value.Default default boolean addEnvironmentToClassPaths() {
+            return false;
+        }
+
+        List<Supplier<ListView<File>>> annotationProcessorPathSuppliers();
+
+        /**
+         * Whether the paths from system property "java.class.path" are added to the annotation processor path. Defaults
+         * to false.
+         */
+        @Value.Default default boolean addEnvironmentToAnnotationProcessorPaths() {
+            return false;
+        }
 
 
         Optional<String> release();
@@ -98,9 +105,9 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
         ResourcePath classFileOutputDirectory();
 
 
-        @Value.Default default boolean reportWarnings() { return true; }
+        @Value.Default default boolean reportWarnings() {return true;}
 
-        @Value.Default default boolean emitDebuggingAttributes() { return true; }
+        @Value.Default default boolean emitDebuggingAttributes() {return true;}
 
 
         List<String> additionalOptions();
@@ -108,22 +115,20 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
 
         List<Supplier<?>> originTasks();
 
+        Set<Serializable> shouldExecWhenAffectedTags();
+
         Optional<Serializable> key();
     }
 
 
-    private final JavaCompiler compiler;
-    private final FileManagerFactory fileManagerFactory;
-    private final JavaFileObjectFactory javaFileObjectFactory;
+    private final mb.pie.task.java.JavaCompiler compiler;
 
-    public CompileJava(JavaCompiler compiler, FileManagerFactory fileManagerFactory, JavaFileObjectFactory javaFileObjectFactory) {
+    public CompileJava(mb.pie.task.java.JavaCompiler compiler) {
         this.compiler = compiler;
-        this.fileManagerFactory = fileManagerFactory;
-        this.javaFileObjectFactory = javaFileObjectFactory;
     }
 
     public CompileJava() {
-        this(ToolProvider.getSystemJavaCompiler(), JavaResourceManager::new, new JavaResource.Factory());
+        this(new JdkJavaCompiler());
     }
 
 
@@ -145,132 +150,45 @@ public class CompileJava implements TaskDef<CompileJava.Input, KeyedMessages> {
             context.require(originTask);
         }
 
-        final ArrayList<JavaFileObject> compilationUnits = new ArrayList<>();
-        final ArrayList<HierarchicalResource> sourcePath = new ArrayList<>();
-        for(Sources sources : allSources) {
-            for(ResourcePath sourceFilePath : sources.sourceFiles()) {
-                final HierarchicalResource sourceFile = context.require(sourceFilePath, ResourceStampers.<HierarchicalResource>modifiedFile());
-                compilationUnits.add(javaFileObjectFactory.create(sourceFile));
-            }
-            for(ResourcePath sourceFilesFromPath : sources.sourceFilesFromPaths()) {
-                final HierarchicalResource sourceFilesFromDirectory = context.getHierarchicalResource(sourceFilesFromPath);
-                // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
-                sourceFilesFromDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
-                // Require all Java source files recursively, so we re-execute whenever a file changes.
-                sourceFilesFromDirectory.walkForEach(ResourceMatcher.ofFileExtension("java"), javaSourceFile -> {
-                    context.require(javaSourceFile, ResourceStampers.<HierarchicalResource>modifiedFile());
-                    compilationUnits.add(javaFileObjectFactory.create(javaSourceFile));
-                });
-            }
-            for(ResourcePath sourcePathPart : sources.sourcePaths()) {
-                final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourcePathPart);
-                // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
-                sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
-                // Require all Java source files recursively, so we re-execute whenever a file changes.
-                sourceDirectory.walkForEach(ResourceMatcher.ofFileExtension("java"), context::require);
-                sourcePath.add(sourceDirectory);
-            }
-            for(ResourcePath sourceDirectoryPath : sources.packagePaths()) {
-                final HierarchicalResource sourceDirectory = context.getHierarchicalResource(sourceDirectoryPath);
-                // Require directories recursively, so we re-execute whenever a file is added/removed from a directory.
-                sourceDirectory.walkForEach(ResourceMatcher.ofDirectory(), context::require);
-                sourcePath.add(sourceDirectory);
+        final ArrayList<String> classPaths = input.classPathSuppliers().stream()
+            .flatMap(s -> context.require(s).stream())
+            .map(File::toString)
+            .collect(Collectors.toCollection(ArrayList::new));
+        if(input.addEnvironmentToClassPaths()) {
+            final @Nullable String envClassPath = System.getProperty("java.class.path");
+            if(envClassPath != null) {
+                final String[] entries = envClassPath.split(File.pathSeparator);
+                Collections.addAll(classPaths, entries);
             }
         }
-        if(compilationUnits.isEmpty()) {
-            // Compiler throws exception if there are no source files. Return early.
-            return messagesBuilder.build();
+
+        final ArrayList<String> annotationProcessorPaths = input.annotationProcessorPathSuppliers().stream()
+            .flatMap(s -> context.require(s).stream())
+            .map(File::toString)
+            .collect(Collectors.toCollection(ArrayList::new));
+        if(input.addEnvironmentToAnnotationProcessorPaths()) {
+            final @Nullable String envClassPath = System.getProperty("java.class.path");
+            if(envClassPath != null) {
+                final String[] entries = envClassPath.split(File.pathSeparator);
+                Collections.addAll(annotationProcessorPaths, entries);
+            }
         }
 
-        final HierarchicalResource sourceFileOutputDir = context.getHierarchicalResource(input.sourceFileOutputDirectory());
-        final HierarchicalResource classFileOutputDir = context.getHierarchicalResource(input.classFileOutputDirectory());
-
-        final JavaFileManager fileManager = fileManagerFactory.create(
-            compiler.getStandardFileManager(null, null, null),
-            javaFileObjectFactory,
-            context.getResourceService(),
-            sourcePath,
-            sourceFileOutputDir,
-            classFileOutputDir
+        return compiler.compile(
+            context,
+            ListView.of(allSources),
+            ListView.of(classPaths),
+            ListView.of(annotationProcessorPaths),
+            input.release().orElse(null),
+            input.sourceFileOutputDirectory(),
+            input.classFileOutputDirectory(),
+            input.reportWarnings(),
+            input.emitDebuggingAttributes(),
+            ListView.of(input.additionalOptions())
         );
-        final ArrayList<String> options = new ArrayList<>();
-        input.release().ifPresent(release -> {
-            if(compiler.isSupportedOption("--release") != -1) {
-                options.add("--release");
-                options.add(release);
-            } else {
-                options.add("-source");
-                options.add(release);
-                options.add("-target");
-                options.add(release);
-            }
-        });
-        if(!input.classPaths().isEmpty()) {
-            options.add("-classpath");
-            options.add(input.classPaths().stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
-        }
-        if(!input.annotationProcessorPaths().isEmpty()) {
-            options.add("-processorpath");
-            options.add(input.annotationProcessorPaths().stream().map(File::toString).collect(Collectors.joining(File.pathSeparator)));
-        }
-        if(!input.reportWarnings()) {
-            options.add("-nowarn");
-        }
-        if(!input.emitDebuggingAttributes()) {
-            options.add("-g:none");
-        }
-        options.addAll(input.additionalOptions());
-        final CompilationTask compilationTask = compiler.getTask(null, fileManager, d -> collectDiagnostic(d, messagesBuilder), options, null, compilationUnits);
-
-        compilationTask.call();
-
-        // Provide generated Java source files.
-        provideFilesInDirectoryOfExtension(context, sourceFileOutputDir, "java");
-        // Provide compiled Java class files.
-        provideFilesInDirectoryOfExtension(context, classFileOutputDir, "class");
-
-        return messagesBuilder.build();
     }
 
-    @Override public Serializable key(Input input) {
-        return input.key().orElse(input);
-    }
-
-
-    private static void provideFilesInDirectoryOfExtension(ExecContext context, HierarchicalResource directory, String extension) throws IOException {
-        directory.walkForEach(ResourceMatcher.ofFile().and(ResourceMatcher.ofPath(PathMatcher.ofExtension(extension))), context::provide);
-    }
-
-    private static void collectDiagnostic(Diagnostic<? extends JavaFileObject> diagnostic, KeyedMessagesBuilder messagesBuilder) {
-        final String text = diagnostic.getMessage(null);
-        final Severity severity = toSeverity(diagnostic.getKind());
-        final @Nullable ResourcePath resource;
-        final @Nullable JavaFileObject source = diagnostic.getSource();
-        if(source instanceof JavaResource) {
-            resource = ((JavaResource)source).resource.getPath();
-        } else {
-            resource = null;
-        }
-        final @Nullable Region region;
-        if(diagnostic.getPosition() != Diagnostic.NOPOS) {
-            region = Region.fromOffsets((int)diagnostic.getStartPosition(), (int)diagnostic.getEndPosition(), (int)diagnostic.getLineNumber());
-        } else {
-            region = null;
-        }
-        messagesBuilder.addMessage(text, severity, resource, region);
-    }
-
-    private static Severity toSeverity(Diagnostic.Kind kind) {
-        switch(kind) {
-            case ERROR:
-                return Severity.Error;
-            case WARNING:
-            case MANDATORY_WARNING:
-                return Severity.Warning;
-            case NOTE:
-                return Severity.Info;
-            default:
-                return Severity.Debug;
-        }
+    @Override public boolean shouldExecWhenAffected(Input input, Set<?> tags) {
+        return tags.isEmpty() || input.shouldExecWhenAffectedTags().isEmpty() || !Collections.disjoint(input.shouldExecWhenAffectedTags(), tags);
     }
 }

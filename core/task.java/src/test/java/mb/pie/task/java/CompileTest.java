@@ -4,10 +4,12 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import mb.common.message.KeyedMessages;
 import mb.common.util.ExceptionPrinter;
+import mb.common.util.ListView;
 import mb.pie.api.MapTaskDefs;
 import mb.pie.api.MixedSession;
 import mb.pie.api.Pie;
 import mb.pie.api.Task;
+import mb.pie.api.ValueSupplier;
 import mb.pie.runtime.PieBuilderImpl;
 import mb.resource.fs.FSResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -18,7 +20,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -88,14 +92,10 @@ class CompileTest {
             );
         final @Nullable String classPathProperty = System.getProperty("classPath");
         assertNotNull(classPathProperty);
-        for(String classPathPart : classPathProperty.split(File.pathSeparator)) {
-            inputBuilder.addClassPaths(new File(classPathPart));
-        }
+        inputBuilder.addClassPathSuppliers(new ValueSupplier<>(ListView.of(Arrays.stream(classPathProperty.split(File.pathSeparator)).map(File::new).collect(Collectors.toList()))));
         final @Nullable String annotationProcessorPathProperty = System.getProperty("annotationProcessorPath");
         assertNotNull(annotationProcessorPathProperty);
-        for(String annotationProcessorPathPart : annotationProcessorPathProperty.split(File.pathSeparator)) {
-            inputBuilder.addAnnotationProcessorPaths(new File(annotationProcessorPathPart));
-        }
+        inputBuilder.addAnnotationProcessorPathSuppliers(new ValueSupplier<>(ListView.of(Arrays.stream(annotationProcessorPathProperty.split(File.pathSeparator)).map(File::new).collect(Collectors.toList()))));
         inputBuilder
             .sourceFileOutputDirectory(sourceFileOutputDirectory.getPath())
             .classFileOutputDirectory(classFileOutputDirecotry.getPath())

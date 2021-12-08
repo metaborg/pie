@@ -10,16 +10,13 @@ import mb.pie.api.PieBuilder;
 import mb.pie.api.Task;
 import mb.pie.api.TaskDef;
 import mb.pie.runtime.PieBuilderImpl;
-import mb.pie.runtime.store.InMemoryStore;
-import mb.pie.runtime.store.SerializingStore;
+import mb.pie.runtime.store.SerializingStoreBuilder;
 import mb.resource.ResourceKeyString;
 import mb.resource.WritableResource;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.ResourcePath;
 
-import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 
 /**
  * This example demonstrates how to write a PIE build script in Kotlin with the PIE API, and how to incrementally
@@ -82,13 +79,11 @@ public class Main {
         // We pass in the TaskDefs object we created.
         pieBuilder.withTaskDefs(taskDefs);
         // For storing build results and the dependency graph, we will serialize the in-memory store on exit at build/store.
-        pieBuilder.withStoreFactory((serde, resourceService, logger) -> {
-            try {
-                return new SerializingStore<>(serde, resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")).createParents(), InMemoryStore::new, InMemoryStore.class);
-            } catch(IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        pieBuilder.withStoreFactory((serde, resourceService, loggerFactory) -> SerializingStoreBuilder.ofInMemoryStore(serde)
+            .withResourceStorage(resourceService.getHierarchicalResource(ResourceKeyString.of("build/store")))
+            .withLoggingDeserializeFailHandler(loggerFactory)
+            .build()
+        );
         // For example purposes, we use very verbose logging which will output to stdout.
         pieBuilder.withLoggerFactory(StreamLoggerFactory.stdOutVeryVerbose());
         // Then we build the PIE runtime.
@@ -104,9 +99,12 @@ public class Main {
 
                 // We print the text of the file to confirm that "Hello, world!" was indeed written to it.
                 System.out.println("File contents: " + file.readString());
+
+                // The PIE session is closed to free its resources. Using a try-with-resources block as is done here is
+                // the best way to ensure that.
             }
         }
-        // Finally, we clean up our resources. PIE must be closed to ensure the database has been fully serialized.
-        // Using a try-with-resources block is the best way to ensure that.
+        // Finally, the PIE instance is closed to ensure the store has been fully serialized. Using a try-with-resources
+        // block as is done here is the best way to ensure that.
     }
 }

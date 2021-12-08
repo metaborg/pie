@@ -112,6 +112,9 @@ class EmptyTracer implements Tracer {
     public void scheduleTask(TaskKey key) {}
 
     @Override
+    public void deferTask(TaskKey key) {}
+
+    @Override
     public void requireScheduledNowStart(TaskKey key) {}
 
     @Override

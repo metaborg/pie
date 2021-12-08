@@ -33,7 +33,7 @@ jobs:
         with:
           gradle-version: ${{ matrix.gradle }}
           build-root-directory: bench
-          arguments: runFull plotToHtml --parallel --stacktrace
+          arguments: benchSpoofax3CompilerFull plotToHtml --parallel --stacktrace
       - uses: actions/upload-artifact@v2
         with:
           name: jmh-result-${{ runner.os }}-${{ matrix.java }}

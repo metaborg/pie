@@ -3,14 +3,14 @@ plugins {
   `maven-publish`
 }
 
-val logVersion = "0.5.2"
-val resourceVersion = "0.11.0"
-val commonVersion = "0.8.0"
+val logVersion = "0.5.5"
+val resourceVersion = "0.13.2"
+val commonVersion = "0.10.1"
 
-val checkerframeworkVersion = "3.10.0"
+val checkerframeworkVersion = "3.16.0"
 
 val immutablesVersion = "2.8.2"
-val daggerVersion = "2.34.1"
+val daggerVersion = "2.36" // Do not upgrade, causes Gradle/Kotlin compatibility issues due to upgrade to Kotlin 1.5.
 
 dependencies {
   constraints {

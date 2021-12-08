@@ -224,7 +224,8 @@ public class PieChildBuilderImpl implements PieChildBuilder {
             layerFactory,
             loggerFactory,
             tracerFactory,
-            new CompositeCallbacks(new MapCallbacks(), ancestorCallbacks)
+            new CompositeCallbacks(new MapCallbacks(), ancestorCallbacks),
+            parent.lock
         );
     }
 }

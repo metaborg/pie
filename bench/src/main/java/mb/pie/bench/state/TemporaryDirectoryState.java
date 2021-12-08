@@ -4,6 +4,7 @@ import com.google.common.jimfs.Jimfs;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
@@ -12,6 +13,11 @@ import java.nio.file.FileSystem;
 
 @State(Scope.Thread)
 public class TemporaryDirectoryState {
+    // Parameters
+
+    @Param("true") public boolean useDiskTemporaryDirectory;
+
+
     // Trial
 
     private @Nullable FileSystem fileSystem;
@@ -22,12 +28,12 @@ public class TemporaryDirectoryState {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
         if(useDiskTemporaryDirectory) {
-            temporaryDirectory = FSResource.temporaryDirectory().appendRelativePath("pie.bench.spoofax3");
+            temporaryDirectory = FSResource.temporaryDirectory().appendRelativePath("pie.bench");
             temporaryDirectory.delete(true);
             temporaryDirectory.ensureDirectoryExists();
         } else {
             fileSystem = Jimfs.newFileSystem();
-            temporaryDirectory = new FSResource(fileSystem.getPath(""));
+            temporaryDirectory = new FSResource(fileSystem.getPath("/pie.bench"));
         }
         return temporaryDirectory;
     }
@@ -62,9 +68,4 @@ public class TemporaryDirectoryState {
         }
         temporaryDirectory.delete(true);
     }
-
-
-    // Parameters
-
-    /*@Param("true")*/ public boolean useDiskTemporaryDirectory = true;
 }

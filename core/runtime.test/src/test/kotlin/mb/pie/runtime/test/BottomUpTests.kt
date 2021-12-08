@@ -2,6 +2,7 @@ package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.None
+import mb.pie.api.STask
 import mb.pie.api.Supplier
 import mb.pie.api.exec.NullCancelableToken
 import mb.pie.api.test.anyC
@@ -38,22 +39,22 @@ class BottomUpTests {
     val combKey = combTask.key()
     var combOutput: String? = null
     var combObserved = 0
-    pie.setCallback(combTask) { s -> combOutput = s; ++combObserved }
 
     val readTask = readDef.createTask(file)
     val readKey = readTask.key()
     var readOutput: String? = null
     var readObserved = 0
-    pie.setCallback(readTask) { s -> readOutput = s; ++readObserved }
 
     val lowerTask = lowerDef.createTask(str)
     val lowerKey = lowerTask.key()
     var lowerOutput: String? = null
     var lowerObserved = 0
-    pie.setCallback(lowerTask) { s -> lowerOutput = s; ++lowerObserved }
 
     // Build [combineTask] in top-down fashion, observe rebuild of all.
     newSession().use { session ->
+      session.setCallback(combTask) { s -> combOutput = s; ++combObserved }
+      session.setCallback(readTask) { s -> readOutput = s; ++readObserved }
+      session.setCallback(lowerTask) { s -> lowerOutput = s; ++lowerObserved }
       val output = session.require(combTask)
       Assertions.assertEquals("hello world!", output)
       Assertions.assertEquals("hello world!", combOutput)
@@ -78,11 +79,11 @@ class BottomUpTests {
     val lowerRevKey = lowerRevTask.key()
     var lowerRevOutput: String? = null
     var lowerRevObserved = 0
-    pie.setCallback(lowerRevTask) { s -> lowerRevOutput = s; ++lowerRevObserved }
 
     // Notify of file change, observe bottom-up execution of directly affected [readTask], which then affects
     // [combTask], which in turn requires [lowerRevTask].
     newSession().use { session ->
+      session.setCallback(lowerRevTask) { s -> lowerRevOutput = s; ++lowerRevObserved }
       session.updateAffectedBy(setOf(file.key))
       // [combTask]'s key has not changed, since it is based on a file name that did not change.
       Assertions.assertEquals("!dlrow olleh", combOutput)
@@ -98,10 +99,10 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerRevObserved)
       val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
-        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-        verify(bottomUpSession).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+        verify(bottomUpSession).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
         verify(bottomUpSession).require(eq(lowerRevKey), eq(lowerRevTask), any(), any(), anyC())
-        verify(bottomUpSession).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
       }
     }
 
@@ -118,9 +119,9 @@ class BottomUpTests {
       Assertions.assertEquals("!dlrow olleh", lowerRevOutput)
       Assertions.assertEquals(1, lowerRevObserved)
       val bottomUpSession = session.bottomUpRunner
-      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
     }
 
     // Change required file in such a way that the file changes (modified date), but the output of [readTask] does not.
@@ -139,11 +140,11 @@ class BottomUpTests {
       Assertions.assertEquals(1, lowerRevObserved)
       val bottomUpSession = session.bottomUpRunner
       inOrder(bottomUpSession) {
-        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), anyC())
+        verify(bottomUpSession).exec(eq(readKey), eq(readTask), anyER(), any(), any(), anyC())
       }
-      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(combKey), eq(combTask), anyER(), any(), any(), anyC())
       verify(bottomUpSession, never()).require(eq(lowerRevKey), eq(lowerRevTask), any(), any(), anyC())
-      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), anyC())
+      verify(bottomUpSession, never()).exec(eq(lowerRevKey), eq(lowerRevTask), anyER(), any(), any(), anyC())
     }
   }
 
@@ -265,8 +266,67 @@ class BottomUpTests {
     newSession().use { session ->
       session.updateAffectedBy(hashSetOf(file.key))
       val bottomUpSession = session.bottomUpRunner
-      verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), any(), anyC())
-      verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), any(), anyC())
+      verify(bottomUpSession).exec(eq(providerTask.key()), eq(providerTask), anyER(), any(), any(), anyC())
+      verify(bottomUpSession).exec(eq(requirerTask.key()), eq(requirerTask), anyER(), any(), any(), anyC())
+    }
+  }
+
+  @TestFactory
+  fun testProvidedFileSwap() = builder.test {
+    val compileChooser = resource("/compile.chooser")
+    write("1", compileChooser)
+
+    val back = taskDef<Triple<FSResource, FSResource, String>, FSResource?>("back") { (inputFile, outputFile, id) ->
+      require(inputFile)
+      require(compileChooser)
+      if(compileChooser.readString() == id) {
+        outputFile.writeString(inputFile.readString())
+        provide(outputFile)
+        outputFile
+      } else {
+        null
+      }
+    }
+    addTaskDef(back)
+
+    val inputFile1 = resource("/input1.str")
+    write("input1", inputFile1)
+    val inputFile2 = resource("/input2.str")
+    write("input2", inputFile2)
+    val outputFile = resource("/output.java")
+
+    val compileStratego = taskDef<None, ArrayList<FSResource>>("compileStratego") {
+      val outputFiles = ArrayList<FSResource>()
+      require(compileChooser)
+      val text = compileChooser.readString()
+      if(text.contains("1")) {
+        val file = require(back, Triple(inputFile1, outputFile, "1"))
+        if(file != null) outputFiles.add(file)
+      } else {
+        val file = require(back, Triple(inputFile2, outputFile, "2"))
+        if(file != null) outputFiles.add(file)
+      }
+      outputFiles
+    }
+    addTaskDef(compileStratego)
+
+    val compileJava = taskDef<STask<ArrayList<FSResource>>, None>("compileJava") { compileStrategoTask ->
+      val javaFiles = require(compileStrategoTask)
+      for(javaFile in javaFiles) {
+        require(javaFile)
+      }
+      None.instance
+    }
+    addTaskDef(compileJava)
+
+    newSession().use { session ->
+      session.require(compileJava.createTask(compileStratego.createSupplier(None.instance)))
+    }
+
+    write("2", compileChooser)
+    newSession().use { session ->
+      session.updateAffectedBy(setOf(compileChooser.key))
+      Unit
     }
   }
 }

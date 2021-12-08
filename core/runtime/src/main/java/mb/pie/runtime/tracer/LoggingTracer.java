@@ -37,6 +37,7 @@ import java.util.function.Consumer;
  * <li>¿: indicates that a resource or task's affected tasks are being checked for scheduling (increases indentation until checking has completed).</li>
  * <li>☐: indicates that a dependency check has been skipped, because the task is unobserved.</li>
  * <li>↑: indicates that a task has been scheduled for execution (if it has not already been scheduled).</li>
+ * <li>↓: indicates that a scheduled task has been deferred.</li>
  * <li>⇒: indicates that the observability of a task has changed from one to another.</li>
  *   <ul>
  *       <li>‼: explicitly observed</li>
@@ -98,21 +99,21 @@ public class LoggingTracer extends EmptyTracer {
     public void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + outputToString(data.output));
+        logExec("← " + outputToString(data.getOutput()));
     }
 
     @Override
     public void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e) {
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + StringUtil.toShortString(e.toString(), strLimit), e);
+        logExec("← exception: " + StringUtil.toShortString(e.toString(), strLimit), e);
     }
 
     @Override
     public void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e) {
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + StringUtil.toShortString(e.toString(), strLimit));
+        logExec("← interrupted: " + StringUtil.toShortString(e.toString(), strLimit));
     }
 
 
@@ -275,6 +276,10 @@ public class LoggingTracer extends EmptyTracer {
         logBottomUp("↑ " + key);
     }
 
+    @Override public void deferTask(TaskKey key) {
+        if(isBottomUpDisabled()) return;
+        logBottomUp("↓ " + key);
+    }
 
     @Override
     public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {

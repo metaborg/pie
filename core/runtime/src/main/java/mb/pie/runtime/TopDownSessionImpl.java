@@ -1,5 +1,6 @@
 package mb.pie.runtime;
 
+import mb.pie.api.Callbacks;
 import mb.pie.api.ExecException;
 import mb.pie.api.Output;
 import mb.pie.api.Store;
@@ -11,7 +12,7 @@ import mb.pie.api.TopDownSession;
 import mb.pie.api.Tracer;
 import mb.pie.api.exec.CancelToken;
 import mb.pie.api.exec.NullCancelableToken;
-import mb.pie.runtime.exec.TopDownRunner;
+import mb.pie.runtime.exec.BottomUpRunner;
 import mb.resource.ResourceKey;
 import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -20,61 +21,64 @@ import java.io.Serializable;
 import java.util.HashSet;
 
 public class TopDownSessionImpl extends SessionImpl implements TopDownSession {
-    private final TopDownRunner topDownRunner;
+    private final BottomUpRunner bottomUpRunner;
     private final Store store;
 
 
     public TopDownSessionImpl(
-        TopDownRunner topDownRunner,
+        BottomUpRunner bottomUpRunner,
         TaskDefs taskDefs,
         ResourceService resourceService,
         Store store,
         Tracer tracer,
+        Callbacks callbacks,
+
         HashSet<ResourceKey> providedResources
     ) {
-        super(taskDefs, resourceService, store, tracer, providedResources);
-        this.topDownRunner = topDownRunner;
+        super(taskDefs, resourceService, store, tracer, callbacks, providedResources);
+        this.bottomUpRunner = bottomUpRunner;
         this.store = store;
     }
 
 
-    @Override public <O extends @Nullable Serializable> O getOutput(Task<O> task) {
+    @SuppressWarnings({"ConstantConditions"}) @Override
+    public <O extends Serializable> O getOutput(Task<O> task) {
         try(final StoreReadTxn txn = store.readTxn()) {
             final TaskKey key = task.key();
-            final @Nullable Serializable input = txn.input(key);
+            final @Nullable Serializable input = txn.getInput(key);
             if(input == null) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', it does not exist. Call require to execute this new task");
             }
             if(!input.equals(task.input)) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', its stored input '" + input + "' differs from given input '" + task.input + "'. Create a new session to execute this task");
             }
-            final @Nullable Output output = txn.output(key);
+            final @Nullable Output output = txn.getOutput(key);
             if(output == null) {
                 throw new IllegalStateException("Cannot get output of task '" + task + "', it has no output object. Call require to execute this new task");
             }
-            @SuppressWarnings({"unchecked"}) final O out = (O)output.output;
-            return out;
+            // noinspection unchecked (cast is safe because task must return object of type O)
+            return (O)output.output;
         }
     }
 
 
     @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends Serializable> O require(Task<O> task) throws ExecException, InterruptedException {
         return require(task, NullCancelableToken.instance);
     }
 
-    @Override
-    public <O extends @Nullable Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return handleException(() -> topDownRunner.requireInitial(task, true, cancel));
+    @SuppressWarnings("ConstantConditions") @Override
+    public <O extends Serializable> O require(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+        return handleException(() -> bottomUpRunner.requireInitial(task, true, cancel));
     }
 
     @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task) throws ExecException, InterruptedException {
         return requireWithoutObserving(task, NullCancelableToken.instance);
     }
 
-    @Override
-    public <O extends @Nullable Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
-        return handleException(() -> topDownRunner.requireInitial(task, false, cancel));
+    @SuppressWarnings("ConstantConditions") @Override
+    public <O extends Serializable> O requireWithoutObserving(Task<O> task, CancelToken cancel) throws ExecException, InterruptedException {
+        return handleException(() -> bottomUpRunner.requireInitial(task, false, cancel));
     }
 }

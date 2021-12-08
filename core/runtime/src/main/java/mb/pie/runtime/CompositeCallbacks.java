@@ -1,6 +1,7 @@
 package mb.pie.runtime;
 
 import mb.pie.api.Callbacks;
+import mb.pie.api.StoreReadTxn;
 import mb.pie.api.TaskKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -21,14 +22,14 @@ public class CompositeCallbacks implements Callbacks {
     }
 
     @Override
-    public @Nullable Consumer<@Nullable Serializable> get(TaskKey key) {
-        final @Nullable Consumer<@Nullable Serializable> callback = childCallbacks.get(key);
+    public @Nullable Consumer<@Nullable Serializable> get(TaskKey key, StoreReadTxn txn) {
+        final @Nullable Consumer<@Nullable Serializable> callback = childCallbacks.get(key, txn);
         if(callback != null) {
             return callback;
         }
         return parentCallbacks
             .stream()
-            .map(callbacks -> callbacks.get(key))
+            .map(callbacks -> callbacks.get(key, txn))
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(null);

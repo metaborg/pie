@@ -5,7 +5,6 @@ import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskRequire;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
-import mb.pie.api.Store;
 import mb.pie.api.StoreReadTxn;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
@@ -47,7 +46,7 @@ public class RequireShared {
     @Nullable TaskData dataFromVisited(TaskKey key) {
         tracer.checkVisitedStart(key);
         final @Nullable TaskData data = visited.get(key);
-        tracer.checkVisitedEnd(key, data != null ? data.output : null);
+        tracer.checkVisitedEnd(key, data != null ? data.getOutput() : null);
         return data;
     }
 
@@ -56,8 +55,8 @@ public class RequireShared {
      */
     @Nullable TaskData dataFromStore(TaskKey key, StoreReadTxn txn) {
         tracer.checkStoredStart(key);
-        final @Nullable TaskData data = txn.data(key);
-        tracer.checkStoredEnd(key, data != null ? data.output : null);
+        final @Nullable TaskData data = txn.getData(key);
+        tracer.checkStoredEnd(key, data != null ? data.getOutput() : null);
         return data;
     }
 

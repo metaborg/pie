@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-  mainClassName = "mb.pie.example.helloworld.kotlin.MainKt"
+  mainClass.set("mb.pie.example.helloworld.kotlin.MainKt")
 }
 
 dependencies {

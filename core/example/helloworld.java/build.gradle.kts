@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-  mainClassName = "mb.pie.example.helloworld.java.Main"
+  mainClass.set("mb.pie.example.helloworld.java.Main")
 }
 
 dependencies {

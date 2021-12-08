@@ -55,7 +55,7 @@ rules
     (file, Program(moduleStmt, _, _)) -> result
     with
     // Note: this strategy assumes files of the form "path/to/file.pie"
-      relativeTargetDir    := <config-get-output-dir>
+      relativeTargetDir    := <config-get-output-dir; trim-whitespace; trim-chars(?'\n'); trim-chars(?'\r')>
     ; ['.' | ['/' | rest]] := <explode-string> relativeTargetDir
     ; '/'                  := <last> rest // assert that last character is a /
     ; rootPackageDir       := <implode-string> rest

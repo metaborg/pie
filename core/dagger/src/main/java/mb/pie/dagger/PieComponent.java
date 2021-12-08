@@ -40,8 +40,8 @@ public interface PieComponent extends AutoCloseable {
         return new PieModule(getPie(), taskDefs);
     }
 
-    default PieModule createChildModule(TaskDefsProvider taskDefsComponent) {
-        return new PieModule(getPie(), taskDefsComponent);
+    default PieModule createChildModule(TaskDefsProvider... taskDefsProviders) {
+        return new PieModule(getPie(), taskDefsProviders);
     }
 
 

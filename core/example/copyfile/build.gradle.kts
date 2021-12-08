@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-  mainClassName = "mb.pie.example.copyfile.MainKt"
+  mainClass.set("mb.pie.example.copyfile.MainKt")
 }
 
 dependencies {

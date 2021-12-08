@@ -5,7 +5,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -13,68 +12,102 @@ import java.util.Set;
  */
 public interface StoreReadTxn extends StoreTxn {
     /**
-     * @return input for task with [key], or `null` if no input is stored.
+     * @return input for task with {@code key}, or {@code null} if no input is stored.
      */
-    @Nullable Serializable input(TaskKey key);
+    @Nullable Serializable getInput(TaskKey key);
 
     /**
-     * @return wrapper around output for [key], or `null` if no output is stored.
+     * @return internal object for task with {@code key}, or {@code null} if no internal object was stored or when
+     * {@code null} was explicitly stored as the internal object
      */
-    @Nullable Output output(TaskKey key);
-
+    @Nullable Serializable getInternalObject(TaskKey key);
 
     /**
-     * @return observability status of task for {@code key}.
+     * @return wrapper around output for task with {@code key}, or {@code null} if no output is stored.
      */
-    Observability taskObservability(TaskKey key);
-
-
-    /**
-     * @return task require dependencies (calls) of task [key].
-     */
-    Collection<TaskRequireDep> taskRequires(TaskKey key);
+    @Nullable Output getOutput(TaskKey key);
 
     /**
-     * @return callers of task [key].
+     * @return observability of task with {@code key}.
      */
-    Set<TaskKey> callersOf(TaskKey key);
+    Observability getTaskObservability(TaskKey key);
 
 
     /**
-     * @return resource require dependencies of task [key].
+     * @return task require dependencies (calls) of task with key {@code caller}.
      */
-    Collection<ResourceRequireDep> resourceRequires(TaskKey key);
+    Collection<TaskRequireDep> getTaskRequireDeps(TaskKey caller);
 
     /**
-     * @return tasks that require resource [key].
+     * @return required tasks of task with key {@code caller}.
      */
-    Set<TaskKey> requireesOf(ResourceKey key);
-
-
-    /**
-     * @return resource provide dependencies of task [key].
-     */
-    Collection<ResourceProvideDep> resourceProvides(TaskKey key);
+    Collection<TaskKey> getRequiredTasks(TaskKey caller);
 
     /**
-     * @return task that provides resource [key], or `null` if no task provides it.
+     * @return callers of task with key {@code callee}.
      */
-    @Nullable TaskKey providerOf(ResourceKey key);
+    Set<TaskKey> getCallersOf(TaskKey callee);
 
 
     /**
-     * @return output and dependencies for task [key], or `null` when no output was stored.
+     * @return {@code true} if task with key {@code caller} requires task {@code callee} directly or transitively.
+     * {@code false} otherwise.
      */
-    @Nullable TaskData data(TaskKey key);
+    boolean doesRequireTransitively(TaskKey caller, TaskKey callee);
+
+    /**
+     * @return {@code true} if task {@code caller} has dependency order before {@code callee}. {@code false} otherwise.
+     */
+    boolean hasDependencyOrderBefore(TaskKey caller, TaskKey callee);
+
+
+    /**
+     * @return resource require dependencies of task with key {@code requirer}.
+     */
+    Collection<ResourceRequireDep> getResourceRequireDeps(TaskKey requirer);
+
+    /**
+     * @return keys of tasks that require resource with key {@code requiree}.
+     */
+    Set<TaskKey> getRequirersOf(ResourceKey requiree);
+
+
+    /**
+     * @return resource provide dependencies of task with key {@code provider}.
+     */
+    Collection<ResourceProvideDep> getResourceProvideDeps(TaskKey provider);
+
+    /**
+     * @return task that provides resource with key {@code providee}, or {@code null} if no task provides it.
+     */
+    @Nullable TaskKey getProviderOf(ResourceKey providee);
+
+
+    /**
+     * @return output and dependencies for task [key], or {@code null} when no output was stored.
+     */
+    @Nullable TaskData getData(TaskKey key);
+
+
+    /**
+     * @return task keys for all tasks that are deferred during a bottom-up build.
+     */
+    Set<TaskKey> getDeferredTasks();
 
 
     /**
      * @return task keys for all tasks that have no callers.
      */
-    Set<TaskKey> tasksWithoutCallers();
+    Set<TaskKey> getTasksWithoutCallers();
 
     /**
      * @return number of source required resources for which there is no provider.
      */
-    int numSourceFiles();
+    int getNumSourceFiles();
+
+
+    /**
+     * @return Callback for task with {@code key}, or {@code null} if it has no callback.
+     */
+    @Nullable SerializableConsumer<Serializable> getCallback(TaskKey key);
 }

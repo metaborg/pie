@@ -1,6 +1,6 @@
 package mb.pie.task.java.ecj;
 
-import mb.pie.task.java.JavaResource;
+import mb.pie.task.java.jdk.JavaResource;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 

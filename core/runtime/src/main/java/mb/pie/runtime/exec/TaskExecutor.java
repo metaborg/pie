@@ -4,15 +4,19 @@ import mb.log.api.LoggerFactory;
 import mb.pie.api.Callbacks;
 import mb.pie.api.Layer;
 import mb.pie.api.Observability;
+import mb.pie.api.Output;
 import mb.pie.api.Share;
 import mb.pie.api.StoreWriteTxn;
 import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskDefs;
+import mb.pie.api.TaskDeps;
 import mb.pie.api.TaskKey;
+import mb.pie.api.TaskRequireDep;
 import mb.pie.api.Tracer;
 import mb.pie.api.UncheckedExecException;
 import mb.pie.api.exec.CancelToken;
+import mb.pie.api.exec.CanceledException;
 import mb.pie.api.exec.ExecReason;
 import mb.pie.api.exec.UncheckedInterruptedException;
 import mb.pie.runtime.DefaultStampers;
@@ -22,6 +26,8 @@ import mb.resource.ResourceService;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
@@ -96,31 +102,63 @@ public class TaskExecutor {
     ) {
         cancel.throwIfCanceled();
 
-        // Store previous data for observability comparison.
-        // Graceful: returns Observability.Unobserved if task has no observability status yet.
-        final Observability previousObservability = txn.taskObservability(key);
-        // Graceful: returns empty list if task has no task require dependencies yet.
-        final HashSet<TaskKey> previousTaskRequires = txn.taskRequires(key).stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+        // Reset task and obtain its previous data (or null if the task did not exist before)
+        final @Nullable TaskData previousData = txn.resetTask(task);
+        final Observability previousObservability = previousData != null ? previousData.taskObservability : Observability.Unobserved;
+        final Collection<TaskRequireDep> previousTaskRequireDeps = previousData != null ? previousData.deps.taskRequireDeps : Collections.emptySet();
 
         // Execute the task.
-        final ExecContextImpl context = new ExecContextImpl(txn, requireTask, modifyObservability || previousObservability.isObserved(), cancel, taskDefs, resourceService, defaultStampers, loggerFactory, tracer);
+        final ExecContextImpl context = new ExecContextImpl(
+            taskDefs,
+            resourceService,
+            defaultStampers,
+            layer,
+            loggerFactory,
+            tracer,
+
+            key,
+            previousData,
+
+            txn,
+            requireTask,
+            modifyObservability || previousObservability.isObserved(),
+            cancel
+        );
         final @Nullable Serializable output;
         try {
             tracer.executeStart(key, task, reason);
             output = task.exec(context);
+            cancel.throwIfCanceled();
+        } catch(UncheckedInterruptedException e) {
+            // Special case for UncheckedInterruptedException which can occur with nested execution.
+            txn.restoreData(key, previousData); // Restore previous data on cancel.
+            tracer.executeEndInterrupted(key, task, reason, e.interruptedException);
+            Thread.currentThread().interrupt(); // Interrupt the current thread.
+            throw e; // Propagate UncheckedInterruptedExceptions, no need to wrap them.
+        } catch(CanceledException e) {
+            txn.restoreData(key, previousData); // Restore previous data on cancel.
+            // TODO: log cancel
+            throw e; // Propagate CanceledExceptions, no need to wrap them.
         } catch(RuntimeException e) {
+            txn.restoreData(key, previousData); // Restore previous data on failure.
             tracer.executeEndFailed(key, task, reason, e);
-            // Propagate runtime exceptions, no need to wrap them.
-            throw e;
+            throw e; // Propagate RuntimeExceptions, no need to wrap them.
         } catch(InterruptedException e) {
+            txn.restoreData(key, previousData); // Restore previous data on cancel.
             tracer.executeEndInterrupted(key, task, reason, e);
-            // Turn InterruptedExceptions into UncheckedInterruptedException.
+            Thread.currentThread().interrupt(); // Interrupt the current thread.
+            // Turn InterruptedExceptions into UncheckedInterruptedException and propagate.
             throw new UncheckedInterruptedException(e);
         } catch(Exception e) {
+            txn.restoreData(key, previousData); // Restore previous data on failure.
             tracer.executeEndFailed(key, task, reason, e);
-            // Wrap regular exceptions into an UncheckedExecException which is propagated up to the entry point, where it
-            // will be turned into an ExecException that must be handled by the caller.
+            // Wrap regular exceptions into an UncheckedExecException which is propagated up to the entry point, where
+            // it will be turned into an ExecException that must be handled by the caller.
             throw new UncheckedExecException("Executing task '" + task.desc(100) + "' failed unexpectedly", e);
+        } catch(Throwable e) {
+            txn.restoreData(key, previousData); // Restore previous data on failure.
+            // TODO: log throwable
+            throw e; // Propagate Throwables, no need to wrap them.
         }
 
         // Gather task data.
@@ -133,26 +171,23 @@ public class TaskExecutor {
             // Copy observability otherwise.
             newObservability = previousObservability;
         }
-        final ExecContextImpl.Deps deps = context.deps();
-        deps.resourceProvides.forEach(d -> providedResources.add(d.key));
-        final TaskData data = new TaskData(task.input, output, newObservability, deps.taskRequires, deps.resourceRequires, deps.resourceProvides);
+        final TaskDeps deps = context.getDeps();
+        deps.resourceProvideDeps.forEach(d -> providedResources.add(d.key));
+        final TaskData data = new TaskData(task.input, txn.getInternalObject(key), new Output(output), newObservability, deps);
         tracer.executeEndSuccess(key, task, reason, data);
 
-        // Validate well-formedness of the dependency graph, before writing.
-        layer.validatePreWrite(key, data, txn);
-
-        // Write output and dependencies to the store.
-        txn.setData(key, data);
-
-        // Validate well-formedness of the dependency graph, after writing.
-        layer.validatePostWrite(key, data, txn);
+        // Validate task output, then write the output and set the new observability.
+        layer.validateTaskOutput(key, output, txn);
+        txn.setOutput(key, output);
+        txn.setTaskObservability(key, newObservability);
 
         // Implicitly unobserve tasks which the executed task no longer depends on (if this task is observed).
         if(newObservability.isObserved()) {
-            final HashSet<TaskKey> newTaskRequires = deps.taskRequires.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
-            previousTaskRequires.removeAll(newTaskRequires);
-            for(TaskKey removedTaskRequire : previousTaskRequires) {
-                Observability.implicitUnobserve(txn, removedTaskRequire, tracer);
+            final HashSet<TaskKey> newRequiredTasks = deps.taskRequireDeps.stream().map((d) -> d.callee).collect(Collectors.toCollection(HashSet::new));
+            for(TaskRequireDep dep : previousTaskRequireDeps) {
+                if(!newRequiredTasks.contains(dep.callee)) {
+                    Observability.implicitUnobserve(txn, dep.callee, tracer);
+                }
             }
         }
 
@@ -160,7 +195,7 @@ public class TaskExecutor {
         visited.put(key, data);
 
         // Invoke callback, if any.
-        final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key);
+        final @Nullable Consumer<@Nullable Serializable> callback = callbacks.get(key, txn);
         if(callback != null) {
             tracer.invokeCallbackStart(callback, key, output);
             callback.accept(output);

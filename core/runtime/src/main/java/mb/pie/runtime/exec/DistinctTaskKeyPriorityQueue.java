@@ -46,12 +46,6 @@ public class DistinctTaskKeyPriorityQueue {
                 set.remove(queuedKey);
                 return queuedKey;
             }
-            // Repeat to skip call in case queuedKey equals key.
-            if(BottomUpShared.hasTransitiveTaskReq(key, queuedKey, txn)) {
-                queue.remove(queuedKey);
-                set.remove(queuedKey);
-                return queuedKey;
-            }
         }
         return null;
     }
@@ -60,6 +54,12 @@ public class DistinctTaskKeyPriorityQueue {
         if(set.contains(key)) return;
         queue.add(key);
         set.add(key);
+    }
+
+    public void addAll(Iterable<TaskKey> keys) {
+        for(TaskKey key : keys) {
+            add(key);
+        }
     }
 
     @Override public String toString() {

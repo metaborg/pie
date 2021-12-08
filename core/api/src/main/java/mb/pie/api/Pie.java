@@ -1,14 +1,19 @@
 package mb.pie.api;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * PIE entry point.
+ * PIE entry point. All methods are thread-safe and reentrant by locking. A child {@link Pie} uses the same lock as its
+ * parent. In other words, every tree of {@link Pie} objects uses the same lock.
  */
 public interface Pie extends AutoCloseable {
     /**
-     * Creates a new session for incrementally executing tasks.
+     * Creates a new session for (incrementally) executing tasks.
+     *
+     * Only one session may exist per {@link Pie} object tree. Calling this method while another session exists will
+     * result in this method waiting until that session is {@link MixedSession#close() closed} through locking.
      *
      * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
      * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
@@ -18,14 +23,30 @@ public interface Pie extends AutoCloseable {
      */
     MixedSession newSession();
 
+    /**
+     * Tries to create a new session for (incrementally) executing tasks, succeeding only if no other session exists for
+     * this {@link Pie} object tree.
+     *
+     * Only one session may exist per {@link Pie} object tree. Calling this method while another session exists will
+     * result in this method returning {@code Optional.empty()}.
+     *
+     * Within a session, the same task is never executed more than once. For sound incrementality, a new session must be
+     * started after external changes have occurred. See {@link MixedSession} for a list of external changes.
+     *
+     * @return A new session if no other session exists, or empty if another session exists.
+     * @see MixedSession
+     */
+    Optional<MixedSession> tryNewSession();
+
 
     /**
      * Checks whether {@code task} has been executed at least once.
      *
      * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
      * @return True if task was executed at least once, false otherwise.
+     * @deprecated Use {@link Session#hasBeenExecuted(Task)}.
      */
-    default boolean hasBeenExecuted(Task<?> task) {
+    @Deprecated default boolean hasBeenExecuted(Task<?> task) {
         return hasBeenExecuted(task.key());
     }
 
@@ -34,77 +55,16 @@ public interface Pie extends AutoCloseable {
      *
      * @param key Key of task to check.
      * @return True if task was executed at least once, false otherwise.
+     * @deprecated Use {@link Session#hasBeenExecuted(Task)}.
      */
-    boolean hasBeenExecuted(TaskKey key);
-
-
-    /**
-     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build) or implicitly observed
-     * (when another observed task requires it).
-     *
-     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
-     * @return True if task is observed, false otherwise.
-     */
-    default boolean isObserved(Task<?> task) {
-        return isObserved(task.key());
-    }
-
-    /**
-     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build) or
-     * implicitly observed (when another observed task requires it).
-     *
-     * @param key Key of task to check.
-     * @return True if task is observed, false otherwise.
-     */
-    boolean isObserved(TaskKey key);
-
-
-    /**
-     * Sets {@code function} as the callback for outputs of {@code task}. Whenever {@code task} is required, its
-     * up-to-date output will be passed as an argument to the {@code function}.
-     *
-     * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
-     *                 which callback function to call when a task is required.
-     * @param function Function to call with up-to-date output as argument when {@code task} is required. Consumed value
-     *                 by the function may be {@code null} when a task returns {@code null}.
-     */
-    <O extends Serializable> void setCallback(Task<O> task, Consumer<O> function);
-
-    /**
-     * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
-     * required, its up-to-date output will be passed as an argument to the {@code function}.
-     *
-     * @param key      Key of task to set callback for.
-     * @param function Function to call with up-to-date output as argument when task is required. Consumed value by the
-     *                 function may be {@code null} when a task returns {@code null}.
-     */
-    void setCallback(TaskKey key, Consumer<Serializable> function);
-
-    /**
-     * Removes the callback function for outputs of {@code task}.
-     *
-     * @param task Task to remove the callback for. The {@link Task#key()} of {@code task} will be used to identify
-     *             which callback function to remove.
-     */
-    void removeCallback(Task<?> task);
-
-    /**
-     * Removes the callback function for outputs of task with {@code key}.
-     *
-     * @param key Key of task to remove callback function for.
-     */
-    void removeCallback(TaskKey key);
-
-    /**
-     * Removes all callback functions.
-     */
-    void dropCallbacks();
+    @Deprecated boolean hasBeenExecuted(TaskKey key);
 
 
     /**
      * Removes all data from the store.
+     * @deprecated Use {@link Session#dropStore()}.
      */
-    void dropStore();
+    @Deprecated void dropStore();
 
 
     /**

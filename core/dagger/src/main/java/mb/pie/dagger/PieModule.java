@@ -78,12 +78,20 @@ public class PieModule {
         this(parentPie, null, taskDefs);
     }
 
-    public PieModule(Pie parentPie, TaskDefsProvider taskDefsComponent) {
-        this(parentPie, null, new HashSet<>(taskDefsComponent.getTaskDefs()));
+    public PieModule(Pie parentPie, TaskDefsProvider... taskDefsProviders) {
+        this(parentPie, null, composeTaskDefs(taskDefsProviders));
     }
 
     public PieModule(Pie parentPie) {
         this(parentPie, null, new HashSet<>());
+    }
+
+    private static HashSet<TaskDef<?, ?>> composeTaskDefs(TaskDefsProvider... taskDefsProviders) {
+        final HashSet<TaskDef<?, ?>> taskDefs = new HashSet<>();
+        for(TaskDefsProvider taskDefsProvider : taskDefsProviders) {
+            taskDefs.addAll(taskDefsProvider.getTaskDefs());
+        }
+        return taskDefs;
     }
 
 

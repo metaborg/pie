@@ -1,10 +1,13 @@
 package mb.pie.runtime.test
 
 import com.nhaarman.mockitokotlin2.*
+import mb.common.concurrent.lock.CloseableReentrantReadWriteLock
+import mb.common.concurrent.lock.LockHandle
 import mb.log.api.LoggerFactory
 import mb.log.stream.StreamLoggerFactory
 import mb.pie.api.Callbacks
 import mb.pie.api.MapTaskDefs
+import mb.pie.api.MixedSession
 import mb.pie.api.Pie
 import mb.pie.api.PieBuilder.LayerFactory
 import mb.pie.api.PieBuilder.StoreFactory
@@ -79,7 +82,8 @@ open class TestPieBuilderImpl(private val shouldSpy: Boolean) : PieBuilderImpl()
       layerFactory,
       loggerFactory,
       tracerFactory,
-      MapCallbacks()
+      MapCallbacks(),
+      CloseableReentrantReadWriteLock()
     )
   }
 }
@@ -95,11 +99,20 @@ open class TestPieImpl(
   layerFactory: LayerFactory,
   loggerFactory: LoggerFactory,
   tracerFactory: Function<LoggerFactory, Tracer>,
-  callbacks: Callbacks
-) : PieImpl(true, taskDefs, resourceService, serde, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks) {
+  callbacks: Callbacks,
+  lock: CloseableReentrantReadWriteLock
+) : PieImpl(true, taskDefs, resourceService, serde, store, share, defaultStampers, layerFactory, loggerFactory, tracerFactory, callbacks, lock) {
   val store: Store get() = super.store // Make store available for testing.
 
   override fun newSession(): TestMixedSessionImpl {
+    return createSession(lock.lockWrite())
+  }
+
+  override fun tryNewSession(): Optional<MixedSession> {
+    return lock.tryLockWrite().map { createSession(it) }
+  }
+
+  private fun createSession(lockHandle: LockHandle): TestMixedSessionImpl {
     val layer = layerFactory.apply(taskDefs, loggerFactory, serde)
     val tracer = tracerFactory.apply(loggerFactory)
     val visited = HashMap<TaskKey, TaskData>()
@@ -120,7 +133,7 @@ open class TestPieImpl(
       bottomUpSession = spy(bottomUpSession)
     }
 
-    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, tracer, providedResources)
+    var session = TestMixedSessionImpl(topDownSession, bottomUpSession, taskDefs, resourceService, super.store, tracer, callbacks, providedResources, lockHandle)
     if(shouldSpy) {
       session = spy(session)
     }
@@ -136,8 +149,12 @@ open class TestMixedSessionImpl(
   resourceService: ResourceService,
   store: Store,
   tracer: Tracer,
-  providedResources: HashSet<ResourceKey>
-) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, providedResources) {
+  callbacks: Callbacks,
+
+  providedResources: HashSet<ResourceKey>,
+
+  lockHandle: LockHandle
+) : MixedSessionImpl(topDownRunner, bottomUpRunner, taskDefs, resourceService, store, tracer, callbacks, providedResources, lockHandle) {
   // Make store available for testing.
   val store: Store get() = super.store
 

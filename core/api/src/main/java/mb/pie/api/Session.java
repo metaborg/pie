@@ -8,12 +8,15 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * A session is a temporary context in which PIE builds can be executed. Within a session, a task with the same {@link
- * Task#key() key} is never executed more than once. For sound incrementality, a new session must be started after
- * external changes have occurred. External changes include:
+ * A session is a temporary context in which PIE builds can be executed. All methods are thread-safe and reentrant by
+ * locking.
+ *
+ * Within a session, a task with the same {@link Task#key() key} is never executed more than once. For sound
+ * incrementality, a new session must be started after external changes have occurred. External changes include:
  * <ul>
  * <li>Change to the contents or metadata of a required or provided resource (e.g., file contents)</li>
  * <li>Change to the input of a required task, which does not influence its {@link Task#key() key}</li>
@@ -82,6 +85,75 @@ public interface Session {
 
 
     /**
+     * Sets {@code function} as the callback for outputs of {@code task}. Whenever {@code task} is required, its
+     * up-to-date output will be passed as an argument to the {@code function}. This callback is not stored, and will be
+     * lost when the {@link Pie} instance is closed.
+     *
+     * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
+     *                 which callback function to call when a task is required.
+     * @param function Function to call with up-to-date output as argument when {@code task} is required. Consumed value
+     *                 by the function may be {@code null} when a task returns {@code null}.
+     */
+    <O extends Serializable> void setCallback(Task<O> task, Consumer<O> function);
+
+    /**
+     * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
+     * required, its up-to-date output will be passed as an argument to the {@code function}. This callback is not
+     * stored, and will be lost when the {@link Pie} instance is closed.
+     *
+     * @param key      Key of task to set callback for.
+     * @param function Function to call with up-to-date output as argument when task is required. Consumed value by the
+     *                 function may be {@code null} when a task returns {@code null}.
+     */
+    void setCallback(TaskKey key, Consumer<Serializable> function);
+
+    /**
+     * Sets {@code function} as the callback for outputs of {@code task}. Whenever {@code task} is required, its
+     * up-to-date output will be passed as an argument to the {@code function}. The callback function must be {@link
+     * Serializable}. Therefore, if using a lambda or anonymous function, make sure that all captured state is
+     * serializable. This callback is stored in the {@link Store}.
+     *
+     * @param task     Task to set the callback for. The {@link Task#key() key} of this task will be used to identify
+     *                 which callback function to call when a task is required.
+     * @param function Function to call with up-to-date output as argument when {@code task} is required. Consumed value
+     *                 by the function may be {@code null} when a task returns {@code null}.
+     */
+    <O extends Serializable> void setSerializableCallback(Task<O> task, SerializableConsumer<O> function);
+
+    /**
+     * Sets {@code function} as the callback for outputs of tasks with {@code key}. Whenever task with {@code key} is
+     * required, its up-to-date output will be passed as an argument to the {@code function}. The callback function must
+     * be {@link Serializable}. Therefore, if using a lambda or anonymous function, make sure that all captured state is
+     * serializable. This callback is stored in the {@link Store}.
+     *
+     * @param key      Key of task to set callback for.
+     * @param function Function to call with up-to-date output as argument when task is required. Consumed value by the
+     *                 function may be {@code null} when a task returns {@code null}.
+     */
+    void setSerializableCallback(TaskKey key, SerializableConsumer<Serializable> function);
+
+    /**
+     * Removes the callback function for outputs of {@code task}.
+     *
+     * @param task Task to remove the callback for. The {@link Task#key()} of {@code task} will be used to identify
+     *             which callback function to remove.
+     */
+    void removeCallback(Task<?> task);
+
+    /**
+     * Removes the callback function for outputs of task with {@code key}.
+     *
+     * @param key Key of task to remove callback function for.
+     */
+    void removeCallback(TaskKey key);
+
+    /**
+     * Removes all callback functions.
+     */
+    void dropCallbacks();
+
+
+    /**
      * Checks whether {@code task} has been executed at least once.
      *
      * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
@@ -119,6 +191,50 @@ public interface Session {
      * @return True if task is observed, false otherwise.
      */
     boolean isObserved(TaskKey key);
+
+
+    /**
+     * Checks whether {@code task} is explicitly observed (by requiring it with a top-down build).
+     *
+     * @param task Task to check. The {@link Task#key() key} of this task will be used to check.
+     * @return True if task is explicitly observed, false otherwise.
+     */
+    default boolean isExplicitlyObserved(Task<?> task) {
+        return isExplicitlyObserved(task.key());
+    }
+
+    /**
+     * Checks whether task with given {@code key} is explicitly observed (by requiring it with a top-down build).
+     *
+     * @param key Key of task to check.
+     * @return True if task is explicitly observed, false otherwise.
+     */
+    boolean isExplicitlyObserved(TaskKey key);
+
+
+    /**
+     * Sets the observability of {@code task} to {@link Observability#ExplicitObserved explicitly observed} if it is
+     * {@link Observability#ImplicitObserved implicitly observed}. Does nothing if already {@link
+     * Observability#ExplicitObserved explicitly observed}. Throws if {@link Observability#Unobserved unobserved}. Use
+     * {@link #require} to explicitly observe an unobserved task.
+     *
+     * @param task Task to explicitly observe.
+     * @throws IllegalArgumentException when {@code} task is not observed.
+     */
+    default void setImplicitToExplicitlyObserved(Task<?> task) {
+        setImplicitToExplicitlyObserved(task.key());
+    }
+
+    /**
+     * Sets the observability of task with given {@code key} to {@link Observability#ExplicitObserved explicitly
+     * observed} if it is {@link Observability#ImplicitObserved implicitly observed}. Does nothing if already {@link
+     * Observability#ExplicitObserved explicitly observed}. Throws if {@link Observability#Unobserved unobserved}. Use
+     * {@link #require} to explicitly observe an unobserved task.
+     *
+     * @param key Key of task to explicitly observe.
+     * @throws IllegalArgumentException when {@code} task is not observed.
+     */
+    void setImplicitToExplicitlyObserved(TaskKey key);
 
 
     /**
@@ -165,4 +281,10 @@ public interface Session {
      * @return Read-only set of provided resources.
      */
     Set<ResourceKey> getProvidedResources();
+
+
+    /**
+     * Removes all data from the store.
+     */
+    void dropStore();
 }
