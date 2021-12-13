@@ -14,7 +14,11 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
+import mb.pie.api.Tracer;
 import mb.pie.api.exec.ExecReason;
+import mb.pie.api.stamp.OutputStamper;
+import mb.pie.api.stamp.ResourceStamper;
+import mb.resource.Resource;
 import mb.resource.ResourceKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -46,13 +50,14 @@ import java.util.function.Consumer;
  *   </ul>
  * </ul>
  */
-public class LoggingTracer extends EmptyTracer {
+public class LoggingTracer implements Tracer {
     private final Logger logger;
     private final Level execLoggingLevel;
     private final Level upToDateLoggingLevel;
     private final Level topDownLoggingLevel;
     private final Level bottomUpLoggingLevel;
     private final int strLimit;
+    private final @Nullable MetricsTracer metricsTracer;
     private final AtomicInteger indentation = new AtomicInteger(0);
 
 
@@ -62,7 +67,8 @@ public class LoggingTracer extends EmptyTracer {
         Level upToDateLoggingLevel,
         Level topDownLoggingLevel,
         Level bottomUpLoggingLevel,
-        int strLimit
+        int strLimit,
+        @Nullable MetricsTracer metricsTracer
     ) {
         this.logger = loggerFactory.create(LoggingTracer.class);
         this.execLoggingLevel = execLoggingLevel;
@@ -70,26 +76,66 @@ public class LoggingTracer extends EmptyTracer {
         this.topDownLoggingLevel = topDownLoggingLevel;
         this.bottomUpLoggingLevel = bottomUpLoggingLevel;
         this.strLimit = strLimit;
+        this.metricsTracer = metricsTracer;
+    }
+
+    public LoggingTracer(
+        LoggerFactory loggerFactory,
+        Level execLoggingLevel,
+        Level upToDateLoggingLevel,
+        Level topDownLoggingLevel,
+        Level bottomUpLoggingLevel,
+        int strLimit
+    ) {
+        this(loggerFactory, execLoggingLevel, upToDateLoggingLevel, topDownLoggingLevel, bottomUpLoggingLevel, strLimit, null);
+    }
+
+    public LoggingTracer(LoggerFactory loggerFactory, @Nullable MetricsTracer metricsTracer) {
+        this(loggerFactory, Level.Debug, Level.Trace, Level.Trace, Level.Trace, 1024, metricsTracer);
     }
 
     public LoggingTracer(LoggerFactory loggerFactory) {
-        this(loggerFactory, Level.Debug, Level.Trace, Level.Trace, Level.Trace, 1024);
+        this(loggerFactory, null);
     }
 
 
-    private void log(Level level, String message) { logger.log(level, getIndent() + message); }
+    private void log(Level level, String message) {
+        logger.log(level, getIndent() + message);
+    }
 
-    private void log(Level level, String message, Exception e) { logger.log(level, getIndent() + message, e); }
+    private void log(Level level, String message, Exception e) {
+        logger.log(level, getIndent() + message, e);
+    }
 
 
-    private boolean isExecDisabled() { return !logger.isEnabled(execLoggingLevel); }
+    @Override public void providedResource(Resource resource, ResourceStamper<?> stamper) {
+        if(metricsTracer != null) metricsTracer.providedResource(resource, stamper);
+    }
 
-    private void logExec(String message) { log(execLoggingLevel, message); }
+    @Override public void requiredResource(Resource resource, ResourceStamper<?> stamper) {
+        if(metricsTracer != null) metricsTracer.requiredResource(resource, stamper);
+    }
 
-    private void logExec(String message, Exception e) { log(execLoggingLevel, message, e); }
+    @Override public void requiredTask(Task<?> task, OutputStamper stamper) {
+        if(metricsTracer != null) metricsTracer.requiredTask(task, stamper);
+    }
+
+
+    private boolean isExecDisabled() {
+        return !logger.isEnabled(execLoggingLevel);
+    }
+
+    private void logExec(String message) {
+        log(execLoggingLevel, message);
+    }
+
+    private void logExec(String message, Exception e) {
+        log(execLoggingLevel, message, e);
+    }
 
     @Override
     public void executeStart(TaskKey key, Task<?> task, ExecReason reason) {
+        if(metricsTracer != null) metricsTracer.executeStart(key, task, reason);
         if(isExecDisabled()) return;
         logExec("→ " + task.desc(strLimit) + " (reason: " + reason + ")");
         indentation.incrementAndGet();
@@ -97,43 +143,70 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void executeEndSuccess(TaskKey key, Task<?> task, ExecReason reason, TaskData data) {
+        if(metricsTracer != null) metricsTracer.executeEndSuccess(key, task, reason, data);
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← " + outputToString(data.getOutput()));
+        logExec("← " + getDurationString(key) + outputToString(data.getOutput()));
     }
 
     @Override
     public void executeEndFailed(TaskKey key, Task<?> task, ExecReason reason, Exception e) {
+        if(metricsTracer != null) metricsTracer.executeEndFailed(key, task, reason, e);
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← exception: " + StringUtil.toShortString(e.toString(), strLimit), e);
+        logExec("← " + getDurationString(key) + "exception: " + StringUtil.toShortString(e.toString(), strLimit), e);
     }
 
     @Override
     public void executeEndInterrupted(TaskKey key, Task<?> task, ExecReason reason, InterruptedException e) {
+        if(metricsTracer != null) metricsTracer.executeEndInterrupted(key, task, reason, e);
         if(isExecDisabled()) return;
         indentation.decrementAndGet();
-        logExec("← interrupted: " + StringUtil.toShortString(e.toString(), strLimit));
+        logExec("← " + getDurationString(key) + "interrupted: " + StringUtil.toShortString(e.toString(), strLimit));
+    }
+
+    private String getDurationString(TaskKey key) {
+        if(metricsTracer == null) return "";
+        final @Nullable Long duration = metricsTracer.getReport().executionDurationPerTask.get(key);
+        if(duration != null) {
+            return "[" + (duration / 1000000.0) + "] ";
+        }
+        return "";
     }
 
 
-    private boolean isUpToDateDisabled() { return !logger.isEnabled(upToDateLoggingLevel); }
+    @Override public void requireStart(TaskKey key, Task<?> task) {
+        if(metricsTracer != null) metricsTracer.requireStart(key, task);
+    }
 
-    private void logUpToDate(String message) { log(upToDateLoggingLevel, message); }
+    @Override public void requireEnd(TaskKey key, Task<?> task) {
+        if(metricsTracer != null) metricsTracer.requireEnd(key, task);
+    }
+
+
+    private boolean isUpToDateDisabled() {
+        return !logger.isEnabled(upToDateLoggingLevel);
+    }
+
+    private void logUpToDate(String message) {
+        log(upToDateLoggingLevel, message);
+    }
 
     @Override
     public void upToDate(TaskKey key, Task<?> task) {
+        if(metricsTracer != null) metricsTracer.upToDate(key, task);
         if(isUpToDateDisabled()) return;
         logUpToDate("✓ " + key.toShortString(strLimit));
     }
 
 
-    private boolean isTopDownDisabled() { return !logger.isEnabled(topDownLoggingLevel); }
+    private boolean isTopDownDisabled() {return !logger.isEnabled(topDownLoggingLevel);}
 
-    private void logTopDown(String message) { log(topDownLoggingLevel, message); }
+    private void logTopDown(String message) {log(topDownLoggingLevel, message);}
 
     @Override
     public void requireTopDownInitialStart(TaskKey key, Task<?> task) {
+        if(metricsTracer != null) metricsTracer.requireTopDownInitialStart(key, task);
         if(isTopDownDisabled()) return;
         logTopDown("Top-down build start: " + task.desc(strLimit));
         indentation.incrementAndGet();
@@ -141,6 +214,7 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void requireTopDownInitialEnd(TaskKey key, Task<?> task, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.requireTopDownInitialEnd(key, task, output);
         if(isTopDownDisabled()) return;
         indentation.decrementAndGet();
         logTopDown("Top-down build end: " + output);
@@ -148,6 +222,7 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void checkTopDownStart(TaskKey key, Task<?> task) {
+        if(metricsTracer != null) metricsTracer.checkTopDownStart(key, task);
         if(isTopDownDisabled()) return;
         logTopDown("? " + task.desc(strLimit));
         indentation.incrementAndGet();
@@ -155,22 +230,33 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void checkTopDownEnd(TaskKey key, Task<?> task) {
+        if(metricsTracer != null) metricsTracer.checkTopDownEnd(key, task);
         if(isTopDownDisabled()) return;
         indentation.decrementAndGet();
     }
 
+    @Override public void checkResourceProvideStart(TaskKey provider, Task<?> task, ResourceProvideDep dep) {
+        if(metricsTracer != null) metricsTracer.checkResourceProvideStart(provider, task, dep);
+    }
+
     @Override
     public void checkResourceProvideEnd(TaskKey provider, Task<?> task, ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
+        if(metricsTracer != null) metricsTracer.checkResourceProvideEnd(provider, task, dep, reason);
         if(isTopDownDisabled()) return;
         if(reason != null) {
             logTopDown("☒ " + dep.key + " (" + dep.stamp + " ≠ " + reason.newStamp + ")");
         } else {
             logTopDown("☑ " + dep.key + " (" + dep.stamp + ")");
         }
+    }
+
+    @Override public void checkResourceRequireStart(TaskKey requirer, Task<?> task, ResourceRequireDep dep) {
+        if(metricsTracer != null) metricsTracer.checkResourceRequireStart(requirer, task, dep);
     }
 
     @Override
     public void checkResourceRequireEnd(TaskKey requirer, Task<?> task, ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
+        if(metricsTracer != null) metricsTracer.checkResourceRequireEnd(requirer, task, dep, reason);
         if(isTopDownDisabled()) return;
         if(reason != null) {
             logTopDown("☒ " + dep.key + " (" + dep.stamp + " ≠ " + reason.newStamp + ")");
@@ -179,8 +265,13 @@ public class LoggingTracer extends EmptyTracer {
         }
     }
 
+    @Override public void checkTaskRequireStart(TaskKey key, Task<?> task, TaskRequireDep dep) {
+        if(metricsTracer != null) metricsTracer.checkTaskRequireStart(key, task, dep);
+    }
+
     @Override
     public void checkTaskRequireEnd(TaskKey key, Task<?> task, TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {
+        if(metricsTracer != null) metricsTracer.checkTaskRequireEnd(key, task, dep, reason);
         if(isTopDownDisabled()) return;
         if(reason != null) {
             logTopDown("☒ " + dep.callee.toShortString(strLimit) + " (" + outputToString(dep.stamp) + " ≠ " + outputToString(reason.newStamp) + ")");
@@ -190,12 +281,13 @@ public class LoggingTracer extends EmptyTracer {
     }
 
 
-    private boolean isBottomUpDisabled() { return !logger.isEnabled(bottomUpLoggingLevel); }
+    private boolean isBottomUpDisabled() {return !logger.isEnabled(bottomUpLoggingLevel);}
 
-    private void logBottomUp(String message) { log(bottomUpLoggingLevel, message); }
+    private void logBottomUp(String message) {log(bottomUpLoggingLevel, message);}
 
     @Override
     public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {
+        if(metricsTracer != null) metricsTracer.requireBottomUpInitialStart(changedResources);
         if(isBottomUpDisabled()) return;
         logBottomUp("Bottom-up build start: " + changedResources);
         indentation.incrementAndGet();
@@ -203,6 +295,7 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void requireBottomUpInitialEnd() {
+        if(metricsTracer != null) metricsTracer.requireBottomUpInitialEnd();
         if(isBottomUpDisabled()) return;
         indentation.decrementAndGet();
         logBottomUp("Bottom-up build end");
@@ -210,6 +303,7 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void scheduleAffectedByResourceStart(ResourceKey resource) {
+        if(metricsTracer != null) metricsTracer.scheduleAffectedByResourceStart(resource);
         if(isBottomUpDisabled()) return;
         logBottomUp("¿ " + resource);
         indentation.incrementAndGet();
@@ -217,12 +311,14 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void scheduleAffectedByResourceEnd(ResourceKey resource) {
+        if(metricsTracer != null) metricsTracer.scheduleAffectedByResourceEnd(resource);
         if(isBottomUpDisabled()) return;
         indentation.decrementAndGet();
     }
 
     @Override
     public void checkAffectedByProvidedResource(TaskKey provider, @Nullable ResourceProvideDep dep, @Nullable InconsistentResourceProvide reason) {
+        if(metricsTracer != null) metricsTracer.checkAffectedByProvidedResource(provider, dep, reason);
         if(isBottomUpDisabled()) return;
         if(reason != null && dep != null) {
             logBottomUp("☒ " + provider.toShortString(strLimit) + "(" + dep.stamp + " ≠ " + reason.newStamp + ")");
@@ -235,6 +331,7 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void checkAffectedByRequiredResource(TaskKey requirer, @Nullable ResourceRequireDep dep, @Nullable InconsistentResourceRequire reason) {
+        if(metricsTracer != null) metricsTracer.checkAffectedByRequiredResource(requirer, dep, reason);
         if(isBottomUpDisabled()) return;
         if(reason != null && dep != null) {
             logBottomUp("☒ " + requirer.toShortString(strLimit) + "(" + dep.stamp + " ≠ " + reason.newStamp + ")");
@@ -247,6 +344,7 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void scheduleAffectedByTaskOutputStart(TaskKey requiree, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.scheduleAffectedByTaskOutputStart(requiree, output);
         if(isBottomUpDisabled()) return;
         logBottomUp("¿ " + requiree.toShortString(strLimit));
         indentation.incrementAndGet();
@@ -254,12 +352,14 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void scheduleAffectedByTaskOutputEnd(TaskKey requiree, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.scheduleAffectedByTaskOutputEnd(requiree, output);
         if(isBottomUpDisabled()) return;
         indentation.decrementAndGet();
     }
 
     @Override
     public void checkAffectedByRequiredTask(TaskKey requirer, @Nullable TaskRequireDep dep, @Nullable InconsistentTaskRequire reason) {
+        if(metricsTracer != null) metricsTracer.checkAffectedByRequiredTask(requirer, dep, reason);
         if(isBottomUpDisabled()) return;
         if(reason != null && dep != null) {
             logBottomUp("☒ " + requirer.toShortString(strLimit) + " (" + outputToString(dep.stamp) + " ≠ " + outputToString(reason.newStamp) + ")");
@@ -272,27 +372,57 @@ public class LoggingTracer extends EmptyTracer {
 
     @Override
     public void scheduleTask(TaskKey key) {
+        if(metricsTracer != null) metricsTracer.scheduleTask(key);
         if(isBottomUpDisabled()) return;
         logBottomUp("↑ " + key);
     }
 
     @Override public void deferTask(TaskKey key) {
+        if(metricsTracer != null) metricsTracer.deferTask(key);
         if(isBottomUpDisabled()) return;
         logBottomUp("↓ " + key);
     }
 
+    @Override public void requireScheduledNowStart(TaskKey key) {
+        if(metricsTracer != null) metricsTracer.requireScheduledNowStart(key);
+    }
+
+    @Override public void requireScheduledNowEnd(TaskKey key, @Nullable TaskData data) {
+        if(metricsTracer != null) metricsTracer.requireScheduledNowEnd(key, data);
+    }
+
+    @Override public void checkVisitedStart(TaskKey key) {
+        if(metricsTracer != null) metricsTracer.checkVisitedStart(key);
+    }
+
+    @Override public void checkVisitedEnd(TaskKey key, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.checkVisitedEnd(key, output);
+    }
+
+    @Override public void checkStoredStart(TaskKey key) {
+        if(metricsTracer != null) metricsTracer.checkStoredStart(key);
+    }
+
+    @Override public void checkStoredEnd(TaskKey key, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.checkStoredEnd(key, output);
+    }
+
     @Override
     public void invokeCallbackStart(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.invokeCallbackStart(observer, key, output);
         if(!logger.isTraceEnabled()) return;
         logger.trace(getIndent() + "☎ " + StringUtil.toShortString(observer.toString(), strLimit) + " (" + outputToString(output) + ")");
     }
 
     @Override
-    public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {}
+    public void invokeCallbackEnd(Consumer<@Nullable Serializable> observer, TaskKey key, @Nullable Serializable output) {
+        if(metricsTracer != null) metricsTracer.invokeCallbackEnd(observer, key, output);
+    }
 
 
     @Override
     public void setTaskObservability(TaskKey key, Observability previousObservability, Observability newObservability) {
+        if(metricsTracer != null) metricsTracer.setTaskObservability(key, previousObservability, newObservability);
         if(previousObservability == newObservability) return;
         final String previousSigil = observabilityToSigil(previousObservability);
         final String newSigil = observabilityToSigil(newObservability);

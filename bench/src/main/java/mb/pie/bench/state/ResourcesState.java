@@ -5,7 +5,6 @@ import mb.log.dagger.LoggerComponent;
 import mb.pie.bench.spoofax3.Spoofax3CompilerState;
 import mb.resource.ResourceService;
 import mb.resource.classloader.ClassLoaderResourceRegistry;
-import mb.resource.classloader.NoopClassLoaderUrlResolver;
 import mb.resource.dagger.DaggerRootResourceServiceComponent;
 import mb.resource.dagger.RootResourceServiceComponent;
 import mb.resource.dagger.RootResourceServiceModule;
@@ -27,7 +26,7 @@ public class ResourcesState {
         }
         logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("{}.setupTrial", getClass().getName());
-        classLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", ResourcesState.class.getClassLoader(), new NoopClassLoaderUrlResolver(), toNativeResolver);
+        classLoaderResourceRegistry = new ClassLoaderResourceRegistry("pie.bench", ResourcesState.class.getClassLoader());
         resourceServiceComponent = DaggerRootResourceServiceComponent.builder()
             .loggerComponent(loggerComponent)
             .rootResourceServiceModule(new RootResourceServiceModule(classLoaderResourceRegistry))

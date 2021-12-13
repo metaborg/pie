@@ -26,7 +26,6 @@ import mb.pie.runtime.share.NonSharingShare;
 import mb.pie.runtime.store.InMemoryStore;
 import mb.pie.runtime.store.NaiveInMemoryStore;
 import mb.pie.runtime.taskdefs.NullTaskDefs;
-import mb.pie.runtime.tracer.CompositeTracer;
 import mb.pie.runtime.tracer.LoggingTracer;
 import mb.pie.runtime.tracer.MetricsTracer;
 import mb.pie.runtime.tracer.NoopTracer;
@@ -155,8 +154,10 @@ public class PieState {
 
     @SuppressWarnings("ConstantConditions")
     public void resetState() {
-        pie.dropStore();
-        pie.dropCallbacks();
+        try(MixedSession session = pie.newSession()) {
+            session.dropStore();
+            session.dropCallbacks();
+        }
     }
 
     public void tearDownInvocation() {
@@ -298,28 +299,28 @@ public class PieState {
                 return (loggerFactory) -> metricsTracer;
             }
 
-            @Override public MetricsTracer getMetricsTracer() { return metricsTracer; }
+            @Override public MetricsTracer getMetricsTracer() {return metricsTracer;}
         },
         logging {
             @Override public Function<LoggerFactory, Tracer> get() {
                 return LoggingTracer::new;
             }
 
-            @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
+            @Override public @Nullable MetricsTracer getMetricsTracer() {return null;}
         },
         metrics_and_logging {
             @Override public Function<LoggerFactory, Tracer> get() {
-                return (loggerFactory) -> new CompositeTracer(metricsTracer, new LoggingTracer(loggerFactory));
+                return (loggerFactory) -> new LoggingTracer(loggerFactory, metricsTracer);
             }
 
-            @Override public MetricsTracer getMetricsTracer() { return metricsTracer; }
+            @Override public MetricsTracer getMetricsTracer() {return metricsTracer;}
         },
         noop {
             @Override public Function<LoggerFactory, Tracer> get() {
                 return (logger) -> NoopTracer.instance;
             }
 
-            @Override public @Nullable MetricsTracer getMetricsTracer() { return null; }
+            @Override public @Nullable MetricsTracer getMetricsTracer() {return null;}
         },
         ;
 

@@ -76,6 +76,7 @@ public class TopDownRunner implements RequireTask {
     public <O extends @Nullable Serializable> O require(TaskKey key, Task<O> task, boolean modifyObservability, StoreWriteTxn txn, CancelToken cancel) {
         cancel.throwIfCanceled();
         layer.requireTopDownStart(key, task.input);
+        tracer.requireStart(key, task);
         try {
             final DataAndExecutionStatus status = executeOrGetExisting(key, task, modifyObservability, txn, cancel);
             TaskData data = status.data;
@@ -104,6 +105,7 @@ public class TopDownRunner implements RequireTask {
             }
             return output;
         } finally {
+            tracer.requireEnd(key, task);
             layer.requireTopDownEnd(key);
         }
     }

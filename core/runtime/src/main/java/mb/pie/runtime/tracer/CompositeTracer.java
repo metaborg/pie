@@ -88,6 +88,19 @@ public class CompositeTracer implements Tracer {
     }
 
 
+    @Override public void requireStart(TaskKey key, Task<?> task) {
+        for(Tracer tracer : tracers) {
+            tracer.requireStart(key, task);
+        }
+    }
+
+    @Override public void requireEnd(TaskKey key, Task<?> task) {
+        for(Tracer tracer : tracers) {
+            tracer.requireEnd(key, task);
+        }
+    }
+
+
     @Override
     public void upToDate(TaskKey key, Task<?> task) {
         for(Tracer tracer : tracers) {

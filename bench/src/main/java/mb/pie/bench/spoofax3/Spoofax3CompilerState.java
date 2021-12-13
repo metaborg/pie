@@ -174,11 +174,11 @@ public class Spoofax3CompilerState {
 
         private static void copyResourcesToTemporaryDirectory(String sourceFilesPath, HierarchicalResource temporaryDirectory, ClassLoaderResourceRegistry classLoaderResourceRegistry) throws IOException {
             final ClassLoaderResource sourceFilesDirectory = classLoaderResourceRegistry.getResource(sourceFilesPath);
-            final ClassLoaderResourceLocations locations = sourceFilesDirectory.getLocations();
+            final ClassLoaderResourceLocations<FSResource> locations = sourceFilesDirectory.getLocations();
             for(FSResource directory : locations.directories) {
                 directory.copyRecursivelyTo(temporaryDirectory);
             }
-            for(JarFileWithPath jarFileWithPath : locations.jarFiles) {
+            for(JarFileWithPath<FSResource> jarFileWithPath : locations.jarFiles) {
                 UnarchiveCommon.unarchiveJar(jarFileWithPath.file, temporaryDirectory, false, false);
             }
         }
