@@ -26,6 +26,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -71,13 +72,11 @@ public class BottomUpRunner implements RequireTask {
         tracer.requireBottomUpInitialStart(changedResources);
         try(final StoreWriteTxn txn = store.writeTxn()) {
             scheduled = DistinctTaskKeyPriorityQueue.withTransitiveDependencyComparator(txn);
-            for(TaskKey deferred : txn.getDeferredTasks()) {
+            // Copy deferred tasks because `scheduleDeferredOrUndefer` may change the set, causing CME.
+            for(TaskKey deferred : new HashSet<>(txn.getDeferredTasks())) {
                 // Schedule deferred tasks that are observable and should not be deferred again.
                 final Task<?> task = deferred.toTask(taskDefs, txn);
-                if(txn.getTaskObservability(deferred).isObserved() && task.taskDef.shouldExecWhenAffected(task.input, tags)) {
-                    tracer.scheduleTask(deferred);
-                    scheduled.add(deferred);
-                }
+                scheduleDeferredOrUndefer(deferred, task, tags, txn);
             }
             scheduleAffectedByResources(changedResources.stream(), txn);
             execScheduled(tags, true, txn, cancel); // Always modify observability in bottom-up build.
@@ -139,14 +138,61 @@ public class BottomUpRunner implements RequireTask {
         }
     }
 
+
+    /**
+     * Schedules given deferred task if needed, or undefers it (remove from the set of deferred tasks) if it was
+     * deferred but does not need to be scheduled anymore.
+     */
+    private void scheduleDeferredOrUndefer(TaskKey key, Task<?> task, Set<?> tags, StoreWriteTxn txn) {
+        if(txn.getTaskObservability(key).isUnobserved()) return; // Unobserved: do not need to schedule, keep deferred.
+        if(!task.taskDef.shouldExecWhenAffected(task.input, tags)) return; // Should stay deferred.
+
+        final @Nullable TaskData data = requireShared.dataFromStore(key, txn);
+        if(data != null) {
+            // Input consistency.
+            if(requireShared.checkInput(data.input, task) != null) {
+                schedule(key);
+                return;
+            }
+            // Transient output consistency.
+            if(requireShared.checkOutputConsistency(data.getOutput()) != null) {
+                schedule(key);
+                return;
+            }
+            // Resource require consistency.
+            for(ResourceRequireDep resourceRequireDep : data.deps.resourceRequireDeps) {
+                if(requireShared.checkResourceRequireDep(key, task, resourceRequireDep) != null) {
+                    schedule(key);
+                    return;
+                }
+            }
+            // Resource provide consistency.
+            for(ResourceProvideDep resourceProvideDep : data.deps.resourceProvideDeps) {
+                if(requireShared.checkResourceProvideDep(key, task, resourceProvideDep) != null) {
+                    schedule(key);
+                    return;
+                }
+            }
+            // Task require consistency (shallow).
+            for(TaskRequireDep taskRequireDep : data.deps.taskRequireDeps) {
+                if(requireShared.checkTaskRequireDepShallowly(key, task, taskRequireDep, txn) != null) {
+                    schedule(key);
+                    return;
+                }
+            }
+        } else {
+            schedule(key); // No stored data: must schedule.
+            return;
+        }
+
+        txn.removeDeferredTask(key);
+    }
+
     /**
      * Schedules tasks affected by (changes to) required and provided files.
      */
     private void scheduleAffectedByResources(Stream<? extends ResourceKey> resources, StoreReadTxn txn) {
-        BottomUpShared.directlyAffectedByResources(resources, resourceService, txn, tracer, (key) -> {
-            tracer.scheduleTask(key);
-            scheduled.add(key);
-        });
+        BottomUpShared.directlyAffectedByResources(resources, resourceService, txn, tracer, this::schedule);
     }
 
     /**
@@ -155,10 +201,7 @@ public class BottomUpRunner implements RequireTask {
     private void scheduleAffectedByRequiredResources(Stream<? extends ResourceKey> resources, StoreReadTxn txn) {
         resources.forEach((changedResource) -> {
             tracer.scheduleAffectedByResourceStart(changedResource);
-            BottomUpShared.directlyAffectedByRequiredResource(changedResource, resourceService, txn, tracer, (key) -> {
-                tracer.scheduleTask(key);
-                scheduled.add(key);
-            });
+            BottomUpShared.directlyAffectedByRequiredResource(changedResource, resourceService, txn, tracer, this::schedule);
             tracer.scheduleAffectedByResourceEnd(changedResource);
         });
     }
@@ -167,10 +210,15 @@ public class BottomUpRunner implements RequireTask {
      * Schedules tasks affected by (changes to the) output of a task.
      */
     private void scheduleAffectedByRequiredTask(TaskKey requiree, @Nullable Serializable output, StoreReadTxn txn) {
-        BottomUpShared.directlyAffectedByRequiredTask(requiree, output, txn, tracer, (key) -> {
-            tracer.scheduleTask(key);
-            scheduled.add(key);
-        });
+        BottomUpShared.directlyAffectedByRequiredTask(requiree, output, txn, tracer, this::schedule);
+    }
+
+    /**
+     * Schedules the task.
+     */
+    private void schedule(TaskKey key) {
+        tracer.scheduleTask(key);
+        scheduled.add(key);
     }
 
 

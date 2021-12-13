@@ -3,6 +3,7 @@ package mb.pie.runtime.exec;
 import mb.pie.api.InconsistentResourceProvide;
 import mb.pie.api.InconsistentResourceRequire;
 import mb.pie.api.InconsistentTaskRequire;
+import mb.pie.api.Output;
 import mb.pie.api.ResourceProvideDep;
 import mb.pie.api.ResourceRequireDep;
 import mb.pie.api.StoreReadTxn;
@@ -107,6 +108,22 @@ public class RequireShared {
         final @Nullable Serializable calleeOutput = requireTask.require(calleeKey, calleeTask, modifyObservability, txn, cancel);
         tracer.checkTaskRequireStart(key, task, taskRequireDep);
         final @Nullable InconsistentTaskRequire reason = taskRequireDep.checkConsistency(calleeOutput);
+        tracer.checkTaskRequireEnd(key, task, taskRequireDep, reason);
+        return reason;
+    }
+
+    /**
+     * Check if a task require dependency is consistent in a shallow way: only the outputs are compared, the task is not
+     * required in a top-down manner. This check is not total: it could be that requiring the task of the dependency
+     * leads to a different output that would invalidate the dependency.
+     *
+     * This method should only be used in bottom-up builds where the bottom-up build ensures that a change in output
+     * will trigger execution of the dependent task.
+     */
+    @Nullable InconsistentTaskRequire checkTaskRequireDepShallowly(TaskKey key, Task<?> task, TaskRequireDep taskRequireDep, StoreReadTxn txn) {
+        final @Nullable Output calleeOutput = txn.getOutput(taskRequireDep.callee);
+        tracer.checkTaskRequireStart(key, task, taskRequireDep);
+        final @Nullable InconsistentTaskRequire reason = taskRequireDep.checkConsistency(calleeOutput != null ? calleeOutput.output : null);
         tracer.checkTaskRequireEnd(key, task, taskRequireDep, reason);
         return reason;
     }

@@ -79,6 +79,17 @@ public class LoggingTracer implements Tracer {
         this.metricsTracer = metricsTracer;
     }
 
+    public LoggingTracer(
+        LoggerFactory loggerFactory,
+        Level execLoggingLevel,
+        Level upToDateLoggingLevel,
+        Level topDownLoggingLevel,
+        Level bottomUpLoggingLevel,
+        int strLimit
+    ) {
+        this(loggerFactory, execLoggingLevel, upToDateLoggingLevel, topDownLoggingLevel, bottomUpLoggingLevel, strLimit, null);
+    }
+
     public LoggingTracer(LoggerFactory loggerFactory, @Nullable MetricsTracer metricsTracer) {
         this(loggerFactory, Level.Debug, Level.Trace, Level.Trace, Level.Trace, 1024, metricsTracer);
     }

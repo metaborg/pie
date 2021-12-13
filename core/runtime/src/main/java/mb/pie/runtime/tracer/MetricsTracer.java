@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 public class MetricsTracer extends EmptyTracer {
     public static class Report {
@@ -187,7 +188,17 @@ public class MetricsTracer extends EmptyTracer {
         }
     }
 
+    private final boolean autoReset;
     private Report report = new Report();
+
+
+    public MetricsTracer(boolean autoReset) {
+        this.autoReset = autoReset;
+    }
+
+    public MetricsTracer() {
+        this(false);
+    }
 
 
     Report getReport() {
@@ -202,6 +213,15 @@ public class MetricsTracer extends EmptyTracer {
         final Report report = this.report;
         this.report = new Report();
         return report;
+    }
+
+
+    @Override public void requireTopDownInitialStart(TaskKey key, Task<?> task) {
+        if(autoReset) reset();
+    }
+
+    @Override public void requireBottomUpInitialStart(Set<? extends ResourceKey> changedResources) {
+        if(autoReset) reset();
     }
 
 
