@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
+## [0.19.7] - 2021-11-23
+### Changed
+- Do not schedule deferred task if it is not affected.
+- `MetricsTracer` to have a mode where it automatically resets itself when a new build starts.
+- `LoggingTracer` to accept a `MetricsTracer` which it uses to log task execution durations.
+
+
 ## [0.19.6] - 2021-11-23
 ### Changed
 - `common` requirement to `0.10.1`.
@@ -110,7 +117,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `common` requirement to `0.9.3`.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.6...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.7...HEAD
+[0.19.7]: https://github.com/metaborg/pie/compare/release-0.19.6...release-0.19.7
 [0.19.6]: https://github.com/metaborg/pie/compare/release-0.19.5...release-0.19.6
 [0.19.5]: https://github.com/metaborg/pie/compare/release-0.19.4...release-0.19.5
 [0.19.4]: https://github.com/metaborg/pie/compare/release-0.19.3...release-0.19.4
