@@ -127,7 +127,7 @@ It is published to our [artifact server](https://artifacts.metaborg.org) in the 
 First update `CHANGELOG.md` with your changes, create a new release entry, and update the release links at the bottom of the file.
 
 Then, commit your changes and merge them from the `develop` branch into the `master` branch, and ensure that you depend on only released versions of other projects (i.e., no `SNAPSHOT` or development versions).
-All dependencies are managed in the `depconstraints/build.gradle.kts` file.
+All dependencies are managed in the `core/depconstraints/build.gradle.kts` file.
 
 To make a new release, create a tag in the form of `release-*` where `*` is the version of the release you'd like to make.
 Then first build the project with `./gradlew buildAll` to check if building succeeds.
@@ -135,7 +135,7 @@ Then first build the project with `./gradlew buildAll` to check if building succ
 If you want our buildfarm to publish this release, just push the tag you just made, and our buildfarm will build the repository and publish the release.
 
 If you want to publish this release locally, you will need an account with write access to our artifact server, and tell Gradle about this account.
-Create the `./gradle/gradle.properties` file if it does not exist.
+Create the `~/.gradle/gradle.properties` file if it does not exist.
 Add the following lines to it, replacing `<username>` and `<password>` with those of your artifact server account:
 ```
 publish.repository.metaborg.artifacts.username=<username>
