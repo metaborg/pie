@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
-## [0.19.7] - 2021-11-23
+## [0.19.7] - 2021-12-13
 ### Changed
 - Do not schedule deferred task if it is not affected.
 - `MetricsTracer` to have a mode where it automatically resets itself when a new build starts.
