@@ -18,6 +18,6 @@ context-free syntax
 
   GenericParam.GenericParam = <<TYPEID><UpperBound><LowerBound>>
 
-  GenericParams.NoGenericParams = [] // syntactic sugar for empty list
-  GenericParams.GenericParams = [<[{GenericParam ", "}*]>]
+  GenericParams.NoGenericParams = <> // syntactic sugar for empty list
+  GenericParams.GenericParams = <[<{GenericParam ", "}*>]>
 

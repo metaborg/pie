@@ -29,10 +29,10 @@ context-free syntax
   Type.PathTy     = <path>
   Type.TupleTy    = <(<{Type ", "}+>)>
   Type.ListTy     = <<Type>*>
-  Type.SupplierTy = <supplier\<<Type>\>>
+  Type.SupplierTy = <supplier[<Type>]>
 
-  TypeArgs.NoTypeArgs = []
-  TypeArgs.TypeArgs = [<[{Type ", "}*]>]
+  TypeArgs.NoTypeArgs = <>
+  TypeArgs.TypeArgs = <[<{Type ", "}*>]>
 
   DataTy.DataTy = <<ModuleList><TYPEID><TypeArgs>>
   Type = DataTy

@@ -12,7 +12,7 @@ test path [[ path ]] parse to PathTy()
 
 // data types
 test data [[ Foo ]] parse to DataTy(NoModuleList(), "Foo", NoTypeArgs())
-test data [[ Foo<string, Bar> ]] parse to DataTy(
+test data [[ Foo[string, Bar] ]] parse to DataTy(
     NoModuleList(),
     "Foo",
     TypeArgs(
@@ -37,7 +37,7 @@ test tuple missing brackets [[ string, int ]] parse fails
 test tuple missing open bracket [[ string, int) ]] parse fails
 test tuple missing closing bracket [[ (path, string ]] parse fails
 test tuple single element parsed as brackets simple [[ (int) ]] parse to IntTy()
-test tuple single element parsed as brackets data [[ (Fuz<path>) ]] parse to DataTy(NoModuleList(), "Fuz", TypeArgs([PathTy()]))
+test tuple single element parsed as brackets data [[ (Fuz[path]) ]] parse to DataTy(NoModuleList(), "Fuz", TypeArgs([PathTy()]))
 test tuple single element parsed as brackets imported data [[ (example:Bak) ]] parse to DataTy(ModuleList(["example"]), "Bak", NoTypeArgs())
 test tuple two elements [[ (string, path) ]] parse succeeds
 test tuple three elements [[ (string, path, Foo) ]] parse succeeds
@@ -54,21 +54,21 @@ test list nested [[ int** ]] parse to ListTy(ListTy(IntTy()))
 test list of pairs [[ (string, bool)* ]] parse to ListTy(TupleTy([StrTy(), BoolTy()]))
 
 // supplier types
-test supplier simple type [[ supplier<path> ]] parse to SupplierTy(PathTy())
-test supplier layout after keyword [[ supplier <path> ]] parse fails
-test supplier layout within keyword [[ suppl ier<path> ]] parse fails
-test supplier layout after less than sign [[ supplier< path> ]] parse succeeds
-test supplier layout before greater than sign [[ supplier<path > ]] parse succeeds
+test supplier simple type [[ supplier[path] ]] parse to SupplierTy(PathTy())
+test supplier layout after keyword [[ supplier [path] ]] parse fails
+test supplier layout within keyword [[ suppl ier[path] ]] parse fails
+test supplier layout after open square bracket [[ supplier[ path] ]] parse succeeds
+test supplier layout before close square bracket [[ supplier[path ] ]] parse succeeds
 test supplier missing brackets [[ supplier path ]] parse fails
 test supplier missing brackets no layout [[ supplierpath ]] parse to DataTy(NoModuleList(), "supplierpath", NoTypeArgs())
 test supplier missing brackets [[ supplier path ]] parse fails
-test supplier missing open bracket [[ supplier path> ]] parse fails
-test supplier missing open bracket no layout [[ supplierpath> ]] parse fails
-test supplier missing close bracket [[ supplier<path ]] parse fails
-test supplier data type [[ supplier<Bar> ]] parse to SupplierTy(DataTy(NoModuleList(), "Bar", NoTypeArgs()))
-test supplier nullable type [[ supplier<string?> ]] parse to SupplierTy(NullableTy(StrTy(), NullableMarker()))
-test supplier nested [[ supplier<supplier<int>> ]] parse to SupplierTy(SupplierTy(IntTy()))
-test supplier of pairs [[ supplier<(string, bool)> ]] parse to SupplierTy(TupleTy([StrTy(), BoolTy()]))
+test supplier missing open bracket [[ supplier path] ]] parse fails
+test supplier missing open bracket no layout [[ supplierpath] ]] parse fails
+test supplier missing close bracket [[ supplier[path ]] parse fails
+test supplier data type [[ supplier[Bar] ]] parse to SupplierTy(DataTy(NoModuleList(), "Bar", NoTypeArgs()))
+test supplier nullable type [[ supplier[string?] ]] parse to SupplierTy(NullableTy(StrTy(), NullableMarker()))
+test supplier nested [[[ supplier[supplier[int]] ]]] parse to SupplierTy(SupplierTy(IntTy()))
+test supplier of pairs [[ supplier[(string, bool)] ]] parse to SupplierTy(TupleTy([StrTy(), BoolTy()]))
 
 // nullable
 test nullable simple [[ string? ]] parse to NullableTy(StrTy(), NullableMarker())
@@ -78,12 +78,12 @@ test nullable imported data type [[ example:othermod:Foo? ]] parse to NullableTy
 test nullable list [[ bool*? ]] parse to NullableTy(ListTy(BoolTy()), NullableMarker())
 test nullable list of nullable [[ int?*? ]] parse to NullableTy(ListTy(NullableTy(IntTy(), NullableMarker())), NullableMarker())
 test nullable in tuple [[ (path, string?) ]] parse to TupleTy([PathTy(), NullableTy(StrTy(), NullableMarker())])
-test nullable in supplier [[ supplier<Thing?> ]] parse to SupplierTy(NullableTy(DataTy(NoModuleList(), "Thing", NoTypeArgs()), NullableMarker()))
+test nullable in supplier [[ supplier[Thing?] ]] parse to SupplierTy(NullableTy(DataTy(NoModuleList(), "Thing", NoTypeArgs()), NullableMarker()))
 
 // wildcards
 test wildcard boundless [[ _ ]] parse to Wildcard(NoUpperBound(), NoLowerBound())
 test wildcard upperbound [[ _ : T ]] parse to Wildcard(UpperBound(DataTy(_, "T", _)), NoLowerBound())
 test wildcard lowerbound [[ _ -: T ]] parse to Wildcard(NoUpperBound(), LowerBound(DataTy(_, "T", _)))
-test wildcard nested [[ Pair<Apple, _ : Fruit>*  ]] parse succeeds
+test wildcard nested [[ Pair[Apple, _ : Fruit]*  ]] parse succeeds
 test wildcard nullable [[ _ : T? ]] parse to Wildcard(UpperBound(NullableTy(_, _)), NoLowerBound())
 test wildcard list [[ _ : T* ]] parse to Wildcard(UpperBound(ListTy(_)), NoLowerBound())
