@@ -17,16 +17,16 @@ fixture [[
   data Baar : Foo = foreign java org.example.test.expression.Baar {}
   data Bok = foreign java org.example.test.expression.Bok {}
 
-  data Generic<T: Foo, U: Foo, V> = foreign java org.example.test.expression.Generic {}
-  data GenericSub<T: Bar, U: Baar> : Generic<T, U, string> = foreign java org.example.test.expression.GenericSub {}
+  data Generic[T: Foo, U: Foo, V] = foreign java org.example.test.expression.Generic {}
+  data GenericSub[T: Bar, U: Baar] : Generic[T, U, string] = foreign java org.example.test.expression.GenericSub {}
 
   data Animal = foreign java org.example.test.expression.Animal {}
   data Mammal : Animal = foreign java org.example.test.expression.Mammal {}
   data Dog : Mammal = foreign java org.example.test.expression.Dog {}
   data Fish : Animal = foreign java org.example.test.expression.Fish {}
 
-  data Fuz<T : Animal> = foreign java Foo {}
-  data Faz<T> = foreign java Foo {}
+  data Fuz[T : Animal] = foreign java Foo {}
+  data Faz[T] = foreign java Foo {}
 
   func main(
     name: string,
@@ -37,15 +37,15 @@ fixture [[
     bar: Bar,
     bak: Bak,
     bok: Bok,
-    generic1: Generic<Foo, Baar, string>,
-    generic2: Generic<Bak, Baar, int>,
-    genericSub: GenericSub<Bar, Baar>,
-    fuz: Fuz<Mammal>,
-    faz: Faz<Mammal>,
-    fuzWildcardUpperBounded: Fuz<_ : Mammal>,
-    fazWildcardUnbounded: Faz<_>,
-    fazWildcardUpperBounded: Faz<_ : Mammal>,
-    fazWildcardLowerBounded: Faz<_ -: Mammal>,
+    generic1: Generic[Foo, Baar, string],
+    generic2: Generic[Bak, Baar, int],
+    genericSub: GenericSub[Bar, Baar],
+    fuz: Fuz[Mammal],
+    faz: Faz[Mammal],
+    fuzWildcardUpperBounded: Fuz[_ : Mammal],
+    fazWildcardUnbounded: Faz[_],
+    fazWildcardUpperBounded: Faz[_ : Mammal],
+    fazWildcardLowerBounded: Faz[_ -: Mammal],
     dog: Dog,
     fish: Fish
   ) -> unit = {
@@ -58,8 +58,8 @@ fixture [[
   func double(x: int) -> int = x+x
   func argsFunc(x: int, y: int, name: string) -> string = "not implemented"
   func takesFoo(foo: Foo) -> int = 17
-  func useAnimal<A : Animal>(animal: A) -> path = foreign test.expression.UseAnimal
-  func checkAnimals<A: Animal, B: Animal>(animal1: A, animal2: B) -> bool = foreign test.expression.CheckAnimals
+  func useAnimal[A : Animal](animal: A) -> path = foreign test.expression.UseAnimal
+  func checkAnimals[A: Animal, B: Animal](animal1: A, animal2: B) -> bool = foreign test.expression.CheckAnimals
 ]]
 
 
@@ -189,10 +189,10 @@ test ifelse true branch subtype nullable [[ [[ if (comment != null) bak? else fo
 test ifelse true branch subtype [[ [[ if (value == 0) bar else foo ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 // test ifelse false branch subtype [[ [[ if (value == 0) foo else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
 // test ifelse branches least upperbound [[ [[ if (value == 0) bar else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
-//test ifelse branches equal with type arguments [[ [[ val res: Generic<Foo, Baar, string> = if (value == 0) generic1 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
-//test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic<_ : Foo, Baar, _> = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
-//test ifelse true branch subtype with different type arguments [[ [[ val res: Generic<_ : Foo, Baar, _> = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
-//test ifelse false branch subtype with different type arguments [[ [[ val res: Generic<_ : Foo, Baar, _> = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse branches equal with type arguments [[ [[ val res: Generic[Foo, Baar, string] = if (value == 0) generic1 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic[_ : Foo, Baar, _] = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse true branch subtype with different type arguments [[ [[ val res: Generic[_ : Foo, Baar, _] = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+//test ifelse false branch subtype with different type arguments [[ [[ val res: Generic[_ : Foo, Baar, _] = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
 test ifelse branch type mismatch [[ if (value == 0) "hello" else 10 ]] 1 error
 test ifelse branch type mismatch datatypes [[ if (value == 0) bak else bok ]] 1 error error like "Type mismatch"
 test ifelse branch type mismatch nullable datatypes [[ if (value == 0) foo? else bok? ]] 1 error error like "Type mismatch"
@@ -242,7 +242,7 @@ test val declaration type is wildcard with upper bound [[val x: [[_ : int =]] 7 
 test val declaration type is wildcard with lower bound [[val x: [[_ -: Foo  =]] bar ]] 1 error at #1  error like "Cannot use a wildcard"
 test val declaration type is wildcard with equal lower bound [[val x: [[_ -: Foo  =]] foo ]] 1 error at #1  error like "Cannot use a wildcard"
 test val declaration type is wildcard with upper and lower bound [[
-  val x: _[[ : Foo<>]][[ -: Bar<>]] = bar
+  val x: _[[ : Foo[] ]][[ -: Bar[] ]] = bar
 ]] 3 errors at #1, #2
    error like "Cannot use a wildcard"
    error like "Cannot have both an upper and lower bound"
@@ -303,167 +303,167 @@ test val declaration assign tuple to tuple with supertype [[
 ]] 1 error at #1
    error like "Type mismatch"
 test val declaration assign supplier to supplier of nullable [[
-  val sup: supplier<int> = supplier(8);
-  val supNullable: supplier<int?> = sup
+  val sup: supplier[int] = supplier(8);
+  val supNullable: supplier[int?] = sup
 ]] analysis succeeds
 test val declaration assign supplier of nullable to supplier [[
-  val supNullable: supplier<int?> = supplier(null);
-  val sup: [[supplier<int>]] = supNullable
+  val supNullable: supplier[int?] = supplier(null);
+  val sup: [[supplier[int] ]] = supNullable
 ]] 1 error at #1
    error like "Type mismatch"
 test val declaration assign supplier to supertype supplier [[
-  val barSup: supplier<Bar> = supplier(bar);
-  val fooSup: [[supplier<Foo>]] = barSup
+  val barSup: supplier[Bar] = supplier(bar);
+  val fooSup: [[supplier[Foo] ]] = barSup
 ]] 1 error at #1
    error like "Type mismatch"
 test val declaration assign supplier to supertype supplier [[
-  val fooSup: supplier<Foo> = supplier(foo);
-  val barSup: [[supplier<Bar>]] = fooSup
+  val fooSup: supplier[Foo] = supplier(foo);
+  val barSup: [[supplier[Bar] ]] = fooSup
 ]] 1 error at #1
    error like "Type mismatch"
 test val declaration assign single to tuple bind [[ val (x, y) = [1, 2] ]] analysis fails
 test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1  error like "Cannot resolve"
 
 // value assignment with generics
-test assign equal type [[ val res: Fuz<Mammal> = fuz ]] analysis succeeds
-test assign super type [[ val res: [[Fuz<Animal>]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign sub type [[ val res: [[Fuz<Dog>]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign different type [[ val res: [[Fuz<Fish>]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type without upperbounded type parameter with wildcard unbounded [[ val res: Faz<_> = faz ]] analysis succeeds
-test assign to type with upperbounded type parameter with wildcard unbounded [[ val res: Fuz<[[_>]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument upper bound is equal [[ val res: Fuz<_ : Mammal> = fuz ]] analysis succeeds
-test assign to type with wildcard argument upper bound is higher  [[ val res: Fuz<_ : Animal> = fuz ]] analysis succeeds
-test assign to type with wildcard argument upper bound is lower [[ val res: [[Fuz<_ : Dog>]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument upper bound is different [[ val res: [[Fuz<_ : Fish>]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument lower bound is equal [[ val res: Faz<_ -: Mammal> = faz ]] analysis succeeds
-test assign to type with wildcard argument lower bound is lower [[ val res: Faz<_ -: Dog> = faz ]] analysis succeeds
-test assign to type with wildcard argument lower bound is higher [[ val res: [[Faz<_ -: Animal>]] = faz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument lower bound is different [[ val res: [[Faz<_ -: Fish>]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign equal type [[ val res: Fuz[Mammal] = fuz ]] analysis succeeds
+test assign super type [[ val res: [[Fuz[Animal] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign sub type [[ val res: [[Fuz[Dog] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign different type [[ val res: [[Fuz[Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type without upperbounded type parameter with wildcard unbounded [[ val res: Faz[_] = faz ]] analysis succeeds
+test assign to type with upperbounded type parameter with wildcard unbounded [[ val res: Fuz[ [[_] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is equal [[ val res: Fuz[_ : Mammal] = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is higher  [[ val res: Fuz[_ : Animal] = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is lower [[ val res: [[Fuz[_ : Dog] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is different [[ val res: [[Fuz[_ : Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is equal [[ val res: Faz[_ -: Mammal] = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is lower [[ val res: Faz[_ -: Dog] = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is higher [[ val res: [[Faz[_ -: Animal] ]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is different [[ val res: [[Faz[_ -: Fish] ]] = faz ]] 1 error at #1  error like "Type mismatch"
 test assign to type with wildcard argument upper and lower bound [[
-  val res: Fuz<_[[ : Animal<>]][[ -: Dog<>]]> = fuz
+  val res: Fuz[_[[ : Animal[] ]][[ -: Dog[] ]] ] = fuz
 ]] 2 errors at #1, #2
    error like "Cannot have both an upper and lower bound" at #1
    error like "Cannot have both an upper and lower bound" at #2
 test assign type with upper bounded wildcard type argument to specific type equal to bound [[
-  val res: [[Fuz<Mammal>]] = fuzWildcardUpperBounded
+  val res: [[Fuz[Mammal] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to specific type higher than bound [[
-  val res: [[Fuz<Animal>]] = fuzWildcardUpperBounded
+  val res: [[Fuz[Animal] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to specific type lower than bound [[
-  val res: [[Fuz<Dog>]] = fuzWildcardUpperBounded
+  val res: [[Fuz[Dog] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to specific type different from bound [[
-  val res: [[Fuz<Dog>]] = fuzWildcardUpperBounded
+  val res: [[Fuz[Dog] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal bounds [[
-  val res: Fuz<_ : Mammal> = fuzWildcardUpperBounded
+  val res: Fuz[_ : Mammal] = fuzWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with higher bound [[
-  val res: Fuz<_ : Animal> = fuzWildcardUpperBounded
+  val res: Fuz[_ : Animal] = fuzWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with lower bound [[
-  val res: [[Fuz<_ : Dog>]] = fuzWildcardUpperBounded
+  val res: [[Fuz[_ : Dog] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with different bound [[
-  val res: [[Fuz<_ : Fish>]] = fuzWildcardUpperBounded
+  val res: [[Fuz[_ : Fish] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 
 test assign type with unbounded wildcard type argument to specific type [[
-  val res: [[Faz<Animal>]] = fazWildcardUnbounded
+  val res: [[Faz[Animal] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with unbounded wildcard type argument to type with unbounded wildcard [[
-  val res: Faz<_> = fazWildcardUnbounded
+  val res: Faz[_] = fazWildcardUnbounded
 ]] analysis succeeds
 test assign type with unbounded wildcard type argument to type with upper bounded wildcard [[
-  val res: [[Faz<_ : Animal>]] = fazWildcardUnbounded
+  val res: [[Faz[_ : Animal] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with unbounded wildcard type argument to type with lower bounded wildcard [[
-  val res: [[Faz<_ -: Animal>]] = fazWildcardUnbounded
+  val res: [[Faz[_ -: Animal] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with unbounded wildcard type argument to type with lower bounded wildcard lowest currently defined [[
-  val res: [[Faz<_ -: Dog>]] = fazWildcardUnbounded
+  val res: [[Faz[_ -: Dog] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 
 test assign type with upper bounded wildcard type argument to type with unbounded wildcard [[
-  val res: Faz<_> = fazWildcardUpperBounded
+  val res: Faz[_] = fazWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal [[
-  val res: Faz<_ : Mammal> = fazWildcardUpperBounded
+  val res: Faz[_ : Mammal] = fazWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard higher [[
-  val res: Faz<_ : Animal> = fazWildcardUpperBounded
+  val res: Faz[_ : Animal] = fazWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard lower [[
-  val res: [[Faz<_ : Dog>]] = fazWildcardUpperBounded
+  val res: [[Faz[_ : Dog] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard different [[
-  val res: [[Faz<_ : Fish>]] = fazWildcardUpperBounded
+  val res: [[Faz[_ : Fish] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard equal [[
-  val res: [[Faz<_ -: Mammal>]] = fazWildcardUpperBounded
+  val res: [[Faz[_ -: Mammal] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard higher [[
-  val res: [[Faz<_ -: Animal>]] = fazWildcardUpperBounded
+  val res: [[Faz[_ -: Animal] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard lower [[
-  val res: [[Faz<_ -: Dog>]] = fazWildcardUpperBounded
+  val res: [[Faz[_ -: Dog] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard different [[
-  val res: [[Faz<_ -: Fish>]] = fazWildcardUpperBounded
+  val res: [[Faz[_ -: Fish] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 
 test assign type with lower bounded wildcard type argument to specific type [[
-  val res: [[Faz<Mammal>]] = fazWildcardLowerBounded
+  val res: [[Faz[Mammal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with unbounded wildcard [[
-  val res: Faz<_> = fazWildcardLowerBounded
+  val res: Faz[_] = fazWildcardLowerBounded
 ]] analysis succeeds
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard equal [[
-  val res: [[Faz<_ : Mammal>]] = fazWildcardLowerBounded
+  val res: [[Faz[_ : Mammal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard higher [[
-  val res: [[Faz<_ : Animal>]] = fazWildcardLowerBounded
+  val res: [[Faz[_ : Animal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard lower [[
-  val res: [[Faz<_ : Dog>]] = fazWildcardLowerBounded
+  val res: [[Faz[_ : Dog] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard different [[
-  val res: [[Faz<_ : Fish>]] = fazWildcardLowerBounded
+  val res: [[Faz[_ : Fish] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard equal [[
-  val res: Faz<_ -: Mammal> = fazWildcardLowerBounded
+  val res: Faz[_ -: Mammal] = fazWildcardLowerBounded
 ]] analysis succeeds
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard higher [[
-  val res: [[Faz<_ -: Animal>]] = fazWildcardLowerBounded
+  val res: [[Faz[_ -: Animal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard lower [[
-  val res: Faz<_ -: Dog> = fazWildcardLowerBounded
+  val res: Faz[_ -: Dog] = fazWildcardLowerBounded
 ]] analysis succeeds
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard different [[
-  val res: [[Faz<_ -: Fish>]] = fazWildcardLowerBounded
+  val res: [[Faz[_ -: Fish] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 
@@ -471,15 +471,15 @@ test reference defined [[ [[name]] ]] analysis succeeds run pie-ast-type on #1 t
 test reference undefined [[ [[nope]] ]] 1 error at #1
 
 test simple call no args [[ [[anotherFunc]]() ]] analysis succeeds resolve #1
-test simple call with type arguments [[ [[anotherFunc<>()]] ]] analysis succeeds  run pie-ast-type on #1 to IntType()
-test simple call with one type argument [[ [[ useAnimal<Animal>(fish) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
-test simple call with two type arguments [[ [[ checkAnimals<Animal, Dog>(dog, dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to BoolType()
+test simple call with type arguments [[ [[anotherFunc[]()]] ]] analysis succeeds  run pie-ast-type on #1 to IntType()
+test simple call with one type argument [[ [[ useAnimal[Animal](fish) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
+test simple call with two type arguments [[ [[ checkAnimals[Animal, Dog](dog, dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to BoolType()
 test simple call omitted type argument list with type arguments expected [[ [[useAnimal]](fish) ]] >= 1 error  error like "Cannot derive type arguments" at #1
-test simple call not enough type arguments with empty type argument list [[ checkAnimals[[<>]](fish, dog) ]] >= 1 error at #1  error like "Not enough type arguments"
-test simple call not enough type arguments with type argument list [[ checkAnimals[[<Animal>]](fish, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
-test simple call not enough type arguments with type argument out of bounds [[ checkAnimals[[<Baz>]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
-test simple call too many type arguments [[ useAnimal[[<Animal, Dog>]](dog) ]] >= 1 error at #1  error like "Too many type arguments"
-test simple call argument of wrong type [[ checkAnimals<Animal, [[Faz<_>]]>(dog) ]] >= 1 error at #1  error like "not within upper bound"
+test simple call not enough type arguments with empty type argument list [[ checkAnimals[[ [] ]](fish, dog) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call not enough type arguments with type argument list [[ checkAnimals[[ [Animal] ]](fish, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call not enough type arguments with type argument out of bounds [[ checkAnimals[[ [Baz] ]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call too many type arguments [[ useAnimal[[ [Animal, Dog] ]](dog) ]] >= 1 error at #1  error like "Too many type arguments"
+test simple call argument of wrong type [[ checkAnimals[Animal, [[Faz[_] ]] ](dog) ]] >= 1 error at #1  error like "not within upper bound"
 test simple call 1 arg [[ [[double]](4) ]] analysis succeeds resolve #1
 test simple call 3 args [[ [[argsFunc]](2, value, "yes") ]] analysis succeeds resolve #1
 test simple call undefined func [[ [[unknown]](true) ]] 1 error at #1  error like "Undefined function"
@@ -499,7 +499,7 @@ test simple call incorrect arg count [[ double(3, 4) ]] error like "Unexpected n
 test simple call incorrect arg type [[ double([[ [3, 4] ]]) ]] >= 1 error at #1 // error like "Type mismatch"
 
 test fully qualified call no args [[ test:expression:[[anotherFunc]]() ]] analysis succeeds resolve #1
-test fully qualified call with one type argument [[ [[ test:expression:useAnimal<Mammal>(dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
+test fully qualified call with one type argument [[ [[ test:expression:useAnimal[Mammal](dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
 test fully qualified call 1 arg [[ test:expression:[[double]](4) ]] analysis succeeds resolve #1
 test fully qualified call 3 args [[ test:expression:[[argsFunc]](2, value, "yes") ]] analysis succeeds resolve #1
 test fully qualified call undefined func [[ test:expression:[[unknown]](true) ]] 1 error at #1  error like "Undefined function"
@@ -542,28 +542,28 @@ test method call on nullable type undefined [[
    warning like "Undefined function"
 
 test built-in method supplier get from supplier literal [[ [[ supplier("hello").get() ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
-test built-in method supplier get with type argument list [[ [[ supplier(./src/test/resources/example1.txt).get<>() ]] ]] analysis succeeds run pie-ast-type on #1 to PathType()
-test built-in method supplier get with type argument [[ supplier("hello").get[[<int>]]() ]] 1 error at #1  error like "Too many type arguments"
+test built-in method supplier get with type argument list [[ [[ supplier(./src/test/resources/example1.txt).get[]() ]] ]] analysis succeeds run pie-ast-type on #1 to PathType()
+test built-in method supplier get with type argument [[ supplier("hello").get[[ [int] ]]() ]] 1 error at #1  error like "Too many type arguments"
 test built-in method supplier get from function supplier [[ [[ double.supplier(78).get() ]] ]] analysis succeeds run pie-ast-type on #1 to IntType()
 test built-in method supplier get nested supplier [[ [[ supplier(double.supplier(-3)).get() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 
 test create supplier [[ [[ supplier(42) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test create supplier, supplier as argument [[ [[ supplier(supplier(42)) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(SupplierType(IntType()))
-test create supplier with empty type argument list [[ supplier[[<>]]("test") ]] 1 error at #1  error like "Not enough type arguments"
-test create supplier with one type argument [[ [[ supplier<int>(8) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
-test create supplier with two type arguments [[ supplier[[<int, string>]](9) ]] 1 error at #1  error like "Too many type arguments"
-test create supplier with wrong argument type [[ supplier<path>([[true]]) ]] 1 error at #1  error like "Type mismatch"
+test create supplier with empty type argument list [[ supplier[[ [] ]]("test") ]] 1 error at #1  error like "Not enough type arguments"
+test create supplier with one type argument [[ [[ supplier[int](8) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test create supplier with two type arguments [[ supplier[[ [int, string] ]](9) ]] 1 error at #1  error like "Too many type arguments"
+test create supplier with wrong argument type [[ supplier[path]([[true]]) ]] 1 error at #1  error like "Type mismatch"
 test create supplier missing argument [[ [[supplier]]() ]] 1 error at #1  error like "Not enough arguments"
 test create supplier two arguments [[ [[supplier]](12, "twelve") ]] 1 error at #1  error like "Too many arguments"
 
 test task supplier [[ [[ anotherFunc.supplier() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
-test task supplier with empty type arguments list [[ [[ anotherFunc.supplier<>() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
-test task supplier with one type argument [[ [[ useAnimal.supplier<Dog>(dog) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(PathType())
-test task supplier with two type arguments [[ [[ checkAnimals.supplier<Dog, Fish>(dog, fish) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(BoolType())
-test task supplier with empty type argument list, not enough type arguments [[ checkAnimals.supplier[[<>]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test task supplier with empty type arguments list [[ [[ anotherFunc.supplier[]() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test task supplier with one type argument [[ [[ useAnimal.supplier[Dog](dog) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(PathType())
+test task supplier with two type arguments [[ [[ checkAnimals.supplier[Dog, Fish](dog, fish) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(BoolType())
+test task supplier with empty type argument list, not enough type arguments [[ checkAnimals.supplier[[ [] ]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
 test task supplier with omitted type argument list, not enough type arguments [[ [[useAnimal]].supplier(fish) ]] >= 1 error  error like "Cannot derive type arguments" at #1
-test task supplier with too many type arguments [[ checkAnimals.supplier[[<Dog, Fish, Mammal>]](dog, fish) ]] >= 1 error at #1  error like "Too many type arguments"
-test task supplier type argument outside bound [[ useAnimal.supplier<[[Bar>]](bar) ]] 1 error at #1  error like "not within upper bound"
+test task supplier with too many type arguments [[ checkAnimals.supplier[[ [Dog, Fish, Mammal] ]](dog, fish) ]] >= 1 error at #1  error like "Too many type arguments"
+test task supplier type argument outside bound [[ useAnimal.supplier[ [[Bar] ]](bar) ]] 1 error at #1  error like "not within upper bound"
 test task supplier one argument [[ [[ double.supplier(7) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test task supplier three arguments [[ [[ argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier qualified function [[ [[ test:expression:argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
