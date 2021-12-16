@@ -126,18 +126,18 @@ test reference reserved keyword true  [[ true  ]] parse to BoolLit(True())
 test reference reserved keyword false [[ false ]] parse to BoolLit(False())
 
 test call simple [[ someFunc() ]] parse succeeds
-test call empty type argument list [[ someFunc<>() ]]
-test call missing opening bracket type arguments [[ someFunc>() ]] parse fails
-test call missing closing bracket type arguments [[ someFunc<() ]] parse fails
-test call missing separator type arguments [[ someFunc<int int>() ]] parse fails
-test call one type argument [[ someFunc<int>() ]]
+test call empty type argument list [[ someFunc[]() ]]
+test call missing opening bracket type arguments [[ someFunc]() ]] parse fails
+test call missing closing bracket type arguments [[ someFunc[() ]] parse fails
+test call missing separator type arguments [[ someFunc[int int]() ]] parse fails
+test call one type argument [[ someFunc[int]() ]]
 test call type argument with upper bound [[
-  someFunc<T : Food>()
+  someFunc[T : Food]()
 ]] parse to Call(_, _, TypeArgs([DataTy(ModuleList(["T"]), "Food", _)]), _)
-test call type argument with lower bound [[ someFunc<T -: Food>() ]] parse fails
-test call two type arguments [[ someFunc<Food, string>() ]]
-test call three type arguments [[ someFunc<int, path, (string, bool)>() ]]
-test call three type arguments [[ someFunc<int, path, (string, bool)>() ]]
+test call type argument with lower bound [[ someFunc[T -: Food]() ]] parse fails
+test call two type arguments [[ someFunc[Food, string]() ]]
+test call three type arguments [[ someFunc[int, path, (string, bool)]() ]]
+test call three type arguments [[ someFunc[int, path, (string, bool)]() ]]
 
 test call missing brackets [[ someFunc ]] parse succeeds parse to Ref("someFunc")
 test call 1 param [[ otherFunc(67) ]] parse succeeds
@@ -173,16 +173,16 @@ test create supplier no space within brackets [[ supplier( [1, 2] ) ]] parse suc
 test create supplier space within keyword [[ sup plier(42) ]] parse fails
 test create supplier missing argument [[ supplier() ]]
 test create supplier multiple arguments [[ supplier(2, 0) ]]
-test create supplier with empty type argument list [[ supplier<>(0) ]]
-test create supplier with type argument [[ supplier<int>(0) ]]
+test create supplier with empty type argument list [[ supplier[](0) ]]
+test create supplier with type argument [[ supplier[int](0) ]]
 test create supplier capitalized [[ Supplier(0) ]] parse to Call(NoModuleList(), "Supplier", NoTypeArgs(), [IntLit("0")])
 test create supplier random capital [[ supplIer(0) ]] parse to Call(NoModuleList(), "supplIer", NoTypeArgs(), [IntLit("0")])
 test create supplier all caps [[ SUPPLIER(0) ]] parse to Call(NoModuleList(), "SUPPLIER", NoTypeArgs(), [IntLit("0")])
 
 test task supplier no arguments [[ parse.supplier() ]] parse succeeds
-test task supplier with empty type argument list [[ parse.supplier<>() ]]
-test task supplier with one type argument [[ parse.supplier<int>() ]]
-test task supplier with two type arguments [[ parse.supplier<int, string>() ]]
+test task supplier with empty type argument list [[ parse.supplier[]() ]] parse succeeds
+test task supplier with one type argument [[ parse.supplier[int]() ]] parse succeeds
+test task supplier with two type arguments [[ parse.supplier[int, string]() ]] parse succeeds
 test task supplier one argument [[ parse.supplier(true) ]] parse succeeds
 test task supplier two arguments [[ parse.supplier("no", [some_value]) ]] parse succeeds
 test task supplier qualified task name [[ example:test:expression:parse.supplier(ast) ]] parse succeeds
@@ -192,19 +192,19 @@ test task supplier space after period [[ parse. supplier() ]] parse succeeds
 test task supplier space in keyword [[ parse.suppl ier() ]] parse fails
 test task supplier capitalized keyword [[ parse.Supplier() ]] parse to QCall(Ref("parse"), "Supplier", NoTypeArgs(), [])
 
-test supplier get [[ supp.get<>() ]] parse succeeds
-test supplier get with type argument [[ supp.get<string>() ]]
-test supplier get with argument [[ supp.get<>("yes") ]]
-test supplier get space before period [[ supp .get<>() ]] parse succeeds
-test supplier get space after period [[ supp. get<>() ]] parse succeeds
-test supplier get space after get [[ supp.get <>() ]] parse succeeds
-test supplier get space in diamond [[ supp.get< >() ]] parse succeeds
-test supplier get space after diamond [[ supp.get<> () ]] parse succeeds
-test supplier get space within brackets [[ supp.get<>( ) ]] parse succeeds
+test supplier get [[ supp.get[]() ]] parse succeeds
+test supplier get with type argument [[ supp.get[string]() ]] parse succeeds
+test supplier get with argument [[ supp.get[]("yes") ]] parse succeeds
+test supplier get space before period [[ supp .get[]() ]] parse succeeds
+test supplier get space after period [[ supp. get[]() ]] parse succeeds
+test supplier get space after get [[ supp.get []() ]] parse succeeds
+test supplier get space in diamond [[ supp.get[ ]() ]] parse succeeds
+test supplier get space after diamond [[ supp.get[] () ]] parse succeeds
+test supplier get space within brackets [[ supp.get[]( ) ]] parse succeeds
 test supplier get missing diamond [[ supp.get( ) ]] parse to QCall(Ref("supp"), "get", NoTypeArgs(), [])
-test supplier get capitalized [[ supp.Get<>( ) ]] parse to QCall(Ref("supp"), "Get", TypeArgs([]), [])
-test supplier get random capitalized [[ supp.gEt<>( ) ]] parse to QCall(Ref("supp"), "gEt", TypeArgs([]), [])
-test supplier get all caps [[ supp.GET<>( ) ]] parse to QCall(Ref("supp"), "GET", TypeArgs([]), [])
+test supplier get capitalized [[ supp.Get[]( ) ]] parse to QCall(Ref("supp"), "Get", TypeArgs([]), [])
+test supplier get random capitalized [[ supp.gEt[]( ) ]] parse to QCall(Ref("supp"), "gEt", TypeArgs([]), [])
+test supplier get all caps [[ supp.GET[]( ) ]] parse to QCall(Ref("supp"), "GET", TypeArgs([]), [])
 
 test list absolute path literal [[ list /foo ]] parse succeeds
 test list relative path literal [[ list ./foo ]] parse succeeds
