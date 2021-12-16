@@ -24,26 +24,26 @@ test foreign pie task type parameters omitted [[
   func test() -> bool = foreign test.func_def.ForeignTask
 ]] analysis succeeds
 test foreign pie task type parameters empty [[
-  func test<>() -> bool = foreign test.func_def.ForeignTask
+  func test[]() -> bool = foreign test.func_def.ForeignTask
 ]] analysis succeeds
 test foreign pie task with type parameter [[
-  func test<T>() -> bool = foreign test.func_def.ForeignTask
+  func test[T]() -> bool = foreign test.func_def.ForeignTask
 ]] analysis succeeds
 test foreign java static function type parameters omitted [[
   func test() -> bool = foreign java test.func_def.Util#test
 ]] analysis succeeds
 test foreign java static function type parameters empty [[
-  func test<>() -> bool = foreign java test.func_def.Util#test
+  func test[]() -> bool = foreign java test.func_def.Util#test
 ]] analysis succeeds
 test foreign java static function with type parameter [[
-  func test<T>() -> bool = foreign java test.func_def.Util#test
+  func test[T]() -> bool = foreign java test.func_def.Util#test
 ]] analysis succeeds
 test foreign java constructor type parameters omitted [[
   func test() -> Test = foreign java constructor test.func_def.Test
 ]] analysis succeeds
 test foreign java constructor type parameters empty [[
-  func test<>() -> Test = foreign java constructor test.func_def.Test
+  func test[]() -> Test = foreign java constructor test.func_def.Test
 ]] analysis succeeds
 test foreign java constructor with type parameter [[
-  func test<T>() -> Test = foreign java constructor test.func_def.Test
+  func test[T]() -> Test = foreign java constructor test.func_def.Test
 ]] analysis succeeds
