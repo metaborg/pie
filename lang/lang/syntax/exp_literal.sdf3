@@ -1,0 +1,45 @@
+module exp_literal
+// Separate file for keyword follow restrictions
+
+imports
+
+  lex/literal
+  func_body
+
+template options
+
+  keyword -/- [a-zA-Z0-9\-\_]
+  tokenize : "([<."
+
+context-free sorts
+
+  Bool
+  SupplierKeyword
+
+context-free syntax
+
+  SupplierKeyword.SupplierKeyword = <supplier>
+
+context-free syntax // Literals
+
+  Exp.UnitLit  = <unit>
+  Exp.BoolLit  = <<Bool>>
+  Bool.True    = <true>
+  Bool.False   = <false>
+  Exp.IntLit   = <<INT>>
+  Exp.NullLit  = <null>
+
+  Exp.TupleLit = <(<{Exp ","}+>)> {left}
+  Exp.ListLit  = <[<{Exp ","}*>]> {left}
+
+lexical syntax // Reject keywords
+
+  FUNCID = "supplier"  {reject}
+  FUNCID = "unit"      {reject}
+  FUNCID = "null"      {reject}
+  FUNCID = "true"      {reject}
+  FUNCID = "false"     {reject}
+  VALID  = "unit"      {reject}
+  VALID  = "null"      {reject}
+  VALID  = "true"      {reject}
+  VALID  = "false"     {reject}
