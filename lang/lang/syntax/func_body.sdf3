@@ -78,7 +78,7 @@ context-free syntax // References
   Exp.QCall = <<Exp>.<FUNCID><TypeArgs>(<{Exp ", "}*>)>       {left}
 
   Exp.CreateSupplier = <<SupplierKeyword><TypeArgs>(<{Exp ", "}*>)>
-  Exp.TaskSupplier   = <<ModuleList><FUNCID>.supplier<TypeArgs>(<{Exp ", "}*>)>
+  Exp.TaskSupplier   = <<ModuleList><FUNCID>.<SupplierKeyword><TypeArgs>(<{Exp ", "}*>)>
 
 context-free syntax // Paths
 

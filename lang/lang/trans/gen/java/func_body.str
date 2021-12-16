@@ -730,7 +730,7 @@ rules // PIE function calls
     ; result             := (stmts, supplierName)
 
 
-  p2j-ast-exp: t@TaskSupplier(moduleList, funcId, typeArgs, args) -> result
+  p2j-ast-exp: t@TaskSupplier(moduleList, funcId, _, typeArgs, args) -> result
     with
       <add-import> "javax.inject.Provider"
     ; javaClassId          := <pie-func-name-to-javaClassId> funcId

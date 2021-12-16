@@ -258,7 +258,7 @@ rules
     typeOfCreateSupplier_1(type_args@TypeArgs([_,_|_]), _) :-
       false | error $[Too many type arguments. Expected one argument, got multiple] @type_args.
 
-  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, type_args, args)) = (s2, SupplierType(ty)) :-
+  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, _, type_args, args)) = (s2, SupplierType(ty)) :-
     {merged}
     mergeScopes(s1, resolveModuleListToFile(s1, moduleList)) == merged,
     typeOfCall(s1, merged, s1, func_name, type_args, args) == (s2, ty).
