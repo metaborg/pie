@@ -17,19 +17,19 @@ test duplicate function [[
 ]] 2 errors at #1, #2
    error like "Duplicate function"
 
-test empty generic parameter list [[func test<>() -> int = 8]] analysis succeeds
+test empty generic parameter list [[func test[]() -> int = 8]] analysis succeeds
 test omitted generic parameter list [[func test() -> bool = false]] analysis succeeds
 // See https://github.com/MeAmAnUsername/pie/issues/181
 test with type parameter [[
-  func test[[<T>]]() -> path = ./test
+  func test[[ [T] ]]() -> path = ./test
 ]] 1 error at #1
    error like "Code generation for PIE tasks with type parameters has not been implemented yet"
 
 test param with wildcard type [[func test(something: [[_)]] -> bool = true]] 1 error at #1  error like "Cannot use a wildcard"
 test param with wildcard type [[func test(something: [[_ : Food)]] -> int = 9]] 1 error at #1  error like "Cannot use a wildcard"
-test param with wildcard type [[func test(something: [[_ -: Apple<>]]) -> string = "apple"]] 1 error at #1  error like "Cannot use a wildcard"
+test param with wildcard type [[func test(something: [[_ -: Apple[] ]]) -> string = "apple"]] 1 error at #1  error like "Cannot use a wildcard"
 test param with wildcard type [[
-  func test(something: _[[ : Fruit<>]][[ -: Apple<>]]) -> Fruit? = null
+  func test(something: _[[ : Fruit[] ]][[ -: Apple[] ]]) -> Fruit? = null
 ]] 3 errors at #1, #2
    error like "Cannot use a wildcard"
    error like "Cannot have both an upper and lower bound" at #1
