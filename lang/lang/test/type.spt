@@ -18,7 +18,7 @@ test tuple [[ func foo() -> (path, string?) = {
   (/test.txt, str)
 } ]] analysis succeeds
 test list [[ func foo() -> path* = [./file1.txt, ./file2.txt] ]] analysis succeeds
-test supplier [[ func foo() -> supplier<string> = supplier("Nope") ]] analysis succeeds
+test supplier [[ func foo() -> supplier[string] = supplier("Nope") ]] analysis succeeds
 test data type local [[
   data [[Foo]] = foreign java org.example.test.type.Foo {}
   func getFoo() -> [[Foo]] = foreign java constructor org.example.test.type.Foo
