@@ -124,6 +124,9 @@ test reference reserved keyword unit  [[ unit  ]] parse to UnitLit()
 test reference reserved keyword null  [[ null  ]] parse to NullLit()
 test reference reserved keyword true  [[ true  ]] parse to BoolLit(True())
 test reference reserved keyword false [[ false ]] parse to BoolLit(False())
+test reference keyword func [[ func ]] parse to Ref("func")
+test reference keyword return [[ return ]] parse to Ref("return")
+test reference keyword supplier [[ supplier ]] parse to Ref("supplier")
 
 test call simple [[ someFunc() ]] parse succeeds
 test call empty type argument list [[ someFunc[]() ]]
