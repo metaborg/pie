@@ -1,0 +1,13 @@
+module prevent_ambiguous_syntax
+language pie
+start symbol Exp
+
+// Using angled brackets for generics leads to several ambiguities with less
+// than and greater than. These tests are to make sure that no ambiguities are
+// introduced by accident if the syntax is changed in the future.
+// see issue 208: https://github.com/MeAmAnUsername/pie/issues/208
+test angled brackets ambiguity - less than greater than - call [[ foo(A<B, C>(1)) ]] parse fails
+test angled brackets ambiguity - less than greater than - call with 1 or 3 arguments [[ foo(A<B, C, D>(1)) ]] parse fails
+test angled brackets ambiguity - less than greater than - call with 1 or 4 arguments [[ foo(A<B, C, D, E>(1)) ]] parse fails
+test angled brackets ambiguity - less than greater than - list [[ [A<B, C>(1)] ]] parse fails
+test angled brackets ambiguity - less than greater than - tuple [[ (A<B, C>(1)) ]] parse fails
