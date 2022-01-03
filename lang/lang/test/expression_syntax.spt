@@ -14,6 +14,18 @@ test int literal negative [[ -73 ]] parse succeeds
 test int literal positive with sign [[ +73 ]] parse fails
 test null literal [[ null ]] parse succeeds
 
+test to nullable bool [[ true? ]] parse to ToNullable(BoolLit(True()))
+test to nullable bool with layout [[ true ? ]] parse to ToNullable(BoolLit(True()))
+test to nullable null [[ null? ]] parse to ToNullable(NullLit())
+test to nullable null with layout [[ null ? ]] parse to ToNullable(NullLit())
+test to nullable int [[ 8? ]] parse to ToNullable(IntLit("8"))
+
+test to non-nullable bool [[ true! ]] parse to ToNonNullable(BoolLit(True()))
+test to non-nullable bool with layout [[ true ! ]] parse to ToNonNullable(BoolLit(True()))
+test to non-nullable null [[ null! ]] parse to ToNonNullable(NullLit())
+test to non-nullable null with layout [[ null ! ]] parse to ToNonNullable(NullLit())
+test to non-nullable int [[ 8! ]] parse to ToNonNullable(IntLit("8"))
+
 test or [[ var == null || someCall(var) ]] parse succeeds
 test or no layout around [[ true||true ]] parse succeeds
 test or layout between [[ true | | false ]] parse fails
