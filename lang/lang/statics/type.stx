@@ -139,7 +139,7 @@ rules // operations on types
           instantiateNamedTypeArgs(s1, s2, capture_state, type_args) == instantiated,
           declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
           copyContext(s_data_instance_instantiated, "foreign_java_impl"),
-          !type_args[getTypeArgTypes(type_args)] in s_data_instance_instantiated.
+          !type_args[getTypeArgTypes(instantiated)] in s_data_instance_instantiated.
 
           instantiateNamedTypeArg : scope * scope * CaptureState * (GenericParameter * TYPE) -> (GenericParameter * TYPE)
           instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, *, list(*)) = list(*)

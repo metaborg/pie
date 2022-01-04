@@ -1,0 +1,9 @@
+module mb:pie:lang:test:foreignFunc:constructor:generic
+
+data Bar[T] = foreign java mb.pie.lang.test.foreignFunc.constructor.Bar {}
+func newBar[T, E](t: T, e: E, arg: string) -> Bar[T] =
+  foreign java constructor mb.pie.lang.test.foreignFunc.constructor.Bar
+
+func main_generic() -> Bar[int] = {
+  newBar[int, bool](58, false, "generic")
+}
