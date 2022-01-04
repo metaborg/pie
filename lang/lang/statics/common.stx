@@ -69,6 +69,8 @@ rules
     setModuleName(s_empty, "<NONE>"),
     setFileIfExists(s, s_empty),
     setContext(s_empty, "data_name_unqualified", ContextName("<NONE>")),
+    !generic_params[[]] in s_empty,
+    !type_args[[]] in s_empty,
     !data_mods[[]] in s_empty.
 
   /**
