@@ -91,6 +91,29 @@ rules
     with
       <add-import> "mb.pie.api.Supplier"
 
+  p2j-ast-type-sig:
+    WildcardType(upper_bound, lower_bound, _) -> WildCard(WildCard([]))
+    where
+      <bound-not-required> upper_bound; <bound-not-required> lower_bound
+  p2j-ast-type-sig:
+    WildcardType(upper_bound, lower_bound, _) -> WildCard(WildCardSuper([], <p2j-ast-type-sig> lower_bound))
+    where
+      <bound-not-required> upper_bound
+  p2j-ast-type-sig:
+    WildcardType(upper_bound, _, _) -> WildCard(WildCardExtends([], <p2j-ast-type-sig> upper_bound))
+
+  bound-not-required = ?NoUpperBoundType()
+  bound-not-required = ?UpperBoundType(TopType())
+  bound-not-required = ?NoLowerBoundType()
+  bound-not-required = ?LowerBoundType(BottomType())
+
+  p2j-ast-type-sig: UpperBoundType(ty) -> <p2j-ast-type-sig> ty
+  p2j-ast-type-sig: NoUpperBoundType() -> <p2j-ast-type-sig> TopType()
+    with error(|"BUG? p2j-ast-type-sig got called with NoUpperBoundType()")
+  p2j-ast-type-sig: LowerBoundType(ty) -> <p2j-ast-type-sig> ty
+  p2j-ast-type-sig: NoLowerBoundType() -> "error"
+    with error(|"BUG: p2j-ast-type-sig got called with NoLowerBoundType()")
+
 rules // type arguments
 
   /**
