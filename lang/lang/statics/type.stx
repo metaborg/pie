@@ -139,6 +139,7 @@ rules // operations on types
           instantiateNamedTypeArgs(s1, s2, capture_state, type_args) == instantiated,
           declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
           copyContext(s_data_instance_instantiated, "foreign_java_impl"),
+          copyContext(s_data_instance_instantiated, "data_name_unqualified"),
           !type_args[getTypeArgTypes(instantiated)] in s_data_instance_instantiated.
 
           instantiateNamedTypeArg : scope * scope * CaptureState * (GenericParameter * TYPE) -> (GenericParameter * TYPE)
@@ -458,7 +459,8 @@ rules
       !type_args[getTypeArgTypes(getTypeArgsOrdered(s_data_instance))] in s_data_instance,
       @name.ref := name',
       @name.type := type,
-      copyContext(s_data_instance, "foreign_java_impl").
+      copyContext(s_data_instance, "foreign_java_impl"),
+      copyContext(s_data_instance, "data_name_unqualified").
 
       // s: current function/module scope
       // s_type_args: scope for looking up defined data types
