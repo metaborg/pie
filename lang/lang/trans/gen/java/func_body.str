@@ -523,7 +523,7 @@ rules // Java foreign function calls
     ; expressionNameJavaClassId   := <java-qualifiedClass-to-expressionName> <string-tokenize(|['.'])> javaClassId
     ; javaMethodId                := <pie-ast-ref-prop(|"javaMethodId")> name
     ; (argExpsStmts, argExpsVals) := <unzip> <map(try-p2j-ast-exp)> argExps
-    ; javaExpr                    := 
+    ; javaExpr                    :=
         InvokeQExp(
           expressionNameJavaClassId
         , javaTypeArgs
