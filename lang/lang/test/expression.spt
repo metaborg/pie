@@ -177,7 +177,7 @@ test add null to empty list [[ [[ [] + null ]] ]] analysis succeeds run pie-ast-
 test if [[ if (enableFinagle) anotherFunc() ]] analysis succeeds
 test if with block [[ if (enableFinagle) {anotherFunc(); return unit} ]] analysis succeeds
 test if condition not boolean [[ if ([[0]]) unit ]] 1 error at #1
-test if error in branch [[ if (!enableFinagle) return [[anotherFunc()]] ]] >= 1 error at #1 // todo: I expect only 1 but Statix gives 2
+test if error in branch [[ if (!enableFinagle) return [[anotherFunc()]] ]] 1 error at #1
 
 test ifelse [[ [[ if (value == 10) "hello" else "world" ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test ifelse condition not boolean [[ if ([["true"]]) 1 else 5 ]] 1 error at #1
