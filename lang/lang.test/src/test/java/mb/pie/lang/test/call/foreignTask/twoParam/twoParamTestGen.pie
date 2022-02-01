@@ -1,0 +1,7 @@
+module mb:pie:lang:test:call:foreignTask:twoParam
+
+func twoParam(bool, string) -> string = foreign mb.pie.lang.test.call.foreignTask.twoParam.TwoParam
+
+func main_twoParam() -> string = {
+  twoParam(false, "hello world!")
+}

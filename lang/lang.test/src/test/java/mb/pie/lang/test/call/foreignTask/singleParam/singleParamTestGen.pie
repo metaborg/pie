@@ -1,0 +1,7 @@
+module mb:pie:lang:test:call:foreignTask:singleParam
+
+func oneParam(int) -> bool = foreign mb.pie.lang.test.call.foreignTask.singleParam.SingleParam
+
+func main_singleParam() -> bool = {
+  oneParam(7)
+}

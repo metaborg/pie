@@ -1,0 +1,7 @@
+module mb:pie:lang:test:call:foreignTask:threeParam
+
+func threeParam(int*, int, int) -> bool = foreign mb.pie.lang.test.call.foreignTask.threeParam.ThreeParam
+
+func main_threeParam() -> bool = {
+  threeParam([1, 2, 3], 3, 6)
+}
