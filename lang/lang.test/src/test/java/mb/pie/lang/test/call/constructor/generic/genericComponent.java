@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor.generic;
+package mb.pie.lang.test.call.constructor.generic;
 
 import dagger.Component;
 import mb.pie.dagger.PieComponent;

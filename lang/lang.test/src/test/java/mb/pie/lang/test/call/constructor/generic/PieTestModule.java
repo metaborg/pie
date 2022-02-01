@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor.twoParam;
+package mb.pie.lang.test.call.constructor.generic;
 
 import dagger.Module;
 import dagger.Provides;
@@ -13,10 +13,10 @@ import java.util.Set;
 abstract class PieTestModule {
     @Provides @mb.pie.dagger.PieScope @ElementsIntoSet
     public static Set<TaskDef<?, ?>> provideTaskDefs(
-        main_twoParam twoParam
+        main_generic generic
     ) {
         final HashSet<TaskDef<?, ?>> taskDefs = new HashSet<>(1, 1);
-        taskDefs.add(twoParam);
+        taskDefs.add(generic);
         return taskDefs;
     }
 }

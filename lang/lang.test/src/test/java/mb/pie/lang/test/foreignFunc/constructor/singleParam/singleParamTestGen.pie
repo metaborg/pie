@@ -1,8 +1,0 @@
-module mb:pie:lang:test:foreignFunc:constructor:singleParam
-
-data Foo = foreign java mb.pie.lang.test.foreignFunc.constructor.Foo {}
-func newFoo(int) -> Foo = foreign java constructor mb.pie.lang.test.foreignFunc.constructor.Foo
-
-func main_singleParam() -> Foo = {
-  newFoo(5)
-}

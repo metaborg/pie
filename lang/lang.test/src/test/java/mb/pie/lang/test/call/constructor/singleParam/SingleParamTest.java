@@ -1,7 +1,7 @@
-package mb.pie.lang.test.foreignFunc.constructor.singleParam;
+package mb.pie.lang.test.call.constructor.singleParam;
 
 import mb.pie.api.ExecException;
-import mb.pie.lang.test.foreignFunc.constructor.Foo;
+import mb.pie.lang.test.call.constructor.Foo;
 import org.junit.jupiter.api.Test;
 
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;

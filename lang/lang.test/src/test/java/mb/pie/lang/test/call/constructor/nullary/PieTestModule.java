@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor.nullary;
+package mb.pie.lang.test.call.constructor.nullary;
 
 import dagger.Module;
 import dagger.Provides;

@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor.threeParam;
+package mb.pie.lang.test.call.constructor.twoParam;
 
 import dagger.Component;
 import mb.pie.dagger.PieComponent;
@@ -8,6 +8,6 @@ import javax.inject.Singleton;
 
 @mb.pie.dagger.PieScope
 @Component(modules = {PieModule.class, PieTestModule.class}, dependencies = {mb.log.dagger.LoggerComponent.class, mb.resource.dagger.ResourceServiceComponent.class})
-public interface threeParamComponent extends PieComponent {
-    main_threeParam get();
+public interface twoParamComponent extends PieComponent {
+    main_twoParam get();
 }

@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor;
+package mb.pie.lang.test.call.constructor;
 
 import java.io.Serializable;
 

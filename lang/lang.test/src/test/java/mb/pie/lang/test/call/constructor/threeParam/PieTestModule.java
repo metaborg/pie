@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor.threeParam;
+package mb.pie.lang.test.call.constructor.threeParam;
 
 import dagger.Module;
 import dagger.Provides;

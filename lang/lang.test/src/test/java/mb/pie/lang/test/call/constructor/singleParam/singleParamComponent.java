@@ -1,4 +1,4 @@
-package mb.pie.lang.test.foreignFunc.constructor.singleParam;
+package mb.pie.lang.test.call.constructor.singleParam;
 
 import dagger.Component;
 import mb.pie.dagger.PieComponent;
