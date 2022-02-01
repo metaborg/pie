@@ -1,8 +1,8 @@
 module mb:pie:lang:test:call:constructor:generic
 
-data Bar[T] = foreign java mb.pie.lang.test.call.constructor.Bar {}
+data Bar[T] = foreign java mb.pie.lang.test.call.Bar {}
 func newBar[T, E](t: T, e: E, arg: string) -> Bar[T] =
-  foreign java constructor mb.pie.lang.test.call.constructor.Bar
+  foreign java constructor mb.pie.lang.test.call.Bar
 
 func main_generic() -> Bar[int] = {
   newBar[int, bool](58, false, "generic")

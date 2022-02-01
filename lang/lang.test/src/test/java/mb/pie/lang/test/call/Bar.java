@@ -1,4 +1,4 @@
-package mb.pie.lang.test.call.constructor;
+package mb.pie.lang.test.call;
 
 import java.io.Serializable;
 

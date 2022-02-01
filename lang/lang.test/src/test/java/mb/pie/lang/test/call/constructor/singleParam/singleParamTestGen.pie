@@ -1,7 +1,7 @@
 module mb:pie:lang:test:call:constructor:singleParam
 
-data Foo = foreign java mb.pie.lang.test.call.constructor.Foo {}
-func newFoo(int) -> Foo = foreign java constructor mb.pie.lang.test.call.constructor.Foo
+data Foo = foreign java mb.pie.lang.test.call.Foo {}
+func newFoo(int) -> Foo = foreign java constructor mb.pie.lang.test.call.Foo
 
 func main_singleParam() -> Foo = {
   newFoo(5)

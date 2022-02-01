@@ -1,7 +1,7 @@
 package mb.pie.lang.test.call.constructor.generic;
 
 import mb.pie.api.ExecException;
-import mb.pie.lang.test.call.constructor.Bar;
+import mb.pie.lang.test.call.Bar;
 import org.junit.jupiter.api.Test;
 
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;

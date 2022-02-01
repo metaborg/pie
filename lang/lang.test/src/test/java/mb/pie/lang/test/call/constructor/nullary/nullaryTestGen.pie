@@ -1,7 +1,7 @@
 module mb:pie:lang:test:call:constructor:nullary
 
-data Foo = foreign java mb.pie.lang.test.call.constructor.Foo {}
-func newFoo() -> Foo = foreign java constructor mb.pie.lang.test.call.constructor.Foo
+data Foo = foreign java mb.pie.lang.test.call.Foo {}
+func newFoo() -> Foo = foreign java constructor mb.pie.lang.test.call.Foo
 
 func main_nullary() -> Foo = {
   newFoo()
