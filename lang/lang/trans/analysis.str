@@ -142,3 +142,13 @@ rules // Debugging
   debug-show-analyzed: (selected, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path
        ; result   := selected
+
+  debug-print-scopegraph:
+    (_, _, _, path, project-path) -> (filename, result)
+    where
+      a := <stx--get-resource-analysis> path
+    with
+      filename := <guarantee-extension(|"scopegraph.aterm")> path
+    ; sg := <stx--get-scopegraph; strip-annos> a
+    ; result := sg
+
