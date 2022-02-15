@@ -568,11 +568,15 @@ rules
   genericArgOk : scope * scope * scope * (GenericParameter * TYPE * TYPE) * Type * BOOLEAN
   genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
   genericArgOk(s, s_type_args, s_data_instance, (param@GenericParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) :-
-    {arg_ty}
+    {arg_ty upper_bound_instantiated lower_bound_instantiated}
+    instantiateTypeArgs(s_type_args, upper_bound) == upper_bound_instantiated,
+    instantiateTypeArgs(s_type_args, lower_bound) == lower_bound_instantiated,
     typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types) == arg_ty,
     declareTypeArg(s_data_instance, param, arg_ty),
-    try { assignableTo(arg_ty, upper_bound, TypeArgKind()) } | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound] for type parameter [name]],
-    try { assignableTo(lower_bound, arg_ty, TypeArgKind()) } | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound] for type parameter [name]].
+    try { assignableTo(arg_ty, upper_bound_instantiated, TypeArgKind()) }
+      | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound_instantiated] for type parameter [name]],
+    try { assignableTo(lower_bound_instantiated, arg_ty, TypeArgKind()) }
+      | error $[Type mismatch: [arg_ty] is not within lower bound [lower_bound_instantiated] for type parameter [name]].
 
   /**
    * instantiateTypeArgs(s, T) = instantiated_type
