@@ -20,7 +20,7 @@ import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
 import mb.spoofax.lwb.compiler.CompileLanguage;
 import mb.spoofax.lwb.compiler.CompileLanguageException;
-import mb.spoofax.lwb.compiler.dagger.StandaloneSpoofax3Compiler;
+import mb.spoofax.lwb.compiler.dagger.Spoofax3Compiler;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -35,7 +35,7 @@ public class Spoofax3CompilerState {
 
     private @Nullable Logger logger;
     private @Nullable ClassLoaderResourceRegistry classLoaderResourceRegistry;
-    private @Nullable StandaloneSpoofax3Compiler spoofax3Compiler;
+    private @Nullable Spoofax3Compiler spoofax3Compiler;
 
     public Spoofax3CompilerState setupTrial(
         LoggerComponent loggerComponent,
@@ -47,7 +47,7 @@ public class Spoofax3CompilerState {
         logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("Spoofax3CompilerState.setupTrial");
         classLoaderResourceRegistry = resourcesState.getClassLoaderResourceRegistry();
-        spoofax3Compiler = new StandaloneSpoofax3Compiler(
+        spoofax3Compiler = new Spoofax3Compiler(
             loggerComponent,
             resourcesState.getResourceServiceComponent().createChildModule(),
             new PieModule(PieBuilderImpl::new)
