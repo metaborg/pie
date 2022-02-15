@@ -495,7 +495,6 @@ rules
     typeOfgenericParam : scope * scope * GenericParam -> (GenericParameter * TYPE * TYPE)
     typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
     typeOfgenericParam(s, s_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
-      {upper_error_node lower_error_node}
       bothBoundsOk(upper_bound, lower_bound),
       typeOrTopType(typeOfUpperBound(s, s_def, upper_bound, FALSE())) == upper_bound_ty,
       typeOrBottomType(typeOfLowerBound(s, s_def, lower_bound, FALSE())) == lower_bound_ty,
