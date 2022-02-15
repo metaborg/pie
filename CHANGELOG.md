@@ -3,6 +3,9 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Fixed
+- Calling `Pie.close` causing the `Store` to be closed multiple times.
+- Unnecessary `throws Exception` in `SerializingStoreInMemoryBuffer.close` method definition.
 
 
 ## [0.19.7] - 2021-12-13

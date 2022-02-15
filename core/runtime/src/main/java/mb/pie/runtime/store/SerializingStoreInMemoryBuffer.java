@@ -11,7 +11,7 @@ public class SerializingStoreInMemoryBuffer implements AutoCloseable {
     private byte[] buffer = new byte[0];
 
 
-    @Override public void close() throws Exception {
+    @Override public void close() {
         buffer = new byte[0];
     }
 

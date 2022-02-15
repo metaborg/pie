@@ -43,6 +43,7 @@ public class PieImpl implements Pie {
     protected final Function<LoggerFactory, Tracer> tracerFactory;
     protected final Callbacks callbacks;
     protected final CloseableReentrantReadWriteLock lock;
+    boolean isClosed = false;
 
 
     public PieImpl(
@@ -74,8 +75,9 @@ public class PieImpl implements Pie {
     }
 
     @Override public void close() {
-        if(isBase) {
+        if(isBase && !isClosed) {
             store.close();
+            isClosed = true;
         }
     }
 
