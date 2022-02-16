@@ -55,7 +55,7 @@ test list of pairs [[ (string, bool)* ]] parse to ListTy(TupleTy([StrTy(), BoolT
 
 // supplier types
 test supplier simple type [[ supplier[path] ]] parse to SupplierTy(PathTy())
-test supplier layout after keyword [[ supplier [path] ]] parse fails
+test supplier layout after keyword [[ supplier [path] ]] parse succeeds
 test supplier layout within keyword [[ suppl ier[path] ]] parse fails
 test supplier layout after open square bracket [[ supplier[ path] ]] parse succeeds
 test supplier layout before close square bracket [[ supplier[path ] ]] parse succeeds
