@@ -46,7 +46,7 @@ rules
   superOk : scope * scope * SuperType * string
   superOk(s, s_data_def, NoSuperType(), name).
   superOk(s, s_data_def, SuperType(data_ty@DataTy(_, super_name, _)), name) :- {s_super occs}
-    typeOfDataTy(s, s_data_def, data_ty, FALSE()) == DataType(s_super),
+    typeOfDataTy(s, s_data_def, data_ty, FALSE(), []) == DataType(s_super),
     s_data_def -INHERIT-> s_super,
     inherits(s_super, s_data_def) == FALSE() | error $[Cannot (indirectly) inherit from self. [super_name] is already an (indirect) subtype of [name]] @super_name,
     query func filter e in s_data_def |-> occs,

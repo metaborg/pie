@@ -372,7 +372,7 @@ rules
    */
   typeOf : scope * Type -> TYPE
   typesOf maps typeOf(*, list(*)) = list(*)
-  typeOf(s, ty) = typeOfWithTypeArgScope(s, emptyScope(s), ty, FALSE()).
+  typeOf(s, ty) = typeOfWithTypeArgScope(s, emptyScope(s), ty, FALSE(), []).
 
   /**
    * typeOfWithTypeArgScope(s, s_type_args, ty) = type
@@ -381,30 +381,34 @@ rules
    * [resolve_in_super_types] specifies if type arguments can be looked up in
    * super types or not. If they can, resolution will follow P and INHERIT
    * edges. Otherwise, it will only follow P edges.
+   * [currently_defining] specifies zero or one generic parameters that we are
+   * currently defining. If there is one and [ty] is that generic
+   * parameter, it will return `GenericParameter2TYPE(param)` instead of
+   * the resolved type of the parameter.
    */
-  typeOfWithTypeArgScope : scope * scope * Type * BOOLEAN -> TYPE
-  typesOfWithTypeArgScope maps typeOfWithTypeArgScope(*, *, list(*), *) = list(*)
-  typeOfWithTypeArgScope(s, s_type_args, ty, resolve_in_super_types) =
-    type@typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types) :-
+  typeOfWithTypeArgScope : scope * scope * Type * BOOLEAN * list(GenericParameter) -> TYPE
+  typesOfWithTypeArgScope maps typeOfWithTypeArgScope(*, *, list(*), *, *) = list(*)
+  typeOfWithTypeArgScope(s, s_type_args, ty, resolve_in_super_types, currently_defining) =
+    type@typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining) :-
     @ty.type := type.
 
-  typeOfWithTypeArgScope_1 : scope * scope * Type * BOOLEAN -> TYPE
-  typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope_1(*, *, list(*), *) = list(*)
-  typeOfWithTypeArgScope_1(_, _, UnitTy(), _) = UnitType().
-  typeOfWithTypeArgScope_1(_, _, BoolTy(), _) = BoolType().
-  typeOfWithTypeArgScope_1(_, _, IntTy(), _)  = IntType().
-  typeOfWithTypeArgScope_1(_, _, StrTy(), _)  = StrType().
-  typeOfWithTypeArgScope_1(_, _, PathTy(), _) = PathType().
-  typeOfWithTypeArgScope_1(s, s_type_args, DataTy2Type(data_ty), resolve_in_super_types) = typeOfDataTy(s, s_type_args, data_ty, resolve_in_super_types).
-  typeOfWithTypeArgScope_1(s, s_type_args, TupleTy(tys), resolve_in_super_types) = TupleType(typesOfWithTypeArgScope_1(s, s_type_args, tys, resolve_in_super_types)).
-  typeOfWithTypeArgScope_1(s, s_type_args, ListTy(ty), resolve_in_super_types) = ListType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)).
-  typeOfWithTypeArgScope_1(s, s_type_args, SupplierTy(ty), resolve_in_super_types) = SupplierType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)).
-  typeOfWithTypeArgScope_1(s, s_type_args, NullableTy(ty, marker), resolve_in_super_types) = NullableType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types)) :-
+  typeOfWithTypeArgScope_1 : scope * scope * Type * BOOLEAN * list(GenericParameter) -> TYPE
+  typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope_1(*, *, list(*), *, *) = list(*)
+  typeOfWithTypeArgScope_1(_, _, UnitTy(), _, _) = UnitType().
+  typeOfWithTypeArgScope_1(_, _, BoolTy(), _, _) = BoolType().
+  typeOfWithTypeArgScope_1(_, _, IntTy(),  _, _) = IntType().
+  typeOfWithTypeArgScope_1(_, _, StrTy(),  _, _) = StrType().
+  typeOfWithTypeArgScope_1(_, _, PathTy(), _, _) = PathType().
+  typeOfWithTypeArgScope_1(s, s_type_args, DataTy2Type(data_ty), resolve_in_super_types, currently_defining) = typeOfDataTy(s, s_type_args, data_ty, resolve_in_super_types, currently_defining).
+  typeOfWithTypeArgScope_1(s, s_type_args, TupleTy(tys), resolve_in_super_types, currently_defining) = TupleType(typesOfWithTypeArgScope_1(s, s_type_args, tys, resolve_in_super_types, currently_defining)).
+  typeOfWithTypeArgScope_1(s, s_type_args, ListTy(ty), resolve_in_super_types, currently_defining) = ListType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)).
+  typeOfWithTypeArgScope_1(s, s_type_args, SupplierTy(ty), resolve_in_super_types, currently_defining) = SupplierType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)).
+  typeOfWithTypeArgScope_1(s, s_type_args, NullableTy(ty, marker), resolve_in_super_types, currently_defining) = NullableType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)) :-
     try { ty != NullableTy(_, _) } | warning $[No-op: double nullable has no effect] @marker.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound), resolve_in_super_types) = WildcardType(upper_bound_ty, lower_bound_ty, Free()) :-
+  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(upper_bound, lower_bound), resolve_in_super_types, currently_defining) = WildcardType(upper_bound_ty, lower_bound_ty, Free()) :-
     {upper_error_node lower_error_node}
-    typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types) == upper_bound_ty,
-    typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types) == lower_bound_ty,
+    typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining) == upper_bound_ty,
+    typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining) == lower_bound_ty,
     bothBoundsOk(upper_bound, lower_bound).
 
   /**
@@ -414,42 +418,49 @@ rules
    * [resolve_in_super_types] specifies if type arguments can be looked up in
    * super types or not. If they can, resolution will follow P and INHERIT
    * edges. Otherwise, it will only follow P edges.
+   * [currently_defining] specifies zero or one generic parameters that we are
+   * currently defining. If there is one and [data_ty] is that generic
+   * parameter, it will return `GenericParameter2TYPE(param)` instead of
+   * the resolved type of the parameter.
    */
-  typeOfDataTy : scope * scope * DataTy * BOOLEAN -> TYPE
-  typeOfDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), resolve_in_super_types) = type :-
+  typeOfDataTy : scope * scope * DataTy * BOOLEAN * list(GenericParameter) -> TYPE
+  typeOfDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), resolve_in_super_types, currently_defining) = type :-
     {resolved_params resolvedData}
     resolveGenericParam(s_type_args, name) == resolved_params,
     resolveData(mergeScopes(s, resolveModuleListToFile(s, modules)), name) == resolvedData,
-    isGenericParamOrDataTy(s, s_type_args, data_ty, modules, resolved_params, resolvedData, resolve_in_super_types) == type,
+    isGenericParamOrDataTy(s, s_type_args, data_ty, modules, resolved_params, resolvedData, resolve_in_super_types, currently_defining) == type,
     @data_ty.type := type.
 
     isGenericParamOrDataTy : scope * scope * DataTy * ModuleList *
-      list((path * (GenericParameter * (TYPE * TYPE)))) * list((path * (TYPEID * scope))) * BOOLEAN -> TYPE
-    isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, _, _, _) = DataType(emptyScope(s)) :-
+      list((path * (GenericParameter * (TYPE * TYPE)))) * list((path * (TYPEID * scope))) *
+      BOOLEAN * list(GenericParameter) -> TYPE
+    isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, _, _, _, _) = DataType(emptyScope(s)) :-
       false | error $[Undefined datatype [name]] @name.
 
     // generic parameter
     isGenericParamOrDataTy(s, s_type_args, DataTy(NoModuleList(), name, type_args), NoModuleList(),
-      [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, resolve_in_super_types) = type :-
-      genericParamToType(resolveTypeArgFromNameOnly(s_type_args, name, resolve_in_super_types), param, upper_bound) == type,
+      [(_, (param@GenericParameter(_, name'), (upper_bound, _)))], _, resolve_in_super_types, currently_defining) = type :-
+      genericParamToType(resolveTypeArgFromNameOnly(s_type_args, name, resolve_in_super_types), param, upper_bound, currently_defining) == type,
       @name.ref := name',
       @name.type := type,
       getTypeArgsList(type_args) == [] | error "Generic parameters do not take type arguments" @type_args.
 
-      genericParamToType : list((path * (GenericParameter * TYPE))) * GenericParameter * TYPE -> TYPE
-      genericParamToType([], param, _) = GenericParameter2TYPE(param).
-      genericParamToType([(_, (_, ty))], _, _) = ty.
-      genericParamToType([(_, (GenericParameter(_, name), _)),_|_], GenericParameter(s, _), _) = DataType(emptyScope(s)) :-
+      // todo: remove upper_bound (last TYPE)
+      genericParamToType : list((path * (GenericParameter * TYPE))) * GenericParameter * TYPE * list(GenericParameter) -> TYPE
+      genericParamToType([], param, _, _) = GenericParameter2TYPE(param).
+      genericParamToType([(_, (_, ty))], param, _, [param]) = GenericParameter2TYPE(param).
+      genericParamToType([(_, (_, ty))], _, _, _) = ty.
+      genericParamToType([(_, (GenericParameter(_, name), _)),_|_], GenericParameter(s, _), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
 
-    isGenericParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _, _) = DataType(emptyScope(s)) :-
+    isGenericParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _, _, _) = DataType(emptyScope(s)) :-
       false | error $[Duplicate declarations for generic parameter [name]] @name.
 
     // data type
-    isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, _, [_,_|_], _) = DataType(emptyScope(s)) :-
+    isGenericParamOrDataTy(s, _, DataTy(_, name, _), _, _, [_,_|_], _, _) = DataType(emptyScope(s)) :-
       false | error $[Duplicate datatype [name]] @name.
     isGenericParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), _, _,
-      [(_, (name', s_data_def))], resolve_in_super_types) = type@DataType(s_data_instance) :-
+      [(_, (name', s_data_def))], resolve_in_super_types, _) = type@DataType(s_data_instance) :-
       {params}
       new s_data_instance,
       !root[getRoot(s)] in s_data_instance,
@@ -496,8 +507,8 @@ rules
     typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
     typeOfgenericParam(s, s_def, GenericParam(name, upper_bound, lower_bound)) = (param, upper_bound_ty, lower_bound_ty) :-
       bothBoundsOk(upper_bound, lower_bound),
-      typeOrTopType(typeOfUpperBound(s, s_def, upper_bound, FALSE())) == upper_bound_ty,
-      typeOrBottomType(typeOfLowerBound(s, s_def, lower_bound, FALSE())) == lower_bound_ty,
+      typeOrTopType(typeOfUpperBound(s, s_def, upper_bound, FALSE(), [])) == upper_bound_ty,
+      typeOrBottomType(typeOfLowerBound(s, s_def, lower_bound, FALSE(), [])) == lower_bound_ty,
       declareGenericParam(s_def, name, upper_bound_ty, lower_bound_ty) == param,
       try { resolveData(s, name) == [] } | note $[Generic parameter [name] shadows data type [name]] @name.
 
@@ -507,10 +518,10 @@ rules
         false | error $[Cannot have both an upper and lower bound] @u,
         false | error $[Cannot have both an upper and lower bound] @l.
 
-      typeOfUpperBound : scope * scope * UpperBound * BOOLEAN -> UpperBoundType
-      typeOfUpperBound(_, _, NoUpperBound(), _) = NoUpperBoundType().
-      typeOfUpperBound(s, s_type_args, UpperBound(upper_bound), resolve_in_super_types) =
-        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound, resolve_in_super_types))
+      typeOfUpperBound : scope * scope * UpperBound * BOOLEAN * list(GenericParameter) -> UpperBoundType
+      typeOfUpperBound(_, _, NoUpperBound(), _, _) = NoUpperBoundType().
+      typeOfUpperBound(s, s_type_args, UpperBound(upper_bound), resolve_in_super_types, currently_defining) =
+        UpperBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining))
       :-
         try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
         try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
@@ -518,10 +529,10 @@ rules
         try { ty != TupleType(_) } | warning $[Nonsensical bound: tuple types do not have subtypes] @upper_bound,
         try { ty != BottomType() } | warning $[Nonsensical bound: BOTTOM is the only matching type] @upper_bound.
 
-      typeOfLowerBound : scope * scope * LowerBound * BOOLEAN -> LowerBoundType
-      typeOfLowerBound(_, _, NoLowerBound(), _) = NoLowerBoundType().
-      typeOfLowerBound(s, s_type_args, LowerBound(lower_bound), resolve_in_super_types) =
-        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound, resolve_in_super_types))
+      typeOfLowerBound : scope * scope * LowerBound * BOOLEAN * list(GenericParameter) -> LowerBoundType
+      typeOfLowerBound(_, _, NoLowerBound(), _, _) = NoLowerBoundType().
+      typeOfLowerBound(s, s_type_args, LowerBound(lower_bound), resolve_in_super_types, currently_defining) =
+        LowerBoundType(ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining))
       :-
         try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
@@ -571,7 +582,7 @@ rules
     {arg_ty upper_bound_instantiated lower_bound_instantiated}
     instantiateTypeArgs(s_type_args, upper_bound) == upper_bound_instantiated,
     instantiateTypeArgs(s_type_args, lower_bound) == lower_bound_instantiated,
-    typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types) == arg_ty,
+    typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types, [param]) == arg_ty,
     declareTypeArg(s_data_instance, param, arg_ty),
     try { assignableTo(arg_ty, upper_bound_instantiated, TypeArgKind()) }
       | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound_instantiated] for type parameter [name]],

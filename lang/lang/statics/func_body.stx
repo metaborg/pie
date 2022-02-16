@@ -198,7 +198,7 @@ rules
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty,
-      typesOfWithTypeArgScope(s1, s_type_args, getTypeArgsList(type_args), FALSE()) == type_arg_tys,
+      typesOfWithTypeArgScope(s1, s_type_args, getTypeArgsList(type_args), FALSE(), []) == type_arg_tys,
       instantiateTypeArgsInAll(s_func_instantiated, type_arg_tys) == instantiated_type_args,
       @name.ref := name',
       @name.type := FuncRefType(instantiated_type_args, instantiated_param_tys, ty).
@@ -221,7 +221,7 @@ rules
     typeOfQCall((s1, exp_ty@NullableType(inner_ty)), call@QCall(_, name, type_args, arg_exps)) = (s2, DataType(emptyScope(s1))) :-
       {s_data s_nullable resolved}
       getScopeFromType(s1, inner_ty) == s_data,
-      typesOfWithTypeArgScope(s1, s_data, getTypeArgsList(type_args), FALSE()) == _,
+      typesOfWithTypeArgScope(s1, s_data, getTypeArgsList(type_args), FALSE(), []) == _,
       typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
       getScopeFromType(s1, exp_ty) == s_nullable,
       resolveFunc(s_nullable, name) == resolved,
