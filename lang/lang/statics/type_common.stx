@@ -87,14 +87,17 @@ rules
 
 
   /**
-   * withinBounds((ub1, lb1), (ub2, lb2), assignable_kind) = within_bounds
-   * Returns TRUE iff the upper bound [ub1] is assignable to upper bound [ub2]
-   * and lower bound [lb2] is assignable to lower bound [lb1].
+   * withinBounds(T1, T2, assignable_kind) = within_bounds
+   * Returns TRUE iff [T1] is within the bounds of [T2].
+   * It checks if the upper bound of [T1] is assignable to the upper bound of
+   * [T2] and the lower bound of [T2] is assignable to the lower bound of [T1].
    * Uses [assignable_kind] to compare bounds.
    */
-  withinBounds : (TYPE * TYPE) * (TYPE * TYPE) * AssignableKind -> BOOLEAN
-  withinBounds((ub1, lb1), (ub2, lb2), assignable_kind) =
-    andB(isAssignableTo(ub1, ub2, assignable_kind), isAssignableTo(lb2, lb1, assignable_kind)).
+  withinBounds : TYPE * TYPE * AssignableKind -> BOOLEAN
+  withinBounds(T1, T2, assignable_kind) =
+    andB(isAssignableTo(ub1, ub2, assignable_kind), isAssignableTo(lb2, lb1, assignable_kind)) :-
+    getBounds(T1) == (ub1, lb1),
+    getBounds(T2) == (ub2, lb2).
 
   /**
    * getTypeParamsList(type_params) = type_params_list

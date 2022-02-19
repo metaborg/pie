@@ -189,12 +189,12 @@ rules // operations on types
               isScopeEqual(getGenericDef(s1), getGenericDef(s2)),
               isTypeArgsCompatible(s1, s2, assignable_kind)
             ).
-          isTypeArgCompatible_1(T, WildcardType(ub, lb, Free()), assignable_kind) =
-              withinBounds(getBounds(T), (typeOrTopType(ub), typeOrBottomType(lb)), assignable_kind).
+          isTypeArgCompatible_1(T1, T2@WildcardType(_, _, Free()), assignable_kind) =
+              withinBounds(T1, T2, assignable_kind).
           isTypeArgCompatible_1(T, WildcardType(_, lb, Bound()), assignable_kind) =
               isAssignableTo(T, typeOrBottomType(lb), assignable_kind).
           isTypeArgCompatible_1(T1, T2@GenericParameter2TYPE(_), assignable_kind) =
-              withinBounds(getBounds(T1), getBounds(T2), assignable_kind).
+              withinBounds(T1, T2, assignable_kind).
           isTypeArgCompatible_1(T1, T2, _) = FALSE().
 
     isAssignableTo_1(InvariantKind(), TopType(), TopType()) = TRUE() :-
@@ -206,9 +206,9 @@ rules // operations on types
     isAssignableTo_1(assignable_kind, T, WildcardType(upper_bound, _, _)) =
       isAssignableTo(typeOrTopType(upper_bound), T, assignable_kind).
     isAssignableTo_1(InvariantKind(), T1@WildcardType(_, _, Free()), T2) =
-      withinBounds(getBounds(T2), getBounds(T1), TypeArgKind()).
-    isAssignableTo_1(TypeArgKind(), WildcardType(upper_bound, lower_bound, _), T) =
-      withinBounds(getBounds(T), (typeOrTopType(upper_bound), typeOrBottomType(lower_bound)), TypeArgKind()) :-
+      withinBounds(T2, T1, TypeArgKind()).
+    isAssignableTo_1(TypeArgKind(), T1@WildcardType(_, _, _), T2) =
+      withinBounds(T2, T1, TypeArgKind()) :-
         try { false } | warning $[BUG?: incorrect assumption that isAssignableTo_1(TypeArgKind(), WildcardType(upper_bound, lower_bound, _), T) will not be called. Check if there is a difference between bound and free wildcard].
     isAssignableTo_1(ExpressionKind(), WildcardType(upper_bound, _, Free()), T) =
       isAssignableTo(T, typeOrTopType(upper_bound), ExpressionKind()).
@@ -222,7 +222,7 @@ rules // operations on types
     isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) = TRUE() :-
       try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(_, T@GenericParameter2TYPE(_), T@GenericParameter2TYPE(_)) is never called because it is caught by isAssignableTo(T, T, _)].
     isAssignableTo_1(TypeArgKind(), T2@GenericParameter2TYPE(_), T1) =
-      withinBounds(getBounds(T1), getBounds(T2), TypeArgKind()).
+      withinBounds(T1, T2, TypeArgKind()).
     isAssignableTo_1(ExpressionKind(), T2@GenericParameter2TYPE(_), T1) =
       isAssignableTo(T1, lower_bound, ExpressionKind()) :-
         getBounds(T2) == (_, lower_bound).
