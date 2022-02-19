@@ -205,12 +205,8 @@ rules // operations on types
 
     isAssignableTo_1(assignable_kind, T, WildcardType(upper_bound, _, _)) =
       isAssignableTo(typeOrTopType(upper_bound), T, assignable_kind).
-//    // todo: remove this rule
-//    isAssignableTo_1(InvariantKind(), WildcardType(_, _, Bound()), WildcardType(_, _, _)) = FALSE() :-
-//      try{false} | note $[DEBUG - checking invariant assignability for bound wildcard].
     isAssignableTo_1(InvariantKind(), T1@WildcardType(_, _, Free()), T2) =
       withinBounds(getBounds(T2), getBounds(T1), TypeArgKind()).
-    isAssignableTo_1(_, T@WildcardType(_, _, Free()), T@WildcardType(_, _, _)) = TRUE(). // incorrect, may be out of bounds
     isAssignableTo_1(TypeArgKind(), WildcardType(upper_bound, lower_bound, _), T) =
       withinBounds(getBounds(T), (typeOrTopType(upper_bound), typeOrBottomType(lower_bound)), TypeArgKind()) :-
         try { false } | warning $[BUG?: incorrect assumption that isAssignableTo_1(TypeArgKind(), WildcardType(upper_bound, lower_bound, _), T) will not be called. Check if there is a difference between bound and free wildcard].
