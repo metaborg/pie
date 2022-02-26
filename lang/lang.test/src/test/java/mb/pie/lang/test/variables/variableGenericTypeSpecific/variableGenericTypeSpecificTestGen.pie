@@ -1,0 +1,8 @@
+module mb:pie:lang:test:variables:variableGenericTypeSpecific
+
+data Box[T] = foreign java mb.pie.lang.test.variables.Box {}
+
+func main_variableGenericTypeSpecific(box: Box[int]) -> Box[int] = {
+  val res: Box[int] = box;
+  res
+}
