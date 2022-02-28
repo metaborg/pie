@@ -11,7 +11,7 @@ public class Bar<T> implements Serializable {
         this.arg = arg;
     }
 
-    public static <C, D> D method(C c, D d) {
+    public static <C, D> D func(C c, D d) {
         return d;
     }
 
