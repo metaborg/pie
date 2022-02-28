@@ -1,0 +1,9 @@
+module mb:pie:lang:test:call:foreignMethod:threeParam
+
+data Foo = foreign java mb.pie.lang.test.call.Foo {
+  func func(string, int, int) -> int
+}
+
+func main_threeParam(foo: Foo) -> int = {
+  foo.func("The numbers: ", 7, 4)
+}

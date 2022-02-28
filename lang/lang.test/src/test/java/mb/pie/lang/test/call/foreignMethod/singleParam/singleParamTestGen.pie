@@ -1,0 +1,9 @@
+module mb:pie:lang:test:call:foreignMethod:singleParam
+
+data Foo = foreign java mb.pie.lang.test.call.Foo {
+  func func(int) -> int
+}
+
+func main_singleParam(foo: Foo) -> int = {
+  foo.func(5)
+}

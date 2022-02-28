@@ -1,0 +1,9 @@
+module mb:pie:lang:test:call:foreignMethod:twoParam
+
+data Foo = foreign java mb.pie.lang.test.call.Foo {
+  func func(bool, string) -> bool
+}
+
+func main_twoParam(foo: Foo) -> bool = {
+  foo.func(true, "hello world!")
+}

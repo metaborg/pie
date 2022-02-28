@@ -1,0 +1,9 @@
+module mb:pie:lang:test:call:foreignMethod:generic
+
+data Bar[T] = foreign java mb.pie.lang.test.call.Bar {
+  func method[C, D](c: C, d: D) -> T
+}
+
+func main_generic(bar: Bar[int]) -> int = {
+  bar.method[path, (string, bool)](/tmp/user.txt, ("generic", true))
+}

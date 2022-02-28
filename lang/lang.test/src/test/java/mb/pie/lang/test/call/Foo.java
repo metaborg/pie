@@ -21,6 +21,19 @@ public class Foo implements Serializable {
         return x+y;
     }
 
+    public int method() {
+        return 0;
+    }
+    public int method(int x) {
+        return x;
+    }
+    public boolean method(boolean flag, String message) {
+        return flag;
+    }
+    public int method(String text, int x, int y) {
+        return x+y;
+    }
+
     @Override
     public int hashCode() {
         return 0;

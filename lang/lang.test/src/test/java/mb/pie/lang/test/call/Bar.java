@@ -15,6 +15,10 @@ public class Bar<T> implements Serializable {
         return d;
     }
 
+    public <C, D> T method(C c, D d) {
+        return t;
+    }
+
     @Override
     public int hashCode() {
         return t.hashCode() * 31 + arg.hashCode();
