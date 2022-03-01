@@ -53,6 +53,9 @@ rules
     , name
     , types
     )
+  java-classType-to-unannType:
+    WildCard(WildCardExtends(_, ClassType(_, name, type_args))) -> ClassType(name, type_args)
+  java-classType-to-unannType: WildCard(_) -> ClassType(Id("Object"), None())
   java-classType-to-unannType: x -> x
     where
       <not(?ClassType(_, _, _)); not(?ClassOrInterfaceTypeMember(_, _, _, _))> x
