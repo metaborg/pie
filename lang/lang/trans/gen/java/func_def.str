@@ -282,7 +282,7 @@ rules // PIE function definitions
     None() -> [Return(ExpressionName(Id("input")))]
 
   p2j-ast-pie-func-key-body:
-    PieKeyFunc(exp) -> result
+    Some(PieKeyFunc(exp)) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
     ; result             := <concat> [expStmts, [Return(expVal)]]
