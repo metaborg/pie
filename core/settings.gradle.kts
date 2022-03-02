@@ -17,6 +17,7 @@ fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
 
 includeProject("depconstraints")
 includeProject("api")
+includeProject("graph")
 includeProject("runtime")
 
 includeProject("api.test")

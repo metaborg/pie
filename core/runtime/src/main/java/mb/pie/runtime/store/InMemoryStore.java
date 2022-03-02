@@ -4,8 +4,8 @@ import mb.pie.api.Task;
 import mb.pie.api.TaskData;
 import mb.pie.api.TaskKey;
 import mb.pie.api.TaskRequireDep;
-import mb.pie.runtime.graph.DAG;
-import mb.pie.runtime.graph.DefaultEdge;
+import mb.pie.graph.DefaultEdge;
+import mb.pie.graph.DirectedAcyclicGraph;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
  * performant alternatives.
  */
 public class InMemoryStore extends InMemoryStoreBase {
-    private DAG<TaskKey> taskRequireGraph = new DAG<>();
+    private DirectedAcyclicGraph<TaskKey, DefaultEdge> taskRequireGraph = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
     @Override public boolean hasDependencyOrderBefore(TaskKey caller, TaskKey callee) {
         return this.taskRequireGraph.getTopologicalIndex(caller) < this.taskRequireGraph.getTopologicalIndex(callee);
@@ -73,7 +73,7 @@ public class InMemoryStore extends InMemoryStoreBase {
 
     @Override public void drop() {
         super.drop();
-        this.taskRequireGraph = new DAG<>();
+        this.taskRequireGraph = new DirectedAcyclicGraph<>(DefaultEdge.class);
     }
 
 
