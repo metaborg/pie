@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:walk:walkWithRegex
+
+func main_walkWithRegex(dir: path) -> path* =
+  walk dir with regex "[^/]+/result_\\d+X\\d.csv"

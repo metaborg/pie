@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:walk:walkWithExtensions
+
+func main_walkWithExtensions(dir: path) -> path* =
+  walk dir with extensions ["tig", "jav"]

@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:walk:walkWithPattern
+
+func main_walkWithPattern(dir: path) -> path* =
+  walk dir with pattern "**/result_*"
