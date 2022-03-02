@@ -423,6 +423,7 @@ public class LoggingTracer implements Tracer {
     @Override
     public void setTaskObservability(TaskKey key, Observability previousObservability, Observability newObservability) {
         if(metricsTracer != null) metricsTracer.setTaskObservability(key, previousObservability, newObservability);
+        if(isTopDownDisabled() && isBottomUpDisabled()) return;
         if(previousObservability == newObservability) return;
         final String previousSigil = observabilityToSigil(previousObservability);
         final String newSigil = observabilityToSigil(newObservability);
