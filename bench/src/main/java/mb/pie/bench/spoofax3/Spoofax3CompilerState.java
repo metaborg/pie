@@ -18,9 +18,9 @@ import mb.resource.classloader.JarFileWithPath;
 import mb.resource.fs.FSResource;
 import mb.resource.hierarchical.HierarchicalResource;
 import mb.resource.hierarchical.ResourcePath;
-import mb.spoofax.lwb.compiler.CompileLanguage;
-import mb.spoofax.lwb.compiler.CompileLanguageException;
-import mb.spoofax.lwb.compiler.dagger.Spoofax3Compiler;
+import mb.spoofax.lwb.compiler.definition.CompileLanguageDefinition;
+import mb.spoofax.lwb.compiler.definition.CompileLanguageDefinitionException;
+import mb.spoofax.lwb.compiler.SpoofaxLwbCompiler;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -35,19 +35,19 @@ public class Spoofax3CompilerState {
 
     private @Nullable Logger logger;
     private @Nullable ClassLoaderResourceRegistry classLoaderResourceRegistry;
-    private @Nullable Spoofax3Compiler spoofax3Compiler;
+    private @Nullable SpoofaxLwbCompiler spoofaxLwbCompiler;
 
     public Spoofax3CompilerState setupTrial(
         LoggerComponent loggerComponent,
         ResourcesState resourcesState
     ) {
-        if(logger != null && classLoaderResourceRegistry != null && spoofax3Compiler != null) {
+        if(logger != null && classLoaderResourceRegistry != null && spoofaxLwbCompiler != null) {
             throw new IllegalStateException("setupTrial was called before tearDownTrial");
         }
         logger = loggerComponent.getLoggerFactory().create(Spoofax3CompilerState.class);
         logger.trace("Spoofax3CompilerState.setupTrial");
         classLoaderResourceRegistry = resourcesState.getClassLoaderResourceRegistry();
-        spoofax3Compiler = new Spoofax3Compiler(
+        spoofaxLwbCompiler = new SpoofaxLwbCompiler(
             loggerComponent,
             resourcesState.getResourceServiceComponent().createChildModule(),
             new PieModule(PieBuilderImpl::new)
@@ -57,15 +57,15 @@ public class Spoofax3CompilerState {
 
     @SuppressWarnings("ConstantConditions")
     public Pie getPie() {
-        return spoofax3Compiler.pieComponent.getPie();
+        return spoofaxLwbCompiler.pieComponent.getPie();
     }
 
     public void tearDownTrial() {
-        if(logger == null || classLoaderResourceRegistry == null || spoofax3Compiler == null) {
+        if(logger == null || classLoaderResourceRegistry == null || spoofaxLwbCompiler == null) {
             throw new IllegalStateException("tearDownTrial was called before calling setupTrial");
         }
-        spoofax3Compiler.close();
-        spoofax3Compiler = null;
+        spoofaxLwbCompiler.close();
+        spoofaxLwbCompiler = null;
         classLoaderResourceRegistry = null;
         logger.trace("Spoofax3CompilerState.tearDownTrial");
         logger = null;
@@ -76,8 +76,8 @@ public class Spoofax3CompilerState {
 
     private @Nullable ResourcePath rootDirectory;
 
-    public Task<Result<CompileLanguage.Output, CompileLanguageException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
-        if(logger == null || classLoaderResourceRegistry == null || spoofax3Compiler == null) {
+    public Task<Result<CompileLanguageDefinition.Output, CompileLanguageDefinitionException>> setupInvocation(HierarchicalResource temporaryDirectory) throws IOException {
+        if(logger == null || classLoaderResourceRegistry == null || spoofaxLwbCompiler == null) {
             throw new IllegalStateException("setupInvocation was called before setupTrial");
         }
         if(rootDirectory != null) {
@@ -86,13 +86,13 @@ public class Spoofax3CompilerState {
         logger.trace("Spoofax3CompilerState.setupInvocation");
         language.unarchiveToTempDirectory(temporaryDirectory, classLoaderResourceRegistry);
         rootDirectory = temporaryDirectory.getPath();
-        return spoofax3Compiler.compiler.component.getCompileLanguage().createTask(CompileLanguage.Args.builder().rootDirectory(rootDirectory).build());
+        return spoofaxLwbCompiler.compiler.component.getCompileLanguage().createTask(CompileLanguageDefinition.Args.builder().rootDirectory(rootDirectory).build());
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void handleResult(Result<CompileLanguage.Output, CompileLanguageException> result) {
+    public void handleResult(Result<CompileLanguageDefinition.Output, CompileLanguageDefinitionException> result) {
         if(result.isErr()) {
-            final CompileLanguageException e = result.getErr();
+            final CompileLanguageDefinitionException e = result.getErr();
             final ExceptionPrinter exceptionPrinter = new ExceptionPrinter();
             exceptionPrinter.addCurrentDirectoryContext(rootDirectory);
             logger.error(exceptionPrinter.printExceptionToString(e));
@@ -125,7 +125,7 @@ public class Spoofax3CompilerState {
 
     @SuppressWarnings("ConstantConditions")
     private void delete(ResourcePath path) throws IOException {
-        spoofax3Compiler.compiler.resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
+        spoofaxLwbCompiler.compiler.resourceServiceComponent.getResourceService().getHierarchicalResource(path).delete(true);
     }
 
 
