@@ -930,6 +930,10 @@ rules // Path operations
       ]),
       NewInstance(None(), [], Id("PathResourceMatcher"), [], None(), [matcher])
     ]
+    with
+      <add-import> "mb.resource.hierarchical.walk.PathResourceWalker"
+    ; <add-import> "mb.resource.hierarchical.match.path.NoHiddenPathMatcher"
+    ; <add-import> "mb.resource.hierarchical.match.PathResourceMatcher"
     // Note: meaning of these ASTs:
     //   new PathResourceWalker(new NoHiddenPathMatcher())
     //   new PathResourceMatcher([matcher])
@@ -938,15 +942,68 @@ rules // Path operations
   p2j-ast-filter:
     None() -> ([], Null())
   p2j-ast-filter:
-    Regex(exp) -> <p2j-ast-filter-common> ("RegexPathMatcher", exp)
+    Some(FilterPart(Regex(exp))) -> <p2j-ast-filter-common> ("RegexPathMatcher", exp)
   p2j-ast-filter:
-    Pattern(exp) -> <p2j-ast-filter-common> ("PatternPathMatcher", exp)
+    Some(FilterPart(Pattern(exp))) -> <p2j-ast-filter-common> ("AntPatternPathMatcher", exp)
   p2j-ast-filter:
-    Patterns(exp) -> <p2j-ast-filter-common> ("PatternsPathMatcher", exp)
+    Some(FilterPart(Patterns(exp))) -> result
+    with
+      (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; matchResultName    := <newname> "matchResult"
+    ; stmts              := <concat> [expStmts,
+        [ LocVarDeclStm(
+            LocalVarDecl(
+              [Final()]
+            , ClassType(
+                Id("ArrayList")
+              , Some(TypeArguments([ClassType([], Id("AntPattern"), None())]))
+              )
+            , [ VariableDeclInit(
+                  VariableDecl(Id("patterns"))
+                , NewInstance(None(), [], Id("ArrayList"), [], Some(Diamond()), [])
+                )
+              ]
+            )
+          )
+        , ForEach(
+            []
+          , ClassType(Id("String"), None())
+          , VariableDecl(Id("pattern"))
+          , expVal
+          , Block(
+              [ ExpressionStatement(
+                  InvokeQExp(
+                    ExpressionName(Id("patterns"))
+                  , None()
+                  , Id("add")
+                  , [NewInstance(None(), [], Id("AntPattern"), [], None(), [ExpressionName(Id("pattern"))])]
+                  )
+                )
+              ]
+            )
+          )
+        , LocVarDeclStm(
+            LocalVarDecl(
+              [Final()]
+            , ClassType(Id("AntPatternsPathMatcher"), None())
+            , [ VariableDeclInit(
+                  matchResultName
+                , NewInstance(None(), [], Id("AntPatternsPathMatcher"), [], None(), [ExpressionName(Id("patterns"))])
+                )
+              ]
+            )
+          )
+        ]
+      ]
+    // Note: meaning of this AST: new AntPatternsPathMatcher([expVal])
+    ; result                := (stmts, matchResultName)
+    ; <add-import> "mb.resource.hierarchical.match.path.AntPatternsPathMatcher"
+    ; <add-import> "mb.resource.util.AntPattern"
+    ; <add-import> "java.util.ArrayList"
   p2j-ast-filter:
-    Extension(exp) -> <p2j-ast-filter-common> ("ExtensionPathMatcher", exp)
+    Some(FilterPart(Extension(exp))) -> <p2j-ast-filter-common> ("ExtensionPathMatcher", exp)
   p2j-ast-filter:
-    Extensions(exp) -> <p2j-ast-filter-common> ("ExtensionsPathMatcher", exp)
+    Some(FilterPart(Extensions(exp))) -> <p2j-ast-filter-common> ("ExtensionsPathMatcher", exp)
 
   // p2j-ast-filter-common: (Pie matcher, Pie exp) -> (stmts, Java AST expression value)
   p2j-ast-filter-common:
@@ -956,6 +1013,7 @@ rules // Path operations
     ; resultExp          := NewInstance(None(), [], Id(matcher), [], None(), [expVal])
     // Note: meaning of this AST: new [matcher]([expVal])
     ; result                := (expStmts, resultExp)
+    ; <add-import> $[mb.resource.hierarchical.match.path.[matcher]]
 
 
   p2j-ast-exp:
