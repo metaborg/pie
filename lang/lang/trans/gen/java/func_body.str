@@ -949,6 +949,7 @@ rules // Path operations
     Some(FilterPart(Patterns(exp))) -> result
     with
       (expStmts, expVal) := <try-p2j-ast-exp> exp
+    ; patternsName       := <newname> "patterns"
     ; matchResultName    := <newname> "matchResult"
     ; stmts              := <concat> [expStmts,
         [ LocVarDeclStm(
@@ -959,7 +960,7 @@ rules // Path operations
               , Some(TypeArguments([ClassType([], Id("AntPattern"), None())]))
               )
             , [ VariableDeclInit(
-                  VariableDecl(Id("patterns"))
+                  VariableDecl(Id(patternsName))
                 , NewInstance(None(), [], Id("ArrayList"), [], Some(Diamond()), [])
                 )
               ]
@@ -973,7 +974,7 @@ rules // Path operations
           , Block(
               [ ExpressionStatement(
                   InvokeQExp(
-                    ExpressionName(Id("patterns"))
+                    ExpressionName(Id(patternsName))
                   , None()
                   , Id("add")
                   , [NewInstance(None(), [], Id("AntPattern"), [], None(), [ExpressionName(Id("pattern"))])]
@@ -988,15 +989,21 @@ rules // Path operations
             , ClassType(Id("AntPatternsPathMatcher"), None())
             , [ VariableDeclInit(
                   matchResultName
-                , NewInstance(None(), [], Id("AntPatternsPathMatcher"), [], None(), [ExpressionName(Id("patterns"))])
+                , NewInstance(None(), [], Id("AntPatternsPathMatcher"), [], None(), [ExpressionName(Id(patternsName))])
                 )
               ]
             )
           )
         ]
       ]
-    // Note: meaning of this AST: new AntPatternsPathMatcher([expVal])
-    ; result                := (stmts, matchResultName)
+    // Note: meaning of this AST:
+    //         final ArrayList<AntPattern> [patternsName] = new ArrayList<>();
+    //         for(String pattern : [expVal]) {
+    //             [patternsName].add(new AntPattern(pattern));
+    //         }
+    //         final AntPatternsPathMatcher [matcherResult] = new AntPatternsPathMatcher([patternsName]);
+    ; expRes                := ExpressionName(Id(matchResultName))
+    ; result                := (stmts, expRes)
     ; <add-import> "mb.resource.hierarchical.match.path.AntPatternsPathMatcher"
     ; <add-import> "mb.resource.util.AntPattern"
     ; <add-import> "java.util.ArrayList"
