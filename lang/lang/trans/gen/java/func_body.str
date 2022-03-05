@@ -921,8 +921,10 @@ rules // Path operations
   // Given a Java AST node for a matcher, create a list of parameters
   // for the Pie API method funcName
   p2j-ast-filter-create-param-list-for-list:
-    matcher -> [NewInstance(None(), [], Id("PathResourceMatcher"), [], None(), matcher)]
+    matcher -> [NewInstance(None(), [], Id("PathResourceMatcher"), [], None(), [matcher])]
     // Note: meaning of this AST: new PathResourceMatcher([matcher])
+    with
+      <add-import> "mb.resource.hierarchical.match.PathResourceMatcher"
   p2j-ast-filter-create-param-list-for-walk:
     matcher -> [
       NewInstance(None(), [], "PathResourceWalker", [], None(), [
