@@ -302,25 +302,25 @@ rules // Control flow
   p2j-ast-add(|lType, rType):
     (lExp, rExp) -> ([],
       InvokeQExp(
-	    InvokeQExp(
-	      ExpressionName(Id("Stream"))
-	    , None()
-	    , Id("concat")
-	    , [ InvokeQExp(lExp, None(), Id("stream"), [])
-	      , InvokeQExp(rExp, None(), Id("stream"), [])
-	      ]
-	    )
-	  , None()
-	  , Id("collect")
-	  , [ InvokeQExp(
-	        ExpressionName(Id("Collectors"))
-	      , None()
-	      , Id("toCollection")
-	      , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
-	      )
-	    ]
-	  )
-	)
+        InvokeQExp(
+          ExpressionName(Id("Stream"))
+        , None()
+        , Id("concat")
+        , [ InvokeQExp(lExp, None(), Id("stream"), [])
+          , InvokeQExp(rExp, None(), Id("stream"), [])
+          ]
+        )
+      , None()
+      , Id("collect")
+      , [ InvokeQExp(
+            ExpressionName(Id("Collectors"))
+          , None()
+          , Id("toCollection")
+          , [MethodReferenceCType(ClassType([], Id("ArrayList"), None()), None())]
+          )
+        ]
+      )
+    )
     // Note: meaning of this AST:
     // Stream.concat(([lExp]).stream(), ([rExp]).stream()).collect(Collectors.toCollection(ArrayList::new))]
     where
