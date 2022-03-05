@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:list:listWithExtensions
+
+func main_listWithExtensions(dir: path) -> path* =
+  list dir with extensions ["tig", "jav"]

@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:list:listNoFilter
+
+func main_listNoFilter(dir: path) -> path* =
+  list dir

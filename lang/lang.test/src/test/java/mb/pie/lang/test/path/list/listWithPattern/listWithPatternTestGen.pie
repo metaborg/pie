@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:list:listWithPattern
+
+func main_listWithPattern(dir: path) -> path* =
+  list dir with pattern "?.t??"
