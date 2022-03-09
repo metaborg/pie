@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file, based on [Keep 
 ## [Unreleased]
 
 
-## [0.19.8]
+## [0.19.8] - 2022-03-09
 ### Changed
 - Moved graph code into a separate project `pie.graph`.
 - - `common` requirement to `0.10.2`.
