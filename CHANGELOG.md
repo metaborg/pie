@@ -3,9 +3,17 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+
+
+## [0.19.8]
+### Changed
+- Moved graph code into a separate project `pie.graph`.
+- - `common` requirement to `0.10.2`.
+
 ### Fixed
 - Calling `Pie.close` causing the `Store` to be closed multiple times.
 - Unnecessary `throws Exception` in `SerializingStoreInMemoryBuffer.close` method definition.
+- Don't log observability changes if both top-down and bottom-up are disabled.
 
 
 ## [0.19.7] - 2021-12-13
@@ -120,7 +128,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `common` requirement to `0.9.3`.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.7...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.8...HEAD
+[0.19.8]: https://github.com/metaborg/pie/compare/release-0.19.7...release-0.19.8
 [0.19.7]: https://github.com/metaborg/pie/compare/release-0.19.6...release-0.19.7
 [0.19.6]: https://github.com/metaborg/pie/compare/release-0.19.5...release-0.19.6
 [0.19.5]: https://github.com/metaborg/pie/compare/release-0.19.4...release-0.19.5
