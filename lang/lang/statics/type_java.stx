@@ -119,7 +119,7 @@ rules
         getTypeArgsUnordered(s_data1) == type_args.
     isTypeEqualToErased(T, param@TypeParameter2TYPE(_)) =
       isTypeEqualToErased(T, upper_bound) :-
-        getBounds(param) == (upper_bound, _).
+        getBounds(param) == (_, upper_bound).
     isTypeEqualToErased(T, WildcardType(_, upper_bound, _)) = isTypeEqualToErased(T, upper_bound) :-
       false | error $[BUG?: checking if [T] is equal to an erased wildcard].
     isTypeEqualToErased(T1, T2) = FALSE().
@@ -155,4 +155,4 @@ rules
     eraseType_1(FuncRefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
     eraseType_1(WildcardType(_, ub, _)) = ub.
     eraseType_1(T@TypeParameter2TYPE(_)) = eraseType(ub) :-
-      getBounds(T) == (ub, _).
+      getBounds(T) == (_, ub).

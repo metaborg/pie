@@ -218,14 +218,14 @@ rules // operations on types
     isAssignableTo_1(InvariantKind(), _, TypeParameter2TYPE(_)) = FALSE().
     isAssignableTo_1(assignable_kind, T2, T1@TypeParameter2TYPE(_)) =
       isAssignableTo(upper_bound, T2, assignable_kind) :-
-        getBounds(T1) == (upper_bound, _).
+        getBounds(T1) == (_, upper_bound).
     isAssignableTo_1(_, T@TypeParameter2TYPE(_), T@TypeParameter2TYPE(_)) = TRUE() :-
       try {false} | warning $[BUG?: incorrect assumption that isAssignableTo_1(_, T@TypeParameter2TYPE(_), T@TypeParameter2TYPE(_)) is never called because it is caught by isAssignableTo(T, T, _)].
     isAssignableTo_1(TypeArgKind(), T2@TypeParameter2TYPE(_), T1) =
       withinBounds(T1, T2, TypeArgKind()).
     isAssignableTo_1(ExpressionKind(), T2@TypeParameter2TYPE(_), T1) =
       isAssignableTo(T1, lower_bound, ExpressionKind()) :-
-        getBounds(T2) == (_, lower_bound).
+        getBounds(T2) == (lower_bound, _).
 
     isAssignableTo_1(_, _, _) = FALSE().
 
@@ -320,8 +320,8 @@ rules // operations on types
           lub_type_arg_1(_, T2, _, TRUE()) = T2.
           lub_type_arg_1(T1, T2, FALSE(), FALSE()) =
             WildcardType(BottomType(), lub(ub1, ub2), Free()) :-
-              getBounds(T1) == (ub1, _),
-              getBounds(T2) == (ub2, _).
+              getBounds(T1) == (_, ub1),
+              getBounds(T2) == (_, ub2).
 
   lub(TopType(), T) = TopType().
   lub(T, TopType()) = TopType().
@@ -332,9 +332,9 @@ rules // operations on types
   lub(T, T) = T.
   lub(T@TypeParameter2TYPE(_), T@TypeParameter2TYPE(_)) = T.
   lub(T1@TypeParameter2TYPE(_), T2) = lub(ub, T2) :-
-    getBounds(T1) == (ub, _).
+    getBounds(T1) == (_, ub).
   lub(T1, T2@TypeParameter2TYPE(_)) = lub(T1, ub) :-
-    getBounds(T2) == (ub, _).
+    getBounds(T2) == (_, ub).
   lub(T1, T2) = firstTrueT([
     (isAssignableTo(T1, T2, ExpressionKind()), T2),
     (isAssignableTo(T2, T1, ExpressionKind()), T1)],

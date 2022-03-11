@@ -38,14 +38,14 @@ rules
   getScopeFromType(s, ty) = emptyScope(s).
 
   /**
-   * getBounds(T) -> (upper_bound, lower_bound)
-   * Gets the upper and lower bound of a type [T]. The bounds for generic
+   * getBounds(T) -> (lower_bound, upper_bound)
+   * Gets the lower and upper bound of a type [T]. The bounds for type
    * parameters and wildcards are taken as is, for other types the bounds are
    * simply that same type.
    */
   getBounds : TYPE -> (TYPE * TYPE)
-  getBounds(WildcardType(lb, ub, _)) = (ub, lb).
-  getBounds(TypeParameter2TYPE(TypeParameter(s, name))) = (ub, lb) :-
+  getBounds(WildcardType(lb, ub, _)) = (lb, ub).
+  getBounds(TypeParameter2TYPE(TypeParameter(s, name))) = (lb, ub) :-
     resolveTypeParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
   getBounds(T) = (T, T).
 
@@ -60,8 +60,8 @@ rules
   withinBounds : TYPE * TYPE * AssignableKind -> BOOLEAN
   withinBounds(T1, T2, assignable_kind) =
     andB(isAssignableTo(ub1, ub2, assignable_kind), isAssignableTo(lb2, lb1, assignable_kind)) :-
-    getBounds(T1) == (ub1, lb1),
-    getBounds(T2) == (ub2, lb2).
+    getBounds(T1) == (lb1, ub1),
+    getBounds(T2) == (lb2, ub2).
 
   /**
    * getTypeParamsList(type_params) = type_params_list
@@ -136,11 +136,11 @@ rules
 
     getTypeArgsOrdered_2 : scope * TypeParameter * list((path * (TypeParameter * TYPE))) -> TYPE
     getTypeArgsOrdered_2(s_data, param, []) = upper_bound :-
-      getBounds(TypeParameter2TYPE(param)) == (upper_bound, _),
+      getBounds(TypeParameter2TYPE(param)) == (_, upper_bound),
       false | error $[BUG: no type arguments found from [s_data]].
     getTypeArgsOrdered_2(s_data, _, [(_, (param, val))]) = val.
     getTypeArgsOrdered_2(s_data, param, [_,_|_]) = upper_bound :-
-      getBounds(TypeParameter2TYPE(param)) == (upper_bound, _),
+      getBounds(TypeParameter2TYPE(param)) == (_, upper_bound),
       false | error $[BUG: multiple declarations for type arguments found from [s_data]].
 
   /**
