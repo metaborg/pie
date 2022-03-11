@@ -5,10 +5,10 @@ fixture [[
   module test:data_def:method
 
   data Food = foreign java dataDef.generics.method.Food {}
-  data Fruit : Food = foreign java dataDef.generics.method.Fruit {}
-  data Apple : Fruit = foreign java dataDef.generics.method.Apple {}
-  data GrannySmith : Apple = foreign java dataDef.generics.method.GrammySmith {}
-  data SubtypeOfGrannySmith : GrannySmith = foreign java dataDef.generics.method.SubtypeOfGrannySmith {}
+  data Fruit <: Food = foreign java dataDef.generics.method.Fruit {}
+  data Apple <: Fruit = foreign java dataDef.generics.method.Apple {}
+  data GrannySmith <: Apple = foreign java dataDef.generics.method.GrammySmith {}
+  data SubtypeOfGrannySmith <: GrannySmith = foreign java dataDef.generics.method.SubtypeOfGrannySmith {}
 
   [[...]]
 ]]
@@ -66,7 +66,7 @@ test foreign java disallow overloading method within datatype [[
 
 test foreign java wildcard as parameter type [[
   data Foo = foreign java org.example.test.Foo {
-    func wildcardParam(param: [[_ : Food)]] -> unit
+    func wildcardParam(param: [[_ <: Food)]] -> unit
   }
 ]] 1 error at #1
    error like "Cannot use a wildcard"

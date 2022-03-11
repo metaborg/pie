@@ -193,7 +193,7 @@ rules
       new s_func_instantiated,
       s_func_instantiated -P-> s_func,
       s_func_instantiated -P-> s_type_args,
-      getGenericParams(s_func) == type_params,
+      getTypeParams(s_func) == type_params,
       genericArgsOk(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name),
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,

@@ -45,7 +45,7 @@ rules
     declareVal(s_func, name, semantic_type, InputValKind()),
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  funcImplOk : scope * FuncImpl * GenericParams * TYPE * FUNCID -> FuncImplKind
+  funcImplOk : scope * FuncImpl * TypeParams * TYPE * FUNCID -> FuncImplKind
   funcImplOk(_, PieForeignFuncImpl(class_id), _, _, name) = PieForeignFuncKind() :-
     @name.javaClassId := class_id.
   funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, _, name) = JavaForeignFuncKind() :-

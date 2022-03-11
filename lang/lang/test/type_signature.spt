@@ -5,12 +5,12 @@ fixture [[
   module test:type_signature
 
   data Food = foreign java org.example.test.type.Food {}
-  data Vegetable : Food = foreign java org.example.test.type.Vegetable {}
-  data Fruit : Food = foreign java org.example.test.type.Fruit {}
-  data Apple : Fruit = foreign java org.example.test.type.Apple {}
-  data Pear : Fruit = foreign java org.example.test.type.Pear {}
+  data Vegetable <: Food = foreign java org.example.test.type.Vegetable {}
+  data Fruit <: Food = foreign java org.example.test.type.Fruit {}
+  data Apple <: Fruit = foreign java org.example.test.type.Apple {}
+  data Pear <: Fruit = foreign java org.example.test.type.Pear {}
 
-  data Bar[T, R : Fruit] = foreign java org.example.test.type.Bar {}
+  data Bar[T, R <: Fruit] = foreign java org.example.test.type.Bar {}
   data A[B] = foreign java org.example.test.type.A {}
 
   data Foo[A] = foreign java org.example.test.type.Foo {
@@ -35,12 +35,12 @@ test data type type argument subtype [[ Bar[Food, Apple] ]] analysis succeeds
 test data type type argument supertype [[ Bar[int, [[Food[] ]] ] ]] 1 error at #1  error like "Type mismatch"
 test data type type argument wrong type [[ Bar[int, [[Vegetable[] ]] ] ]] 1 error at #1  error like "Type mismatch"
 test data type type argument wildcard [[ Bar[_, Pear] ]] analysis succeeds
-test data type type argument wildcard with upper bound [[ Bar[int, _ : Pear] ]] analysis succeeds
-test data type type argument wildcard invalid upper bound [[ Bar[int, _ : Food[] ] ]] >= 1 error  error like "Type mismatch"
-test data type type argument wildcard with upper bound wildcard [[ Bar[_ : _, Fruit] ]] 1 error  error like "Cannot use wildcard"
-test data type type argument wildcard with lower bound [[ Bar[int, _ -: Fruit] ]] 1 error  error like "Type mismatch"
-test data type type argument wildcard invalid lower bound [[ Bar[int, [[_ -: Food[] ]] ] ]] 1 error at #1  error like "Type mismatch"
-test data type type argument wildcard lower bound wildcard [[ Bar[int, _ -: _] ]] 2 errors  error like "Cannot use wildcard"  error like "Type mismatch"
+test data type type argument wildcard with upper bound [[ Bar[int, _ <: Pear] ]] analysis succeeds
+test data type type argument wildcard invalid upper bound [[ Bar[int, _ <: Food[] ] ]] >= 1 error  error like "Type mismatch"
+test data type type argument wildcard with upper bound wildcard [[ Bar[_ <: _, Fruit] ]] 1 error  error like "Cannot use wildcard"
+test data type type argument wildcard with lower bound [[ Bar[int, _ :> Fruit] ]] 1 error  error like "Type mismatch"
+test data type type argument wildcard invalid lower bound [[ Bar[int, [[_ :> Food[] ]] ] ]] 1 error at #1  error like "Type mismatch"
+test data type type argument wildcard lower bound wildcard [[ Bar[int, _ :> _] ]] 2 errors  error like "Cannot use wildcard"  error like "Type mismatch"
 test data type type argument nullable wildcard [[ Bar[int, [[(_)?]] ] ]] 1 error at #1  error like "Type mismatch"
 test data type type argument nullable wildcard [[ Bar[int, _?] ]] parse fails // See https://github.com/MeAmAnUsername/pie/issues/143
 test data type imported [[ test:type_signature:Food ]] analysis succeeds
@@ -53,5 +53,5 @@ test double nullable [[ path?[[?]] ]] analysis succeeds  1 warning at #1  warnin
 test triple nullable [[ string?[[?]][[?]] ]] analysis succeeds  2 warnings at #1, #2  warning like "double nullable has no effect"
 
 test wildcard [[ [[ _ ]] ]] 1 error at #1  error like "Cannot use a wildcard"
-test wildcard upperbound [[ [[ _ : Food ]] ]] 1 error at #1  error like "Cannot use a wildcard"
-test wildcard lowerbound [[ [[ _ -: Pear ]] ]] 1 error at #1  error like "Cannot use a wildcard"
+test wildcard upperbound [[ [[ _ <: Food ]] ]] 1 error at #1  error like "Cannot use a wildcard"
+test wildcard lowerbound [[ [[ _ :> Pear ]] ]] 1 error at #1  error like "Cannot use a wildcard"

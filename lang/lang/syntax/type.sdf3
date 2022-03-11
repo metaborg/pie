@@ -13,11 +13,10 @@ template options
 context-free sorts
 
   Type
-  UpperBound
-  LowerBound
   TypeArgs
   DataTy
   NullableMarker
+  Wildcard
 
 context-free syntax
 
@@ -41,13 +40,14 @@ context-free syntax
   NullableMarker.NullableMarker = <?> // to allow warning on just question mark
   Type.NullableTy = <<Type><NullableMarker>>
 
-  UpperBound.NoUpperBound = <>
-  UpperBound.UpperBound = < : <Type>>
+  Wildcard.UnboundedWildcard = [_]
+  Wildcard.UpperBoundedWildcard = [_ <: [Type]]
+  Wildcard.LowerBoundedWildcard = [_ :> [Type]]
+  // double bounds not allowed, parsed to give explicit error
+  Wildcard.BothBoundedWildcard = [[Type] <: _ <: [Type]]
+  Wildcard.BothBoundedReverseWildcard = [[Type] :> _ :> [Type]]
 
-  LowerBound.NoLowerBound = <>
-  LowerBound.LowerBound = < -: <Type>>
-
-  Type.Wildcard = <_<UpperBound><LowerBound>>
+  Type.Wildcard = Wildcard
 
 context-free priorities
 

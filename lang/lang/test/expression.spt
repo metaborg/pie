@@ -9,23 +9,23 @@ fixture [[
     func get() -> Foo
     func set(Foo) -> unit
   }
-  data Bar : Foo = foreign java org.example.test.expression.Bar {
+  data Bar <: Foo = foreign java org.example.test.expression.Bar {
     func finagle(bool, Foo) -> int
     func set(Foo) -> unit
   }
-  data Bak : Foo = foreign java org.example.test.expression.Bak {}
-  data Baar : Foo = foreign java org.example.test.expression.Baar {}
+  data Bak <: Foo = foreign java org.example.test.expression.Bak {}
+  data Baar <: Foo = foreign java org.example.test.expression.Baar {}
   data Bok = foreign java org.example.test.expression.Bok {}
 
-  data Generic[T: Foo, U: Foo, V] = foreign java org.example.test.expression.Generic {}
-  data GenericSub[T: Bar, U: Baar] : Generic[T, U, string] = foreign java org.example.test.expression.GenericSub {}
+  data Generic[T <: Foo, U <: Foo, V] = foreign java org.example.test.expression.Generic {}
+  data GenericSub[T <: Bar, U <: Baar] <: Generic[T, U, string] = foreign java org.example.test.expression.GenericSub {}
 
   data Animal = foreign java org.example.test.expression.Animal {}
-  data Mammal : Animal = foreign java org.example.test.expression.Mammal {}
-  data Dog : Mammal = foreign java org.example.test.expression.Dog {}
-  data Fish : Animal = foreign java org.example.test.expression.Fish {}
+  data Mammal <: Animal = foreign java org.example.test.expression.Mammal {}
+  data Dog <: Mammal = foreign java org.example.test.expression.Dog {}
+  data Fish <: Animal = foreign java org.example.test.expression.Fish {}
 
-  data Fuz[T : Animal] = foreign java Foo {}
+  data Fuz[T <: Animal] = foreign java Foo {}
   data Faz[T] = foreign java Foo {}
 
   func main(
@@ -42,10 +42,10 @@ fixture [[
     genericSub: GenericSub[Bar, Baar],
     fuz: Fuz[Mammal],
     faz: Faz[Mammal],
-    fuzWildcardUpperBounded: Fuz[_ : Mammal],
+    fuzWildcardUpperBounded: Fuz[_ <: Mammal],
     fazWildcardUnbounded: Faz[_],
-    fazWildcardUpperBounded: Faz[_ : Mammal],
-    fazWildcardLowerBounded: Faz[_ -: Mammal],
+    fazWildcardUpperBounded: Faz[_ <: Mammal],
+    fazWildcardLowerBounded: Faz[_ :> Mammal],
     dog: Dog,
     fish: Fish
   ) -> unit = {
@@ -58,8 +58,8 @@ fixture [[
   func double(x: int) -> int = x+x
   func argsFunc(x: int, y: int, name: string) -> string = "not implemented"
   func takesFoo(foo: Foo) -> int = 17
-  func useAnimal[A : Animal](animal: A) -> path = foreign test.expression.UseAnimal
-  func checkAnimals[A: Animal, B: Animal](animal1: A, animal2: B) -> bool = foreign test.expression.CheckAnimals
+  func useAnimal[A <: Animal](animal: A) -> path = foreign test.expression.UseAnimal
+  func checkAnimals[A <: Animal, B <: Animal](animal1: A, animal2: B) -> bool = foreign test.expression.CheckAnimals
 ]]
 
 
@@ -190,9 +190,9 @@ test ifelse true branch subtype [[ [[ if (value == 0) bar else foo ]] ]] analysi
 test ifelse false branch subtype [[ [[ if (value == 0) foo else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 test ifelse branches least upperbound [[ [[ if (value == 0) bar else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 test ifelse branches equal with type arguments [[ [[ val res: Generic[Foo, Baar, string] = if (value == 0) generic1 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
-test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic[_ : Foo, Baar, _] = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
-test ifelse true branch subtype with different type arguments [[ [[ val res: Generic[_ : Foo, Baar, _] = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
-test ifelse false branch subtype with different type arguments [[ [[ val res: Generic[_ : Foo, Baar, _] = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse true branch subtype with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse false branch subtype with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 test ifelse branch type mismatch [[ if (value == 0) "hello" else 10 ]] 1 error
 test ifelse branch type mismatch datatypes [[ if (value == 0) bak else bok ]] 1 error error like "Type mismatch"
 test ifelse branch type mismatch nullable datatypes [[ if (value == 0) foo? else bok? ]] 1 error error like "Type mismatch"
@@ -209,7 +209,7 @@ test list comprehension list elem type subtype of declared binder type [[ val [[
   run pie-ast-type on #2 to DataType(_) // Foo
   run pie-ast-type on #3 to DataType(_) // Foo
   run pie-ast-type on #4 to ListType(DataType(_)) // Bar*
-test list comprehension single binder type hint is wildcard [[ ["Hello $name2!" | name2: [[_ -: string]] <- ["Bob", "Alice"] ] ]] 1 error at #1  error like "Cannot use a wildcard"
+test list comprehension single binder type hint is wildcard [[ ["Hello $name2!" | name2: [[_ :> string]] <- ["Bob", "Alice"] ] ]] 1 error at #1  error like "Cannot use a wildcard"
 test list comprehension tuple binder [[ [[ ["$str: $val" | (str, val) <- [("one", 1), ("two", 2), ("three", 3)] ] ]] ]] analysis succeeds run pie-ast-type on #1 to ListType(StrType())
 test list comprehension single binder on tuple [[
   [{
@@ -238,12 +238,12 @@ test val declaration single bind assign non-nullable subtype to nullable [[val [
 test val declaration single bind type mismatch [[ val x: [[string]] = null ]] 1 error error like "Type mismatch" at #1
 test val declaration assign tuple to single bind [[ val [[tup]] = ("left", "right") ]] analysis succeeds run pie-ast-type on #1 to TupleType([StrType(), StrType()])
 test val declaration type is wildcard [[val x: [[_ =]] true ]] 1 errors at #1  error like "Cannot use a wildcard"
-test val declaration type is wildcard with upper bound [[val x: [[_ : int =]] 7 ]] 1 errors at #1  error like "Cannot use a wildcard"
-test val declaration type is wildcard with lower bound [[val x: [[_ -: Foo  =]] bar ]] 1 error at #1  error like "Cannot use a wildcard"
-test val declaration type is wildcard with equal lower bound [[val x: [[_ -: Foo  =]] foo ]] 1 error at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with upper bound [[val x: [[_ <: int =]] 7 ]] 1 errors at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with lower bound [[val x: [[_ :> Foo  =]] bar ]] 1 error at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with equal lower bound [[val x: [[_ :> Foo  =]] foo ]] 1 error at #1  error like "Cannot use a wildcard"
 test val declaration type is wildcard with upper and lower bound [[
-  val x: _[[ : Foo[] ]][[ -: Bar[] ]] = bar
-]] 3 errors at #1, #2
+  val x: [[Bar[] <: _ <: Foo[] ]] = bar
+]] 2 errors at #1
    error like "Cannot use a wildcard"
    error like "Cannot have both an upper and lower bound"
 test val declaration tuple bind [[
@@ -331,19 +331,18 @@ test assign sub type [[ val res: [[Fuz[Dog] ]] = fuz ]] 1 error at #1  error lik
 test assign different type [[ val res: [[Fuz[Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
 test assign to type without upperbounded type parameter with wildcard unbounded [[ val res: Faz[_] = faz ]] analysis succeeds
 test assign to type with upperbounded type parameter with wildcard unbounded [[ val res: Fuz[ [[_] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument upper bound is equal [[ val res: Fuz[_ : Mammal] = fuz ]] analysis succeeds
-test assign to type with wildcard argument upper bound is higher  [[ val res: Fuz[_ : Animal] = fuz ]] analysis succeeds
-test assign to type with wildcard argument upper bound is lower [[ val res: [[Fuz[_ : Dog] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument upper bound is different [[ val res: [[Fuz[_ : Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument lower bound is equal [[ val res: Faz[_ -: Mammal] = faz ]] analysis succeeds
-test assign to type with wildcard argument lower bound is lower [[ val res: Faz[_ -: Dog] = faz ]] analysis succeeds
-test assign to type with wildcard argument lower bound is higher [[ val res: [[Faz[_ -: Animal] ]] = faz ]] 1 error at #1  error like "Type mismatch"
-test assign to type with wildcard argument lower bound is different [[ val res: [[Faz[_ -: Fish] ]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is equal [[ val res: Fuz[_ <: Mammal] = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is higher  [[ val res: Fuz[_ <: Animal] = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is lower [[ val res: [[Fuz[_ <: Dog] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is different [[ val res: [[Fuz[_ <: Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is equal [[ val res: Faz[_ :> Mammal] = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is lower [[ val res: Faz[_ :> Dog] = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is higher [[ val res: [[Faz[_ :> Animal] ]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is different [[ val res: [[Faz[_ :> Fish] ]] = faz ]] 1 error at #1  error like "Type mismatch"
 test assign to type with wildcard argument upper and lower bound [[
-  val res: Fuz[_[[ : Animal[] ]][[ -: Dog[] ]] ] = fuz
-]] 2 errors at #1, #2
+  val res: Fuz[ [[Dog[] <: _ <: Animal[] ]] ] = fuz
+]] 1 error at #1
    error like "Cannot have both an upper and lower bound" at #1
-   error like "Cannot have both an upper and lower bound" at #2
 test assign type with upper bounded wildcard type argument to specific type equal to bound [[
   val res: [[Fuz[Mammal] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
@@ -361,17 +360,17 @@ test assign type with upper bounded wildcard type argument to specific type diff
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal bounds [[
-  val res: Fuz[_ : Mammal] = fuzWildcardUpperBounded
+  val res: Fuz[_ <: Mammal] = fuzWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with higher bound [[
-  val res: Fuz[_ : Animal] = fuzWildcardUpperBounded
+  val res: Fuz[_ <: Animal] = fuzWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with lower bound [[
-  val res: [[Fuz[_ : Dog] ]] = fuzWildcardUpperBounded
+  val res: [[Fuz[_ <: Dog] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with different bound [[
-  val res: [[Fuz[_ : Fish] ]] = fuzWildcardUpperBounded
+  val res: [[Fuz[_ <: Fish] ]] = fuzWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 
@@ -383,15 +382,15 @@ test assign type with unbounded wildcard type argument to type with unbounded wi
   val res: Faz[_] = fazWildcardUnbounded
 ]] analysis succeeds
 test assign type with unbounded wildcard type argument to type with upper bounded wildcard [[
-  val res: [[Faz[_ : Animal] ]] = fazWildcardUnbounded
+  val res: [[Faz[_ <: Animal] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with unbounded wildcard type argument to type with lower bounded wildcard [[
-  val res: [[Faz[_ -: Animal] ]] = fazWildcardUnbounded
+  val res: [[Faz[_ :> Animal] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with unbounded wildcard type argument to type with lower bounded wildcard lowest currently defined [[
-  val res: [[Faz[_ -: Dog] ]] = fazWildcardUnbounded
+  val res: [[Faz[_ :> Dog] ]] = fazWildcardUnbounded
 ]] 1 error at #1
    error like "Type mismatch"
 
@@ -399,33 +398,33 @@ test assign type with upper bounded wildcard type argument to type with unbounde
   val res: Faz[_] = fazWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal [[
-  val res: Faz[_ : Mammal] = fazWildcardUpperBounded
+  val res: Faz[_ <: Mammal] = fazWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard higher [[
-  val res: Faz[_ : Animal] = fazWildcardUpperBounded
+  val res: Faz[_ <: Animal] = fazWildcardUpperBounded
 ]] analysis succeeds
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard lower [[
-  val res: [[Faz[_ : Dog] ]] = fazWildcardUpperBounded
+  val res: [[Faz[_ <: Dog] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with upper bounded wildcard different [[
-  val res: [[Faz[_ : Fish] ]] = fazWildcardUpperBounded
+  val res: [[Faz[_ <: Fish] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard equal [[
-  val res: [[Faz[_ -: Mammal] ]] = fazWildcardUpperBounded
+  val res: [[Faz[_ :> Mammal] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard higher [[
-  val res: [[Faz[_ -: Animal] ]] = fazWildcardUpperBounded
+  val res: [[Faz[_ :> Animal] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard lower [[
-  val res: [[Faz[_ -: Dog] ]] = fazWildcardUpperBounded
+  val res: [[Faz[_ :> Dog] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with upper bounded wildcard type argument to type with lower bounded wildcard different [[
-  val res: [[Faz[_ -: Fish] ]] = fazWildcardUpperBounded
+  val res: [[Faz[_ :> Fish] ]] = fazWildcardUpperBounded
 ]] 1 error at #1
    error like "Type mismatch"
 
@@ -437,33 +436,33 @@ test assign type with lower bounded wildcard type argument to type with unbounde
   val res: Faz[_] = fazWildcardLowerBounded
 ]] analysis succeeds
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard equal [[
-  val res: [[Faz[_ : Mammal] ]] = fazWildcardLowerBounded
+  val res: [[Faz[_ <: Mammal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard higher [[
-  val res: [[Faz[_ : Animal] ]] = fazWildcardLowerBounded
+  val res: [[Faz[_ <: Animal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard lower [[
-  val res: [[Faz[_ : Dog] ]] = fazWildcardLowerBounded
+  val res: [[Faz[_ <: Dog] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with upper bounded wildcard different [[
-  val res: [[Faz[_ : Fish] ]] = fazWildcardLowerBounded
+  val res: [[Faz[_ <: Fish] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard equal [[
-  val res: Faz[_ -: Mammal] = fazWildcardLowerBounded
+  val res: Faz[_ :> Mammal] = fazWildcardLowerBounded
 ]] analysis succeeds
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard higher [[
-  val res: [[Faz[_ -: Animal] ]] = fazWildcardLowerBounded
+  val res: [[Faz[_ :> Animal] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard lower [[
-  val res: Faz[_ -: Dog] = fazWildcardLowerBounded
+  val res: Faz[_ :> Dog] = fazWildcardLowerBounded
 ]] analysis succeeds
 test assign type with lower bounded wildcard type argument to type with lower bounded wildcard different [[
-  val res: [[Faz[_ -: Fish] ]] = fazWildcardLowerBounded
+  val res: [[Faz[_ :> Fish] ]] = fazWildcardLowerBounded
 ]] 1 error at #1
    error like "Type mismatch"
 

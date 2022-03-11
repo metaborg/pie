@@ -51,7 +51,7 @@ rules
       instantiateTypeArgsInAll(s_renamings_all, formal_params2) == renamed_params2,
       isAllAssignableTo(formal_params1, renamed_params2, InvariantKind()) == params_equal.
 
-    isTypeParameterBoundsEqual : list(GenericParamType) * list(GenericParamType) -> BOOLEAN
+    isTypeParameterBoundsEqual : list(TypeParamType) * list(TypeParamType) -> BOOLEAN
     isTypeParameterBoundsEqual([], []) = TRUE().
     isTypeParameterBoundsEqual([_|_], []) = FALSE().
     isTypeParameterBoundsEqual([], [_|_]) = FALSE().
@@ -60,11 +60,11 @@ rules
       isTypeParameterBoundsEqual(params1, params2)
     ).
 
-    isTypeParameterBoundEqual : GenericParamType * GenericParamType -> BOOLEAN
-    isTypeParameterBoundEqual(GenericParamType(_, ub1, lb1), GenericParamType(_, ub2, lb2)) =
+    isTypeParameterBoundEqual : TypeParamType * TypeParamType -> BOOLEAN
+    isTypeParameterBoundEqual(TypeParamType(lb1, _, ub1), TypeParamType(lb2, _, ub2)) =
       andB(
-        isAssignableTo(typeOrTopType(ub1), typeOrTopType(ub2), InvariantKind()),
-        isAssignableTo(typeOrBottomType(lb1), typeOrBottomType(lb2), InvariantKind())
+        isAssignableTo(ub1, ub2, InvariantKind()),
+        isAssignableTo(lb1, lb2, InvariantKind())
       ).
 
   /**
@@ -117,15 +117,15 @@ rules
         findGenericDef(s_data1) == s_data_def1,
         findGenericDef(s_data2) == s_data_def2,
         getTypeArgsUnordered(s_data1) == type_args.
-    isTypeEqualToErased(T, param@GenericParameter2TYPE(_)) =
+    isTypeEqualToErased(T, param@TypeParameter2TYPE(_)) =
       isTypeEqualToErased(T, upper_bound) :-
         getBounds(param) == (upper_bound, _).
-    isTypeEqualToErased(T, WildcardType(upper_bound, _, _)) = isTypeEqualToErased(T, typeOrTopType(upper_bound)) :-
+    isTypeEqualToErased(T, WildcardType(_, upper_bound, _)) = isTypeEqualToErased(T, upper_bound) :-
       false | error $[BUG?: checking if [T] is equal to an erased wildcard].
     isTypeEqualToErased(T1, T2) = FALSE().
 
     // only equal if generic defs are the same and the first instance has no type arguments.
-    isTypeEqualToErased_dataTypeEqual : scope * scope * list((GenericParameter * TYPE)) -> BOOLEAN
+    isTypeEqualToErased_dataTypeEqual : scope * scope * list((TypeParameter * TYPE)) -> BOOLEAN
     isTypeEqualToErased_dataTypeEqual(s, s, []) = TRUE().
     isTypeEqualToErased_dataTypeEqual(_, _, _) = FALSE().
 
@@ -153,6 +153,6 @@ rules
     eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
     eraseType_1(FuncDefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
     eraseType_1(FuncRefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
-    eraseType_1(WildcardType(ub, _, _)) = typeOrTopType(ub).
-    eraseType_1(T@GenericParameter2TYPE(_)) = eraseType(ub) :-
+    eraseType_1(WildcardType(_, ub, _)) = ub.
+    eraseType_1(T@TypeParameter2TYPE(_)) = eraseType(ub) :-
       getBounds(T) == (ub, _).

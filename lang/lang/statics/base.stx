@@ -16,7 +16,7 @@ signature
     ModuleTree
     MODULE
     ParameterizedType
-    GenericParameter
+    TypeParameter
 
   constructors
     /**
@@ -83,8 +83,8 @@ signature
     SUBMODULE : scope * list(MODID) -> MODULE
 
     DataType : scope -> TYPE
-    GenericParameter : scope * TYPEID -> GenericParameter // name + scope it is defined in
-    GenericParameter2TYPE : GenericParameter -> TYPE
+    TypeParameter : scope * TYPEID -> TypeParameter // name + scope it is defined in
+    TypeParameter2TYPE : TypeParameter -> TYPE
 
   relations
     root : scope
@@ -97,10 +97,12 @@ signature
     func_local : FUNCID -> (scope * TYPE)  // function scope, function type
     data : TYPEID -> scope
     data_local : TYPEID -> scope
+    // todo: change generic_params to list(TypeParameterType)
+    // todo: rename generic* to type*
     data_mods : list(DataDefMod)
-    generic_params : list((GenericParameter * TYPE * TYPE)) // GenericParameter, upper bound, lower bound
-    generic_param : GenericParameter -> (TYPE * TYPE) // generic parameter -> upper bound, lower bound
-    generic_arg : GenericParameter -> TYPE   // generic argument, parameter -> instantiated type
+    generic_params : list((TypeParameter * TYPE * TYPE)) // TypeParameter, upper bound, lower bound
+    generic_param : TypeParameter -> (TYPE * TYPE) // generic parameter -> upper bound, lower bound
+    generic_arg : TypeParameter -> TYPE   // generic argument, parameter -> instantiated type
     type_args : list(TYPE)
     context : string -> CONTEXT
 
@@ -350,12 +352,12 @@ rules // Declararing and resolving
 
 
   /**
-   * getGenericParams(s_data) = params
+   * getTypeParams(s_data) = params
    * Get the list of generic parameters of datatype scope [s_data].
    * [s_data] can be the generic definition or an instance.
    */
-  getGenericParams : scope -> list((GenericParameter * TYPE * TYPE))
-  getGenericParams(s_data) = params :-
+  getTypeParams : scope -> list((TypeParameter * TYPE * TYPE))
+  getTypeParams(s_data) = params :-
     query generic_params
       filter P*
          min $ < P and true
@@ -363,29 +365,29 @@ rules // Declararing and resolving
       | error $[BUG: Could not get generic parameters from [s_data]].
 
   /**
-   * declareGenericParam(s, name, upper_bound) = param
+   * declareTypeParam(s, name, upper_bound) = param
    * Declares a generic parameter [param] constructed from [name] and [s] with
    * upper bound [upper_bound] in [s].
    * Checks for duplicates and sets the type on [name].
    */
-  declareGenericParam : scope * TYPEID * TYPE * TYPE -> GenericParameter
-  declareGenericParam(s, name, upper_bound, lower_bound) = param :-
-    !generic_param[param@GenericParameter(s, name), (upper_bound, lower_bound)] in s,
-    resolveGenericParam(s, name) == [_]
+  declareTypeParam : scope * TYPEID * TYPE * TYPE -> TypeParameter
+  declareTypeParam(s, name, upper_bound, lower_bound) = param :-
+    !generic_param[param@TypeParameter(s, name), (upper_bound, lower_bound)] in s,
+    resolveTypeParam(s, name) == [_]
       | error $[Duplicate definition of generic parameter [name]],
-    @name.type := upper_bound.
+    @name.type := wrapBound((param, upper_bound, lower_bound)).
 
   /**
-   * resolveGenericParam(param, name) = occs
+   * resolveTypeParam(param, name) = occs
    * Resolve a generic parameter [name] to its declaration(s) [occs] from scope
    * [s].
    * Does not check if the resolved declarations are unique.
    */
-  resolveGenericParam : scope * TYPEID -> list((path * (GenericParameter * (TYPE * TYPE))))
-  resolveGenericParam(s, name) = occs :-
+  resolveTypeParam : scope * TYPEID -> list((path * (TypeParameter * (TYPE * TYPE))))
+  resolveTypeParam(s, name) = occs :-
     query generic_param
       filter P?
-         and { param' :- GenericParameter(_, name) == param' }
+         and { param' :- TypeParameter(_, name) == param' }
          min and false
           in s |-> occs.
 
@@ -395,9 +397,9 @@ rules // Declararing and resolving
    * scope [s].
    * This checks for and gives a [BUG] error on duplicates type arguments.
    */
-  declareTypeArg : scope * GenericParameter * TYPE
+  declareTypeArg : scope * TypeParameter * TYPE
   declareTypeArgs maps declareTypeArg(*, list(*), list(*))
-  declareTypeArg(s, param@GenericParameter(_, name), ty) :-
+  declareTypeArg(s, param@TypeParameter(_, name), ty) :-
     !generic_arg[param, ty] in s,
     resolveTypeArg(s, param) == [_]
       | error $[BUG: multiple arguments for type parameter [name]].
@@ -409,17 +411,17 @@ rules // Declararing and resolving
    * If [follow_inherit] is TRUE it follows both P and INHERIT edges, otherwise
    * only P edges.
    */
-  resolveTypeArgFromNameOnly : scope * TYPEID * BOOLEAN -> list((path * (GenericParameter * TYPE)))
+  resolveTypeArgFromNameOnly : scope * TYPEID * BOOLEAN -> list((path * (TypeParameter * TYPE)))
   resolveTypeArgFromNameOnly(s, name, FALSE()) = occs :-
     query generic_arg
       filter P*
-         and { GenericParameter(_, name') :- name == name' }
+         and { TypeParameter(_, name') :- name == name' }
          min $ < P
           in s |-> occs.
   resolveTypeArgFromNameOnly(s, name, TRUE()) = occs :-
     query generic_arg
       filter (INHERIT|P)*
-         and { GenericParameter(_, name') :- name == name' }
+         and { TypeParameter(_, name') :- name == name' }
          min $ < P, $ < INHERIT
           in s |-> occs.
 
@@ -428,7 +430,7 @@ rules // Declararing and resolving
    * Resolve [name] to type argument occurences [occs] in [s].
    * May return any number of type arguments. Follows P and INHERIT edges.
    */
-  resolveTypeArg : scope * GenericParameter -> list((path * (GenericParameter * TYPE)))
+  resolveTypeArg : scope * TypeParameter -> list((path * (TypeParameter * TYPE)))
   resolveTypeArg(s, param) = occs :-
     query generic_arg
       filter (INHERIT|P)*
@@ -444,12 +446,12 @@ rules // Declararing and resolving
    * See https://github.com/MeAmAnUsername/pie/issues/187 for the string
    * argument.
    */
-  resolveUniqueTypeArg : scope * GenericParameter * string -> TYPE
+  resolveUniqueTypeArg : scope * TypeParameter * string -> TYPE
   resolveUniqueTypeArgs maps resolveUniqueTypeArg(*, list(*), *) = list(*)
-  resolveUniqueTypeArg(s, param@GenericParameter(_, name), error_node) =
+  resolveUniqueTypeArg(s, param@TypeParameter(_, name), error_node) =
     resolveUniqueTypeArg_1(name, resolveTypeArg(s, param), error_node).
 
-    resolveUniqueTypeArg_1 : TYPEID * list((path * (GenericParameter * TYPE))) * string -> TYPE
+    resolveUniqueTypeArg_1 : TYPEID * list((path * (TypeParameter * TYPE))) * string -> TYPE
     resolveUniqueTypeArg_1(name, [], error_node) = _ :- false | error $[Undefined type argument [name]] @error_node.
     resolveUniqueTypeArg_1(_, [(_, (_, ty))], _) = ty.
     resolveUniqueTypeArg_1(name, [_|_], error_node) = _ :- false | error $[Duplicate type argument [name]] @error_node.

@@ -22,7 +22,7 @@ context-free sorts
 
 context-free syntax // Function head
 
-  FuncHead.FuncHead = [[FUNCID][GenericParams]([Params]) -> [Type]]
+  FuncHead.FuncHead = [[FUNCID][TypeParams]([Params]) -> [Type]]
 
   Param.Param   = <<Type>>
   Param.NParam  = <<VALID> : <Type>> {prefer} // prefer this over a Param(ImportTy(...))

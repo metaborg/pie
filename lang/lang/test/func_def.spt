@@ -5,8 +5,8 @@ fixture [[
   module test:func_def
 
   data Food = foreign java test.func_def.Food {}
-  data Fruit : Food = foreign java test.func_def.Fruit {}
-  data Apple : Fruit = foreign java test.func_def.Apple {}
+  data Fruit <: Food = foreign java test.func_def.Fruit {}
+  data Apple <: Fruit = foreign java test.func_def.Apple {}
 
   [[...]]
 ]]
@@ -26,11 +26,10 @@ test with type parameter [[
    error like "Code generation for PIE tasks with type parameters has not been implemented yet"
 
 test param with wildcard type [[func test(something: [[_)]] -> bool = true]] 1 error at #1  error like "Cannot use a wildcard"
-test param with wildcard type [[func test(something: [[_ : Food)]] -> int = 9]] 1 error at #1  error like "Cannot use a wildcard"
-test param with wildcard type [[func test(something: [[_ -: Apple[] ]]) -> string = "apple"]] 1 error at #1  error like "Cannot use a wildcard"
+test param with wildcard type [[func test(something: [[_ <: Food)]] -> int = 9]] 1 error at #1  error like "Cannot use a wildcard"
+test param with wildcard type [[func test(something: [[_ :> Apple[] ]]) -> string = "apple"]] 1 error at #1  error like "Cannot use a wildcard"
 test param with wildcard type [[
-  func test(something: _[[ : Fruit[] ]][[ -: Apple[] ]]) -> Fruit? = null
-]] 3 errors at #1, #2
-   error like "Cannot use a wildcard"
-   error like "Cannot have both an upper and lower bound" at #1
-   error like "Cannot have both an upper and lower bound" at #2
+  func test(something: [[ Apple[] <: _ <: Fruit[] ]]) -> Fruit? = null
+]] 2 errors at #1
+   error like "Cannot use a wildcard as parameter type"
+   error like "Cannot have both an upper and lower bound on a wildcard"

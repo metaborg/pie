@@ -38,51 +38,15 @@ rules
   getScopeFromType(s, ty) = emptyScope(s).
 
   /**
-   * typeOrTopType(upper_bound) = ty
-   * Get the type from an explicit upper bound or the top type if there is no
-   * upper bound.
-   */
-  typeOrTopType : UpperBoundType -> TYPE
-  typeOrTopType(NoUpperBoundType()) = TopType().
-  typeOrTopType(UpperBoundType(ty)) = ty.
-
-  /**
-   * typeOrBottomType(lower_bound) = ty
-   * Get the type from an explicit lower bound or the bottom type if there is
-   * no lower bound.
-   */
-  typeOrBottomType : LowerBoundType -> TYPE
-  typeOrBottomType(NoLowerBoundType()) = BottomType().
-  typeOrBottomType(LowerBoundType(ty)) = ty.
-
-  /**
-   * typeToUpperBoundType(ty) = upper_bount_type
-   * Returns NoUpperBoundType for TopType, otherwise ty wrapped in
-   * UpperBoundType.
-   */
-  typeToUpperBoundType : TYPE -> UpperBoundType
-  typeToUpperBoundType(TopType()) = NoUpperBoundType().
-  typeToUpperBoundType(ty) = UpperBoundType(ty).
-
-  /**
-   * typeToLowerBoundType(ty) = lower_bount_type
-   * Returns NoLowerBoundType for BottomType, otherwise ty wrapped in
-   * LowerBoundType.
-   */
-  typeToLowerBoundType : TYPE -> LowerBoundType
-  typeToLowerBoundType(BottomType()) = NoLowerBoundType().
-  typeToLowerBoundType(ty) = LowerBoundType(ty).
-
-  /**
    * getBounds(T) -> (upper_bound, lower_bound)
    * Gets the upper and lower bound of a type [T]. The bounds for generic
    * parameters and wildcards are taken as is, for other types the bounds are
    * simply that same type.
    */
   getBounds : TYPE -> (TYPE * TYPE)
-  getBounds(WildcardType(ub, lb, _)) = (typeOrTopType(ub), typeOrBottomType(lb)).
-  getBounds(GenericParameter2TYPE(GenericParameter(s, name))) = (ub, lb) :-
-    resolveGenericParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
+  getBounds(WildcardType(lb, ub, _)) = (ub, lb).
+  getBounds(TypeParameter2TYPE(TypeParameter(s, name))) = (ub, lb) :-
+    resolveTypeParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
   getBounds(T) = (T, T).
 
 
@@ -101,12 +65,12 @@ rules
 
   /**
    * getTypeParamsList(type_params) = type_params_list
-   * Gets the list of type parameters from a GenericParams.
-   * Returns an empty list for NoGenericParams().
+   * Gets the list of type parameters from a TypeParams.
+   * Returns an empty list for NoTypeParams().
    */
-  getTypeParamsList : GenericParams -> list(GenericParam)
-  getTypeParamsList(NoGenericParams()) = [].
-  getTypeParamsList(GenericParams(type_params)) = type_params.
+  getTypeParamsList : TypeParams -> list(TypeParam)
+  getTypeParamsList(NoTypeParams()) = [].
+  getTypeParamsList(TypeParams(type_params)) = type_params.
 
   /**
    * getTypeArgsList(type_args) = type_args_list
@@ -143,11 +107,11 @@ rules
    * Type arguments are not ordered.
    * Does not follow any edges.
    */
-  getTypeArgsUnordered : scope -> list((GenericParameter * TYPE))
+  getTypeArgsUnordered : scope -> list((TypeParameter * TYPE))
   getTypeArgsUnordered(s_data) = getArgTypes(occs) :-
     query generic_arg filter e in s_data |-> occs.
 
-    getArgType : (path * (GenericParameter * TYPE)) -> (GenericParameter * TYPE)
+    getArgType : (path * (TypeParameter * TYPE)) -> (TypeParameter * TYPE)
     getArgTypes maps getArgType(list(*)) = list(*)
     getArgType((path, arg_ty)) = arg_ty.
 
@@ -157,11 +121,11 @@ rules
    * parameters.
    * Does not follow any edges.
    */
-  getTypeArgsOrdered : scope -> list((GenericParameter * TYPE))
+  getTypeArgsOrdered : scope -> list((TypeParameter * TYPE))
   getTypeArgsOrdered(s_data_instance) =
-    getTypeArgsOrdered_1s(s_data_instance, getGenericParams(s_data_instance)).
+    getTypeArgsOrdered_1s(s_data_instance, getTypeParams(s_data_instance)).
 
-    getTypeArgsOrdered_1 : scope * (GenericParameter * TYPE * TYPE) -> (GenericParameter * TYPE)
+    getTypeArgsOrdered_1 : scope * (TypeParameter * TYPE * TYPE) -> (TypeParameter * TYPE)
     getTypeArgsOrdered_1s maps getTypeArgsOrdered_1(*, list(*)) = list(*)
     getTypeArgsOrdered_1(s_data, (param, _, _)) =
       (param, getTypeArgsOrdered_2(s_data, param, occs)) :-
@@ -170,13 +134,13 @@ rules
            and { param' :- param' == param }
             in s_data |-> occs.
 
-    getTypeArgsOrdered_2 : scope * GenericParameter * list((path * (GenericParameter * TYPE))) -> TYPE
+    getTypeArgsOrdered_2 : scope * TypeParameter * list((path * (TypeParameter * TYPE))) -> TYPE
     getTypeArgsOrdered_2(s_data, param, []) = upper_bound :-
-      getBounds(GenericParameter2TYPE(param)) == (upper_bound, _),
+      getBounds(TypeParameter2TYPE(param)) == (upper_bound, _),
       false | error $[BUG: no type arguments found from [s_data]].
     getTypeArgsOrdered_2(s_data, _, [(_, (param, val))]) = val.
     getTypeArgsOrdered_2(s_data, param, [_,_|_]) = upper_bound :-
-      getBounds(GenericParameter2TYPE(param)) == (upper_bound, _),
+      getBounds(TypeParameter2TYPE(param)) == (upper_bound, _),
       false | error $[BUG: multiple declarations for type arguments found from [s_data]].
 
   /**
@@ -184,7 +148,7 @@ rules
    * Gets the type of a type argument, i.e. the type that the type parameter is
    * bound to by this type argument.
    */
-  getTypeArgType : (GenericParameter * TYPE) -> TYPE
+  getTypeArgType : (TypeParameter * TYPE) -> TYPE
   getTypeArgTypes maps getTypeArgType(list(*)) = list(*)
   getTypeArgType((_, ty)) = ty.
 
@@ -201,18 +165,18 @@ rules
    * Fails without message when [type_params1] and [type_params2] have
    * different lengths.
    */
-  renameAll : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
+  renameAll : scope * scope * list(TypeParamType) * scope * list(TypeParamType) -> scope
   renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2, type_params2) = s_renaming :-
     new s_renaming,
     s_renaming -P-> s_pre_existing,
     renameAll_1(s_renaming, s_type_params1, type_params1, s_type_params2, type_params2).
 
-    rename : scope * scope * GenericParamType * scope * GenericParamType
+    rename : scope * scope * TypeParamType * scope * TypeParamType
     renameAll_1 maps rename(*, *, list(*), *, list(*))
-    rename(s, s_param1, GenericParamType(name1, _, _), s_param2, GenericParamType(name2, _, _)) :-
+    rename(s, s_param1, TypeParamType(_, name1, _), s_param2, TypeParamType(_, name2, _)) :-
       {type}
-      type == GenericParameter2TYPE(GenericParameter(s_param2, name2)),
-      declareTypeArg(s, GenericParameter(s_param1, name1), type).
+      type == TypeParameter2TYPE(TypeParameter(s_param2, name2)),
+      declareTypeArg(s, TypeParameter(s_param1, name1), type).
 
   /**
    * typeListsLengthsEqual(Ts1, Ts2) = equal_lengths
@@ -249,9 +213,9 @@ rules
   ppTYPE(FuncDefType(type_params, in, out)) = "func def".
   ppTYPE(FuncRefType(type_params, in, out)) = "func ref".
   ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
-  ppTYPE(WildcardType(ub, lb, Free())) = "wildcard (capture state: free)".
-  ppTYPE(WildcardType(ub, lb, Bound())) = "wildcard (capture state: bound)".
-  ppTYPE(GenericParameter2TYPE(GenericParameter(_, name))) = name.
+  ppTYPE(WildcardType(lb, ub, Free())) = "wildcard (capture state: free)".
+  ppTYPE(WildcardType(lb, ub, Bound())) = "wildcard (capture state: bound)".
+  ppTYPE(TypeParameter2TYPE(TypeParameter(_, name))) = name.
 
   /**
    * ppScope(s) -> name

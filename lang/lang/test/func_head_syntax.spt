@@ -46,21 +46,17 @@ test generic parameters start with number [[a[4world]() -> int]] parse fails
 test generic parameters end with number [[a[world9]() -> int]]
 test generic parameters ampersand in name [[a[hello&world]() -> int]] parse fails
 
-test generic parameters one parameter missing brackets [[resultOfOk T(value: T) -> Result[T, _ : Exception] ]] parse fails
-test generic parameters one parameter no bounds [[resultOfOk[T](value: T) -> Result[T, _ : Exception] ]]
-test generic parameters one parameter upper bound [[resultOfErr[E : Exception](error: E) -> Result[_, E] ]]
-test generic parameters one parameter lower bound [[addToList[C -: Cat](list: C*, cat: Cat) -> unit]]
-test generic parameters one parameter both bounds [[doTheThing[C : Animal -: Cat](list: C*) -> unit]]
-test generic parameters one parameter both bounds reverse order [[
-  doTheThing[C -: Cat : Animal](list: C*) -> unit
-]] parse to FuncHead(_, GenericParams([
-       GenericParam("C", NoUpperBound(), LowerBound(DataTy(ModuleList(["Cat"]), "Animal", _)))
-     ]), _, _)
+test generic parameters one parameter missing brackets [[resultOfOk T(value: T) -> Result[T, _ <: Exception] ]] parse fails
+test generic parameters one parameter no bounds [[resultOfOk[T](value: T) -> Result[T, _ <: Exception] ]]
+test generic parameters one parameter upper bound [[resultOfErr[E <: Exception](error: E) -> Result[_, E] ]]
+test generic parameters one parameter lower bound [[addToList[C :> Cat](list: C*, cat: Cat) -> unit]]
+test generic parameters one parameter both bounds [[doTheThing[Cat <: C <: Animal](list: C*) -> unit]]
+test generic parameters one parameter both bounds reverse order [[doTheThing[Animal :> C :> Cat](list: C*) -> unit]]
 
 test generic parameters two parameters missing separator [[a[T E]() -> int]] parse fails
 test generic parameters two parameters no bounds [[kweh[A, B]() -> bool]]
 test generic parameters two parameters upper bound on second [[
-  resultOfOkWithExplicitErrorType[T, E : Exception](value: T) -> Result[T, E]
+  resultOfOkWithExplicitErrorType[T, E <: Exception](value: T) -> Result[T, E]
 ]]
 test generic parameters three parameters [[kweh[A, B, C]() -> bool]]
 test generic parameters four parameters [[kweh[A, B, C, D]() -> bool]]

@@ -4,6 +4,6 @@ data Bar[T] = foreign java mb.pie.lang.test.returnTypes.Bar {}
 
 // returns a nullable because this test is only for the types, and there is no
 // literal for foreign data types (requires call to a foreign function)
-func main_dataTyGenericWildcardUpperBoundedNullableForeignJava() -> Bar[_ : string?]? = {
+func main_dataTyGenericWildcardUpperBoundedNullableForeignJava() -> Bar[_ <: string?]? = {
   null
 }

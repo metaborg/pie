@@ -14,14 +14,14 @@ imports
 rules
 
   dataDefOk : scope * DataDef
-  dataDefOk(s, DataDef(DataDefMods(mods), name, generic_params, super, impl)) :- {s_data_def}
+  dataDefOk(s, DataDef(DataDefMods(mods), name, type_params, super, impl)) :- {s_data_def}
     dataDefModsOk(mods),
     new s_data_def,
     !root[getRoot(s)] in s_data_def,
     setFileIfExists(s, s_data_def),
     setContext(s_data_def, "data_name_unqualified", ContextName(name)),
     !data_mods[mods] in s_data_def,
-    genericParamsOk(s, s_data_def, generic_params) == _,
+    genericParamsOk(s, s_data_def, type_params) == _,
     declareData(s, name, s_data_def),
     declareLocalData(s, name, s_data_def),
     superOk(s, s_data_def, super, name),
@@ -84,7 +84,7 @@ rules
       // renames super method type parameters to sub method type parameters
       // unless sub method has no type parameters, in which case it may have
       // been classified as an override due to type erasing the super method.
-      superOk_3_rename_if_not_erased : scope * scope * list(GenericParamType) * scope * list(GenericParamType) -> scope
+      superOk_3_rename_if_not_erased : scope * scope * list(TypeParamType) * scope * list(TypeParamType) -> scope
       superOk_3_rename_if_not_erased(s_data_def, _, [], _, _) = s_data_def.
       superOk_3_rename_if_not_erased(s_data_def, s_func, type_params@[_|_], s_func_super, type_params_super) =
         renameAll(s_data_def, s_func_super, type_params_super, s_func, type_params).

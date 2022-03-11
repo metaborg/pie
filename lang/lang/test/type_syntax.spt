@@ -81,9 +81,9 @@ test nullable in tuple [[ (path, string?) ]] parse to TupleTy([PathTy(), Nullabl
 test nullable in supplier [[ supplier[Thing?] ]] parse to SupplierTy(NullableTy(DataTy(NoModuleList(), "Thing", NoTypeArgs()), NullableMarker()))
 
 // wildcards
-test wildcard boundless [[ _ ]] parse to Wildcard(NoUpperBound(), NoLowerBound())
-test wildcard upperbound [[ _ : T ]] parse to Wildcard(UpperBound(DataTy(_, "T", _)), NoLowerBound())
-test wildcard lowerbound [[ _ -: T ]] parse to Wildcard(NoUpperBound(), LowerBound(DataTy(_, "T", _)))
-test wildcard nested [[ Pair[Apple, _ : Fruit]*  ]] parse succeeds
-test wildcard nullable [[ _ : T? ]] parse to Wildcard(UpperBound(NullableTy(_, _)), NoLowerBound())
-test wildcard list [[ _ : T* ]] parse to Wildcard(UpperBound(ListTy(_)), NoLowerBound())
+test wildcard boundless [[ _ ]] parse to Wildcard(UnboundedWildcard())
+test wildcard upperbound [[ _ <: T ]] parse to Wildcard(UpperBoundedWildcard(DataTy(_, "T", _)))
+test wildcard lowerbound [[ _ :> T ]] parse to Wildcard(LowerBoundedWildcard(DataTy(_, "T", _)))
+test wildcard nested [[ Pair[Apple, _ <: Fruit]*  ]] parse succeeds
+test wildcard nullable [[ _ <: T? ]] parse to Wildcard(UpperBoundedWildcard(NullableTy(_, _)))
+test wildcard list [[ _ <: T* ]] parse to Wildcard(UpperBoundedWildcard(ListTy(_)))

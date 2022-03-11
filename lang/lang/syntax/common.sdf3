@@ -8,16 +8,22 @@ imports
 context-free sorts
 
   ModuleList
-  GenericParam
-  GenericParams
+  BoundedTypeParam
+  TypeParam
+  TypeParams
 
 context-free syntax
 
   ModuleList.NoModuleList = <>
   ModuleList.ModuleList = <<{MODID ":"}+>:>
 
-  GenericParam.GenericParam = <<TYPEID><UpperBound><LowerBound>>
+  BoundedTypeParam.UnboundedTypeParam = [[TYPEID]]
+  BoundedTypeParam.UpperBoundedTypeParam = [[TYPEID] <: [Type]]
+  BoundedTypeParam.LowerBoundedTypeParam = [[TYPEID] :> [Type]]
+  // double bounds not allowed, parsed to give explicit error
+  BoundedTypeParam.BothBoundedTypeParam = [[Type] <: [TYPEID] <: [Type]]
+  BoundedTypeParam.BothBoundedReverseTypeParam = [[Type] :> [TYPEID] :> [Type]]
+  TypeParam.TypeParam = [[BoundedTypeParam]]
 
-  GenericParams.NoGenericParams = <> // syntactic sugar for empty list
-  GenericParams.GenericParams = <[<{GenericParam ", "}*>]>
-
+  TypeParams.NoTypeParams = <> // syntactic sugar for empty list
+  TypeParams.TypeParams = <[<{TypeParam ", "}*>]>

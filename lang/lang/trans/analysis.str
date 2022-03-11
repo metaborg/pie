@@ -33,7 +33,7 @@ rules // Editor Services
 
   editor-hover = stx-editor-hover(pp-pie-string)
 
-rules // Pretty-printing DataType(scope) and GenericParameter2TYPE
+rules // Pretty-printing DataType(scope) and TypeParameter2TYPE
 
   prettyprint-pie-TYPE :
     t@DataType(_) -> [ H(
@@ -79,7 +79,7 @@ rules // Pretty-printing DataType(scope) and GenericParameter2TYPE
          end
 
   prettyprint-pie-TYPE :
-    t@GenericParameter2TYPE(GenericParameter(_, name)) -> [ H(
+    t@TypeParameter2TYPE(TypeParameter(_, name)) -> [ H(
                       [SOpt(HS(), "0")]
                     , t1__'
                     )
@@ -92,10 +92,10 @@ rules // Pretty-printing DataType(scope) and GenericParameter2TYPE
                    ; flatten-list> [S($[generic parameter [name]])]
 
   is-pie-TYPE =
-    ?GenericParameter2TYPE(_)
+    ?TypeParameter2TYPE(_)
 
   pie-get-indent :
-    (t@GenericParameter2TYPE(_), index) -> indent
+    (t@TypeParameter2TYPE(_), index) -> indent
     where sort := <ia-get-sort> t
           ; <?"TYPE"> sort
     with switch !index
@@ -104,7 +104,7 @@ rules // Pretty-printing DataType(scope) and GenericParameter2TYPE
          end
 
   pie-get-separator :
-    (t@GenericParameter2TYPE(_), index) -> separator
+    (t@TypeParameter2TYPE(_), index) -> separator
     where sort := <ia-get-sort> t
           ; <?"TYPE"> sort
     with switch !index
@@ -113,7 +113,7 @@ rules // Pretty-printing DataType(scope) and GenericParameter2TYPE
          end
 
   pie-get-leading-ws :
-    (t@GenericParameter2TYPE(_), index) -> ws
+    (t@TypeParameter2TYPE(_), index) -> ws
     where sort := <ia-get-sort> t
           ; <?"TYPE"> sort
     with switch !index

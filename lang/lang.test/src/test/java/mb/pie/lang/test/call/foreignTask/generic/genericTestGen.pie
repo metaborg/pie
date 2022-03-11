@@ -1,6 +1,6 @@
 module mb:pie:lang:test:call:foreignTask:generic
 
-func generic[A: int, B: A*](A*, B, A) -> int = foreign mb.pie.lang.test.call.foreignTask.generic.Generic
+func generic[A <: int, B <: A*](A*, B, A) -> int = foreign mb.pie.lang.test.call.foreignTask.generic.Generic
 
 func main_generic() -> int = {
   generic[int, int*]([1, 2, 3], [4, 5, 6], 7)

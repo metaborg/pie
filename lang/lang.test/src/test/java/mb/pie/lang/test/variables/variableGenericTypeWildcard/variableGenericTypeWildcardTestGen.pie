@@ -2,7 +2,7 @@ module mb:pie:lang:test:variables:variableGenericTypeWildcard
 
 data Box[T] = foreign java mb.pie.lang.test.variables.Box {}
 
-func main_variableGenericTypeWildcard(box: Box[_ : string]) -> Box[_ : string?] = {
-  val res: Box[_ : string?] = box;
+func main_variableGenericTypeWildcard(box: Box[_ <: string]) -> Box[_ <: string?] = {
+  val res: Box[_ <: string?] = box;
   res
 }

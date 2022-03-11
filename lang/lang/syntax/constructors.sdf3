@@ -8,14 +8,8 @@ imports
 
 // A semantic type (as opposed to the lexical, non-all caps Type)
 context-free start-symbols TYPE // For type hint on editor mouseover
-context-free sorts TYPE UpperBoundType LowerBoundType CaptureState GenericParamType
+context-free sorts TYPE CaptureState TypeParamType
 context-free syntax
-
-  UpperBoundType.NoUpperBoundType = < [no upper bound]>
-  UpperBoundType.UpperBoundType = < : <TYPE>>
-
-  LowerBoundType.NoLowerBoundType = < [no lower bound]>
-  LowerBoundType.LowerBoundType = < -: <TYPE>>
 
   TYPE.UnitType = [unit]
   TYPE.BoolType = [bool]
@@ -32,16 +26,16 @@ context-free syntax
   TYPE.TupleType = [([{TYPE ", "}+])]
   TYPE.SupplierType = [supplier([TYPE])]
 
-  GenericParamType.GenericParamType = [[TYPEID][UpperBoundType][LowerBoundType]]
-  TYPE.FuncDefType = [func<[{GenericParamType ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
-  TYPE.FuncRefType = [func<[{TYPE ", "}*]>([{TYPE ", "}*]) -> [TYPE]]
+  TypeParamType.TypeParamType = [[TYPE] <: [TYPEID] <: [TYPE]]
+  TYPE.FuncDefType = <func[<{TypeParamType ", "}*>](<{TYPE ", "}*>) -\> <TYPE>>
+  TYPE.FuncRefType = <func[<{TYPE ", "}*>](<{TYPE ", "}*>) -\> <TYPE>>
 
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
-//  TYPE.GenericParameter2TYPE = GenericParameter
+//  TYPE.TypeParameter2TYPE = TypeParameter
 
   CaptureState.Free = [free]
   CaptureState.Bound = [bound]
-  TYPE.WildcardType = [WILDCARD[UpperBoundType][LowerBoundType] (capture state: [CaptureState])]
+  TYPE.WildcardType = [[TYPE] <: WILDCARD <: [TYPE] (capture state: [CaptureState])]
 
 // Boolean values. Used in Statix logic.
 context-free sorts BOOLEAN

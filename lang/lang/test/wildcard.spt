@@ -5,8 +5,8 @@ fixture [[
   module test:wildcard
 
   data Fruit = foreign java test.wildcard.Fruit {}
-  data Apple : Fruit = foreign java test.wildcard.Apple {}
-  data Pear : Fruit = foreign java test.wildcard.Banana {}
+  data Apple <: Fruit = foreign java test.wildcard.Apple {}
+  data Pear <: Fruit = foreign java test.wildcard.Banana {}
 
   data List[T] = foreign java java.util.List {
     func add(T) -> unit
@@ -16,18 +16,18 @@ fixture [[
 ]]
 
 test pass to parameter with lower bounded wildcard parameter [[
-  func test(list: List[_ -: Fruit], apple: Apple) -> unit = list.add(apple)
+  func test(list: List[_ :> Fruit], apple: Apple) -> unit = list.add(apple)
 ]] analysis succeeds
 
 // Adding Apple is not allowed because it could be List[Banana]
 test pass to parameter with upper bounded wildcard parameter [[
-  func test(list: List[_ : Fruit], apple: Apple) -> unit = list.add([[apple]])
+  func test(list: List[_ <: Fruit], apple: Apple) -> unit = list.add([[apple]])
 ]] 1 error at #1
    error like "Type mismatch"
 
 // Least upper bound (lub)
 test Least upper bound of parameterized list takes wildcard of lub [[
-  func test1(apples: List[Apple], pears: List[Pear]) -> List[_ : Fruit] =
+  func test1(apples: List[Apple], pears: List[Pear]) -> List[_ <: Fruit] =
     if (true) apples else pears
 ]] analysis succeeds
 test Cannot assign lub(List<Apple>, List<Pear>) to List<Fruit> [[
@@ -44,12 +44,12 @@ test Cannot assign lub(List<Fruit>, List<Pear>) to List<Fruit> [[
 // free vs bound wildcard
 test free wildcard [[
   data Thing = foreign java test.wildcard.Box {
-    func doStuff(List[_ : Fruit]) -> unit
+    func doStuff(List[_ <: Fruit]) -> unit
   }
   func test(thing: Thing, list: List[Apple]) -> unit = thing.doStuff(list)
 ]] analysis succeeds
 test bound wildcard [[
   // not allowed, list could be List[Banana]
-  func test(list: List[_ : Fruit], apple: Apple) -> unit = list.add([[apple]])
+  func test(list: List[_ <: Fruit], apple: Apple) -> unit = list.add([[apple]])
 ]] 1 error at #1
    error like "Type mismatch"

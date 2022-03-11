@@ -9,5 +9,5 @@ rules
   desugar-all = topdown(try(desugar))
   resugar-all = topdown(try(resugar))
 
-  desugar: NoGenericParams() -> GenericParams([])
-  resugar: GenericParams([]) -> NoGenericParams()
+  desugar: NoTypeParams() -> TypeParams([])
+  resugar: TypeParams([]) -> NoTypeParams()

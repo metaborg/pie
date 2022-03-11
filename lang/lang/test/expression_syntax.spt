@@ -116,7 +116,7 @@ test val declaration named val [[ val val = 5 ]] parse succeeds
 test val declaration named _ [[ val _ = 5 ]] parse succeeds // todo: disallow _ as variable name?
 test val declaration single bind missing expression [[ val x = ]] parse fails
 test val declaration single bind no layout around = [[ val x=7 ]] parse succeeds
-test val declaration single bind with type missing : [[ val foo string = "-_-" ]] parse fails
+test val declaration single bind with type missing <: [[ val foo string = "-_-" ]] parse fails
 test val declaration single bind with type missing name [[ val : string = "" ]] parse fails
 test val declaration single bind with type missing type [[ val foo : = 56 ]] parse fails
 test val declaration tuple bind [[ val (x, y) = (9, 3) ]] parse succeeds
@@ -126,7 +126,7 @@ test val declaration tuple bind missing names [[ val = (true, false) ]] parse fa
 test val declaration tuple bind missing name [[ val (i, ) = ("no", false) ]] parse fails
 test val declaration tuple bind missing expressions [[ val (foo, bar, baz) = ]] parse fails
 test val declaration tuple bind missing expression [[ val (x, y, z) = ("yes", , "no")]] parse fails
-test val declaration tuple bind with type missing : [[ val (foo: int, bar int) = (5, 2) ]] parse fails
+test val declaration tuple bind with type missing <: [[ val (foo: int, bar int) = (5, 2) ]] parse fails
 test val declaration tuple bind with type missing name [[ val (: string, bar: int) = ("hey", 9) ]] parse fails
 test val declaration tuple bind with type missing type [[ val (x: , y: bool) = ("string", true) ]] parse fails
 
@@ -146,10 +146,8 @@ test call missing opening bracket type arguments [[ someFunc]() ]] parse fails
 test call missing closing bracket type arguments [[ someFunc[() ]] parse fails
 test call missing separator type arguments [[ someFunc[int int]() ]] parse fails
 test call one type argument [[ someFunc[int]() ]]
-test call type argument with upper bound [[
-  someFunc[T : Food]()
-]] parse to Call(_, _, TypeArgs([DataTy(ModuleList(["T"]), "Food", _)]), _)
-test call type argument with lower bound [[ someFunc[T -: Food]() ]] parse fails
+test call type argument with upper bound [[someFunc[T <: Food]()]] parse fails
+test call type argument with lower bound [[ someFunc[T :> Food]() ]] parse fails
 test call two type arguments [[ someFunc[Food, string]() ]]
 test call three type arguments [[ someFunc[int, path, (string, bool)]() ]]
 test call three type arguments [[ someFunc[int, path, (string, bool)]() ]]
