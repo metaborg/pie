@@ -37,7 +37,7 @@ rules // PIE function definitions
   // InjectValues are the values that will be injected
   // into the constructor of the Java class
   p2j-ast-def:
-    FuncDef(FuncHead(funcId, genericParams, params, type), PieFuncImpl(body, optKeyBody)) -> result
+    FuncDef(FuncHead(funcId, typeParams, params, type), PieFuncImpl(body, optKeyBody)) -> result
     with
       <debug(|"start p2j-ast-def: ")> funcId
     ; className   := <pie-sanitize-class-id> funcId

@@ -17,8 +17,8 @@ test duplicate function [[
 ]] 2 errors at #1, #2
    error like "Duplicate function"
 
-test empty generic parameter list [[func test[]() -> int = 8]] analysis succeeds
-test omitted generic parameter list [[func test() -> bool = false]] analysis succeeds
+test empty type parameter list [[func test[]() -> int = 8]] analysis succeeds
+test omitted type parameter list [[func test() -> bool = false]] analysis succeeds
 // See https://github.com/MeAmAnUsername/pie/issues/181
 test with type parameter [[
   func test[[ [T] ]]() -> path = ./test

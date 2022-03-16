@@ -132,8 +132,8 @@ rules
   /**
    * eraseType(T) = erased_type
    * erases TYPE [T] to TYPE [erased_type].
-   * This removes all generic arguments and makes it nullable.
-   * This also takes the upper bound of generic variables and wildcards.
+   * This removes all type arguments and makes it nullable.
+   * This also takes the upper bound of type variables and wildcards.
    * Because there are no specific erased types, this just replaces everything
    * with UnitType if outright removing it is not possible.
    */

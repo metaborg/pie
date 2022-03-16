@@ -129,7 +129,7 @@ rules // operations on types
               in s_sub |-> [(_, s_sub_super_instance)],
         instantiateTypeParams(s_sub, s_sub_super_instance, Bound()) == instantiated_s_sub_super_instance.
 
-        // instantiate generic parameters in instance s2 with the type arguments of s1
+        // instantiate type parameters in instance s2 with the type arguments of s1
         // todo: move
         instantiateTypeParams : scope * scope * CaptureState -> scope
         instantiateTypeParams(s1, s2, capture_state) = s_data_instance_instantiated :-
@@ -382,8 +382,8 @@ rules
    * [resolve_in_super_types] specifies if type arguments can be looked up in
    * super types or not. If they can, resolution will follow P and INHERIT
    * edges. Otherwise, it will only follow P edges.
-   * [currently_defining] specifies zero or one generic parameters that we are
-   * currently defining. If there is one and [ty] is that generic
+   * [currently_defining] specifies zero or one type parameters that we are
+   * currently defining. If there is one and [ty] is that type
    * parameter, it will return `TypeParameter2TYPE(param)` instead of
    * the resolved type of the parameter.
    */
@@ -427,8 +427,8 @@ rules
    * [resolve_in_super_types] specifies if type arguments can be looked up in
    * super types or not. If they can, resolution will follow P and INHERIT
    * edges. Otherwise, it will only follow P edges.
-   * [currently_defining] specifies zero or one generic parameters that we are
-   * currently defining. If there is one and [data_ty] is that generic
+   * [currently_defining] specifies zero or one type parameters that we are
+   * currently defining. If there is one and [data_ty] is that type
    * parameter, it will return `TypeParameter2TYPE(param)` instead of
    * the resolved type of the parameter.
    */
@@ -446,24 +446,24 @@ rules
     isTypeParamOrDataTy(s, _, DataTy(_, name, _), _, _, _, _, _) = DataType(emptyScope(s)) :-
       false | error $[Undefined datatype [name]] @name.
 
-    // generic parameter
+    // type parameter
     isTypeParamOrDataTy(s, s_type_args, DataTy(NoModuleList(), name, type_args), NoModuleList(),
       [(_, (param@TypeParameter(_, name'), (upper_bound, _)))], _, resolve_in_super_types, currently_defining) = type :-
-      genericParamToType(resolveTypeArgFromNameOnly(s_type_args, name, resolve_in_super_types), param, upper_bound, currently_defining) == type,
+      typeParamToType(resolveTypeArgFromNameOnly(s_type_args, name, resolve_in_super_types), param, upper_bound, currently_defining) == type,
       @name.ref := name',
       @name.type := type,
       getTypeArgsList(type_args) == [] | error "Generic parameters do not take type arguments" @type_args.
 
       // todo: remove upper_bound (last TYPE)
-      genericParamToType : list((path * (TypeParameter * TYPE))) * TypeParameter * TYPE * list(TypeParameter) -> TYPE
-      genericParamToType([], param, _, _) = TypeParameter2TYPE(param).
-      genericParamToType([(_, (_, ty))], param, _, [param]) = TypeParameter2TYPE(param).
-      genericParamToType([(_, (_, ty))], _, _, _) = ty.
-      genericParamToType([(_, (TypeParameter(_, name), _)),_|_], TypeParameter(s, _), _, _) = DataType(emptyScope(s)) :-
+      typeParamToType : list((path * (TypeParameter * TYPE))) * TypeParameter * TYPE * list(TypeParameter) -> TYPE
+      typeParamToType([], param, _, _) = TypeParameter2TYPE(param).
+      typeParamToType([(_, (_, ty))], param, _, [param]) = TypeParameter2TYPE(param).
+      typeParamToType([(_, (_, ty))], _, _, _) = ty.
+      typeParamToType([(_, (TypeParameter(_, name), _)),_|_], TypeParameter(s, _), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
 
     isTypeParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _, _, _) = DataType(emptyScope(s)) :-
-      false | error $[Duplicate declarations for generic parameter [name]] @name.
+      false | error $[Duplicate declarations for type parameter [name]] @name.
 
     // data type
     isTypeParamOrDataTy(s, _, DataTy(_, name, _), _, _, [_,_|_], _, _) = DataType(emptyScope(s)) :-
@@ -475,9 +475,9 @@ rules
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
       getTypeParams(s_data_def) == params,
-      genericArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name),
-      // todo: return type args from genericArgsOk
-      // See commit 78a7f563638f06f2571f77ddd1a4c357169b7e3a, "Remove return value from genericArgsOk"
+      typeArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name),
+      // todo: return type args from typeArgsOk
+      // See commit 78a7f563638f06f2571f77ddd1a4c357169b7e3a, "Remove return value from typeArgsOk"
       !type_args[getTypeArgTypes(getTypeArgsOrdered(s_data_instance))] in s_data_instance,
       @name.ref := name',
       @name.type := type,
@@ -490,9 +490,9 @@ rules
       // s_data_def: definition for s_data_instance
 
   /**
-   * genericParamsOk(s, s_data_def, TypeParams(params)) = generic_params
+   * typeParamsOk(s, s_data_def, TypeParams(params)) = type_params
    * Checks that the declared type parameters are ok. Returns a list
-   * [generic_params] of the resolved type parameters with their bounds.
+   * [type_params] of the resolved type parameters with their bounds.
    * - Declares the type parameters in [s_def].
    * - Declares each individual type parameter in [s_def].
    * - Checks that there are no duplicate names for the type parameters. This
@@ -502,10 +502,10 @@ rules
    * - Resolves the type of each bound in scope [s].
    * - Gives a note if the type parameter shadows a datatype name in [s].
    */
-  genericParamsOk : scope * scope * TypeParams -> list(TypeParamType)
-  genericParamsOk(s, s_def, TypeParams(params)) = wrapBounds(parameters) :-
+  typeParamsOk : scope * scope * TypeParams -> list(TypeParamType)
+  typeParamsOk(s, s_def, TypeParams(params)) = wrapBounds(parameters) :-
     typeOfGenericParams(s, s_def, params) == parameters,
-    !generic_params[parameters] in s_def.
+    !type_params[parameters] in s_def.
 
     wrapBound : (TypeParameter * TYPE * TYPE) -> TypeParamType
     wrapBounds maps wrapBound(list(*)) = list(*)
@@ -556,9 +556,9 @@ rules
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
 
 
-  genericArgsOk : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string
-  genericArgsOk(_, _, _, [], NoTypeArgs(), _, _). // separate case to force unification of params before evaluating this.
-  genericArgsOk(_, _, s_data_instance, params@[_|_], NoTypeArgs(), _, error_node) :-
+  typeArgsOk : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string
+  typeArgsOk(_, _, _, [], NoTypeArgs(), _, _). // separate case to force unification of params before evaluating this.
+  typeArgsOk(_, _, s_data_instance, params@[_|_], NoTypeArgs(), _, error_node) :-
     {names}
     declareInvalidTypeArgs(s_data_instance, params),
     getTypeParamNames(params) == names,
@@ -568,8 +568,8 @@ rules
     getTypeParamNames maps getTypeParamName(list(*)) = list(*)
     getTypeParamName((TypeParameter(_, name), _, _)) = name.
 
-  genericArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), resolve_in_super_types, _) :-
-    genericArgsOk_1(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, sameLength(params, arg_types)).
+  typeArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), resolve_in_super_types, _) :-
+    typeArgsOk_1(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, sameLength(params, arg_types)).
 
     sameLength : list((TypeParameter * TYPE * TYPE)) * list(Type) -> (list(TYPEID) * list(Type))
     sameLength([], []) = ([], []).
@@ -578,25 +578,25 @@ rules
     sameLength([], remaining@[_|_]) = ([], remaining).
     sameLength([_|params], [_|type_args]) = sameLength(params, type_args).
 
-  genericArgsOk_1 : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) *
+  typeArgsOk_1 : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) *
     TypeArgs * BOOLEAN * (list(TYPEID) * list(Type))
-  genericArgsOk_1(_, _, s_data_instance, params, type_args, _, (remaining@[_|_], [])) :-
+  typeArgsOk_1(_, _, s_data_instance, params, type_args, _, (remaining@[_|_], [])) :-
     declareInvalidTypeArgs(s_data_instance, params),
-    false | error $[Not enough type arguments, unmatched generic arguments: [remaining]] @type_args.
-  genericArgsOk_1(_, _, s_data_instance, params, type_args, _, ([], remaining@[_|_])) :-
+    false | error $[Not enough type arguments, unmatched type arguments: [remaining]] @type_args.
+  typeArgsOk_1(_, _, s_data_instance, params, type_args, _, ([], remaining@[_|_])) :-
     declareInvalidTypeArgs(s_data_instance, params),
     false | error $[Too many type arguments, unmatched type arguments: [remaining]] @type_args.
-  genericArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) :-
-    genericArgsOk_2(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types).
+  typeArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) :-
+    typeArgsOk_2(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types).
 
     declareInvalidTypeArg : scope * (TypeParameter * TYPE * TYPE)
     declareInvalidTypeArgs maps declareInvalidTypeArg(*, list(*))
     declareInvalidTypeArg(s_data_instance, (name, upper_bound, _)) :-
       declareTypeArg(s_data_instance, name, upper_bound).
 
-  genericArgOk : scope * scope * scope * (TypeParameter * TYPE * TYPE) * Type * BOOLEAN
-  genericArgsOk_2 maps genericArgOk(*, *, *, list(*), list(*), *)
-  genericArgOk(s, s_type_args, s_data_instance, (param@TypeParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) :-
+  typeArgOk : scope * scope * scope * (TypeParameter * TYPE * TYPE) * Type * BOOLEAN
+  typeArgsOk_2 maps typeArgOk(*, *, *, list(*), list(*), *)
+  typeArgOk(s, s_type_args, s_data_instance, (param@TypeParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) :-
     {arg_ty upper_bound_instantiated lower_bound_instantiated}
     instantiateTypeArgs(s_type_args, upper_bound) == upper_bound_instantiated,
     instantiateTypeArgs(s_type_args, lower_bound) == lower_bound_instantiated,
@@ -611,7 +611,7 @@ rules
    * instantiateTypeArgs(s, T) = instantiated_type
    * instantiate [T] to a type [instantiated_type].
    * This recursively and exhaustively replaces TypeParameter2TYPE(_) with
-   * its type argument. If no type argument exists it will leave the generic
+   * its type argument. If no type argument exists it will leave the type
    * parameter as is. This is used when checking if a method overrides another.
    * Type arguments are looked up in [s].
    */
@@ -650,7 +650,7 @@ rules
       ).
 
     instantiateTypeArgs_1(s, TypeParameter2TYPE(param@TypeParameter(s_param, _)), _, params) =
-      instantiateTypeArgs_genericParameter(s, resolved_arg, param, [param|params], seen)
+      instantiateTypeArgs_typeParameter(s, resolved_arg, param, [param|params], seen)
     :-
       resolveTypeArg(s, param) == resolved_arg,
       containsTypeParam(params, param) == seen.
@@ -660,10 +660,10 @@ rules
       containsTypeParam([param|_], param) = TRUE().
       containsTypeParam([param'|params], param) = containsTypeParam(params, param).
 
-      instantiateTypeArgs_genericParameter : scope * list((path * (TypeParameter * TYPE))) *
+      instantiateTypeArgs_typeParameter : scope * list((path * (TypeParameter * TYPE))) *
         TypeParameter * list(TypeParameter) * BOOLEAN -> TYPE
-      instantiateTypeArgs_genericParameter(_, [], param, _, _) = TypeParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(s, [_], param, params, TRUE()) = TypeParameter2TYPE(param).
-      instantiateTypeArgs_genericParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, Bound(), params).
-      instantiateTypeArgs_genericParameter(s, [_,_|_], TypeParameter(_, name), _, _) = DataType(emptyScope(s)) :-
+      instantiateTypeArgs_typeParameter(_, [], param, _, _) = TypeParameter2TYPE(param).
+      instantiateTypeArgs_typeParameter(s, [_], param, params, TRUE()) = TypeParameter2TYPE(param).
+      instantiateTypeArgs_typeParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, Bound(), params).
+      instantiateTypeArgs_typeParameter(s, [_,_|_], TypeParameter(_, name), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].

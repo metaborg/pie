@@ -97,11 +97,10 @@ signature
     func_local : FUNCID -> (scope * TYPE)  // function scope, function type
     data : TYPEID -> scope
     data_local : TYPEID -> scope
-    // todo: rename generic* to type*
     data_mods : list(DataDefMod)
-    generic_params : list((TypeParameter * TYPE * TYPE)) // TypeParameter, upper bound, lower bound
-    generic_param : TypeParameter -> (TYPE * TYPE) // generic parameter -> upper bound, lower bound
-    generic_arg : TypeParameter -> TYPE   // generic argument, parameter -> instantiated type
+    type_params : list((TypeParameter * TYPE * TYPE)) // TypeParameter, upper bound, lower bound
+    type_param : TypeParameter -> (TYPE * TYPE) // type parameter -> upper bound, lower bound
+    type_arg : TypeParameter -> TYPE   // type argument, parameter -> instantiated type
     type_args : list(TYPE)
     context : string -> CONTEXT
 
@@ -352,39 +351,39 @@ rules // Declararing and resolving
 
   /**
    * getTypeParams(s_data) = params
-   * Get the list of generic parameters of datatype scope [s_data].
+   * Get the list of type parameters of datatype scope [s_data].
    * [s_data] can be the generic definition or an instance.
    */
   getTypeParams : scope -> list((TypeParameter * TYPE * TYPE))
   getTypeParams(s_data) = params :-
-    query generic_params
+    query type_params
       filter P*
          min $ < P and true
           in s_data |-> [(_, params)]
-      | error $[BUG: Could not get generic parameters from [s_data]].
+      | error $[BUG: Could not get type parameters from [s_data]].
 
   /**
    * declareTypeParam(s, name, upper_bound) = param
-   * Declares a generic parameter [param] constructed from [name] and [s] with
+   * Declares a type parameter [param] constructed from [name] and [s] with
    * upper bound [upper_bound] in [s].
    * Checks for duplicates and sets the type on [name].
    */
   declareTypeParam : scope * TYPEID * TYPE * TYPE -> TypeParameter
   declareTypeParam(s, name, upper_bound, lower_bound) = param :-
-    !generic_param[param@TypeParameter(s, name), (upper_bound, lower_bound)] in s,
+    !type_param[param@TypeParameter(s, name), (upper_bound, lower_bound)] in s,
     resolveTypeParam(s, name) == [_]
-      | error $[Duplicate definition of generic parameter [name]],
+      | error $[Duplicate definition of type parameter [name]],
     @name.type := wrapBound((param, upper_bound, lower_bound)).
 
   /**
    * resolveTypeParam(param, name) = occs
-   * Resolve a generic parameter [name] to its declaration(s) [occs] from scope
+   * Resolve a type parameter [name] to its declaration(s) [occs] from scope
    * [s].
    * Does not check if the resolved declarations are unique.
    */
   resolveTypeParam : scope * TYPEID -> list((path * (TypeParameter * (TYPE * TYPE))))
   resolveTypeParam(s, name) = occs :-
-    query generic_param
+    query type_param
       filter P?
          and { param' :- TypeParameter(_, name) == param' }
          min and false
@@ -399,7 +398,7 @@ rules // Declararing and resolving
   declareTypeArg : scope * TypeParameter * TYPE
   declareTypeArgs maps declareTypeArg(*, list(*), list(*))
   declareTypeArg(s, param@TypeParameter(_, name), ty) :-
-    !generic_arg[param, ty] in s,
+    !type_arg[param, ty] in s,
     resolveTypeArg(s, param) == [_]
       | error $[BUG: multiple arguments for type parameter [name]].
 
@@ -412,13 +411,13 @@ rules // Declararing and resolving
    */
   resolveTypeArgFromNameOnly : scope * TYPEID * BOOLEAN -> list((path * (TypeParameter * TYPE)))
   resolveTypeArgFromNameOnly(s, name, FALSE()) = occs :-
-    query generic_arg
+    query type_arg
       filter P*
          and { TypeParameter(_, name') :- name == name' }
          min $ < P
           in s |-> occs.
   resolveTypeArgFromNameOnly(s, name, TRUE()) = occs :-
-    query generic_arg
+    query type_arg
       filter (INHERIT|P)*
          and { TypeParameter(_, name') :- name == name' }
          min $ < P, $ < INHERIT
@@ -431,7 +430,7 @@ rules // Declararing and resolving
    */
   resolveTypeArg : scope * TypeParameter -> list((path * (TypeParameter * TYPE)))
   resolveTypeArg(s, param) = occs :-
-    query generic_arg
+    query type_arg
       filter (INHERIT|P)*
          and { param' :- param == param' }
          min $ < P, $ < INHERIT

@@ -22,44 +22,44 @@ test name start with underscore [[_foo() -> int]]
 test name ends with underscore [[foo_() -> int]]
 test name everything [[-helloW0rld_I_am-a-function4() -> int]]
 
-// function generic parameters
-test generic parameters empty list [[a[]() -> int]]
-test generic parameters omitted list [[f() -> int]]
-test generic parameters missing closing bracket [[h[() -> int]] parse fails
-test generic parameters missing opening bracket [[j]() -> int]] parse fails
-test generic parameters multiple lists [[j[][]() -> int]] parse fails
+// function type parameters
+test type parameters empty list [[a[]() -> int]]
+test type parameters omitted list [[f() -> int]]
+test type parameters missing closing bracket [[h[() -> int]] parse fails
+test type parameters missing opening bracket [[j]() -> int]] parse fails
+test type parameters multiple lists [[j[][]() -> int]] parse fails
 
-test generic parameters single uppercase letter [[a[T]() -> int]]
-test generic parameters single lowercase letter [[a[t]() -> int]]
-test generic parameters multi-letter all lowercase [[a[type]() -> int]]
-test generic parameters multi-letter all uppercase [[a[THING]() -> unit]]
-test generic parameters multi-letter [[a[Kind]() -> Kind]]
-test generic parameters camelcase [[a[SomeParam]() -> int]]
-test generic parameters dash in name [[a[some-name]() -> int]]
-test generic parameters start with dash [[a[-hello]() -> int]]
-test generic parameters end with dash [[a[hello-]() -> int]]
-test generic parameters underscore in name [[a[Some_Name]() -> int]]
-test generic parameters start with underscore [[a[_hello]() -> int]]
-test generic parameters end with underscore [[a[hello_]() -> int]]
-test generic parameters number in name [[a[hello2world]() -> int]]
-test generic parameters start with number [[a[4world]() -> int]] parse fails
-test generic parameters end with number [[a[world9]() -> int]]
-test generic parameters ampersand in name [[a[hello&world]() -> int]] parse fails
+test type parameters single uppercase letter [[a[T]() -> int]]
+test type parameters single lowercase letter [[a[t]() -> int]]
+test type parameters multi-letter all lowercase [[a[type]() -> int]]
+test type parameters multi-letter all uppercase [[a[THING]() -> unit]]
+test type parameters multi-letter [[a[Kind]() -> Kind]]
+test type parameters camelcase [[a[SomeParam]() -> int]]
+test type parameters dash in name [[a[some-name]() -> int]]
+test type parameters start with dash [[a[-hello]() -> int]]
+test type parameters end with dash [[a[hello-]() -> int]]
+test type parameters underscore in name [[a[Some_Name]() -> int]]
+test type parameters start with underscore [[a[_hello]() -> int]]
+test type parameters end with underscore [[a[hello_]() -> int]]
+test type parameters number in name [[a[hello2world]() -> int]]
+test type parameters start with number [[a[4world]() -> int]] parse fails
+test type parameters end with number [[a[world9]() -> int]]
+test type parameters ampersand in name [[a[hello&world]() -> int]] parse fails
 
-test generic parameters one parameter missing brackets [[resultOfOk T(value: T) -> Result[T, _ <: Exception] ]] parse fails
-test generic parameters one parameter no bounds [[resultOfOk[T](value: T) -> Result[T, _ <: Exception] ]]
-test generic parameters one parameter upper bound [[resultOfErr[E <: Exception](error: E) -> Result[_, E] ]]
-test generic parameters one parameter lower bound [[addToList[C :> Cat](list: C*, cat: Cat) -> unit]]
-test generic parameters one parameter both bounds [[doTheThing[Cat <: C <: Animal](list: C*) -> unit]]
-test generic parameters one parameter both bounds reverse order [[doTheThing[Animal :> C :> Cat](list: C*) -> unit]]
+test type parameters one parameter missing brackets [[resultOfOk T(value: T) -> Result[T, _ <: Exception] ]] parse fails
+test type parameters one parameter no bounds [[resultOfOk[T](value: T) -> Result[T, _ <: Exception] ]]
+test type parameters one parameter upper bound [[resultOfErr[E <: Exception](error: E) -> Result[_, E] ]]
+test type parameters one parameter lower bound [[addToList[C :> Cat](list: C*, cat: Cat) -> unit]]
+test type parameters one parameter both bounds [[doTheThing[Cat <: C <: Animal](list: C*) -> unit]]
+test type parameters one parameter both bounds reverse order [[doTheThing[Animal :> C :> Cat](list: C*) -> unit]]
 
-test generic parameters two parameters missing separator [[a[T E]() -> int]] parse fails
-test generic parameters two parameters no bounds [[kweh[A, B]() -> bool]]
-test generic parameters two parameters upper bound on second [[
+test type parameters two parameters missing separator [[a[T E]() -> int]] parse fails
+test type parameters two parameters no bounds [[kweh[A, B]() -> bool]]
+test type parameters two parameters upper bound on second [[
   resultOfOkWithExplicitErrorType[T, E <: Exception](value: T) -> Result[T, E]
 ]]
-test generic parameters three parameters [[kweh[A, B, C]() -> bool]]
-test generic parameters four parameters [[kweh[A, B, C, D]() -> bool]]
+test type parameters three parameters [[kweh[A, B, C]() -> bool]]
+test type parameters four parameters [[kweh[A, B, C, D]() -> bool]]
 
 // function params
 test missing brackets [[test -> int]] parse fails

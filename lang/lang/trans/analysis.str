@@ -89,7 +89,7 @@ rules // Pretty-printing DataType(scope) and TypeParameter2TYPE
                    , FALSE()
                    , FALSE()
                    )
-                   ; flatten-list> [S($[generic parameter [name]])]
+                   ; flatten-list> [S($[type parameter [name]])]
 
   is-pie-TYPE =
     ?TypeParameter2TYPE(_)

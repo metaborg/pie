@@ -23,12 +23,12 @@ rules
     @func.type := ty.
 
   typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
-  typeOfFuncHead(s, s_parent, FuncHead(name, generic_params, Params(params), out_ty_exp)) =
-    (s_func, name, FuncDefType(generic_param_tys, param_tys, out_ty))
+  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp)) =
+    (s_func, name, FuncDefType(type_param_tys, param_tys, out_ty))
   :-
     new s_func,
     s_func -P-> s_parent,
-    genericParamsOk(s, s_func, generic_params) == generic_param_tys,
+    typeParamsOk(s, s_func, type_params) == type_param_tys,
     typeOfParams(s, s_func, s_func, params) == param_tys,
     typeOfWithTypeArgScope(s, s_func, out_ty_exp, FALSE(), []) == out_ty,
     try { out_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.

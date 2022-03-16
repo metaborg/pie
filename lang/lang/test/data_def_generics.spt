@@ -11,69 +11,69 @@ fixture [[
   [[...]]
 ]]
 
-test generic parameters omitted param list [[ [[data Foo = foreign java Foo {} ]] ]]
+test type parameters omitted param list [[ [[data Foo = foreign java Foo {} ]] ]]
   analysis succeeds
   run desugar-all on #1 to DataDef(_, _, TypeParams([]), _, _)
-test generic parameters empty param list [[ data Foo[] = foreign java Foo {} ]] analysis succeeds
-test generic parameters single param unbound [[ data Foo[ [[T]] ] = foreign java Foo {} ]]
+test type parameters empty param list [[ data Foo[] = foreign java Foo {} ]] analysis succeeds
+test type parameters single param unbound [[ data Foo[ [[T]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", TopType())
-test generic parameters single param bound [[ data Foo[ [[T]] <: [[Food]] ] = foreign java Foo {} ]]
+test type parameters single param bound [[ data Foo[ [[T]] <: [[Food]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", DataType(_))
-test generic parameters shadow existing name [[ data Foo[ [[Apple]] ] = foreign java Foo {} ]]
+test type parameters shadow existing name [[ data Foo[ [[Apple]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "Apple", TopType())
   1 note at #1
   note like "shadows data type"
-test generic parameters reference own type [[ data [[Foo]][ [[T]] <: [[Foo]][ [[T]] ] ] = foreign java Foo {} ]]
+test type parameters reference own type [[ data [[Foo]][ [[T]] <: [[Foo]][ [[T]] ] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #2 to TypeParamType(BottomType(), "T", DataType(_))
   resolve #3 to #1
   resolve #4 to #2
-test generic parameters bound is unit [[ data Foo[ [[T]] <: [[unit]] ] = foreign java Foo {} ]]
+test type parameters bound is unit [[ data Foo[ [[T]] <: [[unit]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", UnitType())
   1 warning at #2
   warning like "unit does not have subtypes"
-test generic parameters bound is list [[ data Foo[ [[T]] <: [[Food*]] ] = foreign java Foo {} ]]
+test type parameters bound is list [[ data Foo[ [[T]] <: [[Food*]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", ListType(DataType(_)))
   1 warning at #2
   warning like "list types do not have subtypes"
-test generic parameters bound is tuple [[ data Foo[ [[T]] <: [[(path, Fruit)]] ] = foreign java Foo {} ]]
+test type parameters bound is tuple [[ data Foo[ [[T]] <: [[(path, Fruit)]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", TupleType([PathType(), DataType(_)]))
   1 warning at #2
   warning like "tuple types do not have subtypes"
-test generic parameters bound is supplier [[ data Foo[ [[T]] <: [[supplier[string] ]] ] = foreign java Foo {} ]]
+test type parameters bound is supplier [[ data Foo[ [[T]] <: [[supplier[string] ]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", SupplierType(StrType()))
-test generic parameters allow list type [[ data Foo[T <: Bar*] <: Object = foreign java Foo {} ]] parse succeeds
-test generic parameters allow tuple type [[ data Bar[T <: (Foo, Bak)] <: Object = foreign java Foo {} ]] parse succeeds
+test type parameters allow list type [[ data Foo[T <: Bar*] <: Object = foreign java Foo {} ]] parse succeeds
+test type parameters allow tuple type [[ data Bar[T <: (Foo, Bak)] <: Object = foreign java Foo {} ]] parse succeeds
 
-test generic parameters two params unbound [[ data Foo[ [[T]], [[R]] ] = foreign java Foo {} ]]
+test type parameters two params unbound [[ data Foo[ [[T]], [[R]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", TopType())
   run pie-get-type on #2 to TypeParamType(BottomType(), "R", TopType())
-test generic parameters two params first bound [[ data Foo[ [[T]] <: Apple, [[R]] ] = foreign java Foo {} ]]
+test type parameters two params first bound [[ data Foo[ [[T]] <: Apple, [[R]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", DataType(_))
   run pie-get-type on #2 to TypeParamType(BottomType(), "R", TopType())
-test generic parameters two params second bound [[ data Foo[ [[T]], [[R]] <: string] = foreign java Foo {} ]]
+test type parameters two params second bound [[ data Foo[ [[T]], [[R]] <: string] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", TopType())
   run pie-get-type on #2 to TypeParamType(BottomType(), "R", StrType())
-test generic parameters two params both bound [[ data Foo[ [[T]] <: int?, [[R]] <: bool] = foreign java Foo {} ]]
+test type parameters two params both bound [[ data Foo[ [[T]] <: int?, [[R]] <: bool] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", NullableType(IntType()))
   run pie-get-type on #2 to TypeParamType(BottomType(), "R", BoolType())
-test generic parameters two duplicate name [[ data Foo[ [[T]], [[T]] <: int] = foreign java Foo {} ]]
+test type parameters two duplicate name [[ data Foo[ [[T]], [[T]] <: int] = foreign java Foo {} ]]
   2 errors at #1, #2
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", TopType())
   run pie-get-type on #2 to TypeParamType(BottomType(), "T", IntType())
-  error like "Duplicate definition of generic parameter"
-test generic parameters two params both bound [[ data Foo[ [[T]] <: int?, [[R]], [[U]] <: bool] = foreign java Foo {} ]]
+  error like "Duplicate definition of type parameter"
+test type parameters two params both bound [[ data Foo[ [[T]] <: int?, [[R]], [[U]] <: bool] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", NullableType(IntType()))
   run pie-get-type on #2 to TypeParamType(BottomType(), "R", TopType())
@@ -81,10 +81,10 @@ test generic parameters two params both bound [[ data Foo[ [[T]] <: int?, [[R]],
 
 
 
-test omitted generic parameters list [[
+test omitted type parameters list [[
   data Foo = foreign java test.dataDef.generics.Foo {}
 ]] analysis succeeds
-test empty generic parameters list [[
+test empty type parameters list [[
   data Foo[] = foreign java test.dataDef.generics.Foo {}
 ]] analysis succeeds
 test single parameter [[
@@ -166,7 +166,7 @@ test method call inherited from transitive supertype [[
   func test(t: T4[string]) -> string = t.get()
 ]] analysis succeeds
 
-test nested generic parameters [[
+test nested type parameters [[
   data [[Box]][ [[T]] ] = foreign java org.example.test.dataDef.generics.Box {}
   data [[DoubleBox]][ [[E]], [[C]] <: [[Box]][ [[E]] ] ] = foreign java org.example.test.dataDef.generics.DoubleBox {}
 
@@ -185,7 +185,7 @@ test nested generic parameters [[
 // Most of them I also don't know if they even should be allowed, since it
 // seems like the only solution is T = R
 // todo: decide if this should be allowed
-test generic parameters two params circular reference [[
+test type parameters two params circular reference [[
   data Foo[ [[T]] <: Foo[ [[R]], [[R]] ], [[R]] <: Foo[ [[T]], [[R]] ] ] = foreign java Foo {}
 ]] parse succeeds
 //   analysis succeeds

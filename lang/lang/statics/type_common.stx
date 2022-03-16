@@ -109,7 +109,7 @@ rules
    */
   getTypeArgsUnordered : scope -> list((TypeParameter * TYPE))
   getTypeArgsUnordered(s_data) = getArgTypes(occs) :-
-    query generic_arg filter e in s_data |-> occs.
+    query type_arg filter e in s_data |-> occs.
 
     getArgType : (path * (TypeParameter * TYPE)) -> (TypeParameter * TYPE)
     getArgTypes maps getArgType(list(*)) = list(*)
@@ -129,7 +129,7 @@ rules
     getTypeArgsOrdered_1s maps getTypeArgsOrdered_1(*, list(*)) = list(*)
     getTypeArgsOrdered_1(s_data, (param, _, _)) =
       (param, getTypeArgsOrdered_2(s_data, param, occs)) :-
-      query generic_arg
+      query type_arg
         filter e
            and { param' :- param' == param }
             in s_data |-> occs.
