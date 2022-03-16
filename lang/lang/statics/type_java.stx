@@ -153,6 +153,6 @@ rules
     eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
     eraseType_1(FuncDefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
     eraseType_1(FuncRefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
-    eraseType_1(WildcardType(_, ub, _)) = ub.
+    eraseType_1(WildcardType(_, ub, _)) = eraseType(ub).
     eraseType_1(T@TypeParameter2TYPE(_)) = eraseType(ub) :-
       getBounds(T) == (_, ub).
