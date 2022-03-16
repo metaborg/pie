@@ -97,7 +97,6 @@ signature
     func_local : FUNCID -> (scope * TYPE)  // function scope, function type
     data : TYPEID -> scope
     data_local : TYPEID -> scope
-    // todo: change generic_params to list(TypeParameterType)
     // todo: rename generic* to type*
     data_mods : list(DataDefMod)
     generic_params : list((TypeParameter * TYPE * TYPE)) // TypeParameter, upper bound, lower bound
