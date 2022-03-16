@@ -504,7 +504,7 @@ rules
    */
   genericParamsOk : scope * scope * TypeParams -> list(TypeParamType)
   genericParamsOk(s, s_def, TypeParams(params)) = wrapBounds(parameters) :-
-    typeOfgenericParams(s, s_def, params) == parameters,
+    typeOfGenericParams(s, s_def, params) == parameters,
     !generic_params[parameters] in s_def.
 
     wrapBound : (TypeParameter * TYPE * TYPE) -> TypeParamType
@@ -512,9 +512,9 @@ rules
     wrapBound((TypeParameter(_, name), upper_bound, lower_bound)) =
       TypeParamType(lower_bound, name, upper_bound).
 
-    typeOfgenericParam : scope * scope * TypeParam -> (TypeParameter * TYPE * TYPE)
-    typeOfgenericParams maps typeOfgenericParam(*, *, list(*)) = list(*)
-    typeOfgenericParam(s, s_def, type_param@TypeParam(bounded_type_param)) = (param, upper_bound_ty, lower_bound_ty) :-
+    typeOfGenericParam : scope * scope * TypeParam -> (TypeParameter * TYPE * TYPE)
+    typeOfGenericParams maps typeOfGenericParam(*, *, list(*)) = list(*)
+    typeOfGenericParam(s, s_def, type_param@TypeParam(bounded_type_param)) = (param, upper_bound_ty, lower_bound_ty) :-
       {name type}
       typeOfBoundedTypeParam(s, s_def, bounded_type_param) == (lower_bound_ty, name, upper_bound_ty),
       declareTypeParam(s_def, name, upper_bound_ty, lower_bound_ty) == param,
