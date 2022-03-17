@@ -584,7 +584,7 @@ rules
     TypeArgs * BOOLEAN * (list(TYPEID) * list(Type))
   typeArgsOk_1(_, _, s_data_instance, params, type_args, _, (remaining@[_|_], [])) :-
     declareInvalidTypeArgs(s_data_instance, params),
-    false | error $[Not enough type arguments, unmatched type arguments: [remaining]] @type_args.
+    false | error $[Not enough type arguments, unmatched type parameters: [remaining]] @type_args.
   typeArgsOk_1(_, _, s_data_instance, params, type_args, _, ([], remaining@[_|_])) :-
     declareInvalidTypeArgs(s_data_instance, params),
     false | error $[Too many type arguments, unmatched type arguments: [remaining]] @type_args.
