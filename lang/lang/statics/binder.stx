@@ -31,8 +31,10 @@ rules
     @b.type := exp_ty.
 
   typeOfBind(s, actual_ty, b@TBind(name, expected_ty_exp)) = expected_ty :-
+    {expected_ty_instantiated}
     typeOf(s, expected_ty_exp) == expected_ty,
-    assignableTo(actual_ty, instantiateTypeArgs(s, expected_ty), ExpressionKind()) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty]] @expected_ty_exp,
+    instantiateTypeArgs(s, expected_ty) == expected_ty_instantiated,
+    assignableTo(actual_ty, expected_ty_instantiated, ExpressionKind()) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty_instantiated]] @expected_ty_exp,
     declareVal(s, name, expected_ty, LocalValKind()),
     @b.type := expected_ty,
     try { expected_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as value type. Use the upper bound or omit the type hint] @expected_ty_exp.
