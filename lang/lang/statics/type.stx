@@ -81,19 +81,20 @@ rules // operations on types
     isAssignableTo_1(_, SupplierType(T2), SupplierType(T1)) =
       isAssignableTo(T1, T2, InvariantKind()).
     isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) =
-      isAssignableTo_invariantDataTypes(same_generic_def, type_args, s2) :-
+      isAssignableTo_invariantDataTypes(same_generic_def, type_args_s1, type_args_s2) :-
         isScopeEqual(findGenericDef(s1), findGenericDef(s2)) == same_generic_def,
-        getTypeArgsUnordered(s1) == type_args. // todo: use getTypeArgsOrdered, reimplement isAssignableTo_invariantDataTypes
+        getTypeArgsOrdered(s1) == type_args_s1,
+        getTypeArgsOrdered(s2) == type_args_s2.
 
-      isAssignableTo_invariantDataTypes : BOOLEAN * list((TypeParameter * TYPE)) * scope -> BOOLEAN
+      isAssignableTo_invariantDataTypes : BOOLEAN * list((TypeParameter * TYPE)) * list((TypeParameter * TYPE)) -> BOOLEAN
       isAssignableTo_invariantDataTypes(FALSE(), _, _) = FALSE().
-      isAssignableTo_invariantDataTypes(TRUE(), type_args, s2) =
-        allTrue(isAssignableTo_invariantDataTypes_1s(type_args, s2)).
+      isAssignableTo_invariantDataTypes(TRUE(), type_args_s1, type_args_s2) =
+        allTrue(isAssignableTo_invariantDataTypes_1s(type_args_s1, type_args_s2)).
 
-        isAssignableTo_invariantDataTypes_1 : (TypeParameter * TYPE) * scope -> BOOLEAN
-        isAssignableTo_invariantDataTypes_1s maps isAssignableTo_invariantDataTypes_1(list(*), *) = list(*)
-        isAssignableTo_invariantDataTypes_1((param, T1), s2) =
-          isAssignableTo(T1, resolveUniqueTypeArg(s2, param, "no error node"), InvariantKind()).
+        isAssignableTo_invariantDataTypes_1 : (TypeParameter * TYPE) * (TypeParameter * TYPE) -> BOOLEAN
+        isAssignableTo_invariantDataTypes_1s maps isAssignableTo_invariantDataTypes_1(list(*), list(*)) = list(*)
+        isAssignableTo_invariantDataTypes_1((_, T1), (_, T2)) =
+          isAssignableTo(T1, T2, InvariantKind()).
 
     isAssignableTo_1(assignable_kind, DataType(s_super), DataType(s_sub)) =
       isAssignableTo_dataTypes(s_sub, s_super, inherits, type_args, s_super_def, assignable_kind)
