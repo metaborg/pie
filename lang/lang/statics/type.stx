@@ -81,11 +81,11 @@ rules // operations on types
     isAssignableTo_1(_, SupplierType(T2), SupplierType(T1)) =
       isAssignableTo(T1, T2, InvariantKind()).
     isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) =
-      isAssignableTo_invariantDataTypes(isScopeEqual(findGenericDef(s1), findGenericDef(s2)), s1, s2).
+      isAssignableTo_invariantDataTypes(findGenericDef(s1), findGenericDef(s2), s1, s2).
 
-      isAssignableTo_invariantDataTypes : BOOLEAN * scope * scope -> BOOLEAN
-      isAssignableTo_invariantDataTypes(FALSE(), _, _) = FALSE().
-      isAssignableTo_invariantDataTypes(TRUE(), s1, s2) =
+      isAssignableTo_invariantDataTypes : scope * scope * scope * scope -> BOOLEAN
+      isAssignableTo_invariantDataTypes(s_def1, s_def2, _, _) = FALSE().
+      isAssignableTo_invariantDataTypes(s_generic_def, s_generic_def, s1, s2) =
         allTrue(isAssignableTo_invariantDataTypes_1s(type_args_s1, type_args_s2)) :-
           getTypeArgsOrdered(s1) == type_args_s1,
           getTypeArgsOrdered(s2) == type_args_s2.
