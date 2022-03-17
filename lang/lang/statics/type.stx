@@ -450,18 +450,18 @@ rules
 
     // type parameter
     isTypeParamOrDataTy(s, s_type_args, DataTy(NoModuleList(), name, type_args), NoModuleList(),
-      [(_, (param@TypeParameter(_, name'), (upper_bound, _)))], _, resolve_in_super_types, currently_defining) = type :-
-      typeParamToType(resolveTypeArgFromNameOnly(s_type_args, name, resolve_in_super_types), param, upper_bound, currently_defining) == type,
+      [(_, (param@TypeParameter(_, name'), (_, _)))], _, resolve_in_super_types, currently_defining) = type :-
+      typeParamToType(resolveTypeArgFromNameOnly(s_type_args, name, resolve_in_super_types), param, currently_defining) == type,
       @name.ref := name',
       @name.type := type,
       getTypeArgsList(type_args) == [] | error "Generic parameters do not take type arguments" @type_args.
 
       // todo: remove upper_bound (last TYPE)
-      typeParamToType : list((path * (TypeParameter * TYPE))) * TypeParameter * TYPE * list(TypeParameter) -> TYPE
-      typeParamToType([], param, _, _) = TypeParameter2TYPE(param).
-      typeParamToType([(_, (_, ty))], param, _, [param]) = TypeParameter2TYPE(param).
-      typeParamToType([(_, (_, ty))], _, _, _) = ty.
-      typeParamToType([(_, (TypeParameter(_, name), _)),_|_], TypeParameter(s, _), _, _) = DataType(emptyScope(s)) :-
+      typeParamToType : list((path * (TypeParameter * TYPE))) * TypeParameter * list(TypeParameter) -> TYPE
+      typeParamToType([], param, _) = TypeParameter2TYPE(param).
+      typeParamToType([(_, (_, ty))], param, [param]) = TypeParameter2TYPE(param).
+      typeParamToType([(_, (_, ty))], _, _) = ty.
+      typeParamToType([(_, (TypeParameter(_, name), _)),_|_], TypeParameter(s, _), _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
 
     isTypeParamOrDataTy(s, _, DataTy(_, name, type_args), NoModuleList(), [_,_|_], _, _, _) = DataType(emptyScope(s)) :-
