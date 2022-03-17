@@ -472,15 +472,13 @@ rules
       false | error $[Duplicate datatype [name]] @name.
     isTypeParamOrDataTy(s, s_type_args, data_ty@DataTy(modules, name, type_args), _, _,
       [(_, (name', s_data_def))], resolve_in_super_types, _) = type@DataType(s_data_instance) :-
-      {params}
+      {params type_arg_tys}
       new s_data_instance,
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
       getTypeParams(s_data_def) == params,
-      typeArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name) == _,
-      // todo: return type args from typeArgsOk
-      // See commit 78a7f563638f06f2571f77ddd1a4c357169b7e3a, "Remove return value from typeArgsOk"
-      !type_args[getTypeArgTypes(getTypeArgsOrdered(s_data_instance))] in s_data_instance,
+      typeArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name) == type_arg_tys,
+      !type_args[type_arg_tys] in s_data_instance,
       @name.ref := name',
       @name.type := type,
       copyContext(s_data_instance, "foreign_java_impl"),
