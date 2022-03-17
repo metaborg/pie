@@ -87,10 +87,10 @@ rules // operations on types
       isAssignableTo_invariantDataTypes(s_def1, s_def2, _, _) = FALSE().
       isAssignableTo_invariantDataTypes(s_generic_def, s_generic_def, s1, s2) =
         allTrue(isAssignableTo_invariantDataTypes_1s(type_args_s1, type_args_s2)) :-
-          getTypeArgsOrdered(s1) == type_args_s1,
-          getTypeArgsOrdered(s2) == type_args_s2.
-          // #optimization: could get type parameters only once instead of once
-          //                for each scope because both have the same generic def
+          {type_params}
+          getTypeParams(s_generic_def) == type_params,
+          getTypeArgsOrdered_1s(s1, type_params) == type_args_s1,
+          getTypeArgsOrdered_1s(s2, type_params) == type_args_s2.
 
         isAssignableTo_invariantDataTypes_1 : (TypeParameter * TYPE) * (TypeParameter * TYPE) -> BOOLEAN
         isAssignableTo_invariantDataTypes_1s maps isAssignableTo_invariantDataTypes_1(list(*), list(*)) = list(*)
