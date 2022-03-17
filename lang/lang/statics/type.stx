@@ -81,15 +81,16 @@ rules // operations on types
     isAssignableTo_1(_, SupplierType(T2), SupplierType(T1)) =
       isAssignableTo(T1, T2, InvariantKind()).
     isAssignableTo_1(InvariantKind(), DataType(s2), DataType(s1)) =
-      isAssignableTo_invariantDataTypes(same_generic_def, type_args_s1, type_args_s2) :-
-        isScopeEqual(findGenericDef(s1), findGenericDef(s2)) == same_generic_def,
-        getTypeArgsOrdered(s1) == type_args_s1,
-        getTypeArgsOrdered(s2) == type_args_s2.
+      isAssignableTo_invariantDataTypes(isScopeEqual(findGenericDef(s1), findGenericDef(s2)), s1, s2).
 
-      isAssignableTo_invariantDataTypes : BOOLEAN * list((TypeParameter * TYPE)) * list((TypeParameter * TYPE)) -> BOOLEAN
+      isAssignableTo_invariantDataTypes : BOOLEAN * scope * scope -> BOOLEAN
       isAssignableTo_invariantDataTypes(FALSE(), _, _) = FALSE().
-      isAssignableTo_invariantDataTypes(TRUE(), type_args_s1, type_args_s2) =
-        allTrue(isAssignableTo_invariantDataTypes_1s(type_args_s1, type_args_s2)).
+      isAssignableTo_invariantDataTypes(TRUE(), s1, s2) =
+        allTrue(isAssignableTo_invariantDataTypes_1s(type_args_s1, type_args_s2)) :-
+          getTypeArgsOrdered(s1) == type_args_s1,
+          getTypeArgsOrdered(s2) == type_args_s2.
+          // #optimization: could get type parameters only once instead of once
+          //                for each scope because both have the same generic def
 
         isAssignableTo_invariantDataTypes_1 : (TypeParameter * TYPE) * (TypeParameter * TYPE) -> BOOLEAN
         isAssignableTo_invariantDataTypes_1s maps isAssignableTo_invariantDataTypes_1(list(*), list(*)) = list(*)
