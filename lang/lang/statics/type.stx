@@ -456,7 +456,6 @@ rules
       @name.type := type,
       getTypeArgsList(type_args) == [] | error "Generic parameters do not take type arguments" @type_args.
 
-      // todo: remove upper_bound (last TYPE)
       typeParamToType : list((path * (TypeParameter * TYPE))) * TypeParameter * list(TypeParameter) -> TYPE
       typeParamToType([], param, _) = TypeParameter2TYPE(param).
       typeParamToType([(_, (_, ty))], param, [param]) = TypeParameter2TYPE(param).
