@@ -596,9 +596,9 @@ rules
     declareInvalidTypeArg(s_data_instance, (name, upper_bound, _)) = upper_bound :-
       declareTypeArg(s_data_instance, name, upper_bound).
 
-  typeArgOk : scope * scope * scope * (TypeParameter * TYPE * TYPE) * Type * BOOLEAN -> TYPE
-  typeOfTypeArgs_2 maps typeArgOk(*, *, *, list(*), list(*), *) = list(*)
-  typeArgOk(s, s_type_args, s_data_instance, (param@TypeParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) = arg_ty :-
+  typeOfTypeArg : scope * scope * scope * (TypeParameter * TYPE * TYPE) * Type * BOOLEAN -> TYPE
+  typeOfTypeArgs_2 maps typeOfTypeArg(*, *, *, list(*), list(*), *) = list(*)
+  typeOfTypeArg(s, s_type_args, s_data_instance, (param@TypeParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) = arg_ty :-
     {upper_bound_instantiated lower_bound_instantiated}
     instantiateTypeArgs(s_type_args, upper_bound) == upper_bound_instantiated,
     instantiateTypeArgs(s_type_args, lower_bound) == lower_bound_instantiated,
