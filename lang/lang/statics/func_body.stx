@@ -170,7 +170,7 @@ rules
    * - Replaces parameter types and return type of the declaration with type
    *   arguments [type_args] and the type arguments defined in [s_type_args].
    *   There is no preference between these two, so it fails if both define the
-   *   same type argument. The computed return type is [out_ty]. 
+   *   same type argument. The computed return type is [out_ty].
    * - Computes the types of the argument expressions [arg_exps], resolved in
    *   scope [s].
    * - Checks that the computed types for the type arguments are subtypes of
@@ -194,7 +194,8 @@ rules
       s_func_instantiated -P-> s_func,
       s_func_instantiated -P-> s_type_args,
       getTypeParams(s_func) == type_params,
-      typeArgsOk(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name),
+      // todo: use returned type arguments for early failure
+      typeArgsOk(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name) == _,
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty,
