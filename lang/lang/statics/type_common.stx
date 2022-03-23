@@ -153,21 +153,20 @@ rules
   getTypeArgType((_, ty)) = ty.
 
   /**
-   * instantiateTypeParams(template, s_data, capture_state) =
+   * instantiateTypeParams(s_data, template, capture_state) =
    *   s_data_instance_instantiated
    * Instantiate type parameters in instance [s_data] with the type arguments
    * of [template]. In other words, look up the values for type parameters of
    * [s_data] in [template].
-   * todo: switch template and s_data
    */
   instantiateTypeParams : scope * scope * CaptureState -> scope
-  instantiateTypeParams(s1, s2, capture_state) = s_data_instance_instantiated :-
+  instantiateTypeParams(s_data, template, capture_state) = s_data_instance_instantiated :-
     {type_args instantiated}
     new s_data_instance_instantiated,
-    !root[getRoot(s2)] in s_data_instance_instantiated,
-    s_data_instance_instantiated -P-> findGenericDef(s2),
-    getTypeArgsOrdered(s2) == type_args,
-    instantiateNamedTypeArgs(s1, s2, capture_state, type_args) == instantiated,
+    !root[getRoot(s_data)] in s_data_instance_instantiated,
+    s_data_instance_instantiated -P-> findGenericDef(s_data),
+    getTypeArgsOrdered(s_data) == type_args,
+    instantiateNamedTypeArgs(template, s_data, capture_state, type_args) == instantiated,
     declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
     copyContext(s_data_instance_instantiated, "foreign_java_impl"),
     copyContext(s_data_instance_instantiated, "data_name_unqualified"),
