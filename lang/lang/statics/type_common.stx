@@ -166,15 +166,15 @@ rules
     !root[getRoot(s_data)] in s_data_instance_instantiated,
     s_data_instance_instantiated -P-> findGenericDef(s_data),
     getTypeArgsOrdered(s_data) == type_args,
-    instantiateNamedTypeArgs(template, s_data, capture_state, type_args) == instantiated,
+    instantiateNamedTypeArgs(template, capture_state, type_args) == instantiated,
     declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
     copyContext(s_data_instance_instantiated, "foreign_java_impl"),
     copyContext(s_data_instance_instantiated, "data_name_unqualified"),
     !type_args[getTypeArgTypes(instantiated)] in s_data_instance_instantiated.
 
-    instantiateNamedTypeArg : scope * scope * CaptureState * (TypeParameter * TYPE) -> (TypeParameter * TYPE)
-    instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, *, list(*)) = list(*)
-    instantiateNamedTypeArg(template, s2, capture_state, (name, T)) = (name, instantiateTypeArgs_1(template, T, capture_state, [])).
+    instantiateNamedTypeArg : scope * CaptureState * (TypeParameter * TYPE) -> (TypeParameter * TYPE)
+    instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*)) = list(*)
+    instantiateNamedTypeArg(template, capture_state, (name, T)) = (name, instantiateTypeArgs_1(template, T, capture_state, [])).
 
     declareTypeArgsFromTuples : scope * list((TypeParameter * TYPE))
     declareTypeArgsFromTuples(_, []).
