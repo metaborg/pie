@@ -185,28 +185,29 @@ rules
     typeOfCall_1(s1, _, _, arg_exps, [], name) = (s2, DataType(emptyScope(s1))) :-
       typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
       false | error $[Undefined function [name]] @name.
-
-    typeOfCall_1(s1, s_type_args, type_args, arg_exps,
-      [(_, (name', (s_func, FuncDefType(_, param_tys, ret_ty))))], name)
-    = (s2, ty) :-
-      {s_func_instantiated type_params instantiated_param_tys type_arg_tys instantiated_type_args}
+    typeOfCall_1(s1, _, _, arg_exps, [_,_|_], name) = (s2, DataType(emptyScope(s1))) :-
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
+      false | error $[Duplicate declarations of function [name]. Remove the duplicate definitions.] @name.
+    typeOfCall_1(s1, s_type_args, type_args, arg_exps, [(_, (name', (s_func, func_ty)))], name)
+    = typeOfCall_2(type_args_ok, s1, s_func_instantiated, func_ty, type_arg_tys, arg_exps, name) :-
+      {type_params}
       new s_func_instantiated,
       s_func_instantiated -P-> s_func,
       s_func_instantiated -P-> s_type_args,
       getTypeParams(s_func) == type_params,
-      // todo: use returned type arguments for early failure
-      typeOfTypeArgs(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name) == _,
+      typeOfTypeArgs(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name) == (type_args_ok, type_arg_tys),
+      @name.ref := name'.
+
+    typeOfCall_2 : BOOLEAN * scope * scope * TYPE * list(TYPE) * list(Exp) * FUNCID -> (scope * TYPE)
+    typeOfCall_2(FALSE(), s1, _, _, _, arg_exps, _) = (s2, DataType(emptyScope(s1))) :-
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _).
+    typeOfCall_2(TRUE(), s1, s_func_instantiated, FuncDefType(_, param_tys, ret_ty), type_arg_tys, arg_exps, name) = (s2, ty) :-
+      {instantiated_param_tys instantiated_type_args}
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty,
-      typesOfWithTypeArgScope(s1, s_type_args, getTypeArgsList(type_args), FALSE(), []) == type_arg_tys,
       instantiateTypeArgsInAll(s_func_instantiated, type_arg_tys) == instantiated_type_args,
-      @name.ref := name',
       @name.type := FuncRefType(instantiated_type_args, instantiated_param_tys, ty).
-
-    typeOfCall_1(s1, _, _, arg_exps, [_,_|_], name) = (s2, DataType(emptyScope(s1))) :-
-      typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
-      false | error $[Duplicate declarations of function [name]. Remove the duplicate definitions.] @name.
 
   typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
     typeOfCall(s, merged, s, name, type_args, arg_exps) :-
