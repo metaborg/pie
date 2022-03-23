@@ -195,7 +195,7 @@ rules
       s_func_instantiated -P-> s_type_args,
       getTypeParams(s_func) == type_params,
       // todo: use returned type arguments for early failure
-      typeArgsOk(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name) == _,
+      typeOfTypeArgs(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name) == _,
       instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
       expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
       instantiateTypeArgs(s_func_instantiated, ret_ty) == ty,

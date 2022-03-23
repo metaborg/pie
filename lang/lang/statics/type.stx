@@ -477,7 +477,7 @@ rules
       !root[getRoot(s)] in s_data_instance,
       s_data_instance -P-> s_data_def,
       getTypeParams(s_data_def) == params,
-      typeArgsOk(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name) == _,
+      typeOfTypeArgs(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, name) == _,
       // todo: return type args from typeArgsOk
       // See commit 78a7f563638f06f2571f77ddd1a4c357169b7e3a, "Remove return value from typeArgsOk"
       !type_args[getTypeArgTypes(getTypeArgsOrdered(s_data_instance))] in s_data_instance,
@@ -558,9 +558,9 @@ rules
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
 
 
-  typeArgsOk : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string -> (BOOLEAN * list(TYPE))
-  typeArgsOk(_, _, _, [], NoTypeArgs(), _, _) = (TRUE(), []). // separate case to force unification of params before evaluating this.
-  typeArgsOk(_, _, s_data_instance, params@[_|_], NoTypeArgs(), _, error_node) = (FALSE(), types) :-
+  typeOfTypeArgs : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) * TypeArgs * BOOLEAN * string -> (BOOLEAN * list(TYPE))
+  typeOfTypeArgs(_, _, _, [], NoTypeArgs(), _, _) = (TRUE(), []). // separate case to force unification of params before evaluating this.
+  typeOfTypeArgs(_, _, s_data_instance, params@[_|_], NoTypeArgs(), _, error_node) = (FALSE(), types) :-
     {names}
     declareInvalidTypeArgs(s_data_instance, params) == types,
     getTypeParamNames(params) == names,
@@ -570,8 +570,8 @@ rules
     getTypeParamNames maps getTypeParamName(list(*)) = list(*)
     getTypeParamName((TypeParameter(_, name), _, _)) = name.
 
-  typeArgsOk(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), resolve_in_super_types, _) =
-    typeArgsOk_1(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, sameLength(params, arg_types)).
+  typeOfTypeArgs(s, s_type_args, s_data_instance, params, type_args@TypeArgs(arg_types), resolve_in_super_types, _) =
+    typeOfTypeArgs_1(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types, sameLength(params, arg_types)).
 
     sameLength : list((TypeParameter * TYPE * TYPE)) * list(Type) -> (list(TYPEID) * list(Type))
     sameLength([], []) = ([], []).
@@ -580,16 +580,16 @@ rules
     sameLength([], remaining@[_|_]) = ([], remaining).
     sameLength([_|params], [_|type_args]) = sameLength(params, type_args).
 
-  typeArgsOk_1 : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) *
+  typeOfTypeArgs_1 : scope * scope * scope * list((TypeParameter * TYPE * TYPE)) *
     TypeArgs * BOOLEAN * (list(TYPEID) * list(Type)) -> (BOOLEAN * list(TYPE))
-  typeArgsOk_1(_, _, s_data_instance, params, type_args, _, (remaining@[_|_], [])) = (FALSE(), types) :-
+  typeOfTypeArgs_1(_, _, s_data_instance, params, type_args, _, (remaining@[_|_], [])) = (FALSE(), types) :-
     declareInvalidTypeArgs(s_data_instance, params) == types,
     false | error $[Not enough type arguments, unmatched type parameters: [remaining]] @type_args.
-  typeArgsOk_1(_, _, s_data_instance, params, type_args, _, ([], remaining@[_|_])) = (FALSE(), types) :-
+  typeOfTypeArgs_1(_, _, s_data_instance, params, type_args, _, ([], remaining@[_|_])) = (FALSE(), types) :-
     declareInvalidTypeArgs(s_data_instance, params) == types,
     false | error $[Too many type arguments, unmatched type arguments: [remaining]] @type_args.
-  typeArgsOk_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) =
-    (TRUE(), typeArgsOk_2(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types)).
+  typeOfTypeArgs_1(s, s_type_args, s_data_instance, params, TypeArgs(type_args), resolve_in_super_types, ([], [])) =
+    (TRUE(), typeOfTypeArgs_2(s, s_type_args, s_data_instance, params, type_args, resolve_in_super_types)).
 
     declareInvalidTypeArg : scope * (TypeParameter * TYPE * TYPE) -> TYPE
     declareInvalidTypeArgs maps declareInvalidTypeArg(*, list(*)) = list(*)
@@ -597,7 +597,7 @@ rules
       declareTypeArg(s_data_instance, name, upper_bound).
 
   typeArgOk : scope * scope * scope * (TypeParameter * TYPE * TYPE) * Type * BOOLEAN -> TYPE
-  typeArgsOk_2 maps typeArgOk(*, *, *, list(*), list(*), *) = list(*)
+  typeOfTypeArgs_2 maps typeArgOk(*, *, *, list(*), list(*), *) = list(*)
   typeArgOk(s, s_type_args, s_data_instance, (param@TypeParameter(_, name), upper_bound, lower_bound), arg, resolve_in_super_types) = arg_ty :-
     {upper_bound_instantiated lower_bound_instantiated}
     instantiateTypeArgs(s_type_args, upper_bound) == upper_bound_instantiated,
