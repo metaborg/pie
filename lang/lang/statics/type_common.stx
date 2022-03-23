@@ -174,7 +174,7 @@ rules
 
     instantiateNamedTypeArg : scope * scope * CaptureState * (TypeParameter * TYPE) -> (TypeParameter * TYPE)
     instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, *, list(*)) = list(*)
-    instantiateNamedTypeArg(s1, s2, capture_state, (name, T)) = (name, instantiateTypeArgs_1(s1, T, capture_state, [])).
+    instantiateNamedTypeArg(template, s2, capture_state, (name, T)) = (name, instantiateTypeArgs_1(template, T, capture_state, [])).
 
     declareTypeArgsFromTuples : scope * list((TypeParameter * TYPE))
     declareTypeArgsFromTuples(_, []).
