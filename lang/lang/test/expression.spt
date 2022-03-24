@@ -109,7 +109,7 @@ test shadowing in block [[
 test toNullable [[ val x: int? = 8? ]] analysis succeeds
 test toNullable null [[ val x = null? ]] analysis succeeds
 test toNonNullable [[ val x: int = [[null!]] ]]
-  analysis fails     // todo: test has errors with Gradle runner
+  analysis fails     // test has errors with Gradle runner
   // 1 errors at #1  // see https://github.com/MeAmAnUsername/pie/issues/216
   0 warnings
   error like "Type mismatch"
