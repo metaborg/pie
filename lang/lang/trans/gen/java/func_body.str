@@ -699,23 +699,19 @@ rules // PIE function calls
       //       new [javaClassId].Input([expsVals])
     ; result                := (stmts, exp)
 
-  p2j-ast-exp: CreateSupplier(_, typeArg, [arg]) -> result
+  p2j-ast-exp: cs@CreateSupplier(_, _, [arg]) -> result
     with
       <add-import> "mb.pie.api.Supplier"
     ; <add-import> "mb.pie.api.ValueSupplier"
     ; (argStmts, argVal) := <p2j-ast-exp> arg
-      // todo: get type from typeArg, not arg. (could also get full type directly from CreateSupplier node?)
-    ; ty                 := <p2j-ast-type-sig> <pie-ast-type> arg
+    ; ty                 := <p2j-ast-type-sig> <pie-ast-type> cs
     ; supplierName       := <newname> "supplier"
     ; stmts              := <concat> [
         argStmts,
         [ LocVarDeclStm(
             LocalVarDecl(
               [Final()]
-            , ClassType(
-                Id("Supplier")
-              , Some(TypeArguments([ty]))
-              )
+            , <java-classType-to-unannType> ty
             , [ VariableDeclInit(
                   VariableDecl(Id(supplierName))
                 , NewInstance(None(), [], "ValueSupplier", [], None(), [argVal])
