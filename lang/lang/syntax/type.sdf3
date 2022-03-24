@@ -60,3 +60,7 @@ context-free priorities
   } > {
     Type.Wildcard
   }
+
+lexical syntax // Reject keywords
+
+  TYPEID = "_" {reject}
