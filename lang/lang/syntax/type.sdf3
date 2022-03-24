@@ -54,7 +54,6 @@ context-free priorities
   // Solves ambiguity between single element tuples and brackets
   Type.TupleTy <1> .> {Type ","}+ = Type,
 
-  // todo: causes bug where _? fails to parse. See https://slde.slack.com/archives/C7254SF60/p1623169709196400
   {
     Type.ListTy
     Type.NullableTy
