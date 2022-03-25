@@ -3,6 +3,7 @@ package mb.pie.runtime.test
 import com.nhaarman.mockitokotlin2.*
 import mb.pie.api.InconsistentResourceRequire
 import mb.pie.api.MapTaskDefs
+import mb.pie.api.None
 import mb.pie.api.exec.InterruptCancelableToken
 import mb.pie.api.test.anyC
 import mb.pie.runtime.exec.NoData
@@ -77,6 +78,11 @@ class InterruptAndExceptionTests {
       val result = session.require(task)
       assertEquals("test", result)
     }
+
+    newSession().use { session -> // Test cleanup.
+      session.unobserve(task)
+      session.deleteUnobservedTasks({ true }, { _, _ -> true })
+    }
   }
 
   @TestFactory
@@ -111,6 +117,11 @@ class InterruptAndExceptionTests {
     newSession().use { session ->
       val result = session.require(task)
       assertEquals("test", result)
+    }
+
+    newSession().use { session -> // Test cleanup.
+      session.unobserve(task)
+      session.deleteUnobservedTasks({ true }, { _, _ -> true })
     }
   }
 
@@ -163,6 +174,11 @@ class InterruptAndExceptionTests {
       val result = session.require(task, InterruptCancelableToken())
       assertEquals("test", result)
     }
+
+    newSession().use { session -> // Test cleanup.
+      session.unobserve(task)
+      session.deleteUnobservedTasks({ true }, { _, _ -> true })
+    }
   }
 
   @TestFactory
@@ -200,6 +216,45 @@ class InterruptAndExceptionTests {
     newSession().use { session ->
       val result = session.require(task, InterruptCancelableToken())
       assertEquals("test", result)
+    }
+
+    newSession().use { session -> // Test cleanup.
+      session.unobserve(task)
+      session.deleteUnobservedTasks({ true }, { _, _ -> true })
+    }
+  }
+
+  @TestFactory
+  fun testResetDataCallerCorrectState() = builder.test {
+    val sometimesThrows = spy(sometimesThrows)
+    addTaskDef(sometimesThrows)
+
+    val file = resource("/input1.str")
+
+    val sometimesCallsThrows = taskDef<None, None>("sometimesCallsThrows") {
+      require(file)
+      val text = file.readString()
+      if(text.contains("call")) {
+        this.require(sometimesThrows, file)
+      }
+      None.instance
+    }
+    addTaskDef(sometimesCallsThrows)
+
+    val task = sometimesCallsThrows.createTask(None.instance)
+
+    write("test", file)
+    newSession().use { session ->
+      session.require(task)
+    }
+
+    write("call throw", file)
+    newSession().use { session ->
+      assertThrows(Exception::class.java) {
+        session.require(task)
+      }
+      session.unobserve(task)
+      session.deleteUnobservedTasks({ true }, { _, _ -> true })
     }
   }
 }

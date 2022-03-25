@@ -3,6 +3,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Fixed
+- Fix inconsistent store state in very specific task cancellation scenario, which would result in `RuntimeException`s when deleting unobserved tasks.
 
 
 ## [0.19.8] - 2022-03-09
