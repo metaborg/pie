@@ -467,7 +467,7 @@ rules
       // s_data_def: definition for s_data_instance
 
   /**
-   * typeParamsOk(s, s_data_def, TypeParams(params)) = type_params
+   * typesOfTypeParams(s, s_data_def, TypeParams(params)) = type_params
    * Checks that the declared type parameters are ok. Returns a list
    * [type_params] of the resolved type parameters with their bounds.
    * - Declares the type parameters in [s_def].
@@ -479,8 +479,8 @@ rules
    * - Resolves the type of each bound in scope [s].
    * - Gives a note if the type parameter shadows a datatype name in [s].
    */
-  typeParamsOk : scope * scope * TypeParams -> list(TypeParamType)
-  typeParamsOk(s, s_def, TypeParams(params)) = wrapBounds(parameters) :-
+  typesOfTypeParams : scope * scope * TypeParams -> list(TypeParamType)
+  typesOfTypeParams(s, s_def, TypeParams(params)) = wrapBounds(parameters) :-
     typeOfGenericParams(s, s_def, params) == parameters,
     !type_params[parameters] in s_def.
 

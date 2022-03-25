@@ -21,7 +21,7 @@ rules
     setFileIfExists(s, s_data_def),
     setContext(s_data_def, "data_name_unqualified", ContextName(name)),
     !data_mods[mods] in s_data_def,
-    typeParamsOk(s, s_data_def, type_params) == _,
+    typesOfTypeParams(s, s_data_def, type_params) == _,
     declareData(s, name, s_data_def),
     declareLocalData(s, name, s_data_def),
     superOk(s, s_data_def, super, name),
