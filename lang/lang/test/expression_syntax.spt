@@ -113,7 +113,7 @@ test val declaration reserved keyword null  [[ val null  = 5 ]] parse fails
 test val declaration reserved keyword true  [[ val true  = 5 ]] parse fails
 test val declaration reserved keyword false [[ val false = 5 ]] parse fails
 test val declaration named val [[ val val = 5 ]] parse succeeds
-test val declaration named _ [[ val _ = 5 ]] parse succeeds // todo: disallow _ as variable name?
+test val declaration named _ [[ val _ = 5 ]] parse succeeds
 test val declaration single bind missing expression [[ val x = ]] parse fails
 test val declaration single bind no layout around = [[ val x=7 ]] parse succeeds
 test val declaration single bind with type missing <: [[ val foo string = "-_-" ]] parse fails
