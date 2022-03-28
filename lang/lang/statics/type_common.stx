@@ -159,22 +159,23 @@ rules
    * of [template]. In other words, look up the values for type parameters of
    * [s_data] in [template].
    */
-  instantiateTypeParams : scope * scope * CaptureState -> scope
-  instantiateTypeParams(s_data, template, capture_state) = s_data_instance_instantiated :-
+  instantiateTypeParams : scope * scope * CaptureState * list(TypeParameter) -> scope
+  instantiateTypeParams(s_data, template, capture_state, params) = s_data_instance_instantiated :-
     {type_args instantiated}
     new s_data_instance_instantiated,
     !root[getRoot(s_data)] in s_data_instance_instantiated,
     s_data_instance_instantiated -P-> findGenericDef(s_data),
     getTypeArgsOrdered(s_data) == type_args,
-    instantiateNamedTypeArgs(template, capture_state, type_args) == instantiated,
+    instantiateNamedTypeArgs(template, capture_state, type_args, params) == instantiated,
     declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
     copyContext(s_data_instance_instantiated, "foreign_java_impl"),
     copyContext(s_data_instance_instantiated, "data_name_unqualified"),
     !type_args[getTypeArgTypes(instantiated)] in s_data_instance_instantiated.
 
-    instantiateNamedTypeArg : scope * CaptureState * (TypeParameter * TYPE) -> (TypeParameter * TYPE)
-    instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*)) = list(*)
-    instantiateNamedTypeArg(template, capture_state, (name, T)) = (name, instantiateTypeArgs_1(template, T, capture_state, [])).
+    instantiateNamedTypeArg : scope * CaptureState * (TypeParameter * TYPE) * list(TypeParameter) -> (TypeParameter * TYPE)
+    instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*), *) = list(*)
+    instantiateNamedTypeArg(template, capture_state, (name, T), params) =
+      (name, instantiateTypeArgs_1(template, T, capture_state, params)).
 
     declareTypeArgsFromTuples : scope * list((TypeParameter * TYPE))
     declareTypeArgsFromTuples(_, []).

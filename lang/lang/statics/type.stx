@@ -129,7 +129,7 @@ rules // operations on types
           filter INHERIT? (P INHERIT)*
              and { s :- getGenericDef(s) == s_super_def }
               in s_sub |-> [(_, s_sub_super_instance)],
-        instantiateTypeParams(s_sub_super_instance, s_sub, Bound()) == instantiated_s_sub_super_instance.
+        instantiateTypeParams(s_sub_super_instance, s_sub, Bound(), []) == instantiated_s_sub_super_instance.
 
       // check if s1 is compatible with s2. Assumes s1 is an instance of data
       // type dt and that s2 is either also an instance or the generic definition
@@ -268,8 +268,8 @@ rules // operations on types
         filter (P|INHERIT)*
            and { s4_candidate :- isInstanceOf(s4_candidate, s_common) == TRUE() }
            min $ < INHERIT, $ < P in s2 |-> [(_, s4)],
-      instantiateTypeParams(s3, s1, Free()) == s3_instantiated,
-      instantiateTypeParams(s4, s2, Free()) == s4_instantiated,
+      instantiateTypeParams(s3, s1, Free(), []) == s3_instantiated,
+      instantiateTypeParams(s4, s2, Free(), []) == s4_instantiated,
       unzipTypeArgs(getTypeArgsUnordered(s3_instantiated)) == (type_arg_params, type_arg_tys),
       lubs_type_args(type_arg_tys, resolveUniqueTypeArgs(s4_instantiated, type_arg_params, "no error node")) == merged_type_args,
       declareTypeArgs(s_common_instance, type_arg_params, merged_type_args).
@@ -607,7 +607,7 @@ rules
     instantiateTypeArgs_1(_, TopType(), _, _) = TopType().
     instantiateTypeArgs_1(_, BottomType(), _, _) = BottomType().
     instantiateTypeArgs_1(s, DataType(s_data), capture_state, params) =
-      DataType(instantiateTypeParams(s_data, s, capture_state)).
+      DataType(instantiateTypeParams(s_data, s, capture_state, params)).
     instantiateTypeArgs_1(s, TupleType(tys), capture_state, params) = TupleType(instantiateTypeArgsInAll_1(s, tys, capture_state, params)).
     instantiateTypeArgs_1(s, ListType(ty), capture_state, params) = ListType(instantiateTypeArgs_1(s, ty, capture_state, params)).
     instantiateTypeArgs_1(_, EmptyListType(), _, _) = EmptyListType().
@@ -640,7 +640,7 @@ rules
       instantiateTypeArgs_typeParameter : scope * list((path * (TypeParameter * TYPE))) *
         TypeParameter * list(TypeParameter) * BOOLEAN -> TYPE
       instantiateTypeArgs_typeParameter(_, [], param, _, _) = TypeParameter2TYPE(param).
-      instantiateTypeArgs_typeParameter(s, [_], param, params, TRUE()) = TypeParameter2TYPE(param).
-      instantiateTypeArgs_typeParameter(s, [(_, (_, T))], _, params, FALSE()) = instantiateTypeArgs_1(s, T, Bound(), params).
+      instantiateTypeArgs_typeParameter(s, [_], param, _, TRUE()) = TypeParameter2TYPE(param).
+      instantiateTypeArgs_typeParameter(s, [(_, (_, T))], param, params, FALSE()) = instantiateTypeArgs_1(s, T, Bound(), [param|params]).
       instantiateTypeArgs_typeParameter(s, [_,_|_], TypeParameter(_, name), _, _) = DataType(emptyScope(s)) :-
         false | error $[BUG: resolved multiple type arguments named [name]].
