@@ -625,7 +625,6 @@ rules
         instantiateTypeArgs_1(s, upper_bound, Bound(), params),
         Bound()
       ).
-
     instantiateTypeArgs_1(s, TypeParameter2TYPE(param@TypeParameter(s_param, _)), _, params) =
       instantiateTypeArgs_typeParameter(s, resolved_arg, param, [param|params], seen)
     :-
