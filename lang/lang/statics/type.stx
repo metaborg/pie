@@ -347,18 +347,8 @@ rules // operations on types
 rules
 
   /**
-   * typeOf(s, ty) = type
-   * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
-   * If you have a scope with type arguments, use typeOfWithTypeArgScope
-   */
-  typeOf : scope * Type -> TYPE
-  typesOf maps typeOf(*, list(*)) = list(*)
-  typeOf(s, ty) = typeOfWithTypeArgScope(s, emptyScope(s), ty, FALSE(), []).
-
-  /**
    * typeOfWithTypeArgScope(s, s_type_args, ty) = type
    * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
-   * If you don't have a scope with type arguments, use typeOf
    * [resolve_in_super_types] specifies if type arguments can be looked up in
    * super types or not. If they can, resolution will follow P and INHERIT
    * edges. Otherwise, it will only follow P edges.
