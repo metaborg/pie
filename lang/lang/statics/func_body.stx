@@ -223,7 +223,7 @@ rules
     typeOfQCall((s1, exp_ty@NullableType(inner_ty)), call@QCall(_, name, type_args, arg_exps)) = (s2, DataType(emptyScope(s1))) :-
       {s_data s_nullable resolved}
       getScopeFromType(s1, inner_ty) == s_data,
-      typesOfWithTypeArgScope(s1, s_data, getTypeArgsList(type_args), FALSE(), []) == _,
+      typesOf(s1, s_data, getTypeArgsList(type_args), FALSE(), []) == _,
       typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
       getScopeFromType(s1, exp_ty) == s_nullable,
       resolveFunc(s_nullable, name) == resolved,
@@ -243,7 +243,7 @@ rules
     typeOfExp(s1, exp) == (s2, ty).
   typeOfExpImpl(s1, CreateSupplier(_, TypeArgs([arg_ty_lex]), [exp])) = (s2, SupplierType(arg_ty)) :-
     {exp_ty}
-    typeOfWithTypeArgScope(s1, s1, arg_ty_lex, FALSE(), []) == arg_ty,
+    typeOf(s1, s1, arg_ty_lex, FALSE(), []) == arg_ty,
     typeOfExp(s1, exp) == (s2, exp_ty),
     assignableTo(exp_ty, arg_ty, ExpressionKind())
       | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.

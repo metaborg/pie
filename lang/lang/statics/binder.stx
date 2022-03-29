@@ -32,7 +32,7 @@ rules
 
   typeOfBind(s, actual_ty, b@TBind(name, expected_ty_exp)) = expected_ty :-
     {expected_ty_instantiated}
-    typeOfWithTypeArgScope(s, s, expected_ty_exp, FALSE(), []) == expected_ty,
+    typeOf(s, s, expected_ty_exp, FALSE(), []) == expected_ty,
     instantiateTypeArgs(s, expected_ty) == expected_ty_instantiated,
     assignableTo(actual_ty, expected_ty_instantiated, ExpressionKind()) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty_instantiated]] @expected_ty_exp,
     declareVal(s, name, expected_ty, LocalValKind()),

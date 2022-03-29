@@ -347,7 +347,7 @@ rules // operations on types
 rules
 
   /**
-   * typeOfWithTypeArgScope(s, s_type_args, ty) = type
+   * typeOf(s, s_type_args, ty) = type
    * Resolves a syntactic Type [ty] to a semantic TYPE [type] in scope [s].
    * [resolve_in_super_types] specifies if type arguments can be looked up in
    * super types or not. If they can, resolution will follow P and INHERIT
@@ -357,35 +357,35 @@ rules
    * parameter, it will return `TypeParameter2TYPE(param)` instead of
    * the resolved type of the parameter.
    */
-  typeOfWithTypeArgScope : scope * scope * Type * BOOLEAN * list(TypeParameter) -> TYPE
-  typesOfWithTypeArgScope maps typeOfWithTypeArgScope(*, *, list(*), *, *) = list(*)
-  typeOfWithTypeArgScope(s, s_type_args, ty, resolve_in_super_types, currently_defining) =
-    type@typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining) :-
+  typeOf : scope * scope * Type * BOOLEAN * list(TypeParameter) -> TYPE
+  typesOf maps typeOf(*, *, list(*), *, *) = list(*)
+  typeOf(s, s_type_args, ty, resolve_in_super_types, currently_defining) =
+    type@typeOf_1(s, s_type_args, ty, resolve_in_super_types, currently_defining) :-
     @ty.type := type.
 
-  typeOfWithTypeArgScope_1 : scope * scope * Type * BOOLEAN * list(TypeParameter) -> TYPE
-  typesOfWithTypeArgScope_1 maps typeOfWithTypeArgScope_1(*, *, list(*), *, *) = list(*)
-  typeOfWithTypeArgScope_1(_, _, UnitTy(), _, _) = UnitType().
-  typeOfWithTypeArgScope_1(_, _, BoolTy(), _, _) = BoolType().
-  typeOfWithTypeArgScope_1(_, _, IntTy(),  _, _) = IntType().
-  typeOfWithTypeArgScope_1(_, _, StrTy(),  _, _) = StrType().
-  typeOfWithTypeArgScope_1(_, _, PathTy(), _, _) = PathType().
-  typeOfWithTypeArgScope_1(s, s_type_args, DataTy2Type(data_ty), resolve_in_super_types, currently_defining) = typeOfDataTy(s, s_type_args, data_ty, resolve_in_super_types, currently_defining).
-  typeOfWithTypeArgScope_1(s, s_type_args, TupleTy(tys), resolve_in_super_types, currently_defining) = TupleType(typesOfWithTypeArgScope_1(s, s_type_args, tys, resolve_in_super_types, currently_defining)).
-  typeOfWithTypeArgScope_1(s, s_type_args, ListTy(ty), resolve_in_super_types, currently_defining) = ListType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)).
-  typeOfWithTypeArgScope_1(s, s_type_args, SupplierTy(ty), resolve_in_super_types, currently_defining) = SupplierType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)).
-  typeOfWithTypeArgScope_1(s, s_type_args, NullableTy(ty, marker), resolve_in_super_types, currently_defining) = NullableType(typeOfWithTypeArgScope_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)) :-
+  typeOf_1 : scope * scope * Type * BOOLEAN * list(TypeParameter) -> TYPE
+  typesOf_1 maps typeOf_1(*, *, list(*), *, *) = list(*)
+  typeOf_1(_, _, UnitTy(), _, _) = UnitType().
+  typeOf_1(_, _, BoolTy(), _, _) = BoolType().
+  typeOf_1(_, _, IntTy(),  _, _) = IntType().
+  typeOf_1(_, _, StrTy(),  _, _) = StrType().
+  typeOf_1(_, _, PathTy(), _, _) = PathType().
+  typeOf_1(s, s_type_args, DataTy2Type(data_ty), resolve_in_super_types, currently_defining) = typeOfDataTy(s, s_type_args, data_ty, resolve_in_super_types, currently_defining).
+  typeOf_1(s, s_type_args, TupleTy(tys), resolve_in_super_types, currently_defining) = TupleType(typesOf_1(s, s_type_args, tys, resolve_in_super_types, currently_defining)).
+  typeOf_1(s, s_type_args, ListTy(ty), resolve_in_super_types, currently_defining) = ListType(typeOf_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)).
+  typeOf_1(s, s_type_args, SupplierTy(ty), resolve_in_super_types, currently_defining) = SupplierType(typeOf_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)).
+  typeOf_1(s, s_type_args, NullableTy(ty, marker), resolve_in_super_types, currently_defining) = NullableType(typeOf_1(s, s_type_args, ty, resolve_in_super_types, currently_defining)) :-
     try { ty != NullableTy(_, _) } | warning $[No-op: double nullable has no effect] @marker.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(UnboundedWildcard()), resolve_in_super_types, currently_defining) = WildcardType(BottomType(), TopType(), Free()).
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(UpperBoundedWildcard(upper_bound)), resolve_in_super_types, currently_defining) = WildcardType(BottomType(), upper_bound_ty, Free()) :-
+  typeOf_1(s, s_type_args, Wildcard(UnboundedWildcard()), resolve_in_super_types, currently_defining) = WildcardType(BottomType(), TopType(), Free()).
+  typeOf_1(s, s_type_args, Wildcard(UpperBoundedWildcard(upper_bound)), resolve_in_super_types, currently_defining) = WildcardType(BottomType(), upper_bound_ty, Free()) :-
     typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining) == upper_bound_ty.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(LowerBoundedWildcard(lower_bound)), resolve_in_super_types, currently_defining) = WildcardType(lower_bound_ty, TopType(), Free()) :-
+  typeOf_1(s, s_type_args, Wildcard(LowerBoundedWildcard(lower_bound)), resolve_in_super_types, currently_defining) = WildcardType(lower_bound_ty, TopType(), Free()) :-
     typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining) == lower_bound_ty.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(wildcard@BothBoundedWildcard(lower_bound, upper_bound)), resolve_in_super_types, currently_defining) = WildcardType(lower_bound_ty, upper_bound_ty, Free()) :-
+  typeOf_1(s, s_type_args, Wildcard(wildcard@BothBoundedWildcard(lower_bound, upper_bound)), resolve_in_super_types, currently_defining) = WildcardType(lower_bound_ty, upper_bound_ty, Free()) :-
     typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining) == upper_bound_ty,
     typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining) == lower_bound_ty,
     false | error "Cannot have both an upper and lower bound on a wildcard" @wildcard.
-  typeOfWithTypeArgScope_1(s, s_type_args, Wildcard(wildcard@BothBoundedReverseWildcard(upper_bound, lower_bound)), resolve_in_super_types, currently_defining) = WildcardType(lower_bound_ty, upper_bound_ty, Free()) :-
+  typeOf_1(s, s_type_args, Wildcard(wildcard@BothBoundedReverseWildcard(upper_bound, lower_bound)), resolve_in_super_types, currently_defining) = WildcardType(lower_bound_ty, upper_bound_ty, Free()) :-
     typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining) == upper_bound_ty,
     typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining) == lower_bound_ty,
     false | error "Cannot have both an upper and lower bound on a wildcard" @wildcard.
@@ -507,7 +507,7 @@ rules
 
       typeOfUpperBound : scope * scope * Type * BOOLEAN * list(TypeParameter) -> TYPE
       typeOfUpperBound(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining) =
-        ty@typeOfWithTypeArgScope(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining)
+        ty@typeOf(s, s_type_args, upper_bound, resolve_in_super_types, currently_defining)
       :-
         try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as upper bound] @upper_bound,
         try { ty != UnitType()   } | warning $[Nonsensical bound: unit does not have subtypes] @upper_bound,
@@ -517,7 +517,7 @@ rules
 
       typeOfLowerBound : scope * scope * Type * BOOLEAN * list(TypeParameter) -> TYPE
       typeOfLowerBound(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining) =
-        ty@typeOfWithTypeArgScope(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining)
+        ty@typeOf(s, s_type_args, lower_bound, resolve_in_super_types, currently_defining)
       :-
         try { ty != WildcardType(_, _, _) } | error $[Cannot use wildcard as lower bound] @lower_bound,
         try { ty != TopType() } | warning $[Nonsensical bound: TOP is the only matching type] @lower_bound.
@@ -567,7 +567,7 @@ rules
     {upper_bound_instantiated lower_bound_instantiated}
     instantiateTypeArgs(s_type_args, upper_bound) == upper_bound_instantiated,
     instantiateTypeArgs(s_type_args, lower_bound) == lower_bound_instantiated,
-    typeOfWithTypeArgScope(s, s_type_args, arg, resolve_in_super_types, [param]) == arg_ty,
+    typeOf(s, s_type_args, arg, resolve_in_super_types, [param]) == arg_ty,
     declareTypeArg(s_data_instance, param, arg_ty),
     try { assignableTo(arg_ty, upper_bound_instantiated, TypeArgKind()) }
       | error $[Type mismatch: [arg_ty] is not within upper bound [upper_bound_instantiated] for type parameter [name]],
