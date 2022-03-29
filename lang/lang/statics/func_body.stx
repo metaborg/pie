@@ -243,7 +243,7 @@ rules
     typeOfExp(s1, exp) == (s2, ty).
   typeOfExpImpl(s1, CreateSupplier(_, TypeArgs([arg_ty_lex]), [exp])) = (s2, SupplierType(arg_ty)) :-
     {exp_ty}
-    typeOf(s1, arg_ty_lex) == arg_ty,
+    typeOfWithTypeArgScope(s1, s1, arg_ty_lex, FALSE(), []) == arg_ty,
     typeOfExp(s1, exp) == (s2, exp_ty),
     assignableTo(exp_ty, arg_ty, ExpressionKind())
       | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
