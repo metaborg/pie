@@ -52,6 +52,18 @@ test type parameters bound is supplier [[ data Foo[ [[T]] <: [[supplier[string] 
 test type parameters allow list type [[ data Foo[T <: Bar*] <: Object = foreign java Foo {} ]] parse succeeds
 test type parameters allow tuple type [[ data Bar[T <: (Foo, Bak)] <: Object = foreign java Foo {} ]] parse succeeds
 
+test type parameter lower bound boolean [[ data Foo[ [[T]] :> bool] = foreign java Foo {} ]]
+  analysis succeeds
+  run pie-get-type on #1 to TypeParamType(BoolType(), "T", TopType())
+test type parameter lower bound list [[ data Foo[ [[T]] :> bool*] = foreign java Foo {} ]]
+  analysis succeeds
+  0 warnings
+  run pie-get-type on #1 to TypeParamType(ListType(BoolType()), "T", TopType())
+test type parameter lower bound tuple [[ data Foo[ [[T]] :> (path, Foo[T])] = foreign java Foo {} ]]
+  analysis succeeds
+  0 warnings
+  run pie-get-type on #1 to TypeParamType(TupleType(_), "T", TopType())
+
 test type parameters two params unbound [[ data Foo[ [[T]], [[R]] ] = foreign java Foo {} ]]
   analysis succeeds
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", TopType())
@@ -78,8 +90,6 @@ test type parameters two params both bound [[ data Foo[ [[T]] <: int?, [[R]], [[
   run pie-get-type on #1 to TypeParamType(BottomType(), "T", NullableType(IntType()))
   run pie-get-type on #2 to TypeParamType(BottomType(), "R", TopType())
   run pie-get-type on #3 to TypeParamType(BottomType(), "U", BoolType())
-
-
 
 test omitted type parameters list [[
   data Foo = foreign java test.dataDef.generics.Foo {}
