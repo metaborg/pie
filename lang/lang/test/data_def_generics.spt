@@ -181,10 +181,8 @@ test nested type parameters [[
    resolve #14 to #9
 
 // List of cases where Statix analysis does not terminate.
-// Don't know if this is a bug in Statix or just unbounded recursion in Statix spec.
-// Most of them I also don't know if they even should be allowed, since it
-// seems like the only solution is T = R
-// todo: decide if this should be allowed
+// This seems to be a bug in Statix
+// issue: #159, https://github.com/MeAmAnUsername/pie/issues/159
 test type parameters two params circular reference [[
   data Foo[ [[T]] <: Foo[ [[R]], [[R]] ], [[R]] <: Foo[ [[T]], [[R]] ] ] = foreign java Foo {}
 ]] parse succeeds
