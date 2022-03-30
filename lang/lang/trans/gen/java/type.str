@@ -91,13 +91,9 @@ rules
       <add-import> "mb.pie.api.Supplier"
 
   p2j-ast-type-sig:
-    WildcardType(lower_bound, upper_bound, _) -> WildCard(WildCard([]))
-    where
-      TopType() := upper_bound; BottomType() := lower_bound
+    WildcardType(BottomType(), TopType(), _) -> WildCard(WildCard([]))
   p2j-ast-type-sig:
-    WildcardType(lower_bound, upper_bound, _) -> WildCard(WildCardSuper([], <p2j-ast-type-sig> lower_bound))
-    where
-      TopType() := upper_bound
+    WildcardType(lower_bound, TopType(), _) -> WildCard(WildCardSuper([], <p2j-ast-type-sig> lower_bound))
   p2j-ast-type-sig:
     WildcardType(_, upper_bound, _) -> WildCard(WildCardExtends([], <p2j-ast-type-sig> upper_bound))
 
