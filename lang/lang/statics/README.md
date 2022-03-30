@@ -68,18 +68,18 @@ Wildcards differentiate between an explicit top type upper bound and no upper bo
 This is not useful right now, but is required if we ever want to copy the upper bound from a supertype.
 For example, in
 ```
-data Foo<T : Fruit> = foreign java org.example.Foo {}
-data Bar<E> : Foo<E> = foreign java org.example.Bar {}
-data Buz<A : Object> : Foo<A> = foreign java org.example.Buz {}
+data Foo[T : Fruit] = foreign java org.example.Foo {}
+data Bar[E] : Foo[E] = foreign java org.example.Bar {}
+data Buz[A : Object] : Foo[A] = foreign java org.example.Buz {}
 ```
-`E` gets the implicit upper bound `Fruit` because it is passed to `Foo`.
-`A` fails because the upper bound `Object` is not compatible with the upper bound `Fruit` of `A` in `Foo<A>`.
+`E` could get the implicit upper bound `Fruit` because it is passed to `Foo`.
+`A` fails because the upper bound `Object` is not compatible with the upper bound `Fruit` of `A` in `Foo[A]`.
 
 ### Type parameters
 Type parameters contain the defining scope so that going up a type hierarchy is possible without ambiguities in what a type argument refers to, for example:
 ```
-data Box<A, B> = foreign java Box {}
-data Box2<A, B> : Box<B, A> = foreign java Box2 {}
+data Box[A, B] = foreign java Box {}
+data Box2[A, B] : Box[B, A] = foreign java Box2 {}
 ```
 Here, A and B exist in both data elements.
 Without the defining scope, type instantiating needs to go through the scopes one by one.
