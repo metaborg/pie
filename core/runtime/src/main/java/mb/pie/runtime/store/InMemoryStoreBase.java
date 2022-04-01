@@ -222,11 +222,7 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
                 addTaskRequireDep(key, dep);
             }
         } else {
-            // Ensure that `key` is removed from `callersOf`, even though `callersOf.get(key)` may return an empty list,
-            // because an empty list has different semantics than not being in the mapping at all: if
-            // `callersOf.get(key)` returns an empty list, then key is eligible for garbage collection through
-            // `getTasksWithoutCallers`, but that would fail because this task does not exist anymore.
-            this.callersOf.remove(key);
+            removeFromCallersOf(key);
         }
         removeResourceRequireDepsOf(key);
         if(data != null) {
@@ -253,8 +249,6 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
             throw new IllegalStateException("BUG: deleting task data for '" + key + "', but no output was deleted");
         }
         final @Nullable Observability observability = this.taskObservability.remove(key);
-        // Pass `true` to `removeTaskRequireDepsOf` to remove `key` from the `callersOf` map, as `key` will be removed
-        // completely, thus it is not possible to call it anymore.
         final @Nullable Collection<TaskRequireDep> removedTaskRequires = removeTaskRequiresAndDepsOf(key);
         removeFromCallersOf(key);
         final @Nullable Collection<ResourceRequireDep> removedResourceRequires = removeResourceRequireDepsOf(key);
@@ -275,17 +269,17 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
 
 
     private @Nullable Collection<TaskRequireDep> removeTaskRequiresAndDepsOf(TaskKey key) {
-        final @Nullable Collection<TaskKey> removedCallers = this.taskRequires.remove(key);
+        final @Nullable Collection<TaskKey> removedCallees = this.taskRequires.remove(key);
         // Use the removed tasks from `taskRequires` instead of the removed deps from `taskRequireDeps` here, because
         // when a task requires (calls) another task, this is immediately recorded in `taskRequires`, but only after
         // the call completes in `taskRequireDeps`. This matters because tasks can be cancelled/interrupted, and in that
         // case no dependency will be added to `taskRequireDeps`. Therefore, we should use `taskRequires` to remove
         // entries from `callersOf`.
-        if(removedCallers != null) {
-            for(final TaskKey removedCaller : removedCallers) {
-                final @Nullable Set<TaskKey> callers = this.callersOf.get(removedCaller);
-                if(callers != null) {
-                    callers.remove(key);
+        if(removedCallees != null) {
+            for(final TaskKey removedCallee : removedCallees) {
+                final @Nullable Set<TaskKey> callersOfRemovedCallee = this.callersOf.get(removedCallee);
+                if(callersOfRemovedCallee != null) {
+                    callersOfRemovedCallee.remove(key);
                 }
             }
         }
@@ -294,6 +288,10 @@ public abstract class InMemoryStoreBase implements Store, StoreReadTxn, StoreWri
     }
 
     private void removeFromCallersOf(TaskKey key) {
+        // Ensure that `key` is removed from `callersOf`, even though `callersOf.get(key)` may return an empty list,
+        // because an empty list has different semantics than not being in the mapping at all: if
+        // `callersOf.get(key)` returns an empty list, then key is eligible for garbage collection through
+        // `getTasksWithoutCallers`, but that would fail when this task does not exist anymore.
         this.callersOf.remove(key);
     }
 
