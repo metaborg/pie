@@ -6,7 +6,8 @@ imports
   signatures/func_body-sig
   statics/base
   statics/type
-  statics/util
+  statics/type_common
+  statics/common
   statics/module
   statics/binder
 
@@ -48,13 +49,14 @@ rules
 
   typeOfExpImpl(s1, ToNullable(exp)) = (s2, NullableType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty),
-    ty != NullableType(_) | error $[Type mismatch: cannot make [ty] nullable] @exp.
+    ty != NullableType(_) | error $[Type mismatch: cannot make [ty] nullable again] @exp,
+    ty != TopType() | error $[Type mismatch: cannot make top type nullable, it is already nullable] @exp.
 
   typeOfExpImpl(s1, ToNonNullable(exp)) = (s2, ty) :-
     typeOfExp(s1, exp) == (s2, NullableType(ty)) | error $[Type mismatch: cannot make [ty] non-nullable] @exp.
 
-  typeOfExpImpl(s1, Not(exp)) = (s2, BoolType()) :- {ty}
-    expectSubtype(s1, exp, BoolType()) == s2.
+  typeOfExpImpl(s1, Not(exp)) = (s2, BoolType()) :-
+    expectAssignableTo(s1, exp, BoolType(), ExpressionKind()) == s2.
 
 // Binary expressions
 
@@ -73,12 +75,12 @@ rules
   typeOfExpImpl(s, e@Neq(l, r)) = comparableOk(s, l, r, e).
 
   typeOfExpImpl(s1, Lor(exp_left, exp_right)) = (s3, BoolType()) :- {s2 ty_left ty_right}
-    expectSubtype(s1, exp_left, BoolType()) == s2,
-    expectSubtype(s2, exp_right, BoolType()) == s3.
+    expectAssignableTo(s1, exp_left, BoolType(), ExpressionKind()) == s2,
+    expectAssignableTo(s2, exp_right, BoolType(), ExpressionKind()) == s3.
 
   typeOfExpImpl(s1, Land(exp_left, exp_right)) = (s3, BoolType()) :- {s2 ty_left ty_right}
-    expectSubtype(s1, exp_left, BoolType()) == s2,
-    expectSubtype(s2, exp_right, BoolType()) == s3.
+    expectAssignableTo(s1, exp_left, BoolType(), ExpressionKind()) == s2,
+    expectAssignableTo(s2, exp_right, BoolType(), ExpressionKind()) == s3.
 
   typeOfExpImpl(s1, Add(exp_left, exp_right)) = (s3, ty) :- {s2 ty_left ty_right}
     typeOfExp(s1, exp_left) == (s2, ty_left),
@@ -96,41 +98,45 @@ rules
   typeOfAdd(StrType()      , _              , _) = StrType().
   typeOfAdd(PathType()     , PathType()     , _) = PathType().
   typeOfAdd(PathType()     , StrType()      , _) = PathType().
-  typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- subtype(T2, T1) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
-  typeOfAdd(ListType(T)    , EmptyListType(), _) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op].
+  typeOfAdd(ListType(T1)   , ListType(T2)   , e) = ListType(T1) :- assignableTo(T2, T1, ExpressionKind()) | error $[Type mismatch: cannot concatenate [T2] to [T1]] @e.
+  typeOfAdd(ListType(T)    , EmptyListType(), e) = ListType(T) :- try {false} | warning $[concatenating an empty list is a no-op] @e.
   typeOfAdd(ListType(T)    , NullType()     , _) = ListType(makeNullable(T)).
-  typeOfAdd(ListType(T1)   , T2             , e) = ListType(T1) :- subtype(T2, T1) | error $[Type mismatch: cannot add element [T1] to list [T2]] @e.
+  typeOfAdd(ListType(T1)   , T2             , e) = ListType(T1) :- assignableTo(T2, T1, ExpressionKind()) | error $[Type mismatch: cannot add element [T1] to list [T2]] @e.
   typeOfAdd(EmptyListType(), ListType(T)    , _) = ListType(T).
-  typeOfAdd(EmptyListType(), EmptyListType(), _) = EmptyListType() :- try {false} | warning $[concatenating an empty list is a no-op].
+  typeOfAdd(EmptyListType(), EmptyListType(), e) = EmptyListType() :- try {false} | warning $[concatenating an empty list is a no-op] @e.
   typeOfAdd(EmptyListType(), T              , _) = ListType(T).
 
 // Control flow
 
   typeOfExpImpl(s, If(exp_cond, exp_body)) = (s, UnitType()) :- {s_if}
-    expectSubtype(s, exp_cond, BoolType()) == s_if,
+    expectAssignableTo(s, exp_cond, BoolType(), ExpressionKind()) == s_if,
     typeOfExp(s_if, exp_body) == _.
 
   typeOfExpImpl(s, IfElse(exp_cond, exp_true, exp_false)) = (s, ty) :- {s_if ty_true ty_false}
-    expectSubtype(s, exp_cond, BoolType()) == s_if,
+    expectAssignableTo(s, exp_cond, BoolType(), ExpressionKind()) == s_if,
     typeOfExp(s_if, exp_true) == (_, ty_true),
     typeOfExp(s_if, exp_false) == (_, ty_false),
     lub(ty_true, ty_false) == ty,
     try { ty != TopType()               } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type],
     try { ty != NullableType(TopType()) } | error $[Type mismatch: true branch ([ty_true]) and false branch ([ty_false]) combine to the top type].
 
-  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) = (s1, ListType(ty_map)) :- {s2 s3 ty_list expected_ty arg_ty}
+  typeOfExpImpl(s1, ListComprehension(exp_map, binder, exp_list)) =
+    (s1, ListType(ty_map))
+  :-
+    {s2 s3 ty_list expected_ty arg_ty}
     typeOfExp(s1, exp_list) == (s2, ty_list),
     typeOfExpImplListComprehension(s3, ty_list, exp_list) == arg_ty,
     new s3,
+    !root[getRoot(s1)] in s3,
     s3 -P-> s2,
     typeOfBinder(s3, arg_ty, binder) == _,
     typeOfExp(s3, exp_map) == (_, ty_map).
 
     typeOfExpImplListComprehension : scope * TYPE * Exp -> TYPE
     typeOfExpImplListComprehension(s3, ListType(elem_ty), _) = elem_ty.
-    typeOfExpImplListComprehension(s3, EmptyListType(), exp_list) = _ :-
+    typeOfExpImplListComprehension(s3, EmptyListType(), exp_list) = BottomType() :-
       try { false } | warning $[Dead code: list comprehension over empty list] @exp_list.
-    typeOfExpImplListComprehension(s3, actual_ty, exp_list) = _ :-
+    typeOfExpImplListComprehension(s3, actual_ty, exp_list) = BottomType() :-
       false | error $[Type mismatch: expected a list, got [actual_ty]] @exp_list.
 
 // Value declaration and use.
@@ -141,47 +147,123 @@ rules
     s3 -P-> s2,
     typeOfBinder(s3, actual_ty, binder) == declared_ty.
 
-  typeOfExpImpl(s, Ref2Exp(r@Ref(name))) = (s, ty) :-
-    resolveUniqueVal(s, name) == (ty, _),
-    @r.type := ty.
+  typeOfExpImpl(s, Ref2Exp(ref@Ref(name))) =
+    (s, ty@typeOfExpImpl_ref(s, resolveUniqueVal(s, name))) :-
+      @ref.type := ty.
+
+    typeOfExpImpl_ref : scope * (TYPE * BOOLEAN) -> TYPE
+    typeOfExpImpl_ref(s, (_, FALSE())) = DataType(emptyScope(s)).
+    typeOfExpImpl_ref(s, (ty, TRUE())) = ty.
 
 // Calls
 
   /**
-   * Checks that a call is Ok, returns the return type of the function.
-   * - resolve function [name] in scope [s_data].
-   * - Check that [arg_exps] have the right types (resolved in scope [s])
+   * typeOfCall(s, s_def, s_type_args, name, type_args, arg_exps) = (s2, out_ty)
+   * Checks that a call to function [name] is Ok, returns the return type
+   * [out_ty] of the function and the resulting scope [s2].
    * This is a general function to check any type of call.
-   * The caller just needs to provide search_scopes.
+   * - resolves function [name] in scope [s_def]. If the function does not
+   *   resolve, expressions are still checked but not matched against
+   *   parameters types.
+   * - Checks that type arguments [type_args] match the declared type
+   *   parameters.
+   * - Replaces parameter types and return type of the declaration with type
+   *   arguments [type_args] and the type arguments defined in [s_type_args].
+   *   There is no preference between these two, so it fails if both define the
+   *   same type argument. The computed return type is [out_ty].
+   * - Computes the types of the argument expressions [arg_exps], resolved in
+   *   scope [s].
+   * - Checks that the computed types for the type arguments are subtypes of
+   *   the declared types.
    */
-  typeOfCall : scope * list(scope) * string * list(Exp) -> (scope * TYPE)
-  typeOfCall(s, search_scopes, name, arg_exps) =
-    typeOfCall_1(s, arg_exps, resolveUniqueFuncInScopes(search_scopes, name)).
+  typeOfCall : scope * scope * scope * string * TypeArgs * list(Exp) -> (scope * TYPE)
+  typeOfCall(s, s_def, s_type_args, name, type_args, arg_exps) =
+    typeOfCall_1(s, s_type_args, type_args, arg_exps, resolveFunc(s_def, name), name).
 
-    typeOfCall_1 : scope * list(Exp) * (TYPE * BOOLEAN) -> (scope * TYPE)
-    typeOfCall_1(s1, arg_exps, (FuncType(param_tys, out_ty), TRUE())) = (s2, out_ty) :-
-      expectSubtypesPassScopes(s1, arg_exps, param_tys) == s2.
+    typeOfCall_1 : scope * scope * TypeArgs * list(Exp) *
+      list((path * (FUNCID * (scope * TYPE)))) * FUNCID -> (scope * TYPE)
+    typeOfCall_1(s1, _, _, arg_exps, [], name) = (s2, DataType(emptyScope(s1))) :-
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
+      false | error $[Undefined function [name]] @name.
+    typeOfCall_1(s1, _, _, arg_exps, [_,_|_], name) = (s2, DataType(emptyScope(s1))) :-
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
+      false | error $[Duplicate declarations of function [name]. Remove the duplicate definitions.] @name.
+    typeOfCall_1(s1, s_type_args, type_args, arg_exps, [(_, (name', (s_func, func_ty)))], name)
+    = typeOfCall_2(type_args_ok, s1, s_func_instantiated, func_ty, type_arg_tys, arg_exps, name) :-
+      {type_params}
+      new s_func_instantiated,
+      s_func_instantiated -P-> s_func,
+      s_func_instantiated -P-> s_type_args,
+      getTypeParams(s_func) == type_params,
+      typeOfTypeArgs(s1, s_func_instantiated, s_func_instantiated, type_params, type_args, TRUE(), name) == (type_args_ok, type_arg_tys),
+      @name.ref := name'.
 
-    // Function didn't resolve. No need to check arguments.
-    // Errors for non-resolving are created by resolveUniqueFunc.
-    typeOfCall_1(s, _, (_, FALSE())) = (s, _).
+    typeOfCall_2 : BOOLEAN * scope * scope * TYPE * list(TYPE) * list(Exp) * FUNCID -> (scope * TYPE)
+    typeOfCall_2(FALSE(), s1, _, _, _, arg_exps, _) = (s2, DataType(emptyScope(s1))) :-
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _).
+    typeOfCall_2(TRUE(), s1, s_func_instantiated, FuncDefType(_, param_tys, ret_ty), type_arg_tys, arg_exps, name) = (s2, ty) :-
+      {instantiated_param_tys instantiated_type_args}
+      instantiateTypeArgsInAll(s_func_instantiated, param_tys) == instantiated_param_tys,
+      expectAssignableToPassScopes(s1, arg_exps, instantiated_param_tys, ExpressionKind()) == s2,
+      instantiateTypeArgs(s_func_instantiated, ret_ty) == ty,
+      instantiateTypeArgsInAll(s_func_instantiated, type_arg_tys) == instantiated_type_args,
+      @name.type := FuncRefType(instantiated_type_args, instantiated_param_tys, ty).
 
-  typeOfExpImpl(s, Call(moduleList, name, arg_exps)) =
-    typeOfCall(s, resolveModuleListToFile(s, moduleList), name, arg_exps).
+  typeOfExpImpl(s, Call(moduleList, name, type_args, arg_exps)) =
+    typeOfCall(s, merged, s, name, type_args, arg_exps) :-
+      mergeScopes(s, resolveModuleListToFile(s, moduleList)) == merged.
 
-  typeOfExpImpl(s1, QCall(exp, name, arg_exps)) = (s3, ty) :- {s2 exp_ty s_data}
-    typeOfExp(s1, exp) == (s2, exp_ty),
-    getScopeFromType(s2, exp_ty) == s_data,
-    typeOfCall(s2, [s_data], name, arg_exps) == (s3, ty).
+  typeOfExpImpl(s, qCall@QCall(exp, _, _, _)) = typeOfQCall(typeOfExp(s, exp), qCall).
 
-  typeOfExpImpl(s1, CreateSupplier(exp)) = (s2, SupplierType(ty)) :-
+    typeOfQCall : (scope * TYPE) * Exp -> (scope * TYPE)
+    typeOfQCall((s, SupplierType(inner_ty)), call@QCall(_, "get", type_args, arg_exps)) = (s, inner_ty) :-
+      try { getTypeArgsList(type_args) == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @type_args,
+      try { arg_exps == [] } | error $[Too many type arguments. Expected zero arguments, but got more] @arg_exps,
+      @call.kind := PieBuiltInFuncKind(SupplierGet()).
+    typeOfQCall((s1, exp_ty@NullableType(inner_ty)), call@QCall(_, name, type_args, arg_exps)) = (s2, DataType(emptyScope(s1))) :-
+      {s_data s_nullable resolved}
+      getScopeFromType(s1, inner_ty) == s_data,
+      typesOf(s1, s_data, getTypeArgsList(type_args), FALSE(), []) == _,
+      typeOfExpsPassScopes(s1, arg_exps) == (s2, _),
+      getScopeFromType(s1, exp_ty) == s_nullable,
+      resolveFunc(s_nullable, name) == resolved,
+      try { resolved == [] }
+        | error $[BUG: expected no method defined on nullable type, but found method [name] in [s_nullable]] @name,
+      try { resolved == [_] }
+        | error $[Cannot call method on nullable type [exp_ty], make it non-nullable first] @name,
+      try { resolveFunc(s_data, name) == [_] }
+        | warning $[Undefined function [name] on inner data type DataType([s_data])] @name,
+      @call.kind := JavaForeignMethodKind().
+    typeOfQCall((s1, exp_ty), call@QCall(exp, name, type_args, arg_exps)) = (s2, ty) :- {s_data}
+      getScopeFromType(s1, exp_ty) == s_data,
+      typeOfCall(s1, s_data, s_data, name, type_args, arg_exps) == (s2, ty),
+      @call.kind := JavaForeignMethodKind().
+
+  typeOfExpImpl(s1, CreateSupplier(_, NoTypeArgs(), [exp])) = (s2, SupplierType(ty)) :-
     typeOfExp(s1, exp) == (s2, ty).
+  typeOfExpImpl(s1, CreateSupplier(_, TypeArgs([arg_ty_lex]), [exp])) = (s2, SupplierType(arg_ty)) :-
+    {exp_ty}
+    typeOf(s1, s1, arg_ty_lex, FALSE(), []) == arg_ty,
+    typeOfExp(s1, exp) == (s2, exp_ty),
+    assignableTo(exp_ty, arg_ty, ExpressionKind())
+      | error $[Type mismatch: argument with type [exp_ty] is not assignable to type argument [arg_ty]] @exp.
+  typeOfExpImpl(s, CreateSupplier(name, type_args, args)) = (s, DataType(emptyScope(s))) :-
+    typeOfCreateSupplier_1(type_args, args),
+    try { args != [] } | error $[Not enough arguments. Expected one argument, but got zero] @name,
+    try { args != [_,_|_] } | error $[Too many arguments. Expected one argument, but got multiple] @name.
 
-  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, args)) = (s2, SupplierType(ty)) :-
-    typeOfCall(s1, resolveModuleListToFile(s1, moduleList), func_name, args) == (s2, ty).
+    typeOfCreateSupplier_1 : TypeArgs * list(Exp)
+    typeOfCreateSupplier_1(NoTypeArgs(), _).
+    typeOfCreateSupplier_1(type_args@TypeArgs([]), args) :-
+      false | error $[Not enough type arguments. Expected one type argument, got zero. To infer the type argument, omit the type argument list: `supplier([args])`] @type_args.
+    typeOfCreateSupplier_1(type_args@TypeArgs([_]), _).
+    typeOfCreateSupplier_1(type_args@TypeArgs([_,_|_]), _) :-
+      false | error $[Too many type arguments. Expected one argument, got multiple] @type_args.
 
-  typeOfExpImpl(s1, SupplierGet(exp)) = (s2, ty) :-
-    typeOfExp(s1, exp) == (s2, SupplierType(ty)) | error $[Type mismatch: cannot call 'get<>()'. Expected a Supplier, got a [ty]].
+  typeOfExpImpl(s1, TaskSupplier(moduleList, func_name, _, type_args, args)) = (s2, SupplierType(ty)) :-
+    {merged}
+    mergeScopes(s1, resolveModuleListToFile(s1, moduleList)) == merged,
+    typeOfCall(s1, merged, s1, func_name, type_args, args) == (s2, ty).
 
 // Path operations
 
@@ -198,44 +280,44 @@ rules
   optionalFilterOk(s, [FilterPart(filter)]) = filterOk(s, filter).
 
   filterOk : scope * Filter -> scope
-  filterOk(s, Regex(exp))      = expectSubtype(s, exp, StrType()).
-  filterOk(s, Pattern(exp))    = expectSubtype(s, exp, StrType()).
-  filterOk(s, Patterns(exp))   = expectSubtype(s, exp, ListType(StrType())).
-  filterOk(s, Extension(exp))  = expectSubtype(s, exp, StrType()).
-  filterOk(s, Extensions(exp)) = expectSubtype(s, exp, ListType(StrType())).
+  filterOk(s, Regex(exp))      = expectAssignableTo(s, exp, StrType(), ExpressionKind()).
+  filterOk(s, Pattern(exp))    = expectAssignableTo(s, exp, StrType(), ExpressionKind()).
+  filterOk(s, Patterns(exp))   = expectAssignableTo(s, exp, ListType(StrType()), ExpressionKind()).
+  filterOk(s, Extension(exp))  = expectAssignableTo(s, exp, StrType(), ExpressionKind()).
+  filterOk(s, Extensions(exp)) = expectAssignableTo(s, exp, ListType(StrType()), ExpressionKind()).
 
 
   typeOfExpImpl(s1, RequiresPath(exp, filter, stamper)) = (s4, UnitType()) :- {s2 s3 exp_ty}
-    expectSubtype(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalFilterOk(s2, filter) == s3,
     optionalStamperOk(s3, stamper) == s4.
 
   typeOfExpImpl(s1, GeneratesPath(exp, stamper)) = (s3, UnitType()) :- {s2}
-    expectSubtype(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalStamperOk(s2, stamper) == s3.
 
   typeOfExpImpl(s1, ListPath(exp, filter)) = (s3, ListType(PathType())) :- {s2}
-    expectSubtype(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalFilterOk(s2, filter) == s3.
 
   typeOfExpImpl(s1, WalkPath(exp, filter)) = (s3, ListType(PathType())) :- {s2}
-    expectSubtype(s1, exp, PathType()) == s2,
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2,
     optionalFilterOk(s2, filter) == s3.
 
   typeOfExpImpl(s1, ReadPath(exp)) = (s2, NullableType(StrType())) :-
-    expectSubtype(s1, exp, PathType()) == s2.
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2.
 
   typeOfExpImpl(s1, ExistsPath(exp)) = (s2, BoolType()) :-
-    expectSubtype(s1, exp, PathType()) == s2.
+    expectAssignableTo(s1, exp, PathType(), ExpressionKind()) == s2.
 
 // Early return and failure
 
   typeOfExpImpl(s1, Return(exp)) = (s2, UnitType()) :- {expected_ty}
     getContext(s1, "func_return_type") == ContextType(expected_ty),
-    expectSubtype(s1, exp, expected_ty) == s2.
+    expectAssignableTo(s1, exp, expected_ty, ExpressionKind()) == s2.
 
   typeOfExpImpl(s1, Fail(exp)) = (s2, UnitType()) :-
-    expectSubtype(s1, exp, StrType()) == s2.
+    expectAssignableTo(s1, exp, StrType(), ExpressionKind()) == s2.
 
 // literals
 

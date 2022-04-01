@@ -4,7 +4,7 @@ Shadowing of values and functions is disabled.
 Disabling it is backwards compatible, and it may prevent bugs and make code
 more readable.
 Names leaking in from higher scopes is not a concern because values are only
-available in functions and functions are meant to be small.
+available in functions and functions should be small.
 Shadowing for functions does not matter right now, so I chose the backwards
 compatible option.
 
@@ -18,15 +18,17 @@ subtype of a list of numbers `int* < number*`.
 The same goes for suppliers and tuples.
 This is not implemented because it would complicate the compilation to Java.
 
-A bottom type (sometimes called "never" or "Nothing") that could be used as the
-type of `return` and `fail` expressions is also not implemented because it
-would complicate the compilation to Java.
+The bottom type (sometimes called "never" or "Nothing") is implemented because
+that was useful for the implementation of wildcards and type parameters.
+Bottom types cannot be compiled to Java, but this is fine because they can either be omitted (in the case of wildcard / type parameter bounds) or not compiled at all expressions with bottom type throw an exception, so all code after that can be removed.
+The type of `return` and `fail` expressions could be changed to bottom type, but this has not been done yet.
+See [issue 115](https://github.com/MeAmAnUsername/pie/issues/115)
 
 ### Adding two values
 The type of two values depends on their static types:
 Adding two ints just uses mathematical plus: 1 + 2 = 3.
 Adding any value to a string converts the value to a string and then
-concatenates the strings. 
+concatenates the strings.
 Adding a string or a path to a path concatenates the values.
 Finally, adding a type `T2` to a list with type `ListType(T1)` has two cases:
 - adding two lists (`T2 == ListType(T2_inner)`) will concatenate the lists.
@@ -60,3 +62,25 @@ Most other files depend on type.stx, base.stx and util.stx as required.
 
 file.stx is the entry point for Statix analysis.
 To change the entry point, go to trans/analysis.str
+
+### Wildcards
+Wildcards differentiate between an explicit top type upper bound and no upper bound.
+This is not useful right now, but is required if we ever want to copy the upper bound from a supertype.
+For example, in
+```
+data Foo[T : Fruit] = foreign java org.example.Foo {}
+data Bar[E] : Foo[E] = foreign java org.example.Bar {}
+data Buz[A : Object] : Foo[A] = foreign java org.example.Buz {}
+```
+`E` could get the implicit upper bound `Fruit` because it is passed to `Foo`.
+`A` fails because the upper bound `Object` is not compatible with the upper bound `Fruit` of `A` in `Foo[A]`.
+
+### Type parameters
+Type parameters contain the defining scope so that going up a type hierarchy is possible without ambiguities in what a type argument refers to, for example:
+```
+data Box[A, B] = foreign java Box {}
+data Box2[A, B] : Box[B, A] = foreign java Box2 {}
+```
+Here, A and B exist in both data elements.
+Without the defining scope, type instantiating needs to go through the scopes one by one.
+With the defining scope, all type parameters can just be instantiated until everything is done.

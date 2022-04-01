@@ -5,8 +5,8 @@ plugins {
 }
 
 spoofaxProject {
-  inputIncludePatterns.add("*.pie")
-  outputIncludePatterns.add("*.java")
+  inputIncludePatterns.add("**/*.pie")
+  outputIncludePatterns.add("**/*.java")
 }
 
 fun compositeBuild(name: String) = "$group:$name:$version"

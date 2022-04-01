@@ -8,7 +8,7 @@ imports
 
 // A semantic type (as opposed to the lexical, non-all caps Type)
 context-free start-symbols TYPE // For type hint on editor mouseover
-context-free sorts TYPE
+context-free sorts TYPE CaptureState TypeParamType
 context-free syntax
 
   TYPE.UnitType = [unit]
@@ -18,6 +18,7 @@ context-free syntax
   TYPE.PathType = [path]
   TYPE.NullType = [null]
   TYPE.TopType = [TOP]
+  TYPE.BottomType = [BOTTOM]
 
   TYPE.NullableType = [[TYPE]?]
   TYPE.ListType = [[TYPE]*]
@@ -25,8 +26,16 @@ context-free syntax
   TYPE.TupleType = [([{TYPE ", "}+])]
   TYPE.SupplierType = [supplier([TYPE])]
 
-  TYPE.FuncType = [func([{TYPE ", "}+]) -> [TYPE]]
+  TypeParamType.TypeParamType = [[TYPE] <: [TYPEID] <: [TYPE]]
+  TYPE.FuncDefType = <func[<{TypeParamType ", "}*>](<{TYPE ", "}*>) -\> <TYPE>>
+  TYPE.FuncRefType = <func[<{TYPE ", "}*>](<{TYPE ", "}*>) -\> <TYPE>>
+
 //  TYPE.DataType = [data: [Stx-Scope]] // doesn't work, defined in Statix and Stratego for now
+//  TYPE.TypeParameter2TYPE = TypeParameter
+
+  CaptureState.Free = [free]
+  CaptureState.Bound = [bound]
+  TYPE.WildcardType = [[TYPE] <: WILDCARD <: [TYPE] (capture state: [CaptureState])]
 
 // Boolean values. Used in Statix logic.
 context-free sorts BOOLEAN
@@ -42,14 +51,27 @@ context-free syntax
   Renaming.Renaming = [[{STRING ":"}*] -> [{STRING ":"}*]]
   NormalizedImport.NormalizedImport = [normalized import: [Renaming]]
 
+// The kind of an Assignability check.
+// Used by Statix to discern different assignability checks.
+context-free sorts AssignableKind
+context-free syntax
+
+  AssignableKind.InvariantKind = [assignability check for invariant types]
+  AssignableKind.TypeArgKind = [assignability check for type argument types]
+  AssignableKind.ExpressionKind = [assignability check for expression types]
+
 // The kind of a Function. Used by code generation.
-context-free sorts FuncImplKind
+context-free sorts FuncImplKind BuiltInFunc
 context-free syntax
 
   FuncImplKind.JavaForeignFuncKind = [foreign java func]
   FuncImplKind.JavaForeignConstructorKind = [foreign java constructor]
+  FuncImplKind.JavaForeignMethodKind = [foreign java method]
   FuncImplKind.PieForeignFuncKind = [foreign pie func]
   FuncImplKind.PieFuncKind = [pie func]
+  FuncImplKind.PieBuiltInFuncKind = [pie built-in func [BuiltInFunc]]
+
+  BuiltInFunc.SupplierGet = [supplier.get]
 
 // The kind of a value. Used by code generation.
 context-free sorts ValKind

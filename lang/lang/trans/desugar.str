@@ -1,0 +1,13 @@
+module desugar
+
+imports
+
+  src-gen/signatures/-
+
+rules
+
+  desugar-all = topdown(try(desugar))
+  resugar-all = topdown(try(resugar))
+
+  desugar: NoTypeParams() -> TypeParams([])
+  resugar: TypeParams([]) -> NoTypeParams()

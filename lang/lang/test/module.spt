@@ -56,14 +56,14 @@ test nested [[ module example:modules:module ]] analysis succeeds
 test not nested referenced by data supertype [[
   module [[example]]
   data [[Foo]] = foreign java org.example.Foo {}
-  data Bar : [[example]]:[[Foo]] = foreign java org.example.Foo {}
+  data Bar <: [[example]]:[[Foo]] = foreign java org.example.Foo {}
 ]] analysis succeeds
    resolve #3 to #1
    resolve #4 to #2
 test nested referenced by data supertype [[
   module example:modules:[[module]]
   data [[Foo]] = foreign java org.example.Foo {}
-  data Bar : example:modules:[[module]]:[[Foo]] = foreign java org.example.Foo {}
+  data Bar <: example:modules:[[module]]:[[Foo]] = foreign java org.example.Foo {}
 ]] analysis succeeds
    resolve #3 to #1
    resolve #4 to #2

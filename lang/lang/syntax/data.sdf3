@@ -1,11 +1,12 @@
 module data
 
 imports
-  
+
   lex/literal
   func_def
   type
-  
+  common
+
 template options
 
   keyword -/- [a-zA-Z0-9\-\_]
@@ -21,13 +22,13 @@ context-free sorts
 
 context-free syntax // Data definition
 
-  DataDef.DataDef = <<DataDefMods> data <TYPEID><SuperType> = <DataImpl>>
-  
+  DataDef.DataDef = <<DataDefMods> data <TYPEID><TypeParams><SuperType> = <DataImpl>>
+
   DataDefMod.Transient = <transient>
   DataDefMods.DataDefMods = <<{DataDefMod " "}*>>
-  
-  SuperType.NoSuperType =
-  SuperType.SuperType = < : <DataTy>>
+
+  SuperType.NoSuperType = []
+  SuperType.SuperType = [ <: [DataTy]]
 
 context-free syntax // Java foreign data definition
 

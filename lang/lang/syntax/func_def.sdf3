@@ -4,6 +4,7 @@ imports
 
   lex/literal
   type
+  common
   func_body
 
 template options
@@ -21,7 +22,7 @@ context-free sorts
 
 context-free syntax // Function head
 
-  FuncHead.FuncHead = [[FUNCID]([Params]) -> [Type]]
+  FuncHead.FuncHead = [[FUNCID][TypeParams]([Params]) -> [Type]]
 
   Param.Param   = <<Type>>
   Param.NParam  = <<VALID> : <Type>> {prefer} // prefer this over a Param(ImportTy(...))

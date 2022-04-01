@@ -8,29 +8,59 @@ imports
 template options
 
   keyword -/- [a-zA-Z0-9\-\_]
+  tokenize : "(["
 
 context-free sorts
 
-  BaseType
-  DataTy
-  TypeMod
   Type
+  TypeArgs
+  DataTy
+  NullableMarker
+  Wildcard
 
 context-free syntax
 
-  BaseType.UnitTy     = <unit>
-  BaseType.BoolTy     = <bool>
-  BaseType.IntTy      = <int>
-  BaseType.StrTy      = <string>
-  BaseType.PathTy     = <path>
-  BaseType.TupleTy    = <(<{Type ", "}+>)>
-  BaseType.ListTy     = <<Type>*>
-  BaseType.SupplierTy = <supplier\<<Type>\>>
+  Type = [([Type])] {bracket}
 
-  DataTy.DataTy = <<ModuleList><TYPEID>>
-  BaseType = DataTy
+  Type.UnitTy     = <unit>
+  Type.BoolTy     = <bool>
+  Type.IntTy      = <int>
+  Type.StrTy      = <string>
+  Type.PathTy     = <path>
+  Type.TupleTy    = <(<{Type ", "}+>)>
+  Type.ListTy     = <<Type>*>
+  Type.SupplierTy = <supplier[<Type>]>
 
-  TypeMod.NullableTy = <<BaseType>?>
+  TypeArgs.NoTypeArgs = <>
+  TypeArgs.TypeArgs = <[<{Type ", "}*>]>
 
-  Type = BaseType
-  Type = TypeMod
+  DataTy.DataTy = <<ModuleList><TYPEID><TypeArgs>>
+  Type = DataTy
+
+  NullableMarker.NullableMarker = <?> // to allow warning on just question mark
+  Type.NullableTy = <<Type><NullableMarker>>
+
+  Wildcard.UnboundedWildcard = [_]
+  Wildcard.UpperBoundedWildcard = [_ <: [Type]]
+  Wildcard.LowerBoundedWildcard = [_ :> [Type]]
+  // double bounds not allowed, parsed to give explicit error
+  Wildcard.BothBoundedWildcard = [[Type] <: _ <: [Type]]
+  Wildcard.BothBoundedReverseWildcard = [[Type] :> _ :> [Type]]
+
+  Type.Wildcard = Wildcard
+
+context-free priorities
+
+  // Solves ambiguity between single element tuples and brackets
+  Type.TupleTy <1> .> {Type ","}+ = Type,
+
+  {
+    Type.ListTy
+    Type.NullableTy
+  } > {
+    Type.Wildcard
+  }
+
+lexical syntax // Reject keywords
+
+  TYPEID = "_" {reject}

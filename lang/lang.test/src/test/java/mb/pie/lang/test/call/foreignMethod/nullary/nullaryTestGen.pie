@@ -1,0 +1,9 @@
+module mb:pie:lang:test:call:foreignMethod:nullary
+
+data Foo = foreign java mb.pie.lang.test.call.Foo {
+  func func() -> int
+}
+
+func main_nullary(foo: Foo) -> int = {
+  foo.func()
+}

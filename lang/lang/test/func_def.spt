@@ -1,0 +1,35 @@
+module func_def
+language pie
+
+fixture [[
+  module test:func_def
+
+  data Food = foreign java test.func_def.Food {}
+  data Fruit <: Food = foreign java test.func_def.Fruit {}
+  data Apple <: Fruit = foreign java test.func_def.Apple {}
+
+  [[...]]
+]]
+
+test duplicate function [[
+  func [[test]]() -> int = 9
+  func [[test]](num: int) -> int = foreign java test.func_def.DuplicateFunc#test
+]] 2 errors at #1, #2
+   error like "Duplicate function"
+
+test empty type parameter list [[func test[]() -> int = 8]] analysis succeeds
+test omitted type parameter list [[func test() -> bool = false]] analysis succeeds
+// See https://github.com/MeAmAnUsername/pie/issues/181
+test with type parameter [[
+  func test[[ [T] ]]() -> path = ./test
+]] 1 error at #1
+   error like "Code generation for PIE tasks with type parameters has not been implemented yet"
+
+test param with wildcard type [[func test(something: [[_)]] -> bool = true]] 1 error at #1  error like "Cannot use a wildcard"
+test param with wildcard type [[func test(something: [[_ <: Food)]] -> int = 9]] 1 error at #1  error like "Cannot use a wildcard"
+test param with wildcard type [[func test(something: [[_ :> Apple[] ]]) -> string = "apple"]] 1 error at #1  error like "Cannot use a wildcard"
+test param with wildcard type [[
+  func test(something: [[ Apple[] <: _ <: Fruit[] ]]) -> Fruit? = null
+]] 2 errors at #1
+   error like "Cannot use a wildcard as parameter type"
+   error like "Cannot have both an upper and lower bound on a wildcard"

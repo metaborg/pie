@@ -1,0 +1,9 @@
+module mb:pie:lang:test:call:foreignMethod:genericWildcard
+
+data Bar[T] = foreign java mb.pie.lang.test.call.Bar {
+  func method[C, D](c: C, d: D) -> T
+}
+
+func main_genericWildcard(bar: Bar[_ <: int]) -> int = {
+  bar.method[unit, unit](unit, unit)
+}

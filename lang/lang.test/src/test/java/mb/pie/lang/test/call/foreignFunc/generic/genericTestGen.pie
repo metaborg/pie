@@ -1,0 +1,8 @@
+module mb:pie:lang:test:call:foreignFunc:generic
+
+func func[C, D](c: C, d: D) -> D =
+  foreign java mb.pie.lang.test.call.Bar#func
+
+func main_generic() -> (string, bool) = {
+  func[int, (string, bool)](217, ("generic", true))
+}

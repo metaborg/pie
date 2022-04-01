@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:list:listWithPatterns
+
+func main_listWithPatterns(dir: path) -> path* =
+  list dir with patterns ["?.txt", "?.jav"]

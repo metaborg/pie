@@ -1,0 +1,8 @@
+module mb:pie:lang:test:call:constructor:twoParam
+
+data Foo = foreign java mb.pie.lang.test.call.Foo {}
+func newFoo(bool, string) -> Foo = foreign java constructor mb.pie.lang.test.call.Foo
+
+func main_twoParam() -> Foo = {
+  newFoo(true, "hello world!")
+}

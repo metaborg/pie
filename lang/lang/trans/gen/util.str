@@ -73,6 +73,20 @@ rules // Generic strategies for getting properties and types of AST nodes
       a    := <AstAnalysis>
     ; mods := <stx-get-scopegraph-data(|a, "statics/base!data_mods")> data_scope
 
+  /**
+   * pie-get-type-args: data_scope -> typeArgs
+   * Type: Scope -> list(TYPE)
+   *
+   * Get the list of type arguments for a data type reference.
+   *
+   * data_scope: Scope representing a data type reference.
+   */
+  pie-get-type-args:
+    data_scope -> typeArgs
+    with
+      a          := <AstAnalysis>
+    ; [typeArgs] := <stx-get-scopegraph-data(|a, "statics/base!type_args")> data_scope
+
 imports
   statix/runtime/ast
 

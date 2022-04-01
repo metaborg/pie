@@ -17,7 +17,7 @@ import mb.resource.dagger.RootResourceServiceComponent;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SimpleChecker {
     public static <O extends Serializable> O assertTaskOutputEquals(

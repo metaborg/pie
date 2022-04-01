@@ -10,7 +10,8 @@ imports
   injections/-
   src-gen/pp/constructors-pp
   libspoofax/sdf/pp
-  
+
+  desugar
   gen/java/type
   gen/util
 
@@ -23,8 +24,8 @@ rules // Analysis
   // multi-file analysis
   editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics/project", "projectOk", "programOk")
 
-  pre-analyze  = explicate-injections-pie-Start
-  post-analyze = implicate-injections-pie-Start
+  pre-analyze  = desugar-all; explicate-injections-pie-Start
+  post-analyze = implicate-injections-pie-Start; resugar-all
 
 rules // Editor Services
 
@@ -32,7 +33,7 @@ rules // Editor Services
 
   editor-hover = stx-editor-hover(pp-pie-string)
 
-rules // Pretty-printing DataType(scope)
+rules // Pretty-printing DataType(scope) and TypeParameter2TYPE
 
   prettyprint-pie-TYPE :
     t@DataType(_) -> [ H(
@@ -77,12 +78,60 @@ rules // Pretty-printing DataType(scope)
              ws := ""
          end
 
+  prettyprint-pie-TYPE :
+    t@TypeParameter2TYPE(TypeParameter(_, name)) -> [ H(
+                      [SOpt(HS(), "0")]
+                    , t1__'
+                    )
+                  ]
+    with t1__' := <clean-layout-empty-symbols(
+                   | ""
+                   , FALSE()
+                   , FALSE()
+                   )
+                   ; flatten-list> [S($[type parameter [name]])]
+
+  is-pie-TYPE =
+    ?TypeParameter2TYPE(_)
+
+  pie-get-indent :
+    (t@TypeParameter2TYPE(_), index) -> indent
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             indent := ""
+         end
+
+  pie-get-separator :
+    (t@TypeParameter2TYPE(_), index) -> separator
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             separator := ""
+         end
+
+  pie-get-leading-ws :
+    (t@TypeParameter2TYPE(_), index) -> ws
+    where sort := <ia-get-sort> t
+          ; <?"TYPE"> sort
+    with switch !index
+           otherwise :
+             ws := ""
+         end
+
 rules // Debugging
 
   // Prints the abstract syntax ATerm of a selection.
   debug-show-aterm: (selected, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path
        ; result   := selected
+
+  // Prints the desugared abstract syntax ATerm of a selection.
+  debug-show-desugared: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"desugared.aterm")> path
+       ; result   := <desugar-all> selected
 
   // Prints the pre-analyzed abstract syntax ATerm of a selection.
   debug-show-pre-analyzed: (selected, _, _, path, project-path) -> (filename, result)
@@ -93,3 +142,13 @@ rules // Debugging
   debug-show-analyzed: (selected, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path
        ; result   := selected
+
+  debug-print-scopegraph:
+    (_, _, _, path, project-path) -> (filename, result)
+    where
+      a := <stx--get-resource-analysis> path
+    with
+      filename := <guarantee-extension(|"scopegraph.aterm")> path
+    ; sg := <stx--get-scopegraph; strip-annos> a
+    ; result := sg
+

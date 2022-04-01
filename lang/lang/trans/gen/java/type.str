@@ -26,6 +26,10 @@ imports
 signature
   constructors
     DataType : scope -> TYPE
+    TypeParameter2TYPE : TypeParameter -> TYPE
+
+  sorts TypeParameter constructors
+    TypeParameter : scope * string -> TypeParameter
 
 rules
 
@@ -40,22 +44,26 @@ rules
   p2j-ast-type-sig: NullType() -> ClassType([], Id("Void"), None())
 
   p2j-ast-type-sig:
-    DataType(scope) -> ClassType([], Id(javaClassId), None())
+    DataType(scope) -> ClassType([], Id(javaClassId), typeArguments)
     where
       <pie-get-data-mods; not(collect-one(?Transient()))> scope
     with
       ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
+    ; typeArgs                 := <pie-get-type-args> scope
+    ; typeArguments            := <p2j-ast-type-arg-list> typeArgs
 
   p2j-ast-type-sig:
     DataType(scope) -> ClassType(
       [],
       Id("OutTransient"),
-      Some(TypeArguments([ClassType([], Id(javaClassId), None())]))
+      Some(TypeArguments([ClassType([], Id(javaClassId), typeArguments)]))
     )
     where
       <pie-get-data-mods; collect-one(?Transient())> scope
     with
       ContextName(javaClassId) := <pie-get-context(|"foreign_java_impl")> scope
+    ; typeArgs                 := <pie-get-type-args> scope
+    ; typeArguments            := <p2j-ast-type-arg-list> typeArgs
     ; <add-import> "mb.pie.api.OutTransient"
 
   p2j-ast-type-sig:
@@ -64,7 +72,6 @@ rules
       length    := <length> pieTypes
     ; javaTypes := <map(p2j-ast-type-sig)> pieTypes
     ; <add-import> $[mb.pie.util.Tuple[length]]
-    ; <add-import> "mb.pie.util.Util"
 
   p2j-ast-type-sig:
     ListType(ty) -> ClassType([], Id("ArrayList"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
@@ -82,6 +89,36 @@ rules
     SupplierType(ty) -> ClassType([], Id("Supplier"), Some(TypeArguments([<p2j-ast-type-sig> ty])))
     with
       <add-import> "mb.pie.api.Supplier"
+
+  p2j-ast-type-sig:
+    WildcardType(BottomType(), TopType(), _) -> WildCard(WildCard([]))
+  p2j-ast-type-sig:
+    WildcardType(lower_bound, TopType(), _) -> WildCard(WildCardSuper([], <p2j-ast-type-sig> lower_bound))
+  p2j-ast-type-sig:
+    WildcardType(_, upper_bound, _) -> WildCard(WildCardExtends([], <p2j-ast-type-sig> upper_bound))
+
+rules // type arguments
+
+  /**
+   * p2j-ast-type-args: typeArgs -> typeArguments
+   *   Type: PIE TypeArgs -> Some with java TypeArguments/1 constructor, or None()
+   * Converts the PIE syntactic types to Java types and then wraps it in a TypeArguments/1 constructor
+   */
+  p2j-ast-type-args: NoTypeArgs() -> None()
+  p2j-ast-type-args: TypeArgs(typeArgs) -> typeArguments
+    with
+      types := <map(syntacticToSemanticType)> typeArgs
+    ; typeArguments := <p2j-ast-type-arg-list> types
+
+  /**
+   * p2j-ast-type-arg-list: typeArgs -> typeArguments
+   *   Type: list of PIE types -> Some with java TypeArguments/1 constructor, or None()
+   * Converts the PIE types to Java types and then wraps it in a TypeArguments/1 constructor
+   */
+  p2j-ast-type-arg-list: typeArgs@[_|_] -> Some(TypeArguments(javaTypeArgs))
+    with
+      javaTypeArgs := <map(p2j-ast-type-sig)> typeArgs
+  p2j-ast-type-arg-list: [] -> None()
 
 rules
 

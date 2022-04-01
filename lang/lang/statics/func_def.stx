@@ -7,51 +7,60 @@ imports
   signatures/func_def-sig
   statics/base
   statics/type
-  statics/util
+  statics/type_common
+  statics/common
   statics/func_body
 
 rules
 
   funcDefOk : scope * FuncDef
-  funcDefOk(s_mod, func@FuncDef(func_head, impl)) :- {name s_func out_ty impl_kind ty}
-    typeOfFuncHead(s_mod, func_head) == (s_func, name, ty@FuncType(_, out_ty)),
-    declareFunc(s_mod, name, ty, impl_kind),
-    declareLocalFunc(s_mod, name, ty),
-    funcImplOk(s_func, impl, out_ty, name) == impl_kind,
+  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _), impl)) :- {name s_func out_ty impl_kind ty}
+    typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
+    declareFunc(s_mod, name, (s_func, ty), impl_kind),
+    declareLocalFunc(s_mod, name, (s_func, ty)),
+    funcImplOk(s_func, impl, type_params, out_ty, name) == impl_kind,
     @func.kind := impl_kind,
     @func.type := ty.
 
-  typeOfFuncHead : scope * FuncHead -> (scope * string * TYPE)
-  typeOfFuncHead(s, FuncHead(name, Params(params), out_ty_exp)) = (s_func, name, FuncType(param_tys, out_ty)) :-
+  typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
+  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp)) =
+    (s_func, name, FuncDefType(type_param_tys, param_tys, out_ty))
+  :-
     new s_func,
-    s_func -P-> s,
-    typeOfParams(s, s_func, params) == param_tys,
-    typeOf(s, out_ty_exp) == out_ty.
+    s_func -P-> s_parent,
+    typesOfTypeParams(s, s_func, type_params) == type_param_tys,
+    typeOfParams(s, s_func, s_func, params) == param_tys,
+    typeOf(s, s_func, out_ty_exp, FALSE(), []) == out_ty,
+    try { out_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 
-  typeOfParam : scope * scope * Param -> TYPE
-  typeOfParams maps typeOfParam(*, *, list(*)) = list(*)
+  typeOfParam : scope * scope * scope * Param -> TYPE
+  typeOfParams maps typeOfParam(*, *, *, list(*)) = list(*)
 
-  typeOfParam(s_mod, _, Param(lexical_type)) = semantic_type :-
-    typeOf(s_mod, lexical_type) == semantic_type.
+  typeOfParam(s_mod, s_type_args, _, Param(lexical_type)) = semantic_type :-
+    typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
+    try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  typeOfParam(s_mod, s_func, p@NParam(name, lexical_type)) = semantic_type :-
-    typeOf(s_mod, lexical_type) == semantic_type,
-    declareVal(s_func, name, semantic_type, InputValKind()).
+  typeOfParam(s_mod, s_type_args, s_func, p@NParam(name, lexical_type)) = semantic_type :-
+    typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
+    declareVal(s_func, name, semantic_type, InputValKind()),
+    try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  funcImplOk : scope * FuncImpl * TYPE * FUNCID -> FuncImplKind
-  funcImplOk(_, PieForeignFuncImpl(class_id), _, name) = PieForeignFuncKind() :-
+  funcImplOk : scope * FuncImpl * TypeParams * TYPE * FUNCID -> FuncImplKind
+  funcImplOk(_, PieForeignFuncImpl(class_id), _, _, name) = PieForeignFuncKind() :-
     @name.javaClassId := class_id.
-  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, name) = JavaForeignFuncKind() :-
+  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, _, name) = JavaForeignFuncKind() :-
     @name.javaClassId := class_id,
     @name.javaMethodId := java_name.
-  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, name) = JavaForeignConstructorKind() :-
+  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, _, name) = JavaForeignConstructorKind() :-
     @name.javaClassId := class_id.
-  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), expected_type, _) = PieFuncKind() :- {s_func_inner}
+  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, expected_type, name) = PieFuncKind() :- {s_func_inner}
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
     setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
-    expectSubtype(s_func_inner, exp, expected_type) == _,
-    optionalKeyFuncOk(s_func_outer, keyFunc).
+    expectAssignableTo(s_func_inner, exp, instantiateTypeArgs(s_func_inner, expected_type), ExpressionKind()) == _,
+    optionalKeyFuncOk(s_func_outer, keyFunc),
+    // See https://github.com/MeAmAnUsername/pie/issues/181
+    try { getTypeParamsList(type_params) == [] } | error $[Code generation for PIE tasks with type parameters has not been implemented yet. Implement this task in Java and import it as foreign [name] instead] @type_params.
 
   keyFuncOk : scope * PieKeyFunc
   optionalKeyFuncOk maps keyFuncOk(*, list(*))

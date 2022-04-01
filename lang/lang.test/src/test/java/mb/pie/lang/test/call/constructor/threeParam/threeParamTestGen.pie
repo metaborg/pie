@@ -1,0 +1,8 @@
+module mb:pie:lang:test:call:constructor:threeParam
+
+data Foo = foreign java mb.pie.lang.test.call.Foo {}
+func newFoo(string, int, int) -> Foo = foreign java constructor mb.pie.lang.test.call.Foo
+
+func main_threeParam() -> Foo = {
+  newFoo("The numbers: ", 7, 0)
+}

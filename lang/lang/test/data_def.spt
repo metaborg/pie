@@ -6,6 +6,12 @@ fixture [[
   module test:data_def
 
   [[...]]
+
+  data Command = foreign java org.example.test.dataDef.Command {}
+
+  data Food = foreign java org.example.test.Food {}
+  data Fruit <: Food = foreign java org.example.test.Fruit {}
+  data Apple <: Fruit = foreign java org.example.test.Apple {}
 ]]
 
 // general
@@ -19,31 +25,34 @@ test duplicate name [[
 
 // data def mods
 test transient datadef [[ transient data Foo = foreign java org.example.test.Foo {} ]] analysis succeeds
-test double transient [[ transient transient data Foo = foreign java org.example.test.Foo {} ]] analysis fails
+test double transient [[
+  transient [[transient]] data Foo = foreign java org.example.test.Foo {}
+]] 1 error at #1
+   error like "Duplicate modifier"
 
 // supertypes
 test supertype declaration before use [[
   data [[Bar]] = foreign java org.example.test.Bar {}
-  data Foo : [[Bar]] = foreign java org.example.test.Foo {}
+  data Foo <: [[Bar]] = foreign java org.example.test.Foo {}
 ]] analysis succeeds
    resolve #2 to #1
 test supertype use before declaration [[
-  data Foo : [[Bar]] = foreign java org.example.test.Foo {}
+  data Foo <: [[Bar]] = foreign java org.example.test.Foo {}
   data [[Bar]] = foreign java org.example.test.Bar {}
 ]] analysis succeeds
    resolve #1 to #2
 test supertype imported [[
   data [[Bar]] = foreign java org.example.test.Bar {}
-  data Foo : test:data_def:[[Bar]] = foreign java org.example.test.Foo {}
+  data Foo <: test:data_def:[[Bar]] = foreign java org.example.test.Foo {}
 ]] analysis succeeds
    resolve #2 to #1
-test supertype is self [[ data [[Foo]] : [[Foo]] = foreign java org.example.test.Foo {} ]]
+test supertype is self [[ data [[Foo]] <: [[Foo]] = foreign java org.example.test.Foo {} ]]
   resolve #2 to #1
   1 error at #2
   error like "inherit" at #2
 test supertype is self indirect [[
-  data [[Foo]] : [[Bar]] = foreign java org.example.test.Foo {}
-  data [[Bar]] : [[Foo]] = foreign java org.example.test.Bar {}
+  data [[Foo]] <: [[Bar]] = foreign java org.example.test.Foo {}
+  data [[Bar]] <: [[Foo]] = foreign java org.example.test.Bar {}
 ]] resolve #2 to #3
    resolve #4 to #1
    2 errors at #2, #4
@@ -52,7 +61,7 @@ test supertype non-overriding methods [[
   data [[Bar]] = foreign java org.example.test.Bar {
     func get() -> int
   }
-  data Foo : [[Bar]] = foreign java org.example.test.Foo {
+  data Foo <: [[Bar]] = foreign java org.example.test.Foo {
     func set(int) -> unit
   }
 ]] analysis succeeds
@@ -61,7 +70,7 @@ test supertype overriding, compatible methods [[
   data [[Foo]] = foreign java org.example.test.Foo {
     func [[get]]() -> [[Foo]]
   }
-  data [[Bar]] : [[Foo]] = foreign java org.example.test.Bar {
+  data [[Bar]] <: [[Foo]] = foreign java org.example.test.Bar {
     func [[get]]() -> [[Bar]]
   }
 ]] analysis succeeds
@@ -73,7 +82,7 @@ test supertype - non-overriding methods - different parameter count [[
   data Bar = foreign java org.example.test.Bar {
     func get() -> bool
   }
-  data Foo : Bar = foreign java org.example.test.Foo {
+  data Foo <: Bar = foreign java org.example.test.Foo {
     func get(int) -> int
   }
 ]] analysis succeeds
@@ -81,35 +90,41 @@ test supertype - overriding, incompatible methods - non-subtype return type [[
   data Foo = foreign java org.example.test.Foo {
     func [[get]]() -> Bar
   }
-  data Bar : Foo = foreign java org.example.test.Bar {
+  data Bar <: Foo = foreign java org.example.test.Bar {
     func [[get]]() -> Foo
   }
-]] 1 error at #2
-   error like "incompatable return type"
+]] 1 error
+   error like "incompatible return type"
    resolve #2 to #1
 test supertype - non-overriding methods - narrowing parameter [[
   data Bar = foreign java org.example.test.Bar {
     func get(Bar) -> int
   }
-  data Foo : Bar = foreign java org.example.test.Foo {
-    func get(Foo) -> int // does not override get(Bar) above
+  data Foo <: Bar = foreign java org.example.test.Foo {
+    func get(Foo) -> unit // does not override get(Bar) above
+  }
+]] analysis succeeds
+test supertype - non-overriding methods - widening parameter [[
+  data Bar = foreign java org.example.test.Bar {
+    func get(Apple) -> int
+  }
+  data Foo <: Bar = foreign java org.example.test.Foo {
+    func get(Food) -> bool // does not override get(Apple)
   }
 ]] analysis succeeds
 test supertype - non-overriding methods - different parameters types [[
   data Bar = foreign java org.example.test.Bar {
     func get(Bar, int) -> int
   }
-  data Foo : Bar = foreign java org.example.test.Foo {
-    func get(Foo, bool) -> int
+  data Foo <: Bar = foreign java org.example.test.Foo {
+    func get(Foo, bool) -> bool // does not override get(Bar, int)
   }
 ]] analysis succeeds
-
-
 
 // implementation - foreign java - class def
 test foreign java same class [[
   data Bar = foreign java org.example.test.Bar {}
-  data Foo1 : Bar = foreign java org.example.test.Foo {}
+  data Foo1 <: Bar = foreign java org.example.test.Foo {}
   data Foo2 = foreign java org.example.test.Foo {}
   func takesFoo1(foo: Foo1) -> unit = {}
   func main(foo: Foo2) -> unit = takesFoo1([[foo]])
@@ -117,55 +132,3 @@ test foreign java same class [[
    // Using the same class for different pie data types is allowed, even if the signatures don't match
    // Cannot use Foo2 where Foo1 is expected, even though both are the same Java class.
    1 error at #1
-
-// implementation - foreign java - methods
-test foreign java no methods [[ data Foo = foreign java org.example.test.Foo {} ]] analysis succeeds
-test foreign java one method [[ data Foo = foreign java org.example.test.Foo {
-  func get() -> int
-} ]] analysis succeeds
-test foreign java two methods [[ data Foo = foreign java org.example.test.Foo {
-  func get() -> int
-  func set(int) -> unit
-} ]] analysis succeeds
-test foreign java three methods [[ data Foo = foreign java org.example.test.Foo {
-  func get() -> int
-  func set(int) -> unit
-  func getAndSet(int) -> int
-} ]] analysis succeeds
-test foreign java allow returning own type [[
-  data [[Foo]] = foreign java org.example.test.Foo {
-    func get() -> [[Foo]]
-  }
-]] analysis succeeds
-   resolve #2 to #1
-test foreign java allow taking own type [[
-  data [[Foo]] = foreign java org.example.test.Foo {
-    func set([[Foo]]) -> unit
-  }
-]] analysis succeeds
-   resolve #2 to #1
-test foreign java allow circular dependency [[
-  data [[Bar]] = foreign java org.example.test.Bar {
-    func get() -> [[Foo]]
-  }
-  data [[Foo]] = foreign java org.example.test.Foo {
-    func get() -> [[Bar]]
-  }
-]] analysis succeeds
-   resolve #2 to #3
-   resolve #4 to #1
-test foreign java allow same name methods in different datatypes [[
-  data Bar = foreign java org.example.test.Bar {
-    func get() -> int
-  }
-  data Foo = foreign java org.example.test.Foo {
-    func get() -> int
-  }
-]] analysis succeeds
-test foreign java disallow overloading method within datatype [[
-  data Foo = foreign java org.example.test.Foo {
-    func [[get]]() -> int
-    func [[get]](int) -> unit
-  }
-]] 2 errors at #1, #2
-   error like "Duplicate" at #1, #2

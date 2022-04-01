@@ -1,0 +1,681 @@
+module generics_inheritance
+language pie
+
+fixture [[
+  module test:generics:inheritance
+
+  data Food = foreign java test.generics.inheritance.Food {}
+  data Fruit <: Food = foreign java test.generics.inheritance.Fruit {}
+  data Apple <: Fruit = foreign java test.generics.inheritance.Apple {}
+  data GrannySmith <: Apple = foreign java test.generics.inheritance.GrammySmith {}
+  data SubtypeOfGrannySmith <: GrannySmith = foreign java test.generics.inheritance.SubtypeOfGrannySmith {}
+
+  [[...]]
+]]
+
+test supertype - generic return type does not resolve from subtype [[
+  data Bar[F <: Food] = foreign java org.example.test.Bar { }
+  data Foo <: Bar[Food] = foreign java org.example.test.Foo {
+    func get() -> [[F]]
+  }
+]] 1 error at #1
+   error like "Undefined datatype"
+
+test supertype - overriding methods - sub generic return type [[
+  data Bar = foreign java org.example.test.Bar {
+    func [[get]]() -> Food
+  }
+  data Foo[F <: Food] <: Bar = foreign java org.example.test.Foo {
+    func [[get]]() -> F
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - sub generic return type outside bound [[
+  data Bar = foreign java org.example.test.Bar {
+    func [[get]]() -> Fruit
+  }
+  data Foo[F <: Food] <: Bar = foreign java org.example.test.Foo {
+    func [[get]]() -> F
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+
+test supertype - overriding methods - super generic return type - argument is upper bound, return type is equal to argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> Fruit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is upper bound, return type is higher than argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> Food
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is upper bound, return type is lower than argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> Apple
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is lower than upper bound, return type is equal to argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo <: Bar[Apple] = foreign java org.example.test.Foo {
+    func [[get]]() -> Apple
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is lower than upper bound, return type is higher than argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo <: Bar[Apple] = foreign java org.example.test.Foo {
+    func [[get]]() -> Fruit
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - super generic return type - argument is lower than upper bound, return type is lower than argument [[
+  data Bar[F <: Food] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> Apple
+  }
+]] analysis succeeds
+   resolve #2 to #1
+
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound equal to argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Fruit] <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound higher than argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Food] <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument equal to super upper bound, sub upper bound lower than argument [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Apple] <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument lower than super upper bound, sub upper bound equal to argument [[
+  data Bar[F <: Food] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Fruit] <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument lower than super upper bound, sub upper bound higher than argument [[
+  data Bar[F <: Food] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Food] <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument lower than super upper bound, sub upper bound lower than argument [[
+  data Bar[F <: Food] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Apple] <: Bar[Fruit] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+
+test supertype - overriding methods - both generic return types - argument is type parameter, sub upper bound equal to super upper bound [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Fruit] <: Bar[G] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both generic return types - argument is type parameter, sub upper bound lower than super upper bound [[
+  data Bar[F <: Fruit] = foreign java org.example.test.Bar {
+    func [[get]]() -> F
+  }
+  data Foo[G <: Apple] <: Bar[G] = foreign java org.example.test.Foo {
+    func [[get]]() -> G
+  }
+]] analysis succeeds
+   resolve #2 to #1
+
+test method with type parameter [[
+  data Foo[ [[F]] <: Food] = foreign java org.example.test.Foo {
+    func get(food: [[F]]) -> string
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test method with type parameters multiple references [[
+  data Foo[ [[F]] <: Food] = foreign java org.example.test.Foo {
+    func get(food1: [[F]], food2: [[F]]) -> string
+  }
+]] analysis succeeds
+   resolve #2 to #1
+   resolve #3 to #1
+test method with composed type parameter [[
+  data FoodParty[ [[F]] <: Food] = foreign java org.example.test.FoodParty {
+    func compute(preferences: (string, [[F]]*)) -> string
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test method with undefined type parameter [[
+  data Foo[F <: Food] = foreign java org.example.test.Foo {
+    func get(food: [[G]]) -> string
+  }
+]] 1 error at #1
+   error like "Undefined datatype"
+
+test supertype - overriding methods - super type parameter - super type argument is equal to super type param upper bound, subtype method paramater is equal to argument [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2 <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: Fruit) -> unit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - non-overriding methods - super type parameter - super type argument is equal to super type param upper bound, subtype method paramater is higher than argument [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2 <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Food) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding methods - super type parameter - super type argument is equal to super type param upper bound, subtype method paramater is lower than argument [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2 <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Apple) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding, colliding methods - both type parameters - super type argument is equal to super type param upper bound, subtype method paramater is type parameter with upper bound equal to argument [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Fruit] <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: F) -> unit
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test supertype - non-overriding methods - both type parameters - super type argument is equal to super type param upper bound, subtype method paramater is type parameter with upper bound higher than argument [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Food] <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: F) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding methods - both type parameters - super type argument is equal to super type param upper bound, subtype method paramater is type parameter with upper bound lower than argument [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Apple] <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: F) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+
+test supertype - overriding methods - super type parameter - super type argument is lower than super type param upper bound, subtype method paramater is equal to argument [[
+  data FruitBowl[F <: Food] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2 <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: Fruit) -> unit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - non-overriding methods - super type parameter - super type argument is lower than super type param upper bound, subtype method paramater is higher than argument [[
+  data FruitBowl[F <: Food] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2 <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: Food) -> bool // use different return type to check that this method does not override
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test supertype - non-overriding methods - super type parameter - super type argument is lower than super type param upper bound, subtype method paramater is lower than argument [[
+  data FruitBowl[F <: Food] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2 <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Apple) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding methods - both type parameters - super type argument is lower than super type param upper bound, subtype method paramater is type parameter with upper bound equal to argument [[
+  data FruitBowl[F <: Food] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2[F <: Fruit] <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: F) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding, colliding methods - both type parameters - super type argument is lower than super type param upper bound, subtype method paramater is type parameter with upper bound higher than argument [[
+  data FruitBowl[F <: Food] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Food] <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: F) -> bool // use different return type to check that this method does not override
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test supertype - non-overriding methods - both type parameters - super type argument is lower than super type param upper bound, subtype method paramater is type parameter with upper bound lower than argument [[
+  data FruitBowl[F <: Food] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Apple] <: FruitBowl[Fruit] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: F) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+
+test supertype - overriding methods - super type parameter - super type argument is type parameter with upper bound equal to super type param upper bound, subtype method paramater is equal to upper bounds [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2[F <: Fruit] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: Fruit) -> unit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - non-overriding methods - super type parameter - super type argument is type parameter with upper bound equal to super type param upper bound, subtype method paramater is higher than upper bounds [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Fruit] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Food) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding methods - super type parameter - super type argument is type parameter with upper bound equal to super type param upper bound, subtype method paramater is lower than upper bounds [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: Fruit] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Apple) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding methods - super type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is higher than super upper bound [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Food) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - non-overriding, colliding methods - super type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is equal to super upper bound [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: Fruit) -> bool // use different return type to check that this method does not override
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test supertype - non-overriding methods - super type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is between super upper bound and subtype upper bound [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: Apple) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - overriding methods - super type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is equal to subtype upper bound [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: GrannySmith) -> unit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - non-overriding methods - super type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is lower than subtype upper bound [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func addPiece(piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func addPiece(piece: SubtypeOfGrannySmith) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+test supertype - overriding methods - both type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is type parameter [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: F) -> unit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - both type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is type parameter [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2[F <: GrannySmith] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: F) -> bool
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - both type parameter - super type argument is type parameter with upper bound lower than super type param upper bound, subtype method paramater is type parameter [[
+  data FruitBowl[F <: Fruit] = foreign java org.example.test.FruitBowl {
+    func [[addPiece]](piece: F) -> unit
+  }
+  data FruitBowl2[F <: Fruit] <: FruitBowl[F] = foreign java org.example.test.FruitBowl2 {
+    func [[addPiece]](piece: F) -> unit
+  }
+]] analysis succeeds
+   resolve #2 to #1
+
+
+
+test type parameter and return type [[
+  data Foo[ [[T]] <: Apple] = foreign java org.example.test.Foo {
+    func test(value: [[T]]) -> [[T]]
+  }
+]] analysis succeeds
+   resolve #2 to #1
+   resolve #3 to #1
+test supertype - overriding methods - type parameter and return type [[
+  data Foo[T <: Food] = foreign java org.example.test.Foo {
+    func [[test]](value: T) -> T
+  }
+  data Bar[T <: Apple] <: Foo[T] = foreign java org.example.test.Bar {
+    func [[test]](value: T) -> T
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - type parameter and incompatible return type [[
+  data Foo[T <: Food] = foreign java org.example.test.Foo {
+    func [[test]](value: T) -> T
+  }
+  data Bar[T <: Food] <: Foo[T] = foreign java org.example.test.Bar {
+    func [[test]](value: T) -> Apple
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+
+
+test supertype - overriding methods - generic return type with maching type arguments [[
+  data Collection[A] = foreign java java.util.Collection {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asCopy]]() -> Collection[Apple]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asCopy]]() -> Collection[Apple]
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - generic return type with type argument mismatch - lower in subtype [[
+  data Collection[A] = foreign java java.util.Collection {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asCopy]]() -> Collection[Food]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asCopy]]() -> Collection[GrannySmith]
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - generic return type with type argument mismatch - higher in subtype[[
+  data Collection[A] = foreign java java.util.Collection {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asCopy]]() -> Collection[SubtypeOfGrannySmith]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asCopy]]() -> Collection[Apple]
+  }
+]] 1 error at #2
+   error like "incompatible return type"
+   resolve #2 to #1
+test supertype - overriding methods - generic return type [[
+  data Collection[A] = foreign java java.util.Collection {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asCopy]]() -> Collection[E]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asCopy]]() -> Collection[T]
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - non-overriding methods - generic return type - subtype return type wildcard [[
+  data Collection[A] = foreign java java.util.Collection {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asCopy]]() -> Collection[E]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asCopy]]() -> Collection[_]
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - generic return type - supertype return type wildcard [[
+  data Collection[A] = foreign java java.util.Collection {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asCopy]]() -> Collection[E]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asCopy]]() -> Collection[T]
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test supertype - overriding methods - generic return type - return type of subclass is subtype of return type in super class [[
+  data Collection[A] = foreign java java.util.Collection {}
+  data List[B] <: Collection[B] = foreign java java.util.List {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asUnmodifiable]]() -> Collection[E]
+    func [[asCopy]]() -> Collection[E]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asUnmodifiable]]() -> List[T]
+    func [[asCopy]]() -> List[T]
+  }
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
+test supertype - non-overriding methods - generic return type - type parameter mismatch [[
+  data Collection[A] = foreign java java.util.Collection {}
+  data List[B] <: Collection[B] = foreign java java.util.List {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asUnmodifiable]]() -> Collection[E]
+    func [[asCopy]]() -> Collection[E]
+  }
+
+  data ListView[T, E] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asUnmodifiable]]() -> List[E]
+    func [[asCopy]]() -> List[T]
+  }
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
+test supertype - non-overriding methods - generic return type - subtype return type is not a subtype of supertype return type [[
+  data Collection[A] = foreign java java.util.Collection {}
+  data List[B] <: Collection[B] = foreign java java.util.List {}
+
+  data BaseCollectionView[E] = foreign java mb.common.util.BaseCollectionView {
+    func [[asUnmodifiable]]() -> List[E]
+    func [[asCopy]]() -> List[E]
+  }
+
+  data ListView[T] <: BaseCollectionView[T] = foreign java mb.common.util.ListView {
+    func [[asUnmodifiable]]() -> List[T]
+    func [[asCopy]]() -> Collection[T]
+  }
+]] 1 error at #4
+   error like "incompatible return type"
+   resolve #3 to #1
+   resolve #4 to #2
+
+test generic method - single param, same name [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]][T](T) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][T](T) -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test generic method - single param, different name [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]][T](T) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][P](P) -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test generic method - single param, different bound [[
+  data Foo = foreign java org.example.test.Foo {
+    func test[T](T) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func test[T <: Food](T) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+
+test generic method - multiple params [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]][A, B](A, B, A) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][A, B](A, B, A) -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test generic method - multiple params, different names [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]][A, B](A, B, A) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][B, A](B, A, B) -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1
+test generic method - multiple params, declaration order switched [[
+  data Foo = foreign java org.example.test.Foo {
+    func test[A, B](A, B, A) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][B, A](A, B, A) -> bool
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test generic method - multiple params, no override, same erasure [[
+  data Foo = foreign java org.example.test.Foo {
+    func test[A, B](A, B, A) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][B, A](A, B, B) -> bool
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+
+test generic method - super 1 unused param, sub no params [[
+  data Foo = foreign java org.example.test.Foo {
+    func [[test]][T]() -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][]() -> int
+  }
+]] analysis succeeds
+   resolve #2 to #1 // overrides after erasure
+test generic method - sub 1 unused param, super no params [[
+  data Foo = foreign java org.example.test.Foo {
+    func test[]() -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func [[test]][T]() -> bool
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test generic method - super defines on datatype, sub defines on method, super for sub has wildcard [[
+  data Foo[T] = foreign java org.example.test.Foo {
+    func test[](T) -> int
+  }
+  data Bar[] <: Foo[_] = foreign java org.example.test.Bar {
+    func [[test]][T](T) -> bool
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test generic method - super defines on datatype, sub defines on method, super for sub has specific type [[
+  data Foo[T] = foreign java org.example.test.Foo {
+    func test[](T) -> int
+  }
+  data Bar[] <: Foo[Food] = foreign java org.example.test.Bar {
+    func [[test]][T](T) -> bool // use different return type to check that this method does not override
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test generic method - super defines on method, sub defines on datatype [[
+  data Foo[] = foreign java org.example.test.Foo {
+    func test[T](T) -> int
+  }
+  data Bar[T] <: Foo = foreign java org.example.test.Bar {
+    func [[test]][](T) -> bool // use different return type to check that this method does not override
+  }
+]] 1 error at #1
+   error like "collides with method in super type"
+test generic method - different bound [[
+  data Foo[] = foreign java org.example.test.Foo {
+    func test[T](T) -> int
+  }
+  data Bar <: Foo = foreign java org.example.test.Bar {
+    func test[T <: int](T) -> bool // use different return type to check that this method does not override
+  }
+]] analysis succeeds
+
+test generic method - return type is type parameter [[
+  data Bar = foreign java org.example.test.Bar {
+    func get[A]() -> A
+  }
+  data Foo <: Bar = foreign java org.example.test.Foo {
+    func get[B]() -> B
+  }
+]] analysis succeeds

@@ -3,12 +3,27 @@ module common
 imports
 
   lex/literal
+  type
 
 context-free sorts
 
   ModuleList
+  BoundedTypeParam
+  TypeParam
+  TypeParams
 
 context-free syntax
 
   ModuleList.NoModuleList = <>
   ModuleList.ModuleList = <<{MODID ":"}+>:>
+
+  BoundedTypeParam.UnboundedTypeParam = [[TYPEID]]
+  BoundedTypeParam.UpperBoundedTypeParam = [[TYPEID] <: [Type]]
+  BoundedTypeParam.LowerBoundedTypeParam = [[TYPEID] :> [Type]]
+  // double bounds not allowed, parsed to give explicit error
+  BoundedTypeParam.BothBoundedTypeParam = [[Type] <: [TYPEID] <: [Type]]
+  BoundedTypeParam.BothBoundedReverseTypeParam = [[Type] :> [TYPEID] :> [Type]]
+  TypeParam.TypeParam = [[BoundedTypeParam]]
+
+  TypeParams.NoTypeParams = <> // syntactic sugar for empty list
+  TypeParams.TypeParams = <[<{TypeParam ", "}*>]>

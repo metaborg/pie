@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:walk:walkWithPatterns
+
+func main_walkWithPatterns(dir: path) -> path* =
+  walk dir with patterns ["**/*01*.csv", "**/*G?.csv"]

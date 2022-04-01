@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:list:listWithRegex
+
+func main_listWithRegex(dir: path) -> path* =
+  list dir with regex "[A-C]\\.[a-z]{3}"

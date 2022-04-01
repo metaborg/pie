@@ -1,0 +1,158 @@
+module statics/type_java
+
+imports
+
+  statics/base
+  statics/type
+  statics/type_common
+  statics/common
+
+rules
+
+  /**
+   * isSubsignature(s_renamings, signature1, signature2) = is_subsignature
+   * Checks if [signature1] is a subsignature of [signature2].
+   * Implementation of the definition from
+   * https://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.4.2
+   * [s_renamings] maps some type parameters from [signature2] to something
+   * else. This can be used for e.g. renaming type parameters that are defined
+   * by a data type instead of the function.
+   */
+  isSubsignature : scope * scope * TYPE * scope * TYPE -> BOOLEAN
+  isSubsignature(s_renamings, s_func1, signature1@FuncDefType(type_params1, formal_params1, return_type1),
+    s_func2, signature2@FuncDefType(type_params2, formal_params2, return_type2)) =
+      orB(isSignatureEqual(s_renamings, s_func1, signature1, s_func2, signature2),
+        isSignatureEqualToErased(s_renamings, signature1, signature2)).
+  isSubsignature(_, _, _, _, _) = FALSE() :-
+    false | error $[BUG: cannot call isSubsignature with types other than two FuncTypes].
+
+
+  /**
+   * isSignatureEqual(s, signature1, signature2) = is_signature_equal
+   * Checks if two signatures are equal.
+   * Implementation of the definition from
+   * https://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.4.2
+   * [s_renamings] maps some type parameters from [signature2] to something
+   * else. This can be used for e.g. renaming type parameters that are defined
+   * by a data type instead of the function.
+   */
+  isSignatureEqual : scope * scope * TYPE * scope * TYPE -> BOOLEAN
+  isSignatureEqual(s_renamings, s_func1, signature1@FuncDefType(type_params1, formal_params1, _),
+    s_func2, signature2@FuncDefType(type_params2, formal_params2, _)) =
+      isSignatureEqual_1(type_params_equal_bounds, s_renamings, s_func1, signature1, s_func2, signature2) :-
+        isTypeParameterBoundsEqual(type_params1, type_params2) == type_params_equal_bounds.
+
+    isSignatureEqual_1 : BOOLEAN * scope * scope * TYPE * scope * TYPE -> BOOLEAN
+    isSignatureEqual_1(FALSE(), _, _, _, _, _) = FALSE().
+    isSignatureEqual_1(TRUE(), s_renamings, s_func1, tmp1@FuncDefType(type_params1, formal_params1, _),
+      s_func2, tmp2@FuncDefType(type_params2, formal_params2, _)) = params_equal :-
+      {s_renamings_all renamed_params2}
+      renameAll(s_renamings, s_func2, type_params2, s_func1, type_params1) == s_renamings_all,
+      instantiateTypeArgsInAll(s_renamings_all, formal_params2) == renamed_params2,
+      isAllAssignableTo(formal_params1, renamed_params2, InvariantKind()) == params_equal.
+
+    isTypeParameterBoundsEqual : list(TypeParamType) * list(TypeParamType) -> BOOLEAN
+    isTypeParameterBoundsEqual([], []) = TRUE().
+    isTypeParameterBoundsEqual([_|_], []) = FALSE().
+    isTypeParameterBoundsEqual([], [_|_]) = FALSE().
+    isTypeParameterBoundsEqual([param1|params1], [param2|params2]) = andB(
+      isTypeParameterBoundEqual(param1, param2),
+      isTypeParameterBoundsEqual(params1, params2)
+    ).
+
+    isTypeParameterBoundEqual : TypeParamType * TypeParamType -> BOOLEAN
+    isTypeParameterBoundEqual(TypeParamType(lb1, _, ub1), TypeParamType(lb2, _, ub2)) =
+      andB(
+        isAssignableTo(ub1, ub2, InvariantKind()),
+        isAssignableTo(lb1, lb2, InvariantKind())
+      ).
+
+  /**
+   * isSignatureEqualToErased(s_renamings, signature1@FuncDefType,
+   *   signature2@FuncDefType) = is_equal
+   * Checks if [signature1] is equal to [signature2] after erasure of
+   * [signature2].
+   * Attention: [signature2] should _not_ be erased before calling this
+   * function.
+   */
+  isSignatureEqualToErased : scope * TYPE * TYPE -> BOOLEAN
+  isSignatureEqualToErased(_, FuncDefType([_|_], _, _), _) = FALSE().
+  isSignatureEqualToErased(s_renamings, FuncDefType([], formal_params1, _), FuncDefType(_, formal_params2, _)) =
+    isSignatureEqualToErased_1(param_counts_equal, s_renamings, formal_params1, formal_params2) :-
+      typeListsLengthsEqual(formal_params1, formal_params2) == param_counts_equal.
+  isSignatureEqualToErased(_, _, _) = FALSE() :-
+    false | error $[BUG: Cannot call isSignatureEqualToErased with types other than two FuncTypes].
+
+    isSignatureEqualToErased_1 : BOOLEAN * scope * list(TYPE) * list(TYPE) -> BOOLEAN
+    isSignatureEqualToErased_1(FALSE(), _, _, _) = FALSE().
+    isSignatureEqualToErased_1(TRUE(), s_renamings, formal_params1, formal_params2) =
+      allTrue(isTypesEqualToErased(formal_params1, instantiateTypeArgsInAll(s_renamings, formal_params2))).
+
+    isTypeEqualToErased : TYPE * TYPE -> BOOLEAN
+    isTypesEqualToErased maps isTypeEqualToErased(list(*), list(*)) = list(*)
+    isTypeEqualToErased(UnitType(), UnitType()) = TRUE().
+    isTypeEqualToErased(BoolType(), BoolType()) = TRUE().
+    isTypeEqualToErased(IntType(), IntType()) = TRUE().
+    isTypeEqualToErased(StrType(), StrType()) = TRUE().
+    isTypeEqualToErased(PathType(), PathType()) = TRUE().
+    isTypeEqualToErased(NullType(), NullType()) = TRUE() :-
+      false | error $[BUG?: checking if null type is equal to an erased null type].
+    isTypeEqualToErased(TopType(), TopType()) = TRUE() :-
+      false | error $[BUG?: checking if top type is equal to an erased top type].
+    isTypeEqualToErased(BottomType(), BottomType()) = TRUE() :-
+      false | error $[BUG?: checking if bottom type is equal to an erased bottom type].
+    isTypeEqualToErased(NullableType(T1), NullableType(T2)) = isTypeEqualToErased(T1, T2).
+    isTypeEqualToErased(NullableType(T1), T2) = isTypeEqualToErased(T1, T2).
+    isTypeEqualToErased(T1, NullableType(T2)) = isTypeEqualToErased(T1, T2).
+    isTypeEqualToErased(ListType(_), ListType(_)) = TRUE().
+    isTypeEqualToErased(EmptyListType(), EmptyListType()) = TRUE() :-
+      false | error $[BUG?: checking if empty list type is equal to an erased empty list type].
+    isTypeEqualToErased(TupleType(Ts1), TupleType(Ts2)) =
+      typeListsLengthsEqual(Ts1, Ts2).
+    isTypeEqualToErased(FuncDefType(_, params1, _), FuncDefType(_, params2, _)) =
+      typeListsLengthsEqual(params1, params2) :-
+        false | error $[BUG?: checking if function type is equal to an erased function type].
+    isTypeEqualToErased(DataType(s_data1), DataType(s_data2)) =
+      isTypeEqualToErased_dataTypeEqual(s_data_def1, s_data_def2, type_args) :-
+        findGenericDef(s_data1) == s_data_def1,
+        findGenericDef(s_data2) == s_data_def2,
+        getTypeArgsUnordered(s_data1) == type_args.
+    isTypeEqualToErased(T, param@TypeParameter2TYPE(_)) =
+      isTypeEqualToErased(T, upper_bound) :-
+        getBounds(param) == (_, upper_bound).
+    isTypeEqualToErased(T, WildcardType(_, upper_bound, _)) = isTypeEqualToErased(T, upper_bound) :-
+      false | error $[BUG?: checking if [T] is equal to an erased wildcard].
+    isTypeEqualToErased(T1, T2) = FALSE().
+
+    // only equal if generic defs are the same and the first instance has no type arguments.
+    isTypeEqualToErased_dataTypeEqual : scope * scope * list((TypeParameter * TYPE)) -> BOOLEAN
+    isTypeEqualToErased_dataTypeEqual(s, s, []) = TRUE().
+    isTypeEqualToErased_dataTypeEqual(_, _, _) = FALSE().
+
+  /**
+   * eraseType(T) = erased_type
+   * erases TYPE [T] to TYPE [erased_type].
+   * This removes all type arguments and makes it nullable.
+   * This also takes the upper bound of type variables and wildcards.
+   * Because there are no specific erased types, this just replaces everything
+   * with UnitType if outright removing it is not possible.
+   */
+  eraseType : TYPE -> TYPE
+  eraseTypes maps eraseType(list(*)) = list(*)
+  eraseType(T) = makeNullable(eraseType_1(T)).
+
+    eraseType_1 : TYPE -> TYPE
+    eraseType_1(T) = T.
+    eraseType_1(DataType(s_data)) = DataType(findGenericDef(s_data)).
+    eraseType_1(NullableType(T)) = NullableType(eraseType_1(T)).
+    eraseType_1(ListType(T)) = ListType(UnitType()).
+    eraseType_1(TupleType(Ts)) = TupleType(replaceWithUnit(Ts)).
+      getUnit : TYPE -> TYPE
+      replaceWithUnit maps getUnit(list(*)) = list(*)
+      getUnit(_) = UnitType().
+    eraseType_1(SupplierType(_)) = SupplierType(UnitType()).
+    eraseType_1(FuncDefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
+    eraseType_1(FuncRefType(_, params, _)) = FuncDefType([], replaceWithUnit(params), UnitType()).
+    eraseType_1(WildcardType(_, ub, _)) = eraseType(ub).
+    eraseType_1(T@TypeParameter2TYPE(_)) = eraseType(ub) :-
+      getBounds(T) == (_, ub).

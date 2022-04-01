@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:list:listWithExtension
+
+func main_listWithExtension(dir: path) -> path* =
+  list dir with extension "txt"

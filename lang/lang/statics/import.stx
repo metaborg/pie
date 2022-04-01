@@ -5,7 +5,7 @@ imports
   signatures/constructors-sig
   signatures/pie-sig
   statics/base
-  statics/util
+  statics/common
   statics/module
 
 rules
@@ -38,7 +38,7 @@ rules
     renamingingToNormalizedImport(renaming) = NormalizedImport(renaming).
 
     carthesianProducts : list(list(Renaming)) -> list(Renaming)
-    carthesianProducts([]) = [] :- try {false} | note "BUG?: carthesianProducts called with empty list".
+    carthesianProducts([]) = [] :- try {false} | warning "BUG?: carthesianProducts called with empty list".
     carthesianProducts([list|[]]) = list.
     carthesianProducts([list|lists]) = carthesianProduct(list, carthesianProducts(lists)).
 
@@ -127,7 +127,7 @@ rules
 
     // declareFuncsAndData(s, submodule, import_name, rename, funcs, data) = s_import_tree
     // Declare in s or s_import_tree depending on whether submodule is empty
-    declareFuncsAndData : scope * list(MODID) * ANYID * ANYID * list((FUNCID * TYPE)) * list((TYPEID * scope)) -> list(MODULE)
+    declareFuncsAndData : scope * list(MODID) * ANYID * ANYID * list((FUNCID * (scope * TYPE))) * list((TYPEID * scope)) -> list(MODULE)
     declareFuncsAndData(s, [], import_name, rename, funcs, data) = [] :-
       declareFuncImports(s, rename, import_name, funcs),
       declareDataImports(s, rename, import_name, data).
@@ -144,7 +144,7 @@ rules
     createModuleForScope(name, s) = SUBMODULE(s, name).
 
   resolveImport : scope * NormalizedImport -> (
-      list((FUNCID * TYPE))
+      list((FUNCID * (scope * TYPE)))
       * list((TYPEID * scope))
       * list(scope)
     )
@@ -155,7 +155,7 @@ rules
     resolveImportInFile(moduleTreeScopeToFiles(s_mod_tree), name) == (funcs, data),
     resolveModuleOpt(s_mod_tree, name) == mods.
 
-    resolveImportInFile : list(scope) * ANYID -> (list((FUNCID * TYPE)) * list((TYPEID * scope)))
+    resolveImportInFile : list(scope) * ANYID -> (list((FUNCID * (scope * TYPE))) * list((TYPEID * scope)))
     resolveImportInFile([], _) = ([], []).
     resolveImportInFile([s_mod_file], name) = (funcs, data) :-
       getFuncs(resolveLocalFunc(s_mod_file, name)) == funcs,
@@ -164,7 +164,7 @@ rules
       getModuleName(s_mod_file) == name,
       false | error $[Cannot resolve import: multiple files declared for [name]] @node.
 
-    getFunc : (path * (FUNCID * TYPE)) -> (FUNCID * TYPE)
+    getFunc : (path * (FUNCID * (scope * TYPE))) -> (FUNCID * (scope * TYPE))
     getFuncs maps getFunc(list(*)) = list(*)
     getFunc((_, func)) = func.
 
@@ -177,14 +177,14 @@ rules
    * Reports errors on the imports if they refer to multiple elements or if
    * none of the imports resolve.
    */
-  reportErrors : list((FUNCID * TYPE)) * list((TYPEID * scope)) * list(scope) * ANYID * list(MODID) * ANYID * list(MODID)
+  reportErrors : list((FUNCID * (scope * TYPE))) * list((TYPEID * scope)) * list(scope) * ANYID * list(MODID) * ANYID * list(MODID)
   reportErrors([], [], [], name, module, _, _) :- false | error $[[name] does not resolve to anything in [module]] @name.
   reportErrors(funcs, data, mods, name, module, rename, renaming) :-
     checkTooManyFuncs(funcs, name, module),
     checkTooManyData(data, name, module),
     checkTooManyMods(mods, name, module).
 
-    checkTooManyFuncs : list((FUNCID * TYPE)) * ANYID * list(MODID)
+    checkTooManyFuncs : list((FUNCID * (scope * TYPE))) * ANYID * list(MODID)
     checkTooManyFuncs([], _, _).
     checkTooManyFuncs([_], _, _).
     checkTooManyFuncs([_|_], name, module) :- false | error $[Duplicate definition for function [name] in [module]].

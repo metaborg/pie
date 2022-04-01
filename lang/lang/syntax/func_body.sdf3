@@ -4,12 +4,13 @@ imports
 
   lex/literal
   common
+  exp_literal
   type
 
 template options
 
   keyword -/- [a-zA-Z0-9\-\_\"\/\.\[\!\+]
-  tokenize : "(<."
+  tokenize : "([<."
 
 context-free sorts
 
@@ -23,7 +24,6 @@ context-free sorts
   StampKind
   FilterPart
   Filter
-  Bool
   StrPart
   PathPart
 
@@ -74,12 +74,11 @@ context-free syntax // References
   Ref.Ref = <<VALID>> {avoid}
   Exp     = Ref
 
-  Exp.Call  = <<ModuleList><FUNCID>(<{Exp ", "}*>)> {left}
-  Exp.QCall = <<Exp>.<FUNCID>(<{Exp ", "}*>)>       {left}
+  Exp.Call  = <<ModuleList><FUNCID><TypeArgs>(<{Exp ", "}*>)> {left}
+  Exp.QCall = <<Exp>.<FUNCID><TypeArgs>(<{Exp ", "}*>)>       {left}
 
-  Exp.CreateSupplier = <supplier (<Exp>)>
-  Exp.TaskSupplier   = <<ModuleList><FUNCID>.supplier(<{Exp ", "}*>)>
-  Exp.SupplierGet    = <<Exp>.get\<\>()>
+  Exp.CreateSupplier = <<SupplierKeyword><TypeArgs>(<{Exp ", "}*>)>
+  Exp.TaskSupplier   = <<ModuleList><FUNCID>.<SupplierKeyword><TypeArgs>(<{Exp ", "}*>)>
 
 context-free syntax // Paths
 
@@ -109,15 +108,7 @@ context-free syntax // Early return and failure
 
 context-free syntax // Literals
 
-  Exp.UnitLit  = <unit>
-  Exp.BoolLit  = <<Bool>>
-  Bool.True    = <true>
-  Bool.False   = <false>
-  Exp.IntLit   = <<INT>>
-  Exp.NullLit  = <null>
-
-  Exp.TupleLit = <(<{Exp ","}+>)> {left}
-  Exp.ListLit  = <[<{Exp ","}*>]> {left}
+  // moved to exp_literal.sdf3
 
 syntax // Interpolated string literal
 
@@ -233,12 +224,4 @@ lexical syntax // Reject keywords
   FUNCID = "generates" {reject}
   FUNCID = "list"      {reject}
   FUNCID = "walk"      {reject}
-  FUNCID = "supplier"  {reject}
-  FUNCID = "unit"      {reject}
-  FUNCID = "null"      {reject}
-  FUNCID = "true"      {reject}
-  FUNCID = "false"     {reject}
-  VALID  = "unit"      {reject}
-  VALID  = "null"      {reject}
-  VALID  = "true"      {reject}
-  VALID  = "false"     {reject}
+  // more keywords in exp_literals

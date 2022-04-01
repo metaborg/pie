@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:walk:walkNoFilter
+
+func main_walkNoFilter(dir: path) -> path* =
+  walk dir

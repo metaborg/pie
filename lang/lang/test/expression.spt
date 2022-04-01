@@ -9,14 +9,46 @@ fixture [[
     func get() -> Foo
     func set(Foo) -> unit
   }
-  data Bar : Foo = foreign java org.example.test.expression.Bar {
+  data Bar <: Foo = foreign java org.example.test.expression.Bar {
     func finagle(bool, Foo) -> int
     func set(Foo) -> unit
   }
-  data Bak : Foo = foreign java org.example.test.expression.Bak {}
+  data Bak <: Foo = foreign java org.example.test.expression.Bak {}
+  data Baar <: Foo = foreign java org.example.test.expression.Baar {}
   data Bok = foreign java org.example.test.expression.Bok {}
 
-  func main(name: string, comment: string?, enableFinagle: bool, value: int, foo: Foo, bar: Bar, bak: Bak, bok: Bok) -> unit = {
+  data Generic[T <: Foo, U <: Foo, V] = foreign java org.example.test.expression.Generic {}
+  data GenericSub[T <: Bar, U <: Baar] <: Generic[T, U, string] = foreign java org.example.test.expression.GenericSub {}
+
+  data Animal = foreign java org.example.test.expression.Animal {}
+  data Mammal <: Animal = foreign java org.example.test.expression.Mammal {}
+  data Dog <: Mammal = foreign java org.example.test.expression.Dog {}
+  data Fish <: Animal = foreign java org.example.test.expression.Fish {}
+
+  data Fuz[T <: Animal] = foreign java Foo {}
+  data Faz[T] = foreign java Foo {}
+
+  func main(
+    name: string,
+    comment: string?,
+    enableFinagle: bool,
+    value: int,
+    foo: Foo,
+    bar: Bar,
+    bak: Bak,
+    bok: Bok,
+    generic1: Generic[Foo, Baar, string],
+    generic2: Generic[Bak, Baar, int],
+    genericSub: GenericSub[Bar, Baar],
+    fuz: Fuz[Mammal],
+    faz: Faz[Mammal],
+    fuzWildcardUpperBounded: Fuz[_ <: Mammal],
+    fazWildcardUnbounded: Faz[_],
+    fazWildcardUpperBounded: Faz[_ <: Mammal],
+    fazWildcardLowerBounded: Faz[_ :> Mammal],
+    dog: Dog,
+    fish: Fish
+  ) -> unit = {
     [[...]];
 
     unit
@@ -26,6 +58,8 @@ fixture [[
   func double(x: int) -> int = x+x
   func argsFunc(x: int, y: int, name: string) -> string = "not implemented"
   func takesFoo(foo: Foo) -> int = 17
+  func useAnimal[A <: Animal](animal: A) -> path = foreign test.expression.UseAnimal
+  func checkAnimals[A <: Animal, B <: Animal](animal1: A, animal2: B) -> bool = foreign test.expression.CheckAnimals
 ]]
 
 
@@ -45,15 +79,16 @@ test list literal with null [[ val x: int?* = [1, null, 3] ]] analysis succeeds
 
 // simple expressions
 test empty block [[ {} ]] analysis succeeds
-test block 1 element [[ val fuz: int = { 5 } ]] analysis succeeds
+test block 1 element [[ val buk: int = { 5 } ]] analysis succeeds
 test block 2 elements [[
-  val fuz: string = {
-    val baz: int = 8;
-    "value: $baz"
+  val buk: string = {
+    val [[baz]]: int = 8;
+    "value: $[[baz]]"
   }
 ]] analysis succeeds
+   resolve #2 to #1
 test nested block [[
-  val fuz: bool = {{
+  val buk: bool = {{
     val [[baz]] = ./values;
     {
       exists [[baz]]
@@ -73,7 +108,11 @@ test shadowing in block [[
 
 test toNullable [[ val x: int? = 8? ]] analysis succeeds
 test toNullable null [[ val x = null? ]] analysis succeeds
-test toNonNullable [[ val x: int = [[null!]] ]] 1 errors at #1    0 warnings
+test toNonNullable [[ val x: int = [[null!]] ]]
+  analysis fails     // test has errors with Gradle runner
+  // 1 errors at #1  // see https://github.com/MeAmAnUsername/pie/issues/216
+  0 warnings
+  error like "Type mismatch"
 test not [[ val b: bool = [[!enableFinagle]] ]] analysis succeeds
 
 test equals int [[ val b: bool = value == 5 ]] analysis succeeds
@@ -138,7 +177,7 @@ test add null to empty list [[ [[ [] + null ]] ]] analysis succeeds run pie-ast-
 test if [[ if (enableFinagle) anotherFunc() ]] analysis succeeds
 test if with block [[ if (enableFinagle) {anotherFunc(); return unit} ]] analysis succeeds
 test if condition not boolean [[ if ([[0]]) unit ]] 1 error at #1
-test if error in branch [[ if (!enableFinagle) return [[anotherFunc()]] ]] >= 1 error at #1 // todo: I expect only 1 but Statix gives 2
+test if error in branch [[ if (!enableFinagle) return [[anotherFunc()]] ]] 1 error at #1
 
 test ifelse [[ [[ if (value == 10) "hello" else "world" ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test ifelse condition not boolean [[ if ([["true"]]) 1 else 5 ]] 1 error at #1
@@ -146,10 +185,14 @@ test ifelse true branch null [[ [[ if (value == 10) null else "a string" ]] ]] a
 test ifelse false branch null [[ [[ if (comment != null) "Comment: $comment" else null ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(StrType())
 test ifelse branches nullable [[ [[ if (comment != null) comment else comment ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(StrType())
 test ifelse true branch subtype nullable [[ [[ if (comment != null) bak? else foo? ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(DataType(_))
-// test ifelse false branch subtype nullable [[ [[ if (comment != null) foo? else bar? ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(DataType(_)) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+test ifelse false branch subtype nullable [[ [[ if (comment != null) foo? else bar? ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(DataType(_))
 test ifelse true branch subtype [[ [[ if (value == 0) bar else foo ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
-// test ifelse false branch subtype [[ [[ if (value == 0) foo else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
-// test ifelse branches least upperbound [[ [[ if (value == 0) bar else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_) // todo: enable test when it is stable (see https://github.com/MeAmAnUsername/pie/issues/99)
+test ifelse false branch subtype [[ [[ if (value == 0) foo else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse branches least upperbound [[ [[ if (value == 0) bar else bak ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse branches equal with type arguments [[ [[ val res: Generic[Foo, Baar, string] = if (value == 0) generic1 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse true branch subtype with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
+test ifelse false branch subtype with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 test ifelse branch type mismatch [[ if (value == 0) "hello" else 10 ]] 1 error
 test ifelse branch type mismatch datatypes [[ if (value == 0) bak else bok ]] 1 error error like "Type mismatch"
 test ifelse branch type mismatch nullable datatypes [[ if (value == 0) foo? else bok? ]] 1 error error like "Type mismatch"
@@ -166,6 +209,7 @@ test list comprehension list elem type subtype of declared binder type [[ val [[
   run pie-ast-type on #2 to DataType(_) // Foo
   run pie-ast-type on #3 to DataType(_) // Foo
   run pie-ast-type on #4 to ListType(DataType(_)) // Bar*
+test list comprehension single binder type hint is wildcard [[ ["Hello $name2!" | name2: [[_ :> string]] <- ["Bob", "Alice"] ] ]] 1 error at #1  error like "Cannot use a wildcard"
 test list comprehension tuple binder [[ [[ ["$str: $val" | (str, val) <- [("one", 1), ("two", 2), ("three", 3)] ] ]] ]] analysis succeeds run pie-ast-type on #1 to ListType(StrType())
 test list comprehension single binder on tuple [[
   [{
@@ -176,6 +220,9 @@ test list comprehension single binder on tuple [[
    resolve #1 to #2
    run pie-ast-type on #2 to TupleType([StrType(), IntType()])
    run pie-ast-type on #1 to TupleType([StrType(), IntType()])
+test list comprehension tuple binder type hint is wildcard [[
+  ["Hello $first_name $surname!" | (first_name: [[_,]] surname) <- [("Charlie", "Chaplin")] ]
+]] 1 errors at #1  error like "Cannot use a wildcard"
 test list comprehension not a list [[ ["$x * 3 = ${x+x+x}" | x <- [[ (1, 2, 3) ]] ] ]] error like "expected a list" at #1
 test list comprehension empty list [[ ["$x * 3 = ${x+x+x}" | x: int <- [[ [] ]] ] ]] 0 errors 1 warning warning like "empty list" at #1
 test list comprehension binder type mismatch [[ ["$x * 3 = ${x+x+x}" | x: [[string]] <- [1, 2, 3] ] ]] error like "Type mismatch" at #1
@@ -190,6 +237,15 @@ test val declaration single bind assign nullable subtype [[val [[x]]: Foo? = bar
 test val declaration single bind assign non-nullable subtype to nullable [[val [[x]]: Foo? = bak ]] analysis succeeds run pie-ast-type on #1 to NullableType(DataType(_))
 test val declaration single bind type mismatch [[ val x: [[string]] = null ]] 1 error error like "Type mismatch" at #1
 test val declaration assign tuple to single bind [[ val [[tup]] = ("left", "right") ]] analysis succeeds run pie-ast-type on #1 to TupleType([StrType(), StrType()])
+test val declaration type is wildcard [[val x: [[_ =]] true ]] 1 errors at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with upper bound [[val x: [[_ <: int =]] 7 ]] 1 errors at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with lower bound [[val x: [[_ :> Foo  =]] bar ]] 1 error at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with equal lower bound [[val x: [[_ :> Foo  =]] foo ]] 1 error at #1  error like "Cannot use a wildcard"
+test val declaration type is wildcard with upper and lower bound [[
+  val x: [[Bar[] <: _ <: Foo[] ]] = bar
+]] 2 errors at #1
+   error like "Cannot use a wildcard"
+   error like "Cannot have both an upper and lower bound"
 test val declaration tuple bind [[
   val ([[val]], [[str]]) = (3, "three")
 ]] analysis succeeds
@@ -204,21 +260,245 @@ test val declaration tuple bind mixed typed/untyped [[
 ]] analysis succeeds
    run pie-ast-type on #1 to ListType(NullableType(StrType()))
    run pie-ast-type on #2 to ListType(IntType())
+test val declaration tuple bind with wildcard type hints [[
+  val (test_name, test_time_ms: int, test_result: [[_)]] = ("t25-10-sample_01", 13425, "err_no 127")
+]] 1 errors at #1
+   error like "Cannot use a wildcard"
+test val declaration assign list to list of nullable [[
+  val ints: int* = [8, 6];
+  val maybeInts: int?* = ints
+]] analysis succeeds
+test val declaration assign list of nullable to list [[
+  val maybeInts: int?* = [9, null];
+  val ints: [[int*]] = maybeInts
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign list to supertype list [[
+  val bars: Bar* = [bar];
+  val foos: [[Foo*]] = bars
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign list to supertype list [[
+  val foos: Foo* = [foo];
+  val bars: [[Bar*]] = foos
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign tuple to tuple of nullable [[
+  val tuple: (int, string) = (4, "yes");
+  val nullable: (int?, string?) = tuple
+]] analysis succeeds
+test val declaration assign tuple of nullable to tuple [[
+  val nullable: (int?, string?) = (4?, null);
+  val tuple: [[(int, string)]] = nullable
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign tuple to tuple with supertype [[
+  val foobar: (Foo, Bar) = (foo, bar);
+  val foofoo: [[(Foo, Foo)]] = foobar
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign tuple to tuple with supertype [[
+  val foofoo: (Foo, Foo) = (foo, foo);
+  val foobar: [[(Foo, Bar)]] = foofoo
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign supplier to supplier of nullable [[
+  val sup: supplier[int] = supplier(8);
+  val supNullable: supplier[int?] = sup
+]] analysis succeeds
+test val declaration assign supplier of nullable to supplier [[
+  val supNullable: supplier[int?] = supplier(null);
+  val sup: [[supplier[int] ]] = supNullable
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign supplier to supertype supplier [[
+  val barSup: supplier[Bar] = supplier(bar);
+  val fooSup: [[supplier[Foo] ]] = barSup
+]] 1 error at #1
+   error like "Type mismatch"
+test val declaration assign supplier to supertype supplier [[
+  val fooSup: supplier[Foo] = supplier(foo);
+  val barSup: [[supplier[Bar] ]] = fooSup
+]] 1 error at #1
+   error like "Type mismatch"
 test val declaration assign single to tuple bind [[ val (x, y) = [1, 2] ]] analysis fails
-test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1
+test val use before declaration [[ val x: int = [[x]]+1 ]] >= 1 error at #1  error like "Cannot resolve"
+
+// value assignment with generics
+test assign equal type [[ val res: Fuz[Mammal] = fuz ]] analysis succeeds
+test assign super type [[ val res: [[Fuz[Animal] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign sub type [[ val res: [[Fuz[Dog] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign different type [[ val res: [[Fuz[Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type without upperbounded type parameter with wildcard unbounded [[ val res: Faz[_] = faz ]] analysis succeeds
+test assign to type with upperbounded type parameter with wildcard unbounded [[ val res: Fuz[ [[_] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is equal [[ val res: Fuz[_ <: Mammal] = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is higher  [[ val res: Fuz[_ <: Animal] = fuz ]] analysis succeeds
+test assign to type with wildcard argument upper bound is lower [[ val res: [[Fuz[_ <: Dog] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper bound is different [[ val res: [[Fuz[_ <: Fish] ]] = fuz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is equal [[ val res: Faz[_ :> Mammal] = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is lower [[ val res: Faz[_ :> Dog] = faz ]] analysis succeeds
+test assign to type with wildcard argument lower bound is higher [[ val res: [[Faz[_ :> Animal] ]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument lower bound is different [[ val res: [[Faz[_ :> Fish] ]] = faz ]] 1 error at #1  error like "Type mismatch"
+test assign to type with wildcard argument upper and lower bound [[
+  val res: Fuz[ [[Dog[] <: _ <: Animal[] ]] ] = fuz
+]] 1 error at #1
+   error like "Cannot have both an upper and lower bound" at #1
+test assign type with upper bounded wildcard type argument to specific type equal to bound [[
+  val res: [[Fuz[Mammal] ]] = fuzWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to specific type higher than bound [[
+  val res: [[Fuz[Animal] ]] = fuzWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to specific type lower than bound [[
+  val res: [[Fuz[Dog] ]] = fuzWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to specific type different from bound [[
+  val res: [[Fuz[Dog] ]] = fuzWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal bounds [[
+  val res: Fuz[_ <: Mammal] = fuzWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with higher bound [[
+  val res: Fuz[_ <: Animal] = fuzWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with lower bound [[
+  val res: [[Fuz[_ <: Dog] ]] = fuzWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard with different bound [[
+  val res: [[Fuz[_ <: Fish] ]] = fuzWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+
+test assign type with unbounded wildcard type argument to specific type [[
+  val res: [[Faz[Animal] ]] = fazWildcardUnbounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with unbounded wildcard type argument to type with unbounded wildcard [[
+  val res: Faz[_] = fazWildcardUnbounded
+]] analysis succeeds
+test assign type with unbounded wildcard type argument to type with upper bounded wildcard [[
+  val res: [[Faz[_ <: Animal] ]] = fazWildcardUnbounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with unbounded wildcard type argument to type with lower bounded wildcard [[
+  val res: [[Faz[_ :> Animal] ]] = fazWildcardUnbounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with unbounded wildcard type argument to type with lower bounded wildcard lowest currently defined [[
+  val res: [[Faz[_ :> Dog] ]] = fazWildcardUnbounded
+]] 1 error at #1
+   error like "Type mismatch"
+
+test assign type with upper bounded wildcard type argument to type with unbounded wildcard [[
+  val res: Faz[_] = fazWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard equal [[
+  val res: Faz[_ <: Mammal] = fazWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard higher [[
+  val res: Faz[_ <: Animal] = fazWildcardUpperBounded
+]] analysis succeeds
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard lower [[
+  val res: [[Faz[_ <: Dog] ]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with upper bounded wildcard different [[
+  val res: [[Faz[_ <: Fish] ]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard equal [[
+  val res: [[Faz[_ :> Mammal] ]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard higher [[
+  val res: [[Faz[_ :> Animal] ]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard lower [[
+  val res: [[Faz[_ :> Dog] ]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with upper bounded wildcard type argument to type with lower bounded wildcard different [[
+  val res: [[Faz[_ :> Fish] ]] = fazWildcardUpperBounded
+]] 1 error at #1
+   error like "Type mismatch"
+
+test assign type with lower bounded wildcard type argument to specific type [[
+  val res: [[Faz[Mammal] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with unbounded wildcard [[
+  val res: Faz[_] = fazWildcardLowerBounded
+]] analysis succeeds
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard equal [[
+  val res: [[Faz[_ <: Mammal] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard higher [[
+  val res: [[Faz[_ <: Animal] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard lower [[
+  val res: [[Faz[_ <: Dog] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with upper bounded wildcard different [[
+  val res: [[Faz[_ <: Fish] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard equal [[
+  val res: Faz[_ :> Mammal] = fazWildcardLowerBounded
+]] analysis succeeds
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard higher [[
+  val res: [[Faz[_ :> Animal] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard lower [[
+  val res: Faz[_ :> Dog] = fazWildcardLowerBounded
+]] analysis succeeds
+test assign type with lower bounded wildcard type argument to type with lower bounded wildcard different [[
+  val res: [[Faz[_ :> Fish] ]] = fazWildcardLowerBounded
+]] 1 error at #1
+   error like "Type mismatch"
 
 test reference defined [[ [[name]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test reference undefined [[ [[nope]] ]] 1 error at #1
 
 test simple call no args [[ [[anotherFunc]]() ]] analysis succeeds resolve #1
+test simple call with type arguments [[ [[anotherFunc[]()]] ]] analysis succeeds  run pie-ast-type on #1 to IntType()
+test simple call with one type argument [[ [[ useAnimal[Animal](fish) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
+test simple call with two type arguments [[ [[ checkAnimals[Animal, Dog](dog, dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to BoolType()
+test simple call omitted type argument list with type arguments expected [[ [[useAnimal]](fish) ]] >= 1 error  error like "Cannot derive type arguments" at #1
+test simple call not enough type arguments with empty type argument list [[ checkAnimals[[ [] ]](fish, dog) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call not enough type arguments with type argument list [[ checkAnimals[[ [Animal] ]](fish, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call not enough type arguments with type argument out of bounds [[ checkAnimals[[ [Baz] ]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test simple call too many type arguments [[ useAnimal[[ [Animal, Dog] ]](dog) ]] >= 1 error at #1  error like "Too many type arguments"
+test simple call argument of wrong type [[ checkAnimals[Animal, [[Faz[_] ]] ](dog) ]] >= 1 error at #1  error like "not within upper bound"
 test simple call 1 arg [[ [[double]](4) ]] analysis succeeds resolve #1
 test simple call 3 args [[ [[argsFunc]](2, value, "yes") ]] analysis succeeds resolve #1
 test simple call undefined func [[ [[unknown]](true) ]] 1 error at #1  error like "Undefined function"
+test simple call undefined func evaluates arguments [[
+  [[unknown]]([[1]] || true)
+]] 2 errors at #1, #2
+   error like "Undefined function" at #1
+   error like "Type mismatch" at #2
+test simple call undefined func passes along arguments scope [[
+  [[unknown]](val [[f]] = "Hello %s");
+  [[f]]
+]] 1 error at #1
+   error like "Undefined function" at #1
+   resolve #3 to #2
 test simple call provide subtype as argument [[ [[takesFoo]](bak) ]] analysis succeeds resolve #1
 test simple call incorrect arg count [[ double(3, 4) ]] error like "Unexpected number of arguments"
 test simple call incorrect arg type [[ double([[ [3, 4] ]]) ]] >= 1 error at #1 // error like "Type mismatch"
 
 test fully qualified call no args [[ test:expression:[[anotherFunc]]() ]] analysis succeeds resolve #1
+test fully qualified call with one type argument [[ [[ test:expression:useAnimal[Mammal](dog) ]] ]] analysis succeeds  run pie-ast-type on #1 to PathType()
 test fully qualified call 1 arg [[ test:expression:[[double]](4) ]] analysis succeeds resolve #1
 test fully qualified call 3 args [[ test:expression:[[argsFunc]](2, value, "yes") ]] analysis succeeds resolve #1
 test fully qualified call undefined func [[ test:expression:[[unknown]](true) ]] 1 error at #1  error like "Undefined function"
@@ -233,25 +513,74 @@ test method call subtype argument [[ bar.[[finagle]](true, bak) ]] analysis succ
 test method call super method [[ bar.[[get]]() ]] analysis succeeds  resolve #1
 test method call overridden method [[ bar.[[set]](bak) ]] analysis succeeds  resolve #1
 test method call undefined func [[ bar.[[nope]]() ]] 1 error at #1  error like "Undefined function"
+test method call undefined func evaluates arguments [[
+  bar.[[nope]](1 + [[true]])
+]] 2 errors at #1, #2
+   error like "Undefined function" at #1
+   error like "Type mismatch" at #2
+test method call undefined func passes arguments scope [[
+  bar.[[nope]](val [[x]] = 42);
+  [[x]]
+]] 1 error at #1
+   error like "Undefined function" at #1
+   resolve #3 to #2
 test method call incorrect arg count [[ foo.set(foo, 8) ]] >= 1 error
 test method call incorrect arg type [[ foo.set([[bok]]) ]] >= 1 error at #1
-// todo: method calls on built-in types
+test method call on nullable type [[
+  val maybe: Foo? = null;
+  maybe.[[get]]()
+]] 1 error at #1
+   0 warnings
+   error like "Cannot call method on nullable type"
+test method call on nullable type undefined [[
+  val maybe: Foo? = null;
+  maybe.[[nope]]()
+]] 1 error at #1
+   1 warning at #1
+   error like "Cannot call method on nullable type"
+   warning like "Undefined function"
+
+test built-in method supplier get from supplier literal [[ [[ supplier("hello").get() ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
+test built-in method supplier get with type argument list [[ [[ supplier(./src/test/resources/example1.txt).get[]() ]] ]] analysis succeeds run pie-ast-type on #1 to PathType()
+test built-in method supplier get with type argument [[ supplier("hello").get[[ [int] ]]() ]] 1 error at #1  error like "Too many type arguments"
+test built-in method supplier get from function supplier [[ [[ double.supplier(78).get() ]] ]] analysis succeeds run pie-ast-type on #1 to IntType()
+test built-in method supplier get nested supplier [[ [[ supplier(double.supplier(-3)).get() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 
 test create supplier [[ [[ supplier(42) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test create supplier, supplier as argument [[ [[ supplier(supplier(42)) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(SupplierType(IntType()))
+test create supplier with empty type argument list [[ supplier[[ [] ]]("test") ]] 1 error at #1  error like "Not enough type arguments"
+test create supplier with one type argument [[ [[ supplier[int](8) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test create supplier with two type arguments [[ supplier[[ [int, string] ]](9) ]] 1 error at #1  error like "Too many type arguments"
+test create supplier with wrong argument type [[ supplier[path]([[true]]) ]] 1 error at #1  error like "Type mismatch"
+test create supplier missing argument [[ [[supplier]]() ]] 1 error at #1  error like "Not enough arguments"
+test create supplier two arguments [[ [[supplier]](12, "twelve") ]] 1 error at #1  error like "Too many arguments"
 
 test task supplier [[ [[ anotherFunc.supplier() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test task supplier with empty type arguments list [[ [[ anotherFunc.supplier[]() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test task supplier with one type argument [[ [[ useAnimal.supplier[Dog](dog) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(PathType())
+test task supplier with two type arguments [[ [[ checkAnimals.supplier[Dog, Fish](dog, fish) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(BoolType())
+test task supplier with empty type argument list, not enough type arguments [[ checkAnimals.supplier[[ [] ]](dog, fish) ]] >= 1 error at #1  error like "Not enough type arguments"
+test task supplier with omitted type argument list, not enough type arguments [[ [[useAnimal]].supplier(fish) ]] >= 1 error  error like "Cannot derive type arguments" at #1
+test task supplier with too many type arguments [[ checkAnimals.supplier[[ [Dog, Fish, Mammal] ]](dog, fish) ]] >= 1 error at #1  error like "Too many type arguments"
+test task supplier type argument outside bound [[ useAnimal.supplier[ [[Bar] ]](bar) ]] 1 error at #1  error like "not within upper bound"
 test task supplier one argument [[ [[ double.supplier(7) ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
 test task supplier three arguments [[ [[ argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier qualified function [[ [[ test:expression:argsFunc.supplier(8, -5, "Mandy") ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(StrType())
 test task supplier undefined function [[ [[missing]].supplier() ]] 1 error at #1  error like "Undefined function"
+test task supplier undefined function evaluates arguments [[
+  [[missing]].supplier([[nope]])
+]] 2 errors at #1, #2
+   error like "Undefined function" at #1
+   error like "Cannot resolve" at #2
+test task supplier undefined function passes along argument scope [[
+  [[missing]].supplier(val [[file]] = ./missing.txt);
+  [[file]]
+]] 1 error at #1
+   error like "Undefined function" at #1
+   resolve #3 to #2
 test task supplier not enough arguments [[ [[ double.supplier() ]] ]] 1 error at #1  error like "arguments"
 test task supplier too many arguments [[ [[ double.supplier(4, 6) ]] ]] 1 error at #1  error like "arguments"
-test task supplier argument with wrong type [[ argsFunc.supplier(8, [[ true ]], "Mandy") ]] 1 error at #1 // todo: error like "Type mismatch"
-
-test supplier get [[ [[ supplier("hello").get<>() ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
-test supplier get [[ [[ double.supplier(78).get<>() ]] ]] analysis succeeds run pie-ast-type on #1 to IntType()
-test supplier get [[ [[ supplier(double.supplier(-3)).get<>() ]] ]] analysis succeeds run pie-ast-type on #1 to SupplierType(IntType())
+test task supplier argument with wrong type [[ argsFunc.supplier(8, [[ true ]], "Mandy") ]] 1 error at #1  error like "Type mismatch"
 
 test list without filter [[ [[ list ./example/ ]] ]] analysis succeeds run pie-ast-type on #1 to ListType(PathType())
 test list with filter regex      [[ list /tmp/test/ with regex "file[0-9]+" ]] analysis succeeds
@@ -259,14 +588,16 @@ test list with filter pattern    [[ list /tmp/test/ with pattern "test" ]] analy
 test list with filter patterns   [[ list /tmp/test/ with patterns ["test", "attempt"] ]] analysis succeeds
 test list with filter extension  [[ list /tmp/test/ with extension "pie" ]] analysis succeeds
 test list with filter extensions [[ list /tmp/test/ with extensions ["c", "cpp"] ]] analysis succeeds
-test list list expression not a path [[ list [["./foo"]] ]] 1 error at #1 // error like "Type mismatch"
-test list regex not a string [[ list /a with regex [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test list pattern not a string [[ list /a with pattern [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test list patterns not a list [[ list /a with patterns [["result"]] ]] error like "Type mismatch" at #1
-test list patterns not a string list [[ list /a with patterns [[ [2019, 2020] ]] ]] error like "Type mismatch" at #1
-test list extension not a string [[ list /a with extension [[2020]] ]] 1 error at #1 // error like "Type mismatch"
-test list extensions not a list [[ list /a with extensions [["txt"]] ]] error like "Type mismatch" at #1
-test list extensions not a string list [[ list /a with extensions [[("h", "hpp")]] ]] error like "Type mismatch" at #1
+test list list expression not a path [[ list [["./foo"]] ]] 1 error at #1  error like "Type mismatch"
+test list regex not a string [[ list /a with regex [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test list pattern not a string [[ list /a with pattern [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test list patterns not a list [[ list /a with patterns [["result"]] ]] 1 error at #1  error like "Type mismatch"
+test list patterns not a string list [[ list /a with patterns [[ [2019, 2020] ]] ]] 1 error at #1 // error like "Type mismatch"
+test list patterns tuple instead of list [[ list /a with patterns [[ ("passed", "failed") ]] ]] 1 error at #1  error like "Type mismatch"
+test list extension not a string [[ list /a with extension [[2020]] ]] 1 error at #1  error like "Type mismatch"
+test list extensions not a list [[ list /a with extensions [["txt"]] ]] 1 error at #1  error like "Type mismatch"
+test list extensions not a string list [[ list /a with extensions [[("h", "hpp")]] ]] 1 error at #1  error like "Type mismatch"
+test list extensions tuple instead of list [[ list /a with extensions [[("h", "hpp")]] ]] 1 error at #1  error like "Type mismatch"
 
 test walk without filter [[ [[ walk ./example/ ]] ]] analysis succeeds run pie-ast-type on #1 to ListType(PathType())
 test walk with filter regex      [[ walk /tmp/test/ with regex "file[0-9]+" ]] analysis succeeds
@@ -274,14 +605,16 @@ test walk with filter pattern    [[ walk /tmp/test/ with pattern "test" ]] analy
 test walk with filter patterns   [[ walk /tmp/test/ with patterns ["test", "attempt"] ]] analysis succeeds
 test walk with filter extension  [[ walk /tmp/test/ with extension "pie" ]] analysis succeeds
 test walk with filter extensions [[ walk /tmp/test/ with extensions ["c", "cpp"] ]] analysis succeeds
-test walk walk expression not a path [[ walk [["./foo"]] ]] 1 error at #1 // error like "Type mismatch"
-test walk regex not a string [[ walk /a with regex [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test walk pattern not a string [[ walk /a with pattern [[./result]] ]] 1 error at #1 // error like "Type mismatch"
-test walk patterns not a list [[ walk /a with patterns [["result"]] ]] error like "Type mismatch" at #1
-test walk patterns not a string list [[ walk /a with patterns [[ [2019, 2020] ]] ]] error like "Type mismatch" at #1
-test walk extension not a string [[ walk /a with extension [[2020]] ]] 1 error at #1 // error like "Type mismatch"
-test walk extensions not a list [[ walk /a with extensions [["txt"]] ]] error like "Type mismatch" at #1
-test walk extensions not a string list [[ walk /a with extensions [[("h", "hpp")]] ]] error like "Type mismatch" at #1
+test walk walk expression not a path [[ walk [["./foo"]] ]] 1 error at #1  error like "Type mismatch"
+test walk regex not a string [[ walk /a with regex [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test walk pattern not a string [[ walk /a with pattern [[./result]] ]] 1 error at #1  error like "Type mismatch"
+test walk patterns not a list [[ walk /a with patterns [["result"]] ]] 1 error at #1  error like "Type mismatch" at #1
+test walk patterns not a string list [[ walk /a with patterns [[ [2019, 2020] ]] ]] 1 error at #1 // error like "Type mismatch"
+test walk patterns tuple instead of list [[ walk /a with patterns [[ ("passed", "failed") ]] ]] 1 error at #1  error like "Type mismatch"
+test walk extension not a string [[ walk /a with extension [[2020]] ]] 1 error at #1  error like "Type mismatch"
+test walk extensions not a list [[ walk /a with extensions [["txt"]] ]] 1 error at #1  error like "Type mismatch"
+test walk extensions not a string list [[ walk /a with extensions [[ [/.txt] ]] ]] 1 error at #1 // error like "Type mismatch"
+test walk extensions tuple instead of list [[ walk /a with extensions [[("h", "hpp")]] ]] 1 error at #1  error like "Type mismatch"
 
 test read [[ [[ read ./config.txt ]] ]] analysis succeeds run pie-ast-type on #1 to NullableType(StrType())
 test read not a path type [[ read [["./config"]] ]] 1 error at #1 // error like "Type mismatch"

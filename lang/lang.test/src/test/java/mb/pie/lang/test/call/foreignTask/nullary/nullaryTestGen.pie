@@ -1,0 +1,7 @@
+module mb:pie:lang:test:call:foreignTask:nullary
+
+func nullary() -> string = foreign mb.pie.lang.test.call.foreignTask.nullary.Nullary
+
+func main_nullary() -> string = {
+  nullary()
+}

@@ -5,7 +5,7 @@ imports
   signatures/constructors-sig
   signatures/lex/literal-sig
   signatures/pie-sig
-  statics/util
+  statics/common
   statics/type
 
 // These sorts/constructors are declared here and not in
@@ -15,6 +15,8 @@ signature
   sorts
     ModuleTree
     MODULE
+    ParameterizedType
+    TypeParameter
 
   constructors
     /**
@@ -81,6 +83,8 @@ signature
     SUBMODULE : scope * list(MODID) -> MODULE
 
     DataType : scope -> TYPE
+    TypeParameter : scope * TYPEID -> TypeParameter // name + scope it is defined in
+    TypeParameter2TYPE : TypeParameter -> TYPE
 
   relations
     root : scope
@@ -89,18 +93,26 @@ signature
     mod : MODID -> scope
     is_proxy_module : // no value, can be set as a flag
     val : VALID -> TYPE
-    func : FUNCID -> TYPE
-    func_local : FUNCID -> TYPE
+    func : FUNCID -> (scope * TYPE) // function scope, function type
+    func_local : FUNCID -> (scope * TYPE)  // function scope, function type
     data : TYPEID -> scope
     data_local : TYPEID -> scope
     data_mods : list(DataDefMod)
+    type_params : list((TypeParameter * TYPE * TYPE)) // TypeParameter, upper bound, lower bound
+    type_param : TypeParameter -> (TYPE * TYPE) // type parameter -> upper bound, lower bound
+    type_arg : TypeParameter -> TYPE   // type argument, parameter -> instantiated type
+    type_args : list(TYPE)
     context : string -> CONTEXT
 
 signature
   name-resolution
     labels
       INHERIT // Between data scopes
-      P // Scopes within functions, functions to file, files to root
+      DATA // merged scope to data scope. Is prioritized over P when looking up data types.
+      P // Multi-purpose "Parent" edge. Uses:
+        // - Scopes within functions (each declaration creates a new scope, as do list comprehensions)
+        // - Functions to file, files to root
+        // - data type with instantiated type parameters to data type with generic type parameters
       I // import module tree to root module tree
       FILE // module tree scope to file scope
       MODULE_TREE_ROOT // points to a module tree root. Starts in root scope for
@@ -201,9 +213,9 @@ rules // Declararing and resolving
    * Declare a function [name] with type [TYPE] in scope [s], set the type on
    * the function name.
    */
-  declareFunc : scope * string * TYPE * FuncImplKind
-  declareFunc(s, name, type, kind) :-
-    !func[name, type] in s,
+  declareFunc : scope * string * (scope * TYPE) * FuncImplKind
+  declareFunc(s, name, (s_func, type), kind) :-
+    !func[name, (s_func, type)] in s,
     resolveFunc(s, name) == [_] | error $[Duplicate function [name]] @name,
     @name.type := type,
     @name.kind := kind,
@@ -220,10 +232,10 @@ rules // Declararing and resolving
    * Declare an imported function [import_as_name] with type [type] in scope [s].
    * Set type on [import_name] and [import_as_name] and reference on [import_as_name].
    */
-  declareFuncImport : scope * FUNCID * FUNCID * (FUNCID * TYPE)
+  declareFuncImport : scope * FUNCID * FUNCID * (FUNCID * (scope * TYPE))
   declareFuncImports maps declareFuncImport(*, *, *, list(*))
-  declareFuncImport(s, import_as_name, import_name, (decl_name, type)) :-
-    !func[import_as_name, type] in s,
+  declareFuncImport(s, import_as_name, import_name, (decl_name, (s_func, type))) :-
+    !func[import_as_name, (s_func, type)] in s,
     resolveFunc(s, import_as_name) == [_]
       | error $[Duplicate function [import_as_name]] @import_as_name,
     @import_as_name.type := type,
@@ -234,15 +246,15 @@ rules // Declararing and resolving
    * declareLocalFunc(s, name, type)
    * Declare a local function [name] with type [type] in scope [s]
    */
-  declareLocalFunc : scope * string * TYPE
-  declareLocalFunc(s, name, type) :- !func_local[name, type] in s.
+  declareLocalFunc : scope * string * (scope * TYPE)
+  declareLocalFunc(s, name, (s_func, type)) :- !func_local[name, (s_func, type)] in s.
 
   /**
    * resolveLocalFunc(s, name)
    * Resolve local function [name] in scope [s] to a list of function types.
    * Used when declaring imports to avoid circular dependencies.
    */
-  resolveLocalFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
+  resolveLocalFunc : scope * FUNCID -> list((path * (FUNCID * (scope * TYPE))))
   resolveLocalFunc(s, name) = occs :-
     query func_local
       filter P*
@@ -253,56 +265,14 @@ rules // Declararing and resolving
   /**
    * Resolve a function [name] in scope [s]
    */
-  resolveFunc : scope * FUNCID -> list((path * (FUNCID * TYPE)))
+  resolveFunc : scope * FUNCID -> list((path * (FUNCID * (scope * TYPE))))
   resolveFunc(s, name) = occs :-
     query func
-      filter P*|INHERIT*
+      filter (P|INHERIT)*
          and { name' :- name' == name }
          min $ < INHERIT
          and true
           in s |-> occs.
-
-  /**
-   * resolve a function [name] to a unique declaration in scope [s]
-   * The boolean represents whether the function resolved (if it didn't, don't
-   * check for argument number/types etc.)
-   */
-  resolveUniqueFunc : scope * FUNCID -> (TYPE * BOOLEAN)
-  resolveUniqueFunc(s, name) = resolveUniqueFunc_1(name, resolveFunc(s, name)).
-
-    // This function exists so that the result of resolveFunc is not
-    // prematurely matched to a single occurrence
-    resolveUniqueFunc_1 : FUNCID * list((path * (FUNCID * TYPE))) -> (TYPE * BOOLEAN)
-    resolveUniqueFunc_1(name, []) = (_, FALSE()) :-
-      false | error $[Undefined function [name]] @name.
-
-    resolveUniqueFunc_1(name, [(_, (name', ty))]) = (ty, TRUE()) :-
-      @name.ref := name',
-      @name.type := ty.
-
-    // If there are multiple, the declaration will give an error.
-    resolveUniqueFunc_1(name, [_,_|_]) = (_, FALSE()).
-
-  /**
-   * resolveUniqueFuncInScopes(scopes, name) = (ty, resolved)
-   * Resolve a unique function [name] in [scopes] to a function type [ty].
-   * Only one of the scopes can have this function, so this does not look for
-   * one data type in each scope.
-   */
-  resolveUniqueFuncInScopes : list(scope) * FUNCID -> (TYPE * BOOLEAN)
-  resolveUniqueFuncInScopes(scopes, name) =
-    resolveUniqueFunc_1(name, flattenFuncOccurrences(resolveUniqueFuncInScopes_1(scopes, name))).
-
-    resolveUniqueFuncInScopes_1 maps resolveFunc(list(*), *) = list(*)
-
-    flattenFuncOccurrences : list(list((path * (FUNCID * TYPE)))) -> list((path * (FUNCID * TYPE)))
-    flattenFuncOccurrences([]) = [].
-    flattenFuncOccurrences([occs|rest]) = concatFuncOccurrences(occs, flattenFuncOccurrences(rest)).
-
-    concatFuncOccurrences : list((path * (FUNCID * TYPE))) * list((path * (FUNCID * TYPE))) -> list((path * (FUNCID * TYPE)))
-    concatFuncOccurrences([], rest) = rest.
-    concatFuncOccurrences([occ|occs], rest) = [occ|concatFuncOccurrences(occs, rest)].
-
 
   /**
    * declareData(s, name, s_data)
@@ -346,9 +316,9 @@ rules // Declararing and resolving
   resolveLocalData : scope * string -> list((path * (string * scope)))
   resolveLocalData(s, name) = occs :-
     query data_local
-      filter P*
+      filter DATA? P*
          and { name' :- name' == name }
-         min and false
+         min DATA < P and false
           in s |-> occs.
 
   /**
@@ -357,39 +327,133 @@ rules // Declararing and resolving
   resolveData : scope * string -> list((path * (string * scope)))
   resolveData(s, name) = occs :-
     query data
-      filter P*
+      filter DATA? P*
          and { name' :- name' == name }
-         min and false
+         min DATA < P and false
           in s |-> occs.
 
   /**
    * resolveUniqueData(s, name) = s_data
    * Resolve data [name] to a unique data scope [s_data] in scope [s].
-   * Returns an empty scope if [name] could not be resolved to a unique data
-   * type.
+   * [resolved] is TRUE if [name] resolved to a unique data type. If not,
+   * [s_data] will be a dummy scope.
    */
-  resolveUniqueData : scope * TYPEID -> scope
+  resolveUniqueData : scope * TYPEID -> (BOOLEAN * scope)
   resolveUniqueData(s, name) = resolveUniqueData_1(s, resolveData(s, name), name).
 
-    resolveUniqueData_1 : scope * list((path * (TYPEID * scope))) * TYPEID -> scope
-    resolveUniqueData_1(s, [], name) = emptyScope(s) :- false | error $[Undefined data [name]] @name.
-    resolveUniqueData_1(_, [(_, (name', s_data))], name) = s_data :-
+    resolveUniqueData_1 : scope * list((path * (TYPEID * scope))) * TYPEID -> (BOOLEAN * scope)
+    resolveUniqueData_1(s, [], name) = (FALSE(), emptyScope(s)) :- false | error $[Undefined data [name]] @name.
+    resolveUniqueData_1(_, [(_, (name', s_data))], name) = (TRUE(), s_data) :-
       @name.ref := name',
       @name.type := DataType(s_data).
-    resolveUniqueData_1(s, [_,_|_], _) = emptyScope(s).
+    resolveUniqueData_1(s, [_,_|_], _) = (FALSE(), emptyScope(s)).
+
 
   /**
-   * resolveUniqueDataInScopes(s, scopes, name) = s_data
-   * Resolve a unique data type [name] in [scopes] to a data scope [s_data].
-   * Only one of the scopes can have this data type, so this does not look for
-   * one data type in each scope.
-   * Scope [s] is used to set the root on an auxilary scope.
+   * getTypeParams(s_data) = params
+   * Get the list of type parameters of datatype scope [s_data].
+   * [s_data] can be the generic definition or an instance.
    */
-  resolveUniqueDataInScopes : scope * list(scope) * TYPEID -> scope
-  resolveUniqueDataInScopes(s, scopes, name) = resolveUniqueData(s_auxilary, name) :-
-    new s_auxilary,
-    !root[getRoot(s)] in s_auxilary,
-    createPEdges(s_auxilary, scopes).
+  getTypeParams : scope -> list((TypeParameter * TYPE * TYPE))
+  getTypeParams(s_data) = params :-
+    query type_params
+      filter P*
+         min $ < P and true
+          in s_data |-> [(_, params)]
+      | error $[BUG: Could not get type parameters from [s_data]].
+
+  /**
+   * declareTypeParam(s, name, upper_bound) = param
+   * Declares a type parameter [param] constructed from [name] and [s] with
+   * upper bound [upper_bound] in [s].
+   * Checks for duplicates and sets the type on [name].
+   */
+  declareTypeParam : scope * TYPEID * TYPE * TYPE -> TypeParameter
+  declareTypeParam(s, name, upper_bound, lower_bound) = param :-
+    !type_param[param@TypeParameter(s, name), (upper_bound, lower_bound)] in s,
+    resolveTypeParam(s, name) == [_]
+      | error $[Duplicate definition of type parameter [name]],
+    @name.type := wrapBound((param, upper_bound, lower_bound)).
+
+  /**
+   * resolveTypeParam(param, name) = occs
+   * Resolve a type parameter [name] to its declaration(s) [occs] from scope
+   * [s].
+   * Does not check if the resolved declarations are unique.
+   */
+  resolveTypeParam : scope * TYPEID -> list((path * (TypeParameter * (TYPE * TYPE))))
+  resolveTypeParam(s, name) = occs :-
+    query type_param
+      filter P?
+         and { param' :- TypeParameter(_, name) == param' }
+         min and false
+          in s |-> occs.
+
+  /**
+   * declareTypeArg(s, param, ty)
+   * Declare a type argument with type [ty] for type parameter [param] in
+   * scope [s].
+   * This checks for and gives a [BUG] error on duplicates type arguments.
+   */
+  declareTypeArg : scope * TypeParameter * TYPE
+  declareTypeArgs maps declareTypeArg(*, list(*), list(*))
+  declareTypeArg(s, param@TypeParameter(_, name), ty) :-
+    !type_arg[param, ty] in s,
+    resolveTypeArg(s, param) == [_]
+      | error $[BUG: multiple arguments for type parameter [name]].
+
+  /**
+   * resolveTypeArgFromNameOnly(s, name, follow_inherit) = occs
+   * Resolve [name] to type argument occurences [occs] in [s].
+   * May return any number of type arguments.
+   * If [follow_inherit] is TRUE it follows both P and INHERIT edges, otherwise
+   * only P edges.
+   */
+  resolveTypeArgFromNameOnly : scope * TYPEID * BOOLEAN -> list((path * (TypeParameter * TYPE)))
+  resolveTypeArgFromNameOnly(s, name, FALSE()) = occs :-
+    query type_arg
+      filter P*
+         and { TypeParameter(_, name') :- name == name' }
+         min $ < P
+          in s |-> occs.
+  resolveTypeArgFromNameOnly(s, name, TRUE()) = occs :-
+    query type_arg
+      filter (INHERIT|P)*
+         and { TypeParameter(_, name') :- name == name' }
+         min $ < P, $ < INHERIT
+          in s |-> occs.
+
+  /**
+   * resolveTypeArg(s, name) = occs
+   * Resolve [name] to type argument occurences [occs] in [s].
+   * May return any number of type arguments. Follows P and INHERIT edges.
+   */
+  resolveTypeArg : scope * TypeParameter -> list((path * (TypeParameter * TYPE)))
+  resolveTypeArg(s, param) = occs :-
+    query type_arg
+      filter (INHERIT|P)*
+         and { param' :- param == param' }
+         min $ < P, $ < INHERIT
+          in s |-> occs.
+
+  /**
+   * resolveUniqueTypeArg(s, param, error_node) = instantiation
+   * Resolve type parameter [param] to its instantiated type [instantiation] in
+   * [s]. Gives an error if the type argument is undefined or if there are
+   * multiple type arguments.
+   * See https://github.com/MeAmAnUsername/pie/issues/187 for the string
+   * argument.
+   */
+  resolveUniqueTypeArg : scope * TypeParameter * string -> TYPE
+  resolveUniqueTypeArgs maps resolveUniqueTypeArg(*, list(*), *) = list(*)
+  resolveUniqueTypeArg(s, param@TypeParameter(_, name), error_node) =
+    resolveUniqueTypeArg_1(name, resolveTypeArg(s, param), error_node).
+
+    resolveUniqueTypeArg_1 : TYPEID * list((path * (TypeParameter * TYPE))) * string -> TYPE
+    resolveUniqueTypeArg_1(name, [], error_node) = _ :- false | error $[Undefined type argument [name]] @error_node.
+    resolveUniqueTypeArg_1(_, [(_, (_, ty))], _) = ty.
+    resolveUniqueTypeArg_1(name, [_|_], error_node) = _ :- false | error $[Duplicate type argument [name]] @error_node.
+
 
   /**
    * setContext(s, name, context)
@@ -414,3 +478,20 @@ rules // Declararing and resolving
           in s |-> occs,
     occs == [(_, (_, context))],
     try { occs != [] } | error $[cannot get context value [name] in [s]].
+
+  /**
+   * copyContext(s, name)
+   * Resolves context value [name] in the parent scopes of scope [s] and
+   * declares it in [s] as well.
+   */
+  copyContext : scope * string
+  copyContext(s, name) :-
+    {occs value}
+    query context
+      filter P+
+         and { name' :- name' == name }
+         min $ < P
+         and true
+          in s |-> occs,
+    occs == [(_, (_, value))] | error $[BUG: cannot get context value [name] from parents of [s]],
+    !context[name, value] in s.

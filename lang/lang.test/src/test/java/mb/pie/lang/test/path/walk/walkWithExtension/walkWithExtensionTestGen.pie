@@ -1,0 +1,4 @@
+module mb:pie:lang:test:path:walk:walkWithExtension
+
+func main_walkWithExtension(dir: path) -> path* =
+  walk dir with extension "txt"

@@ -1,2 +1,5 @@
 # ignore generated java files in examples
 example/*.java
+
+# ignore stxtest result files
+**/*.stxresult

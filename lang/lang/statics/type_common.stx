@@ -1,0 +1,268 @@
+module statics/type_common
+
+imports
+
+  signatures/constructors-sig
+  statics/base
+  statics/type
+  statics/common
+
+rules
+
+  /**
+   * Returns the first element in the list that is TRUE(), or the default otherwise.
+   */
+  firstTrueT : list((BOOLEAN * TYPE)) * TYPE -> TYPE
+  firstTrueT([], T) = T.
+  firstTrueT([(FALSE(), _)|rest], T) = firstTrueT(rest, T).
+  firstTrueT([(TRUE(), T)|_], _) = T.
+
+  /**
+   * makeNullable(T)
+   * Make Type [T] nullable if it is not already.
+   * This returns NullType() or TopType() if [T] already was one of those and
+   * NullableType(_) otherwise
+   */
+  makeNullable : TYPE -> TYPE
+  makeNullable(NullType()) = NullType().
+  makeNullable(T@NullableType(_)) = T.
+  makeNullable(TopType()) = TopType().
+  makeNullable(T) = NullableType(T).
+
+  /**
+   * getScopeFromType(s, ty)
+   * Returns the scope with methods associated with type [ty]
+   */
+  getScopeFromType : scope * TYPE -> scope
+  getScopeFromType(_, DataType(s_data)) = s_data.
+  getScopeFromType(s, ty) = emptyScope(s).
+
+  /**
+   * getBounds(T) -> (lower_bound, upper_bound)
+   * Gets the lower and upper bound of a type [T]. The bounds for type
+   * parameters and wildcards are taken as is, for other types the bounds are
+   * simply that same type.
+   */
+  getBounds : TYPE -> (TYPE * TYPE)
+  getBounds(WildcardType(lb, ub, _)) = (lb, ub).
+  getBounds(TypeParameter2TYPE(TypeParameter(s, name))) = (lb, ub) :-
+    resolveTypeParam(s, name) == [(_, (_, (ub, lb)))] | error $[BUG: not a single declaration of [name] in [s]].
+  getBounds(T) = (T, T).
+
+
+  /**
+   * withinBounds(T1, T2, assignable_kind) = within_bounds
+   * Returns TRUE iff [T1] is within the bounds of [T2].
+   * It checks if the upper bound of [T1] is assignable to the upper bound of
+   * [T2] and the lower bound of [T2] is assignable to the lower bound of [T1].
+   * Uses [assignable_kind] to compare bounds.
+   */
+  withinBounds : TYPE * TYPE * AssignableKind -> BOOLEAN
+  withinBounds(T1, T2, assignable_kind) =
+    andB(isAssignableTo(ub1, ub2, assignable_kind), isAssignableTo(lb2, lb1, assignable_kind)) :-
+    getBounds(T1) == (lb1, ub1),
+    getBounds(T2) == (lb2, ub2).
+
+  /**
+   * getTypeParamsList(type_params) = type_params_list
+   * Gets the list of type parameters from a TypeParams.
+   * Returns an empty list for NoTypeParams().
+   */
+  getTypeParamsList : TypeParams -> list(TypeParam)
+  getTypeParamsList(NoTypeParams()) = [].
+  getTypeParamsList(TypeParams(type_params)) = type_params.
+
+  /**
+   * getTypeArgsList(type_args) = type_args_list
+   * Gets the list of type arguments from a TypeArgs.
+   * Returns an empty list for NoTypeArgs().
+   */
+  getTypeArgsList : TypeArgs -> list(Type)
+  getTypeArgsList(NoTypeArgs()) = [].
+  getTypeArgsList(TypeArgs(type_args)) = type_args.
+
+  /**
+   * findGenericDef(s_data) -> s_data_def
+   * Finds the generic definition of a data type [s_data].
+   * [s_data] can be a generic definition, in which case it itself will be
+   * returned.
+   */
+  // Get generic definition of s_data. s_data can be either an instance or the generic def itself.
+  findGenericDef : scope -> scope
+  findGenericDef(s_data) = getScope(occ) :-
+    query () filter P? min P < $ in s_data |-> [occ].
+
+  /**
+   * getGenericDef(s_data_instance) -> s_data_def
+   * Gets the generic definition of a data type instance [s_data_instance].
+   * [s_data_instance] cannot be a generic definition, it must be an instance.
+   */
+  getGenericDef : scope -> scope
+  getGenericDef(s_data_instance) = getScope(occ) :-
+    query () filter P in s_data_instance |-> [occ].
+
+  /**
+   * getTypeArgsUnordered(s_data) = type_args
+   * Get all type arguments defined in s_data.
+   * Type arguments are not ordered.
+   * Does not follow any edges.
+   */
+  getTypeArgsUnordered : scope -> list((TypeParameter * TYPE))
+  getTypeArgsUnordered(s_data) = getArgTypes(occs) :-
+    query type_arg filter e in s_data |-> occs.
+
+    getArgType : (path * (TypeParameter * TYPE)) -> (TypeParameter * TYPE)
+    getArgTypes maps getArgType(list(*)) = list(*)
+    getArgType((path, arg_ty)) = arg_ty.
+
+  /**
+   * getTypeArgsOrdered(s_data_instance) = type_args
+   * Gets the type arguments in the same order as defined by the type
+   * parameters.
+   * Does not follow any edges.
+   */
+  getTypeArgsOrdered : scope -> list((TypeParameter * TYPE))
+  getTypeArgsOrdered(s_data_instance) =
+    getTypeArgsOrdered_1s(s_data_instance, getTypeParams(s_data_instance)).
+
+    getTypeArgsOrdered_1 : scope * (TypeParameter * TYPE * TYPE) -> (TypeParameter * TYPE)
+    getTypeArgsOrdered_1s maps getTypeArgsOrdered_1(*, list(*)) = list(*)
+    getTypeArgsOrdered_1(s_data, (param, _, _)) =
+      (param, getTypeArgsOrdered_2(s_data, param, occs)) :-
+      query type_arg
+        filter e
+           and { param' :- param' == param }
+            in s_data |-> occs.
+
+    getTypeArgsOrdered_2 : scope * TypeParameter * list((path * (TypeParameter * TYPE))) -> TYPE
+    getTypeArgsOrdered_2(s_data, param, []) = upper_bound :-
+      getBounds(TypeParameter2TYPE(param)) == (_, upper_bound),
+      false | error $[BUG: no type arguments found from [s_data]].
+    getTypeArgsOrdered_2(s_data, _, [(_, (param, val))]) = val.
+    getTypeArgsOrdered_2(s_data, param, [_,_|_]) = upper_bound :-
+      getBounds(TypeParameter2TYPE(param)) == (_, upper_bound),
+      false | error $[BUG: multiple declarations for type arguments found from [s_data]].
+
+  /**
+   * getTypeArgType(type_arg) -> type
+   * Gets the type of a type argument, i.e. the type that the type parameter is
+   * bound to by this type argument.
+   */
+  getTypeArgType : (TypeParameter * TYPE) -> TYPE
+  getTypeArgTypes maps getTypeArgType(list(*)) = list(*)
+  getTypeArgType((_, ty)) = ty.
+
+  /**
+   * instantiateTypeParams(s_data, template, capture_state) =
+   *   s_data_instance_instantiated
+   * Instantiate type parameters in instance [s_data] with the type arguments
+   * of [template]. In other words, look up the values for type parameters of
+   * [s_data] in [template].
+   */
+  instantiateTypeParams : scope * scope * CaptureState * list(TypeParameter) -> scope
+  instantiateTypeParams(s_data, template, capture_state, params) = s_data_instance_instantiated :-
+    {type_args instantiated}
+    new s_data_instance_instantiated,
+    !root[getRoot(s_data)] in s_data_instance_instantiated,
+    s_data_instance_instantiated -P-> findGenericDef(s_data),
+    getTypeArgsOrdered(s_data) == type_args,
+    instantiateNamedTypeArgs(template, capture_state, type_args, params) == instantiated,
+    declareTypeArgsFromTuples(s_data_instance_instantiated, instantiated),
+    copyContext(s_data_instance_instantiated, "foreign_java_impl"),
+    copyContext(s_data_instance_instantiated, "data_name_unqualified"),
+    !type_args[getTypeArgTypes(instantiated)] in s_data_instance_instantiated.
+
+    instantiateNamedTypeArg : scope * CaptureState * (TypeParameter * TYPE) * list(TypeParameter) -> (TypeParameter * TYPE)
+    instantiateNamedTypeArgs maps instantiateNamedTypeArg(*, *, list(*), *) = list(*)
+    instantiateNamedTypeArg(template, capture_state, (name, T), params) =
+      (name, instantiateTypeArgs_1(template, T, capture_state, params)).
+
+    declareTypeArgsFromTuples : scope * list((TypeParameter * TYPE))
+    declareTypeArgsFromTuples(_, []).
+    declareTypeArgsFromTuples(s, [(name, T)|args]) :-
+      declareTypeArg(s, name, T),
+      declareTypeArgsFromTuples(s, args).
+
+  /**
+   * renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2,
+   *   type_params2) = s_renaming
+   * Renames all type parameters from [type_params1] to [type_params2]
+   * Renamings are returned as the scope [s_renaming]
+   * Overrides the renamings from [s_pre_existing], but type parameters from
+   * [s_pre_existing] that are not a type parameter in [type_params1] keep
+   * their original value.
+   * [s_type_params1] and [s_type_params2] are the scopes for the type
+   * parameters of [type_params1] and [type_params2] respectively.
+   * Fails without message when [type_params1] and [type_params2] have
+   * different lengths.
+   */
+  renameAll : scope * scope * list(TypeParamType) * scope * list(TypeParamType) -> scope
+  renameAll(s_pre_existing, s_type_params1, type_params1, s_type_params2, type_params2) = s_renaming :-
+    new s_renaming,
+    s_renaming -P-> s_pre_existing,
+    renameAll_1(s_renaming, s_type_params1, type_params1, s_type_params2, type_params2).
+
+    rename : scope * scope * TypeParamType * scope * TypeParamType
+    renameAll_1 maps rename(*, *, list(*), *, list(*))
+    rename(s, s_param1, TypeParamType(_, name1, _), s_param2, TypeParamType(_, name2, _)) :-
+      {type}
+      type == TypeParameter2TYPE(TypeParameter(s_param2, name2)),
+      declareTypeArg(s, TypeParameter(s_param1, name1), type).
+
+  /**
+   * typeListsLengthsEqual(Ts1, Ts2) = equal_lengths
+   * Checks if the length of the two lists is equal
+   */
+  typeListsLengthsEqual : list(TYPE) * list(TYPE) -> BOOLEAN
+  typeListsLengthsEqual([], []) = TRUE().
+  typeListsLengthsEqual([_|_], []) = FALSE().
+  typeListsLengthsEqual([], [_|_]) = FALSE().
+  typeListsLengthsEqual([_|Ts1], [_|Ts2]) =
+    typeListsLengthsEqual(Ts1, Ts2).
+
+  /**
+   * ppTYPE(type) -> name
+   * get the name of a type
+   * Does not work with composite types, only use for debugging!
+   */
+  ppTYPE : TYPE -> string
+  ppTYPEs maps ppTYPE(list(*)) = list(*)
+  ppTYPES maps ppTYPE(list(*)) = list(*)
+  ppTYPE(UnitType()) = "unit".
+  ppTYPE(BoolType()) = "bool".
+  ppTYPE(IntType()) = "int".
+  ppTYPE(StrType()) = "string".
+  ppTYPE(PathType()) = "path".
+  ppTYPE(NullType()) = "null".
+  ppTYPE(TopType()) = "top".
+  ppTYPE(BottomType()) = "bottom".
+  ppTYPE(NullableType(T)) = "nullable".
+  ppTYPE(ListType(T)) = "list".
+  ppTYPE(EmptyListType()) = "[]".
+  ppTYPE(TupleType(Ts)) = "tuple".
+  ppTYPE(SupplierType(T)) = "supplier".
+  ppTYPE(FuncDefType(type_params, in, out)) = "func def".
+  ppTYPE(FuncRefType(type_params, in, out)) = "func ref".
+  ppTYPE(DataType(s_data)) = name :- getContext(s_data, "data_name_unqualified") == ContextName(name).
+  ppTYPE(WildcardType(lb, ub, Free())) = "wildcard (capture state: free)".
+  ppTYPE(WildcardType(lb, ub, Bound())) = "wildcard (capture state: bound)".
+  ppTYPE(TypeParameter2TYPE(TypeParameter(_, name))) = name.
+
+  /**
+   * ppScope(s) -> name
+   * get the name of a scope
+   * returns "unknown scope" if it is not a type.
+   */
+  ppScope : scope -> string
+  ppScope(s) = ppScope_1(s, occs) :-
+    query context
+      filter P*
+         and {name :- "data_name_unqualified" == name}
+         min $ < P
+         and {x1, x2 :- x1 == x2}
+          in s |-> occs.
+
+    ppScope_1 : scope * list((path * (string * CONTEXT))) -> string
+    ppScope_1(s, []) = "unknown scope".
+    ppScope_1(_, [(_, (_, ContextName(name)))]) = name.
+    ppScope_1(s, [_,_|_]) = "unknown scope" :- false | error $[BUG: resolved multiple context values for "data_name_unqualified" in [s]].

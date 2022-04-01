@@ -4,7 +4,7 @@ imports
 
   signatures/constructors-sig
   statics/base
-  statics/util
+  statics/common
 
 rules
 
@@ -271,7 +271,7 @@ rules
     separateProxyModules : list(scope) -> (list(scope) * list(scope))
     separateProxyModules([]) = ([], []).
     separateProxyModules([s|rest]) = separateProxyModules_1(s, occs, separateProxyModules(rest)) :-
-      query is_proxy_module in s |-> occs.
+      query is_proxy_module filter e in s |-> occs.
 
     separateProxyModules_1 : scope * list((path * ())) * (list(scope) * list(scope)) -> (list(scope) * list(scope))
     separateProxyModules_1(s, [], (proper_module_scopes, proxy_scopes)) = ([s|proper_module_scopes], proxy_scopes).
@@ -298,7 +298,7 @@ rules
    */
   resolveModuleList : scope * ModuleList * BOOLEAN * BOOLEAN -> scope
   resolveModuleList(s, NoModuleList(), _, _) = s.
-  resolveModuleList(s, ModuleList([]), _, _) = s :- try {false} | note "BUG?: called resolveModuleList with empty ModuleList".
+  resolveModuleList(s, ModuleList([]), _, _) = s :- try {false} | warning "BUG?: called resolveModuleList with empty ModuleList".
   resolveModuleList(s, module@ModuleList(mods@[name|_]), follow_imports, add_references) =
     resolveModuleList_1(s, getModuleTreeRoots(s, follow_imports), mods, name, module, add_references).
 
