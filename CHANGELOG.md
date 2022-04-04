@@ -3,8 +3,12 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Added
+- Generics in the PIE DSL ([#16](https://github.com/metaborg/pie/pull/16))
+
 ### Fixed
-- Fix inconsistent store state in very specific task cancellation scenario, which would result in `RuntimeException`s when deleting unobserved tasks.
+- Fix inconsistent store state in very specific task cancellation scenario, which would result in `RuntimeException`s when deleting unobserved tasks, and added a regression test for it.
+- Fix same task being deleted multiple times by garbage collection (`deleteUnobservedTasks`), resulting in a runtime exception, and added regression tests for it. This happened due to a task depending on another task multiple times with different output stampers.
 
 
 ## [0.19.8] - 2022-03-09

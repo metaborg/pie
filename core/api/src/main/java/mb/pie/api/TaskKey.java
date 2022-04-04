@@ -21,11 +21,11 @@ public class TaskKey implements Serializable {
     public Task<?> toTask(TaskDefs taskDefs, StoreReadTxn txn) {
         final @Nullable TaskDef<?, ?> taskDef = taskDefs.getTaskDef(id);
         if(taskDef == null) {
-            throw new RuntimeException("Cannot get task definition for task key " + this.toShortString(Integer.MAX_VALUE) + "; task definition with id " + id + " does not exist");
+            throw new IllegalStateException("BUG: cannot get task definition for task key " + this.toShortString(Integer.MAX_VALUE) + "; task definition with id " + id + " does not exist");
         }
         final @Nullable Serializable input = txn.getInput(this);
         if(input == null) {
-            throw new RuntimeException("Cannot get task for task key " + this.toShortString(Integer.MAX_VALUE) + " ; input object does not exist");
+            throw new IllegalStateException("BUG: cannot get task for task key " + this.toShortString(Integer.MAX_VALUE) + " ; input object does not exist");
         }
         return new Task<>(taskDef, input);
     }

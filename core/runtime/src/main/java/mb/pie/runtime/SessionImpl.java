@@ -160,8 +160,13 @@ public abstract class SessionImpl implements Session {
         try(final StoreWriteTxn txn = store.writeTxn()) {
             // Start with tasks that have no callers: these are either ExplicitlyObserved, or Unobserved.
             final Deque<TaskKey> tasksToDelete = new ArrayDeque<>(txn.getTasksWithoutCallers());
+            final HashSet<TaskKey> deleted = new HashSet<>();
             while(!tasksToDelete.isEmpty()) {
                 final TaskKey key = tasksToDelete.pop();
+                if(deleted.contains(key)) {
+                    // Task was already deleted; skip.
+                    continue;
+                }
                 if(!txn.getTaskObservability(key).isUnobserved()) {
                     // Do not delete observed tasks. This filters out ExplicitlyObserved tasks.
                     continue;
@@ -172,6 +177,7 @@ public abstract class SessionImpl implements Session {
                     continue;
                 }
                 final @Nullable TaskData deletedData = txn.deleteData(key);
+                deleted.add(key);
                 if(deletedData != null) {
                     // Delete provided resources.
                     for(ResourceProvideDep dep : deletedData.deps.resourceProvideDeps) {
