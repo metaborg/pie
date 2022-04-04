@@ -3,18 +3,25 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
-### Added
-- Generics in the PIE DSL ([#16](https://github.com/metaborg/pie/pull/16))
+
+
+## [0.20.0] - 2022-04-04
+### Changed
+- `common` requirement to `0.10.3`.
+- `resource` requirement to `0.14.0`.
 
 ### Fixed
 - Fix inconsistent store state in very specific task cancellation scenario, which would result in `RuntimeException`s when deleting unobserved tasks, and added a regression test for it.
 - Fix same task being deleted multiple times by garbage collection (`deleteUnobservedTasks`), resulting in a runtime exception, and added regression tests for it. This happened due to a task depending on another task multiple times with different output stampers.
 
+### Added
+- Generics in the PIE DSL ([#16](https://github.com/metaborg/pie/pull/16))
+
 
 ## [0.19.8] - 2022-03-09
 ### Changed
 - Moved graph code into a separate project `pie.graph`.
-- - `common` requirement to `0.10.2`.
+- `common` requirement to `0.10.2`.
 
 ### Fixed
 - Calling `Pie.close` causing the `Store` to be closed multiple times.
@@ -134,7 +141,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `common` requirement to `0.9.3`.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.19.8...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.20.0...HEAD
+[0.20.0]: https://github.com/metaborg/pie/compare/release-0.19.8...release-0.20.0
 [0.19.8]: https://github.com/metaborg/pie/compare/release-0.19.7...release-0.19.8
 [0.19.7]: https://github.com/metaborg/pie/compare/release-0.19.6...release-0.19.7
 [0.19.6]: https://github.com/metaborg/pie/compare/release-0.19.5...release-0.19.6
