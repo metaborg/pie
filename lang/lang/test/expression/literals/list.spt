@@ -47,3 +47,6 @@ test list literal subtypes only
 test list literal nullable subtypes only
   [[ val list: Fruit?* = [banana?, apple?] ]]
   analysis succeeds
+test list literal mixed nullable subtypes
+  [[ val list: Fruit?* = [banana, apple?] ]]
+  analysis succeeds
