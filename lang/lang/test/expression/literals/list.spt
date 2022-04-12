@@ -25,7 +25,7 @@ test list literal single string [[ [[ ["hello world"] ]] ]]
   analysis succeeds
   run pie-ast-type on #1 to ListType(StrType())
 test list literal single value reference to custom type
-  [[ [[ val list: Banana* = [banana] ]] ]]
+  [[ val list: Banana* = [banana] ]]
   analysis succeeds
 test list literal single expression [[ [[ [3 + 8] ]] ]]
   analysis succeeds
@@ -39,11 +39,11 @@ test list literal heterogeneous types [[ [[ [1, "two", ./three] ]] ]]
   run pie-ast-type on #1 to ListType(TopType())
 
 test list literal type and subtypes
-  [[ [[ val list: Fruit* = [fruit, banana, apple] ]] ]]
+  [[ val list: Fruit* = [fruit, banana, apple] ]]
   analysis succeeds
 test list literal subtypes only
-  [[ [[ val list: Fruit* = [banana, apple] ]] ]]
+  [[ val list: Fruit* = [banana, apple] ]]
   analysis succeeds
 test list literal nullable subtypes only
-  [[ [[ val list: Fruit?* = [banana?, apple?] ]] ]]
+  [[ val list: Fruit?* = [banana?, apple?] ]]
   analysis succeeds
