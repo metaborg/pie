@@ -153,6 +153,18 @@ rules // Declararing and resolving
   // statics/module!declareModule and statics/module!resolveModuleList
 
   /**
+   * declareValIfNotAnonymous(s, value_id, type, kind)
+   * Does nothing if value_id is an AnonymousValue(). Otherwise, declares the
+   * value [name] with type [TYPE] and ValKind [kind] in scope [s] and set the
+   * type on the value name.
+   * See also declareVal.
+   */
+  declareValIfNotAnonymous : scope * ValueId * TYPE * ValKind
+  declareValIfNotAnonymous(s, ValueId(name), type, kind) :-
+    declareVal(s, name, type, kind).
+  declareValIfNotAnonymous(_, AnonymousValue(), _, _).
+
+  /**
    * Declare a value [name] with type [TYPE] and ValKind [kind] in scope [s],
    * set the type on the value name.
    */

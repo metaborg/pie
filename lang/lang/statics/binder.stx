@@ -13,7 +13,8 @@ rules
    */
   typeOfBinder : scope * TYPE * Binder -> TYPE
   typeOfBinder(s, ty_exp, b@SingleBinder(bind)) = ty@typeOfBind(s, ty_exp, bind) :-
-    @b.type := ty.
+    @b.type := ty,
+    try { getBindValueId(bind) != AnonymousValue() } | warning $[Assignment to anonymous value '_' is ignored and can be removed.\n'_' is used for anonymous values. To assign this expression to a value, use a different name].
   typeOfBinder(s, ty_exp, b@TupleBinder(binds)) = ty_dec :- {tys_exp tys_dec}
     ty_exp == TupleType(tys_exp) | error $[Type mismatch: expected tuple type, got [ty_exp]] @b,
     ty_dec == TupleType(tys_dec) | error $[Type mismatch: expected tuple type, got [ty_dec]] @b,
@@ -21,13 +22,21 @@ rules
     @b.type := ty_dec.
 
   /**
+   * getBindValueId(bind) = value_id
+   * Get the ValueId [value_id] from [bind].
+   */
+  getBindValueId : Bind -> ValueId
+  getBindValueId(Bind(value_id)) = value_id.
+  getBindValueId(TBind(value_id, _)) = value_id.
+
+  /**
    * type of a bind in scope [s] with type of the assignment expression [exp_ty]
    */
   typeOfBind : scope * TYPE * Bind -> TYPE
   typeOfBinds maps typeOfBind(*, list(*), list(*)) = list(*)
 
-  typeOfBind(s, exp_ty, b@Bind(name)) = exp_ty :-
-    declareVal(s, name, exp_ty, LocalValKind()),
+  typeOfBind(s, exp_ty, b@Bind(value_id)) = exp_ty :-
+    declareValIfNotAnonymous(s, value_id, exp_ty, LocalValKind()),
     @b.type := exp_ty.
 
   typeOfBind(s, actual_ty, b@TBind(name, expected_ty_exp)) = expected_ty :-
@@ -35,6 +44,6 @@ rules
     typeOf(s, s, expected_ty_exp, FALSE(), []) == expected_ty,
     instantiateTypeArgs(s, expected_ty) == expected_ty_instantiated,
     assignableTo(actual_ty, expected_ty_instantiated, ExpressionKind()) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty_instantiated]] @expected_ty_exp,
-    declareVal(s, name, expected_ty, LocalValKind()),
+    declareValIfNotAnonymous(s, name, expected_ty, LocalValKind()),
     @b.type := expected_ty,
     try { expected_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as value type. Use the upper bound or omit the type hint] @expected_ty_exp.

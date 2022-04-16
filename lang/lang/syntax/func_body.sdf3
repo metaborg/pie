@@ -64,8 +64,8 @@ context-free syntax // Binding
 
   Binder.SingleBinder = <<Bind>>
   Binder.TupleBinder  = <(<{Bind ", "}*>)>
-  Bind.Bind           = <<VALID>>
-  Bind.TBind          = <<VALID> : <Type>>
+  Bind.Bind           = <<ValueId>>
+  Bind.TBind          = <<ValueId> : <Type>>
 
   Exp.ValDec = <val <Binder> = <Exp>> {non-assoc}
 
