@@ -71,7 +71,7 @@ context-free syntax // Binding
 
 context-free syntax // References
 
-  Ref.Ref = <<VALID>> {avoid}
+  Ref.Ref = <<ValueId>> {avoid}
   Exp     = Ref
 
   Exp.Call  = <<ModuleList><FUNCID><TypeArgs>(<{Exp ", "}*>)> {left}
