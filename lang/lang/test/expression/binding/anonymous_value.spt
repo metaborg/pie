@@ -17,14 +17,14 @@ test anonymous value in single untyped value declaration [[
 ]] 1 error at #2
    error like "Cannot reference anonymous value"
    1 warning at #1
-   warning like "return value is ignored"
+   warning like "ignored"
 test anonymous value in single typed value declaration [[
   val [[_]]: int = 3;
   [[_]];
 ]] 1 error at #2
    error like "Cannot reference anonymous value"
    1 warning at #1
-   warning like "return value is ignored"
+   warning like "ignored"
 test anonymous value in single typed value declaration with incorrect type hint [[
   val [[_]]: [[int]] = "no";
   [[_]];
@@ -32,7 +32,7 @@ test anonymous value in single typed value declaration with incorrect type hint 
    error like "Type mismatch" at #2
    error like "Cannot reference anonymous value" at #3
    1 warning at #1
-   warning like "return value is ignored"
+   warning like "ignored"
 test anonymous value in multi untyped value declaration [[
   val (x, _, z) = (1, 2, 3);
   x;
