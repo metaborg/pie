@@ -15,14 +15,14 @@ test anonymous value in single untyped value declaration [[
   val [[_]] = 3;
   [[_]];
 ]] 1 error at #2
-   error like "cannot reference anonymous value"
+   error like "Cannot reference anonymous value"
    1 warning at #1
    warning like "return value is ignored"
 test anonymous value in single typed value declaration [[
   val [[_]]: int = 3;
   [[_]];
 ]] 1 error at #2
-   error like "cannot reference anonymous value"
+   error like "Cannot reference anonymous value"
    1 warning at #1
    warning like "return value is ignored"
 test anonymous value in single typed value declaration with incorrect type hint [[
@@ -30,7 +30,7 @@ test anonymous value in single typed value declaration with incorrect type hint 
   [[_]];
 ]] 2 errors at #2, #3
    error like "Type mismatch" at #2
-   error like "cannot reference anonymous value" at #3
+   error like "Cannot reference anonymous value" at #3
    1 warning at #1
    warning like "return value is ignored"
 test anonymous value in multi untyped value declaration [[
@@ -39,7 +39,7 @@ test anonymous value in multi untyped value declaration [[
   [[_]];
   z;
 ]] 1 error at #1
-   error like "cannot reference anonymous value"
+   error like "Cannot reference anonymous value"
    0 warnings
 test anonymous value in multi typed value declaration [[
   val (x: int, _: int, z: int) = (1, 2, 3);
@@ -47,7 +47,7 @@ test anonymous value in multi typed value declaration [[
   [[_]];
   z;
 ]] 1 error at #1
-   error like "cannot reference anonymous value"
+   error like "Cannot reference anonymous value"
    0 warnings
 test anonymous value in multi typed value declaration with incorrect type hint [[
   val (x: int, _: [[path]], z: int) = (1, 2, 3);
@@ -56,20 +56,20 @@ test anonymous value in multi typed value declaration with incorrect type hint [
   z;
 ]] 2 errors at #1, #2
    error like "Type mismatch" at #1
-   error like "cannot reference anonymous value" at #2
+   error like "Cannot reference anonymous value" at #2
    0 warnings
 test multiple anonymous values in multi declaration [[
   val (_, _, z) = (1, 2, 3);
   [[_]];
   z;
 ]] 1 error at #1
-   error like "cannot reference anonymous value"
+   error like "Cannot reference anonymous value"
    0 warnings
 test all anonymous values in multi declaration [[
   val [[(_, _, _)]] = (1, 2, 3);
   [[_]];
 ]] 1 error at #2
-   error like "cannot reference anonymous value"
+   error like "Cannot reference anonymous value"
    0 warnings
    1 warning at #1
    warning like "return value is ignored"
