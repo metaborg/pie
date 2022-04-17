@@ -13,11 +13,11 @@ rules
    */
   typeOfBinder : scope * TYPE * Binder -> TYPE
   typeOfBinder(s, ty_exp, b@SingleBinder(bind)) = ty :-
-    {vid}
-    typeOfBind(s, ty_exp, bind) == (_, ty), // todo: use is_anonymous for message below
+    {is_anonymous vid}
+    typeOfBind(s, ty_exp, bind) == (is_anonymous, ty),
     @b.type := ty,
     getBindValueId(bind) == vid,
-    try { vid != AnonymousValue() } | warning $[Assignment to anonymous value '_' is ignored and can be removed] @vid.
+    try { is_anonymous != TRUE() } | warning $[Assignment to anonymous value '_' is ignored and can be removed] @vid.
   typeOfBinder(s, ty_exp, b@TupleBinder(binds)) = ty_dec :-
     {tys_exp is_anonymous tys_dec}
     ty_exp == TupleType(tys_exp) | error $[Type mismatch: expected tuple type, got [ty_exp]] @b,
