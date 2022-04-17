@@ -70,9 +70,8 @@ test all anonymous values in multi declaration [[
   [[_]];
 ]] 1 error at #2
    error like "Cannot reference anonymous value"
-   0 warnings
    1 warning at #1
-   warning like "return value is ignored"
+   warning like "ignored"
 
 test multiple anonymous values with single declarations [[
   val _ = 2;

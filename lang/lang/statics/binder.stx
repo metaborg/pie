@@ -12,16 +12,19 @@ rules
    * type of a binder in scope [s] with type of the assignment expression [ty_exp]
    */
   typeOfBinder : scope * TYPE * Binder -> TYPE
-  typeOfBinder(s, ty_exp, b@SingleBinder(bind)) = ty@typeOfBind(s, ty_exp, bind) :-
+  typeOfBinder(s, ty_exp, b@SingleBinder(bind)) = ty :-
     {vid}
+    typeOfBind(s, ty_exp, bind) == (_, ty), // todo: use is_anonymous for message below
     @b.type := ty,
     getBindValueId(bind) == vid,
     try { vid != AnonymousValue() } | warning $[Assignment to anonymous value '_' is ignored and can be removed.\n'_' is used for anonymous values. To assign this expression to a value, use a different name] @vid.
-  typeOfBinder(s, ty_exp, b@TupleBinder(binds)) = ty_dec :- {tys_exp tys_dec}
+  typeOfBinder(s, ty_exp, b@TupleBinder(binds)) = ty_dec :-
+    {tys_exp is_anonymous tys_dec}
     ty_exp == TupleType(tys_exp) | error $[Type mismatch: expected tuple type, got [ty_exp]] @b,
     ty_dec == TupleType(tys_dec) | error $[Type mismatch: expected tuple type, got [ty_dec]] @b,
-    typeOfBinds(s, tys_exp, binds) == tys_dec,
-    @b.type := ty_dec.
+    unzipBindResult(typeOfBinds(s, tys_exp, binds)) == (is_anonymous, tys_dec),
+    @b.type := ty_dec,
+    try { allTrue(is_anonymous) == FALSE() } | warning $[Tuple assignment to anonymous values '_' is ignored and can be removed.\n'_' is used for anonymous values. To assign this expression to a value, use a different name] @b.
 
   /**
    * getBindValueId(bind) = value_id
@@ -32,13 +35,24 @@ rules
   getBindValueId(TBind(value_id, _)) = value_id.
 
   /**
-   * type of a bind in scope [s] with type of the assignment expression [exp_ty]
+   * unzipBindResult(zipped_list) = (is_anonymous, tys)
+   * Unzip the results list from typeOfBinds
    */
-  typeOfBind : scope * TYPE * Bind -> TYPE
+  unzipBindResult : list((BOOLEAN * TYPE)) -> (list(BOOLEAN) * list(TYPE))
+  unzipBindResult([]) = ([], []).
+  unzipBindResult([(is_anonymous, ty)|rest]) = ([is_anonymous|is_anonymous_rest], [ty|tys]) :-
+    unzipBindResult(rest) == (is_anonymous_rest, tys).
+
+  /**
+   * typeOfBind(s, actual_ty, bind) = (is_anonymous, expected_ty)
+   * Type of a bind in scope [s] with type of the assignment expression [exp_ty].
+   * Returns whether the value is anonymous.
+   */
+  typeOfBind : scope * TYPE * Bind -> (BOOLEAN * TYPE)
   typeOfBinds maps typeOfBind(*, list(*), list(*)) = list(*)
 
-  typeOfBind(s, exp_ty, b@Bind(value_id)) = exp_ty :-
-    declareValIfNotAnonymous(s, value_id, exp_ty, LocalValKind()),
+  typeOfBind(s, exp_ty, b@Bind(value_id)) = (is_anonymous, exp_ty) :-
+    declareValIfNotAnonymous(s, value_id, exp_ty, LocalValKind()) == is_anonymous,
     @b.type := exp_ty.
 
   typeOfBind(s, actual_ty, b@TBind(name, expected_ty_exp)) = expected_ty :-

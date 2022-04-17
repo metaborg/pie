@@ -42,7 +42,7 @@ rules
 
   typeOfParam(s_mod, s_type_args, s_func, p@NParam(value_id, lexical_type)) = semantic_type :-
     typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
-    declareValIfNotAnonymous(s_func, value_id, semantic_type, InputValKind()),
+    declareValIfNotAnonymous(s_func, value_id, semantic_type, InputValKind()) == _,
     try { value_id != AnonymousValue() } | warning $[Ignored parameter '_' can be removed.\n'_' is used for anonymous values. To use this parameter, use a different name] @value_id,
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
