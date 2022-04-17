@@ -151,7 +151,7 @@ rules
     (s, ty@DataType(emptyScope(s))) :-
       @ref.type := ty,
       @vid.type := ty,
-      false | error $[Cannot reference anonymous value '_'.\nTo reference this variable, give it a different name.] @vid.
+      false | error $[Cannot reference anonymous value '_'] @vid.
 
   typeOfExpImpl(s, Ref2Exp(ref@Ref(ValueId(name)))) =
     (s, ty@typeOfExpImpl_ref(s, resolveUniqueVal(s, name))) :-
@@ -342,7 +342,7 @@ rules
 
   strPartOk : scope * StrPart -> scope
   strPartOk(s, Str(_)) = s.
-  strPartOk(s, StrInterpRef(Ref(vid@AnonymousValue()))) = s :- false | error $[Cannot reference anonymous value '_'.\nTo reference this variable, give it a different name.] @vid.
+  strPartOk(s, StrInterpRef(Ref(vid@AnonymousValue()))) = s :- false | error $[Cannot reference anonymous value '_'] @vid.
   strPartOk(s, StrInterpRef(Ref(ValueId(name)))) = s :- resolveUniqueVal(s, name) == _.
   strPartOk(s1, StrInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
 
@@ -358,7 +358,7 @@ rules
 
   pathPartOk : scope * PathPart -> scope
   pathPartOk(s, Path(_)) = s.
-  pathPartOk(s, PathInterpRef(Ref(vid@AnonymousValue()))) = s :- false | error $[Cannot reference anonymous value '_'.\nTo reference this variable, give it a different name.] @vid.
+  pathPartOk(s, PathInterpRef(Ref(vid@AnonymousValue()))) = s :- false | error $[Cannot reference anonymous value '_'] @vid.
   pathPartOk(s, PathInterpRef(Ref(ValueId(name)))) = s :- resolveUniqueVal(s, name) == _.
   pathPartOk(s1, PathInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
 

@@ -17,14 +17,14 @@ rules
     typeOfBind(s, ty_exp, bind) == (_, ty), // todo: use is_anonymous for message below
     @b.type := ty,
     getBindValueId(bind) == vid,
-    try { vid != AnonymousValue() } | warning $[Assignment to anonymous value '_' is ignored and can be removed.\n'_' is used for anonymous values. To assign this expression to a value, use a different name] @vid.
+    try { vid != AnonymousValue() } | warning $[Assignment to anonymous value '_' is ignored and can be removed] @vid.
   typeOfBinder(s, ty_exp, b@TupleBinder(binds)) = ty_dec :-
     {tys_exp is_anonymous tys_dec}
     ty_exp == TupleType(tys_exp) | error $[Type mismatch: expected tuple type, got [ty_exp]] @b,
     ty_dec == TupleType(tys_dec) | error $[Type mismatch: expected tuple type, got [ty_dec]] @b,
     unzipBindResult(typeOfBinds(s, tys_exp, binds)) == (is_anonymous, tys_dec),
     @b.type := ty_dec,
-    try { allTrue(is_anonymous) == FALSE() } | warning $[Tuple assignment to anonymous values '_' is ignored and can be removed.\n'_' is used for anonymous values. To assign this expression to a value, use a different name] @b.
+    try { allTrue(is_anonymous) == FALSE() } | warning $[Tuple assignment to anonymous values '_' is ignored and can be removed] @b.
 
   /**
    * getBindValueId(bind) = value_id
