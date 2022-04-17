@@ -53,7 +53,8 @@ rules
 
   typeOfBind(s, exp_ty, b@Bind(value_id)) = (is_anonymous, exp_ty) :-
     declareValIfNotAnonymous(s, value_id, exp_ty, LocalValKind()) == is_anonymous,
-    @b.type := exp_ty.
+    @b.type := exp_ty,
+    @value_id.type := exp_ty.
 
   typeOfBind(s, actual_ty, b@TBind(value_id, expected_ty_exp)) = (is_anonymous, expected_ty) :-
     {expected_ty_instantiated}
@@ -62,4 +63,5 @@ rules
     assignableTo(actual_ty, expected_ty_instantiated, ExpressionKind()) | error $[Type mismatch: cannot assign actual type [actual_ty] to declared type [expected_ty_instantiated]] @expected_ty_exp,
     declareValIfNotAnonymous(s, value_id, expected_ty, LocalValKind()) == is_anonymous,
     @b.type := expected_ty,
+    @value_id.type := expected_ty,
     try { expected_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as value type. Use the upper bound or omit the type hint] @expected_ty_exp.
