@@ -231,7 +231,8 @@ rules // operations on types
   lubs maps lub(list(*), list(*)) = list(*)
   lub(NullType(), T) = makeNullable(T).
   lub(T, NullType()) = makeNullable(T).
-  lub(NullableType(T1), NullableType(T2)) = NullableType(lub(T1, T2)).
+  lub(NullableType(T1), T2) = makeNullable(lub(T1, T2)).
+  lub(T1, NullableType(T2)) = makeNullable(lub(T1, T2)).
   lub(EmptyListType(), ListType(T)) = ListType(T).
   lub(ListType(T), EmptyListType()) = ListType(T).
   lub(T1@DataType(_), T2@DataType(_)) =
