@@ -4,10 +4,6 @@ language pie
 fixture [[
   module test:func_def
 
-  data Food = foreign java test.func_def.Food {}
-  data Fruit <: Food = foreign java test.func_def.Fruit {}
-  data Apple <: Fruit = foreign java test.func_def.Apple {}
-
   [[...]]
 ]]
 
