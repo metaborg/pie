@@ -11,12 +11,12 @@ fixture [[
   [[...]]
 ]]
 
-test anonymous parameter [[ func test([[_]]: int) -> int = {[[_]]; 7} ]]
+test anonymous parameter PIE implementation [[ func test([[_]]: int) -> int = {[[_]]; 7} ]]
   1 error at #2
   error like "Cannot reference anonymous value"
   1 warning at #1
   warning like "Ignored parameter"
-test anonymous parameters [[ func test([[_]]: int, [[_]]: path) -> int = {[[_]]; 8} ]]
+test anonymous parameters PIE implementation [[ func test([[_]]: int, [[_]]: path) -> int = {[[_]]; 8} ]]
   1 error at #3
   error like "Cannot reference anonymous value"
   2 warnings at #1, #2
