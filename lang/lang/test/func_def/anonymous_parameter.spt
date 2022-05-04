@@ -18,3 +18,12 @@ test anonymous parameters PIE implementation [[ func test([[_]]: int, [[_]]: pat
   2 notes at #1, #2
   note like "cannot be referred to" at #1
   note like "cannot be referred to" at #2
+test anonymous parameter foreign java implementation [[ func test([[_]]: int) -> int = foreign java AnonVal#test ]]
+  analysis succeeds
+  1 warning at #1
+  warning like "Anonymous parameter name can be omitted."
+test anonymous parameters PIE implementation [[ func test([[_]]: int, [[_]]: path) -> int = foreign java AnonVal#test ]]
+  analysis succeeds
+  2 warnings at #1, #2
+  warning like "Anonymous parameter name can be omitted." at #1
+  warning like "Anonymous parameter name can be omitted." at #2
