@@ -15,36 +15,43 @@ rules
 
   funcDefOk : scope * FuncDef
   funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _), impl)) :- {name s_func out_ty impl_kind ty}
-    typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
+    typeOfFuncHead(s_mod, s_mod, func_head, impl_kind) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
     funcImplOk(s_func, impl, type_params, out_ty, name) == impl_kind,
     @func.kind := impl_kind,
     @func.type := ty.
 
-  typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
-  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp)) =
+  typeOfFuncHead : scope * scope * FuncHead * FuncImplKind -> (scope * string * TYPE)
+  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp), impl_kind) =
     (s_func, name, FuncDefType(type_param_tys, param_tys, out_ty))
   :-
     new s_func,
     s_func -P-> s_parent,
     typesOfTypeParams(s, s_func, type_params) == type_param_tys,
-    typeOfParams(s, s_func, s_func, params) == param_tys,
+    typeOfParams(s, s_func, s_func, params, impl_kind) == param_tys,
     typeOf(s, s_func, out_ty_exp, FALSE(), []) == out_ty,
     try { out_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 
-  typeOfParam : scope * scope * scope * Param -> TYPE
-  typeOfParams maps typeOfParam(*, *, *, list(*)) = list(*)
+  typeOfParam : scope * scope * scope * Param * FuncImplKind -> TYPE
+  typeOfParams maps typeOfParam(*, *, *, list(*), *) = list(*)
 
-  typeOfParam(s_mod, s_type_args, _, Param(lexical_type)) = semantic_type :-
+  typeOfParam(s_mod, s_type_args, _, Param(lexical_type), _) = semantic_type :-
     typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  typeOfParam(s_mod, s_type_args, s_func, p@NParam(value_id, lexical_type)) = semantic_type :-
+  typeOfParam(s_mod, s_type_args, s_func, NParam(value_id, lexical_type), impl_kind) = semantic_type :-
     typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
     declareValIfNotAnonymous(s_func, value_id, semantic_type, InputValKind()) == _,
-    try { value_id != AnonymousValue() } | note $[Anonymous parameter _ cannot be referred to but will be included in the generated task signature. If this is not required, this parameter can be removed. If this is intended, it is recommended to add a comment explaining why this is necessary. To refer to this parameter, use a different name.] @value_id,
+    funcParamValueIdOk(value_id, impl_kind),
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
+    
+    funcParamValueIdOk : ValueId * FuncImplKind
+    funcParamValueIdOk(ValueId(_), _).
+    funcParamValueIdOk(value_id@AnonymousValue(), PieFuncKind()) :-
+      try {false} | note $[Anonymous parameter _ cannot be referred to but will be included in the generated task signature. If this is not required, this parameter can be removed. If this is intended, it is recommended to add a comment explaining why this is necessary. To refer to this parameter, use a different name.] @value_id.
+    funcParamValueIdOk(value_id@AnonymousValue(), JavaForeignFuncKind()) :-
+      try {false} | warning $[Anonymous parameter name can be omitted. Alternatively, the parameter can have a proper name.] @value_id.
 
   funcImplOk : scope * FuncImpl * TypeParams * TYPE * FUNCID -> FuncImplKind
   funcImplOk(_, PieForeignFuncImpl(class_id), _, _, name) = PieForeignFuncKind() :-
