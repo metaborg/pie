@@ -45,13 +45,20 @@ rules
     declareValIfNotAnonymous(s_func, value_id, semantic_type, InputValKind()) == _,
     funcParamValueIdOk(value_id, impl_kind),
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
-    
+
     funcParamValueIdOk : ValueId * FuncImplKind
     funcParamValueIdOk(ValueId(_), _).
-    funcParamValueIdOk(value_id@AnonymousValue(), PieFuncKind()) :-
-      try {false} | note $[Anonymous parameter _ cannot be referred to but will be included in the generated task signature. If this is not required, this parameter can be removed. If this is intended, it is recommended to add a comment explaining why this is necessary. To refer to this parameter, use a different name.] @value_id.
-    funcParamValueIdOk(value_id@AnonymousValue(), JavaForeignFuncKind()) :-
-      try {false} | warning $[Anonymous parameter name can be omitted. Alternatively, the parameter can have a proper name.] @value_id.
+    funcParamValueIdOk(value_id@AnonymousValue(), impl_kind) :-
+      try {impl_kind != PieFuncKind()} | note $[Anonymous parameter _ cannot be referred to but will be included in the generated task signature. If this is not required, this parameter can be removed. If this is intended, it is recommended to add a comment explaining why this is necessary. To refer to this parameter, use a different name.] @value_id,
+      try {funcImplIsForeign(impl_kind) == FALSE()} | warning $[Anonymous parameter name can be omitted. Alternatively, the parameter can have a proper name.] @value_id.
+
+    funcImplIsForeign : FuncImplKind -> BOOLEAN
+    funcImplIsForeign(JavaForeignFuncKind()) = TRUE().
+    funcImplIsForeign(JavaForeignConstructorKind()) = TRUE().
+    funcImplIsForeign(JavaForeignMethodKind()) = TRUE().
+    funcImplIsForeign(PieForeignFuncKind()) = TRUE().
+    funcImplIsForeign(PieFuncKind()) = FALSE().
+    funcImplIsForeign(PieBuiltInFuncKind(_)) = FALSE().
 
   funcImplOk : scope * FuncImpl * TypeParams * TYPE * FUNCID -> FuncImplKind
   funcImplOk(_, PieForeignFuncImpl(class_id), _, _, name) = PieForeignFuncKind() :-
