@@ -23,7 +23,7 @@ test anonymous parameter foreign java implementation [[ func test([[_]]: int) ->
   analysis succeeds
   1 warning at #1
   warning like "Anonymous parameter name can be omitted."
-test anonymous parameters PIE implementation [[ func test([[_]]: int, [[_]]: path) -> int = foreign java AnonVal#test ]]
+test anonymous parameters foreign java implementation [[ func test([[_]]: int, [[_]]: path) -> int = foreign java AnonVal#test ]]
   analysis succeeds
   2 warnings at #1, #2
   warning like "Anonymous parameter name can be omitted." at #1
