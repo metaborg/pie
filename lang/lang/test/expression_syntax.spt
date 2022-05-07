@@ -103,23 +103,29 @@ test list comprehension square brackets [[ "$x * 3 = ${x+x+x}" | x <- [1, 2, 3] 
 test list comprehension missing map expression [[ [ | x <- [1, 2, 3] ] ]] parse fails
 test list comprehension missing list expression [[ ["$x * 3 = ${x+x+x}" | x <- ] ]] parse fails
 
-test val declaration single bind [[ val x = 8 ]] parse succeeds
+test val declaration single bind [[ val x = 8 ]]
+  parse to ValDec(SingleBinder(Bind(ValueId("x"))), _)
 test val declaration single bind missing = [[ val x 5 ]] parse fails
-test val declaration single bind missing val [[ x = 5 ]] parse fails
-test val without layout [[ value: bool = false ]] parse fails
+test val declaration single bind missing keyword val [[ x = 5 ]] parse fails
+test val declaration missing keyword val with type hint [[ value: bool = false ]] parse fails
+test val declaration without layout [[ val value:bool=false ]] parse succeeds
+test val declaration without layout between val keyword and name [[ valvalue = false ]] parse fails
 test val declaration single bind missing name [[ val = 5 ]] parse fails
 test val declaration reserved keyword unit  [[ val unit  = 5 ]] parse fails
 test val declaration reserved keyword null  [[ val null  = 5 ]] parse fails
 test val declaration reserved keyword true  [[ val true  = 5 ]] parse fails
 test val declaration reserved keyword false [[ val false = 5 ]] parse fails
 test val declaration named val [[ val val = 5 ]] parse succeeds
-test val declaration named _ [[ val _ = 5 ]] parse succeeds
+test val declaration named _ [[ val _ = 5 ]]
+  parse to ValDec(SingleBinder(Bind(AnonymousValue())), _)
 test val declaration single bind missing expression [[ val x = ]] parse fails
 test val declaration single bind no layout around = [[ val x=7 ]] parse succeeds
 test val declaration single bind with type missing <: [[ val foo string = "-_-" ]] parse fails
 test val declaration single bind with type missing name [[ val : string = "" ]] parse fails
 test val declaration single bind with type missing type [[ val foo : = 56 ]] parse fails
 test val declaration tuple bind [[ val (x, y) = (9, 3) ]] parse succeeds
+test val declaration tuple bind with anonymous value [[ val (x, _) = (9, 3) ]]
+  parse to ValDec(TupleBinder([_, Bind(AnonymousValue())]), _)
 test val declaration tuple bind missing = [[ val (x, y) (9, 3) ]] parse fails
 test val declaration tuple bind missing val [[ (a, b) = ("A", "B") ]] parse fails
 test val declaration tuple bind missing names [[ val = (true, false) ]] parse fails
@@ -131,14 +137,15 @@ test val declaration tuple bind with type missing name [[ val (: string, bar: in
 test val declaration tuple bind with type missing type [[ val (x: , y: bool) = ("string", true) ]] parse fails
 
 test reference [[ foo ]] parse succeeds parse to Ref(ValueId("foo"))
-test reference [[ val ]] parse succeeds parse to Ref(ValueId("val"))
+test reference anonymous value [[ _ ]] parse to Ref(AnonymousValue())
+test reference keyword val [[ val ]] parse succeeds parse to Ref(ValueId("val"))
+test reference keyword func [[ func ]] parse to Ref(ValueId("func"))
+test reference keyword return [[ return ]] parse to Ref(ValueId("return"))
+test reference keyword supplier [[ supplier ]] parse to Ref(ValueId("supplier"))
 test reference reserved keyword unit  [[ unit  ]] parse to UnitLit()
 test reference reserved keyword null  [[ null  ]] parse to NullLit()
 test reference reserved keyword true  [[ true  ]] parse to BoolLit(True())
 test reference reserved keyword false [[ false ]] parse to BoolLit(False())
-test reference keyword func [[ func ]] parse to Ref(ValueId("func"))
-test reference keyword return [[ return ]] parse to Ref(ValueId("return"))
-test reference keyword supplier [[ supplier ]] parse to Ref(ValueId("supplier"))
 
 test call simple [[ someFunc() ]] parse succeeds
 test call empty type argument list [[ someFunc[]() ]]
