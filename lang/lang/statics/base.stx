@@ -161,9 +161,13 @@ rules // Declararing and resolving
    * See also declareVal.
    */
   declareValIfNotAnonymous : scope * ValueId * TYPE * ValKind -> BOOLEAN
-  declareValIfNotAnonymous(s, ValueId(name), type, kind) = FALSE() :-
-    declareVal(s, name, type, kind).
-  declareValIfNotAnonymous(_, AnonymousValue(), _, _) = TRUE().
+  declareValIfNotAnonymous(s, vid@ValueId(name), type, kind) = FALSE() :-
+    declareVal(s, name, type, kind),
+    @vid.type := type,
+    @vid.kind := kind.
+  declareValIfNotAnonymous(_, vid@AnonymousValue(), type, kind) = TRUE() :-
+    @vid.type := type,
+    @vid.kind := kind.
 
   /**
    * Declare a value [name] with type [TYPE] and ValKind [kind] in scope [s],
