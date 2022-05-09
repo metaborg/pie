@@ -3,6 +3,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+### Fixed
+- `IOException`s not being reported to the deserialize failure handler in `SerializingStore`.
 
 
 ## [0.20.0] - 2022-04-04
