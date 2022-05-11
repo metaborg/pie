@@ -3,8 +3,15 @@ All notable changes to this project are documented in this file, based on [Keep 
 
 
 ## [Unreleased]
+
+
+## [0.21.0] - 2022-05-11
 ### Fixed
 - `IOException`s not being reported to the deserialize failure handler in `SerializingStore`.
+
+### Changed
+- `resource` requirement to `0.14.1`.
+- `common` requirement to `0.11.0`.
 
 
 ## [0.20.0] - 2022-04-04
@@ -143,7 +150,8 @@ All notable changes to this project are documented in this file, based on [Keep 
 - `common` requirement to `0.9.3`.
 
 
-[Unreleased]: https://github.com/metaborg/pie/compare/release-0.20.0...HEAD
+[Unreleased]: https://github.com/metaborg/pie/compare/release-0.21.0...HEAD
+[0.21.0]: https://github.com/metaborg/pie/compare/release-0.20.0...release-0.21.0
 [0.20.0]: https://github.com/metaborg/pie/compare/release-0.19.8...release-0.20.0
 [0.19.8]: https://github.com/metaborg/pie/compare/release-0.19.7...release-0.19.8
 [0.19.7]: https://github.com/metaborg/pie/compare/release-0.19.6...release-0.19.7
