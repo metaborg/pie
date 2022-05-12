@@ -1,0 +1,6 @@
+module mb:pie:lang:test:variables:anonymous:multiUseNamed
+
+func main_multiUseNamed() -> int = {
+  val (_, x) = (true, 2);
+  x
+}

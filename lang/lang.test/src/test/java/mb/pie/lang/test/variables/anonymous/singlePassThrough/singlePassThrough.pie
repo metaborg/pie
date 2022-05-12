@@ -1,0 +1,5 @@
+module mb:pie:lang:test:variables:anonymous:singlePassThrough
+
+func main_singlePassThrough() -> string = {
+  val _ = "hello world"
+}

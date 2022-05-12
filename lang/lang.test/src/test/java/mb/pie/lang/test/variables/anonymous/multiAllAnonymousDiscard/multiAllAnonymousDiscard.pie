@@ -1,0 +1,6 @@
+module mb:pie:lang:test:variables:anonymous:multiAllAnonymousDiscard
+
+func main_multiAllAnonymousDiscard() -> bool = {
+  val (_, _, _, _) = (1, 2, false, 4);
+  false
+}

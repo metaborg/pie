@@ -1,0 +1,6 @@
+module mb:pie:lang:test:variables:anonymous:singleDiscard
+
+func main_singleDiscard() -> int = {
+  val _ = "9";
+  5
+}
