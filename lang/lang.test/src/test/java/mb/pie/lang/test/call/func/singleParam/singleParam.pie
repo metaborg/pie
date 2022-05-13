@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:singleParam
+
+func main_singleParam() -> int = helper_singleParam(./file.txt)
+func helper_singleParam(x: path) -> int = 1

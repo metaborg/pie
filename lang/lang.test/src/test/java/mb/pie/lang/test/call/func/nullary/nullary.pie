@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:nullary
+
+func main_nullary() -> int = helper_nullary()
+func helper_nullary() -> int = 0
