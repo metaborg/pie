@@ -1,3 +1,0 @@
-module mb:pie:lang:test:funcDef:params:multiAnonymous
-
-func main_multiAnonymous(_: int, _: path?) -> bool = false

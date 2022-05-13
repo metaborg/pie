@@ -1,3 +1,0 @@
-module mb:pie:lang:test:funcDef:params:MultiUnnamed
-
-func main_MultiUnnamed(path*, string) -> string = "hello"

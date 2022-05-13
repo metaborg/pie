@@ -1,4 +1,4 @@
-package mb.pie.lang.test.funcDef.params.multiAnonymous;
+package mb.pie.lang.test.funcDef.params.twoBothUnnamed;
 
 import dagger.Module;
 import dagger.Provides;
@@ -13,10 +13,10 @@ import java.util.Set;
 abstract class PieTestModule {
     @Provides @mb.pie.dagger.PieScope @ElementsIntoSet
     public static Set<TaskDef<?, ?>> provideTaskDefs(
-        main_multiAnonymous multiAnonymous
+        main_twoBothUnnamed twoBothUnnamed
     ) {
         final HashSet<TaskDef<?, ?>> taskDefs = new HashSet<>(1, 1);
-        taskDefs.add(multiAnonymous);
+        taskDefs.add(twoBothUnnamed);
         return taskDefs;
     }
 }
