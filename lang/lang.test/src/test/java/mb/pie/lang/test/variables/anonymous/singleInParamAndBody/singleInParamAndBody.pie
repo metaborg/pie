@@ -1,0 +1,6 @@
+module mb:pie:lang:test:variables:anonymous:singleInParamAndBody
+
+func main_singleInParamAndBody(_: string) -> int = {
+  val _ = 9;
+  26
+}
