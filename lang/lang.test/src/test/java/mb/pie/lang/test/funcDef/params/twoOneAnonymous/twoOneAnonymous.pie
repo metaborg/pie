@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:params:twoOneAnonymous
+
+func main_twoOneAnonymous(_: int, strs: string*?) -> int = 67

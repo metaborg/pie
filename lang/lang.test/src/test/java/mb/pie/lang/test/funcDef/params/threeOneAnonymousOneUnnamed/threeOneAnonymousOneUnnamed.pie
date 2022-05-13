@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:params:threeOneAnonymousOneUnnamed
+
+func main_threeOneAnonymousOneUnnamed(x: int, _: int, int) -> int = 37
