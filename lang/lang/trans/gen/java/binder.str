@@ -24,7 +24,7 @@ rules
     TBind(valId, ty) -> valId
 
   p2j-valueId-name:
-    AnonymousValue() -> "$unused"
+    AnonymousValue() -> $[$unused[<newname>]]
   p2j-valueId-name:
     ValueId(name) -> name
 
