@@ -193,9 +193,9 @@ test ifelse branches equal with type arguments [[ [[ val res: Generic[Foo, Baar,
 test ifelse branches simple type equal with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) generic2 else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 test ifelse true branch subtype with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) genericSub else generic1 ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
 test ifelse false branch subtype with different type arguments [[ [[ val res: Generic[_ <: Foo, Baar, _] = if (value == 0) generic2 else genericSub ]] ]] analysis succeeds run pie-ast-type on #1 to DataType(_)
-test ifelse branch type mismatch [[ if (value == 0) "hello" else 10 ]] 1 error
-test ifelse branch type mismatch datatypes [[ if (value == 0) bak else bok ]] 1 error error like "Type mismatch"
-test ifelse branch type mismatch nullable datatypes [[ if (value == 0) foo? else bok? ]] 1 error error like "Type mismatch"
+test ifelse branch type mismatch [[ [[ if (value == 0) "hello" else 10 ]] ]] analysis succeeds  run pie-ast-type on #1 to TopType()
+test ifelse branch type mismatch datatypes [[ [[ if (value == 0) bak else bok ]] ]] analysis succeeds  run pie-ast-type on #1 to TopType()
+test ifelse branch type mismatch nullable datatypes [[ [[ if (value == 0) foo? else bok? ]] ]] analysis succeeds  run pie-ast-type on #1 to TopType()
 test ifelse with blocks [[ [[ if (value == 10) {"hello"} else {anotherFunc(); "world"} ]] ]] analysis succeeds run pie-ast-type on #1 to StrType()
 test ifelse error in any branch [[ if (value == 10) [[not_defined]] else "world" ]] error like "resolve" at #1
 test ifelse error in dead code [[ if (true) "hello" else [[not_defined]] ]] error like "resolve" at #1

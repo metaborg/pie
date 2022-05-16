@@ -105,6 +105,7 @@ public class SerializingStore<S extends Store & Serializable> implements Store {
                 return storeSupplier.get();
             }
         } catch(IOException e) {
+            deserializeFailHandler.accept(e);
             return storeSupplier.get();
         }
 
