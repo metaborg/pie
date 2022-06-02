@@ -31,33 +31,35 @@ test context params - one - anonymous [[
 test context params - one - duplicate name with param - different types [[
   func test([[param]]: int)[ [[param]]: bool] -> int = 3
 ]] 2 errors at #1, #2
-   error like "Duplicate value" at #1, #2
+   error like "Duplicate definition of value" at #1, #2
 test context params - one - duplicate name with param - same type [[
   func test([[param]]: bool)[ [[param]]: bool] -> int = 3
 ]] 2 errors at #1, #2
-   error like "Duplicate value" at #1, #2
+   error like "Duplicate definition of value" at #1, #2
 test context params - one - custom datatype [[[
-  func test()[param: Type[int]] -> int = 3
-]]] 2 errors at #1, #2
-    error like "Duplicate value" at #1, #2
+  func test()[param: [[[Type]]][int]] -> int = 3
+]]] analysis succeeds
+    resolve #1
 test context params - call method [[[
-  func test()[param: Type[int]] -> int = param.method[bool](true)
-]]] 2 errors at #1, #2
-    error like "Duplicate value" at #1, #2
+  func test()[ [[[param]]]: [[[Type]]][int]] -> int = [[[param]]].[[[method]]][bool](true)
+]]] analysis succeeds
+    resolve #2
+    resolve #3 to #1
+    resolve #4
 test context params - one - qualified [[[
-  func test()[param: test:func_def:context_params:Type[string]] -> int = 3
-]]] 2 errors at #1, #2
-    error like "Duplicate value" at #1, #2
+  func test()[param: test:func_def:context_params:[[[Type]]][string]] -> int = 3
+]]] analysis succeeds
+    resolve #1
 
 test context params - two [[
-  func test()[ [[value]]: int, [[flag]]: bool] -> int = [[value]] == 5 && ![[flag]]
+  func test()[ [[value]]: int, [[flag]]: bool] -> bool = [[value]] == 5 && ![[flag]]
 ]] analysis succeeds
    resolve #3 to #1
    resolve #4 to #2
 test context params - two - duplicate names [[
   func test()[ [[x]]: int, [[x]]: bool] -> int = 32
 ]] 2 errors at #1, #2
-   error like "Duplicate value" at #1, #2
+   error like "Duplicate definition of value" at #1, #2
 
 test context params - defined on foreign task [[
   func test()[ [[param: string]] ] -> int = foreign Task
