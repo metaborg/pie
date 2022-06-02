@@ -23,7 +23,7 @@ test context params - one - unnamed [[
   func test()[ [[int]] ] -> int = 3
 ]] analysis succeeds
    1 warning at #1
-   warning like "Unused context parameter"
+   warning like "Unnamed context parameter cannot be referred to"
 test context params - one - anonymous [[
   func test()[ _ : int ] -> int = 3
 ]] analysis succeeds

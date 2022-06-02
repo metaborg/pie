@@ -65,7 +65,7 @@ rules
   funcImplOk(_, JavaForeignConstructorImpl(class_id), _, context_params, _, name) = JavaForeignConstructorKind() :-
     warnForUselessContextParams(context_params),
     @name.javaClassId := class_id.
-  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, _, expected_type, name) = PieFuncKind() :-
+  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, context_params, expected_type, name) = PieFuncKind() :-
     {s_func_inner}
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
@@ -73,12 +73,24 @@ rules
     expectAssignableTo(s_func_inner, exp, instantiateTypeArgs(s_func_inner, expected_type), ExpressionKind()) == _,
     optionalKeyFuncOk(s_func_outer, keyFunc),
     // See https://github.com/MeAmAnUsername/pie/issues/181
-    try { getTypeParamsList(type_params) == [] } | error $[Code generation for PIE tasks with type parameters has not been implemented yet. Implement this task in Java and import it as foreign [name] instead] @type_params.
+    try { getTypeParamsList(type_params) == [] } | error $[Code generation for PIE tasks with type parameters has not been implemented yet. Implement this task in Java and import it as foreign [name] instead] @type_params,
+    warnForUnnamedContextParams(context_params).
 
   warnForUselessContextParams : ContextParams
   warnForUselessContextParams(NoContextParams()).
   warnForUselessContextParams(ContextParams(node@Params(params))) :-
     try{params == []} | warning $[Useless context parameters can be removed] @node.
+
+  warnForUnnamedContextParams : ContextParams
+  warnForUnnamedContextParams(NoContextParams()).
+  warnForUnnamedContextParams(ContextParams(Params(params))) :-
+    warnForUnnamedContextParams_1(params).
+
+    warnForUnnamedContextParam : Param
+    warnForUnnamedContextParams_1 maps warnForUnnamedContextParam(list(*))
+    warnForUnnamedContextParam(p@Param(_)) :-
+      try{false} | warning $[Unnamed context parameter cannot be referred to. This parameter can be named to refer to it, or it can be removed.] @p.
+    warnForUnnamedContextParam(NParam(_, _)).
 
   keyFuncOk : scope * PieKeyFunc
   optionalKeyFuncOk maps keyFuncOk(*, list(*))
