@@ -61,18 +61,59 @@ test context params - two - duplicate names [[
 ]] 2 errors at #1, #2
    error like "Duplicate definition of value" at #1, #2
 
-test context params - defined on foreign task [[
+test context params - defined on foreign task - omitted [[
+  func test() -> int = foreign Task
+]] analysis succeeds
+   0 warnings
+test context params - defined on foreign task - empty [[
+  func test()[] -> int = foreign Task
+]] analysis succeeds
+   0 warnings
+test context params - defined on foreign task - one [[
   func test()[ [[param: string]] ] -> int = foreign Task
 ]] analysis succeeds
    1 warning at #1
    warning like "Useless context parameters"
-test context params - defined on foreign func [[
+test context params - defined on foreign task - two [[
+  func test()[ [[param: string, param2: path]] ] -> int = foreign Task
+]] analysis succeeds
+   1 warning at #1
+   warning like "Useless context parameters"
+
+test context params - defined on foreign func - omitted [[
+  func test() -> int = foreign java Class#function
+]] analysis succeeds
+   0 warnings
+test context params - defined on foreign func - empty [[
+  func test()[] -> int = foreign java Class#function
+]] analysis succeeds
+   0 warnings
+test context params - defined on foreign func - one [[
   func test()[ [[param: string]] ] -> int = foreign java Class#function
 ]] analysis succeeds
    1 warning at #1
    warning like "Useless context parameters"
-test context params - defined on foreign constructor [[
+test context params - defined on foreign func - two [[
+  func test()[ [[param: string, param2: path]] ] -> int = foreign java Class#function
+]] analysis succeeds
+   1 warning at #1
+   warning like "Useless context parameters"
+
+test context params - defined on foreign constructor - omitted [[
+  func test() -> int = foreign java constructor Class
+]] analysis succeeds
+   0 warnings
+test context params - defined on foreign constructor - empty [[
+  func test()[] -> int = foreign java constructor Class
+]] analysis succeeds
+   0 warnings
+test context params - defined on foreign constructor - one [[
   func test()[ [[param: string]] ] -> int = foreign java constructor Class
+]] analysis succeeds
+   1 warning at #1
+   warning like "Useless context parameters"
+test context params - defined on foreign constructor - two [[
+  func test()[ [[param: string, param2: path]] ] -> int = foreign java constructor Class
 ]] analysis succeeds
    1 warning at #1
    warning like "Useless context parameters"
