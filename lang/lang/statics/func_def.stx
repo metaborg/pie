@@ -14,7 +14,7 @@ imports
 rules
 
   funcDefOk : scope * FuncDef
-  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _), impl)) :- {name s_func out_ty impl_kind ty}
+  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _, _), impl)) :- {name s_func out_ty impl_kind ty}
     typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
@@ -23,13 +23,14 @@ rules
     @func.type := ty.
 
   typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
-  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp)) =
+  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), context_params, out_ty_exp)) =
     (s_func, name, FuncDefType(type_param_tys, param_tys, out_ty))
   :-
     new s_func,
     s_func -P-> s_parent,
     typesOfTypeParams(s, s_func, type_params) == type_param_tys,
     typeOfParams(s, s_func, s_func, params) == param_tys,
+    // todo: use type params
     typeOf(s, s_func, out_ty_exp, FALSE(), []) == out_ty,
     try { out_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 

@@ -14,6 +14,7 @@ template options
 context-free sorts
 
   FuncHead
+  ContextParams
   Param
   Params
   FuncDef
@@ -22,7 +23,10 @@ context-free sorts
 
 context-free syntax // Function head
 
-  FuncHead.FuncHead = [[FUNCID][TypeParams]([Params]) -> [Type]]
+  FuncHead.FuncHead = [[FUNCID][TypeParams]([Params])[ContextParams] -> [Type]]
+
+  ContextParams.NoContextParams = []
+  ContextParams.ContextParams = <[<Params>]>
 
   Param.Param   = <<Type>>
   Param.NParam  = <<VALID> : <Type>> {prefer} // prefer this over a Param(ImportTy(...))
