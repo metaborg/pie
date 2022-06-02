@@ -103,7 +103,9 @@ rules
 
   javaDataMemberOk : scope * scope * JavaDataMemb
   javaDataMembersOk maps javaDataMemberOk(*, *, list(*))
-  javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :- {s_func name ty}
+  javaDataMemberOk(s, s_data, JavaFuncDef(func_head@FuncHead(_, _, _, context_params, _))) :-
+    {s_func name ty}
+    warnForUselessContextParams(context_params),
     typeOfFuncHead(s, s_data, func_head) == (s_func, name, ty),
     declareFunc(s_data, name, (s_func, ty), JavaForeignFuncKind()).
 
