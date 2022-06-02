@@ -78,8 +78,8 @@ rules
 
   warnForUselessContextParams : ContextParams
   warnForUselessContextParams(NoContextParams()).
-  warnForUselessContextParams(ContextParams(node@Params(params))) :-
-    try{params == []} | warning $[Useless context parameters can be removed] @node.
+  warnForUselessContextParams(cp@ContextParams(Params(params))) :-
+    try{params == []} | warning $[Useless context parameters can be removed] @cp.
 
   warnForUnnamedContextParams : ContextParams
   warnForUnnamedContextParams(NoContextParams()).
