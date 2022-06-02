@@ -1,0 +1,76 @@
+module func_def/context_param
+language pie
+fixture [[
+  module test:func_def:context_params
+
+  data Type[T] = foreign java Type {
+    func method[A](a: A) -> T
+  }
+
+  [[...]]
+]]
+
+test context params - omitted [[ func test() -> int = 4 ]] analysis succeeds
+test context params - zero [[ func test()[] -> int = 5 ]] analysis succeeds
+test context params - one - unused [[
+  func test()[cparam: int] -> int = 8
+]] analysis succeeds
+test context params - one - used [[
+  func test()[ [[cparam]]: int] -> int = [[cparam]]
+]] analysis succeeds
+   resolve #2 to #1
+test context params - one - unnamed [[
+  func test()[ [[int]] ] -> int = 3
+]] analysis succeeds
+   1 warning at #1
+   warning like "Unused context parameter"
+test context params - one - anonymous [[
+  func test()[ _ : int ] -> int = 3
+]] analysis succeeds
+   0 warnings // todo: should become a warning once issue #277 / pull #20 is merged
+test context params - one - duplicate name with param - different types [[
+  func test([[param]]: int)[ [[param]]: bool] -> int = 3
+]] 2 errors at #1, #2
+   error like "Duplicate value" at #1, #2
+test context params - one - duplicate name with param - same type [[
+  func test([[param]]: bool)[ [[param]]: bool] -> int = 3
+]] 2 errors at #1, #2
+   error like "Duplicate value" at #1, #2
+test context params - one - custom datatype [[[
+  func test()[param: Type[int]] -> int = 3
+]]] 2 errors at #1, #2
+    error like "Duplicate value" at #1, #2
+test context params - call method [[[
+  func test()[param: Type[int]] -> int = param.method[bool](true)
+]]] 2 errors at #1, #2
+    error like "Duplicate value" at #1, #2
+test context params - one - qualified [[[
+  func test()[param: test:func_def:context_params:Type[string]] -> int = 3
+]]] 2 errors at #1, #2
+    error like "Duplicate value" at #1, #2
+
+test context params - two [[
+  func test()[ [[value]]: int, [[flag]]: bool] -> int = [[value]] == 5 && ![[flag]]
+]] analysis succeeds
+   resolve #3 to #1
+   resolve #4 to #2
+test context params - two - duplicate names [[
+  func test()[ [[x]]: int, [[x]]: bool] -> int = 32
+]] 2 errors at #1, #2
+   error like "Duplicate value" at #1, #2
+
+test context params - defined on foreign task [[
+  func test()[ [[param: string]] ] -> int = foreign Task
+]] analysis succeeds
+   1 warning at #1
+   warning like "Useless context parameters"
+test context params - defined on foreign func [[
+  func test()[ [[param: string]] ] -> int = foreign java Class#function
+]] analysis succeeds
+   1 warning at #1
+   warning like "Useless context parameters"
+test context params - defined on foreign constructor [[
+  func test()[ [[param: string]] ] -> int = foreign java constructor Class
+]] analysis succeeds
+   1 warning at #1
+   warning like "Useless context parameters"
