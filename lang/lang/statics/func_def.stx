@@ -14,7 +14,8 @@ imports
 rules
 
   funcDefOk : scope * FuncDef
-  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, context_params, _), impl)) :- {name s_func out_ty impl_kind ty}
+  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, context_params, _), impl)) :-
+    {name s_func out_ty impl_kind ty}
     typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
@@ -64,7 +65,8 @@ rules
   funcImplOk(_, JavaForeignConstructorImpl(class_id), _, context_params, _, name) = JavaForeignConstructorKind() :-
     warnForUselessContextParams(context_params),
     @name.javaClassId := class_id.
-  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, _, expected_type, name) = PieFuncKind() :- {s_func_inner}
+  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, _, expected_type, name) = PieFuncKind() :-
+    {s_func_inner}
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
     setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
