@@ -139,14 +139,6 @@ test context params - defined on foreign method - one [[
    warning like "Useless context parameters"
 test context params - defined on foreign method - two [[
   data Test = foreign java Test {
-    func test()[ [[param: string]] ] -> int
-  }
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-
-test context params - defined on method [[
-  data Test = foreign java Test {
     func test()[ [[param: string, param2: path]] ] -> int
   }
 ]] analysis succeeds
