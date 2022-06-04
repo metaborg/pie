@@ -1,0 +1,8 @@
+module mb:pie:lang:test:call:contextParams:one
+
+data T1 = foreign java mb.pie.lang.test.call.contextParams.T1 {
+  func get() -> int
+}
+
+func main_one() -> int = helper_one()
+func helper_one()[p1: T1] -> int = p1.get()
