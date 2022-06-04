@@ -34,8 +34,8 @@ rules // PIE function definitions
   // Defines the dynamic rules InputKind and InjectValues
   // InputKind is either 0, 1, or 2, it reflects the number of parameter for this function
   // (2 is used for anything greater than 1)
-  // InjectValues are the values that will be injected
-  // into the constructor of the Java class
+  // InjectValues are the values that will be injected into the constructor of the Java class.
+  // An InjectValue is a pair of a name and a Java type
   p2j-ast-def:
     FuncDef(FuncHead(funcId, typeParams, params, context_params, type), PieFuncImpl(body, optKeyBody)) -> result
     with
@@ -47,8 +47,10 @@ rules // PIE function definitions
     ; (outputType, outputDataClasses) := <p2j-ast-pie-func-impl-outputsig(|className)> <syntacticToSemanticType> type
     ; (stmts, lastValue)              := <p2j-ast-pie-func-impl-body> body
     ; keyImpl                         := <p2j-ast-pie-func-key-body> optKeyBody
-      // todo: use context_params
-    ; injectTuples                    := <bagof-InjectValues; make-set>
+    ; injectTuples                    := <concat> [
+        <bagof-InjectValues; make-set>,
+        <context-params-to-inject-tuples> context_params
+      ]
     ; fields                          := <map(type-tuple-to-ast-field)> injectTuples
     ; constructorParams               := <create-ast-formal-params> injectTuples
     ; assignments                     := <map(type-tuple-to-ast-assignment)> injectTuples
@@ -244,6 +246,18 @@ rules // PIE function definitions
     ; result       := (inputType, [dataClass])
     with
       rules(InputKind := 2)
+
+  /**
+   * context-params-to-inject-tuples: context-params -> idTypeTuples
+   *   Type: ContextParams -> list((string, Java type AST))
+   *
+   * Converts context parameters to id type tuples, i.e. a name and a Java
+   * type.
+   */
+  context-params-to-inject-tuples:
+    NoContextParams() -> []
+  context-params-to-inject-tuples:
+    ContextParams(params) -> <pie-idtype-tuples; map(\(name, ty) -> (name, <p2j-ast-type-sig> ty)\)> params
 
   // p2j-ast-pie-func-impl-outputsig(|className):
   //   Pie type -> (Java Type, list of Java (data)class declaration AST nodes)

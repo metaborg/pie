@@ -79,6 +79,7 @@ context-free syntax
 
   ValKind.LocalValKind = [local val]
   ValKind.InputValKind = [input val]
+  ValKind.ContextValKind = [context val]
 
 // The kind of a data type.
 context-free sorts TypeKind

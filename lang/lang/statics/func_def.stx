@@ -30,28 +30,28 @@ rules
     new s_func,
     s_func -P-> s_parent,
     typesOfTypeParams(s, s_func, type_params) == type_param_tys,
-    typeOfParams(s, s_func, s_func, params) == param_tys,
+    typeOfParams(s, s_func, s_func, params, InputValKind()) == param_tys,
     contextParamsOk(s, s_func, context_params),
     typeOf(s, s_func, out_ty_exp, FALSE(), []) == out_ty,
     try { out_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 
-  typeOfParam : scope * scope * scope * Param -> TYPE
-  typeOfParams maps typeOfParam(*, *, *, list(*)) = list(*)
+  typeOfParam : scope * scope * scope * Param * ValKind -> TYPE
+  typeOfParams maps typeOfParam(*, *, *, list(*), *) = list(*)
 
-  typeOfParam(s_mod, s_type_args, _, Param(lexical_type)) = semantic_type :-
+  typeOfParam(s_mod, s_type_args, _, Param(lexical_type), _) = semantic_type :-
     typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
-  typeOfParam(s_mod, s_type_args, s_func, p@NParam(name, lexical_type)) = semantic_type :-
+  typeOfParam(s_mod, s_type_args, s_func, p@NParam(name, lexical_type), val_kind) = semantic_type :-
     typeOf(s_mod, s_type_args, lexical_type, FALSE(), []) == semantic_type,
-    declareVal(s_func, name, semantic_type, InputValKind()),
+    declareVal(s_func, name, semantic_type, val_kind),
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
 
   contextParamsOk : scope * scope * ContextParams
   contextParamsOk(_, _, NoContextParams()).
   contextParamsOk(s, s_func, ContextParams(Params(params))) :-
-    typeOfParams(s, s_func, s_func, params) == _.
+    typeOfParams(s, s_func, s_func, params, ContextValKind()) == _.
 
 
   funcImplOk : scope * FuncImpl * TypeParams * ContextParams * TYPE * FUNCID -> FuncImplKind
