@@ -84,20 +84,6 @@ test param name starts with dash [[test(-fuz: int) -> int]]
 test param name ends with dash [[test(fuz-: int) -> int]]
 test param name starts with dash [[test(-fuz: int) -> int]]
 
-// function context parameters
-test context parameters omitted [[test() -> int]]
-test context parameters none [[test()[] -> int]]
-test context parameters single [[test()[cparam: int] -> int]]
-test context parameters two [[test()[parse: TigerParse, analyze: TigerAnalyze] -> int]]
-test context parameters three [[test()[one: int, two: int, three: int] -> int]]
-test context parameters qualified [[test()[param: a:b:c:Type] -> int]]
-test context parameters missing type [[test()[param] -> int]]
-  // parses to unnamed parameter with type 'param'. Gives warning in static analysis.
-  parse to FuncHead(_, _, _, ContextParams(Params([Param(DataTy(_, "param", _))])), _)
-test context parameters missing name [[test()[: a:b:c:Type] -> int]] parse fails
-test context parameters no param after comma [[test()[one: int, ] -> int]] parse fails
-test context parameters no param before comma [[test()[, two: bool] -> int]] parse fails
-
 // function output types
 test missing return type [[test() -> ]] parse fails
 test missing return type missing arrow [[test()]] parse fails
