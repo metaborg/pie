@@ -14,24 +14,23 @@ imports
 rules
 
   funcDefOk : scope * FuncDef
-  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, context_params, _), impl)) :-
+  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _), impl)) :-
     {name s_func out_ty impl_kind ty}
     typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
-    funcImplOk(s_func, impl, type_params, context_params, out_ty, name) == impl_kind,
+    funcImplOk(s_func, impl, type_params, out_ty, name) == impl_kind,
     @func.kind := impl_kind,
     @func.type := ty.
 
   typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
-  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), context_params, out_ty_exp)) =
+  typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp)) =
     (s_func, name, FuncDefType(type_param_tys, param_tys, out_ty))
   :-
     new s_func,
     s_func -P-> s_parent,
     typesOfTypeParams(s, s_func, type_params) == type_param_tys,
     typeOfParams(s, s_func, s_func, params, InputValKind()) == param_tys,
-    contextParamsOk(s, s_func, context_params),
     typeOf(s, s_func, out_ty_exp, FALSE(), []) == out_ty,
     try { out_ty != WildcardType(_, _, _) } | error $[Cannot use a wildcard as return type. Use its upper bound instead] @out_ty_exp.
 
@@ -48,49 +47,44 @@ rules
     try { semantic_type != WildcardType(_, _, _) } | error $[Cannot use a wildcard as parameter type. Use the upper bound of the wildcard instead] @lexical_type.
 
 
-  contextParamsOk : scope * scope * ContextParams
-  contextParamsOk(_, _, NoContextParams()).
-  contextParamsOk(s, s_func, ContextParams(Params(params))) :-
-    typeOfParams(s, s_func, s_func, params, ContextValKind()) == _.
+// todo
+//  contextParamsOk : scope * scope * ContextParams
+//  contextParamsOk(_, _, NoContextParams()).
+//  contextParamsOk(s, s_func, ContextParams(Params(params))) :-
+//    typeOfParams(s, s_func, s_func, params, ContextValKind()) == _.
 
 
-  funcImplOk : scope * FuncImpl * TypeParams * ContextParams * TYPE * FUNCID -> FuncImplKind
-  funcImplOk(_, PieForeignFuncImpl(class_id), _, context_params, _, name) = PieForeignFuncKind() :-
-    warnForUselessContextParams(context_params),
+  funcImplOk : scope * FuncImpl * TypeParams * TYPE * FUNCID -> FuncImplKind
+  funcImplOk(_, PieForeignFuncImpl(class_id), _, _, name) = PieForeignFuncKind() :-
     @name.javaClassId := class_id.
-  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, context_params, _, name) = JavaForeignFuncKind() :-
-    warnForUselessContextParams(context_params),
+  funcImplOk(_, JavaForeignFuncImpl(class_id, java_name), _, _, name) = JavaForeignFuncKind() :-
     @name.javaClassId := class_id,
     @name.javaMethodId := java_name.
-  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, context_params, _, name) = JavaForeignConstructorKind() :-
-    warnForUselessContextParams(context_params),
+  funcImplOk(_, JavaForeignConstructorImpl(class_id), _, _, name) = JavaForeignConstructorKind() :-
     @name.javaClassId := class_id.
-  funcImplOk(s_func_outer, PieFuncImpl(Exp2PieFuncBody(exp), keyFunc), type_params, context_params, expected_type, name) = PieFuncKind() :-
+  funcImplOk(s_func_outer, PieFuncImpl(injections, Exp2PieFuncBody(exp), keyFunc), type_params, context_params, expected_type, name) = PieFuncKind() :-
     {s_func_inner}
     new s_func_inner,
     s_func_inner -P-> s_func_outer,
     setContext(s_func_inner, "func_return_type", ContextType(expected_type)),
+    // todo: handle injections
     expectAssignableTo(s_func_inner, exp, instantiateTypeArgs(s_func_inner, expected_type), ExpressionKind()) == _,
     optionalKeyFuncOk(s_func_outer, keyFunc),
     // See https://github.com/MeAmAnUsername/pie/issues/181
     try { getTypeParamsList(type_params) == [] } | error $[Code generation for PIE tasks with type parameters has not been implemented yet. Implement this task in Java and import it as foreign [name] instead] @type_params,
     warnForUnnamedContextParams(context_params).
 
-  warnForUselessContextParams : ContextParams
-  warnForUselessContextParams(NoContextParams()).
-  warnForUselessContextParams(cp@ContextParams(Params(params))) :-
-    try{params == []} | warning $[Useless context parameters can be removed] @cp.
-
-  warnForUnnamedContextParams : ContextParams
-  warnForUnnamedContextParams(NoContextParams()).
-  warnForUnnamedContextParams(ContextParams(Params(params))) :-
-    warnForUnnamedContextParams_1(params).
-
-    warnForUnnamedContextParam : Param
-    warnForUnnamedContextParams_1 maps warnForUnnamedContextParam(list(*))
-    warnForUnnamedContextParam(p@Param(_)) :-
-      try{false} | warning $[Unnamed context parameter cannot be referred to. This parameter can be named to refer to it, or it can be removed.] @p.
-    warnForUnnamedContextParam(NParam(_, _)).
+// todo
+//  warnForUnnamedContextParams : ContextParams
+//  warnForUnnamedContextParams(NoContextParams()).
+//  warnForUnnamedContextParams(ContextParams(Params(params))) :-
+//    warnForUnnamedContextParams_1(params).
+//
+//    warnForUnnamedContextParam : Param
+//    warnForUnnamedContextParams_1 maps warnForUnnamedContextParam(list(*))
+//    warnForUnnamedContextParam(p@Param(_)) :-
+//      try{false} | warning $[Unnamed context parameter cannot be referred to. This parameter can be named to refer to it, or it can be removed.] @p.
+//    warnForUnnamedContextParam(NParam(_, _)).
 
   keyFuncOk : scope * PieKeyFunc
   optionalKeyFuncOk maps keyFuncOk(*, list(*))

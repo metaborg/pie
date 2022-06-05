@@ -37,7 +37,7 @@ rules // PIE function definitions
   // InjectValues are the values that will be injected into the constructor of the Java class.
   // An InjectValue is a pair of a name and a Java type
   p2j-ast-def:
-    FuncDef(FuncHead(funcId, typeParams, params, context_params, type), PieFuncImpl(body, optKeyBody)) -> result
+    FuncDef(FuncHead(funcId, typeParams, params, type), PieFuncImpl(injections, body, optKeyBody)) -> result
     with
       <debug(|"start p2j-ast-def: ")> funcId
     ; className   := <pie-sanitize-class-id> funcId
@@ -47,9 +47,10 @@ rules // PIE function definitions
     ; (outputType, outputDataClasses) := <p2j-ast-pie-func-impl-outputsig(|className)> <syntacticToSemanticType> type
     ; (stmts, lastValue)              := <p2j-ast-pie-func-impl-body> body
     ; keyImpl                         := <p2j-ast-pie-func-key-body> optKeyBody
+    ; context_params := "todo: use injections"
     ; injectTuples                    := <concat> [
-        <bagof-InjectValues; make-set>,
-        <context-params-to-inject-tuples> context_params
+        <bagof-InjectValues; make-set>
+//        <context-params-to-inject-tuples> context_params // todo
       ]
     ; fields                          := <map(type-tuple-to-ast-field)> injectTuples
     ; constructorParams               := <create-ast-formal-params> injectTuples
@@ -254,10 +255,11 @@ rules // PIE function definitions
    * Converts context parameters to id type tuples, i.e. a name and a Java
    * type.
    */
-  context-params-to-inject-tuples:
-    NoContextParams() -> []
-  context-params-to-inject-tuples:
-    ContextParams(params) -> <pie-idtype-tuples; map(\(name, ty) -> (name, <p2j-ast-type-sig> ty)\)> params
+   // todo
+//  context-params-to-inject-tuples:
+//    NoContextParams() -> []
+//  context-params-to-inject-tuples:
+//    ContextParams(params) -> <pie-idtype-tuples; map(\(name, ty) -> (name, <p2j-ast-type-sig> ty)\)> params
 
   // p2j-ast-pie-func-impl-outputsig(|className):
   //   Pie type -> (Java Type, list of Java (data)class declaration AST nodes)

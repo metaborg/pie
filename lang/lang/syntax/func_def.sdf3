@@ -14,19 +14,16 @@ template options
 context-free sorts
 
   FuncHead
-  ContextParams
   Param
   Params
   FuncDef
   FuncImpl
+  PieFuncInjections
   PieKeyFunc
 
 context-free syntax // Function head
 
-  FuncHead.FuncHead = [[FUNCID][TypeParams]([Params])[ContextParams] -> [Type]]
-
-  ContextParams.NoContextParams = []
-  ContextParams.ContextParams = <[<Params>]>
+  FuncHead.FuncHead = [[FUNCID][TypeParams]([Params]) -> [Type]]
 
   Param.Param   = <<Type>>
   Param.NParam  = <<VALID> : <Type>> {prefer} // prefer this over a Param(ImportTy(...))
@@ -38,6 +35,9 @@ context-free syntax // Function definition
   FuncImpl.PieForeignFuncImpl  = <foreign <PIEQTYPEID>>
   FuncImpl.JavaForeignFuncImpl = <foreign java <JAVAQTYPEID>#<JAVAFUNCID>>
   FuncImpl.JavaForeignConstructorImpl = <foreign java constructor <JAVAQTYPEID>>
-  FuncImpl.PieFuncImpl         = <<PieFuncBody><PieKeyFunc?>>
-  
+  FuncImpl.PieFuncImpl         = <<PieFuncInjections><PieFuncBody><PieKeyFunc?>>
+
+  PieFuncInjections.NoInjections = []
+  PieFuncInjections.Injections = [inject [Params] in ]
+
   PieKeyFunc.PieKeyFunc = <@ <PieFuncBody>>
