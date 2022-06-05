@@ -4,4 +4,4 @@ data T1 = foreign java mb.pie.lang.test.funcDef.contextParams.T1 {
   func get() -> int
 }
 
-func main_one()[p1: T1] -> int = p1.get()
+func main_one() -> int = inject p1: T1 in p1.get()

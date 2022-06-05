@@ -7,5 +7,5 @@ data T2 = foreign java mb.pie.lang.test.funcDef.contextParams.T2 {
   func get() -> int
 }
 
-func main_three()[p1: T1, p2: T2, p3: T1] -> int =
-  p1.get() + (p2.get()) + (p3.get())
+func main_three() -> int =
+  inject p1: T1, p2: T2, p3: T1 in p1.get() + (p2.get()) + (p3.get())
