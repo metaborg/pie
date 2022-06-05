@@ -476,7 +476,7 @@ rules // References
   p2j-ast-exp:
     r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|Field(This(), Id(varId)))> r)
     where
-      ContextValKind() := <pie-ast-ref-prop(|"kind")> varId
+      InjectedValKind() := <pie-ast-ref-prop(|"kind")> varId
 
   p2j-ast-exp:
     r@Ref(varId) -> <error(|"value kind of declaration is set to parameter but function has 0 parameters")> r
