@@ -1,4 +1,0 @@
-module mb:pie:lang:test:call:contextParams:omitted
-
-func main_omitted() -> int = helper_omitted()
-func helper_omitted() -> int = -1

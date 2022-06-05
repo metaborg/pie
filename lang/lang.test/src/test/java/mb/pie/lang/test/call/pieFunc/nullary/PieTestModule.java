@@ -1,12 +1,10 @@
-package mb.pie.lang.test.call.contextParams.omitted;
+package mb.pie.lang.test.call.pieFunc.nullary;
 
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import mb.pie.api.TaskDef;
-import mb.pie.lang.test.call.contextParams.empty.helper_empty;
-import mb.pie.lang.test.call.contextParams.empty.main_empty;
-import mb.pie.lang.test.call.contextParams.omitted.main_omitted;
+import mb.pie.lang.test.call.pieFunc.nullary.main_nullary;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,8 +13,8 @@ import java.util.Set;
 abstract class PieTestModule {
     @Provides @mb.pie.dagger.PieScope @ElementsIntoSet
     public static Set<TaskDef<?, ?>> provideTaskDefs(
-        main_omitted main,
-        helper_omitted helper
+        main_nullary main,
+        helper_nullary helper
     ) {
         final HashSet<TaskDef<?, ?>> taskDefs = new HashSet<>(2, 1);
         taskDefs.add(main);

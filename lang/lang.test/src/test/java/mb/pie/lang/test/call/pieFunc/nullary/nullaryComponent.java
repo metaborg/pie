@@ -1,12 +1,12 @@
-package mb.pie.lang.test.call.contextParams.three;
+package mb.pie.lang.test.call.pieFunc.nullary;
 
 import dagger.Component;
 import mb.pie.dagger.PieComponent;
 import mb.pie.dagger.PieModule;
-import mb.pie.lang.test.call.contextParams.three.main_three;
+import mb.pie.lang.test.call.pieFunc.nullary.main_nullary;
 
 @mb.pie.dagger.PieScope
 @Component(modules = {PieModule.class, PieTestModule.class}, dependencies = {mb.log.dagger.LoggerComponent.class, mb.resource.dagger.ResourceServiceComponent.class})
-public interface threeComponent extends PieComponent {
-    main_three get();
+public interface nullaryComponent extends PieComponent {
+    main_nullary get();
 }

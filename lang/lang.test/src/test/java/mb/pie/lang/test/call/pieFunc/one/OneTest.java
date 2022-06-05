@@ -1,7 +1,7 @@
-package mb.pie.lang.test.call.contextParams.one;
+package mb.pie.lang.test.call.pieFunc.one;
 
 import mb.pie.api.ExecException;
-import mb.pie.lang.test.call.contextParams.one.DaggeroneComponent;
+import mb.pie.lang.test.call.pieFunc.one.DaggeroneComponent;
 import org.junit.jupiter.api.Test;
 
 import static mb.pie.lang.test.util.SimpleChecker.assertTaskOutputEquals;

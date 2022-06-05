@@ -1,12 +1,12 @@
-package mb.pie.lang.test.call.contextParams.two;
+package mb.pie.lang.test.call.pieFunc.one;
 
 import dagger.Component;
 import mb.pie.dagger.PieComponent;
 import mb.pie.dagger.PieModule;
-import mb.pie.lang.test.call.contextParams.two.main_two;
+import mb.pie.lang.test.call.pieFunc.one.main_one;
 
 @mb.pie.dagger.PieScope
 @Component(modules = {PieModule.class, PieTestModule.class}, dependencies = {mb.log.dagger.LoggerComponent.class, mb.resource.dagger.ResourceServiceComponent.class})
-public interface twoComponent extends PieComponent {
-    main_two get();
+public interface oneComponent extends PieComponent {
+    main_one get();
 }

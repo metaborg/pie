@@ -1,4 +1,0 @@
-module mb:pie:lang:test:call:contextParams:empty
-
-func main_empty() -> int = helper_empty()
-func helper_empty()[] -> int = 0
