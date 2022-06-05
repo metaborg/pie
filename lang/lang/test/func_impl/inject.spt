@@ -7,140 +7,61 @@ fixture [[
     func method[A](a: A) -> T
   }
 
-  [[...]]
+  func test(x: int, y: bool) -> int = [[...]]
 ]]
 
-test context params - omitted [[ func test() -> int = 4 ]] analysis succeeds
-test context params - zero [[ func test()[] -> int = 5 ]] analysis succeeds
-test context params - one - unused [[
-  func test()[cparam: int] -> int = 8
+test injections - omitted [[
+  4
 ]] analysis succeeds
-test context params - one - used [[
-  func test()[ [[cparam]]: int] -> int = [[cparam]]
+test injections - zero [[
+  [[inject in]] 5
+]] 1 warning at #1
+   warning like "Empty injections"
+test injections - one - unused [[
+  inject cparam: int in 8
+]] analysis succeeds
+test injections - one - used [[
+  inject [[cparam]]: int in [[cparam]]
 ]] analysis succeeds
    resolve #2 to #1
-test context params - one - unnamed [[
-  func test()[ [[int]] ] -> int = 3
-]] analysis succeeds
-   1 warning at #1
-   warning like "Unnamed context parameter cannot be referred to"
-test context params - one - anonymous [[
-  func test()[ _ : int ] -> int = 3
+test injections - one - unnamed [[
+  inject [[int]]  in 3
+]] 1 error at #1
+   error like "Injections must be named"
+test injections - one - anonymous [[
+  inject _ : int  in 3
 ]] analysis succeeds
    0 warnings // todo: should become a warning once issue #277 / pull #20 is merged
-test context params - one - duplicate name with param - different types [[
-  func test([[param]]: int)[ [[param]]: bool] -> int = 3
-]] 2 errors at #1, #2
-   error like "Duplicate definition of value" at #1, #2
-test context params - one - duplicate name with param - same type [[
-  func test([[param]]: bool)[ [[param]]: bool] -> int = 3
-]] 2 errors at #1, #2
-   error like "Duplicate definition of value" at #1, #2
-test context params - one - custom datatype [[[
-  func test()[param: [[[Type]]][int]] -> int = 3
-]]] analysis succeeds
+test injections - one - duplicate name with param - different types [[
+  inject [[x]]: bool in 3
+]] 1 error at #1
+   error like "Duplicate definition of value" at #1
+test injections - one - duplicate name with param - same type [[
+  inject [[y]]: bool in 3
+]] 1 error at #1
+   error like "Duplicate definition of value" at #1
+test injections - one - custom datatype [[
+  inject param: [[Type]][int] in 3
+]] analysis succeeds
     resolve #1
-test context params - call method [[[
-  func test()[ [[[param]]]: [[[Type]]][int]] -> int = [[[param]]].[[[method]]][bool](true)
-]]] analysis succeeds
+test injections - call method [[
+  inject  [[param]]: [[Type]][int] in [[param]].[[method]][bool](true)
+]] analysis succeeds
     resolve #2
     resolve #3 to #1
     resolve #4
-test context params - one - qualified [[[
-  func test()[param: test:func_impl:inject:[[[Type]]][string]] -> int = 3
-]]] analysis succeeds
+test injections - one - qualified [[
+  inject param: test:func_impl:inject:[[Type]][string] in 3
+]] analysis succeeds
     resolve #1
 
-test context params - two [[
-  func test()[ [[value]]: int, [[flag]]: bool] -> bool = [[value]] == 5 && ![[flag]]
+test injections - two [[
+  inject  [[value]]: int, [[flag]]: bool in
+    if (![[flag]]) [[value]] else 5
 ]] analysis succeeds
-   resolve #3 to #1
-   resolve #4 to #2
-test context params - two - duplicate names [[
-  func test()[ [[x]]: int, [[x]]: bool] -> int = 32
+   resolve #3 to #2
+   resolve #4 to #1
+test injections - two - duplicate names [[
+  inject  [[p]]: int, [[p]]: bool in 32
 ]] 2 errors at #1, #2
    error like "Duplicate definition of value" at #1, #2
-
-test context params - defined on foreign task - omitted [[
-  func test() -> int = foreign Task
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign task - empty [[
-  func test()[] -> int = foreign Task
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign task - one [[
-  func test()[[ [param: string] ]] -> int = foreign Task
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-test context params - defined on foreign task - two [[
-  func test()[[ [param: string, param2: path] ]] -> int = foreign Task
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-
-test context params - defined on foreign func - omitted [[
-  func test() -> int = foreign java Class#function
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign func - empty [[
-  func test()[] -> int = foreign java Class#function
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign func - one [[
-  func test()[[ [param: string] ]] -> int = foreign java Class#function
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-test context params - defined on foreign func - two [[
-  func test()[[ [param: string, param2: path] ]] -> int = foreign java Class#function
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-
-test context params - defined on foreign constructor - omitted [[
-  func test() -> int = foreign java constructor Class
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign constructor - empty [[
-  func test()[] -> int = foreign java constructor Class
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign constructor - one [[
-  func test()[[ [param: string] ]] -> int = foreign java constructor Class
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-test context params - defined on foreign constructor - two [[
-  func test()[[ [param: string, param2: path] ]] -> int = foreign java constructor Class
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-
-test context params - defined on foreign method - omitted [[
-  data Test = foreign java Test {
-    func test() -> int
-  }
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign method - empty [[
-  data Test = foreign java Test {
-    func test()[] -> int
-  }
-]] analysis succeeds
-   0 warnings
-test context params - defined on foreign method - one [[
-  data Test = foreign java Test {
-    func test()[[ [param: string] ]] -> int
-  }
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
-test context params - defined on foreign method - two [[
-  data Test = foreign java Test {
-    func test()[[ [param: string, param2: path] ]] -> int
-  }
-]] analysis succeeds
-   1 warning at #1
-   warning like "Useless context parameters"
