@@ -97,4 +97,4 @@ test return type unit [[test() -> unit]]
 test return type custom type [[test() -> CustomType]]
 test return type tuple type [[test() -> (int, string)]]
 // void is not a type in pie, but it is parsed as a custom data type
-test return type void [[test() -> void]] parse to FuncHead(_, _, _, _, DataTy(_, "void", _))
+test return type void [[test() -> void]] parse to FuncHead(_, _, _, DataTy(_, "void", _))
