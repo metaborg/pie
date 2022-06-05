@@ -1,7 +1,7 @@
-module func_def/context_param
+module func_impl/inject
 language pie
 fixture [[
-  module test:func_def:context_params
+  module test:func_impl:inject
 
   data Type[T] = foreign java Type {
     func method[A](a: A) -> T
@@ -47,7 +47,7 @@ test context params - call method [[[
     resolve #3 to #1
     resolve #4
 test context params - one - qualified [[[
-  func test()[param: test:func_def:context_params:[[[Type]]][string]] -> int = 3
+  func test()[param: test:func_impl:inject:[[[Type]]][string]] -> int = 3
 ]]] analysis succeeds
     resolve #1
 
