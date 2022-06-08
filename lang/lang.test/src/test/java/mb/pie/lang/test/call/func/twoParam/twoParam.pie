@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:twoParam
+
+func main_twoParam() -> int = helper_twoParam(false, null)
+func helper_twoParam(x: bool, y: int?) -> int = 2

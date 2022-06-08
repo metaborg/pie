@@ -236,7 +236,7 @@ rules // PIE function definitions
       length := <length> params
     ; <gt> (length, 1)
     with
-      idTypeTuples := <pie-idtype-tuples> p
+      idTypeTuples := <pie-idtype-tuples; map(\(valId, ty) -> (<p2j-valueId-name> valId, ty)\)> p
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Input")> idTypeTuples
     ; inputType    := ClassOrInterfaceTypeMember(ClassType([], Id(className), None()), [], Id("Input"), None())
       // Note: meaning of this AST: [className].Input

@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:params:two
+
+func main_two(x: int, dir: path?) -> bool = dir == null || x == 3

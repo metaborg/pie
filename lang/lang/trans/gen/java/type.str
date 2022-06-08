@@ -130,7 +130,7 @@ rules
       <add-import> "org.checkerframework.checker.nullness.qual.Nullable"
     ; <add-import> "java.io.Serializable"
     ; <add-import> $[mb.pie.util.Tuple[<length> idPieTypeTuples]]
-    ; <add-import> $[mb.pie.util.Util]
+    ; <add-import> "mb.pie.util.Util"
     ; tupleTy        := $[Tuple[<length> idPieTypeTuples]]
     ; tys            := <map(Snd)> idPieTypeTuples
     ; types          := <map(p2j-ast-type-sig)> tys

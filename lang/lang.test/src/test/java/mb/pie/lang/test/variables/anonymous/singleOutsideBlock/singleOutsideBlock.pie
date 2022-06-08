@@ -1,0 +1,4 @@
+module mb:pie:lang:test:variables:anonymous:singleOutsideBlock
+
+func main_singleOutsideBlock() -> string =
+  val _ = "look ma, no block"

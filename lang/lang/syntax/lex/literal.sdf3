@@ -21,6 +21,7 @@ lexical syntax // Identifier
   PIEQTYPEID  = QID
   JAVAQTYPEID = QID
 
+  VALID      = "_" {reject}
   VALID      = ID // VAL-ID, not the opposite of 'invalid'
   MODID      = "_" {reject}
   MODID      = ID

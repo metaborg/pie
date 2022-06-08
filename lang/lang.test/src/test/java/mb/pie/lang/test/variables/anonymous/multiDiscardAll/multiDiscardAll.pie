@@ -1,0 +1,6 @@
+module mb:pie:lang:test:variables:anonymous:multiDiscardAll
+
+func main_multiDiscardAll() -> int = {
+  val (firstName, _, lastName) = ("Bob", "the", "Builder");
+  78
+}

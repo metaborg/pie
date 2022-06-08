@@ -1,0 +1,91 @@
+module expression/binding/anonymous_value
+language pie
+
+fixture [[
+  module expression:binding:anonymous_value
+  
+  func fixture() -> unit = {
+    [[...]]
+    
+    unit
+  }
+]]
+
+test anonymous value in single untyped value declaration [[
+  val [[_]] = 3;
+  [[_]];
+]] 1 error at #2
+   error like "Cannot reference anonymous value"
+   1 warning at #1
+   warning like "ignored"
+test anonymous value in single typed value declaration [[
+  val [[_]]: int = 3;
+  [[_]];
+]] 1 error at #2
+   error like "Cannot reference anonymous value"
+   1 warning at #1
+   warning like "ignored"
+test anonymous value in single typed value declaration with incorrect type hint [[
+  val [[_]]: [[int]] = "no";
+  [[_]];
+]] 2 errors at #2, #3
+   error like "Type mismatch" at #2
+   error like "Cannot reference anonymous value" at #3
+   1 warning at #1
+   warning like "ignored"
+test anonymous value in multi untyped value declaration [[
+  val (x, _, z) = (1, 2, 3);
+  x;
+  [[_]];
+  z;
+]] 1 error at #1
+   error like "Cannot reference anonymous value"
+   0 warnings
+test anonymous value in multi typed value declaration [[
+  val (x: int, _: int, z: int) = (1, 2, 3);
+  x;
+  [[_]];
+  z;
+]] 1 error at #1
+   error like "Cannot reference anonymous value"
+   0 warnings
+test anonymous value in multi typed value declaration with incorrect type hint [[
+  val (x: int, _: [[path]], z: int) = (1, 2, 3);
+  x;
+  [[_]];
+  z;
+]] 2 errors at #1, #2
+   error like "Type mismatch" at #1
+   error like "Cannot reference anonymous value" at #2
+   0 warnings
+test multiple anonymous values in multi declaration [[
+  val (_, _, z) = (1, 2, 3);
+  [[_]];
+  z;
+]] 1 error at #1
+   error like "Cannot reference anonymous value"
+   0 warnings
+test all anonymous values in multi declaration [[
+  val [[(_, _, _)]] = (1, 2, 3);
+  [[_]];
+]] 1 error at #2
+   error like "Cannot reference anonymous value"
+   1 warning at #1
+   warning like "ignored"
+
+test multiple anonymous values with single declarations [[
+  val _ = 2;
+  val _ = "string";
+]] analysis succeeds
+test multiple anonymous values with multi declarations [[
+  val (_, x) = (1, 2);
+  val (y, _) = ("hey", "now");
+]] analysis succeeds
+test multiple anonymous values with single followed by multi declarations [[
+  val _ = 12;
+  val (y, _) = ("you're", "an");
+]] analysis succeeds
+test multiple anonymous values with multi followed by single declarations [[
+  val (y, _) = ("all", "star");
+  val _ = 13;
+]] analysis succeeds
