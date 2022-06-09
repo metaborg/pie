@@ -103,23 +103,29 @@ test list comprehension square brackets [[ "$x * 3 = ${x+x+x}" | x <- [1, 2, 3] 
 test list comprehension missing map expression [[ [ | x <- [1, 2, 3] ] ]] parse fails
 test list comprehension missing list expression [[ ["$x * 3 = ${x+x+x}" | x <- ] ]] parse fails
 
-test val declaration single bind [[ val x = 8 ]] parse succeeds
+test val declaration single bind [[ val x = 8 ]]
+  parse to ValDec(SingleBinder(Bind(ValueId("x"))), _)
 test val declaration single bind missing = [[ val x 5 ]] parse fails
-test val declaration single bind missing val [[ x = 5 ]] parse fails
-test val without layout [[ value: bool = false ]] parse fails
+test val declaration single bind missing keyword val [[ x = 5 ]] parse fails
+test val declaration missing keyword val with type hint [[ value: bool = false ]] parse fails
+test val declaration without layout [[ val value:bool=false ]] parse succeeds
+test val declaration without layout between val keyword and name [[ valvalue = false ]] parse fails
 test val declaration single bind missing name [[ val = 5 ]] parse fails
 test val declaration reserved keyword unit  [[ val unit  = 5 ]] parse fails
 test val declaration reserved keyword null  [[ val null  = 5 ]] parse fails
 test val declaration reserved keyword true  [[ val true  = 5 ]] parse fails
 test val declaration reserved keyword false [[ val false = 5 ]] parse fails
 test val declaration named val [[ val val = 5 ]] parse succeeds
-test val declaration named _ [[ val _ = 5 ]] parse succeeds
+test val declaration named _ [[ val _ = 5 ]]
+  parse to ValDec(SingleBinder(Bind(AnonymousValue())), _)
 test val declaration single bind missing expression [[ val x = ]] parse fails
 test val declaration single bind no layout around = [[ val x=7 ]] parse succeeds
 test val declaration single bind with type missing <: [[ val foo string = "-_-" ]] parse fails
 test val declaration single bind with type missing name [[ val : string = "" ]] parse fails
 test val declaration single bind with type missing type [[ val foo : = 56 ]] parse fails
 test val declaration tuple bind [[ val (x, y) = (9, 3) ]] parse succeeds
+test val declaration tuple bind with anonymous value [[ val (x, _) = (9, 3) ]]
+  parse to ValDec(TupleBinder([_, Bind(AnonymousValue())]), _)
 test val declaration tuple bind missing = [[ val (x, y) (9, 3) ]] parse fails
 test val declaration tuple bind missing val [[ (a, b) = ("A", "B") ]] parse fails
 test val declaration tuple bind missing names [[ val = (true, false) ]] parse fails
@@ -130,15 +136,16 @@ test val declaration tuple bind with type missing <: [[ val (foo: int, bar int) 
 test val declaration tuple bind with type missing name [[ val (: string, bar: int) = ("hey", 9) ]] parse fails
 test val declaration tuple bind with type missing type [[ val (x: , y: bool) = ("string", true) ]] parse fails
 
-test reference [[ foo ]] parse succeeds parse to Ref("foo")
-test reference [[ val ]] parse succeeds parse to Ref("val")
+test reference [[ foo ]] parse succeeds parse to Ref(ValueId("foo"))
+test reference anonymous value [[ _ ]] parse to Ref(AnonymousValue())
+test reference keyword val [[ val ]] parse succeeds parse to Ref(ValueId("val"))
+test reference keyword func [[ func ]] parse to Ref(ValueId("func"))
+test reference keyword return [[ return ]] parse to Ref(ValueId("return"))
+test reference keyword supplier [[ supplier ]] parse to Ref(ValueId("supplier"))
 test reference reserved keyword unit  [[ unit  ]] parse to UnitLit()
 test reference reserved keyword null  [[ null  ]] parse to NullLit()
 test reference reserved keyword true  [[ true  ]] parse to BoolLit(True())
 test reference reserved keyword false [[ false ]] parse to BoolLit(False())
-test reference keyword func [[ func ]] parse to Ref("func")
-test reference keyword return [[ return ]] parse to Ref("return")
-test reference keyword supplier [[ supplier ]] parse to Ref("supplier")
 
 test call simple [[ someFunc() ]] parse succeeds
 test call empty type argument list [[ someFunc[]() ]]
@@ -152,7 +159,7 @@ test call two type arguments [[ someFunc[Food, string]() ]]
 test call three type arguments [[ someFunc[int, path, (string, bool)]() ]]
 test call three type arguments [[ someFunc[int, path, (string, bool)]() ]]
 
-test call missing brackets [[ someFunc ]] parse succeeds parse to Ref("someFunc")
+test call missing brackets [[ someFunc ]] parse succeeds parse to Ref(ValueId("someFunc"))
 test call 1 param [[ otherFunc(67) ]] parse succeeds
 test call 2 param [[ foo("Bob", true) ]] parse succeeds
 test call 3 param [[ exec("rm", flags, false) ]] parse succeeds
@@ -203,7 +210,7 @@ test task supplier spaces around brackets [[ parse.supplier ( ) ]] parse succeed
 test task supplier space before period [[ parse .supplier() ]] parse succeeds
 test task supplier space after period [[ parse. supplier() ]] parse succeeds
 test task supplier space in keyword [[ parse.suppl ier() ]] parse fails
-test task supplier capitalized keyword [[ parse.Supplier() ]] parse to QCall(Ref("parse"), "Supplier", NoTypeArgs(), [])
+test task supplier capitalized keyword [[ parse.Supplier() ]] parse to QCall(Ref(ValueId("parse")), "Supplier", NoTypeArgs(), [])
 
 test supplier get [[ supp.get[]() ]] parse succeeds
 test supplier get with type argument [[ supp.get[string]() ]] parse succeeds
@@ -214,10 +221,10 @@ test supplier get space after get [[ supp.get []() ]] parse succeeds
 test supplier get space in diamond [[ supp.get[ ]() ]] parse succeeds
 test supplier get space after diamond [[ supp.get[] () ]] parse succeeds
 test supplier get space within brackets [[ supp.get[]( ) ]] parse succeeds
-test supplier get missing diamond [[ supp.get( ) ]] parse to QCall(Ref("supp"), "get", NoTypeArgs(), [])
-test supplier get capitalized [[ supp.Get[]( ) ]] parse to QCall(Ref("supp"), "Get", TypeArgs([]), [])
-test supplier get random capitalized [[ supp.gEt[]( ) ]] parse to QCall(Ref("supp"), "gEt", TypeArgs([]), [])
-test supplier get all caps [[ supp.GET[]( ) ]] parse to QCall(Ref("supp"), "GET", TypeArgs([]), [])
+test supplier get missing diamond [[ supp.get( ) ]] parse to QCall(Ref(ValueId("supp")), "get", NoTypeArgs(), [])
+test supplier get capitalized [[ supp.Get[]( ) ]] parse to QCall(Ref(ValueId("supp")), "Get", TypeArgs([]), [])
+test supplier get random capitalized [[ supp.gEt[]( ) ]] parse to QCall(Ref(ValueId("supp")), "gEt", TypeArgs([]), [])
+test supplier get all caps [[ supp.GET[]( ) ]] parse to QCall(Ref(ValueId("supp")), "GET", TypeArgs([]), [])
 
 test list absolute path literal [[ list /foo ]] parse succeeds
 test list relative path literal [[ list ./foo ]] parse succeeds
@@ -236,8 +243,8 @@ test list missing pattern    expression [[ list ./b with pattern    ]] parse fai
 test list missing patterns   expression [[ list ./c with patterns   ]] parse fails
 test list missing extension  expression [[ list ./d with extension  ]] parse fails
 test list missing extensions expression [[ list ./e with extensions ]] parse fails
-test list pattern s   [[ list ./e with pattern s   ]] parse to ListPath(PathLit("./",[Path("e")]),Some(FilterPart(Pattern(Ref("s")))))
-test list extension s [[ list ./e with extension s ]] parse to ListPath(PathLit("./",[Path("e")]),Some(FilterPart(Extension(Ref("s")))))
+test list pattern s   [[ list ./e with pattern s   ]] parse to ListPath(PathLit("./",[Path("e")]),Some(FilterPart(Pattern(Ref(ValueId("s"))))))
+test list extension s [[ list ./e with extension s ]] parse to ListPath(PathLit("./",[Path("e")]),Some(FilterPart(Extension(Ref(ValueId("s"))))))
 
 test walk absolute path literal [[ walk /foo ]] parse succeeds
 test walk relative path literal [[ walk ./foo ]] parse succeeds
@@ -256,22 +263,22 @@ test walk missing pattern    expression [[ walk ./b with pattern    ]] parse fai
 test walk missing patterns   expression [[ walk ./c with patterns   ]] parse fails
 test walk missing extension  expression [[ walk ./d with extension  ]] parse fails
 test walk missing extensions expression [[ walk ./e with extensions ]] parse fails
-test walk pattern s   [[ walk ./e with pattern s   ]] parse to WalkPath(PathLit("./",[Path("e")]),Some(FilterPart(Pattern(Ref("s")))))
-test walk extension s [[ walk ./e with extension s ]] parse to WalkPath(PathLit("./",[Path("e")]),Some(FilterPart(Extension(Ref("s")))))
+test walk pattern s   [[ walk ./e with pattern s   ]] parse to WalkPath(PathLit("./",[Path("e")]),Some(FilterPart(Pattern(Ref(ValueId("s"))))))
+test walk extension s [[ walk ./e with extension s ]] parse to WalkPath(PathLit("./",[Path("e")]),Some(FilterPart(Extension(Ref(ValueId("s"))))))
 
 test read absolute path literal [[ read /foo.txt ]] parse succeeds
 test read relative path literal [[ read ./foo.txt ]] parse succeeds
 test read variable [[ read file ]] parse succeeds
 test read no layout between followed by slash [[ read/foo ]] parse fails
 test read no layout between followed by period [[ read./foo ]] parse fails
-test read no layout between followed by letter [[ readfile ]] parse to Ref("readfile")
+test read no layout between followed by letter [[ readfile ]] parse to Ref(ValueId("readfile"))
 
 test exists absolute path literal [[ exists /foo.txt ]] parse succeeds
 test exists relative path literal [[ exists ./foo.txt ]] parse succeeds
 test exists variable [[ exists file ]] parse succeeds
 test exists no layout between followed by slash [[ exists/foo ]] parse fails
 test exists no layout between followed by period [[ exists./foo ]] parse fails
-test exists no layout between followed by letter [[ existsfile ]] parse to Ref("existsfile")
+test exists no layout between followed by letter [[ existsfile ]] parse to Ref(ValueId("existsfile"))
 
 test return int literal [[ return 2 ]] parse succeeds
 test return string literal [[ return "Successfully parsed $file" ]] parse succeeds
@@ -284,13 +291,13 @@ test return no layout between followed by open bracket in brackets [[ return(5) 
 test return no layout between followed by open bracket in tuple [[ return(5, 9) ]] // todo parse fails
 test return no layout between followed by open square bracket in list literal [[ return[1, 2] ]] parse fails
 test return no layout between followed by open square bracket in list comprehension [[ return[double(x) | x <- [1, 2, 3] ] ]] parse fails
-test return no layout between followed by letter in variable [[ returnfile ]] parse to Ref("returnfile")
+test return no layout between followed by letter in variable [[ returnfile ]] parse to Ref(ValueId("returnfile"))
 test return no layout between followed by letter in function [[ returnsomeFunc() ]] parse to Call(NoModuleList(), "returnsomeFunc", NoTypeArgs(), [])
-test return no layout between followed by digit [[ return5 ]] parse to Ref("return5")
-test return no layout between followed by underscore [[ return_foo ]] parse to Ref("return_foo")
-test return no layout between followed by dash [[ return-5 ]] parse to Ref("return-5")
+test return no layout between followed by digit [[ return5 ]] parse to Ref(ValueId("return5"))
+test return no layout between followed by underscore [[ return_foo ]] parse to Ref(ValueId("return_foo"))
+test return no layout between followed by dash [[ return-5 ]] parse to Ref(ValueId("return-5"))
 test return no layout between followed by exclamation mark [[ return!true ]] parse fails
-test return no layout between followed by plus [[ return+5 ]] parse to Add(Ref("return"), IntLit("5"))
+test return no layout between followed by plus [[ return+5 ]] parse to Add(Ref(ValueId("return")), IntLit("5"))
 
 test fail string literal [[ fail "No files to parse" ]] parse succeeds
 test fail string interpolation [[ fail "Could not find '$file'" ]] parse succeeds
@@ -301,11 +308,11 @@ test fail no layout between followed by open bracket in brackets [[ fail(5) ]] /
 test fail no layout between followed by open bracket in tuple [[ fail(5, 9) ]] // todo parse fails
 test fail no layout between followed by open square bracket in list literal [[ fail[1, 2] ]] parse fails
 test fail no layout between followed by open square bracket in list comprehension [[ fail[double(x) | x <- [1, 2, 3] ] ]] parse fails
-test fail no layout between followed by letter in variable [[ failfile ]] parse to Ref("failfile")
+test fail no layout between followed by letter in variable [[ failfile ]] parse to Ref(ValueId("failfile"))
 test fail no layout between followed by letter in function [[ failsomeFunc() ]] parse to Call(NoModuleList(), "failsomeFunc", NoTypeArgs(), [])
 test fail no layout between followed by letter in built-in [[ failread file ]] parse fails
-test fail no layout between followed by digit [[ fail5 ]] parse to Ref("fail5")
-test fail no layout between followed by underscore [[ fail_foo ]] parse to Ref("fail_foo")
-test fail no layout between followed by dash [[ fail-5 ]] parse to Ref("fail-5")
+test fail no layout between followed by digit [[ fail5 ]] parse to Ref(ValueId("fail5"))
+test fail no layout between followed by underscore [[ fail_foo ]] parse to Ref(ValueId("fail_foo"))
+test fail no layout between followed by dash [[ fail-5 ]] parse to Ref(ValueId("fail-5"))
 test fail no layout between followed by exclamation mark [[ fail!true ]] parse fails
-test fail no layout between followed by plus [[ fail+5 ]] parse to Add(Ref("fail"), IntLit("5"))
+test fail no layout between followed by plus [[ fail+5 ]] parse to Add(Ref(ValueId("fail")), IntLit("5"))

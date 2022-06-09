@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:twoParamOneAnonymous
+
+func main_twoParamOneAnonymous() -> int = helper_twoParamOneAnonymous(./file.txt, [])
+func helper_twoParamOneAnonymous(_: path, y: path*) -> int = 21

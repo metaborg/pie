@@ -3,7 +3,11 @@ module gen/java/binder
 imports
 
   src-gen/signatures/-
+  signatures/java/statements/-
+  signatures/java/expressions/-
 
+  gen/java/ast-util
+  gen/java/type
   gen/util
   gen/debug
 
@@ -15,6 +19,44 @@ rules
     TupleBinder(binds) -> <map(p2j-ast-bind)> binds
 
   p2j-ast-bind:
-    Bind(varId) -> varId
+    Bind(valId) -> valId
   p2j-ast-bind:
-    TBind(varId, ty) -> varId
+    TBind(valId, ty) -> valId
+
+  p2j-valueId-name:
+    AnonymousValue() -> $[$unused[<newname>]]
+  p2j-valueId-name:
+    ValueId(name) -> name
+
+  // bind-tuples-to-assignments:
+  // (Pie Binder (Bind or TBind), Pie ExpressionType) -> (assignments, varName)
+  bind-tuples-to-ast-assignments:
+    (SingleBinder(bind), _) -> ([], <p2j-ast-bind; p2j-valueId-name> bind)
+
+  bind-tuples-to-ast-assignments:
+    (TupleBinder(binds), expTy) -> result
+    with
+      valIds         := <map(p2j-ast-bind)> binds
+    ; TupleType(tys) := expTy
+    ; javaTys        := <map(p2j-ast-type-sig)> tys
+    ; bindList       := <zip> (valIds, javaTys)
+    ; tmpVar         := <newname> "tmpTupleVar"
+    ; assignments    := <nmap-par(bind-tuple-to-ast | 1, tmpVar); concat> bindList
+    ; result         := (assignments, tmpVar)
+
+  // nmap that passes an extra parameter to the strategy
+  nmap-par(s : Int * c * a -> b | i, par) =
+    ?[] + [s(|i,par) | nmap-par(s | <inc> i, par)]
+
+  bind-tuple-to-ast(|i, tmpVar):
+    (AnonymousValue(), _) -> []
+  bind-tuple-to-ast(|i, tmpVar):
+    (ValueId(name), ty) -> [LocVarDeclStm(LocalVarDecl(
+      [Final()]
+    , <java-classType-to-unannType> ty
+    , [ VariableDeclInit(
+          VariableDecl(Id(name))
+        , InvokeQExp(ExpressionName(Id(tmpVar)), None(), Id($[component[i]]), [])
+        )
+      ]
+    ))]

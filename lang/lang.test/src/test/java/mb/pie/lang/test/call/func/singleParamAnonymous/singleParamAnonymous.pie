@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:singleParamAnonymous
+
+func main_singleParamAnonymous() -> int = helper_singleParamAnonymous(0)
+func helper_singleParamAnonymous(_: int) -> int = 2

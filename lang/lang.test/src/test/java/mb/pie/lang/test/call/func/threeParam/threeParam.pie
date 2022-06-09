@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:threeParam
+
+func main_threeParam() -> int = helper_threeParam("yay", unit, 8)
+func helper_threeParam(x: string, y: unit, z: int) -> int = 3

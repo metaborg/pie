@@ -14,7 +14,7 @@ rules // Params to idtype tuples
       idTypeTuples := <nmap(pie-idtype-tuple|1)> params
 
   pie-idtype-tuple(|i):
-    Param(ty) -> ($[p[<int-to-string>i]], <syntacticToSemanticType> ty)
+    Param(ty) -> (AnonymousValue(), <syntacticToSemanticType> ty)
 
   pie-idtype-tuple(|i):
     NParam(varId, ty) -> (varId, <syntacticToSemanticType> ty)

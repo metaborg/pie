@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:params:three
+
+func main_three(first: int, second: bool, third: string) -> unit = unit

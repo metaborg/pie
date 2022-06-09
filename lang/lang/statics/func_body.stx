@@ -145,7 +145,13 @@ rules
     s3 -P-> s2,
     typeOfBinder(s3, actual_ty, binder) == declared_ty.
 
-  typeOfExpImpl(s, Ref2Exp(ref@Ref(name))) =
+  typeOfExpImpl(s, Ref2Exp(ref@Ref(vid@AnonymousValue()))) =
+    (s, ty@DataType(emptyScope(s))) :-
+      @ref.type := ty,
+      @vid.type := ty,
+      false | error $[Cannot reference anonymous value '_'] @vid.
+
+  typeOfExpImpl(s, Ref2Exp(ref@Ref(ValueId(name)))) =
     (s, ty@typeOfExpImpl_ref(s, resolveUniqueVal(s, name))) :-
       @ref.type := ty.
 
@@ -334,7 +340,8 @@ rules
 
   strPartOk : scope * StrPart -> scope
   strPartOk(s, Str(_)) = s.
-  strPartOk(s, StrInterpRef(Ref(name))) = s :- resolveUniqueVal(s, name) == _.
+  strPartOk(s, StrInterpRef(Ref(vid@AnonymousValue()))) = s :- false | error $[Cannot reference anonymous value '_'] @vid.
+  strPartOk(s, StrInterpRef(Ref(ValueId(name)))) = s :- resolveUniqueVal(s, name) == _.
   strPartOk(s1, StrInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
 
   strPartsOkPassScopes : scope * list(StrPart) -> scope
@@ -349,7 +356,8 @@ rules
 
   pathPartOk : scope * PathPart -> scope
   pathPartOk(s, Path(_)) = s.
-  pathPartOk(s, PathInterpRef(Ref(name))) = s :- resolveUniqueVal(s, name) == _.
+  pathPartOk(s, PathInterpRef(Ref(vid@AnonymousValue()))) = s :- false | error $[Cannot reference anonymous value '_'] @vid.
+  pathPartOk(s, PathInterpRef(Ref(ValueId(name)))) = s :- resolveUniqueVal(s, name) == _.
   pathPartOk(s1, PathInterpExp(exp)) = s2 :- typeOfExp(s1, exp) == (s2, _).
 
   pathPartsOkPassScopes : scope * list(PathPart) -> scope

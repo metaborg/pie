@@ -7,12 +7,16 @@ imports
 
 context-free sorts
 
+  ValueId
   ModuleList
   BoundedTypeParam
   TypeParam
   TypeParams
 
 context-free syntax
+
+  ValueId.ValueId = <<VALID>>
+  ValueId.AnonymousValue = <_>
 
   ModuleList.NoModuleList = <>
   ModuleList.ModuleList = <<{MODID ":"}+>:>

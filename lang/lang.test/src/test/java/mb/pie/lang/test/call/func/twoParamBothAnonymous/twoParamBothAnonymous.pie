@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:func:twoParamBothAnonymous
+
+func main_twoParamBothAnonymous() -> int = helper_twoParamBothAnonymous([2], null)
+func helper_twoParamBothAnonymous(_: int*, _: string?) -> int = 20

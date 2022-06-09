@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:params:twoOneUnnamed
+
+func main_twoOneUnnamed(v: bool, int) -> bool = v

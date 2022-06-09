@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:params:twoBothAnonymous
+
+func main_twoBothAnonymous(_: int, _: path?) -> bool = false

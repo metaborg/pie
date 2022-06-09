@@ -239,7 +239,7 @@ rules // PIE function definitions
       length := <length> params
     ; <gt> (length, 1)
     with
-      idTypeTuples := <pie-idtype-tuples> p
+      idTypeTuples := <pie-idtype-tuples; map(\(valId, ty) -> (<p2j-valueId-name> valId, ty)\)> p
     ; dataClass    := <p2j-ast-type-generate-dataclass(|"Input")> idTypeTuples
     ; inputType    := ClassOrInterfaceTypeMember(ClassType([], Id(className), None()), [], Id("Input"), None())
       // Note: meaning of this AST: [className].Input
@@ -256,7 +256,7 @@ rules // PIE function definitions
   injections-to-inject-tuples:
     NoInjections() -> []
   injections-to-inject-tuples:
-    Injections(params) -> <pie-idtype-tuples; map(\(name, ty) -> (name, <p2j-ast-type-sig> ty)\)> params
+    Injections(params) -> <pie-idtype-tuples; map(\(valId, ty) -> (<p2j-valueId-name> valId, <p2j-ast-type-sig> ty)\)> params
 
   // p2j-ast-pie-func-impl-outputsig(|className):
   //   Pie type -> (Java Type, list of Java (data)class declaration AST nodes)

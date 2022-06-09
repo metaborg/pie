@@ -1,0 +1,4 @@
+module mb:pie:lang:test:variables:anonymous:multiAllAnonymousOutsideBlock
+
+func main_multiAllAnonymousOutsideBlock() -> (int*, string) =
+  val (_, _) = ([3], "nope")

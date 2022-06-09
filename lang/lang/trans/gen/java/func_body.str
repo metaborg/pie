@@ -416,6 +416,10 @@ rules // Control flow
 rules // Binding
 
   p2j-ast-exp:
+    ValDec(binder, exp) -> <try-p2j-ast-exp> exp
+    where
+      <p2j-ast-binder; map(?AnonymousValue())> binder
+  p2j-ast-exp:
     e@ValDec(binder, exp) -> result
     with
       pieTy                := <pie-ast-type> binder
@@ -435,63 +439,32 @@ rules // Binding
     ; resultExp            := <Snd> <try-p2j-ast-exp> UnitLit()
     ; result               := (stmts, resultExp)
 
-  // bind-tuples-to-assignments:
-  // (Pie Binder (Bind or TBind), Pie ExpressionType) -> (assignments, varName)
-  bind-tuples-to-ast-assignments:
-    (SingleBinder(bind), _) -> ([], <p2j-ast-bind> bind)
-
-  bind-tuples-to-ast-assignments:
-    (TupleBinder(binds), expTy) -> result
-    with
-      varIds         := <map(p2j-ast-bind)> binds
-    ; TupleType(tys) := expTy
-    ; javaTys        := <map(p2j-ast-type-sig)> tys
-    ; bindList       := <zip> (varIds, javaTys)
-    ; tmpVar         := <newname> "tmpTupleVar"
-    ; assignments    := <nmap-par(bind-tuple-to-ast | 1, tmpVar)> bindList
-    ; result         := (assignments, tmpVar)
-
-  // nmap that passes an extra parameter to the strategy
-  nmap-par(s : Int * c * a -> b | i, par) =
-    ?[] + [s(|i,par) | nmap-par(s | <inc> i, par)]
-
-  bind-tuple-to-ast(|i, tmpVar):
-    (varId, ty) -> LocVarDeclStm(LocalVarDecl(
-      [Final()]
-    , <java-classType-to-unannType> ty
-    , [ VariableDeclInit(
-          VariableDecl(Id(varId))
-        , InvokeQExp(ExpressionName(Id(tmpVar)), None(), Id($[component[i]]), [])
-        )
-      ]
-    ))
-
 rules // References
 
   p2j-ast-exp:
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id(varId)))> r)
+    r@Ref(ValueId(varId)) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id(varId)))> r)
     where
       LocalValKind() := <pie-ast-ref-prop(|"kind")> varId
 
   p2j-ast-exp:
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|Field(This(), Id(varId)))> r)
+    r@Ref(ValueId(varId)) -> ([], <p2j-ast-ref-add-transient-val(|Field(This(), Id(varId)))> r)
     where
       InjectedValKind() := <pie-ast-ref-prop(|"kind")> varId
 
   p2j-ast-exp:
-    r@Ref(varId) -> <error(|"value kind of declaration is set to parameter but function has 0 parameters")> r
+    r@Ref(ValueId(varId)) -> <error(|"value kind of declaration is set to parameter but function has 0 parameters")> r
     where
       InputValKind() := <pie-ast-ref-prop(|"kind")> varId
     ; 0 := <InputKind>
 
   p2j-ast-exp:
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id("input")))> r)
+    r@Ref(ValueId(varId)) -> ([], <p2j-ast-ref-add-transient-val(|ExpressionName(Id("input")))> r)
     where
       InputValKind() := <pie-ast-ref-prop(|"kind")> varId
     ; 1 := <InputKind>
 
   p2j-ast-exp:
-    r@Ref(varId) -> ([], <p2j-ast-ref-add-transient-val(|InvokeQExp(
+    r@Ref(ValueId(varId)) -> ([], <p2j-ast-ref-add-transient-val(|InvokeQExp(
       ExpressionName(Id("input")), None(), Id($[get_[varId]]), [])
     )> r)
     where

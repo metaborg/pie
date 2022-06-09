@@ -17,9 +17,10 @@ test name starts with number [[7foo() -> int]] parse fails
 test name dash [[foo-bar() -> int]]
 test name start with dash [[-bar() -> int]]
 test name ends with dash [[bar-() -> int]]
-test name underscore [[foo_bar() -> int]]
+test name contains underscore [[foo_bar() -> int]]
 test name start with underscore [[_foo() -> int]]
 test name ends with underscore [[foo_() -> int]]
+test name underscore only [[_() -> int]] parse fails
 test name everything [[-helloW0rld_I_am-a-function4() -> int]]
 
 // function type parameters
@@ -83,6 +84,11 @@ test param name with dash [[test(foo-bar: int) -> int]]
 test param name starts with dash [[test(-fuz: int) -> int]]
 test param name ends with dash [[test(fuz-: int) -> int]]
 test param name starts with dash [[test(-fuz: int) -> int]]
+test param anonymous name [[test(_: int) -> int]]
+  parse to FuncHead(_, _, Params([NParam(AnonymousValue(), _)]), _)
+test param anonymous name untyped [[test(_) -> int]]
+  parse to FuncHead(_, _, Params([Param(Wildcard(_))]), _)
+
 
 // function output types
 test missing return type [[test() -> ]] parse fails
