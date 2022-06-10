@@ -103,10 +103,11 @@ rules
 
   javaDataMemberOk : scope * scope * JavaDataMemb
   javaDataMembersOk maps javaDataMemberOk(*, *, list(*))
-  javaDataMemberOk(s, s_data, JavaFuncDef(func_head)) :-
+  javaDataMemberOk(s, s_data, JavaFuncDef(func_head@FuncHead(_, _, Params(params), _))) :-
     {s_func name ty}
-    typeOfFuncHead(s, s_data, func_head, JavaForeignMethodKind()) == (s_func, name, ty),
-    declareFunc(s_data, name, (s_func, ty), JavaForeignFuncKind()).
+    typeOfFuncHead(s, s_data, func_head) == (s_func, name, ty),
+    declareFunc(s_data, name, (s_func, ty), JavaForeignFuncKind()),
+    warnForUselessAnonymousParameters(params).
 
 
   getDataName : scope -> TYPEID
