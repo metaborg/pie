@@ -95,13 +95,13 @@ rules
     s_injections -P-> s_func,
     typeOfParams(s_func, s_injections, s_injections, params, InjectedValKind()) == _,
     try { params != [] } | warning $[Empty injections are useless and can be omitted] @inj,
-    warnForUnnamedInjections(params).
+    checkUnnamedInjections(params).
 
-    warnForUnnamedInjection : Param
-    warnForUnnamedInjections maps warnForUnnamedInjection(list(*))
-    warnForUnnamedInjection(p@Param(_)) :-
+    checkUnnamedInjection : Param
+    checkUnnamedInjections maps checkUnnamedInjection(list(*))
+    checkUnnamedInjection(p@Param(_)) :-
       false | error $[Injections must be named. This injection must be named or removed.] @p.
-    warnForUnnamedInjection(NParam(_, _)).
+    checkUnnamedInjection(NParam(_, _)).
 
   keyFuncOk : scope * PieKeyFunc
   optionalKeyFuncOk maps keyFuncOk(*, list(*))
