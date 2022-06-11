@@ -14,18 +14,18 @@ imports
 rules
 
   funcDefOk : scope * FuncDef
-  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(_, type_params, _, _), impl)) :-
-    {name s_func out_ty impl_kind ty}
-    typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, name, ty@FuncDefType(_, _, out_ty)),
+  funcDefOk(s_mod, func@FuncDef(func_head@FuncHead(name, type_params, _, _), impl)) :-
+    {s_func out_ty impl_kind ty}
+    typeOfFuncHead(s_mod, s_mod, func_head) == (s_func, ty@FuncDefType(_, _, out_ty)),
     declareFunc(s_mod, name, (s_func, ty), impl_kind),
     declareLocalFunc(s_mod, name, (s_func, ty)),
     funcImplOk(s_func, impl, func_head, out_ty) == impl_kind,
     @func.kind := impl_kind,
     @func.type := ty.
 
-  typeOfFuncHead : scope * scope * FuncHead -> (scope * string * TYPE)
+  typeOfFuncHead : scope * scope * FuncHead -> (scope * TYPE)
   typeOfFuncHead(s, s_parent, FuncHead(name, type_params, Params(params), out_ty_exp)) =
-    (s_func, name, FuncDefType(type_param_tys, param_tys, out_ty))
+    (s_func, FuncDefType(type_param_tys, param_tys, out_ty))
   :-
     new s_func,
     s_func -P-> s_parent,
