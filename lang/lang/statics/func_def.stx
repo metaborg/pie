@@ -101,6 +101,8 @@ rules
     checkUnnamedInjections maps checkUnnamedInjection(list(*))
     checkUnnamedInjection(p@Param(_)) :-
       false | error $[Injections must be named. This injection must be named or removed.] @p.
+    checkUnnamedInjection(NParam(av@AnonymousValue(), _)) :-
+      false | error $[Injections must be named. An anonymous value is not a proper name. This injection must be named or removed.] @av.
     checkUnnamedInjection(NParam(_, _)).
 
   keyFuncOk : scope * PieKeyFunc

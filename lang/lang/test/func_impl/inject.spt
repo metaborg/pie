@@ -29,9 +29,9 @@ test injections - one - unnamed [[
 ]] 1 error at #1
    error like "Injections must be named"
 test injections - one - anonymous [[
-  inject _ : int  in 3
-]] analysis succeeds
-   0 warnings // todo: should become a warning once issue #277 / pull #20 is merged
+  inject [[_]] : int  in 3
+]] 1 error at #1
+   error like "Injections must be named. An anonymous value is not a proper name"
 test injections - one - duplicate name with param - different types [[
   inject [[x]]: bool in 3
 ]] 1 error at #1
