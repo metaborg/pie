@@ -56,6 +56,13 @@ test anonymous parameter foreign task implementation [[
 ]] analysis succeeds
    1 warning at #1
    warning like "Anonymous parameter name can be omitted."
+test anonymous parameter method implementation [[
+  data Test = foreign java Test {
+    func test([[_]]: int) -> int
+  }
+]] analysis succeeds
+   1 warning at #1
+   warning like "Anonymous parameter name can be omitted."
 
 
 test anonymous parameter with unqualified type foreign java implementation [[
@@ -73,6 +80,13 @@ test anonymous parameter with unqualified type foreign task implementation [[
 ]] analysis succeeds
    1 warning at #1
    warning like "Anonymous parameter name can be omitted."
+test anonymous parameter with unqualified type method implementation [[
+  data Test = foreign java Test {
+    func test([[_]]: Fruit) -> int
+  }
+]] analysis succeeds
+   1 warning at #1
+   warning like "Anonymous parameter name can be omitted."
 
 test anonymous parameter with qualified type foreign java implementation [[
   func test([[_]]: test:func_def:Fruit) -> int = foreign java AnonVal#test
@@ -84,5 +98,11 @@ test anonymous parameter with qualified type foreign java constructor implementa
    0 warnings
 test anonymous parameter with qualified type foreign task implementation [[
   func test([[_]]: test:func_def:Fruit) -> int = foreign AnonVal
+]] analysis succeeds
+   0 warnings
+test anonymous parameter with qualified type method implementation [[
+  data Test = foreign java Test {
+    func test([[_]]: test:func_def:Fruit) -> int
+  }
 ]] analysis succeeds
    0 warnings

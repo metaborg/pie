@@ -1,0 +1,21 @@
+module func_impl/inject_syntax
+language pie
+
+fixture [[
+  module test:func_impl:inject
+
+  func test() -> int = [[...]]
+]]
+
+test injections omitted [[4]]
+test injections none [[inject in 4]] // warning only
+test injections single [[inject cparam: int in 4]]
+test injections two [[inject parse: TigerParse, analyze: TigerAnalyze in 4]]
+test injections three [[inject one: int, two: int, three: int in 4]]
+test injections qualified [[inject param: a:b:c:Type in 4]]
+test injections missing keyword inject [[cparam: int in 4]] parse fails
+test injections missing keyword in [[inject cparam: int 4]] parse fails
+test injections missing type [[inject param in 4]] // parsed, error in static semantics
+test injections missing name [[inject : a:b:c:Type in 4]] parse fails
+test injections no param after comma [[inject one: int,  in 4]] parse fails
+test injections no param before comma [[inject , two: bool in 4]] parse fails

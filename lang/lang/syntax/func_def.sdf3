@@ -18,6 +18,7 @@ context-free sorts
   Params
   FuncDef
   FuncImpl
+  PieFuncInjections
   PieKeyFunc
 
 context-free syntax // Function head
@@ -34,6 +35,9 @@ context-free syntax // Function definition
   FuncImpl.PieForeignFuncImpl  = <foreign <PIEQTYPEID>>
   FuncImpl.JavaForeignFuncImpl = <foreign java <JAVAQTYPEID>#<JAVAFUNCID>>
   FuncImpl.JavaForeignConstructorImpl = <foreign java constructor <JAVAQTYPEID>>
-  FuncImpl.PieFuncImpl         = <<PieFuncBody><PieKeyFunc?>>
-  
+  FuncImpl.PieFuncImpl         = <<PieFuncInjections><PieFuncBody><PieKeyFunc?>>
+
+  PieFuncInjections.NoInjections = []
+  PieFuncInjections.Injections = [inject [Params] in ]
+
   PieKeyFunc.PieKeyFunc = <@ <PieFuncBody>>

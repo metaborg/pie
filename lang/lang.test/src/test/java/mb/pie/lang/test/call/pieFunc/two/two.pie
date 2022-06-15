@@ -1,0 +1,4 @@
+module mb:pie:lang:test:call:pieFunc:two
+
+func main_two() -> int = helper_two()
+func helper_two() -> int = 2

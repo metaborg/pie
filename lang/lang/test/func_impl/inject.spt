@@ -1,0 +1,67 @@
+module func_impl/inject
+language pie
+fixture [[
+  module test:func_impl:inject
+
+  data Type[T] = foreign java Type {
+    func method[A](a: A) -> T
+  }
+
+  func test(x: int, y: bool) -> int = [[...]]
+]]
+
+test injections - omitted [[
+  4
+]] analysis succeeds
+test injections - zero [[
+  [[inject in]] 5
+]] 1 warning at #1
+   warning like "Empty injections"
+test injections - one - unused [[
+  inject cparam: int in 8
+]] analysis succeeds
+test injections - one - used [[
+  inject [[cparam]]: int in [[cparam]]
+]] analysis succeeds
+   resolve #2 to #1
+test injections - one - unnamed [[
+  inject [[int]]  in 3
+]] 1 error at #1
+   error like "Injections must be named"
+test injections - one - anonymous [[
+  inject [[_]] : int  in 3
+]] 1 error at #1
+   error like "Injections must be named. An anonymous value is not a proper name"
+test injections - one - duplicate name with param - different types [[
+  inject [[x]]: bool in 3
+]] 1 error at #1
+   error like "Duplicate definition of value" at #1
+test injections - one - duplicate name with param - same type [[
+  inject [[y]]: bool in 3
+]] 1 error at #1
+   error like "Duplicate definition of value" at #1
+test injections - one - custom datatype [[
+  inject param: [[Type]][int] in 3
+]] analysis succeeds
+    resolve #1
+test injections - call method [[
+  inject  [[param]]: [[Type]][int] in [[param]].[[method]][bool](true)
+]] analysis succeeds
+    resolve #2
+    resolve #3 to #1
+    resolve #4
+test injections - one - qualified [[
+  inject param: test:func_impl:inject:[[Type]][string] in 3
+]] analysis succeeds
+    resolve #1
+
+test injections - two [[
+  inject  [[value]]: int, [[flag]]: bool in
+    if (![[flag]]) [[value]] else 5
+]] analysis succeeds
+   resolve #3 to #2
+   resolve #4 to #1
+test injections - two - duplicate names [[
+  inject  [[p]]: int, [[p]]: bool in 32
+]] 2 errors at #1, #2
+   error like "Duplicate definition of value" at #1, #2

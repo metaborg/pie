@@ -1,0 +1,3 @@
+module mb:pie:lang:test:funcDef:contextParams:omitted
+
+func main_omitted() -> int = -1

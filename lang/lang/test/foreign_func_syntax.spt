@@ -11,7 +11,8 @@ test foreign task qualified nested thrice [[ foreign org.example.display.Print ]
 test foreign task uncapitalized [[ foreign example.defenestrate ]] parse succeeds
 test foreign task random capitalization [[ foreign ORG.ExamPle.tuRtLesAllTHEWayDoWN ]] parse succeeds
 test foreign task snake_case [[ foreign org.example.Class_with_underscores ]] parse succeeds
-test foreign task missing identifier [[ foreign ]] parse to PieFuncImpl(Ref(ValueId("foreign")), None())
+test foreign task missing identifier [[ foreign ]]
+  parse to PieFuncImpl(NoInjections(), Ref(ValueId("foreign")), None())
 test foreign task missing keyword [[ org.example.DoSomething ]] parse fails
 test foreign task identifier starts with period [[ foreign .example.DoSomething ]] parse fails
 test foreign task identifier ends with period [[ foreign org.example. ]] parse fails
