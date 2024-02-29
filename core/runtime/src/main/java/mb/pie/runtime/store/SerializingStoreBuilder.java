@@ -89,7 +89,7 @@ public class SerializingStoreBuilder<S extends Store & Serializable> {
     }
 
     public SerializingStoreBuilder<S> withLoggingDeserializeFailHandler(LoggerFactory loggerFactory) {
-        this.deserializeFailHandler = e -> loggerFactory.create(SerializingStore.class).error("Deserializing store failed", e);
+        this.deserializeFailHandler = e -> loggerFactory.create(SerializingStore.class).info("Deserializing store failed. " + e.getMessage());
         return this;
     }
 
