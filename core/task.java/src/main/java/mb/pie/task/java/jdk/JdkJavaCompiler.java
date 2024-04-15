@@ -157,7 +157,10 @@ public class JdkJavaCompiler implements JavaCompiler {
         }
         final @Nullable Region region;
         if(diagnostic.getPosition() != Diagnostic.NOPOS) {
-            region = Region.fromOffsets((int)diagnostic.getStartPosition(), (int)diagnostic.getEndPosition(), (int)diagnostic.getLineNumber());
+            int startPosition = (int)diagnostic.getStartPosition();
+            int endPosition = (int) Math.max(diagnostic.getEndPosition(), startPosition); // sometimes end position is unknown, so use start position
+            int lineNumber = (int)diagnostic.getLineNumber();
+            region = Region.fromOffsets(startPosition, endPosition, lineNumber);
         } else {
             region = null;
         }
