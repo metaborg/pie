@@ -6,10 +6,6 @@ pluginManagement {
   }
 }
 
-if(org.gradle.util.VersionNumber.parse(gradle.gradleVersion).major < 6) {
-  enableFeaturePreview("GRADLE_METADATA")
-}
-
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
   include(id)
   project(":$id").projectDir = file(path)
