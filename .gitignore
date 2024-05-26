@@ -9,7 +9,7 @@ hs_err_pid*
 # Gradle
 **/.gradle
 **/build/
-!.gradlew/wrapper/gradle-wrapper.jar
+!gradle/wrapper/*
 
 # IntelliJ
 **/.idea
