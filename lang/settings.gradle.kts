@@ -1,21 +1,21 @@
 rootProject.name = "pie.lang.root"
 
 pluginManagement {
-  repositories {
-    maven("https://artifacts.metaborg.org/content/groups/public/")
-  }
+    repositories {
+        maven("https://artifacts.metaborg.org/content/groups/public/")
+    }
 }
 
 
 // Only include composite builds when this is the root project (it has no parent), for example when running Gradle tasks
 // from the command-line. Otherwise, the parent project (pie.root) will include these composite builds.
-if(gradle.parent == null) {
-  includeBuild("../core")
+if (gradle.parent == null) {
+    includeBuild("../core")
 }
 
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
-  include(id)
-  project(":$id").projectDir = file(path)
+    include(id)
+    project(":$id").projectDir = file(path)
 }
 
 includeProject("lang")

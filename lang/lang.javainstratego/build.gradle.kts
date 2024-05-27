@@ -1,3 +1,3 @@
 plugins {
-  id("org.metaborg.spoofax.gradle.langspec")
+    id("org.metaborg.spoofax.gradle.langspec")
 }

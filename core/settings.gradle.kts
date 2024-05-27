@@ -1,14 +1,14 @@
 rootProject.name = "pie.core.root"
 
 pluginManagement {
-  repositories {
-    maven("https://artifacts.metaborg.org/content/groups/public/")
-  }
+    repositories {
+        maven("https://artifacts.metaborg.org/content/groups/public/")
+    }
 }
 
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
-  include(id)
-  project(":$id").projectDir = file(path)
+    include(id)
+    project(":$id").projectDir = file(path)
 }
 
 includeProject("depconstraints")
