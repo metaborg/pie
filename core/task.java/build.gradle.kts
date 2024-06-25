@@ -25,11 +25,11 @@ val classPathInjection = configurations.create("classPathInjection")
 dependencies {
     classPathInjection("org.metaborg:log.api:0.3.0")
     classPathInjection("org.metaborg:log.backend.slf4j:0.3.0")
-    classPathInjection("org.immutables:value-annotations:2.8.2")
+    classPathInjection("org.immutables:value-annotations:2.10.1")
 }
 val annotationProcessorPathInjection = configurations.create("annotationProcessorPathInjection")
 dependencies {
-    annotationProcessorPathInjection("org.immutables:value:2.8.2")
+    annotationProcessorPathInjection("org.immutables:value:2.10.1")
 }
 
 tasks.test {

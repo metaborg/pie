@@ -9,7 +9,7 @@ val commonVersion = "0.11.0"
 
 val checkerframeworkVersion = "3.16.0"
 
-val immutablesVersion = "2.8.2"
+val immutablesVersion = "2.10.1"
 val daggerVersion = "2.36" // Do not upgrade, causes Gradle/Kotlin compatibility issues due to upgrade to Kotlin 1.5.
 
 dependencies {
