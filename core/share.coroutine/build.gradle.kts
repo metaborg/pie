@@ -3,11 +3,6 @@ plugins {
     id("org.metaborg.gradle.config.junit-testing")
 }
 
-metaborg {
-    kotlinApiVersion = "1.3"
-    kotlinLanguageVersion = "1.3"
-}
-
 dependencies {
     api(platform(project(":pie.depconstraints")))
 
