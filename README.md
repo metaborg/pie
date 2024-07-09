@@ -1,22 +1,37 @@
-[![GitHub license](https://img.shields.io/github/license/metaborg/pie)](https://github.com/metaborg/pie/blob/master/LICENSE)
-[![GitHub actions](https://img.shields.io/github/workflow/status/metaborg/pie/Build?label=GitHub%20actions)](https://github.com/metaborg/pie/actions/workflows/build.yml)
-[![Jenkins](https://img.shields.io/jenkins/build/https/buildfarm.metaborg.org/job/metaborg/job/pie/job/master?label=Jenkins)](https://buildfarm.metaborg.org/job/metaborg/job/pie/job/master/lastBuild)
-[![Jenkins Tests](https://img.shields.io/jenkins/tests/https/buildfarm.metaborg.org/job/metaborg/job/pie/job/master?label=Jenkins%20tests)](https://buildfarm.metaborg.org/job/metaborg/job/pie/job/master/lastBuild/testReport/)
-[![PIE API](https://img.shields.io/maven-metadata/v?label=pie.api&metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.api%2Fmaven-metadata.xml)](https://mvnrepository.com/artifact/org.metaborg/pie.api?repo=metaborg-releases)
-[![PIE Runtime](https://img.shields.io/maven-metadata/v?label=pie.runtime&metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.runtime%2Fmaven-metadata.xml)](https://mvnrepository.com/artifact/org.metaborg/pie.runtime?repo=metaborg-releases)
-
-# PIE: Pipelines for Interactive Environments
+# Metaborg PIE
+[![Build][github-badge:build]][github:build]
+[![License][license-badge]][license]
+[![GitHub Release][github-badge:release]][github:release]
 
 PIE is an API and runtime for developing interactive software development pipelines and incremental build scripts.
 
-## Questions and Issues
+| Artifact                               | Latest Release                                                                                                |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `org.metaborg:pie.api`                 | [![org.metaborg:pie.api][maven-badge:pie.api]][maven:pie.api]                                                 |
+| `org.metaborg:pie.api.test`            | [![org.metaborg:pie.api.test][maven-badge:pie.api.test]][maven:pie.api.test]                                  |
+| `org.metaborg:pie.dagger`              | [![org.metaborg:pie.dagger][maven-badge:pie.dagger]][maven:pie.dagger]                                        |
+| `org.metaborg:pie.graph`               | [![org.metaborg:pie.graph][maven-badge:pie.graph]][maven:pie.graph]                                           |
+| `org.metaborg:pie.runtime`             | [![org.metaborg:pie.runtime][maven-badge:pie.runtime]][maven:pie.runtime]                                     |
+| `org.metaborg:pie.runtime.test`        | [![org.metaborg:pie.runtime.test][maven-badge:pie.runtime.test]][maven:pie.runtime.test]                      |
+| `org.metaborg:pie.serde.fst`           | [![org.metaborg:pie.serde.fst][maven-badge:pie.serde.fst]][maven:pie.serde.fst]                               |
+| `org.metaborg:pie.serde.kryo`          | [![org.metaborg:pie.serde.kryo][maven-badge:pie.serde.kryo]][maven:pie.serde.kryo]                            |
+| `org.metaborg:pie.share.coroutine`     | [![org.metaborg:pie.share.coroutine][maven-badge:pie.share.coroutine]][maven:pie.share.coroutine]             |
+| `org.metaborg:pie.store.lmdb`          | [![org.metaborg:pie.store.lmdb][maven-badge:pie.store.lmdb]][maven:pie.store.lmdb]                            |
+| `org.metaborg:pie.task.archive`        | [![org.metaborg:pie.task.archive][maven-badge:pie.task.archive]][maven:pie.task.archive]                      |
+| `org.metaborg:pie.task.java`           | [![org.metaborg:pie.task.java][maven-badge:pie.task.java]][maven:pie.task.java]                               |
+| `org.metaborg:pie.task.java.ecj`       | [![org.metaborg:pie.task.java.ecj][maven-badge:pie.task.java.ecj]][maven:pie.task.java.ecj]                   |
+| `org.metaborg:pie.taskdefs.guice`      | [![org.metaborg:pie.taskdefs.guice][maven-badge:pie.taskdefs.guice]][maven:pie.taskdefs.guice]                |
+| `org.metaborg:pie.lang`                | [![org.metaborg:pie.lang][maven-badge:pie.lang]][maven:pie.lang]                                              |
+| `org.metaborg:pie.lang.runtime.java`   | [![org.metaborg:pie.lang.runtime.java][maven-badge:pie.lang.runtime.java]][maven:pie.lang.runtime.java]       |
+| `org.metaborg:pie.lang.runtime.kotlin` | [![org.metaborg:pie.lang.runtime.kotlin][maven-badge:pie.lang.runtime.kotlin]][maven:pie.lang.runtime.kotlin] |
+| `org.metaborg:pie.lang.test`           | [![org.metaborg:pie.lang.test][maven-badge:pie.lang.test]][maven:pie.lang.test]                               |
 
+
+## Questions and Issues
 If you have a question, enhancement, feature request, or bug report, please search the [issue tracker](https://github.com/metaborg/pie/issues) for a solution or workaround, or create a new issue.
 
 ## User's guide
-
 ### Installation
-
 PIE is deployed as a set of Maven artifacts to the MetaBorg artifact server, which you can consume with Maven or Gradle.
 To be able to get artifacts from the MetaBorg artifact servers, add the following to your `build.gradle` file:
 
@@ -65,16 +80,16 @@ or add the following to your Maven `pom.xml` file:
 </repositories>
 ```
 
-To depend on version `0.6.0` of the runtime to build and execute pipelines, add the following Gradle dependency to your `build.gradle` file:
+To depend on a specific version of the runtime to build and execute pipelines, add the following Gradle dependency to your `build.gradle` file:
 
 ```gradle
-implementation 'org.metaborg:pie.runtime:0.6.0'
+implementation 'org.metaborg:pie.runtime:<version>'
 ```
 
 or `build.gradle.kts` file:
 
 ```gradle.kts
-implementation("org.metaborg:pie.runtime:0.6.0")
+implementation("org.metaborg:pie.runtime:<version>")
 ```
 
 or add the following to your Maven `pom.xml` file:
@@ -90,7 +105,6 @@ or add the following to your Maven `pom.xml` file:
 The latest version is listed at the top of this file.
 
 ### Components
-
 PIE consists of several components:
 
 * [pie.api](core/api): The PIE API for developing reusable interactive pipelines or incremental build scripts
@@ -100,53 +114,55 @@ PIE consists of several components:
 * [task.java](core/task.java): Java compilation tasks
 * [task.archive](core/task.archive): ZIP/Jar archiving and unarchiving tasks
 
-## Development
 
-This section details the development of this project.
+## License
+Copyright 2018-2024 Delft University of Technology
 
-### Building
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at <https://www.apache.org/licenses/LICENSE-2.0>
 
-The `master` branch of this repository can be built in isolation.
-However, the `develop` branch must be built via the [devenv repository](https://github.com/metaborg/devenv), due to it depending on development versions of other projects.
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an **"as is" basis, without warranties or conditions of any kind**, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-This repository is built with Gradle, which requires a JDK of at least version 8 to be installed. Higher versions may work depending on [which version of Gradle is used](https://docs.gradle.org/current/userguide/compatibility.html).
+[github-badge:build]: https://img.shields.io/github/actions/workflow/status/metaborg/pie/build.yaml
+[github:build]: https://github.com/metaborg/pie/actions
+[license-badge]: https://img.shields.io/github/license/metaborg/pie
+[license]: https://github.com/metaborg/pie/blob/master/LICENSE
+[github-badge:release]: https://img.shields.io/github/v/release/metaborg/pie
+[github:release]: https://github.com/metaborg/pie/releases
 
-To build this repository, run `./gradlew buildAll` on Linux and macOS, or `gradlew buildAll` on Windows.
+[maven:pie.api]:                  https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.api~~~
+[maven:pie.api.test]:             https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.api.test~~~
+[maven:pie.dagger]:               https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.dagger~~~
+[maven:pie.graph]:                https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.graph~~~
+[maven:pie.runtime]:              https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.runtime~~~
+[maven:pie.runtime.test]:         https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.runtime.test~~~
+[maven:pie.serde.fst]:            https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.serde.fst~~~
+[maven:pie.serde.kryo]:           https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.serde.kryo~~~
+[maven:pie.share.coroutine]:      https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.share.coroutine~~~
+[maven:pie.store.lmdb]:           https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.store.lmdb~~~
+[maven:pie.task.archive]:         https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.task.archive~~~
+[maven:pie.task.java]:            https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.task.java~~~
+[maven:pie.task.java.ecj]:        https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.task.java.ecj~~~
+[maven:pie.taskdefs.guice]:       https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.taskdefs.guice~~~
+[maven:pie.lang]:                 https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.lang~~~
+[maven:pie.lang.runtime.java]:    https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.lang.runtime.java~~~
+[maven:pie.lang.runtime.kotlin]:  https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.lang.runtime.kotlin~~~
+[maven:pie.lang.test]:            https://artifacts.metaborg.org/#nexus-search;gav~org.metaborg~pie.lang.test~~~
 
-### Automated Builds
-
-This repository is built on:
-- [GitHub actions](https://github.com/metaborg/pie/actions/workflows/build.yml) via `.github/workflows/build.yml`. Only the `master` branch is built here.
-- Our [Jenkins buildfarm](https://buildfarm.metaborg.org/view/Devenv/job/metaborg/job/pie/) via `Jenkinsfile` which uses our [Jenkins pipeline library](https://github.com/metaborg/jenkins.pipeline/).
-
-### Publishing
-
-This repository is published via Gradle and Git with the [Gitonium](https://github.com/metaborg/gitonium) and [Gradle Config](https://github.com/metaborg/gradle.config) plugins.
-It is published to our [artifact server](https://artifacts.metaborg.org) in the [releases repository](https://artifacts.metaborg.org/content/repositories/releases/).
-
-First update `CHANGELOG.md` with your changes, create a new release entry, and update the release links at the bottom of the file.
-
-Then, commit your changes and merge them from the `develop` branch into the `master` branch, and ensure that you depend on only released versions of other projects (i.e., no `SNAPSHOT` or development versions).
-All dependencies are managed in the `core/depconstraints/build.gradle.kts` file.
-
-To make a new release, create a tag in the form of `release-*` where `*` is the version of the release you'd like to make.
-Then first build the project with `./gradlew buildAll` to check if building succeeds.
-
-If you want our buildfarm to publish this release, just push the tag you just made, and our buildfarm will build the repository and publish the release.
-
-If you want to publish this release locally, you will need an account with write access to our artifact server, and tell Gradle about this account.
-Create the `~/.gradle/gradle.properties` file if it does not exist.
-Add the following lines to it, replacing `<username>` and `<password>` with those of your artifact server account:
-```
-publish.repository.metaborg.artifacts.username=<username>
-publish.repository.metaborg.artifacts.password=<password>
-```
-Then run `./gradlew publishAll` to publish all built artifacts.
-You should also push the release tag you made such that this release is reproducible by others.
-
-## Copyright and License
-
-Copyright © 2018-2022 Delft University of Technology
-
-The files in this repository are licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-You may use the files in this repository in compliance with the license.
+[maven-badge:pie.api]:                  https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.api%2Fmaven-metadata.xml
+[maven-badge:pie.api.test]:             https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.api.test%2Fmaven-metadata.xml
+[maven-badge:pie.dagger]:               https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.dagger%2Fmaven-metadata.xml
+[maven-badge:pie.graph]:                https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.graph%2Fmaven-metadata.xml
+[maven-badge:pie.runtime]:              https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.runtime%2Fmaven-metadata.xml
+[maven-badge:pie.runtime.test]:         https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.runtime.test%2Fmaven-metadata.xml
+[maven-badge:pie.serde.fst]:            https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.serde.fst%2Fmaven-metadata.xml
+[maven-badge:pie.serde.kryo]:           https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.serde.kryo%2Fmaven-metadata.xml
+[maven-badge:pie.share.coroutine]:      https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.share.coroutine%2Fmaven-metadata.xml
+[maven-badge:pie.store.lmdb]:           https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.store.lmdb%2Fmaven-metadata.xml
+[maven-badge:pie.task.archive]:         https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.task.archive%2Fmaven-metadata.xml
+[maven-badge:pie.task.java]:            https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.task.java%2Fmaven-metadata.xml
+[maven-badge:pie.task.java.ecj]:        https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.task.java.ecj%2Fmaven-metadata.xml
+[maven-badge:pie.taskdefs.guice]:       https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.taskdefs.guice%2Fmaven-metadata.xml
+[maven-badge:pie.lang]:                 https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.lang%2Fmaven-metadata.xml
+[maven-badge:pie.lang.runtime.java]:    https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.lang.runtime.java%2Fmaven-metadata.xml
+[maven-badge:pie.lang.runtime.kotlin]:  https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.lang.runtime.kotlin%2Fmaven-metadata.xml
+[maven-badge:pie.lang.test]:            https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fartifacts.metaborg.org%2Fcontent%2Frepositories%2Freleases%2Forg%2Fmetaborg%2Fpie.lang.test%2Fmaven-metadata.xml
