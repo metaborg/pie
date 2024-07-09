@@ -6,6 +6,12 @@ pluginManagement {
     }
 }
 
+
+// This downloads an appropriate JVM if not already available
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+}
+
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
     include(id)
     project(":$id").projectDir = file(path)
