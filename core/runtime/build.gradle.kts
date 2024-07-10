@@ -2,6 +2,8 @@ plugins {
     id("org.metaborg.gradle.config.java-library")
 }
 
+group = "org.metaborg"
+
 dependencies {
     api(platform(project(":pie.depconstraints")))
 

@@ -4,6 +4,8 @@ plugins {
     id("org.metaborg.spoofax.gradle.project")
 }
 
+group = "org.metaborg"
+
 spoofaxProject {
     inputIncludePatterns.add("**/*.pie")
     outputIncludePatterns.add("**/*.java")

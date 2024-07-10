@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api(platform(project(":pie.depconstraints")))
+group = "org.metaborg"
 
     api(project(":pie.api"))
     api("com.google.inject:guice:4.2.0")

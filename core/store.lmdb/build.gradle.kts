@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     api(platform(project(":pie.depconstraints")))
+group = "org.metaborg"
 
     api(project(":pie.api"))
     implementation(project(":pie.runtime"))

@@ -3,6 +3,8 @@ plugins {
     id("org.metaborg.gradle.config.junit-testing")
 }
 
+group = "org.metaborg"
+
 dependencies {
     api(platform(project(":pie.depconstraints")))
     annotationProcessor(platform(project(":pie.depconstraints")))

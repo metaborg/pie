@@ -7,6 +7,8 @@ plugins {
     id("ru.vyarus.use-python") version "2.3.0"
 }
 
+group = "org.metaborg"
+
 dependencies {
     val jmhVersion = "1.26"
     val spoofax3Version = "0.8.0"

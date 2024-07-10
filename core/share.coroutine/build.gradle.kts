@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api(platform(project(":pie.depconstraints")))
+group = "org.metaborg"
 
     api(project(":pie.api"))
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")

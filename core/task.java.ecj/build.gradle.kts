@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(platform(project(":pie.depconstraints")))
+group = "org.metaborg"
 
     api(project(":pie.task.java"))
 
