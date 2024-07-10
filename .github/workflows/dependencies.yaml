@@ -1,0 +1,11 @@
+---
+name: 'Submit Dependencies'
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    uses: metaborg/actions/.github/workflows/gradle-dependencies.yaml@main
