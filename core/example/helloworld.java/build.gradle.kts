@@ -1,6 +1,10 @@
 plugins {
-    id("org.metaborg.gradle.config.java-application")
+    java
+    application
+    id("org.metaborg.convention.java")
 }
+
+group = "org.metaborg"
 
 application {
     mainClass.set("mb.pie.example.helloworld.java.Main")
@@ -13,9 +17,6 @@ dependencies {
     compileOnly(libs.checkerframework.android)
 }
 
-metaborg {
-    javaCreatePublication = false // Do not publish benchmark.
-}
 tasks {
     // Disable currently unused distribution tasks.
     distZip.configure { enabled = false }

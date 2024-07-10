@@ -1,6 +1,8 @@
 plugins {
-    id("org.metaborg.gradle.config.java-library")
-    id("org.metaborg.gradle.config.junit-testing")
+    `java-library`
+    `maven-publish`
+    id("org.metaborg.convention.java")
+    id("org.metaborg.convention.maven-publish")
 }
 
 group = "org.metaborg"
@@ -21,6 +23,7 @@ dependencies {
     annotationProcessor(libs.immutables.value)
 
     testImplementation(project(":pie.runtime"))
+    testImplementation(libs.junit)
     testImplementation(libs.jimfs)
     testCompileOnly(libs.checkerframework.android)
 
@@ -46,6 +49,19 @@ tasks.test {
         lifecycle {
             events.add(org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_OUT)
             events.add(org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR)
+        }
+    }
+}
+
+mavenPublishConvention {
+    repoOwner.set("metaborg")
+    repoName.set("pie")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
         }
     }
 }

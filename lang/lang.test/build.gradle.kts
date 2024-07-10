@@ -1,6 +1,8 @@
 plugins {
-    id("org.metaborg.gradle.config.java-library")
-    id("org.metaborg.gradle.config.junit-testing")
+    `java-library`
+    `maven-publish`
+    id("org.metaborg.convention.java")
+    id("org.metaborg.convention.maven-publish")
     id("org.metaborg.spoofax.gradle.project")
 }
 
@@ -27,6 +29,7 @@ dependencies {
     testImplementation(platform(libs.metaborg.resource.api))
     testImplementation(libs.metaborg.pie.runtime)
     testImplementation(libs.metaborg.pie.dagger)
+    testImplementation(libs.junit)
 
     testImplementation(project(":pie.lang.runtime.java"))
 }
@@ -45,6 +48,19 @@ afterEvaluate {
     tasks.named("spoofaxBuild").configure {
         doFirst {
             project.file(pieGenSourcesDir).mkdirs()
+        }
+    }
+}
+
+mavenPublishConvention {
+    repoOwner.set("metaborg")
+    repoName.set("pie")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
         }
     }
 }

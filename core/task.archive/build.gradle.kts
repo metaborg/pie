@@ -1,6 +1,8 @@
 plugins {
-    id("org.metaborg.gradle.config.java-library")
-    id("org.metaborg.gradle.config.junit-testing")
+    `java-library`
+    `maven-publish`
+    id("org.metaborg.convention.java")
+    id("org.metaborg.convention.maven-publish")
 }
 
 group = "org.metaborg"
@@ -12,5 +14,19 @@ dependencies {
 
     testImplementation(project(":pie.runtime"))
     testImplementation(libs.jimfs)
+    testImplementation(libs.junit)
     testCompileOnly(libs.checkerframework.android)
+}
+
+mavenPublishConvention {
+    repoOwner.set("metaborg")
+    repoName.set("pie")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
 }
