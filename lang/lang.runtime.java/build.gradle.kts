@@ -2,13 +2,11 @@ plugins {
     id("org.metaborg.gradle.config.java-library")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
 group = "org.metaborg"
 
 dependencies {
-    api(platform(compositeBuild("pie.depconstraints")))
+    api(platform(libs.metaborg.platform))
+    api(libs.metaborg.pie.api)
 
-    api(compositeBuild("pie.api"))
-
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 }

@@ -6,12 +6,10 @@ plugins {
 group = "org.metaborg"
 
 dependencies {
-    api(platform(project(":pie.depconstraints")))
-
     api(project(":pie.api"))
-    api("com.esotericsoftware.kryo:kryo5:5.0.0")
+    api(libs.kryo)
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 }
 
 tasks.test {

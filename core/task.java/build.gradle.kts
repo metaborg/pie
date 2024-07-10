@@ -5,33 +5,31 @@ plugins {
 
 group = "org.metaborg"
 
-dependencies {
-    api(platform(project(":pie.depconstraints")))
-    annotationProcessor(platform(project(":pie.depconstraints")))
-
-    api(project(":pie.api"))
-    api("org.metaborg:common")
-
-    compileOnly("org.checkerframework:checker-qual-android")
-    compileOnly("org.immutables:value-annotations")
-
-    annotationProcessor("org.immutables:value")
-
-    testImplementation(project(":pie.runtime"))
-    testImplementation("com.google.jimfs:jimfs:1.1")
-    testCompileOnly("org.checkerframework:checker-qual-android")
-}
-
 // Additional dependencies which are injected into tests.
 val classPathInjection = configurations.create("classPathInjection")
-dependencies {
-    classPathInjection("org.metaborg:log.api:0.3.0")
-    classPathInjection("org.metaborg:log.backend.slf4j:0.3.0")
-    classPathInjection("org.immutables:value-annotations:2.10.1")
-}
 val annotationProcessorPathInjection = configurations.create("annotationProcessorPathInjection")
+
 dependencies {
-    annotationProcessorPathInjection("org.immutables:value:2.10.1")
+    api(platform(libs.metaborg.platform))
+    api(libs.metaborg.common)
+
+    api(project(":pie.api"))
+
+    compileOnly(libs.checkerframework.android)
+    compileOnly(libs.immutables.value.annotations)
+
+    annotationProcessor(libs.immutables.value)
+
+    testImplementation(project(":pie.runtime"))
+    testImplementation(libs.jimfs)
+    testCompileOnly(libs.checkerframework.android)
+
+    classPathInjection(platform(libs.metaborg.platform))
+    classPathInjection(libs.metaborg.log.api)
+    classPathInjection(libs.metaborg.log.backend.slf4j)
+    classPathInjection(libs.immutables.value.annotations)
+
+    annotationProcessorPathInjection(libs.immutables.value)
 }
 
 tasks.test {

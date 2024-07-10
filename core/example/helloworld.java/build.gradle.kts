@@ -7,12 +7,10 @@ application {
 }
 
 dependencies {
-    implementation(platform(project(":pie.depconstraints")))
-
     implementation(project(":pie.runtime"))
     implementation(project(":pie.taskdefs.guice"))
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 }
 
 metaborg {

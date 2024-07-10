@@ -2,15 +2,14 @@ plugins {
     id("org.metaborg.gradle.config.java-library")
 }
 
-dependencies {
-    api(platform(project(":pie.depconstraints")))
 group = "org.metaborg"
 
+dependencies {
     api(project(":pie.task.java"))
 
-    api("org.eclipse.jdt:org.eclipse.jdt.compiler.tool:1.2.1100")
-    api("org.eclipse.jdt:org.eclipse.jdt.compiler.apt:1.3.1200")
-    api("org.eclipse.jdt:org.eclipse.jdt.core:3.25.0")
+    api(libs.eclipse.jdt.core)
+    api(libs.eclipse.jdt.compiler.tool)
+    api(libs.eclipse.jdt.compiler.apt)
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 }

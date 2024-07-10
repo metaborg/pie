@@ -6,18 +6,16 @@ plugins {
 group = "org.metaborg"
 
 dependencies {
-    api(platform(project(":pie.depconstraints")))
-    annotationProcessor(platform(project(":pie.depconstraints")))
-    testAnnotationProcessor(platform(project(":pie.depconstraints")))
+    api(platform(libs.metaborg.platform))
+    api(libs.metaborg.log.dagger)
+    api(libs.metaborg.resource.dagger)
 
     api(project(":pie.api"))
-    api("org.metaborg:log.dagger")
-    api("org.metaborg:resource.dagger")
-    api("com.google.dagger:dagger")
+    api(libs.dagger)
 
-    annotationProcessor("com.google.dagger:dagger-compiler")
-    compileOnly("org.checkerframework:checker-qual-android")
+    annotationProcessor(libs.dagger.compiler)
+    compileOnly(libs.checkerframework.android)
 
     testImplementation(project(":pie.runtime"))
-    testAnnotationProcessor("com.google.dagger:dagger-compiler")
+    testAnnotationProcessor(libs.dagger.compiler)
 }

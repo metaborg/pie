@@ -2,12 +2,12 @@ plugins {
     id("org.metaborg.gradle.config.java-library")
 }
 
-dependencies {
-    api(platform(project(":pie.depconstraints")))
 group = "org.metaborg"
 
-    api("org.metaborg:resource")
-    api("org.metaborg:log.api")
+dependencies {
+    api(platform(libs.metaborg.platform))
+    api(libs.metaborg.resource.api)
+    api(libs.metaborg.log.api)
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 }

@@ -3,35 +3,29 @@ import ru.vyarus.gradle.plugin.python.task.PythonTask
 plugins {
     id("org.metaborg.gradle.config.root-project") version "0.5.6"
     id("org.metaborg.gradle.config.java-application") version "0.5.6"
-    id("org.metaborg.gitonium") version "1.2.0"
+    alias(libs.plugins.gitonium)
     id("ru.vyarus.use-python") version "2.3.0"
 }
 
 group = "org.metaborg"
 
 dependencies {
-    val jmhVersion = "1.26"
-    val spoofax3Version = "0.8.0"
-    fun compositeBuild(name: String) = "$group:$name:$version"
+    implementation(platform(libs.metaborg.platform))
 
-    implementation(platform(compositeBuild("pie.depconstraints")))
+    implementation(libs.metaborg.pie.runtime)
+    implementation(libs.metaborg.pie.store.lmdb)
+    implementation(libs.metaborg.pie.serde.kryo)
+    implementation(libs.metaborg.pie.task.archive)
+    implementation(libs.metaborg.log.backend.slf4j)
+    implementation(libs.spoofax3.lwb.compiler.dagger)
 
-    implementation("org.openjdk.jmh:jmh-core:$jmhVersion")
+    implementation(libs.jmh.core)
+    implementation(libs.jimfs)
+    implementation(libs.slf4j.nop)
+    //implementation(libs.slf4j.simple)
 
-    implementation(compositeBuild("pie.runtime"))
-    implementation(compositeBuild("pie.store.lmdb"))
-    implementation(compositeBuild("pie.serde.kryo"))
-    implementation(compositeBuild("pie.task.archive"))
-
-    implementation("org.metaborg:spoofax.lwb.compiler.dagger:$spoofax3Version")
-
-    implementation("com.google.jimfs:jimfs")
-    implementation("org.metaborg:log.backend.slf4j")
-    implementation("org.slf4j:slf4j-nop:1.7.30")
-    //implementation("org.slf4j:slf4j-simple:1.7.30")
-
-    compileOnly("org.checkerframework:checker-qual-android")
-    annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion")
+    compileOnly(libs.checkerframework.android)
+    annotationProcessor(libs.jmh.generator.annprocess)
 }
 
 application {

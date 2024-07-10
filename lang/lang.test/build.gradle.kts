@@ -11,27 +11,23 @@ spoofaxProject {
     outputIncludePatterns.add("**/*.java")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
-
 dependencies {
-    api(platform(compositeBuild("pie.depconstraints")))
-    annotationProcessor(platform(compositeBuild("pie.depconstraints")))
-    testAnnotationProcessor(platform(compositeBuild("pie.depconstraints")))
+    api(platform(libs.metaborg.platform))
+    compileLanguage(libs.metaborg.pie.lang)
 
-    api("com.google.dagger:dagger")
-    annotationProcessor("com.google.dagger:dagger-compiler")
+    api(libs.dagger)
+    annotationProcessor(libs.dagger.compiler)
 
-    compileLanguage(compositeBuild("pie.lang"))
+    compileOnly(libs.checkerframework.android)
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    testAnnotationProcessor(libs.dagger.compiler)
 
-    testAnnotationProcessor("com.google.dagger:dagger-compiler")
+    testCompileOnly(libs.checkerframework.android)
 
-    testCompileOnly("org.checkerframework:checker-qual-android")
+    testImplementation(platform(libs.metaborg.resource.api))
+    testImplementation(libs.metaborg.pie.runtime)
+    testImplementation(libs.metaborg.pie.dagger)
 
-    testImplementation("org.metaborg:resource")
-    testImplementation(compositeBuild("pie.runtime"))
-    testImplementation(compositeBuild("pie.dagger"))
     testImplementation(project(":pie.lang.runtime.java"))
 }
 

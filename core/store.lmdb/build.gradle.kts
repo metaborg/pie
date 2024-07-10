@@ -4,17 +4,16 @@ plugins {
     id("org.metaborg.gradle.config.junit-testing")
 }
 
-dependencies {
-    api(platform(project(":pie.depconstraints")))
 group = "org.metaborg"
 
+dependencies {
     api(project(":pie.api"))
     implementation(project(":pie.runtime"))
-    implementation("org.lmdbjava:lmdbjava:0.8.1")
+    implementation(libs.lmdbjava)
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 
     testImplementation(project(":pie.runtime.test"))
-    testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin")
+    testImplementation(libs.mockito.kotlin)
     testImplementation(kotlin("reflect")) // Use correct version of reflection library; mockito-kotlin uses an old one.
 }

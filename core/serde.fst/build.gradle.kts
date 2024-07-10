@@ -3,14 +3,13 @@ plugins {
     id("org.metaborg.gradle.config.junit-testing")
 }
 
-dependencies {
-    api(platform(project(":pie.depconstraints")))
 group = "org.metaborg"
 
+dependencies {
     api(project(":pie.api"))
-    api("de.ruedigermoeller:fst:2.56")
+    api(libs.fst)
 
-    compileOnly("org.checkerframework:checker-qual-android")
+    compileOnly(libs.checkerframework.android)
 }
 
 tasks.test {
