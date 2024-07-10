@@ -6,5 +6,7 @@ gradlePipeline(
   buildDevelopBranch: false,
   buildTag: false,
   slack: true,
-  slackChannel: '#spoofax3-dev'
+  slackChannel: '#spoofax3-dev',
+  gradleBuildTasks: "build",
+  gradlePublishTasks: "publish"
 )
