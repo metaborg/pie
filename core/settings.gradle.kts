@@ -7,7 +7,7 @@ pluginManagement {
 }
 
 plugins {
-    id("org.metaborg.convention.settings") version "0.0.10"
+    id("org.metaborg.convention.settings") version "0.0.11"
 }
 
 fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
@@ -15,7 +15,6 @@ fun includeProject(path: String, id: String = "pie.${path.replace('/', '.')}") {
     project(":$id").projectDir = file(path)
 }
 
-includeProject("depconstraints")
 includeProject("api")
 includeProject("graph")
 includeProject("runtime")
