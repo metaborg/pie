@@ -26,7 +26,7 @@ dependencies {
 
     testCompileOnly(libs.checkerframework.android)
 
-    testImplementation(platform(libs.metaborg.resource.api))
+    testImplementation(libs.metaborg.resource.api)
     testImplementation(libs.metaborg.pie.runtime)
     testImplementation(libs.metaborg.pie.dagger)
     testImplementation(libs.junit)
