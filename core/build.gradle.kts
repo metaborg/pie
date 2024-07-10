@@ -1,9 +1,11 @@
+// Workaround for issue: https://youtrack.jetbrains.com/issue/KTIJ-19369
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id("org.metaborg.gradle.config.root-project") version "0.5.6"
-    id("org.metaborg.gitonium") version "1.2.0"
+    alias(libs.plugins.gitonium)
 
     // Set versions for plugins to use, only applying them in subprojects (apply false here).
-    kotlin("jvm") version "1.3.61" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
 }
 
 subprojects {
