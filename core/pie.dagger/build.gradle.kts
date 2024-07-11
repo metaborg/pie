@@ -23,11 +23,6 @@ dependencies {
     testAnnotationProcessor(libs.dagger.compiler)
 }
 
-mavenPublishConvention {
-    repoOwner.set("metaborg")
-    repoName.set("pie")
-}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {

@@ -1,3 +1,5 @@
+import org.metaborg.convention.MavenPublishConventionExtension
+
 // Workaround for issue: https://youtrack.jetbrains.com/issue/KTIJ-19369
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -8,5 +10,11 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
 }
 
-// Workaround for issue: https://github.com/gradle/gradle/issues/20131
-println("")
+allprojects {
+    pluginManager.withPlugin("org.metaborg.convention.maven-publish") {
+        extensions.configure(MavenPublishConventionExtension::class.java) {
+            repoOwner.set("metaborg")
+            repoName.set("pie")
+        }
+    }
+}

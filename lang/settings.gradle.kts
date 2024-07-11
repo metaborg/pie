@@ -1,3 +1,5 @@
+import org.metaborg.convention.MavenPublishConventionExtension
+
 rootProject.name = "pie.lang.root"
 
 pluginManagement {
@@ -7,7 +9,7 @@ pluginManagement {
 }
 
 plugins {
-    id("org.metaborg.convention.settings") version "0.0.11"
+    id("org.metaborg.convention.settings") version "0.0.13"
 }
 
 

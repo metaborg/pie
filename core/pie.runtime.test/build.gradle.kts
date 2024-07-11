@@ -23,11 +23,6 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-mavenPublishConvention {
-    repoOwner.set("metaborg")
-    repoName.set("pie")
-}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {

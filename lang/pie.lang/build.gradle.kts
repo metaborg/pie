@@ -6,11 +6,6 @@ plugins {
 
 group = "org.metaborg"
 
-mavenPublishConvention {
-    repoOwner.set("metaborg")
-    repoName.set("pie")
-}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {

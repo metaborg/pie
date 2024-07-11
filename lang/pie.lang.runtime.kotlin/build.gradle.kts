@@ -15,11 +15,6 @@ dependencies {
     api(libs.metaborg.pie.api)
 }
 
-mavenPublishConvention {
-    repoOwner.set("metaborg")
-    repoName.set("pie")
-}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
