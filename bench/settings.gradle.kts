@@ -3,6 +3,7 @@ rootProject.name = "pie.bench"
 pluginManagement {
     repositories {
         maven("https://artifacts.metaborg.org/content/groups/public/")
+        mavenCentral()
     }
 }
 

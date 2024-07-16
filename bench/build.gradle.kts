@@ -9,6 +9,11 @@ plugins {
 
 group = "org.metaborg"
 
+repositories {
+    maven("https://artifacts.metaborg.org/content/groups/public/")
+    mavenCentral()
+}
+
 dependencies {
     implementation(platform(libs.metaborg.platform))
 
