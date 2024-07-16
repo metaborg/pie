@@ -8,6 +8,10 @@ plugins {
 }
 
 allprojects {
+    apply(plugin = "org.metaborg.gitonium")
+    version = gitonium.version
+    group = "org.metaborg"
+
     pluginManager.withPlugin("org.metaborg.convention.maven-publish") {
         extensions.configure(MavenPublishConventionExtension::class.java) {
             repoOwner.set("metaborg")
