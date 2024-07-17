@@ -10,7 +10,7 @@ plugins {
 group = "org.metaborg"
 
 dependencies {
-    implementation(platform(libs.metaborg.platform))
+    api(platform(libs.metaborg.platform))
 
     implementation(libs.metaborg.pie.runtime)
     implementation(libs.metaborg.pie.store.lmdb)
