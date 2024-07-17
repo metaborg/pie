@@ -11,6 +11,11 @@ group = "org.metaborg"
 spoofaxProject {
     inputIncludePatterns.add("**/*.pie")
     outputIncludePatterns.add("**/*.java")
+
+    // We add the dependency manually and don't change the repositories
+    // Eventually, this functionality should be removed from spoofax.gradle
+    addSpoofaxCoreDependency.set(false)
+    addSpoofaxRepository.set(false)
 }
 
 dependencies {
@@ -21,6 +26,7 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     compileOnly(libs.checkerframework.android)
+    compileOnly(libs.spoofax2.core)
 
     testAnnotationProcessor(libs.dagger.compiler)
 
