@@ -18,9 +18,4 @@ allprojects {
             repoName.set("pie")
         }
     }
-
-    repositories {
-        maven("https://artifacts.metaborg.org/content/groups/public/")
-        mavenCentral()
-    }
 }
