@@ -3,7 +3,7 @@ plugins {
     `maven-publish`
     id("org.metaborg.convention.java")
     id("org.metaborg.convention.maven-publish")
-    id("org.metaborg.spoofax.gradle.project")
+    id("org.metaborg.devenv.spoofax.gradle.project")
 }
 
 group = "org.metaborg"
