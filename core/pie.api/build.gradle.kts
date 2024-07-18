@@ -8,7 +8,7 @@ plugins {
 group = "org.metaborg"
 
 dependencies {
-    api(platform(libs.metaborg.platform))
+    api(platform(libs.metaborg.platform)) { version { require("latest.integration") } }
     api(libs.metaborg.resource.api)
     api(libs.metaborg.log.api)
 

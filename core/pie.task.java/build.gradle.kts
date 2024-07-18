@@ -12,7 +12,7 @@ val classPathInjection = configurations.create("classPathInjection")
 val annotationProcessorPathInjection = configurations.create("annotationProcessorPathInjection")
 
 dependencies {
-    api(platform(libs.metaborg.platform))
+    api(platform(libs.metaborg.platform)) { version { require("latest.integration") } }
     api(libs.metaborg.common)
 
     api(project(":pie.api"))
