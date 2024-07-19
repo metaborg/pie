@@ -26,7 +26,7 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     compileOnly(libs.checkerframework.android)
-    compileOnly(libs.spoofax2.core)
+    compileOnly(libs.spoofax.core)
 
     testAnnotationProcessor(libs.dagger.compiler)
 

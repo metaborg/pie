@@ -7,13 +7,25 @@ plugins {
 group = "org.metaborg"
 
 spoofaxLanguageSpecification {
+    addCompileDependenciesFromMetaborgYaml.set(false)
+    addSourceDependenciesFromMetaborgYaml.set(false)
+
     // We add the dependency manually and don't change the repositories
     // Eventually, this functionality should be removed from spoofax.gradle
     addSpoofaxCoreDependency.set(false)
     addSpoofaxRepository.set(false)
 }
 dependencies {
-    compileOnly(libs.spoofax2.core)
+    compileLanguage(libs.esv.lang)
+    compileLanguage(libs.sdf3.lang)
+    compileLanguage(libs.statix.lang)
+    compileLanguage(libs.sdf3.extstatix)
+
+    sourceLanguage(libs.meta.lib.spoofax)
+    sourceLanguage(libs.statix.runtime)
+    sourceLanguage("org.metaborg:lang.java:1.0.0")
+
+    compileOnly(libs.spoofax.core)
 }
 
 publishing {
