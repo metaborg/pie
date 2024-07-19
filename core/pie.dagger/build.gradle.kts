@@ -3,6 +3,7 @@ plugins {
     `maven-publish`
     id("org.metaborg.convention.java")
     id("org.metaborg.convention.maven-publish")
+    id("org.metaborg.convention.junit")
 }
 
 group = "org.metaborg"
@@ -18,7 +19,6 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
     compileOnly(libs.checkerframework.android)
 
-    testImplementation(libs.junit)
     testImplementation(project(":pie.runtime"))
     testAnnotationProcessor(libs.dagger.compiler)
 }

@@ -3,6 +3,7 @@ plugins {
     `maven-publish`
     id("org.metaborg.convention.java")
     id("org.metaborg.convention.maven-publish")
+    id("org.metaborg.convention.junit")
 }
 
 group = "org.metaborg"
@@ -12,8 +13,6 @@ dependencies {
     api(libs.fst)
 
     compileOnly(libs.checkerframework.android)
-
-    testImplementation(libs.junit)
 }
 
 tasks.test {

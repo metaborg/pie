@@ -3,6 +3,7 @@ plugins {
     `maven-publish`
     id("org.metaborg.convention.java")
     id("org.metaborg.convention.maven-publish")
+    id("org.metaborg.convention.junit")
     id("org.metaborg.devenv.spoofax.gradle.project")
 }
 
@@ -35,7 +36,6 @@ dependencies {
     testImplementation(libs.metaborg.resource.api)
     testImplementation(libs.metaborg.pie.runtime)
     testImplementation(libs.metaborg.pie.dagger)
-    testImplementation(libs.junit)
 
     testImplementation(project(":pie.lang.runtime.java"))
 }

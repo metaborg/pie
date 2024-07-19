@@ -5,6 +5,7 @@ plugins {
     `maven-publish`
     id("org.metaborg.convention.java")
     id("org.metaborg.convention.maven-publish")
+    id("org.metaborg.convention.junit")
     alias(libs.plugins.kotlin.jvm)
 }
 
@@ -17,8 +18,6 @@ dependencies {
     api(libs.mockito.kotlin)
     implementation(kotlin("reflect")) // Use correct version of reflection library; mockito-kotlin uses an old one.
     implementation(libs.jimfs)
-
-    testImplementation(libs.junit)
 }
 
 publishing {
