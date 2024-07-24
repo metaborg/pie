@@ -7,7 +7,7 @@ dependencies {
     api(platform(project(":pie.depconstraints")))
 
     api(project(":pie.api"))
-    api("com.google.inject:guice:4.2.0")
+    api("com.google.inject:guice:7.0.0")
 
     compileOnly("org.checkerframework:checker-qual-android")
 
