@@ -28,7 +28,7 @@ dependencies {
         api("com.google.jimfs:jimfs:1.1")
 
         // Annotations
-        api("javax.inject:javax.inject:1")
+        api("jakarta.inject:jakarta.inject-api:1")
         api("org.immutables:value:$immutablesVersion")
         api("org.immutables:value-annotations:$immutablesVersion")
         api("com.google.dagger:dagger:$daggerVersion")
