@@ -1,4 +1,4 @@
-import org.metaborg.convention.Developer
+import org.metaborg.convention.Person
 import org.metaborg.convention.MavenPublishConventionExtension
 
 // Workaround for issue: https://youtrack.jetbrains.com/issue/KTIJ-19369
@@ -27,9 +27,9 @@ allprojects {
             metadata {
                 inceptionYear.set("2017")
                 developers.set(listOf(
-                    Developer("Gohla", "Gabriel Konat", "gabrielkonat@gmail.com"),
-                    Developer("MeAmAnUsername", "Ivo Wilms", "ivoatinternet@gmail.com"),
-                    Developer("Virtlink", "Daniel A. A. Pelsmaeker", "developer@pelsmaeker.net"),
+                    Person("Gohla", "Gabriel Konat", "gabrielkonat@gmail.com"),
+                    Person("MeAmAnUsername", "Ivo Wilms", "ivoatinternet@gmail.com"),
+                    Person("Virtlink", "Daniel A. A. Pelsmaeker", "developer@pelsmaeker.net"),
                 ))
             }
         }
