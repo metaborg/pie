@@ -1,8 +1,8 @@
 import ru.vyarus.gradle.plugin.python.task.PythonTask
 
 plugins {
-    id("org.metaborg.gradle.config.root-project") version "0.5.6"
-    id("org.metaborg.gradle.config.java-application") version "0.5.6"
+    id("org.metaborg.gradle.config.root-project") version "0.7.3"
+    id("org.metaborg.gradle.config.java-application") version "0.7.3"
     alias(libs.plugins.gitonium)
     id("ru.vyarus.use-python") version "2.3.0"
 }
