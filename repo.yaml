@@ -1,0 +1,160 @@
+---
+repoOwner: "metaborg"
+repoName: "pie"
+mainBranch: "master"
+
+title: "Metaborg PIE"
+description: |
+  PIE is an API and runtime for developing interactive software development pipelines and incremental build scripts.
+inceptionYear: "2017"
+
+spoofax3Libraries:
+  - group: "org.metaborg"
+    name: "pie.api"
+  - group: "org.metaborg"
+    name: "pie.api.test"
+  - group: "org.metaborg"
+    name: "pie.dagger"
+  - group: "org.metaborg"
+    name: "pie.graph"
+  - group: "org.metaborg"
+    name: "pie.runtime"
+  - group: "org.metaborg"
+    name: "pie.runtime.test"
+  - group: "org.metaborg"
+    name: "pie.serde.fst"
+  - group: "org.metaborg"
+    name: "pie.serde.kryo"
+  - group: "org.metaborg"
+    name: "pie.share.coroutine"
+  - group: "org.metaborg"
+    name: "pie.store.lmdb"
+  - group: "org.metaborg"
+    name: "pie.task.archive"
+  - group: "org.metaborg"
+    name: "pie.task.java"
+  - group: "org.metaborg"
+    name: "pie.task.java.ecj"
+  - group: "org.metaborg"
+    name: "pie.taskdefs.guice"
+  - group: "org.metaborg"
+    name: "pie.lang"
+  - group: "org.metaborg"
+    name: "pie.lang.runtime.java"
+  - group: "org.metaborg"
+    name: "pie.lang.runtime.kotlin"
+  - group: "org.metaborg"
+    name: "pie.lang.test"
+
+contributors:
+  - id: "Gohla"
+    name: "Gabriel Konat"
+  - id: "MeAmAnUsername"
+    name: "Ivo Wilms"
+  - id: "Virtlink"
+    name: "Daniel A. A. Pelsmaeker"
+
+developers:
+  - id: "Apanatshka"
+    name: "Jeff Smits"
+
+files:
+  githubWorkflows:
+    publishRelease: true
+    publishSnapshot: true
+  gradleRootProject:
+    generate: true
+    rootProjectName: "pie.root"
+    includedBuilds:
+      - path: "core/"
+      - path: "lang/"
+  readme:
+    body: |
+      ## Questions and Issues
+      If you have a question, enhancement, feature request, or bug report, please search the [issue tracker](https://github.com/metaborg/pie/issues) for a solution or workaround, or create a new issue.
+
+      ## User's guide
+      ### Installation
+      PIE is deployed as a set of Maven artifacts to the MetaBorg artifact server, which you can consume with Maven or Gradle.
+      To be able to get artifacts from the MetaBorg artifact servers, add the following to your `build.gradle` file:
+
+      ```gradle
+      repositories {
+        jcenter()
+        maven { url "https://artifacts.metaborg.org/content/repositories/releases/" }
+        maven { url "https://artifacts.metaborg.org/content/repositories/snapshots/" }
+      }
+      ```
+
+      or `build.gradle.kts` file:
+
+      ```gradle.kts
+      repositories {
+        jcenter()
+        maven { url = uri("https://artifacts.metaborg.org/content/repositories/releases/") }
+        maven { url = uri("https://artifacts.metaborg.org/content/repositories/snapshots/") }
+      }
+      ```
+
+      or add the following to your Maven `pom.xml` file:
+
+      ```maven-pom
+      <repositories>
+        <repository>
+          <id>metaborg-release-repo</id>
+          <url>https://artifacts.metaborg.org/content/repositories/releases/</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>metaborg-snapshot-repo</id>
+          <url>https://artifacts.metaborg.org/content/repositories/snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      ```
+
+      To depend on a specific version of the runtime to build and execute pipelines, add the following Gradle dependency to your `build.gradle` file:
+
+      ```gradle
+      implementation 'org.metaborg:pie.runtime:<version>'
+      ```
+
+      or `build.gradle.kts` file:
+
+      ```gradle.kts
+      implementation("org.metaborg:pie.runtime:<version>")
+      ```
+
+      or add the following to your Maven `pom.xml` file:
+
+      ```maven-pom
+      <dependency>
+        <groupId>org.metaborg</groupId>
+        <artifactId>pie.runtime</artifactId>
+        <version>0.6.0</version>
+      </dependency>
+      ```
+
+      The latest version is listed at the top of this file.
+
+      ### Components
+      PIE consists of several components:
+
+      * [pie.api](core/api): The PIE API for developing reusable interactive pipelines or incremental build scripts
+      * [pie.runtime](core/runtime): The PIE runtime for incrementally executing pipelines developed with the API
+      * [pie.taskdefs.guice](core/taskdefs.guice): Guice dependency injection support for task definitions
+      * [pie.dagger](core/dagger): Dagger dependency injection support
+      * [task.java](core/task.java): Java compilation tasks
+      * [task.archive](core/task.archive): ZIP/Jar archiving and unarchiving tasks
+
+
